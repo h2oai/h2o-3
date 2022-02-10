@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import functools as ft
 from inspect import getdoc
 import re
@@ -9,6 +11,7 @@ from h2o.estimators import H2OEstimator
 from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
+from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import check_id
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from ._base import H2OAutoMLBaseMixin, _fetch_state
@@ -332,7 +335,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         if modeling_plan is None:
             return None
 
-        supported_aliases = ['all', 'defaults', 'grids']
+        supported_aliases = PList(['all', 'defaults', 'grids'])
 
         def assert_is_step_def(sd):
             assert 'name' in sd, "each definition must have a 'name' key"
@@ -642,7 +645,6 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         levels = ['debug', 'info', 'warn', 'error']
         if verbosity is None or verbosity.lower() not in levels:
             return
-
         try:
             if job.progress > state.get('last_job_progress', 0):
                 events_table = _fetch_state(job.dest_key, properties=[], verbosity=verbosity)['json']['event_log_table']

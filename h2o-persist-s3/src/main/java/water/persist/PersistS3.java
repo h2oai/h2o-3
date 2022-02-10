@@ -1,9 +1,6 @@
 package water.persist;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
+import com.amazonaws.*;
 import com.amazonaws.auth.*;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.RegionUtils;
@@ -24,6 +21,7 @@ import water.util.Log;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URL;
 import java.util.*;
 
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
@@ -99,10 +97,7 @@ public final class PersistS3 extends Persist {
       AWSCredentialsProvider[] defaultProviders = new AWSCredentialsProvider[]{
               new H2ODynamicCredentialsProvider(),
               new H2OArgCredentialsProvider(),
-              new InstanceProfileCredentialsProvider(),
-              new EnvironmentVariableCredentialsProvider(),
-              new SystemPropertiesCredentialsProvider(),
-              new ProfileCredentialsProvider()
+              new DefaultAWSCredentialsProviderChain() // use constructor instead of getInstance to be compatible with older versions on Hadoop
       };
       if (customProviderClassName == null) {
         return defaultProviders;
@@ -173,6 +168,18 @@ public final class PersistS3 extends Persist {
     public String toString() {
       return getClass().getSimpleName();
     }
+  }
+
+  /**
+   * Returns a pre-signed URL for accessing S3 resource.
+   * 
+   * @param path S3 path
+   * @param expiration when should the pre-signed URL expire?
+   * @return pre-signed URL
+   */
+  URL generatePresignedUrl(String path, Date expiration) {
+    final String[] bk = decodePath(path);
+    return getClient().generatePresignedUrl(bk[0], bk[1], expiration, HttpMethod.GET);
   }
 
   @Override

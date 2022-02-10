@@ -1948,13 +1948,19 @@ h2o.coef <- function(object, predictorSize=-1) {
     } else {
       if (object@algorithm == "modelselection") {
         modelIDs <- object@model$best_model_ids
-        numModels = length(modelIDs)
+        numModels <- length(modelIDs)
+        mode <- object@parameters$mode
+        maxPredNumbers <- length(object@model$best_model_predictors[[numModels]])
         if (predictorSize == 0)
           stop("predictorSize (predictor subset size) must be between 0 and the total number of predictors used.")
-        if (predictorSize > numModels)
+        if (predictorSize > maxPredNumbers)
           stop("predictorSize (predictor subset size) cannot exceed the total number of predictors used.")
         if (predictorSize > 0) { # subset size was specified
-          return(grabOneModelCoef(modelIDs, predictorSize, FALSE))
+          if (mode == "backward") {
+            return(grabOneModelCoef(modelIDs, numModels-(maxPredNumbers-predictorSize), FALSE))
+          } else {
+            return(grabOneModelCoef(modelIDs, predictorSize, FALSE))
+          }
         } else {
         coeffs <- vector("list", numModels)
         for (index in seq(numModels)) {
@@ -2014,12 +2020,18 @@ h2o.coef_norm <- function(object, predictorSize=-1) {
     if (object@algorithm == "modelselection") {
       modelIDs <- object@model$best_model_ids
       numModels = length(modelIDs)
+      mode <- object@parameters$mode
+      maxPredNumbers <- length(object@model$best_model_predictors[[numModels]])
       if (predictorSize == 0)
         stop("predictorSize (predictor subset size) must be between 0 and the total number of predictors used.")
-      if (predictorSize > numModels)
+      if (predictorSize > maxPredNumbers)
         stop("predictorSize (predictor subset size) cannot exceed the total number of predictors used.")
-      if (predictorSize > 0) { # subset size was specified {
-        return(grabOneModelCoef(modelIDs, predictorSize, TRUE))
+      if (predictorSize > 0) { # subset size was specified 
+          if (mode == "backward") {
+            return(grabOneModelCoef(modelIDs, numModels-(maxPredNumbers-predictorSize), TRUE))
+          } else {
+            return(grabOneModelCoef(modelIDs, predictorSize, TRUE))
+          }
       } else {
       coeffs <- vector("list", numModels)
       for (index in seq(numModels)) {

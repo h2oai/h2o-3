@@ -191,6 +191,9 @@ public abstract class SharedTree<
       warn("_parallel_main_model_building",
               "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
+    if (_parms._build_tree_one_node) {
+      warn("_build_tree_one_node", "Single-node tree building is not supported in this version of H2O.");
+    }
   }
 
   protected void validateRowSampleRate() {
@@ -640,7 +643,7 @@ public abstract class SharedTree<
       // per column.
       int treeNum = ((SharedTreeModel.SharedTreeOutput) _st._model._output)._ntrees;
       new ScoreBuildHistogram2(this, treeNum, _k, _st._ncols, _nbins, _tree, _leafOffsets[_k], _hcs[_k], _family,
-              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx, _treatmentIdx).dfork2(null,_fr2,_build_tree_one_node);
+              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx, _treatmentIdx).dfork2(_fr2);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram) caller;

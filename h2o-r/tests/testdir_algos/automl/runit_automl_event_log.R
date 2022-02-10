@@ -9,7 +9,7 @@ automl.event_log.test <- function() {
     max_models <- 3
     seed <- 1234
 
-    aml = h2o.automl(project_name="r_test_event_log",
+    aml <- h2o.automl(project_name="r_test_event_log",
                      y=y,
                      training_frame=train,
                      max_models=max_models,
@@ -35,28 +35,42 @@ automl.train_verbosity.test <- function() {
     seed <- 1234
 
     print("verbosity disabled")
-    aml = h2o.automl(project_name="r_test_train_verbosity",
-                     y=y,
-                     training_frame=train,
-                     max_models=max_models,
-                     seed=seed)
+    disabled <- capture.output({
+        h2o.automl(project_name="r_test_train_verbosity_disabled",
+                   y=y,
+                   training_frame=train,
+                   max_models=max_models,
+                   seed=seed, 
+                   verbosity=NULL)
+    })
+    cat(disabled, paste0("lines=", length(disabled)), sep="\n")
 
     print("verbosity level = info")
-    aml = h2o.automl(project_name="r_test_train_verbosity_info",
-                     y=y,
-                     training_frame=train,
-                     max_models=max_models,
-                     seed=seed,
-                     verbosity='info')
+    info <- capture.output({
+        h2o.automl(project_name="r_test_train_verbosity_info",
+                   y=y,
+                   training_frame=train,
+                   max_models=max_models,
+                   seed=seed,
+                   verbosity='info')
+    })
+    cat(info, paste0("lines=", length(info)), sep="\n")
 
     print("verbosity level = warn")
-    aml = h2o.automl(project_name="r_test_train_verbosity_warn",
-                     y=y,
-                     training_frame=train,
-                     max_models=max_models,
-                     seed=seed,
-                     stopping_tolerance=0.01,
-                     verbosity='warn')
+    warn <- capture.output({
+        h2o.automl(project_name="r_test_train_verbosity_warn",
+                   y=y,
+                   training_frame=train,
+                   max_models=max_models,
+                   seed=seed,
+                   stopping_tolerance=0.01,
+                   verbosity='warn')
+    })
+    cat(warn, paste0("lines=", length(warn)), sep="\n")
+
+    expect_gt(length(info), length(disabled))
+    expect_gt(length(info), length(warn))
+    expect_gte(length(warn), length(disabled))
 }
 
 

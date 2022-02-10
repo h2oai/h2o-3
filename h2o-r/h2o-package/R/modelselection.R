@@ -33,6 +33,14 @@
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
+#' @param family Family. For MaxR, only gaussian.  For backward, ordinal and multinomial families are not supported Must be one
+#'        of: "AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma", "tweedie",
+#'        "negativebinomial". Defaults to AUTO.
+#' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
+#'        Defaults to family_default.
+#' @param tweedie_variance_power Tweedie variance power Defaults to 0.
+#' @param tweedie_link_power Tweedie link power Defaults to 0.
+#' @param theta Theta Defaults to 0.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
 #'        columns. Must be one of: "AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT",
@@ -101,11 +109,16 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
-#' @param nparallelism number of models to build in parallel.  Default to 0.0 which is adaptive to the system capability Defaults to
+#' @param nparallelism number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability Defaults to
 #'        0.
-#' @param max_predictor_number Maximum number of predictors to be considered when building GLM models.  Defaiult to 1. Defaults to 1.
-#' @param mode Mode: used to choose model selection algorithm to use,  Must be one of: "allsubsets", "maxr". Defaults to
+#' @param max_predictor_number Maximum number of predictors to be considered when building GLM models.  Defaults to 1. Defaults to 1.
+#' @param min_predictor_number For mode = 'backward' only.  Minimum number of predictors to be considered when building GLM models starting
+#'        with all predictors to be included.  Defaults to 1. Defaults to 1.
+#' @param mode Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all subsets, 'maxr'
+#'        for MaxR, 'backward' for backward selection Must be one of: "allsubsets", "maxr", "backward". Defaults to
 #'        maxr.
+#' @param p_values_threshold For mode='backward' only.  If specified, will stop the model building process when all coefficientsp-values
+#'        drop below this threshold  Defaults to 0.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -131,6 +144,11 @@ h2o.modelSelection <- function(x,
                                score_iteration_interval = 0,
                                offset_column = NULL,
                                weights_column = NULL,
+                               family = c("AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                               link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                               tweedie_variance_power = 0,
+                               tweedie_link_power = 0,
+                               theta = 0,
                                solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR"),
                                alpha = NULL,
                                lambda = NULL,
@@ -165,7 +183,9 @@ h2o.modelSelection <- function(x,
                                custom_metric_func = NULL,
                                nparallelism = 0,
                                max_predictor_number = 1,
-                               mode = c("allsubsets", "maxr"))
+                               min_predictor_number = 1,
+                               mode = c("allsubsets", "maxr", "backward"),
+                               p_values_threshold = 0)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -210,6 +230,16 @@ h2o.modelSelection <- function(x,
     parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
+  if (!missing(family))
+    parms$family <- family
+  if (!missing(link))
+    parms$link <- link
+  if (!missing(tweedie_variance_power))
+    parms$tweedie_variance_power <- tweedie_variance_power
+  if (!missing(tweedie_link_power))
+    parms$tweedie_link_power <- tweedie_link_power
+  if (!missing(theta))
+    parms$theta <- theta
   if (!missing(solver))
     parms$solver <- solver
   if (!missing(alpha))
@@ -278,8 +308,12 @@ h2o.modelSelection <- function(x,
     parms$nparallelism <- nparallelism
   if (!missing(max_predictor_number))
     parms$max_predictor_number <- max_predictor_number
+  if (!missing(min_predictor_number))
+    parms$min_predictor_number <- min_predictor_number
   if (!missing(mode))
     parms$mode <- mode
+  if (!missing(p_values_threshold))
+    parms$p_values_threshold <- p_values_threshold
 
   # Error check and build model
   model <- .h2o.modelJob('modelselection', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -298,6 +332,11 @@ h2o.modelSelection <- function(x,
                                                score_iteration_interval = 0,
                                                offset_column = NULL,
                                                weights_column = NULL,
+                                               family = c("AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                                               link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                                               tweedie_variance_power = 0,
+                                               tweedie_link_power = 0,
+                                               theta = 0,
                                                solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT", "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR"),
                                                alpha = NULL,
                                                lambda = NULL,
@@ -332,7 +371,9 @@ h2o.modelSelection <- function(x,
                                                custom_metric_func = NULL,
                                                nparallelism = 0,
                                                max_predictor_number = 1,
-                                               mode = c("allsubsets", "maxr"),
+                                               min_predictor_number = 1,
+                                               mode = c("allsubsets", "maxr", "backward"),
+                                               p_values_threshold = 0,
                                                segment_columns = NULL,
                                                segment_models_id = NULL,
                                                parallelism = 1)
@@ -382,6 +423,16 @@ h2o.modelSelection <- function(x,
     parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
+  if (!missing(family))
+    parms$family <- family
+  if (!missing(link))
+    parms$link <- link
+  if (!missing(tweedie_variance_power))
+    parms$tweedie_variance_power <- tweedie_variance_power
+  if (!missing(tweedie_link_power))
+    parms$tweedie_link_power <- tweedie_link_power
+  if (!missing(theta))
+    parms$theta <- theta
   if (!missing(solver))
     parms$solver <- solver
   if (!missing(alpha))
@@ -450,8 +501,12 @@ h2o.modelSelection <- function(x,
     parms$nparallelism <- nparallelism
   if (!missing(max_predictor_number))
     parms$max_predictor_number <- max_predictor_number
+  if (!missing(min_predictor_number))
+    parms$min_predictor_number <- min_predictor_number
   if (!missing(mode))
     parms$mode <- mode
+  if (!missing(p_values_threshold))
+    parms$p_values_threshold <- p_values_threshold
 
   # Build segment-models specific parameters
   segment_parms <- list()

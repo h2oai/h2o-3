@@ -32,6 +32,12 @@ from collections import defaultdict
 
 
 def check_requirements():
+    if os.getenv("BUILD_HADOOP"):
+        print("Building on Hadoop - skipping Python version check (see https://h2oai.atlassian.net/browse/ITA-1006)")
+    else:
+        check_python_version()
+
+def check_python_version():
     min_version = (3, 6)
     if sys.version_info < min_version:
         raise OSError("Python ({py_exec}) version {py_version} does not match minimal required version to generate bindings: {min_version}".format(
