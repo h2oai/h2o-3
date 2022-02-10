@@ -58,7 +58,7 @@ public abstract class SharedTreeModel<
     public double _min_split_improvement = 1e-5; // Minimum relative improvement in squared error reduction for a split to happen
 
     public enum HistogramType {
-      AUTO, UniformAdaptive, Random, QuantilesGlobal, RoundRobin;
+      AUTO, UniformAdaptive, Random, QuantilesGlobal, RoundRobin, UniformRobust;
       public static HistogramType[] ROUND_ROBIN_CANDIDATES = {
               AUTO, // Note: the inclusion of AUTO means UniformAdaptive has effectively higher chance of being used
               UniformAdaptive, Random, QuantilesGlobal
