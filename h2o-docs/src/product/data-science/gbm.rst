@@ -220,11 +220,7 @@ Defining a GBM Model
    Regression. This value defaults to 0.5.
 
 -  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if *Tweedie* is specified for
-   **distribution**) Specify the Tweedie power. The range is from 1 to
-   2. For a normal distribution, enter ``0``. For Poisson distribution,
-   enter ``1``. For a gamma distribution, enter ``2``. For a compound
-   Poisson-gamma distribution, enter a value greater than 1 but less
-   than 2. This value defaults to 1.5. For more information, refer to `Tweedie
+   **distribution**) Specify the Tweedie power. You can tune over this option with values > 1.0 and < 2.0. This value defaults to ``1.5``. For more information, refer to `Tweedie
    distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
 - `upload_custom_distribution <algo-params/upload_custom_distribution.html>`__: Upload a custom distribution into a running H2O cluster.

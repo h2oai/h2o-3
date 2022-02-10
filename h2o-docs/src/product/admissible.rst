@@ -1,15 +1,14 @@
 Admissible Machine Learning
 ===========================
 
-We have developed new tools to aid in the design of *admissible learning algorithms* which are **efficient** (enjoy good predictive accuracy), **fair** (minimize discrimination against minority groups), and **interpretable** (provide mechanistic understanding) to the best possible extent.
+We have developed new tools to aid in the design of *admissible learning algorithms* which are **efficient** (enjoy good predictive accuracy), **fair** (minimize discrimination against minority groups), and **interpretable** (provide mechanistic understanding) to the best possible extent. 
 
 Admissible ML introduces two methodological tools: 
 
 - **Infogram**, an "information diagram", is a new graphical feature-exploration method that facilitates the development of admissible machine learning methods. 
 - **L-features**, which mitigate unfairness, offer ways to systematically discover the hidden problematic proxy features from a dataset. L-features are inadmissible features. 
 
-The Infogram and Admissible Machine Learning bring a new research direction to machine learning interpretability. You can find the theoretical foundations and several real-life examples of it's utility in the `Admissible ML <https://arxiv.org/abs/2108.07380>`__ paper. Below we introduce the concepts at a high level and provide an example using the H2O Infogram implementation.
-
+The Infogram and Admissible Machine Learning bring a new research direction to machine learning interpretability. You can find the theoretical foundations and several real-life examples of its utility in the `Admissible ML <https://arxiv.org/abs/2108.07380>`__ paper. Below we introduce the concepts at a high level and provide an example using the H2O Infogram implementation.
 
 Infogram
 --------
@@ -30,10 +29,10 @@ Fair Infogram: A Diagnostic Tool for Fairness
 
 To improve fairness, you must remove any variables that are of a protected class.  It is bad practice, yet common, that modelers remove the protected variables alone.  With potentially correlated features (e.g. zip code, income, etc.) still present in the training data, unfair models can be trained, unbeknownst to the data scientist.  This is called "fairness through unawareness."  The proxy attributes (e.g. zip code, income, etc.) share some degree of correlation (information-sharing) with race, gender, or age, so they must be systematically identified and also removed from the set of training features.  
 
-In the Fair Infogram, a non-protected predictor variable will be deemed "inadmissable" if it is found to possess little or no informational value beyond its use as a dummy for protected attributes when checked. 
+In the Fair Infogram, a non-protected predictor variable will be deemed "inadmissible" if it is found to possess little or no informational value beyond its use as a dummy for protected attributes when checked. 
 The Fair Infogram plots all the features as points on a two-dimensional grid of **relevance vs safety**. The x-axis is the **relevance index**, a measure of how much the variable drives the response (the more predictive, the higher the relevance). The y-axis is the **safety index**, a measure of how much extra information the variable has that is not acquired through the protected variables. The **admissible features** are the strongest, safest drivers of the response.
 
-The goal of this tool is to assist the identification of admissible features which have little or no information-overlap with protected attributes, yet are reasonably predictive for the response.
+The goal of this tool is to assist the identification of admissible features which have little or no information-overlap with protected attributes yet are reasonably predictive for the response.
 
 
 Infogram Interface
@@ -94,7 +93,7 @@ Infogram Output
 Infogram Plot
 ~~~~~~~~~~~~~
 
-The infogram function produces a visual guide to admisibility of the features.  The visualization engine used in the R interface is the `ggplot2 <https://ggplot2.tidyverse.org/>`__ package and in Python, we use `matplotlib <https://matplotlib.org/>`__.  Here's an example of the Core Infogram for the Iris dataset.
+The infogram function produces a visual guide to admissibility of the features.  The visualization engine used in the R interface is the `ggplot2 <https://ggplot2.tidyverse.org/>`__ package and in Python, we use `matplotlib <https://matplotlib.org/>`__.  Here's an example of the Core Infogram for the Iris dataset.
 
 .. figure:: images/infogram_core_iris.png
    :alt: H2O Core Infogram
@@ -104,7 +103,7 @@ The infogram function produces a visual guide to admisibility of the features.  
 
 **L-Features.** The highlighted L-shaped area contains features that are either irrelevant or redundant (or both).  Features in the L can be categorized as follows:
 
-- top left: Contains highly unique information, but only a small amout of relevance.
+- top left: Contains highly unique information, but only a small amount of relevance.
 - origin:  Contains low amount of unique information and low relevance.
 - bottom right:  Contains low amount of unique information, but high relevance.
 
@@ -124,7 +123,7 @@ The infogram function produces an object of type ``H2OInfogram``, which contains
 
 - **admissible_features:** A list of the admissible feature column names.
 
-- **admissible_score:** A data frame storing various admissibility scores for each feature.  The rows of the admissible score frame are the features which were evaluated (this will max out at 50 rows/features if ``top_n_features`` is left at the default).  Core and Fair infograms have different interpretations of conditional mutual information (CMI), so the CMI and relevance columns use different names between the two infogram types.  The frame is sorted by the admissible index column, with the most admissible features at the top of the table, for easy access.  The columns in the admissible score frame are:
+- **admissible_score:** A data frame storing various admissibility scores for each feature.  The rows of the admissible score frame are the features which were evaluated (this will max out at 50 rows/features if ``top_n_features`` is left at the default).  Core and Fair Infograms have different interpretations of conditional mutual information (CMI), so the CMI and relevance columns use different names between the two infogram types.  The frame is sorted by the admissible index column, with the most admissible features at the top of the table, for easy access.  The columns in the admissible score frame are:
 
     - **admissible**: Binary indicator of admissibility (1 = admissible, 0 = inadmissible).
     - **admissible_index**: The normalized distance between the origin and the (x, y) feature location on the infogram plot.  The rows of the data frame are sorted by this column. 
@@ -149,10 +148,9 @@ Infogram
 Infogram Example: UCI Credit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example below uses a `UCI Credit <https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients>`__ dataset from the UCI Machine Learning Repository.  It has 30k rows, representing customers, and 24 predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as sex, age, and marital status.  This is a binary classification problem, aimed to estimate the probabilty of default in order to identify "credible or not credible" customers.
+This example below uses a `UCI Credit <https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients>`__ dataset from the UCI Machine Learning Repository.  It has 30k rows, representing customers, and 24 predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as sex, age, and marital status.  This is a binary classification problem, aimed to estimate the probability of default in order to identify "credible or not credible" customers.
 
-Along with the demographic variables that are included in this dataset, there's a number of payment history variables, including previous bill and payment amounts.  On the surface, you may assume that payment history is not correlated with protected variables, but as we will see in the example below, most of the payment history variables provide a hidden pathway through the protected variables to the response.  Therefore, even if you remove the protected variables during training, the resulting model can still be desicrimatory if any non-admissible bill/payment variables are included.  This is Example 9 from the `Admissible ML <https://arxiv.org/abs/2108.07380>`__ paper.
-
+Along with the demographic variables that are included in this dataset, there's a number of payment history variables, including previous bill and payment amounts.  On the surface, you may assume that payment history is not correlated with protected variables, but as we will see in the example below, most of the payment history variables provide a hidden pathway through the protected variables to the response.  Therefore, even if you remove the protected variables during training, the resulting model can still be discriminatory if any non-admissible bill/payment variables are included.  This is Example 9 from the `Admissible ML <https://arxiv.org/abs/2108.07380>`__ paper.
 
 The code below generates an infogram, and we plot the infogram and view the data in the admissible score frame.
 
@@ -232,7 +230,7 @@ Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admiss
    :align: center
 
 
-Notice the position of ``PAY_0`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the model.  The ``PAY_2`` variable is also reasonably safe to use, but it's not as predictive of the response.  The remaining variables are neither highly predictive of the response nor very safe to use in the model.  So, you may consider building a model using just the two admissible variables. To increase accruacy, you could add in some non-admissible, relevant variables; however, since this will be at a cost to safety, this is an important consideration. In many cases, the potential for increased accuracy might be minimal and not worthy of pursuing, or in the case where the safety is a strict requirement, the pursuit is simply not admissible.
+Notice the position of ``PAY_0`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the model.  The ``PAY_2`` variable is also reasonably safe to use, but it's not as predictive of the response.  The remaining variables are neither highly predictive of the response nor very safe to use in the model.  So, you may consider building a model using just the two admissible variables. To increase accuracy, you could add in some non-admissible, relevant variables; however, since this will be at a cost to safety, this is an important consideration. In many cases, the potential for increased accuracy might be minimal and not worthy of pursuing, or in the case where the safety is a strict requirement, the pursuit is simply not admissible.
 
 
 Infogram Example: HMDA
@@ -243,7 +241,7 @@ The `Home Mortgage Disclosure Act (HMDA) <https://en.wikipedia.org/wiki/Home_Mor
 The mortgage dataset analyzed here is a random sample of consumer-anonymized loans from the
 `HMDA database <https://www.consumerfinance.gov/data-research/hmda/>`__. These loans are a subset of all originated mortgage loans in the 2018 HMDA data that were chosen to represent a relatively comparable group of consumer mortgages.
 
-The dataset has 93k rows, representing people who applied for mortages, and a variety of predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as (derived) sex, ethnicity, race, as well as two columns (encodings) of age.  This is a binary classification problem, aimed at trying to predict whether an applicant will get a "high-priced" loan.  High-priced is defined as: the annual percentage rate (APR) that was charged was 150 basis points (1.5%) or more above a survey-based estimate of other similar loans offered around the time of the given loan.
+The dataset has 93k rows, representing people who applied for mortgages, and a variety of predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as (derived) sex, ethnicity, race, as well as two columns (encodings) of age.  This is a binary classification problem, aimed at trying to predict whether an applicant will get a "high-priced" loan.  High-priced is defined as: the annual percentage rate (APR) that was charged was 150 basis points (1.5%) or more above a survey-based estimate of other similar loans offered around the time of the given loan.
 
 
 The code below generates an infogram, and we plot the infogram and view the data in the admissible score frame.
@@ -341,7 +339,7 @@ Here's the infogram which shows that ``loan_to_value_ratio`` , ``property_value`
    :align: center
 
 
-Notice the position of ``loan_to_value_ratio`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the model.  The ``property_value`` and ``loan_amount`` variables are less safe to use and are somewhat predictive of the response, and are also admissible under these settings.  The remaining variables are neither highly predictive of the response nor very safe to use in the model.  In the next two sections below, we will build models comparing admissible machine learning with models trained using inadmissible, un-safe features.
+Notice the position of ``loan_to_value_ratio`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the model.  The ``property_value`` and ``loan_amount`` variables are less safe to use and are somewhat predictive of the response and are also admissible under these settings.  The remaining variables are neither highly predictive of the response nor very safe to use in the model.  In the next two sections below, we will build models comparing admissible machine learning with models trained using inadmissible, un-safe features.
 
 
 
@@ -475,7 +473,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
 Utility Functions
 ~~~~~~~~~~~~~~~~~
 
-In R, the output is stored in the slots of an ``H2OInfogram`` class object, so this data is easy to view and retreive.  In Python, we provide several handy methods for the ``H2OInfogram`` class to help the user retreive different pieces of information about admissibility.
+In R, the output is stored in the slots of an ``H2OInfogram`` class object, so this data is easy to view and retrieve.  In Python, we provide several handy methods for the ``H2OInfogram`` class to help the user retrieve different pieces of information about admissibility.
 
 
 .. tabs::
@@ -513,13 +511,13 @@ Glossary
 
 - **Admissible Features**: These variables have two key characteristics: they are highly predictive and at the same time safe to use in the sense that they share very little predictive information with any protected attributes (e.g. age, gender, race).
 - **Admissible Machine Learning**: Admissible machine learning is a new information-theoretic learning framework which aims to create models that can balance fairness, interpretability, and accuracy.
-- **Conditional Mutual Information (CMI)**: CMI measures the expected value of the mutual information of two random variables, given the value of a third.  In the case of the Core Inforgram, the CMI measures the net predictive information, and in the Fair context, we refer to this as the relevance index.  CMI captures multivariate non-linear conditional dependencies between the variables in a completely non-parametric manner.  The y-axis of the infogram is Normalized CMI.
+- **Conditional Mutual Information (CMI)**: CMI measures the expected value of the mutual information of two random variables, given the value of a third.  In the case of the Core Infogram, the CMI measures the net predictive information, and in the Fair context, we refer to this as the relevance index.  CMI captures multivariate non-linear conditional dependencies between the variables in a completely non-parametric manner.  The y-axis of the infogram is Normalized CMI.
 - **Core Features or Core Set**: In the Core Infogram, these are key features that are driving the response, without redundancy.  High relevance, low redundancy. 
 - **Inadmissible Features (L-Features)**: The highlighted L-shaped area in the Infogram contains features that are either irrelevant or redundant. In the case of the Fair Infogram, these features process little or no informational value beyond their use as a dummy for protected characteristics.
 - **Irrelevant Features**: In the Core Infogram, these are the features on the vertical side of the L, which have low total information (relevance to the response).
 - **Protected Features**:  User-defined features that are sensitive and need to be protected (legally, or otherwise).  These features (e.g. race, gender, etc.) should not drive the prediction of the response.
 - **Redundant Features**: In the Core Infogram, these are the features on the bottom side of the L, which have a low amount of net (unique) information to offer.
-- **Relevance**: Relevance of the feature to the response variable. Higher is more relevant, more predictive, of the response. For Core infograms, we refer to this as Total Information Index and for Fair Infograms, it's referred to as the Relevance Index.  This is the x-axis of the infogram.
+- **Relevance**: Relevance of the feature to the response variable. Higher is more relevant, more predictive, of the response. For Core Infograms, we refer to this as Total Information Index and for Fair Infograms, it's referred to as the Relevance Index.  This is the x-axis of the infogram.
 - **Relevance Index**: A normalized measure of the relevance of the feature to the response variable. Higher is more relevant, more predictive, of the response.
 - **Safety Index**: For Fair Infograms, the safety index represents how safe a feature is to use, with respect to the specified protected columns. This quantifies how much extra information each feature carries for the response that is not acquired through the sensitive variables.  Higher is safer. 
 
