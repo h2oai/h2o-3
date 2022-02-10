@@ -257,8 +257,8 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help="Scale penalty matrix for tp (thin plate) smoothers as in R", level = Level.secondary, direction = Direction.INPUT)
     public boolean scale_tp_penalty_mat; // if true, will apply scaling to the penalty matrix CS
     
-    @API(help="String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns", 
+    @API(help="Array storing frame keys of knots.  One for each gam column set specified in gam_columns", 
             level = Level.secondary, direction = Direction.INPUT)
-    public String[] knot_ids;
+    public FrameKeyV3[] knot_ids;
   }
 }

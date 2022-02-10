@@ -113,14 +113,14 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     int tpInd = _cubicSplineNum+_iSplineNum;
     int gamIndex; // index into the sorted arrays with CS/I-splines front, TP back.
     for (int outIndex = 0; outIndex < _parms._gam_columns.length; outIndex++) { // go through each gam_column group
-      String tempKey = allNull ? null : _parms._knot_ids[outIndex]; // one knot_id for each smoother
+      Key<Frame> tempKey = allNull ? null : _parms._knot_ids[outIndex]; // one knot_id for each smoother
       if (_parms._bs[outIndex] == 1) // thin plate regression
         gamIndex = tpInd++;
       else
         gamIndex = csISplineInd++;
       knots[gamIndex] = new double[_parms._gam_columns[outIndex].length][];
-      if (tempKey != null && (tempKey.length() > 0)) {  // read knots location from Frame given by user      
-        final Frame knotFrame = DKV.getGet(Key.make(tempKey));
+      if (tempKey != null) {  // read knots location from Frame given by user      
+        final Frame knotFrame = DKV.getGet(tempKey);
         double[][] knotContent = new double[(int) knotFrame.numRows()][_parms._gam_columns[outIndex].length];
         final ArrayUtils.FrameToArray f2a = new ArrayUtils.FrameToArray(0,
                 _parms._gam_columns[outIndex].length - 1, knotFrame.numRows(), knotContent);
@@ -558,7 +558,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         _predictVec = gamPred;
         _numKnots = parms._num_knots_sorted[gamColIndex];
         _knots = knots;
-        _order = parms._spline_orders[gamColIndex];
+        _order = parms._spline_orders_sorted[gamColIndex];
         _savePenaltyMat = parms._savePenaltyMat;
         _newColNames = gamColNames;
         _gamColIndex = gamColIndex;

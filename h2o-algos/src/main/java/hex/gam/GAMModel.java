@@ -208,7 +208,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public int[] _spline_orders_sorted;
     public int[] _num_knots_sorted;
     public int[] _num_knots_tp; // store num_knots for thin plate regression
-    public String[] _knot_ids;  // store frame keys that contain knots location for each smoother in gam_X;
+    public Key<Frame>[] _knot_ids;  // store frame keys that contain knots location for each smoother in gam_X;
     public String[][] _gam_columns; // array storing which predictor columns are specified
     public String[][] _gam_columns_sorted;  // move CS spline to the front and tp to the back in gam_columns
     public int[] _gamPredSize;  // store size of predictors for gam smoother

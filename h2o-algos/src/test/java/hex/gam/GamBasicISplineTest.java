@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class GamISplineTest extends TestUtil {
+public class GamBasicISplineTest extends TestUtil {
     public static final double TEST_TOLERANCE = 1e-12;
 
     /***

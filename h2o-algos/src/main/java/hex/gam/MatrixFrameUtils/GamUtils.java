@@ -41,8 +41,13 @@ public class GamUtils {
 
   public static double[][][] allocate3DArray(int num2DArrays, GAMParameters parms, AllocateType fileMode) {
     double[][][] array3D = new double[num2DArrays][][];
-    for (int frameIdx = 0; frameIdx < num2DArrays; frameIdx++)
+    for (int frameIdx = 0; frameIdx < num2DArrays; frameIdx++) {
+      if (parms._bs_sorted[frameIdx] == 0) // cs spline
         array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]);
+      else  // I-splines
+        array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]
+                +parms._spline_orders_sorted[frameIdx]-1);
+    }
     return array3D;
   }
 
@@ -309,7 +314,7 @@ public class GamUtils {
     return knots;
   }
 
-  // grad all predictors to build a smoother
+  // grab all predictors to build a smoother
   public static Frame prepareGamVec(int gam_column_index, GAMParameters parms, Frame fr) {
     final Vec weights_column = (parms._weights_column == null) ? Scope.track(Vec.makeOne(fr.numRows()))
             : fr.vec(parms._weights_column);
@@ -417,7 +422,10 @@ public class GamUtils {
         parms._scale_sorted[csIsIndex] = parms._scale[index];
         parms._gamPredSize[csIsIndex] = parms._gam_columns_sorted[csIsIndex].length;
         parms._bs_sorted[csIsIndex] = parms._bs[index];
-        parms._spline_orders_sorted[csIsIndex++] = parms._spline_orders[index];
+        if (parms._spline_orders == null)
+          parms._spline_orders_sorted[csIsIndex++] = 1;
+        else
+          parms._spline_orders_sorted[csIsIndex++] = parms._spline_orders[index];
       } else {  // thin plate
         parms._gam_columns_sorted[tpIndex] = parms._gam_columns[index].clone();
         parms._num_knots_sorted[tpIndex] = parms._num_knots[index];

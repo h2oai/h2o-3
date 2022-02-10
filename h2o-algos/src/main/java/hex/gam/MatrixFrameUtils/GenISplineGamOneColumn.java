@@ -16,7 +16,7 @@ public class GenISplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
     
     public GenISplineGamOneColumn(GAMModel.GAMParameters parm, double[] knots, int gamColIndex, Frame gamCol) {
         _knots = knots;
-        _order = parm._spline_orders[gamColIndex];
+        _order = parm._spline_orders_sorted[gamColIndex];
         _gamColNChunks = gamCol.vec(0).nChunks();
     }
 
