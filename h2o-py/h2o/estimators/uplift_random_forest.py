@@ -43,7 +43,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  sample_rate_per_class=None,  # type: Optional[List[float]]
                  col_sample_rate_change_per_level=1.0,  # type: float
                  col_sample_rate_per_tree=1.0,  # type: float
-                 histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
+                 histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  check_constant_response=True,  # type: bool
@@ -124,7 +124,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :type col_sample_rate_per_tree: float
         :param histogram_type: What type of histogram to use for finding optimal split points
                Defaults to ``"auto"``.
-        :type histogram_type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
+        :type histogram_type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]
         :param categorical_encoding: Encoding scheme for categorical features
                Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
@@ -470,14 +470,14 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         """
         What type of histogram to use for finding optimal split points
 
-        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]``, defaults to
-        ``"auto"``.
+        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]``,
+        defaults to ``"auto"``.
         """
         return self._parms.get("histogram_type")
 
     @histogram_type.setter
     def histogram_type(self, histogram_type):
-        assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"))
+        assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"))
         self._parms["histogram_type"] = histogram_type
 
     @property
