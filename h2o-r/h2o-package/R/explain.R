@@ -2402,7 +2402,7 @@ h2o.ice_plot <- function(model,
     if (is_factor) {
       margin <- ggplot2::margin(16.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
       if (centered)
-        warning("Normalization is not supported for factor columns!")
+        warning("Centering is not supported for factor columns!")
     }
 
     quantiles <- order(as.data.frame(newdata[[models_info$y]])[[models_info$y]])

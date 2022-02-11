@@ -1332,8 +1332,10 @@ def ice_plot(
                 )[0]
             )
             encoded_col = tmp.columns[0]
+            y_label = "Response"
             if not is_factor and centered:
                 _center(tmp["mean_response"])
+                y_label = "Response difference"
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
                             color=[colors[i]],
@@ -1353,10 +1355,8 @@ def ice_plot(
                 )[0]
             )
             encoded_col = tmp.columns[0]
-            y_label = "Response"
             if not is_factor and centered:
                 _center(tmp["mean_response"])
-                y_label = "Response difference"
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"], color="k",
                             label="Partial Dependence")
