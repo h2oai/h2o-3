@@ -1238,7 +1238,8 @@ def ice_plot(
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="plasma",  # type: str
         save_plot_path=None,  # type: Optional[str]
-        show_pdp=True  # type: bool
+        show_pdp=True,  # type: bool
+        binary_score_format="response" # type: Literal["response", "logodds"]
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1256,8 +1257,10 @@ def ice_plot(
     :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :param show_pdp: option to turn on/off PDP line. Defaults to True.
+    :param binary_score_format: option for binary model to display (on the y-axis) the logodds instead of the actual
+    score. Can be one of: "response", "logodds". Defaults to "response".
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1295,6 +1298,15 @@ def ice_plot(
     if frame.type(column) == "string":
         raise ValueError("String columns are not supported!")
 
+    is_binomial = _is_binomial(model)
+    if (not is_binomial) and (binary_score_format == "logodds"):
+        raise ValueError("binary_score_format cannot be set to 'logodds' value for non-binomial models!")
+
+    if binary_score_format not in ["logodds", "response"]:
+        raise ValueError("Unsupported value for binary_score_format!")
+
+    show_logodds = is_binomial and binary_score_format == "logodds"
+
     with no_progress():
         frame = frame.sort(model.actual_params["response_column"])
         is_factor = frame[column].isfactor()[0]
@@ -1323,13 +1335,17 @@ def ice_plot(
                     nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
                 )[0]
             )
+            response = _get_response(tmp["mean_response"], show_logodds)
             encoded_col = tmp.columns[0]
             if is_factor:
-                plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
+                plt.scatter(factor_map(tmp.get(encoded_col)),
+                            response,
                             color=[colors[i]],
                             label="{}th Percentile".format(i * 10))
             else:
-                plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i],
+                plt.plot(tmp[encoded_col],
+                         response,
+                         color=colors[i],
                          label="{}th Percentile".format(i * 10))
 
         if show_pdp:
@@ -1343,11 +1359,12 @@ def ice_plot(
                 )[0]
             )
             encoded_col = tmp.columns[0]
+            response = _get_response(tmp["mean_response"], show_logodds)
             if is_factor:
-                plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"], color="k",
+                plt.scatter(factor_map(tmp.get(encoded_col)), response, color="k",
                             label="Partial Dependence")
             else:
-                plt.plot(tmp[encoded_col], tmp["mean_response"], color="k", linestyle="dashed",
+                plt.plot(tmp[encoded_col], response, color="k", linestyle="dashed",
                          label="Partial Dependence")
 
         _add_histogram(frame, column)
@@ -1369,6 +1386,20 @@ def ice_plot(
             plt.savefig(fname=save_plot_path)
         return decorate_plot_result(figure=fig)
 
+def _is_binomial(model):
+    if isinstance(model, h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator):
+        return _is_binomial_from_model(model.metalearner())
+    else:
+        return _is_binomial_from_model(model)
+
+def _is_binomial_from_model(model):
+    return model._model_json["output"]["model_category"] == "Binomial"
+
+def _get_response(mean_response, show_logodds):
+    if show_logodds:
+        return np.log(mean_response / (1 - mean_response))
+    else:
+        return mean_response
 
 def _has_varimp(model):
     # type: (h2o.model.ModelBase) -> bool
