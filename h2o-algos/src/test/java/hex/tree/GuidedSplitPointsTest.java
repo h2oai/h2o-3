@@ -83,7 +83,7 @@ public class GuidedSplitPointsTest {
     @Test
     public void extractNonEmptyBins() {
         DHistogram h = makeSmallHistogram();
-        List<GuidedSplitPoints.BinDescriptor> bins = GuidedSplitPoints.extractNonEmptyBins(h);
+        List<GuidedSplitPoints.BinDescriptor> bins = GuidedSplitPoints.extractNonEmptyBins(h, -1, 100);
         assertEquals(2, bins.size());
         assertEquals(Arrays.asList(
                 GuidedSplitPoints.BinDescriptor.fromBin(h, 1),

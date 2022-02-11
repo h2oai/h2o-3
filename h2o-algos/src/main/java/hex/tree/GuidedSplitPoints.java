@@ -31,7 +31,7 @@ public class GuidedSplitPoints {
 
     static double[] makeSplitPoints(DHistogram h, final int targetNBins, final double min, final double maxEx) {
         // Collect bins to consider for refining
-        final List<BinDescriptor> bins = extractNonEmptyBins(h);
+        final List<BinDescriptor> bins = extractNonEmptyBins(h, min, maxEx);
 
         // Budget is given by target number of bins in the new layer, we keep all non-empty bins
         final int totalBudget = targetNBins - bins.size() - 2; // how many bins we have to allocate (save 2 spots for min/max)
@@ -76,13 +76,15 @@ public class GuidedSplitPoints {
         return ArrayUtils.makeUniqueAndLimitToRange(customSplitPoints, min, maxEx);
     }
 
-    static List<BinDescriptor> extractNonEmptyBins(DHistogram h) {
+    static List<BinDescriptor> extractNonEmptyBins(DHistogram h, double min, double maxEx) {
         final int nonEmptyBins = h.nonEmptyBins();
         final List<BinDescriptor> bins = new ArrayList<>(nonEmptyBins);
         for (int i = 0; i < h.nbins(); i++) {
             double weight = h.w(i);
             if (weight > 0) {
                 BinDescriptor bin = BinDescriptor.fromBin(h, i);
+                if ((bin._end < min) || (bin._start >= maxEx))
+                    continue;
                 bins.add(bin);
             }
         }
