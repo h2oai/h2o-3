@@ -1808,9 +1808,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -1842,9 +1841,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -1873,13 +1871,13 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.aecu()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.aecu()
         """
         assert metric in ['qini', 'lift', 'gain'], \
             "AECU metric "+metric+" should be 'qini','lift' or 'gain'."
@@ -1906,13 +1904,13 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.uplift()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.uplift()
         """
         assert metric in ['AUTO', 'qini', 'lift', 'gain']
        
@@ -1941,13 +1939,13 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.uplift()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.uplift()
         """
         assert metric in ['AUTO', 'qini', 'lift', 'gain']
 
@@ -1974,13 +1972,13 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.n()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.n()
         """  
         return self._metric_json["thresholds_and_metric_scores"]["n"]
     
@@ -2003,13 +2001,13 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.thresholds()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.thresholds()
         """
         return self._metric_json["thresholds_and_metric_scores"]["thresholds"]
 
@@ -2032,13 +2030,13 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.thresholds_and_metric_scores()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.thresholds_and_metric_scores()
         """
         return self._metric_json["thresholds_and_metric_scores"]
 
@@ -2061,17 +2059,17 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.auuc_table()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.auuc_table()
         """
         return self._metric_json["auuc_table"]
 
-    def eacu_table(self):
+    def aecu_table(self):
         """
         Retrieve all types of AECU values in a table.
          
@@ -2090,13 +2088,13 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.aecu_table()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.aecu_table()
         """
         return self._metric_json["aecu_table"]
 
@@ -2123,9 +2121,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
