@@ -1228,6 +1228,10 @@ def pd_multi_plot(
             plt.savefig(fname=save_plot_path)
         return decorate_plot_result(figure=fig)
 
+def _center(col):
+        norm_num = col[0]
+        for i in range(len(col)):
+            col[i] = col[i] - norm_num
 
 def ice_plot(
         model,  # type: h2o.model.ModelBase
@@ -1237,8 +1241,9 @@ def ice_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="plasma",  # type: str
-        save_plot_path=None,  # type: Optional[str]
-        show_pdp=True  # type: bool
+        save_plot_path=None, # type: Optional[str]
+        show_pdp=True,  # type: bool
+        centered=False # type: bool
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1258,6 +1263,7 @@ def ice_plot(
     :param colormap: colormap name
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig
     :param show_pdp: option to turn on/off PDP line. Defaults to True.
+    :param centered: a bool whether to center curves around 0 at the first valid x value or not
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1300,6 +1306,8 @@ def ice_plot(
         is_factor = frame[column].isfactor()[0]
 
         if is_factor:
+            if centered:
+                warnings.warn("Centering is not supported for factor columns!")
             if frame[column].nlevels()[0] > max_levels:
                 levels = _get_top_n_levels(frame[column], max_levels)
                 frame = frame[(frame[column].isin(levels)), :]
@@ -1324,6 +1332,8 @@ def ice_plot(
                 )[0]
             )
             encoded_col = tmp.columns[0]
+            if not is_factor and centered:
+                _center(tmp["mean_response"])
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
                             color=[colors[i]],
@@ -1343,6 +1353,10 @@ def ice_plot(
                 )[0]
             )
             encoded_col = tmp.columns[0]
+            y_label = "Response"
+            if not is_factor and centered:
+                _center(tmp["mean_response"])
+                y_label = "Response difference"
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"], color="k",
                             label="Partial Dependence")
@@ -1356,6 +1370,7 @@ def ice_plot(
             column,
             " with target = \"{}\"".format(target[0]) if target else ""
         ))
+        plt.ylabel(y_label)
         ax = plt.gca()
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
