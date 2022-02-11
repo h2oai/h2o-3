@@ -775,7 +775,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     _parms._stopping_rounds = 0;
-    _parms._max_runtime_secs = 0;
+    setMaxRuntimeSecsForMainModel();
     int sum = 0;
     for (ModelBuilder mb : cvModelBuilders)
       sum += ((XGBoostOutput) DKV.<Model>getGet(mb.dest())._output)._ntrees;

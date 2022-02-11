@@ -319,6 +319,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
+        params._main_model_time_budget_factor = 1;
     }
     
     protected void setCrossValidationParams(Model.Parameters params) {

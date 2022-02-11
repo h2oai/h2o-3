@@ -156,7 +156,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     _parms._stopping_rounds = 0;
-    _parms._max_runtime_secs = 0;
+    setMaxRuntimeSecsForMainModel();
     double sum = 0;
     for( ModelBuilder cvmb : cvModelBuilders )
       sum += ((DeepLearningModel)DKV.getGet(cvmb.dest())).last_scored().epoch_counter;
