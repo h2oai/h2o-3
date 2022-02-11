@@ -390,6 +390,9 @@ public class DTree extends Iced {
                 _nasplit == DHistogram.NASplitDir.NARight && way == 1) && h.hasNABin();
 
         double[] customSplitPoints = h._customSplitPoints;
+        if (customSplitPoints != null && j == _col) {
+          System.out.println();
+        }
         if (parms._histogram_type == HistogramType.UniformRobust && 
                 j != _col && // don't apply if we were able to split on the column with the current bins
                 GuidedSplitPoints.isApplicableTo(h)

@@ -52,6 +52,9 @@ public class GuidedSplitPoints {
             BinDescriptor bin = bins.get(b);
             // distributed budget proportionally to SE
             int newBins = Math.min((int) Math.ceil(totalBudget * bin._se / totalSE), budgetLeft);
+            if (h._isInt == 1) {
+                newBins = Math.min(newBins, (int) Math.round(bin._end - bin._start));
+            }
             budgetLeft -= newBins;
             newBinCounts[b] = newBins;
         }

@@ -2397,7 +2397,7 @@ public class GBMTest extends TestUtil {
 //      int resp = 784;
       Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
       DKV.put(tfr);
-      SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
+      SplitFrame sf = new SplitFrame(tfr, new double[]{0.55, 0.45}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
       sf.exec().get();
       ksplits = sf._destination_frames;
