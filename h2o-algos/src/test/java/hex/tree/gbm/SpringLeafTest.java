@@ -38,26 +38,29 @@ public class SpringLeafTest extends TestUtil {
             parms._response_column = fr._names[idx];
             parms._ntrees = 50;
             parms._distribution = DistributionFamily.bernoulli;
-            if (false) {
+            if (true) {
                 parms._max_depth = 8;
                 parms._learn_rate = .02;
                 //parms._score_tree_interval = parms._ntrees + 1;
                 parms._score_tree_interval = 20;
                 parms._sample_rate = 0.8;
                 parms._col_sample_rate = 0.8;
-                /**
+                /*
                  *  2022-02-11 10:01:18  4 min 30.040 sec              50       0.37531          0.44598      0.83421         0.68522       4.25807                       0.18234         0.39343            0.47915        0.76324           0.49873         3.25223                         0.28260
                  */
             } else {
                 parms._max_depth = 5;
                 parms._learn_rate = .1;
                 parms._score_tree_interval = 20;
+                /*
+                 *  2022-02-11 13:43:07  2 min 31.847 sec              50       0.37025          0.43193      0.80429         0.59602       4.03441                       0.22890         0.38300            0.45522        0.77257           0.51764         3.48947                         0.28205
+                 */
             }
             parms._seed = 42;
             //parms._score_each_iteration = true;
             parms._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.UniformRobust;
 
-            /**
+            /*
 UniformAdaptive (random seed, not 42)
 2022-02-09 17:31:59         0.103 sec               0       0.42245          0.54233      0.50000         0.23254       1.00000                       0.76746         0.42246            0.54235        0.50000           0.23255         1.00000                         0.76745
 2022-02-09 17:41:03  9 min  4.310 sec             200       0.33176          0.36579      0.88851         0.78744       4.30027                       0.13971         0.38297            0.45549        0.77157           0.52026         3.60810                         0.27127
