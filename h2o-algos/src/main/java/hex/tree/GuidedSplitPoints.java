@@ -45,18 +45,22 @@ public class GuidedSplitPoints {
             totalSE += bin._se;
         }
 
+        if (totalSE == 0)
+            return null; // already perfect
+
         // For each bin find out how many new bins we can split it into
         int[] newBinCounts = new int[bins.size()];
         Collections.sort(bins); // sort by SE descending
         for (int b = 0; budgetLeft > 0 && b < newBinCounts.length; b++) {
             BinDescriptor bin = bins.get(b);
-            // distributed budget proportionally to SE
-            int newBins = Math.min((int) Math.ceil(totalBudget * bin._se / totalSE), budgetLeft);
-            if (h._isInt == 1) {
-                newBins = Math.min(newBins, (int) Math.round(bin._end - bin._start));
-            }
+            // for integer columns it doesn't make sense to make the "in-bin" step size finer than 1
+            int limit = h._isInt == 1 && bin.length() < Integer.MAX_VALUE ? 
+                    Math.min(budgetLeft, (int) Math.round(bin.length())) : budgetLeft;
+            // distribute proportionally to SE
+            int newBins = Math.min((int) Math.ceil(totalBudget * bin._se / totalSE), limit);
             budgetLeft -= newBins;
             newBinCounts[b] = newBins;
+            assert budgetLeft >= 0 : "We cannot go over allowed limit of bins!";
         }
 
         // Define new split-points
@@ -105,6 +109,10 @@ public class GuidedSplitPoints {
             _end = end;
             _se = Math.max(se, 0); // rounding errors can cause SE to be negative
             _weight = weight;
+        }
+
+        double length() {
+            return _end - _start;
         }
 
         @Override
