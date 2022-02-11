@@ -575,7 +575,7 @@ def shap_summary_plot(
     :param colormap: colormap to use instead of the default blue to red colormap
     :param figsize: figure size; passed directly to matplotlib
     :param jitter: amount of jitter used to show the point density
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -712,7 +712,7 @@ def shap_explain_row_plot(
     :param plot_type: either "barplot" or "breakdown"
     :param contribution_type: One of "positive", "negative", or "both".
                               Used only for plot_type="barplot".
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -980,7 +980,7 @@ def pd_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                   
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1111,7 +1111,7 @@ def pd_multi_plot(
     :param colormap: colormap name
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1261,7 +1261,7 @@ def ice_plot(
     :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :param show_pdp: option to turn on/off PDP line. Defaults to True.
     :param centered: a bool whether to center curves around 0 at the first valid x value or not
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
@@ -1521,7 +1521,7 @@ def _varimp_plot(model, figsize, num_of_features=None, save_plot_path=None):
     :param model: H2O model
     :param figsize: Figure size
     :param num_of_features: Maximum number of variables to plot. Defaults to 10.
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :return: object that contains the resulting figure (can be accessed using result.figure())
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
@@ -1634,7 +1634,7 @@ def varimp_heatmap(
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
@@ -1750,7 +1750,7 @@ def model_correlation_heatmap(
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
@@ -1887,7 +1887,7 @@ def residual_analysis_plot(
     :param model: H2OModel
     :param frame: H2OFrame
     :param figsize: figure size; passed directly to matplotlib
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1980,7 +1980,7 @@ def learning_curve_plot(
                      automatically determine if this is suitable visualisation
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :return: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:

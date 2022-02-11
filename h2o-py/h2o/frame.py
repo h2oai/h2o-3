@@ -3846,7 +3846,7 @@ class H2OFrame(Keyed):
             or a single number for the number of breaks; or a list containing the split points, e.g:
             ``[-50, 213.2123, 9324834]``. If breaks is "fd", the MAD is used over the IQR in computing bin width.
         :param bool plot: If True (default), then a plot will be generated using ``matplotlib``.
-        :param save_plot_path: a path to save the plot via using mathplotlib function savefig.
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig.
 
         :returns: If ``plot`` is False, return H2OFrame with these columns: breaks, counts, mids_true,
             mids, and density; otherwise this method draws a plot and returns H2OFrame and a plot (can be accessed 
