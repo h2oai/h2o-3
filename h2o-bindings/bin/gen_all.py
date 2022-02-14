@@ -26,7 +26,7 @@ if not os.path.exists(results_dir):
 h2o_jarfile = os.getenv('H2O_JARFILE', '../../build/h2o.jar')
 h2o_java_version = os.getenv('H2O_JAVA_VERSION', '1.8')
 h2o_jvm_opts = None if h2o_java_version == '1.8' else '--add-opens=java.base/java.lang=ALL-UNNAMED'
-
+h2o_jvm_cp = os.getenv('H2O_BINDINGS_EXTRA_CLASSPATH', '')
 
 # Start H2O cloud
 print("Starting H2O cloud...")
@@ -37,7 +37,7 @@ cloud = run.H2OCloud(
     h2o_jar=os.path.abspath(h2o_jarfile),
     base_port=48000,
     xmx="4g",
-    cp="",
+    cp=h2o_jvm_cp,
     jvm_opts=h2o_jvm_opts,
     output_dir=results_dir,
     test_ssl=False,
