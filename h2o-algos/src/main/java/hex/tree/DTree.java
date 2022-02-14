@@ -13,10 +13,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
+import static hex.tree.SharedTreeModel.SharedTreeParameters.HistogramType;
 
 /** A Decision Tree, laid over a Frame of Vecs, and built distributed.
  *
@@ -310,7 +309,7 @@ public class DTree extends Iced {
      * @param parms user-given parameters (will use nbins, min_rows, etc.)
      * @return Array of histograms to be used for the next level of split finding
      */
-    public DHistogram[] nextLevelHistos(DHistogram currentHistos[], int way, double splat, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
+    public DHistogram[] nextLevelHistos(DHistogram[] currentHistos, int way, double splat, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
       double n = way==0 ? _n0 : _n1;
       if( n < parms._min_rows ) {
         if (LOG.isTraceEnabled()) LOG.trace("Not splitting: too few observations left: " + n);
@@ -324,12 +323,12 @@ public class DTree extends Iced {
 
       // Build a next-gen split point from the splitting bin
       int cnt=0;                  // Count of possible splits
-      DHistogram nhists[] = new DHistogram[currentHistos.length]; // A new histogram set
+      DHistogram[] nhists = new DHistogram[currentHistos.length]; // A new histogram set
       for(int j = 0; j< currentHistos.length; j++ ) { // For every column in the new split
         DHistogram h = currentHistos[j];            // old histogram of column
         if( h == null )
           continue;        // Column was not being tracked?
-        int adj_nbins      = Math.max(h.nbins()>>1,parms._nbins); //update number of bins dependent on level depth
+        final int adj_nbins      = Math.max(h.nbins()>>1,parms._nbins); //update number of bins dependent on level depth
 
         // min & max come from the original column data, since splitting on an
         // unrelated column will not change the j'th columns min/max.
@@ -390,7 +389,22 @@ public class DTree extends Iced {
         final boolean hasNAs = (_nasplit == DHistogram.NASplitDir.NALeft && way == 0 || 
                 _nasplit == DHistogram.NASplitDir.NARight && way == 1) && h.hasNABin();
 
-        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._intOpt, hasNAs,h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs, h._checkFloatSplits);
+        double[] customSplitPoints = h._customSplitPoints;
+        if (parms._histogram_type == HistogramType.UniformRobust && 
+                j != _col && // don't apply if we were able to split on the column with the current bins
+                GuidedSplitPoints.isApplicableTo(h)
+        ) {
+          final int nonEmptyBins = h.nonEmptyBins();
+          final double density = nonEmptyBins / ((double) h.nbins());
+
+          if (density <= GuidedSplitPoints.LOW_DENSITY_THRESHOLD) {
+            customSplitPoints = GuidedSplitPoints.makeSplitPoints(h, adj_nbins, min, maxEx);
+          }
+        }
+
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._intOpt, hasNAs,
+                h._seed*0xDECAF+(way+1), parms,
+                h._globalQuantilesKey, cs, h._checkFloatSplits, customSplitPoints);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;

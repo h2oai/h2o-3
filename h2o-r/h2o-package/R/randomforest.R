@@ -77,7 +77,7 @@
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen Defaults to 1e-05.
 #' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",
-#'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
+#'        "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
@@ -155,7 +155,7 @@ h2o.randomForest <- function(x,
                              col_sample_rate_change_per_level = 1,
                              col_sample_rate_per_tree = 1,
                              min_split_improvement = 1e-05,
-                             histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
+                             histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust"),
                              categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                              calibrate_model = FALSE,
                              calibration_frame = NULL,
@@ -334,7 +334,7 @@ h2o.randomForest <- function(x,
                                              col_sample_rate_change_per_level = 1,
                                              col_sample_rate_per_tree = 1,
                                              min_split_improvement = 1e-05,
-                                             histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
+                                             histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust"),
                                              categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                              calibrate_model = FALSE,
                                              calibration_frame = NULL,
