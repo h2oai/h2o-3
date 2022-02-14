@@ -133,18 +133,19 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
   }
 
   @Override
-  protected DTree.DecidedNode makeDecided(DTree.UndecidedNode udn, DHistogram hs[], Constraints cs) {
+  protected DTree.DecidedNode makeDecided(DTree.UndecidedNode udn, DHistogram hs[], Constraints cs, Map<String, Double> splitWeights) {
     return new IFDecidedNode(udn, hs, cs);
   }
 
   private class IFDecidedNode extends DTree.DecidedNode {
 
     private IFDecidedNode(DTree.UndecidedNode n, DHistogram[] hs, Constraints cs) {
-      super(n, hs, cs);
+      super(n, hs, cs, null);
     }
 
     @Override
-    public DTree.Split bestCol(DTree.UndecidedNode u, DHistogram hs[], Constraints cs) {
+    public DTree.Split bestCol(DTree.UndecidedNode u, DHistogram hs[], Constraints cs, Map<String, Double> splitWeights) {
+      assert splitWeights == null;
       if( hs == null ) return null;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
       List<FindSplits> findSplits = new ArrayList<>();

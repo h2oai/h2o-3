@@ -364,7 +364,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             // step 1: build histograms
             // step 2: split nodes
             H2O.submitTask(sb1t = new ScoreBuildOneTree(this,k, nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution,
-                    respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx));
+                    respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx, null));
         }
         // Block for all K trees to complete.
         boolean did_split=false;

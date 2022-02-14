@@ -16,14 +16,13 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.udf.CFuncRef;
 import water.util.*;
+import water.util.Timer;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Consumer;
 
 public abstract class SharedTree<
@@ -216,6 +215,8 @@ public abstract class SharedTree<
     }
   }
 
+  transient Map<String, Double> _split_weights;
+
   // --------------------------------------------------------------------------
   // Top-level tree-algo driver
   abstract protected class Driver extends ModelBuilder<M,P,O>.Driver {
@@ -226,6 +227,26 @@ public abstract class SharedTree<
         init(true);             // Do any expensive tests & conversions now
         if( error_count() > 0 )
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SharedTree.this);
+        
+        if (_parms._split_weights_key != null) {
+          Frame swFrame = DKV.getGet(_parms._split_weights_key);
+          if (swFrame == null) {
+            throw new IllegalStateException("_split_weights_key was specified by the frame doesn't exist");
+          }
+          if (swFrame.numCols() != 2) {
+            throw new IllegalStateException("Split-weights frame needs to have 2 columns: feature names, weights");
+          }
+          _split_weights = new HashMap<>();
+          for (int i = 0; i < swFrame.numRows(); i++) {
+            String featureName = swFrame.vec(0).atStr(new BufferedString(), i).toString();
+            double featureWeight = swFrame.vec(1).at(i);
+            _split_weights.put(featureName, featureWeight);
+          }
+        }
+
+        if (_split_weights != null) {
+          Log.warn("Using split-weights! This is an experiment feature. Values: " + _split_weights);
+        }
 
         // Create a New Model or continuing from a checkpoint
         if (_parms.hasCheckpoint()) {
@@ -569,7 +590,7 @@ public abstract class SharedTree<
       // step 1: build histograms
       // step 2: split nodes
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k, nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution,
-              respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx));
+              respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx, _split_weights));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -613,8 +634,10 @@ public abstract class SharedTree<
 
     public boolean _did_split;
 
+    transient Map<String, Double> _splitWeights;
+
     public ScoreBuildOneTree(SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
-                             int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, int treatmentIdx) {
+                             int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, int treatmentIdx, Map<String, Double> splitWeights) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -631,6 +654,7 @@ public abstract class SharedTree<
       _workIdx = workIdx;
       _nidIdx = nidIdx;
       _treatmentIdx = treatmentIdx;
+      _splitWeights = splitWeights;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -653,7 +677,7 @@ public abstract class SharedTree<
         DTree.UndecidedNode udn = _tree.undecided(leaf);
         if (LOG.isTraceEnabled()) LOG.trace((_st._nclass==1?"Regression":("Class "+_st._response.domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
-        DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs);
+        DTree.DecidedNode dn = _st.makeDecided(udn, sbh._hcs[leaf - leafOffset], udn._cs, _splitWeights);
         if (LOG.isTraceEnabled()) LOG.trace(dn + "\n" + dn._split);
         if (dn._split == null) udn.doNotSplit();
         else {
@@ -732,8 +756,8 @@ public abstract class SharedTree<
   }
 
   // Builder-specific decision node
-  protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[], Constraints cs ) {
-    return new DTree.DecidedNode(udn, hs, cs);
+  protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[], Constraints cs, Map<String, Double> splitWeights) {
+    return new DTree.DecidedNode(udn, hs, cs, splitWeights);
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

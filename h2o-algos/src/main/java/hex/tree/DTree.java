@@ -604,8 +604,7 @@ public class DTree extends Iced {
     }
 
     // Pick the best column from the given histograms
-    public Split bestCol(UndecidedNode u, DHistogram hs[], Constraints cs) {
-      DTree.Split best = null;
+    public Split bestCol(UndecidedNode u, DHistogram hs[], Constraints cs, Map<String, Double> splitWeights) {
       if( hs == null ) return null;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
       List<FindSplits> findSplits = new ArrayList<>();
@@ -628,10 +627,15 @@ public class DTree extends Iced {
         if (isSmall) fs.compute();
       }
       if (!isSmall) jsr166y.ForkJoinTask.invokeAll(findSplits);
+
+      DTree.Split best = null;
+      double bestSE = Double.NaN;
       for( FindSplits fs : findSplits) {
         DTree.Split s = fs._s;
-        if( s == null ) continue;
-        if (best == null || s.se() < best.se()) {
+        if( s == null ) 
+          continue;
+        double wSE = s.se() * splitWeight(fs, splitWeights);
+        if (best == null || wSE < bestSE) {
           if (hs[s._col]._checkFloatSplits) {
             // we evaluate the feasibility of the split only if it brings improvement of SE
             // same could be done when building the split (findBestSplitPoint) but the lazy
@@ -640,10 +644,19 @@ public class DTree extends Iced {
             if (Float.isNaN(splitAt))
               continue;
           }
+          bestSE = wSE;
           best = s;
         }
       }
       return best;
+    }
+
+    double splitWeight(FindSplits s, Map<String, Double> splitWeights) {
+      if (splitWeights == null)
+        return 1;
+      String colName = _tree._names[s._col];
+      Double sw = splitWeights.get(colName);
+      return sw == null ? 1 : sw;
     }
 
     public final class FindSplits extends RecursiveAction {
@@ -691,10 +704,10 @@ public class DTree extends Iced {
       }
     }
 
-    public DecidedNode(UndecidedNode n, DHistogram hs[], Constraints cs) {
+    public DecidedNode(UndecidedNode n, DHistogram hs[], Constraints cs, Map<String, Double> splitWeights) {
       super(n._tree,n._pid,n._nid); // Replace Undecided with this DecidedNode
       _nids = new int[2];           // Split into 2 subsets
-      _split = bestCol(n,hs,cs);  // Best split-point for this tree
+      _split = bestCol(n,hs,cs,splitWeights);  // Best split-point for this tree
       if( _split == null) {
         // Happens because the predictor columns cannot split the responses -
         // which might be because all predictor columns are now constant, or

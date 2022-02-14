@@ -92,6 +92,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 split_weights_key=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -305,6 +306,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        :param split_weights_key: Split-weights key (experimental)
+               Defaults to ``None``.
+        :type split_weights_key: str, optional
         """
         super(H2OGradientBoostingEstimator, self).__init__()
         self._parms = {}
@@ -367,6 +371,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self.check_constant_response = check_constant_response
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
+        self.split_weights_key = split_weights_key
 
     @property
     def training_frame(self):
@@ -2137,5 +2142,19 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+    @property
+    def split_weights_key(self):
+        """
+        Split-weights key (experimental)
+
+        Type: ``str``.
+        """
+        return self._parms.get("split_weights_key")
+
+    @split_weights_key.setter
+    def split_weights_key(self, split_weights_key):
+        assert_is_type(split_weights_key, None, str)
+        self._parms["split_weights_key"] = split_weights_key
 
 

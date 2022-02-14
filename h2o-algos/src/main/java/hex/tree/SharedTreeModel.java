@@ -45,6 +45,8 @@ public abstract class SharedTreeModel<
 
   public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees, PlattScalingHelper.ParamsWithCalibration {
 
+    public String _split_weights_key;
+
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
     public int _max_depth = 5; // Maximum tree depth. Grid Search, comma sep values:5,7
