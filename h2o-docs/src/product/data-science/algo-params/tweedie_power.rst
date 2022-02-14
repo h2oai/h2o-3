@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
- A Tweedie distribution provides a continuous spectrum from Poisson distribution to the Gamma distribution. When ``distribution=tweedie`` is specified, then you can also specify a ``tweedie_power`` value. Users can tune over this option with values > 1.0 and < 2.0. 
+ A Tweedie distribution provides a continuous spectrum from Poisson distribution to the Gamma distribution. When ``distribution=tweedie`` is specified, then you can also specify a ``tweedie_power`` value. Users can tune over this option with values > 1.0 and < 2.0.
 
  More information about Tweedie distribution is available `here <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.	
 

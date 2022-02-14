@@ -32,10 +32,7 @@ import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.*;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -5026,4 +5023,159 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  /**
+   * Creates a frame with 
+   *  - completely random column
+   *  - predictor column that perfectly predicts response
+   *  - response with values [0, 1]
+   * 
+   * @return frame instance (tracked in Scope)
+   */
+  private Frame makeFrameForUniformRobustTesting(double outlierScale) {
+    Random r = RandomUtils.getRNG(42);
+    final int N = 100;
+
+    double[] randomCol = new double[N];
+    double[] perfectPredictor = new double[N];
+    double[] response = new double[N];
+
+    for (int i = 0; i < N; i++) {
+      randomCol[i] = r.nextDouble();
+      perfectPredictor[i]  = i / (double) N;
+      response[i] = perfectPredictor[i];
+    }
+
+    // inject outliers
+    perfectPredictor[0  ] = -outlierScale;
+    perfectPredictor[N-1] =  outlierScale;
+
+    return new TestFrameBuilder()
+            .withName("data")
+            .withColNames("RandomCol", "PerfectPredictor", "Response")
+            .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+            .withDataForCol(0, randomCol)
+            .withDataForCol(1, perfectPredictor)
+            .withDataForCol(2, response)
+            .build();
+  }
+  
+  @Test
+  public void testUniformRobust()  {
+    try {
+      Scope.enter();
+      Frame frame = makeFrameForUniformRobustTesting(1e3);
+
+      GBMModel.GBMParameters parmsDefault = new GBMModel.GBMParameters();
+      parmsDefault._train = frame._key;
+      parmsDefault._response_column = "Response";
+      parmsDefault._ntrees = 1;
+      parmsDefault._max_depth = 3;
+      parmsDefault._min_rows = 1;
+      parmsDefault._learn_rate = 1;
+      parmsDefault._distribution = gaussian;
+
+      GBMModel.GBMParameters parmsRobust = (GBMModel.GBMParameters) parmsDefault.clone();
+      parmsRobust._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.UniformRobust;
+
+      GBMModel gbmDefault = new GBM(parmsDefault).trainModel().get();
+      assertNotNull(gbmDefault);
+      Scope.track_generic(gbmDefault);
+
+      SharedTreeSubgraph treeDefault = gbmDefault.getSharedTreeSubgraph(0, 0);
+      // UniformAdaptive finds signal in the RandomColumn
+      assertEquals(Arrays.asList(
+              "RandomCol",
+              "RandomCol", "RandomCol",
+              "RandomCol", "RandomCol", "RandomCol", "RandomCol"
+      ), getSplitCols(treeDefault));
+
+      GBMModel gbmRobust = new GBM(parmsRobust).trainModel().get();
+      assertNotNull(gbmRobust);
+      Scope.track_generic(gbmRobust);
+
+      SharedTreeSubgraph treeRobust = gbmRobust.getSharedTreeSubgraph(0, 0);
+      // UniformRobust still splits on the RandomColumn in the root but refined split-points kick on the next level
+      assertEquals(Arrays.asList(
+              "RandomCol",
+              "PerfectPredictor", "PerfectPredictor",
+              "PerfectPredictor", "PerfectPredictor", "PerfectPredictor", "PerfectPredictor"
+      ), getSplitCols(treeRobust));
+
+      // Compare MAE
+      assertEquals(0.2, ((ModelMetricsRegression) gbmDefault._output._training_metrics).mae(), 0.05);
+      assertEquals(0.05, ((ModelMetricsRegression) gbmRobust._output._training_metrics).mae(), 0.01);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUniformRobustNeedsMultipleRefinementsOfBinsForLargeOutliers()  {
+    try {
+      Scope.enter();
+      Frame frame = makeFrameForUniformRobustTesting(
+              1e6
+      );
+
+      GBMModel.GBMParameters p = new GBMModel.GBMParameters();
+      p._train = frame._key;
+      p._response_column = "Response";
+      p._ntrees = 1;
+      p._max_depth = 4;
+      p._min_rows = 1;
+      p._learn_rate = 1;
+      p._distribution = gaussian;
+      p._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.UniformRobust;
+
+      GBMModel gbm = new GBM(p).trainModel().get();
+      assertNotNull(gbm);
+      Scope.track_generic(gbm);
+
+      SharedTreeSubgraph treeRobust = gbm.getSharedTreeSubgraph(0, 0);
+
+      // It takes 2 iterations of split-points refinement to get useful split-points
+      String splits = printTree(treeRobust);
+      assertEquals(String.join("\n",
+              "-> RandomCol",
+              "    -> RandomCol",
+              "        -> PerfectPredictor",
+              "            -> PerfectPredictor",
+              "            -> PerfectPredictor",
+              "        -> RandomCol",
+              "    -> RandomCol",
+              "        -> PerfectPredictor",
+              "            -> PerfectPredictor",
+              "            -> PerfectPredictor",
+              "        -> PerfectPredictor",
+              "            -> PerfectPredictor",
+              "            -> PerfectPredictor",
+              ""), splits);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private List<String> getSplitCols(SharedTreeSubgraph t) {
+    return t.nodesArray.stream()
+            .filter(n -> !n.isLeaf())
+            .map(SharedTreeNode::getColName)
+            .collect(Collectors.toList());
+  }
+
+  private String printTree(SharedTreeSubgraph t) {
+    StringBuilder sb = new StringBuilder();
+    printNode(t.rootNode, 0, sb);
+    return sb.toString();
+  }
+
+  private void printNode(SharedTreeNode n, int depth, StringBuilder sb) {
+    if (n.isLeaf())
+      return;
+    for (int i = 0; i < depth; i++)
+      sb.append("    ");
+    sb.append("-> ").append(n.getColName()).append('\n');
+    printNode(n.getLeftChild(), depth + 1, sb);
+    printNode(n.getRightChild(), depth + 1, sb);
+  }
+  
 }

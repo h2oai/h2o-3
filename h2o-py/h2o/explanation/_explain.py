@@ -5,6 +5,8 @@ import warnings
 from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
 
+from h2o.utils.typechecks import assert_is_type, Enum
+
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
 except:
@@ -1235,7 +1237,8 @@ def ice_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="plasma",  # type: str
-        save_plot_path=None # type: Optional[str]
+        save_plot_path=None,  # type: Optional[str]
+        show_pdp=True  # type: bool
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1253,7 +1256,8 @@ def ice_plot(
     :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param show_pdp: option to turn on/off PDP line. Defaults to True.
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1304,9 +1308,10 @@ def ice_plot(
 
             factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
 
+        plt.figure(figsize=figsize)
+
         deciles = [int(round(frame.nrow * dec / 10)) for dec in range(11)]
         colors = plt.get_cmap(colormap, 11)(list(range(11)))
-        plt.figure(figsize=figsize)
         for i, index in enumerate(deciles):
             tmp = NumpyFrame(
                 model.partial_plot(
@@ -1327,21 +1332,23 @@ def ice_plot(
                 plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i],
                          label="{}th Percentile".format(i * 10))
 
-        tmp = NumpyFrame(
-            model.partial_plot(
-                frame,
-                cols=[column],
-                plot=False,
-                targets=target,
-                nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
-            )[0]
-        )
-        if is_factor:
-            plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"], color="k",
-                        label="Partial Dependence")
-        else:
-            plt.plot(tmp[encoded_col], tmp["mean_response"], color="k", linestyle="dashed",
-                     label="Partial Dependence")
+        if show_pdp:
+            tmp = NumpyFrame(
+                model.partial_plot(
+                    frame,
+                    cols=[column],
+                    plot=False,
+                    targets=target,
+                    nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
+                )[0]
+            )
+            encoded_col = tmp.columns[0]
+            if is_factor:
+                plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"], color="k",
+                            label="Partial Dependence")
+            else:
+                plt.plot(tmp[encoded_col], tmp["mean_response"], color="k", linestyle="dashed",
+                         label="Partial Dependence")
 
         _add_histogram(frame, column)
         plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}".format(

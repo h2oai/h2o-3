@@ -153,13 +153,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  `quantile_alpha <algo-params/quantile_alpha.html>`__: (Only applicable if ``distribution="quantile"``.) Specify the quantile to be used for Quantile Regression. This option defaults to 0.5.
 
--  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if ``distribution="tweedie"``) Specify the Tweedie power. The range is from 1 to 2, and the default is 1.5.
-   
-    - For a normal distribution, enter ``0``.
-    - For Poisson distribution, enter ``1``. 
-    - For a gamma distribution, enter ``2``. 
-    - For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. 
-    
+-  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if ``distribution="tweedie"``) Specify the Tweedie power. You can tune over this option with values > 1.0 and < 2.0, and the default is ``1.5``. 
    For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
 -  `huber_alpha <algo-params/huber_alpha.html>`__: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1, and the default is 0.9.
