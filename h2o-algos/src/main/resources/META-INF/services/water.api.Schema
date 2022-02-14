@@ -19,10 +19,6 @@ hex.schemas.DeepLearningModelV3
 hex.schemas.DeepLearningModelV3$DeepLearningModelOutputV3
 hex.schemas.DeepLearningV3
 hex.schemas.DeepLearningV3$DeepLearningParametersV3
-hex.schemas.ExampleModelV3
-hex.schemas.ExampleModelV3$ExampleModelOutputV3
-hex.schemas.ExampleV3
-hex.schemas.ExampleV3$ExampleParametersV3
 hex.schemas.GBMModelV3
 hex.schemas.GBMModelV3$GBMModelOutputV3
 hex.schemas.GBMV3

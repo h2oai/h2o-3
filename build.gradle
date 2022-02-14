@@ -127,6 +127,7 @@ ext {
       project(':h2o-ext-mojo-pipeline'),
       project(':h2o-ext-steam'),
       project(':h2o-ext-target-encoder'),
+      project(':h2o-ext-example'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
