@@ -13,6 +13,8 @@ public class GenISplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
     double[] _maxAbsRowSum; // store maximum row sum
     private  double _s_scale;
     private final int _gamColNChunks;
+    public double[][] _ZTransp;  // store Z matrix transpose
+    public double[][] _penaltyMat;  // store penalty matrix
     
     public GenISplineGamOneColumn(GAMModel.GAMParameters parm, double[] knots, int gamColIndex, Frame gamCol) {
         _knots = knots;
@@ -30,15 +32,26 @@ public class GenISplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
         _maxAbsRowSum[cIndex] = Double.NEGATIVE_INFINITY;
         int chkRows = chk[0].len();
         for (int rowIndex=0; rowIndex < chkRows; rowIndex++) {
-            double gamRowSum = 0.0;
-            double xval = chk[0].atd(rowIndex);
-            if (Double.isNaN(xval)) {
-                for (int colIndex = 0; colIndex < totBasisFuncs; colIndex++)
-                    newGamCols[colIndex].addNum(Double.NaN);
+            if (chk[1].atd(rowIndex) != 0) {
+                double gamRowSum = 0.0;
+                double xval = chk[0].atd(rowIndex);
+                if (Double.isNaN(xval)) {
+                    for (int colIndex = 0; colIndex < totBasisFuncs; colIndex++)
+                        newGamCols[colIndex].addNum(Double.NaN);
+                } else {
+                    basisFuncs.gamifyVal(basisVals, xval);
+                }
+                // copy updates to the newChunk row
+                for (int colIndex = 0; colIndex < totBasisFuncs; colIndex++) {
+                    newGamCols[colIndex].addNum(basisVals[colIndex]);
+                    gamRowSum += Double.isNaN(basisVals[colIndex]) ? 0 : Math.abs(basisVals[colIndex]);
+                }
+                if (gamRowSum > _maxAbsRowSum[cIndex])
+                    _maxAbsRowSum[cIndex] = gamRowSum;
             } else {
-                
+                for (int colIndex = 0; colIndex < totBasisFuncs; colIndex++)
+                    newGamCols[colIndex].addNum(0.0);
             }
-            
         }
     }
 }

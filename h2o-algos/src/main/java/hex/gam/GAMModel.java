@@ -359,6 +359,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double[][] _oneOGamColStd;
     public double[] _penaltyScale;
     public Key<Frame> _gamTransformedTrainCenter;  // contain key of predictors, all gamified columns centered
+    public Key<Frame>[] _gamTrainsformedTrain;  // key of predictors, not centered, for testing only
     public DataInfo _dinfo;
     public String[] _responseDomains;
     public String _gam_transformed_center_key;

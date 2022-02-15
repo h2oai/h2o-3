@@ -4,7 +4,6 @@ import hex.Model;
 import hex.gam.GAM;
 import hex.gam.GAMModel;
 import hex.gam.GAMModel.GAMParameters;
-import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
@@ -42,11 +41,17 @@ public class GamUtils {
   public static double[][][] allocate3DArray(int num2DArrays, GAMParameters parms, AllocateType fileMode) {
     double[][][] array3D = new double[num2DArrays][][];
     for (int frameIdx = 0; frameIdx < num2DArrays; frameIdx++) {
-      if (parms._bs_sorted[frameIdx] == 0) // cs spline
+      if (parms._bs_sorted[frameIdx] != 2) { // cs spline
         array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]);
-      else  // I-splines
-        array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]
-                +parms._spline_orders_sorted[frameIdx]-1);
+      } else { // I-splines
+        int totBasis = parms._num_knots_sorted[frameIdx] + parms._spline_orders_sorted[frameIdx] - 2;
+        if (fileMode == AllocateType.firstOneLess)  // allocating for z matrix
+          array3D[frameIdx] = new double[totBasis][totBasis - 1];
+        else if (fileMode == AllocateType.sameOrig) // allocating for penalty matrix
+          array3D[frameIdx] = new double[totBasis][totBasis];
+        else // allocating for penalty matrix centered
+          array3D[frameIdx] = new double[totBasis - 1][totBasis];
+      }
     }
     return array3D;
   }
@@ -332,7 +337,7 @@ public class GamUtils {
     if (parms._bs_sorted[gamColIndex] == 0)
       newColNames = new String[parms._num_knots_sorted[gamColIndex]];
     else
-      newColNames = new String[parms._num_knots_sorted[gamColIndex]+parms._spline_orders_sorted[gamColIndex]+1-2];
+      newColNames = new String[parms._num_knots_sorted[gamColIndex]+parms._spline_orders_sorted[gamColIndex]-2];
 
 /*    StringBuffer nameStub = new StringBuffer();
     int numPredictors = parms._gam_columns_sorted[gamColIndex].length;

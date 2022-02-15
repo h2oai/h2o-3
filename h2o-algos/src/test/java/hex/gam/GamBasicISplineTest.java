@@ -1,7 +1,7 @@
 package hex.gam;
 
 import hex.gam.GamSplines.ISplines;
-import hex.gam.GamSplines.NormalizedBSplines;
+import hex.gam.GamSplines.NBSplinesTypeII;
 import jsr166y.ThreadLocalRandom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -99,25 +99,25 @@ public class GamBasicISplineTest extends TestUtil {
         double[] knots = new double[]{0, 0.3, 0.5, 0.6, 1};
 
         int order = 1;            // test for order 1
-        NormalizedBSplines splineOrder1 = new NormalizedBSplines(order, knots);
+        NBSplinesTypeII splineOrder1 = new NBSplinesTypeII(order, knots);
         NBSplineOrder manualOrder1 = new NBSplineOrder(order, knots);
         assertCorrectNBSpline(splineOrder1, manualOrder1, testValues);
         assertCorrectNBSpline(splineOrder1, manualOrder1, knots);
 
         order = 2;            // test for order 2
-        NormalizedBSplines splineOrder2 = new NormalizedBSplines(order, knots);
+        NBSplinesTypeII splineOrder2 = new NBSplinesTypeII(order, knots);
         NBSplineOrder manualOrder2 = new NBSplineOrder(order, knots);
         assertCorrectNBSpline(splineOrder2, manualOrder2, testValues);
         assertCorrectNBSpline(splineOrder2, manualOrder2, knots);
 
         order = 3;            // test for order 3
-        NormalizedBSplines splineOrder3 = new NormalizedBSplines(order, knots);
+        NBSplinesTypeII splineOrder3 = new NBSplinesTypeII(order, knots);
         NBSplineOrder manualOrder3 = new NBSplineOrder(order, knots);
         assertCorrectNBSpline(splineOrder3, manualOrder3, testValues);
         assertCorrectNBSpline(splineOrder3, manualOrder3, knots);
 
         order = 4;             // test for order 4
-        NormalizedBSplines splineOrder4 = new NormalizedBSplines(order, knots);
+        NBSplinesTypeII splineOrder4 = new NBSplinesTypeII(order, knots);
         NBSplineOrder manualOrder4 = new NBSplineOrder(order, knots);
         assertCorrectNBSpline(splineOrder4, manualOrder4, testValues);
         assertCorrectNBSpline(splineOrder4, manualOrder4, knots);
@@ -132,7 +132,6 @@ public class GamBasicISplineTest extends TestUtil {
      */
     @Test
     public void testISplines() {
-
         double[] testValues = DoubleStream
                 .generate(ThreadLocalRandom.current()::nextDouble)
                 .limit(50)
@@ -172,7 +171,7 @@ public class GamBasicISplineTest extends TestUtil {
         return extractedKnots;
     }
     
-    public static void assertCorrectNBSpline(NormalizedBSplines bpSpline, NBSplineOrder manualSpline, double[] values) {
+    public static void assertCorrectNBSpline(NBSplinesTypeII bpSpline, NBSplineOrder manualSpline, double[] values) {
         double[] manualGamifiedValues = new double[manualSpline._numBasis];
         double[] gamifiedValues = new double[bpSpline._totBasisFuncs];
         for (int dataIndex = 0; dataIndex < values.length; dataIndex++) {

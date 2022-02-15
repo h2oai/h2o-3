@@ -589,7 +589,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       final int _singlePredSplineInd;
       
       public CubicSplineSmoother(Frame predV, GAMParameters parms, int gamColIndex, String[] gamColNames, double[] knots,
-                                 AllocateType fileM, int csInd) {
+                                 int csInd) {
         _predictVec = predV;
         _numKnots = parms._num_knots_sorted[gamColIndex];
         _numKnotsM1 = _numKnots-1;
@@ -611,7 +611,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           _penaltyScale[_gamColIndex] = genOneGamCol._s_scale;  // penaltyMat is scaled by 1/_s_scale
         }
         Frame oneAugmentedColumnCenter = genOneGamCol.outputFrame(Key.make(), _newColNames,
-                null);
+                null);  // one gamified frame
+        if (_parms._keep_gam_cols) {
+          _gamFrameKeys[_gamColIndex] = oneAugmentedColumnCenter._key;
+          DKV.put(oneAugmentedColumnCenter);
+        }
         for (int index = 0; index < _numKnots; index++)
           _gamColMeans[_gamColIndex][index] = oneAugmentedColumnCenter.vec(index).mean();
         oneAugmentedColumnCenter = genOneGamCol.centralizeFrame(oneAugmentedColumnCenter,
@@ -636,15 +640,18 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       Frame trainFrame = _parms.train();
       for (int index = 0; index < numGamFrame; index++) { // generate smoothers/splines
         final Frame predictVec = prepareGamVec(index, _parms, trainFrame);// extract predictors from frame
-        final int numKnots = _parms._num_knots_sorted[index];
+        // numKnots for I-spline will include higher multiplicity
+        final int numKnots = _parms._bs_sorted[index] == 2 ? 
+                _parms._num_knots_sorted[index] + 2 * _parms._spline_orders_sorted[index] - 2 : 
+                _parms._num_knots_sorted[index];
         final int numKnotsM1 = numKnots - 1;
-        if (_parms._bs_sorted[index] == 0 || _parms._bs_sorted[index] == 2) {  // for CS smoothers
+        if (_parms._bs_sorted[index] == 0 || _parms._bs_sorted[index] == 2) {  // for CS or I-spline smoothers
           _gamColNames[index] = generateGamColNames(index, _parms);
           _gamColNamesCenter[index] = new String[numKnotsM1];
           _gamColMeans[index] = new double[numKnots];
           if (_parms._bs_sorted[index] == 0)
             generateGamColumn[index] = new CubicSplineSmoother(predictVec, _parms, index, _gamColNames[index],
-                  _knots[index][0], firstTwoLess, singlePredictorSmootherInd++);
+                  _knots[index][0], singlePredictorSmootherInd++);
           else  // I-splines
             generateGamColumn[index] = new ISplineSmoother(predictVec, _parms, index, _gamColNames[index],
                     _knots[index][0], singlePredictorSmootherInd++);
@@ -743,6 +750,9 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           if (model != null) {
             if (_parms._keep_gam_cols) {
               keepFrameKeys(keep, newTFrame._key);
+              for (int index=0; index<_gamFrameKeys.length; index++) 
+                if (_gamFrameKeys[index] != null)  // skip TP splines
+                  keepFrameKeys(keep, _gamFrameKeys[index]);
             } else {
               DKV.remove(newTFrame._key);
             }
@@ -838,8 +848,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._gamColMeans = flat(_gamColMeans);
       if (_parms._lambda == null) // copy over lambdas used
         _parms._lambda = glm._parms._lambda.clone();
-      if (_parms._keep_gam_cols)
+      if (_parms._keep_gam_cols) {
+        if (_gamFrameKeys != null)
+          model._output._gamTrainsformedTrain = _gamFrameKeys.clone();
         model._output._gam_transformed_center_key = model._output._gamTransformedTrainCenter.toString();
+      }
       if (_parms._savePenaltyMat) {
         model._output._penaltyMatricesCenter = _penaltyMatCenter;
         model._output._penaltyMatrices = _penaltyMat;

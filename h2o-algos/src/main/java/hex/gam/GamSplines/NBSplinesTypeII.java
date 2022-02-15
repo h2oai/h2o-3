@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import static hex.gam.GamSplines.NBSplinesUtils.*;
 
-public class NormalizedBSplines {
+public class NBSplinesTypeII {
     private final int _m;   // order of splines
     private final int _nKnots;   // number of knots of multiplicity 1
     private final List<Double> _knots;
@@ -14,7 +14,7 @@ public class NormalizedBSplines {
     public final int _totBasisFuncs;
     public final BSplineBasis[] _basisFuncs;
     
-    public NormalizedBSplines(int m, double[] knots) {
+    public NBSplinesTypeII(int m, double[] knots) {
         _m = m;
         _nKnots = knots.length;
         _totKnots = _nKnots +2*_m-2;
@@ -29,7 +29,6 @@ public class NormalizedBSplines {
         for (int index=0; index<totBasisFuncs; index++) {
             basisFuncs[index] = formOneBasisFunc(index, order, knots);
         }
-        
         return basisFuncs;
     }
     

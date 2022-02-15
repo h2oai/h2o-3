@@ -21,36 +21,55 @@ import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 @CloudSize(1)
 public class GAMISplineTest extends TestUtil {
 
+    /***
+     * Test that columns are gamified correctly by comparing the one in GAM.java and using the one manually derived.
+     */
     @Test
-    public void testGaussian() {
+    public void testGamification() {
         Scope.enter();
         try {
-            Frame train = Scope.track(massageFrame(
-                    parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
-            DKV.put(train);
-            Scope.track(train);
-            final double[][] knots = new double[][]{{-1.9990569949269443}, {-0.9814307533427584}, {0.025991586992542004},
-                    {1.0077098743127828}, {1.999422899675758}};
-            Frame knotsFrame = genFrameKnots(knots);
-            DKV.put(knotsFrame);
-            Scope.track(knotsFrame);
-            String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
-            String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C15", "C16",
-                    "C17", "C18", "C19", "C20"};
+            Frame train = Scope.track(generateRealWithRangeOnly(4, 100, 0, 12345, 
+                    4)); // generate training frame
+            // generate knots frames
+            double[] pctilesV0 = train.vec(0).pctiles();
+            double[] pctilesV1 = train.vec(1).pctiles();
+            double[] pctilesV2 = train.vec(2).pctiles();
+            int numRow = pctilesV0.length/2;
+            double[][] pctiles0 = new double[numRow+1][1];
+            double[][] pctiles1 = new double[numRow+1][1];
+            double[][] pctiles2 = new double[numRow+1][1];
+            for (int rind = 0; rind < numRow+1; rind++) {
+                pctiles0[rind][0] = pctilesV0[2*rind];
+                pctiles1[rind][0] = pctilesV1[2*rind];
+                pctiles2[rind][0] = pctilesV2[2*rind];
+            }
+            Frame knotsFrame1 = genFrameKnots(pctiles0);
+            DKV.put(knotsFrame1);
+            Scope.track(knotsFrame1);
+            Frame knotsFrame2 = genFrameKnots(pctiles1);
+            DKV.put(knotsFrame2);
+            Scope.track(knotsFrame2);
+            Frame knotsFrame3 = genFrameKnots(pctiles2);
+            DKV.put(knotsFrame3);
+            Scope.track(knotsFrame3);
+            // generate gamified frame
+            String[][] gamCols = new String[][]{{"C1"}, {"C2"}, {"C3"}};
             GAMModel.GAMParameters params = new GAMModel.GAMParameters();
             params._scale = new double[]{0.1, 0.1, 0.1};
             params._bs = new int[]{2,2,2};
             params._family = gaussian;
-            params._response_column = "C21";
-         //   params._max_iterations = 1;
+            params._response_column = "C4";
+            params._max_iterations = 1;
             params._savePenaltyMat = true;
-            params._ignored_columns = ignoredCols;
             params._gam_columns = gamCols;
-            params._knot_ids = new Key[]{knotsFrame._key, knotsFrame._key, knotsFrame._key};
+            params._knot_ids = new Key[]{knotsFrame1._key, knotsFrame2._key, knotsFrame3._key};
             params._train = train._key;
             params._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            params._keep_gam_cols = true;
             final GAMModel gam = new GAM(params).trainModel().get();
             Scope.track_generic(gam);
+            
+           
         } finally {
             Scope.exit();
         }
