@@ -1013,7 +1013,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     } else {
       // looser version that uses max of remaining time and estimated remaining time based on number of folds
       _parms._max_runtime_secs = Math.max(remainingTimeSecs(),
-              _parms._main_model_time_budget_factor * maxRuntimeSecsPerModel(nFoldWork(), nModelsInParallel(nFoldWork())) * nFoldWork()/(nFoldWork() - 1));
+              _parms._main_model_time_budget_factor * maxRuntimeSecsPerModel(nFoldWork(), nModelsInParallel(nFoldWork())) * nFoldWork()/((double) nFoldWork() - 1));
     }
   }
 
