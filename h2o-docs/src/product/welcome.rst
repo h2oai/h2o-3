@@ -42,6 +42,11 @@ H2O supports the following versions of Java:
 
 Click `here <https://jdk.java.net/archive/>`__ to download the latest supported version.
 
+Running H2O on Hadoop
+'''''''''''''''''''''
+
+Java support is different between H2O and Hadoop. Hadoop only supports `Java 8 and Java 11 <https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions>`__. When running H2O on Hadoop, we recommend only running H2O on Java 8 or Java 11. 
+
 Additional Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -364,7 +369,7 @@ REST APIs are generated immediately out of the code, allowing users to implement
 Java Users
 --------------
 
-H2O-3 is supported with Java 8 and later. For Java developers, the following resources will help you create your own custom app that uses H2O.
+Refer to H2O's `Java Requirements <#java-requirements>`__ for more information. For Java developers, the following resources will help you create your own custom app that uses H2O.
 
 -  `H2O Core Java Developer Documentation <../h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
@@ -460,10 +465,6 @@ Supported Versions
 -  ``-mapperXmx``, ``-nodes``, and ``-output`` are required
 -  Root permissions are not required - just unzip the H2O .zip file on any single node
 
-Java Requirements
-~~~~~~~~~~~~~~~~~
-
-Java support is different between H2O and Hadoop. Hadoop only supports `Java 8 and Java 11 <https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions>`__. When running H2O on Hadoop, we recommend only running H2O on Java 8 or Java 11. 
 
 Prerequisite: Open Communication Paths
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
