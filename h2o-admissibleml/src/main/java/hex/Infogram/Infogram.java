@@ -307,8 +307,8 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       try {
         boolean validPresent = _parms.valid() != null;
         prepareModelTrainingFrame(); // generate training frame with predictors and sensitive features (if specified)
-        _model = new hex.Infogram.InfogramModel(dest(), _parms, new hex.Infogram.InfogramModel.InfogramModelOutput(Infogram.this));
-        _model.delete_and_lock(_job);
+        InfogramModel model = new hex.Infogram.InfogramModel(dest(), _parms, new hex.Infogram.InfogramModel.InfogramModelOutput(Infogram.this));
+        _model = model.delete_and_lock(_job);
         _model._output._start_time = System.currentTimeMillis();
         _cmiRaw = new double[_numModels];
         if (_parms.valid() != null)
@@ -349,10 +349,11 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
             keepFrameKeys(keep, _cmiRelKeyValid);
           if (_cmiRelKeyCV != null)
             keepFrameKeys(keep, _cmiRelKeyCV);
+          // final model update
+          _model.update(_job._key);
+          _model.unlock(_job);
         }
         Scope.exit(keep.toArray(new Key[keep.size()]));
-        _model.update(_job._key);
-        _model.unlock(_job);
       }
     }
     
