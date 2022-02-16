@@ -13,7 +13,6 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static hex.DMatrix.transpose;

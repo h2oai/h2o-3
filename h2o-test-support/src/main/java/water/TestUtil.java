@@ -623,7 +623,7 @@ public class TestUtil extends Iced {
   }
 
   private static boolean runWithoutLocalFiles() {
-    return Boolean.valueOf(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
+    return Boolean.parseBoolean(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
 
   protected static void downloadTestFileFromS3(String fname) throws IOException {
@@ -631,8 +631,12 @@ public class TestUtil extends Iced {
       fname = fname.substring(2);
     File f = new File(fname);
     if (!f.exists()) {
-      if (f.getParentFile() != null)
-        f.getParentFile().mkdirs();
+      if (f.getParentFile() != null) {
+        boolean dirsCreated = f.getParentFile().mkdirs();
+        if (! dirsCreated) {
+          Log.warn("Failed to create directory:" + f.getParentFile());
+        }
+      }
       File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
       org.apache.commons.io.FileUtils.copyURLToFile(
               new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
