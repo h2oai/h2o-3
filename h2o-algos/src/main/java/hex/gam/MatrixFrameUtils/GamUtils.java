@@ -44,7 +44,7 @@ public class GamUtils {
       if (parms._bs_sorted[frameIdx] != 2) { // cs spline
         array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]);
       } else { // I-splines
-        int totBasis = parms._num_knots_sorted[frameIdx] + parms._spline_orders_sorted[frameIdx] - 2;
+        int totBasis = parms._num_knots_sorted[frameIdx] + parms._spline_orders_sorted[frameIdx] - 2; // I-spline order=NBSplineTypeII order
         if (fileMode == AllocateType.firstOneLess)  // allocating for z matrix
           array3D[frameIdx] = new double[totBasis][totBasis - 1];
         else if (fileMode == AllocateType.sameOrig) // allocating for penalty matrix

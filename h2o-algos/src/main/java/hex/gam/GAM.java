@@ -429,7 +429,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _numKnots = MemoryManager.malloc4(numGamFrame);
       _gamColNames = new String[numGamFrame][];
       _gamColNamesCenter = new String[numGamFrame][];
-      _gamFrameKeys = new Key[numGamFrame];
+      if (_parms._keep_gam_cols)
+        _gamFrameKeys = new Key[numGamFrame];
       _gamFrameKeysCenter = new Key[numGamFrame];
       _gamColMeans = new double[numGamFrame][];   // means of gamified columns
       _penaltyScale = new double[numGamFrame];
@@ -568,7 +569,17 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       @Override
       protected void compute() {
         // generate GAM basis functions
-        GenISplineGamOneColumn oneGAMCol = new GenISplineGamOneColumn(_parms, _knots, _gamColIndex, _predictVec);
+        int order = _parms._spline_orders_sorted[_gamColIndex];
+        int numBasis = _knots.length+order-2;
+        int totKnots = numBasis + order;
+        GenISplineGamOneColumn oneGAMCol = new GenISplineGamOneColumn(_parms, _knots, _gamColIndex, _predictVec, 
+                numBasis, totKnots);
+        oneGAMCol.doAll(oneGAMCol._numBasis, Vec.T_NUM, _predictVec);
+        Frame oneGamifiedColumn = oneGAMCol.outputFrame(Key.make(), _newColNames, null);
+        if (_parms._keep_gam_cols) {
+          _gamFrameKeys[_gamColIndex] = oneGamifiedColumn._key;
+          DKV.put(oneGamifiedColumn);
+        }
         // extract penalty matrix
         // extract generated gam columns
         // centralize the gam columns

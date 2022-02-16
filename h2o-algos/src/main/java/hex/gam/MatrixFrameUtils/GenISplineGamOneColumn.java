@@ -6,6 +6,9 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
+import water.util.ArrayUtils;
+
+import static hex.gam.GamSplines.NBSplinesTypeI.genPenaltyMatrix;
 
 public class GenISplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
     private final double[] _knots;    // knots without duplication
@@ -15,18 +18,24 @@ public class GenISplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
     private final int _gamColNChunks;
     public double[][] _ZTransp;  // store Z matrix transpose
     public double[][] _penaltyMat;  // store penalty matrix
+    public final int _numBasis;
+    public final int _totKnots;
     
-    public GenISplineGamOneColumn(GAMModel.GAMParameters parm, double[] knots, int gamColIndex, Frame gamCol) {
+    public GenISplineGamOneColumn(GAMModel.GAMParameters parm, double[] knots, int gamColIndex, Frame gamCol, 
+                                  int nBasis, int totKnots) {
         _knots = knots;
         _order = parm._spline_orders_sorted[gamColIndex];
+        _numBasis = nBasis > 0 ? nBasis : knots.length+_order-2;
+        _totKnots = totKnots > 0 ? totKnots : knots.length+2*_order-2;
         _gamColNChunks = gamCol.vec(0).nChunks();
+        _penaltyMat = genPenaltyMatrix(knots, parm._spline_orders_sorted[gamColIndex]);
     }
 
     @Override
     public void map(Chunk[] chk, NewChunk[] newGamCols) {
-        ISplines basisFuncs = new ISplines(_order, _knots);
+        ISplines basisFuncs = new ISplines(_order, _knots, _numBasis, _totKnots);
         _maxAbsRowSum = new double[_gamColNChunks];
-        int totBasisFuncs = basisFuncs._numIBasis;
+        int totBasisFuncs = _numBasis;
         double[] basisVals = new double[totBasisFuncs]; // array to hold each gamified row
         int cIndex = chk[0].cidx();
         _maxAbsRowSum[cIndex] = Double.NEGATIVE_INFINITY;
@@ -53,5 +62,18 @@ public class GenISplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
                     newGamCols[colIndex].addNum(0.0);
             }
         }
+    }
+
+
+    public void reduce(GenISplineGamOneColumn other) {
+        ArrayUtils.add(_maxAbsRowSum, other._maxAbsRowSum);
+    }
+
+    @Override
+    public void postGlobal() {  // scale the _penalty function according to R
+        double tempMaxValue = ArrayUtils.maxValue(_maxAbsRowSum);
+      //  _s_scale = tempMaxValue*tempMaxValue/ArrayUtils.rNorm(_penaltyMat, 'i');
+      //  ArrayUtils.mult(_penaltyMat, _s_scale);
+       // _s_scale = 1.0/ _s_scale;
     }
 }

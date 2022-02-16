@@ -3,10 +3,14 @@ package hex.gam.GamSplines;
 import java.util.ArrayList;
 import java.util.List;
 
+import static hex.gam.GamSplines.NBSplinesUtils.fillKnots;
+
 public class NBSplinesTypeI {
     private final int _order;
     private final int _numKnots;
-    private List<Double> coeffs;
+    private int _index;   // start index of its knots off the original knot sequence with duplication
+    private List<Double> _nodeCoeffs;
+    private double[] _coeffChild;   // coefficient to pass down to child
     private List<Double> _knots;
     private double _commonConst;
     private NBSplinesTypeI _left;
@@ -19,26 +23,14 @@ public class NBSplinesTypeI {
      * @param basisIndex : basis function index
      */
     public NBSplinesTypeI(List<Double> knots, int order, int basisIndex) {
-        _order= order-1;
+        _order= order;
         _numKnots = knots.size();
         _knots = new ArrayList<>(knots.subList(basisIndex, basisIndex+order));
         _commonConst = (knots.get(basisIndex)==knots.get(basisIndex+_order))?0:
                 1.0/(knots.get(basisIndex+_order)-knots.get(basisIndex));
         _left = null;
         _rite = null;
+        _index = basisIndex;
     }
 
-    /***
-     * 
-     * @param knots : containing all knots without duplication
-     * @param order : order of original I-splines
-     * @return double[][] array of size number of basis function by number of total numbers
-     */
-    public static double[][] gen_penalty_matrix(double[] knots, int order) {
-        int numBasis = knots.length+2*order-2;
-        int totKnots = knots.length+order-2;
-        double[][] penaltyMat = new double[numBasis][totKnots];
-        // 
-        return penaltyMat;
-    }
 }

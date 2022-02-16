@@ -35,14 +35,20 @@ public class GAMISplineTest extends TestUtil {
             double[] pctilesV1 = train.vec(1).pctiles();
             double[] pctilesV2 = train.vec(2).pctiles();
             int numRow = pctilesV0.length/2;
-            double[][] pctiles0 = new double[numRow+1][1];
-            double[][] pctiles1 = new double[numRow+1][1];
-            double[][] pctiles2 = new double[numRow+1][1];
+            double[][] pctiles0 = new double[numRow+2][1];
+            double[][] pctiles1 = new double[numRow+2][1];
+            double[][] pctiles2 = new double[numRow+2][1];
             for (int rind = 0; rind < numRow+1; rind++) {
                 pctiles0[rind][0] = pctilesV0[2*rind];
                 pctiles1[rind][0] = pctilesV1[2*rind];
                 pctiles2[rind][0] = pctilesV2[2*rind];
             }
+            pctiles0[numRow+1][0] = train.vec(0).max();
+            pctiles1[numRow+1][0] = train.vec(1).max();
+            pctiles2[numRow+1][0] = train.vec(2).max();
+            pctiles0[0][0] = train.vec(0).min();
+            pctiles1[0][0] = train.vec(1).min();
+            pctiles2[0][0] = train.vec(2).min();
             Frame knotsFrame1 = genFrameKnots(pctiles0);
             DKV.put(knotsFrame1);
             Scope.track(knotsFrame1);

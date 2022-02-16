@@ -14,12 +14,12 @@ public class NBSplinesTypeII {
     public final int _totBasisFuncs;
     public final BSplineBasis[] _basisFuncs;
     
-    public NBSplinesTypeII(int m, double[] knots) {
+    public NBSplinesTypeII(int m, double[] knots, int numBasis, int totKnots) {
         _m = m;
         _nKnots = knots.length;
-        _totKnots = _nKnots +2*_m-2;
-        _totBasisFuncs = _nKnots +_m-2;
-        _knots = fillKnots(knots, m);
+        _totKnots = totKnots > 0 ? totKnots : _nKnots +2*_m-2;
+        _totBasisFuncs = numBasis > 0 ? numBasis : _nKnots +_m-2;
+        _knots = fillKnots(knots, m, totKnots>0);
         _basisFuncs = genBasisFunctions(_totBasisFuncs, _m, _knots);
         
     }

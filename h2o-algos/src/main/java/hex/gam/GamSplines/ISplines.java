@@ -16,10 +16,10 @@ public class ISplines {
     private final double _maxKnot;
     private final ISplineBasis[] _iSplines;
     
-    public ISplines(int order, double[] knots) {
+    public ISplines(int order, double[] knots, int numBasis, int totKnots) {
         _knotsOriginal = Arrays.stream(knots).boxed().collect(Collectors.toList());
         _order = order;
-        _bSplines = new NBSplinesTypeII(order+1, knots);
+        _bSplines = new NBSplinesTypeII(order+1, knots, numBasis, totKnots);
         _numIBasis = _bSplines._totBasisFuncs;
         _minKnot = knots[0];
         _maxKnot = knots[knots.length-1];
@@ -35,7 +35,7 @@ public class ISplines {
         for (int basisInd = 0; basisInd < _numIBasis; basisInd++) {
             if (val < _iSplines[basisInd]._knots.get(0))
                 gamifiedResults[basisInd] = 0;
-            else if (val >= _iSplines[basisInd]._knots.get(_order))
+            else if (val >= _iSplines[basisInd]._knots.get(Math.min(_order, _iSplines[basisInd]._knots.size()-1)))
                 gamifiedResults[basisInd] = 1;
             else 
                 gamifiedResults[basisInd] = sumNBSpline(basisInd, val);
