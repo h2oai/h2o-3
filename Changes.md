@@ -2,6 +2,31 @@
 
 ## H2O
 
+### Zorn (3.36.0.3) - 2/16/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/3/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8567]](https://h2oai.atlassian.net/browse/PUBDEV-8567) - Fixed S3 file downloads not working by adding `aws_java_sdk_sts` as a dependency of H2O persist S3.
+- [[PUBDEV-8563]](https://h2oai.atlassian.net/browse/PUBDEV-8563) - Added note to GBM, DRF, IF, and EIF that `build_tree_one_node=True` does not work with current release.
+- [[PUBDEV-8557]](https://h2oai.atlassian.net/browse/PUBDEV-8557) - Extended AWS default credential chain instead of replacing it.
+- [[PUBDEV-8553]](https://h2oai.atlassian.net/browse/PUBDEV-85653) - Fixed import failures for URLs longer than 152 characters.
+- [[PUBDEV-8552]](https://h2oai.atlassian.net/browse/PUBDEV-8552) -  Fix AutoML ignoring `verbosity` setting.
+- [[PUBDEV-8524]](https://h2oai.atlassian.net/browse/PUBDEV-8524) - Fixed Huber distribution bug for `deviance`.
+
+#### Improvement
+
+- [[PUBDEV-8475]](https://h2oai.atlassian.net/browse/PUBDEV-8475) - Removed “H2O API Extensions” from `h2o.init()` output.
+
+#### Docs
+
+- [[PUBDEV-8569]](https://h2oai.atlassian.net/browse/PUBDEV-8569) - Corrected typos and inconsistencies in Admissible ML documentation.
+- [[PUBDEV-8546]](https://h2oai.atlassian.net/browse/PUBDEV-8546) - Updated copyright year in documentation.
+- [[PUBDEV-8535]](https://h2oai.atlassian.net/browse/PUBDEV-8535) - Clarified feasible intervals for tweedie power.
+- [[PUBDEV-8466]](https://h2oai.atlassian.net/browse/PUBDEV-8466) - Clarified Java requirements when running H2O on Hadoop.
+
+
 ### Zorn (3.36.0.2) - 1/25/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.html</a>
