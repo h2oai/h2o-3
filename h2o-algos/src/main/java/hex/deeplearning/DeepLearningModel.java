@@ -62,6 +62,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     double[] normrespsub;
     int[] catoffsets;
     public TwoDimTable _variable_importances;
+    @Override
+    public TwoDimTable getVariableImportances() {
+      return _variable_importances;
+    }
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();

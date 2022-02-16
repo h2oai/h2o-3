@@ -58,6 +58,10 @@ public class XGBoostExtension extends AbstractH2OExtension {
   }
 
   public void logNativeLibInfo() {
+    if (nativeLibInfo == null) {
+      LOG.warn("No native XGBoost library found.");
+      return;
+    }
     LOG.info("Found XGBoost backend with library: " + nativeLibInfo.name);
     if (nativeLibInfo.flags.length == 0) {
       LOG.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
