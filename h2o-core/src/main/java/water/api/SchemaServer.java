@@ -251,6 +251,10 @@ public class SchemaServer {
     return schema(version, impl.getClass().getSimpleName());
   }
 
+  public static Schema schema (Iced impl) {
+    return schema(STABLE_VERSION, impl);
+  }
+
   /**
    * For a given version and Iced class return an appropriate Schema instance, if any.
    * @param version Version of the schema to create, or pass -1 to use the latest version.

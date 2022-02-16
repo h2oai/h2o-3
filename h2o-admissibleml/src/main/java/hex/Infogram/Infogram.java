@@ -611,7 +611,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
      */
     private void extractRelevance(Model model, Model.Parameters parms) {
       if (_buildCore) {           // full model is last one, just extract varImp
-        _varImp = extractVarImp(_parms._algorithm, model);
+        _varImp = model._output.getVariableImportances();
       } else {                    // need to build model for fair info grame
         Frame fullFrame = subtractAdd2Frame(_baseOrSensitiveFrame, _parms.train(), _parms._protected_columns,
                 _topKPredictors); // training frame is topKPredictors minus protected_columns
@@ -620,7 +620,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
         _generatedFrameKeys[keyIndex++] = fullFrame._key;
         ModelBuilder builder = ModelBuilder.make(parms);
         Model fairModel = (Model) builder.trainModel().get();
-        _varImp = extractVarImp(_parms._algorithm, fairModel);
+        _varImp = fairModel._output.getVariableImportances();
         Scope.track_generic(fairModel);
       }
     }

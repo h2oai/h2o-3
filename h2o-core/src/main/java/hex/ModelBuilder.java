@@ -142,6 +142,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return Optional.of((B) BUILDERS[idx]);
   }
 
+  @SuppressWarnings("unchecked")
+  public static <P extends Model.Parameters> P makeParameters(String algo) {
+    return (P) make(algo, null, null)._parms;
+  }
+
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
   public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
