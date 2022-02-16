@@ -15,6 +15,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/3/index.h
 - [[PUBDEV-8552]](https://h2oai.atlassian.net/browse/PUBDEV-8552) -  Fix AutoML ignoring `verbosity` setting.
 - [[PUBDEV-8524]](https://h2oai.atlassian.net/browse/PUBDEV-8524) - Fixed Huber distribution bug for `deviance`.
 
+#### Improvement
+
+- [[PUBDEV-8475]](https://h2oai.atlassian.net/browse/PUBDEV-8475) - Removed “H2O API Extensions” from `h2o.init()` output.
+
 #### Docs
 
 - [[PUBDEV-8569]](https://h2oai.atlassian.net/browse/PUBDEV-8569) - Corrected typos and inconsistencies in Admissible ML documentation.
