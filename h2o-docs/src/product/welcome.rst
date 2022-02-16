@@ -45,7 +45,7 @@ Click `here <https://jdk.java.net/archive/>`__ to download the latest supported 
 Running H2O on Hadoop
 '''''''''''''''''''''
 
-Java support is different between H2O and Hadoop. Hadoop only supports `Java 8 and Java 11 <https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions>`__. When running H2O on Hadoop, we recommend only running H2O on Java 8 or Java 11. 
+Java support is different between H2O and Hadoop. Hadoop only supports `Java 8 and Java 11 <https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions>`__. When running H2O on Hadoop, we recommend only running H2O on Java 8 or Java 11.
 
 Additional Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~
