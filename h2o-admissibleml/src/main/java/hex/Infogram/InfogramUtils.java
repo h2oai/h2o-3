@@ -4,15 +4,11 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelBuilderHelper;
 import hex.SplitFrame;
-import hex.deeplearning.DeepLearningModel;
-import hex.glm.GLMModel;
 import hex.schemas.*;
-import hex.tree.drf.DRFModel;
-import hex.tree.gbm.GBMModel;
-import hex.tree.xgboost.XGBoostModel;
 import water.DKV;
 import water.Key;
 import water.Scope;
+import water.api.SchemaServer;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -63,7 +59,7 @@ public class InfogramUtils {
             1);
     Model builtModel = builders[0].get();
     Scope.track_generic(builtModel);
-    TwoDimTable varImp = extractVarImp(parms._algorithm, builtModel);
+    TwoDimTable varImp = builtModel._output.getVariableImportances();
     String[] ntopPredictors = new String[parms._top_n_features];
     String[] rowHeaders = varImp.getRowHeaders();
     System.arraycopy(rowHeaders, 0, ntopPredictors, 0, parms._top_n_features);
@@ -76,18 +72,6 @@ public class InfogramUtils {
       if (generatedFrameKeys[index] == null)
         return index;
     return -1;  // all keys are taken
-  }
-
-  public static TwoDimTable extractVarImp(InfogramParameters.Algorithm algo, Model model) {
-    switch (algo) {
-      case AUTO:
-      case gbm : return ((GBMModel) model)._output._variable_importances;
-      case glm : return ((GLMModel) model)._output._variable_importances;
-      case deeplearning : return ((DeepLearningModel) model)._output._variable_importances;
-      case drf : return ((DRFModel) model)._output._variable_importances;
-      case xgboost : return ((XGBoostModel) model)._output._variable_importances;
-      default : return null;
-    }
   }
 
   /**
@@ -174,7 +158,8 @@ public class InfogramUtils {
         paramsSchema = new DeepLearningV3.DeepLearningParametersV3();
         break;
       case xgboost:
-        paramsSchema = new XGBoostV3.XGBoostParametersV3();
+        Model.Parameters params = ModelBuilder.makeParameters("XGBoost");
+        paramsSchema = (ModelParametersSchemaV3<?, ?>) SchemaServer.schema(params);
         break;
       default:
         throw new UnsupportedOperationException("Unknown algo: " + algoName);

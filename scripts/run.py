@@ -359,7 +359,7 @@ class H2OCloudNode(object):
                "-Xmx" + self.xmx,
                "-ea"]
         if self.jvm_opts is not None:
-            cmd += [self.jvm_opts]
+            cmd += self.jvm_opts if isinstance(self.jvm_opts, list) else [self.jvm_opts]
         port_spec = "-port" if self.strict_port else "-baseport"
         cmd += ["-cp", classpath,
                main_class,
@@ -512,8 +512,11 @@ class H2OCloudNode(object):
         if self.pid > 0:
             print("Killing JVM with PID {}".format(self.pid))
             try:
-                self.child.terminate()
-                self.child.wait()
+                if sys.platform == "win32":
+                    os.system("taskkill /F /T /PID {}".format(self.pid))
+                else:
+                    self.child.terminate()
+                    self.child.wait()
             except OSError:
                 pass
             self.pid = -1

@@ -5,13 +5,14 @@ import com.google.gson.reflect.TypeToken;
 import hex.Infogram.Infogram;
 import hex.Infogram.InfogramModel;
 import hex.Model;
+import hex.ModelBuilder;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
-import hex.tree.xgboost.XGBoostModel;
 import water.api.API;
 import water.api.EnumValuesProvider;
+import water.api.SchemaServer;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import static hex.util.DistributionUtils.distributionToFamily;
@@ -223,8 +224,8 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
           params = new DeepLearningModel.DeepLearningParameters();
           break;
         case xgboost:
-          paramsSchema = new XGBoostV3.XGBoostParametersV3();
-          params = new XGBoostModel.XGBoostParameters();
+          params = ModelBuilder.makeParameters("XGBoost");
+          paramsSchema = (ModelParametersSchemaV3<?, ?>) SchemaServer.schema(params);
           break;
         default:
           throw new UnsupportedOperationException("Unknown algo: " + parms._algorithm);
@@ -263,7 +264,7 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
     }
 
     ParamNParamSchema generateParamsSchema(InfogramModel.InfogramParameters.Algorithm chosenAlgo) {
-      ModelParametersSchemaV3 paramsSchema;
+      ModelParametersSchemaV3<?, ?> paramsSchema;
       Model.Parameters params;
       switch (chosenAlgo) {
         case AUTO:
@@ -285,8 +286,8 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
           params = new DeepLearningModel.DeepLearningParameters();
           break;
         case xgboost:
-          paramsSchema = new XGBoostV3.XGBoostParametersV3();
-          params = new XGBoostModel.XGBoostParameters();
+          params = ModelBuilder.makeParameters("XGBoost");
+          paramsSchema = (ModelParametersSchemaV3<?, ?>) SchemaServer.schema(params);
           break;
         default:
           throw new UnsupportedOperationException("Unknown given algo: " + chosenAlgo);
