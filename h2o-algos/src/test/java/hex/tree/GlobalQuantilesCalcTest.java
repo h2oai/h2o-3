@@ -24,7 +24,7 @@ public class GlobalQuantilesCalcTest extends TestUtil {
       fr.remove("RACE");
       fr.remove("DCAPS");
       DKV.put(fr);
-      double[][] splitPoints = GlobalQuantilesCalc.splitPoints(fr, null, 5, 5);
+      double[][] splitPoints = GlobalQuantilesCalc.splitPoints(fr, null, null, 5, 5);
       for (int i = 0; i < fr.numCols(); i++) {
         double[] spI = splitPoints[i];
         assertNotNull(spI);

@@ -36,7 +36,7 @@ public class DHistogramTest extends TestUtil {
   public void initCachesZeroPosition() {
     Scope.enter();
     try {
-      DHistogram.HistoQuantiles hq = new DHistogram.HistoQuantiles(Key.make(), new double[]{-1.0d, -0.3, -0.0d, 1.0, 1.2, 1.8});
+      DHistogram.HistoSplitPoints hq = new DHistogram.HistoSplitPoints(Key.make(), new double[]{-1.0d, -0.3, -0.0d, 1.0, 1.2, 1.8});
       DKV.put(hq);
       Scope.track_generic(hq);
 
@@ -58,7 +58,7 @@ public class DHistogramTest extends TestUtil {
   public void findBinForNegativeZero() {
     Scope.enter();
     try {
-      DHistogram.HistoQuantiles hq = new DHistogram.HistoQuantiles(Key.make(), new double[]{-1.0d, -0.0d, 1.0});
+      DHistogram.HistoSplitPoints hq = new DHistogram.HistoSplitPoints(Key.make(), new double[]{-1.0d, -0.0d, 1.0});
       DKV.put(hq);
       Scope.track_generic(hq);
 
@@ -99,7 +99,7 @@ public class DHistogramTest extends TestUtil {
         splitPointsQuant[i] = histoRand.binAt(i);
       }
       // make a quantile-global estimator with conceptually the same split points
-      DHistogram.HistoQuantiles hq = new DHistogram.HistoQuantiles(Key.make(), splitPointsQuant);
+      DHistogram.HistoSplitPoints hq = new DHistogram.HistoSplitPoints(Key.make(), splitPointsQuant);
       DKV.put(hq);
       Scope.track_generic(hq);
       DHistogram histoQuant = new DHistogram("quant", 20, 1024, (byte) 0, min, maxEx, false, false, -0.001,
