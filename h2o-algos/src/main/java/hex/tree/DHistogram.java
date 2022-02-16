@@ -139,7 +139,7 @@ public final class DHistogram extends Iced<DHistogram> {
   transient float[] _splitPtsFloat;
   public final long _seed;
   public transient boolean _absoluteSplitPts;
-  public Key _globalQuantilesKey; // key under which original top-level quantiles are stored;
+  public Key<HistoSplitPoints> _globalSplitPointsKey; // key under which original top-level quantiles are stored;
   final double[] _customSplitPoints; // explicitly given split points (for UniformRobust)
 
 
@@ -167,11 +167,16 @@ public final class DHistogram extends Iced<DHistogram> {
     public int value() { return value; }
   }
 
-  static class HistoQuantiles extends Keyed<HistoQuantiles> {
-    public HistoQuantiles(Key<HistoQuantiles> key, double[] splitPts) {
+  static class HistoSplitPoints extends Keyed<HistoSplitPoints> {
+    public HistoSplitPoints(Key<HistoSplitPoints> key, double[] splitPts) {
+      this(key, splitPts, true);
+    }
+    public HistoSplitPoints(Key<HistoSplitPoints> key, double[] splitPts, boolean canRefine) {
       super(key);
       this.splitPts = splitPts;
+      this.canRefine = canRefine;
     }
+    boolean canRefine;
     double[/*nbins*/] splitPts;
   }
 
@@ -183,7 +188,7 @@ public final class DHistogram extends Iced<DHistogram> {
   }
 
   DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
-             double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
+             double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key<HistoSplitPoints> globalSplitPointsKey,
              Constraints cs, boolean checkFloatSplits, boolean useUplift, UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType,
              double[] customSplitPoints) {
     assert nbins >= 1;
@@ -226,7 +231,7 @@ public final class DHistogram extends Iced<DHistogram> {
     if (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
       _histoType= SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
     assert(_histoType!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin);
-    _globalQuantilesKey = globalQuantilesKey;
+    _globalSplitPointsKey = globalSplitPointsKey;
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
     int xbins = isInt == 2 ? nbins_cats : nbins;
@@ -347,14 +352,14 @@ public final class DHistogram extends Iced<DHistogram> {
     }
     else if (_histoType== HistogramType.QuantilesGlobal) {
       assert (_splitPts == null);
-      if (_globalQuantilesKey != null) {
-        HistoQuantiles hq = DKV.getGet(_globalQuantilesKey);
+      if (_globalSplitPointsKey != null) {
+        HistoSplitPoints hq = DKV.getGet(_globalSplitPointsKey);
         if (hq != null) {
-          _splitPts = ((HistoQuantiles) DKV.getGet(_globalQuantilesKey)).splitPts;
+          _splitPts = hq.splitPts;
           if (_splitPts!=null) {
             if (LOG.isTraceEnabled()) LOG.trace("Obtaining global splitPoints: " + Arrays.toString(_splitPts));
             _splitPts = ArrayUtils.limitToRange(_splitPts, _min, _maxEx);
-            if (_splitPts.length > 1 && _splitPts.length < _nbin)
+            if (hq.canRefine && _splitPts.length > 1 && _splitPts.length < _nbin)
               _splitPts = ArrayUtils.padUniformly(_splitPts, _nbin);
             if (_splitPts.length <= 1) {
               _splitPts = null; //abort, fall back to uniform binning
@@ -461,12 +466,13 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param hs an array of histograms to be initialize
    * @param seed seed to reproduce
    * @param parms parameters of the model
-   * @param globalQuantilesKey array of global quantile keys
+   * @param globalSplitPointsKey array of global split-points keys
    * @param cs monotone constraints (could be null)
    * @param checkFloatSplits
    * @return array of DHistograms objects 
    */
-  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey,
+  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms,
+                                         Key<HistoSplitPoints>[] globalSplitPointsKey,
                                          Constraints cs, boolean checkFloatSplits, GlobalInteractionConstraints ics) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
@@ -484,7 +490,7 @@ public final class DHistogram extends Iced<DHistogram> {
           byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
           boolean intOpt = useIntOpt(v, parms, cs);
           hs[c] = nacnt == vlen || v.isConst(true) ?
-                  null : make(fr._names[c], nbins, type, minIn, maxEx, intOpt, nacnt > 0, seed, parms, globalQuantilesKey[c], cs, checkFloatSplits, null);
+                  null : make(fr._names[c], nbins, type, minIn, maxEx, intOpt, nacnt > 0, seed, parms, globalSplitPointsKey[c], cs, checkFloatSplits, null);
         } catch (StepOutOfRangeException e) {
           hs[c] = null;
           LOG.warn("Column " + fr._names[c] + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
@@ -496,13 +502,13 @@ public final class DHistogram extends Iced<DHistogram> {
   }
 
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
-                                long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, 
+                                long seed, SharedTreeModel.SharedTreeParameters parms, Key<HistoSplitPoints> globalSplitPointsKey, 
                                 Constraints cs, boolean checkFloatSplits, double[] customSplitPoints) {
     boolean useUplift = isUplift(parms);
     UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType = useUplift ?
             ((UpliftDRFModel.UpliftDRFParameters) parms)._uplift_metric : null;
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, intOpt, hasNAs,
-            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, checkFloatSplits, useUplift, upliftMetricType, customSplitPoints);
+            parms._min_split_improvement, parms._histogram_type, seed, globalSplitPointsKey, cs, checkFloatSplits, useUplift, upliftMetricType, customSplitPoints);
   }
 
   private static boolean isUplift(SharedTreeModel.SharedTreeParameters parms) {
