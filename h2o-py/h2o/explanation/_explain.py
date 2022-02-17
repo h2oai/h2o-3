@@ -1229,9 +1229,7 @@ def pd_multi_plot(
         return decorate_plot_result(figure=fig)
 
 def _center(col):
-        norm_num = col[0]
-        for i in range(len(col)):
-            col[i] = col[i] - norm_num
+    col[:] = col - col[0]
 
 def ice_plot(
         model,  # type: h2o.model.ModelBase
