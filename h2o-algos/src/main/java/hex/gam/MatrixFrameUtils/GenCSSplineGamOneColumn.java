@@ -108,7 +108,7 @@ public class GenCSSplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
     return centralizeFrame(fr, colNameStart, parms, _ZTransp);
   }
 
-  public Frame centralizeFrame(Frame fr, String colNameStart, GAMParameters parms, double[][] zTransp) {
+  public static Frame centralizeFrame(Frame fr, String colNameStart, GAMParameters parms, double[][] zTransp) {
     int numCols = fr.numCols();
     int ncolExp = numCols-1;
     DataInfo frInfo = new DataInfo(fr, null, 0, false,  DataInfo.TransformType.NONE

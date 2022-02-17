@@ -44,7 +44,7 @@ public class GamBasicISplineTest extends TestUtil {
                 double[] knots = DoubleStream
                         .generate(ThreadLocalRandom.current()::nextDouble)
                         .limit(nSizes[sizeIndex]).sorted().toArray();  // knots need to be sorted
-                List<Double> duplicatedKnots = fillKnots(knots, nOrder[orderIndex], false);
+                List<Double> duplicatedKnots = fillKnots(knots, nOrder[orderIndex]);
                 assertTrue(duplicatedKnots.size() == nSizes[sizeIndex]+2*nOrder[orderIndex]-2); // correct length
                 for (int index=1; index < nOrder[orderIndex]; index++) { // duplication at beginning and end are correct
                     assertTrue(Math.abs(duplicatedKnots.get(0)-duplicatedKnots.get(index)) < TEST_TOLERANCE);
@@ -69,7 +69,7 @@ public class GamBasicISplineTest extends TestUtil {
                 double[] knots = DoubleStream
                         .generate(ThreadLocalRandom.current()::nextDouble)
                         .limit(nSizes[sizeIndex]).sorted().toArray();  // knots need to be sorted
-                List<Double> duplicatedKnots = fillKnots(knots, nOrder[orderIndex], false);
+                List<Double> duplicatedKnots = fillKnots(knots, nOrder[orderIndex]);
                 int numBasisFuncs = nSizes[sizeIndex]+nOrder[orderIndex]-2;
                 for (int basisIndex = 0; basisIndex < numBasisFuncs; basisIndex++) {
                     double[] basisKnots = Stream.of((extractKnots(basisIndex, nOrder[orderIndex], duplicatedKnots)
@@ -99,25 +99,25 @@ public class GamBasicISplineTest extends TestUtil {
         double[] knots = new double[]{0, 0.3, 0.5, 0.6, 1};
 
         int order = 1;            // test for order 1
-        NBSplinesTypeII splineOrder1 = new NBSplinesTypeII(order, knots, -1, -1);
+        NBSplinesTypeII splineOrder1 = new NBSplinesTypeII(order, knots);
         NBSplineOrder manualOrder1 = new NBSplineOrder(order, knots);
         assertCorrectNBSpline(splineOrder1, manualOrder1, testValues);
         assertCorrectNBSpline(splineOrder1, manualOrder1, knots);
 
         order = 2;            // test for order 2
-        NBSplinesTypeII splineOrder2 = new NBSplinesTypeII(order, knots, -1, -1);
+        NBSplinesTypeII splineOrder2 = new NBSplinesTypeII(order, knots);
         NBSplineOrder manualOrder2 = new NBSplineOrder(order, knots);
         assertCorrectNBSpline(splineOrder2, manualOrder2, testValues);
         assertCorrectNBSpline(splineOrder2, manualOrder2, knots);
 
         order = 3;            // test for order 3
-        NBSplinesTypeII splineOrder3 = new NBSplinesTypeII(order, knots, -1, -1);
+        NBSplinesTypeII splineOrder3 = new NBSplinesTypeII(order, knots);
         NBSplineOrder manualOrder3 = new NBSplineOrder(order, knots);
         assertCorrectNBSpline(splineOrder3, manualOrder3, testValues);
         assertCorrectNBSpline(splineOrder3, manualOrder3, knots);
 
         order = 4;             // test for order 4
-        NBSplinesTypeII splineOrder4 = new NBSplinesTypeII(order, knots, -1, -1);
+        NBSplinesTypeII splineOrder4 = new NBSplinesTypeII(order, knots);
         NBSplineOrder manualOrder4 = new NBSplineOrder(order, knots);
         assertCorrectNBSpline(splineOrder4, manualOrder4, testValues);
         assertCorrectNBSpline(splineOrder4, manualOrder4, knots);
@@ -132,23 +132,24 @@ public class GamBasicISplineTest extends TestUtil {
      */
     @Test
     public void testISplines() {
-        double[] testValues = DoubleStream
+/*        double[] testValues = DoubleStream
                 .generate(ThreadLocalRandom.current()::nextDouble)
                 .limit(50)
-                .toArray();
+                .toArray();*/
+        double[] testValues = new double[]{0.8646810812099925};
         double[] knots = new double[]{0, 0.3, 0.5, 0.6, 1};
         int order = 1;
-        ISplines ispline1 = new ISplines(order, knots, -1, -1);
+        ISplines ispline1 = new ISplines(order, knots);
         ISplineManual mspline1 = new ISplineManual(order, knots);
         assertCorrectISpline(ispline1, mspline1, testValues);
         assertCorrectISpline(ispline1, mspline1, knots);
         order = 2;
-        ISplines ispline2 = new ISplines(order, knots, -1, -1);
+        ISplines ispline2 = new ISplines(order, knots);
         ISplineManual mspline2 = new ISplineManual(order, knots);
         assertCorrectISpline(ispline2, mspline2, testValues);
         assertCorrectISpline(ispline2, mspline2, knots);
         order = 3;
-        ISplines ispline3 = new ISplines(order, knots, -1, -1);
+        ISplines ispline3 = new ISplines(order, knots);
         ISplineManual mspline3 = new ISplineManual(order, knots);
         assertCorrectISpline(ispline3, mspline3, testValues);
         assertCorrectISpline(ispline3, mspline3, knots);
@@ -194,9 +195,9 @@ public class GamBasicISplineTest extends TestUtil {
         
         public ISplineManual(int order, double[] knots) {
             _order = order;
-            _knots = fillKnots(knots, order+1, false);
+            _knots = fillKnots(knots, order);
             _totKnots = _knots.size();
-            _numBasis = knots.length+order-1;
+            _numBasis = knots.length+order-2;
             _iSplines = new ISplineBasisM[_numBasis];
             for (int index=0; index < _numBasis; index++)
                 _iSplines[index] = new ISplineBasisM(order, _knots, index);
@@ -291,7 +292,7 @@ public class GamBasicISplineTest extends TestUtil {
             public ISplineBasisM(int order, List<Double> knots, int index) {
                 _order = order;
                 _basisInd = index;
-                _knots = extractKnots(index, order+1, knots);
+                _knots = extractKnots(index, order, knots);
             }
         }
     }
@@ -311,7 +312,7 @@ public class GamBasicISplineTest extends TestUtil {
             _order = order;
             _totKnots = knots.length + 2*order - 2;
             _numBasis = knots.length+order-2;
-            _knots = fillKnots(knots, order, false);
+            _knots = fillKnots(knots, order);
             _bSplines = new BSplineBasis[_numBasis];
             for (int index=0; index < _numBasis; index++)
                 _bSplines[index] = new BSplineBasis(_order, index, _knots);

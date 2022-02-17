@@ -31,6 +31,7 @@ import static hex.gam.GamSplines.ThinPlateRegressionUtils.*;
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
+import static hex.gam.MatrixFrameUtils.GenCSSplineGamOneColumn.centralizeFrame;
 import static hex.gam.MatrixFrameUtils.GenCSSplineGamOneColumn.generateZTransp;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
@@ -403,7 +404,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     public int[] _numKnots;           // store number of knots per smoother
     String[][] _gamColNames;          // store column names of all smoothers before any processing
     String[][] _gamColNamesCenter;    // gamColNames after centering is performed.
-    Key<Frame>[] _gamFrameKeys;
     Key<Frame>[] _gamFrameKeysCenter;
     double[][] _gamColMeans;          // store gam column means without centering.
     int[][][] _allPolyBasisList;      // store polynomial basis function for all TP smoothers
@@ -429,8 +429,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _numKnots = MemoryManager.malloc4(numGamFrame);
       _gamColNames = new String[numGamFrame][];
       _gamColNamesCenter = new String[numGamFrame][];
-      if (_parms._keep_gam_cols)
-        _gamFrameKeys = new Key[numGamFrame];
       _gamFrameKeysCenter = new Key[numGamFrame];
       _gamColMeans = new double[numGamFrame][];   // means of gamified columns
       _penaltyScale = new double[numGamFrame];
@@ -553,6 +551,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       final String[] _newColNames;
       final int _gamColIndex; // gam column order from user input
       final int _singlePredSplineInd; // gam column index after moving tp to the back
+      final int _splineType;
       
       public ISplineSmoother(Frame gamPred, GAMParameters parms, int gamColIndex, String[] gamColNames, double[] knots,
                              int singlePredInd) {
@@ -564,6 +563,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         _newColNames = gamColNames;
         _gamColIndex = gamColIndex;
         _singlePredSplineInd = singlePredInd;
+        _splineType = parms._bs_sorted[gamColIndex];
       }
 
       @Override
@@ -575,15 +575,26 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         GenISplineGamOneColumn oneGAMCol = new GenISplineGamOneColumn(_parms, _knots, _gamColIndex, _predictVec, 
                 numBasis, totKnots);
         oneGAMCol.doAll(oneGAMCol._numBasis, Vec.T_NUM, _predictVec);
-        Frame oneGamifiedColumn = oneGAMCol.outputFrame(Key.make(), _newColNames, null);
-        if (_parms._keep_gam_cols) {
-          _gamFrameKeys[_gamColIndex] = oneGamifiedColumn._key;
-          DKV.put(oneGamifiedColumn);
+        if (_savePenaltyMat) {
+          copy2DArray(oneGAMCol._penaltyMat, _penaltyMat[_gamColIndex]);
+          _penaltyScale[_gamColIndex] = oneGAMCol._s_scale;
         }
-        // extract penalty matrix
         // extract generated gam columns
+        Frame oneGamifiedColumn = oneGAMCol.outputFrame(Key.make(), _newColNames, null);
+        for (int index=0; index<numBasis; index++)
+          _gamColMeans[_gamColIndex][index] = oneGamifiedColumn.vec(index).mean();
         // centralize the gam columns
-        
+        copy2DArray(generateZTransp(oneGamifiedColumn, numBasis), _zTranspose[_gamColIndex]); // copy transpose(Z)
+        oneGamifiedColumn = centralizeFrame(oneGamifiedColumn,
+                _predictVec.name(0) + "_" + _splineType + "_center", _parms, _zTranspose[_gamColIndex]);
+        DKV.put(oneGamifiedColumn);
+        _gamFrameKeysCenter[_gamColIndex] = oneGamifiedColumn._key;
+        System.arraycopy(oneGamifiedColumn.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
+                numBasis-1);
+        // extract penalty matrix        
+        double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(_zTranspose[_gamColIndex],
+                oneGAMCol._penaltyMat), ArrayUtils.transpose(_zTranspose[_gamColIndex]));  // transform penalty as zt*S*z
+        copy2DArray(transformedPenalty, _penaltyMatCenter[_gamColIndex]);
       }
     }
     
@@ -623,10 +634,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
         Frame oneAugmentedColumnCenter = genOneGamCol.outputFrame(Key.make(), _newColNames,
                 null);  // one gamified frame
-        if (_parms._keep_gam_cols) {
-          _gamFrameKeys[_gamColIndex] = oneAugmentedColumnCenter._key;
-          DKV.put(oneAugmentedColumnCenter);
-        }
         for (int index = 0; index < _numKnots; index++)
           _gamColMeans[_gamColIndex][index] = oneAugmentedColumnCenter.vec(index).mean();
         oneAugmentedColumnCenter = genOneGamCol.centralizeFrame(oneAugmentedColumnCenter,
@@ -761,9 +768,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           if (model != null) {
             if (_parms._keep_gam_cols) {
               keepFrameKeys(keep, newTFrame._key);
-              for (int index=0; index<_gamFrameKeys.length; index++) 
-                if (_gamFrameKeys[index] != null)  // skip TP splines
-                  keepFrameKeys(keep, _gamFrameKeys[index]);
             } else {
               DKV.remove(newTFrame._key);
             }
@@ -859,11 +863,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._gamColMeans = flat(_gamColMeans);
       if (_parms._lambda == null) // copy over lambdas used
         _parms._lambda = glm._parms._lambda.clone();
-      if (_parms._keep_gam_cols) {
-        if (_gamFrameKeys != null)
-          model._output._gamTrainsformedTrain = _gamFrameKeys.clone();
+      if (_parms._keep_gam_cols)
         model._output._gam_transformed_center_key = model._output._gamTransformedTrainCenter.toString();
-      }
       if (_parms._savePenaltyMat) {
         model._output._penaltyMatricesCenter = _penaltyMatCenter;
         model._output._penaltyMatrices = _penaltyMat;

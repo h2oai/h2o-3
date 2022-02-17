@@ -40,17 +40,13 @@ public class GamUtils {
 
   public static double[][][] allocate3DArray(int num2DArrays, GAMParameters parms, AllocateType fileMode) {
     double[][][] array3D = new double[num2DArrays][][];
+
     for (int frameIdx = 0; frameIdx < num2DArrays; frameIdx++) {
       if (parms._bs_sorted[frameIdx] != 2) { // cs spline
         array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]);
       } else { // I-splines
         int totBasis = parms._num_knots_sorted[frameIdx] + parms._spline_orders_sorted[frameIdx] - 2; // I-spline order=NBSplineTypeII order
-        if (fileMode == AllocateType.firstOneLess)  // allocating for z matrix
-          array3D[frameIdx] = new double[totBasis][totBasis - 1];
-        else if (fileMode == AllocateType.sameOrig) // allocating for penalty matrix
-          array3D[frameIdx] = new double[totBasis][totBasis];
-        else // allocating for penalty matrix centered
-          array3D[frameIdx] = new double[totBasis - 1][totBasis];
+        array3D[frameIdx] = allocate2DArray(fileMode, totBasis);
       }
     }
     return array3D;

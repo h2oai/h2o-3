@@ -5,6 +5,7 @@ import org.apache.commons.math3.geometry.partitioning.BSPTreeVisitor;
 import java.util.ArrayList;
 import java.util.List;
 
+import static hex.gam.GamSplines.NBSplinesTypeI.formBasis;
 import static hex.gam.GamSplines.NBSplinesUtils.extractKnots;
 import static hex.gam.GamSplines.NBSplinesUtils.fillKnots;
 
@@ -18,6 +19,7 @@ public class NBSplinesTypeIDerivative {
     private final double _commonConst;
     private double[] _leftCoeff;
     private double[] _rightCoeff;
+    private double[][] _coeffs; // store coefficients for each knot intervals
     private NBSplinesTypeI _left;
     private NBSplinesTypeI _rite;
     
@@ -30,10 +32,17 @@ public class NBSplinesTypeIDerivative {
         _commonConst = part1*((_knots.get(_order) == _knots.get(0)) ? 0 : 1.0/(_knots.get(_order)-_knots.get(0)));
         _leftCoeff = new double[]{-_knots.get(0),1};
         _rightCoeff = new double[]{_knots.get(_order), -1};
-        
+        _left = formBasis(knots, _order-1, basisIndex, 0);
+        _rite = formBasis(knots, _order-1, basisIndex, 1);
+        _coeffs = extractCoeff(_left, _rite, knots, basisIndex);
     }
 
-
+    public static double[][] extractCoeff(NBSplinesTypeI left, NBSplinesTypeI rite, List<Double> knots, int basisIndex) {
+        double[][] coeffs = new double[knots.size()-1][];
+        return coeffs;
+    }
+    
+    
     /***
      *
      * @param knots : containing all knots without duplication
@@ -41,9 +50,12 @@ public class NBSplinesTypeIDerivative {
      * @return double[][] array of size number of basis function by number of total numbers
      */
     public static double[][] genPenaltyMatrix(double[] knots, int order) {
-        int numBasis = knots.length+2*order-2;
+        int numBasis = knots.length+order-2;
+        if (order == 1)
+            return new double[numBasis][numBasis];  // derivative of order 1 NBSpline will generate 0
+
         int totKnots = knots.length+order-2;
-        List<Double> knotsWithDuplicates = fillKnots(knots, order, false);
+        List<Double> knotsWithDuplicates = fillKnots(knots, order);
         double[][] penaltyMat = new double[numBasis][numBasis];
         for (int i=0; i < numBasis; i++) {
             for (int j = i; j < numBasis; j++) {
