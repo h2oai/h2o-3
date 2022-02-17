@@ -59,8 +59,6 @@ public class AAA_PreCloudLock extends TestUtil {
       new hex.schemas.DRFV3();
       new hex.schemas.DeepLearningModelV3();
       new hex.schemas.DeepLearningV3();
-      new hex.schemas.ExampleModelV3();
-      new hex.schemas.ExampleV3();
       new hex.schemas.GBMModelV3();
       new hex.schemas.GBMV3();
       new hex.schemas.GLMModelV3();

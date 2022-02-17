@@ -9,15 +9,16 @@ public class ExampleModelV3 extends ModelSchemaV3<ExampleModel, ExampleModelV3, 
 
   public static final class ExampleModelOutputV3 extends ModelOutputSchemaV3<ExampleModel.ExampleOutput, ExampleModelOutputV3> {
     // Output fields
-    @API(help="Iterations executed") public int iterations;
-    @API(help="") public double[] maxs;
-  } // ExampleModelOutputV2
+    @API(help="Iterations executed")
+    public int iterations;
+
+    @API(help="Maximum value per column") public double[] maxs;
+  } // ExampleModelOutputV3
 
 
   //==========================
   // Custom adapters go here
 
-  // TOOD: I think we can implement the following two in ModelSchemaV3, using reflection on the type parameters.
   public ExampleV3.ExampleParametersV3 createParametersSchema() { return new ExampleV3.ExampleParametersV3(); }
   public ExampleModelOutputV3 createOutputSchema() { return new ExampleModelOutputV3(); }
 }

@@ -25,10 +25,10 @@ if not os.path.exists(results_dir):
 # Allow override of the H2O jarfile so we can use this with projects which extend h2o.jar
 h2o_jarfile = os.getenv('H2O_JARFILE', '../../build/h2o.jar')
 h2o_java_version = os.getenv('H2O_JAVA_VERSION', '1.8')
+h2o_jvm_cp = os.getenv('H2O_BINDINGS_EXTRA_CLASSPATH', '')
 h2o_jvm_opts = ["-Dsys.ai.h2o.ext.rest.toggle.XGBoost=true", "-Dsys.ai.h2o.ext.core.toggle.XGBoost=true"]
 if h2o_java_version != '1.8':
     h2o_jvm_opts += ["--add-opens=java.base/java.lang=ALL-UNNAMED"]
-
 
 # Start H2O cloud
 print("Starting H2O cloud...")
@@ -39,7 +39,7 @@ cloud = run.H2OCloud(
     h2o_jar=os.path.abspath(h2o_jarfile),
     base_port=48000,
     xmx="4g",
-    cp="",
+    cp=h2o_jvm_cp,
     jvm_opts=h2o_jvm_opts,
     output_dir=results_dir,
     test_ssl=False,
