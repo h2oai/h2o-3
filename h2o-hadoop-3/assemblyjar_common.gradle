@@ -9,13 +9,13 @@ dependencies {
     api(project(':h2o-persist-hdfs')) {
         transitive = false
     }
-    api(project(':h2o-hive')) {
+    api(project(':h2o-hive-hadoop')) {
         transitive = false
     }
     api(project(":h2o-ext-krbstandalone")) {
         transitive = false // we just need hadoop-auth which is provided by the hadoop-client dependency
     }
-    api("org.apache.parquet:parquet-avro:${defaultParquetVersion}") // required by h2o-hive
+    api("org.apache.parquet:parquet-avro:${defaultParquetVersion}") // required by h2o-hive-hadoop
 
     // For standalone mode to work with MapR, this extra library needs to be
     // included, and it's not pulled in by the dependency stuff;  this must

@@ -1,7 +1,7 @@
 #!/usr/env/python
 import sys
 import os
-sys.path.insert(1, os.path.join("../../../h2o-py"))
+sys.path.insert(1, os.path.join("../../../../h2o-py"))
 from tests import pyunit_utils
 import h2o
 

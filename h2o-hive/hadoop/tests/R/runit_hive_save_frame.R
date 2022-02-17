@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../h2o-r/scripts/h2o-r-test-setup.R")
+source("../../../../h2o-r/scripts/h2o-r-test-setup.R")
 
 test.hive.save.frame <- function() {
     connection_url <- "jdbc:hive2://localhost:10000/default"

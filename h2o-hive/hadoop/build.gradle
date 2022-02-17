@@ -1,6 +1,6 @@
 apply plugin: 'java-library'
 
-description = 'H2O Generic MapReduce Driver for Hadoop'
+description = 'H2O Hive Integration for Hadoop'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8

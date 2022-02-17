@@ -3,7 +3,7 @@
 import sys
 import os
 import h2o
-sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
+sys.path.insert(1, os.path.join("..", "..", "..", "..", "h2o-py"))
 from h2o.utils.typechecks import (assert_is_type)
 from h2o.frame import H2OFrame
 from tests import pyunit_utils

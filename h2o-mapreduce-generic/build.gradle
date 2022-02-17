@@ -15,7 +15,7 @@ dependencies {
   api(project(':h2o-app')) {
     exclude module: "${defaultWebserverModule}"
   }
-  api(project(':h2o-hive')) {
+  api(project(':h2o-hive-hadoop')) {
     transitive = false
   }
   api(project(':h2o-persist-hdfs')) {
