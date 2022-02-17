@@ -10,7 +10,7 @@ expect_ggplot <- function(gg) {
     tryCatch({ggplot2::ggsave(file, plot = p)}, finally = unlink(file))
 }
 
-ice_plot_binary_score_form <- function() {
+ice_plot_test_binary_response_scale <- function() {
     train <- h2o.uploadFile(locate("smalldata/titanic/titanic_expanded.csv"))
     y <- "survived"
 
@@ -25,20 +25,20 @@ ice_plot_binary_score_form <- function() {
 
     for (col in cols_to_test) {
         if (col != "name") { # a string column
-            expect_ggplot(h2o.ice_plot(gbm, train, col, binary_score_format="logodds"))
-            expect_ggplot(h2o.ice_plot(gbm, train, col, binary_score_format="response" ))
+            expect_ggplot(h2o.ice_plot(gbm, train, col, binary_response_scale="logodds"))
+            expect_ggplot(h2o.ice_plot(gbm, train, col, binary_response_scale="response" ))
             expect_ggplot(h2o.ice_plot(gbm, train, col))
         }
     }
 
-    expect_error(h2o.ice_plot(gbm, train, col, binary_score_format="invalid_value"))
+    expect_error(h2o.ice_plot(gbm, train, col, binary_response_scale="invalid_value"))
 
     y <- "fare"
     gbm <- h2o.gbm(y = y,
     training_frame = train,
     seed = 1234,
     model_id = "my_awesome_model")
-    expect_error(h2o.ice_plot(gbm, train, col, binary_score_format="logodds"), "binary_score_format cannot be set to 'logodds' value for non-binomial models!")
+    expect_error(h2o.ice_plot(gbm, train, col, binary_response_scale="logodds"), "binary_response_scale cannot be set to 'logodds' value for non-binomial models!")
 
 }
 
@@ -67,6 +67,6 @@ ice_plot_display_mode <- function() {
 
 
 doSuite("Explanation Tests", makeSuite(
-    ice_plot_binary_score_form,
+    ice_plot_test_binary_response_scale,
     ice_plot_display_mode
 ))

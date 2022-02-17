@@ -2355,7 +2355,7 @@ is_binomial <- function(model) {
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
 #'                   Defaults to 30.
 #' @param show_pdp Option to turn on/off PDP line. Defaults to TRUE.
-#' @param binary_score_format Option for binary model to display (on the y-axis) the logodds instead of the actual
+#' @param binary_response_scale Option for binary model to display (on the y-axis) the logodds instead of the actual
 #'                          score. Can be one of: "response", "logodds". Defaults to "response".
 #'
 #' @return A ggplot2 object
@@ -2391,7 +2391,7 @@ h2o.ice_plot <- function(model,
                          target = NULL,
                          max_levels = 30,
                          show_pdp = TRUE,
-                         binary_score_format = c("response", "logodds")) {
+                         binary_response_scale = c("response", "logodds")) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -2405,10 +2405,10 @@ h2o.ice_plot <- function(model,
   models_info <- .process_models_or_automl(model, newdata, require_single_model = TRUE)
 
   is_binomial <- is_binomial(models_info$get_model(models_info$model))
-  binary_score_format <- match.arg(binary_score_format)
-  if (!is_binomial & binary_score_format == "logodds")
-    stop("binary_score_format cannot be set to 'logodds' value for non-binomial models!")
-  show_logodds <- is_binomial & binary_score_format == "logodds"
+  binary_response_scale <- match.arg(binary_response_scale)
+  if (!is_binomial & binary_response_scale == "logodds")
+    stop("binary_response_scale cannot be set to 'logodds' value for non-binomial models!")
+  show_logodds <- is_binomial & binary_response_scale == "logodds"
 
   with_no_h2o_progress({
     if (h2o.nlevels(newdata[[column]]) > max_levels) {

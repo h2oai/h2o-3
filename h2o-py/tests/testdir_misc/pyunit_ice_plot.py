@@ -11,7 +11,7 @@ import matplotlib.pyplot
 from tests import pyunit_utils
 from h2o.estimators import *
 
-def test_display_mode():
+def test_binary_response_scale():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
     y = "survived"
 
@@ -27,23 +27,23 @@ def test_display_mode():
     gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model")
     gbm.train(y=y, training_frame=train)
 
-    assert isinstance(gbm.ice_plot(train, 'title', binary_score_format="logodds").figure(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.ice_plot(train, 'title', binary_response_scale="logodds").figure(), matplotlib.pyplot.Figure)
     assert isinstance(gbm.ice_plot(train, 'age').figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     try:
-        gbm.ice_plot(train, 'title', binary_score_format="invalid_value")
+        gbm.ice_plot(train, 'title', binary_response_scale="invalid_value")
     except ValueError as e:
-        assert str(e) == "Unsupported value for binary_score_format!"
+        assert str(e) == "Unsupported value for binary_response_scale!"
 
     y = "fare"
     gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model")
     gbm.train(y=y, training_frame=train)
 
     try:
-        gbm.ice_plot(train, 'title', binary_score_format="logodds")
+        gbm.ice_plot(train, 'title', binary_response_scale="logodds")
     except ValueError as e:
-        assert str(e) == "binary_score_format cannot be set to 'logodds' value for non-binomial models!"
+        assert str(e) == "binary_response_scale cannot be set to 'logodds' value for non-binomial models!"
 
 
 def test_show_pdd():
@@ -75,6 +75,6 @@ def test_show_pdd():
 
 
 pyunit_utils.run_tests([
-    test_display_mode,
+    test_binary_response_scale,
     test_show_pdd
 ])

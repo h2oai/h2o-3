@@ -1239,7 +1239,7 @@ def ice_plot(
         colormap="plasma",  # type: str
         save_plot_path=None,  # type: Optional[str]
         show_pdp=True,  # type: bool
-        binary_score_format="response" # type: Literal["response", "logodds"]
+        binary_response_scale="response" # type: Literal["response", "logodds"]
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1259,7 +1259,7 @@ def ice_plot(
     :param colormap: colormap name
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :param show_pdp: option to turn on/off PDP line. Defaults to True.
-    :param binary_score_format: option for binary model to display (on the y-axis) the logodds instead of the actual
+    :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
     score. Can be one of: "response", "logodds". Defaults to "response".
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
@@ -1299,13 +1299,13 @@ def ice_plot(
         raise ValueError("String columns are not supported!")
 
     is_binomial = _is_binomial(model)
-    if (not is_binomial) and (binary_score_format == "logodds"):
-        raise ValueError("binary_score_format cannot be set to 'logodds' value for non-binomial models!")
+    if (not is_binomial) and (binary_response_scale == "logodds"):
+        raise ValueError("binary_response_scale cannot be set to 'logodds' value for non-binomial models!")
 
-    if binary_score_format not in ["logodds", "response"]:
-        raise ValueError("Unsupported value for binary_score_format!")
+    if binary_response_scale not in ["logodds", "response"]:
+        raise ValueError("Unsupported value for binary_response_scale!")
 
-    show_logodds = is_binomial and binary_score_format == "logodds"
+    show_logodds = is_binomial and binary_response_scale == "logodds"
 
     with no_progress():
         frame = frame.sort(model.actual_params["response_column"])
