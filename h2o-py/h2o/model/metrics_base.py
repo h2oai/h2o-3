@@ -1945,7 +1945,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
         >>> perf = uplift_model.model_performance()
-        >>> perf.uplift()
+        >>> perf.uplift_random()
         """
         assert metric in ['AUTO', 'qini', 'lift', 'gain']
 
