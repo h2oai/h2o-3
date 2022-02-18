@@ -7,4 +7,6 @@ dependencies {
         // Pull all dependencies to allow run directly from IDE or command line
         transitive = true
     }
+
+    testImplementation "junit:junit:${junitVersion}"
 }
