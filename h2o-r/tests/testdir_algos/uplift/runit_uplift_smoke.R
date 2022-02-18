@@ -8,7 +8,7 @@ test.uplift <- function() {
   mtries <- 6
   seed <- 42
   uplift_metrics <- c("KL", "ChiSquared", "Euclidean")
-  # set.seed(seed)
+  set.seed(seed)
 
   # Test data preparation for each implementation
   train <- sim_pte(n = 2000, p = 6, rho = 0, sigma = sqrt(2), beta.den = 4)

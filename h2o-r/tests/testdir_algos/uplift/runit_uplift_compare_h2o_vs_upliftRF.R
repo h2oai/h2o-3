@@ -68,8 +68,6 @@ test.uplift.vs.h2oUplift <- function() {
     )
 
     print(modelh2o)
-    print(modelh2o.auuc())
-    
 
     # predict upliftRF on new data for treatment group
     print("H2O uplift predict on test data")

@@ -1215,7 +1215,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' train$conversion <- as.factor(train$conversion)
 #' 
 #' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
-#'                                 trees=10, max_depth=5, treatment_column="treatment", auuc_type="AUTO")
+#'                                 ntrees=10, max_depth=5, treatment_column="treatment", auuc_type="AUTO")
 #' perf <- h2o.performance(model, train=TRUE) 
 #' h2o.auuc(perf)
 #' }
@@ -1347,8 +1347,7 @@ h2o.auuc_table <- function(object, train=FALSE, valid=FALSE) {
 #' train$conversion <- as.factor(train$conversion)
 #' 
 #' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
-#'                                        ntrees=10, max_depth=5, treatment_column="treatment", 
-#'                                        auuc_type="AUTO")
+#'                                        ntrees=10, max_depth=5, treatment_column="treatment", auuc_type="AUTO")
 #' perf <- h2o.performance(model, train=TRUE) 
 #' h2o.thresholds_and_metric_scores(perf)
 #' }
@@ -1402,8 +1401,7 @@ h2o.thresholds_and_metric_scores <- function(object, train=FALSE, valid=FALSE) {
 #' train$conversion <- as.factor(train$conversion)
 #' 
 #' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
-#'                                        ntrees=10, max_depth=5, treatment_column="treatment", 
-#'                                        auuc_type="AUTO")
+#'                                        ntrees=10, max_depth=5, treatment_column="treatment", auuc_type="AUTO")
 #' perf <- h2o.performance(model, train=TRUE) 
 #' h2o.qini(perf)
 #' }
@@ -1459,8 +1457,7 @@ h2o.qini <- function(object, train=FALSE, valid=FALSE) {
 #' train$conversion <- as.factor(train$conversion)
 #' 
 #' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
-#'                                        ntrees=10, max_depth=5, treatment_column="treatment", 
-#'                                        auuc_type="AUTO")
+#'                                        ntrees=10, max_depth=5, treatment_column="treatment", auuc_type="AUTO")
 #' perf <- h2o.performance(model, train=TRUE) 
 #' h2o.aecu(perf)
 #' }
@@ -1519,8 +1516,7 @@ h2o.aecu <- function(object, train=FALSE, valid=FALSE, metric="qini") {
 #' train$conversion <- as.factor(train$conversion)
 #' 
 #' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
-#'                                        ntrees=10, max_depth=5, treatment_column="treatment", 
-#'                                        auuc_type="AUTO")
+#'                                        ntrees=10, max_depth=5, treatment_column="treatment", auuc_type="AUTO")
 #' perf <- h2o.performance(model, train=TRUE) 
 #' h2o.aecu_table(perf)
 #' }
