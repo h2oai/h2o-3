@@ -65,6 +65,7 @@ public class GAMISplineTest extends TestUtil {
             params._bs = new int[]{2,2,2};
             params._family = gaussian;
             params._response_column = "C4";
+            params._spline_orders = new int[]{2,2,2};
             params._max_iterations = 1;
             params._savePenaltyMat = true;
             params._gam_columns = gamCols;

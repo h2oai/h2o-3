@@ -132,11 +132,11 @@ public class GamBasicISplineTest extends TestUtil {
      */
     @Test
     public void testISplines() {
-/*        double[] testValues = DoubleStream
+        double[] testValues = DoubleStream
                 .generate(ThreadLocalRandom.current()::nextDouble)
                 .limit(50)
-                .toArray();*/
-        double[] testValues = new double[]{0.8646810812099925};
+                .toArray();
+        testValues = new double[]{0.4007055016805433};
         double[] knots = new double[]{0, 0.3, 0.5, 0.6, 1};
         int order = 1;
         ISplines ispline1 = new ISplines(order, knots);
@@ -221,13 +221,11 @@ public class GamBasicISplineTest extends TestUtil {
                 if (val >= knots.get(0) && val < knots.get(1) && knots.get(1)!=knots.get(0))
                     return (val-knots.get(0))/(knots.get(1)-knots.get(0));
             } else if (_order == 2) {
-                if (val >= knots.get(0) && val < knots.get(1) && knots.get(1)!=knots.get(0))
-                    return (val-knots.get(0))*(val-knots.get(0))/((knots.get(2)-knots.get(0))*(knots.get(1)-knots.get(0)));
+                if (val >= knots.get(0) && val < knots.get(1) && knots.get(1)!=knots.get(0)) {
+                    return 2 * (val*val/2-knots.get(0)*knots.get(0)/2 - knots.get(0) * (val-knots.get(0)))/((knots.get(2) - knots.get(0)) * (knots.get(1) - knots.get(0)));
+                }
                 if (val >= knots.get(1) && val < knots.get(2) && knots.get(2)!=knots.get(1)) {
-                    double part1 = (val-knots.get(0))*(knots.get(2)-val)/((knots.get(2)-knots.get(0))*(knots.get(2)-knots.get(1)));
-                    double part2 = (knots.get(3)-val)*(val-knots.get(1))/((knots.get(3)-knots.get(1))*(knots.get(2)-knots.get(1)));
-                    double part3 = (val-knots.get(1))*(val-knots.get(1))/((knots.get(3)-knots.get(1))*(knots.get(2)-knots.get(1)));
-                    return part1+part2+part3;
+                    return 2*(knots.get(2)*(val-knots.get(1))-val*val/2+knots.get(1)*knots.get(1)/2)/((knots.get(2)-knots.get(1))*(knots.get(2)-knots.get(0)));
                 }
             } else if (_order == 3) {
                 if (val < knots.get(0))

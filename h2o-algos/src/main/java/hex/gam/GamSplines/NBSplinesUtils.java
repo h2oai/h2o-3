@@ -61,4 +61,36 @@ public class NBSplinesUtils {
         }
         return oneOverDenominator;
     }
+
+    /**
+     * Given two polynomial coefficients represented as double arrays, multiply and combine them into one array
+     * 
+     * @param coeff1
+     * @param coeff2
+     * @return
+     */
+    public static double[] combineCoef(double[] coeff1, double[] coeff2) {
+        int firstLen = coeff1.length;
+        int secondLen = coeff2.length;
+        int combinedLen = firstLen*secondLen;
+        int[] firstOrder = IntStream.rangeClosed(0, firstLen-1).toArray();
+        int[] secondOrder = IntStream.rangeClosed(0, secondLen-1).toArray();
+        int highestOrder = firstLen+secondLen-2;
+        double[] combinedCoefficients = new double[highestOrder+1]; // start with order 0
+        List<Double> combinedC = new ArrayList<>();
+        List<Integer> combinedOrder = new ArrayList<>();
+        for (int firstIndex=0; firstIndex < firstLen; firstIndex++) {
+            for (int secondIndex=0; secondIndex < secondLen; secondIndex++) {
+                double tempValue = coeff1[firstIndex]*coeff2[secondIndex];
+                combinedC.add(tempValue);
+                int tempOrder = firstOrder[firstIndex]+secondOrder[secondIndex];
+                combinedOrder.add(tempOrder);
+            }
+        }
+        for (int index = 0; index < combinedLen; index++) {
+            combinedCoefficients[combinedOrder.get(index)] += combinedC.get(index);
+    
+        }
+        return combinedCoefficients;
+    }
 }

@@ -44,7 +44,7 @@ public class ISplines {
             else if (val >= _iSplines[basisInd]._knots.get(Math.min(_order, _iSplines[basisInd]._knots.size()-1)))
                 gamifiedResults[basisInd] = 1;
             else 
-                gamifiedResults[basisInd] = sumNBSpline(basisInd, val);
+                gamifiedResults[basisInd] = sumNBSpline(basisInd+1, val);   // NBspline index is I-spline index-1
         }
     }
     

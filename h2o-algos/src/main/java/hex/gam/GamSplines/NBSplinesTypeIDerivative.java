@@ -19,24 +19,37 @@ public class NBSplinesTypeIDerivative {
     private final double _commonConst;
     private double[] _leftCoeff;
     private double[] _rightCoeff;
-    private double[][] _coeffs; // store coefficients for each knot intervals
+    private double[][] _coeffs; // store coefficients for basis function of _index for all knot intervals
     private NBSplinesTypeI _left;
     private NBSplinesTypeI _rite;
-    
-    
-    public NBSplinesTypeIDerivative(int order, int basisIndex, List<Double> knots) {
+
+    /**
+     * 
+     * @param basisIndex
+     * @param order
+     * @param knots : list containing full list of knots including duplicate
+     */
+    public NBSplinesTypeIDerivative(int basisIndex, int order, List<Double> knots) {
         _order = order;
         _index = basisIndex;
         _knots = extractKnots(_index, order, knots);;
-        double part1 = (_order-1)==0 ? 0 : _order/(_order-1.0);
-        _commonConst = part1*((_knots.get(_order) == _knots.get(0)) ? 0 : 1.0/(_knots.get(_order)-_knots.get(0)));
-        _leftCoeff = new double[]{-_knots.get(0),1};
-        _rightCoeff = new double[]{_knots.get(_order), -1};
-        _left = formBasis(knots, _order-1, basisIndex, 0);
-        _rite = formBasis(knots, _order-1, basisIndex, 1);
+        _commonConst = _order/(_order-1.0)*((_knots.get(_order) == _knots.get(0)) ? 0 : 1.0/(_knots.get(_order)-_knots.get(0)));
+        _leftCoeff = new double[]{1};
+        _rightCoeff = new double[]{1};
+        _left = formBasis(_knots, _order-1, basisIndex, 0);
+        _rite = formBasis(_knots, _order-1, basisIndex, 1);
         _coeffs = extractCoeff(_left, _rite, knots, basisIndex);
     }
 
+    /***
+     * This function extracts the coefficients for the derivative of a NBSplineTypeI.
+     * 
+     * @param left
+     * @param rite
+     * @param knots : list containing full knots with duplications
+     * @param basisIndex index refers to the starting location of knots in knots
+     * @return
+     */
     public static double[][] extractCoeff(NBSplinesTypeI left, NBSplinesTypeI rite, List<Double> knots, int basisIndex) {
         double[][] coeffs = new double[knots.size()-1][];
         return coeffs;
@@ -56,13 +69,29 @@ public class NBSplinesTypeIDerivative {
 
         int totKnots = knots.length+order-2;
         List<Double> knotsWithDuplicates = fillKnots(knots, order);
+        NBSplinesTypeIDerivative[] allDerivs = formDerivatives(numBasis, order, knotsWithDuplicates);
         double[][] penaltyMat = new double[numBasis][numBasis];
         for (int i=0; i < numBasis; i++) {
             for (int j = i; j < numBasis; j++) {
-
+                penaltyMat[i][j] = formDerivateProduct(i, j, order, knotsWithDuplicates);
+                penaltyMat[j][i] = penaltyMat[i][j];
             }
         }
         // 
         return penaltyMat;
     }
+    
+    public static NBSplinesTypeIDerivative[] formDerivatives(int numBasis, int order, List<Double> fullKnots) {
+        NBSplinesTypeIDerivative[] allDerivs = new NBSplinesTypeIDerivative[numBasis];
+        for (int index=0; index<numBasis; index++)
+            allDerivs[index] = new NBSplinesTypeIDerivative(index, order, fullKnots);
+        return allDerivs;
+    }
+    
+    public static double formDerivateProduct(int firstIndex, int secondIndex, int order, List<Double> fullKnots) {
+        NBSplinesTypeIDerivative firstDeriv = new NBSplinesTypeIDerivative(firstIndex, order, fullKnots);
+        NBSplinesTypeIDerivative secondDeriv = new NBSplinesTypeIDerivative(secondIndex, order, fullKnots);
+        return 0;
+    }
+    
 }
