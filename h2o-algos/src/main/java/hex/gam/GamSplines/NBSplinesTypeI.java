@@ -50,6 +50,7 @@ public class NBSplinesTypeI {
         } else {
             
         }
+        return null;
     }
 
     public static NBSplinesTypeI formBasis(List<Double> knots, int order, int basisIndex, int offset) {

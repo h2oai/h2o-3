@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GamBasicISplineTest extends TestUtil {
-    public static final double TEST_TOLERANCE = 1e-12;
+    public static final double EPS = 1e-11;
 
     /***
      * Given a knot sequence length and a spline order, I want to make sure the correct number of duplication is 
@@ -47,9 +47,9 @@ public class GamBasicISplineTest extends TestUtil {
                 List<Double> duplicatedKnots = fillKnots(knots, nOrder[orderIndex]);
                 assertTrue(duplicatedKnots.size() == nSizes[sizeIndex]+2*nOrder[orderIndex]-2); // correct length
                 for (int index=1; index < nOrder[orderIndex]; index++) { // duplication at beginning and end are correct
-                    assertTrue(Math.abs(duplicatedKnots.get(0)-duplicatedKnots.get(index)) < TEST_TOLERANCE);
+                    assertTrue(Math.abs(duplicatedKnots.get(0)-duplicatedKnots.get(index)) < EPS);
                     assertTrue(Math.abs(duplicatedKnots.get(duplicatedKnots.size()-1)-
-                            duplicatedKnots.get(duplicatedKnots.size()-index-1)) < TEST_TOLERANCE);
+                            duplicatedKnots.get(duplicatedKnots.size()-index-1)) < EPS);
                 }
             }
         }
@@ -77,7 +77,7 @@ public class GamBasicISplineTest extends TestUtil {
                                                 .mapToDouble(Double::doubleValue)
                                                 .toArray();
                     double[] manualKnots = extractKnotsManual(basisIndex, nOrder[orderIndex], duplicatedKnots);
-                    assertArrayEquals(basisKnots, manualKnots, TEST_TOLERANCE);
+                    assertArrayEquals(basisKnots, manualKnots, EPS);
                 }
             }
         }
@@ -136,7 +136,7 @@ public class GamBasicISplineTest extends TestUtil {
                 .generate(ThreadLocalRandom.current()::nextDouble)
                 .limit(50)
                 .toArray();
-        testValues = new double[]{0.4007055016805433};
+        //testValues = new double[]{0.2222634642726365, 0.4222634642726365, 0.6222634642726365};
         double[] knots = new double[]{0, 0.3, 0.5, 0.6, 1};
         int order = 1;
         ISplines ispline1 = new ISplines(order, knots);
@@ -160,7 +160,7 @@ public class GamBasicISplineTest extends TestUtil {
         for (int dataIndex=0; dataIndex < data.length; dataIndex++) {
             double[] mGamifiedValues = mspline.evaluate(data[dataIndex]);
             ispline.gamifyVal(iGamifiedValues, data[dataIndex]);
-            assertArrayEquals(mGamifiedValues, iGamifiedValues, TEST_TOLERANCE);
+            assertArrayEquals(mGamifiedValues, iGamifiedValues, EPS);
         }
     }
 
@@ -179,7 +179,7 @@ public class GamBasicISplineTest extends TestUtil {
             for (int index = 0; index < manualSpline._numBasis; index++)    // manually formed gamified row
                 manualGamifiedValues[index] = manualSpline._bSplines[index].evaluate(values[dataIndex]);
             bpSpline.gamify(gamifiedValues, values[dataIndex]);
-            assertArrayEquals(manualGamifiedValues, gamifiedValues, TEST_TOLERANCE);
+            assertArrayEquals(manualGamifiedValues, gamifiedValues, EPS);
         }
     }
 
@@ -221,62 +221,69 @@ public class GamBasicISplineTest extends TestUtil {
                 if (val >= knots.get(0) && val < knots.get(1) && knots.get(1)!=knots.get(0))
                     return (val-knots.get(0))/(knots.get(1)-knots.get(0));
             } else if (_order == 2) {
-                if (val >= knots.get(0) && val < knots.get(1) && knots.get(1)!=knots.get(0)) {
-                    return 2 * (val*val/2-knots.get(0)*knots.get(0)/2 - knots.get(0) * (val-knots.get(0)))/((knots.get(2) - knots.get(0)) * (knots.get(1) - knots.get(0)));
+                if (val >= knots.get(0) && val < knots.get(1) && Math.abs(knots.get(1)-knots.get(0)) > 1e-12) {
+                    return 2 * (val*val/2-knots.get(0)*knots.get(0)/2 - knots.get(0) * (val-knots.get(0)))/
+                            ((knots.get(2) - knots.get(0)) * (knots.get(1) - knots.get(0)));
                 }
                 if (val >= knots.get(1) && val < knots.get(2) && knots.get(2)!=knots.get(1)) {
-                    return 2*(knots.get(2)*(val-knots.get(1))-val*val/2+knots.get(1)*knots.get(1)/2)/((knots.get(2)-knots.get(1))*(knots.get(2)-knots.get(0)));
+                    double temp=0;
+                    if (Math.abs(knots.get(1)-knots.get(0))> 1e-12)
+                        temp = 2 * (knots.get(1)*knots.get(1)/2-knots.get(0)*knots.get(0)/2 - knots.get(0) * 
+                                (knots.get(1)-knots.get(0)))/((knots.get(2) - knots.get(0)) * (knots.get(1) - knots.get(0)));
+                    temp += 2*(knots.get(2)*(val-knots.get(1))-val*val/2+knots.get(1)*knots.get(1)/2)/
+                            ((knots.get(2)-knots.get(1))*(knots.get(2)-knots.get(0)));
+                    return temp;
                 }
             } else if (_order == 3) {
                 if (val < knots.get(0))
                     return 0;
                 if (val >= knots.get(0) && val < knots.get(1) && knots.get(0)!=knots.get(1))
                     return n4Part1(_iSplines[basisInd]._knots, val);
-                if (val >= knots.get(1) && val < knots.get(2) && knots.get(1) != knots.get(2))
-                    return n4Part2(_iSplines[basisInd]._knots, val) + n4Part1(_iSplines[basisInd+1]._knots, val);
-                if (val >= knots.get(2) && val < knots.get(3) && knots.get(2)!=knots.get(3))
-                    return n4Part3(_iSplines[basisInd]._knots, val)+n4Part2(_iSplines[basisInd+1]._knots, val)+n4Part1(_iSplines[basisInd+2]._knots, val);
+                if (val >= knots.get(1) && val < knots.get(2) && knots.get(1) != knots.get(2)) {
+                    return n4Part2(_iSplines[basisInd]._knots, val) + n4Part1(_iSplines[basisInd]._knots, _iSplines[basisInd]._knots.get(1)-EPS/10);
+                }
+                if (val >= knots.get(2) && val < knots.get(3) && knots.get(2)!=knots.get(3)) {
+                    return n4Part3(_iSplines[basisInd]._knots, val) + n4Part2(_iSplines[basisInd]._knots, _iSplines[basisInd]._knots.get(2)-EPS/10)
+                            + n4Part1(_iSplines[basisInd]._knots, _iSplines[basisInd]._knots.get(1)-EPS/10);
+                }
             }
             return 0;
         }
         
         public double n4Part1(List<Double> knots, double val) {
             if (val >= knots.get(0) && val < knots.get(1) && knots.get(1)!=knots.get(0))
-            return (val-knots.get(0))*(val-knots.get(0))*(val-knots.get(0))
-                    /((knots.get(3)-knots.get(0))*(knots.get(2)-knots.get(0))*(knots.get(1)-knots.get(0)));
+            return (val*val*val-knots.get(0)*knots.get(0)*knots.get(0)-3*knots.get(0)*(val*val-knots.get(0)*knots.get(0))
+                    +3*knots.get(0)*knots.get(0)*(val-knots.get(0)))/((knots.get(3)-knots.get(0))*(knots.get(2)-
+                    knots.get(0))*(knots.get(1)-knots.get(0)));
             else
                 return 0;
         }
         
-        public double n4Part2(List<Double> knots, double value) {
-            if (value >= knots.get(1) && value < knots.get(2) &&  knots.get(1) != knots.get(2)) {
-                double part1 = (value-knots.get(0)) * (value-knots.get(0)) *(knots.get(2)-value)
-                        /((knots.get(3)-knots.get(0))*(knots.get(2)-knots.get(0))
-                        *(knots.get(2)-knots.get(1)));
-                double part2 = (value-knots.get(0))*(value-knots.get(1))*(knots.get(3)-value)
-                        /((knots.get(3)-knots.get(0))*(knots.get(3)-knots.get(1))
-                        *(knots.get(2)-knots.get(1)));
-                double part3 = (knots.get(4)-value)*(value-knots.get(1))*(value-knots.get(1))
-                        /((knots.get(4)-knots.get(1))*(knots.get(2)-knots.get(1))
-                        *(knots.get(3)-knots.get(1)));
-                return part1+part2+part3;
+        public double n4Part2(List<Double> knots, double val) {
+            if (val >= knots.get(1) && val < knots.get(2)) {
+                double denom1 = (knots.get(3)-knots.get(0))*(knots.get(2)-knots.get(1))*(knots.get(2)-knots.get(0));
+                double part1 = knots.get(2)==knots.get(1)?0:(1.5*knots.get(2)*(val*val-knots.get(1)*knots.get(1))-3*knots.get(0)*knots.get(2)
+                        *(val-knots.get(1))-(val*val*val-knots.get(1)*knots.get(1)*knots.get(1))+1.5*knots.get(0)*
+                        (val*val-knots.get(1)*knots.get(1)))/denom1;
+                double denom2 = (knots.get(3)-knots.get(1))*(knots.get(2)-knots.get(1))*(knots.get(3)-knots.get(0));
+                double part2 = knots.get(2)==knots.get(1)?0:(1.5*knots.get(3)*(val*val-knots.get(1)*knots.get(1))-
+                        (val*val*val-knots.get(1)*knots.get(1)*knots.get(1))-3*knots.get(1)*knots.get(3)*(val-knots.get(1))
+                        +1.5*knots.get(1)*(val*val-
+                        knots.get(1)*knots.get(1)))
+                        /denom2;
+
+                return part1+part2;
             } else {
                 return 0;
             }
         }
         
-        public double n4Part3(List<Double> knots, double value) {
-            if (value >= knots.get(2) && value < knots.get(3) && knots.get(2)!=knots.get(3)) {
-                double part1 = (value-knots.get(0))*(knots.get(3)-value)*(knots.get(3)-value)
+        public double n4Part3(List<Double> knots, double val) {
+            if (val >= knots.get(2) && val < knots.get(3) && knots.get(2)!=knots.get(3)) {
+                return (3*knots.get(3)*knots.get(3)*(val-knots.get(2))-3*knots.get(3)*(val*val-knots.get(2)
+                        *knots.get(2))+val*val*val-knots.get(2)*knots.get(2)*knots.get(2))
                         /((knots.get(3)-knots.get(0))*(knots.get(3)-knots.get(1))
                         *(knots.get(3)-knots.get(2)));
-                double part2 = (knots.get(4)-value)*(value-knots.get(1))*(knots.get(3)-value)
-                        /((knots.get(4)-knots.get(1))*(knots.get(3)-knots.get(1))
-                        *(knots.get(3)-knots.get(2)));
-                double part3 = (knots.get(4)-value)*(value-knots.get(2))*(knots.get(4)-value)
-                        /((knots.get(4)-knots.get(1))*(knots.get(4)-knots.get(2))
-                        *(knots.get(3)-knots.get(2)));
-                return part1+part2+part3;
             } else {
                 return 0;
             }
