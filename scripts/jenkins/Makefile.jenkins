@@ -309,6 +309,8 @@ test-package-java:
 		h2o-extensions/steam/build/libs/h2o-ext-steam*.jar \
 		h2o-test-support/src/ \
 		h2o-test-support/build/libs/h2o-test-support-*.jar \
+		h2o-hive/common/src/ \
+		h2o-hive/common/build/libs/h2o-hive-common-*.jar \
 		h2o-k8s/src/ \
 		h2o-k8s/build/libs/h2o-k8s-*.jar \
 		h2o-k8s/tests/ \
@@ -463,7 +465,7 @@ test-package-hadoop:
 		h2o-hadoop-2/tests/python/ h2o-hadoop-2/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-3/tests/python/ h2o-hadoop-3/h2o-*-assembly/build/libs/h2odriver.jar \
 		h2o-hadoop-common/tests/python/ h2o-hadoop-common/tests/R/ \
-		h2o-hive/tests/python/ h2o-hive/tests/R/
+		h2o-hive-hadoop/tests/python/ h2o-hive-hadoop/tests/R/
 
 ifeq ($(HIVE_VERSION_MAJOR),3)
 test-hadoop-common-smoke-hive-basic:
@@ -472,11 +474,11 @@ test-hadoop-common-smoke-hive-spnego:
 	echo "Hive version 3 installed, not running Hive tests."
 else
 test-hadoop-common-smoke-hive-basic:
-	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
-	cd h2o-hive/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+	cd h2o-hive-hadoop/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
+	cd h2o-hive-hadoop/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
 test-hadoop-common-smoke-hive-spnego:
-	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
-	cd h2o-hive/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+	cd h2o-hive-hadoop/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+	cd h2o-hive-hadoop/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 endif
 
 test-hadoop-common-smoke-basic:

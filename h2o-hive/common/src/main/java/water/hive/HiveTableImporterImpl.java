@@ -7,17 +7,11 @@ import water.Job;
 import water.Key;
 import water.api.ImportHiveTableHandler;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.parser.CsvParser;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static water.fvec.Vec.*;
 import static water.parser.DefaultParserProviders.GUESS_INFO;
@@ -28,17 +22,35 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
 
   private static final Logger LOG = Logger.getLogger(HiveTableImporterImpl.class);
 
+  private List<HiveMetadataSource> _metadataSources;
+  
   @Override
   public String getExtensionName() {
     return NAME;
   }
-  
-  private HiveMetaData getMetaDataClient(String database) {
-    if (database != null && database.startsWith("jdbc:")) {
-      return new JdbcHiveMetadata(database);
-    } else {
-      return new DirectHiveMetadata(database);
+
+  @Override
+  public void init() {
+    _metadataSources = findMetadataSources();
+  }
+
+  static synchronized List<HiveMetadataSource> findMetadataSources() {
+    List<HiveMetadataSource> sources = new LinkedList<>();
+    ServiceLoader<HiveMetadataSource> extensionsLoader = ServiceLoader.load(HiveMetadataSource.class);
+    for (HiveMetadataSource src : extensionsLoader) {
+      sources.add(src);
     }
+    Collections.sort(sources);
+    return sources;
+  }
+
+  private HiveMetaData getMetaDataClient(String database) {
+    for (HiveMetadataSource src : _metadataSources) {
+      if (src.canHandle(database)) {
+        return src.makeMetadata(database);
+      }
+    }
+    throw new IllegalArgumentException("No implementation is available to handle database: " + database + ".");
   }
 
   public Job<Frame> loadHiveTable(

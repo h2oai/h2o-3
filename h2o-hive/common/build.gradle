@@ -1,0 +1,21 @@
+apply plugin: 'java-library'
+
+description = 'H2O Hive Integration for Hadoop'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+compileJava {
+  options.debug = true
+}
+
+dependencies {
+  api project(":h2o-core")
+  // the versions here are not important - user will provide the correct versions at runtime
+  compileOnly "org.apache.hive:hive-jdbc:1.1.0-cdh5.10.0"
+
+  testImplementation "junit:junit:${junitVersion}"
+  testImplementation project(':h2o-test-support')
+  testRuntimeOnly project(":h2o-parquet-parser")
+  testRuntimeOnly project(":${defaultWebserverModule}")
+}

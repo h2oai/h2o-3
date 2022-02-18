@@ -3,7 +3,6 @@ package water.hive;
 import org.apache.log4j.Logger;
 import water.jdbc.SQLManager;
 import water.util.JSONUtils;
-import water.util.Log;
 
 import java.sql.*;
 import java.util.ArrayList;
