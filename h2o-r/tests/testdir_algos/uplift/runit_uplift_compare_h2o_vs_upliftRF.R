@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 library(uplift)
 
 
-test.uplift.vs.h2oUplit <- function() {
+test.uplift.vs.h2oUplift <- function() {
   ntrees <- 10
   mtries <- 6
   seed <- 42
@@ -68,6 +68,8 @@ test.uplift.vs.h2oUplit <- function() {
     )
 
     print(modelh2o)
+    print(modelh2o.auuc())
+    
 
     # predict upliftRF on new data for treatment group
     print("H2O uplift predict on test data")
@@ -84,4 +86,4 @@ test.uplift.vs.h2oUplit <- function() {
   }
 }
 
-doTest("Uplift Random Forest Test: Test H2O RF uplift against uplift.upliftRF", test.uplift.vs.h2oUplit)
+doTest("Uplift Random Forest Test: Test H2O RF uplift against uplift.upliftRF", test.uplift.vs.h2oUplift)

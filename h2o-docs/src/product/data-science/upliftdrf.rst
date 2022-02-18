@@ -319,9 +319,12 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     
     # Get Qini value
     print(h2o.qini(perf))
+    
+    # Get AECU value
+    print(h2o.aecu(perf))
         
-    # Get AECU values in a table
-    print(perf.aecu_table())
+    # Get all AECU values in a table
+    print(h2o.aecu_table(perf))
     
     
    .. code-tab:: python
