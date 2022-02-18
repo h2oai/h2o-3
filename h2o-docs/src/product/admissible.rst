@@ -52,7 +52,7 @@ The interface is designed to be simple and aligned with the standard modeling in
    .. code-tab:: python
 
         # Generate and plot the infogram
-        ig = H2OInfoGram()
+        ig = H2OInfogram()
         ig.train(x=x, y=y, training_frame=train)
         ig.plot()
 
@@ -255,12 +255,14 @@ The code below generates an infogram, and we plot the infogram and view the data
 
         h2o.init()
                 
-        # Import hmda dataset
+        # Import HMDA dataset
         f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
         col_types <- list(by.col.name = c("high_priced"), 
                           types = c("factor"))
         df <- h2o.importFile(path = f, col.types = col_types)
 
+        # We will split the data so that we can test/compare performance
+        # of admissible vs non-admissible models later
         splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
         train <- splits[[1]]
         test <- splits[[2]]
@@ -297,7 +299,7 @@ The code below generates an infogram, and we plot the infogram and view the data
 
         h2o.init()
 
-        # Import credit dataset
+        # Import HDMA dataset
         f = "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
         col_types = {'high_priced': "enum"}
         df = h2o.import_file(path=f, col_types=col_types)
@@ -358,12 +360,12 @@ Using the HMDA infogram example above, we can extend the infogram analysis to ev
    .. code-tab:: r R
 
         # Building on the HMDA code as above, we train and evaluate an Admissible GBM and 
-        # compare that with a GBM trained on all un-protected features:
+        # compare that with a GBM trained on all unprotected features:
 
-        # Admissible features
+        # Admissible columns
         acols <- ig@admissible_features
 
-        # Un-protected columns
+        # Unprotected columns
         ucols <- setdiff(x, pcols)
 
         # Train an Admissible GBM
@@ -388,17 +390,16 @@ Using the HMDA infogram example above, we can extend the infogram analysis to ev
    .. code-tab:: python
  
         # Building on the HMDA code as above, we train and evaluate an Admissible GBM and 
-        # compare that with a GBM trained on all un-protected features:
+        # compare that with a GBM trained on all unprotected features:
 
         # Admissible columns
         acols = ig.get_admissible_features()
         
-        # Un-protected columns
+        # Unprotected columns
         ucols = list(set(x).difference(pcols))
         
-        from h2o.estimators.gbm import H2OGradientBoostingEstimator
-
         # Train an Admissible GBM
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
         agbm = H2OGradientBoostingEstimator(seed=1)
         agbm.train(x=acols, y=y, training_frame=train)
 
@@ -424,7 +425,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
 .. tabs::
    .. code-tab:: r R
 
-        # Building on the HMDA infogram code, we execute AutoML with all un-protected features, 
+        # Building on the HMDA infogram code, we execute AutoML with all unprotected features, 
         # and then we run AutoML with only the admissible features:
 
         # Admissible AutoML
@@ -433,7 +434,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
                            max_runtime_secs = 60*10, 
                            seed = 1)
 
-        # Un-protected AutoML
+        # Unprotected AutoML
         aml <- h2o.automl(x = ucols, y = y, 
                           training_frame = train,
                           max_runtime_secs = 60*10, 
@@ -443,13 +444,13 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
         h2o.auc(h2o.performance(aaml@leader, test))
         # 0.8264549
 
-        # Un-protected AutoML test AUC
+        # Unprotected AutoML test AUC
         h2o.auc(h2o.performance(aml@leader, test))                     
         # 0.8501232
 
    .. code-tab:: python
  
-        # Building on the HMDA infogram code, we execute AutoML with all un-protected features, 
+        # Building on the HMDA infogram code, we execute AutoML with all unprotected features, 
         # and then we run AutoML with only the admissible features:
 
         from h2o.automl import H2OAutoML
@@ -458,7 +459,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
         aaml = H2OAutoML(max_runtime_secs=60*10, seed=1)
         aaml.train(x=acols, y=y, training_frame=train)
 
-        # Un-protected AutoML
+        # Unprotected AutoML
         aml = H2OAutoML(max_runtime_secs=60*10, seed=1)
         aml.train(x=ucols, y=y, training_frame=train)
 
@@ -466,7 +467,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
         aaml.leader.model_performance(test).auc()
         # 0.8264549
 
-        # Un-protected AutoML test AUC
+        # Unprotected AutoML test AUC
         aml.leader.model_performance(test).auc()
         # 0.8501232
 
