@@ -21,7 +21,7 @@ class H2ORegressionModel(ModelBase):
 
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
-        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig
 
         :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure()).
 

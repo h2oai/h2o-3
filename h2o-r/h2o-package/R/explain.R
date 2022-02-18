@@ -2340,6 +2340,7 @@ h2o.pd_multi_plot <- function(object,
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
 #'                   Defaults to 30.
 #' @param show_pdp Option to turn on/off PDP line. Defaults to TRUE.
+#' @param centered A boolean whether to center curves around 0 at the first valid x value or not. Defaults to FALSE.
 #'
 #' @return A ggplot2 object
 #' @examples
@@ -2373,7 +2374,8 @@ h2o.ice_plot <- function(model,
                          column,
                          target = NULL,
                          max_levels = 30,
-                         show_pdp = TRUE) {
+                         show_pdp = TRUE,
+                         centered = FALSE) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -2396,8 +2398,12 @@ h2o.ice_plot <- function(model,
               column, "\" feature.") }
 
     margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
-    if (h2o.isfactor(newdata[[column]]))
+    is_factor <- is.factor(newdata[[column]])
+    if (is_factor) {
       margin <- ggplot2::margin(16.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
+      if (centered)
+        warning("Centering is not supported for factor columns!")
+    }
 
     quantiles <- order(as.data.frame(newdata[[models_info$y]])[[models_info$y]])
     quantiles <- quantiles[c(1, round((seq_len(11) - 1) * length(quantiles) / 10))]
@@ -2412,12 +2418,17 @@ h2o.ice_plot <- function(model,
         row_index = as.integer(idx),
         plot = FALSE,
         targets = target,
-        nbins = if (is.factor(newdata[[column]])) {
+        nbins = if (is_factor) {
           h2o.nlevels(newdata[[column]]) + 1
         } else {
           20
         }
       ))
+      y_label <- "Response"
+      if (!is_factor && centered) {
+        tmp[["mean_response"]] <- tmp[["mean_response"]] - tmp[["mean_response"]][1]
+        y_label <- "Response difference"
+      }
       tmp[["name"]] <- sprintf("%dth Percentile", i * 10)
       i <- i + 1
       results <- rbind(results, tmp[, c(column, "name", "mean_response")])
@@ -2441,30 +2452,33 @@ h2o.ice_plot <- function(model,
     y_range <- range(results$mean_response)
 
     if (show_pdp == TRUE) {
-      pdp <-
-        as.data.frame(h2o.partialPlot(models_info$get_model(models_info$model),
-                                      newdata,
-                                      column,
-                                      plot = FALSE,
-                                      targets = target,
-                                      nbins = if (is.factor(newdata[[column]])) {
-                                        h2o.nlevels(newdata[[column]]) + 1
-                                      } else {
-                                        20
-                                      }
-        ))
-      pdp[["name"]] <- "mean response"
-      names(pdp) <- make.names(names(pdp))
+        pdp <-
+          as.data.frame(h2o.partialPlot(models_info$get_model(models_info$model),
+                                        newdata,
+                                        column,
+                                        plot = FALSE,
+                                        targets = target,
+                                        nbins = if (is_factor) {
+                                          h2o.nlevels(newdata[[column]]) + 1
+                                        } else {
+                                          20
+                                        }
+          ))
+        if (!is_factor && centered) {
+            pdp[["mean_response"]] <- pdp[["mean_response"]] - pdp[["mean_response"]][1]
+        }
+        pdp[["name"]] <- "mean response"
+        names(pdp) <- make.names(names(pdp))
 
-      col_name <- make.names(column)
-      if (is.character(pdp[[col_name]])) {
-        pdp[[col_name]] <- as.factor(pdp[[col_name]])
-      }
-      pdp[["text"]] <- paste0(
-        "Partial Depencence \n",
-        "Feature Value: ", pdp[[col_name]], "\n",
-        "Mean Response: ", pdp[["mean_response"]], "\n"
-      )
+        col_name <- make.names(column)
+        if (is.character(pdp[[col_name]])) {
+          pdp[[col_name]] <- as.factor(pdp[[col_name]])
+        }
+        pdp[["text"]] <- paste0(
+          "Partial Depencence \n",
+          "Feature Value: ", pdp[[col_name]], "\n",
+          "Mean Response: ", pdp[["mean_response"]], "\n"
+        )
     }
 
     q <- ggplot2::ggplot(ggplot2::aes(x = .data[[col_name]],
@@ -2480,7 +2494,7 @@ h2o.ice_plot <- function(model,
                                   sides = "b", alpha = 0.1, color = "black",
                                   data = stats::setNames(as.data.frame(newdata[[column]]), col_name)
     )
-    plot_name <- ggplot2::labs(y = "Response", title = sprintf(
+    plot_name <- ggplot2::labs(y = y_label, title = sprintf(
       "Individual Conditional Expectations on \"%s\"%s\nfor Model: \"%s\"", col_name,
       if (is.null(target)) {
         ""

@@ -10,7 +10,7 @@ class StandardCoef:
 
         :param num_of_features: the number of features shown in the plot.
         :param server: if true set server settings to matplotlib and show the graph
-        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig
 
         :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
