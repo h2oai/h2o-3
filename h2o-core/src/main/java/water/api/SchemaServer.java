@@ -82,7 +82,7 @@ public class SchemaServer {
    * @throws water.exceptions.H2OFailException if there is a name collision, if the type parameters are bad, or if
    *         the version is bad
    */
-  public static void register(Schema schema) {
+  private static void register(Schema schema) {
     Class clz = schema.getClass();
     synchronized(clz) {
       String clzname = clz.getSimpleName();
