@@ -46,7 +46,7 @@ Example
     h2o.init()
 
     # Import the uplift dataset into H2O:
-    data <- h2o.importFile(locate("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv"))
+    data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
 
     # Set the predictors, response, and treatment column:
     # set the predictors
@@ -70,7 +70,6 @@ Example
                                            max_depth=5,
                                            treatment_column="treatment",
                                            uplift_metric="KL",
-                                           gainslift_bins=10,
                                            min_rows=10,
                                            nbins=1000,
                                            seed=1234,
@@ -79,7 +78,7 @@ Example
     perf <- h2o.performance(uplift.model)
 
     # Get AUUC:
-    auuc <- perf.auuc()
+    auuc <- h2o.auuc(perf)
 
    .. code-tab:: python
    
@@ -107,7 +106,6 @@ Example
                                                   max_depth=5,
                                                   treatment_column=treatment_column,
                                                   uplift_metric="KL",
-                                                  gainslift_bins=10,
                                                   min_rows=10,
                                                   nbins=1000,
                                                   seed=1234,
