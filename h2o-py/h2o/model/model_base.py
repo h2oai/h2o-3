@@ -956,7 +956,28 @@ class ModelBase(h2o_meta(Keyed)):
                 raise H2OValueError("auuc_table() is only available for Uplift Binomial classifiers.")
             m[k] = None if v is None else v.auuc_table()
         return list(m.values())[0] if len(m) == 1 else m
-    
+
+    def qini(self, train=False, valid=False):
+        """
+        Get the Qini value (Area Under Uplift Curve - Area Under Random Curve for Qini uplift).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid".
+
+        :param bool train: If train is True, then return the Qini value for the training data.
+        :param bool valid: If valid is True, then return the Qini value for the validation data.
+
+        :returns: The Qini value.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, False)
+        m = {}
+        for k, v in viewitems(tm):
+            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
+                raise H2OValueError("auuc() is only available for Uplift Binomial classifiers.")
+            m[k] = None if v is None else v.qini()
+        return list(m.values())[0] if len(m) == 1 else m
+
     def aic(self, train=False, valid=False, xval=False):
         """
         Get the AIC (Akaike Information Criterium).

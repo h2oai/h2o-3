@@ -59,7 +59,6 @@ Example
                                            max_depth=5,
                                            treatment_column="treatment",
                                            uplift_metric="KL",
-                                           gainslift_bins=10,
                                            min_rows=10,
                                            nbins=1000,
                                            seed=1234,
@@ -68,7 +67,7 @@ Example
     perf <- h2o.performance(uplift.model)
 
     # Get AUUC:
-    auuc <- perf.auuc()
+    auuc <- h2o.auuc(perf)
 
    .. code-tab:: python
    
@@ -96,7 +95,6 @@ Example
                                                   max_depth=5,
                                                   treatment_column=treatment_column,
                                                   uplift_metric="KL",
-                                                  gainslift_bins=10,
                                                   min_rows=10,
                                                   nbins=1000,
                                                   seed=1234,
