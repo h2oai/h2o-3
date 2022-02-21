@@ -4,7 +4,6 @@ import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
-import java.lang.reflect.Field;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.ServiceLoader;

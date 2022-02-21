@@ -252,4 +252,5 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     }
     return gm.addModelMetrics(metrics); // Update the metrics in-place with the GLM version, do DKV.put
   }
+
 }

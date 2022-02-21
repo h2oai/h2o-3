@@ -106,6 +106,7 @@ public class GAMModelUtils {
     model._output._glm_dispersion = glmModel._output.dispersion();
     model._nobs = glmModel._nobs;
     model._nullDOF = glmModel._nullDOF;
+    model._ymu = new double[glmModel._ymu.length];
     model._rank = glmModel._output.bestSubmodel().rank();
     model._ymu = new double[glmModel._ymu.length];
     System.arraycopy(glmModel._ymu, 0, model._ymu, 0, glmModel._ymu.length);

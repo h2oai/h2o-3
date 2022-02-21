@@ -311,7 +311,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
 
   public static class GAMModelOutput extends Model.Output {
     public String[] _coefficient_names_no_centering;
-    public String[] _coefficient_names;
+    public String[] _coefficient_names;    
     public TwoDimTable _glm_model_summary;
     public ModelMetrics _glm_training_metrics;
     public ModelMetrics _glm_validation_metrics;
