@@ -1780,7 +1780,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
     
     def __init__(self, metric_json, on=None, algo=""):
         """
-          Create a new Binomial Uplift  Metrics object (essentially a wrapper around some json)
+          Create a new Binomial Uplift Metrics object (essentially a wrapper around some json)
 
           :param metric_json: A blob of json holding all of the needed information
           :param on: Metrics built on "training_data" or "validation_data" (default is "training_data")
@@ -1791,8 +1791,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Retrieve area under cumulative uplift curve (AUUC) value.
         
-        :param metric AUUC metric type (None, "qini", "lift", "gain",
-            default is None which means it takes default metric from model parameters) 
+        :param metric AUUC metric type (None, "AUTO", "qini", "lift", "gain",
+            default is None which means it takes default metric from model parameters, "AUTO" means "qini") 
         :returns: AUUC value.
 
         :examples:
@@ -1818,8 +1818,9 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         if metric is None:
             return self._metric_json['AUUC']
         else:
-            assert metric in ['qini', 'lift', 'gain'], \
-               "AUUC metric "+metric+" should be 'qini','lift' or 'gain'."
+            assert metric in ['AUTO', 'qini', 'lift', 'gain'],\
+                "AUUC metric "+metric+" should be 'AUTO', 'qini','lift' or 'gain'."
+            if metric == "AUTO": metric = 'qini'
             return self._metric_json['auuc_table'][metric][0]
 
     def qini(self):
@@ -1850,12 +1851,11 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         return self._metric_json['qini']
 
-    def aecu(self, metric="qini"):
+    def aecu(self, metric="AUTO"):
         """
         Retrieve AECU value (average excess cumulative uplift - area between Uplift curve and random curve).
         
-        :param metric AECU metric type (None, "qini", "lift", "gain",
-            default is "qini") 
+        :param metric AECU metric type (None, "qini", "lift", "gain", default is "AUTO" which means "qini") 
         :returns: AECU value.
 
         :examples:
@@ -1879,8 +1879,9 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> perf = uplift_model.model_performance()
         >>> perf.aecu()
         """
-        assert metric in ['qini', 'lift', 'gain'], \
+        assert metric in ['AUTO', 'qini', 'lift', 'gain'], \
             "AECU metric "+metric+" should be 'qini','lift' or 'gain'."
+        if metric == 'AUTO': metric = 'qini'
         return self._metric_json['aecu_table'][metric][0]
             
     def uplift(self, metric="AUTO"):
@@ -1913,9 +1914,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> perf.uplift()
         """
         assert metric in ['AUTO', 'qini', 'lift', 'gain']
-       
-        if metric == "AUTO": 
-            metric = 'qini'
+        if metric == "AUTO": metric = 'qini'
         return self._metric_json["thresholds_and_metric_scores"][metric]
 
     def uplift_random(self, metric="AUTO"):
@@ -1948,9 +1947,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> perf.uplift_random()
         """
         assert metric in ['AUTO', 'qini', 'lift', 'gain']
-
-        if metric == "AUTO":
-            metric = 'qini'
+        if metric == "AUTO": metric = 'qini'
         return self._metric_json["thresholds_and_metric_scores"][metric+"_random"]    
 
     def n(self):
@@ -2130,6 +2127,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> perf.plot_uplift(plot=True)
         >>> n, uplift = perf.plot_uplift(plot=False)
         """
+        assert metric in ['AUTO', 'qini', 'lift', 'gain'], \
+            "Metric "+metric+" should be 'AUTO', 'qini','lift' or 'gain'."
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:

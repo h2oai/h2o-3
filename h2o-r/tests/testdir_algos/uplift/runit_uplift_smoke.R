@@ -26,13 +26,13 @@ test.uplift <- function() {
   testh2o$y <- as.factor(test$y)
   testh2o <- as.h2o(testh2o)
   
-  expected_values_auuc_qini = c(71.11422, 90.27237, 66.95523)
-  expected_values_auuc_gain = c(143.605116, 182.2717, 132.8936) 
-  expected_values_auuc_lift = c(0.207647, 0.2757076, 0.2236906)
+  expected_values_auuc_qini = c(66.10928, 85.58292, 60.71382)
+  expected_values_auuc_gain = c(128.6424, 162.0204, 121.7822) 
+  expected_values_auuc_lift = c(0.2125203, 0.2605544, 0.2046642)
   
-  expected_values_aecu_qini = c(77.619296, 96.77665, 73.46099)
-  expected_values_aecu_gain = c(156.615271, 195.2803, 145.9051)
-  expected_values_aecu_lift = c(0.214152, 0.2822119, 0.2301963)
+  expected_values_aecu_qini = c(82.12111, 101.5937, 76.73942)
+  expected_values_aecu_gain = c(160.6661, 194.0419, 153.8334)
+  expected_values_aecu_lift = c(0.2285321, 0.2765652, 0.2206898)
   
   for (i in 1:length(uplift_metrics)) {
     print(paste("Train h2o uplift model", uplift_metrics[i]))
