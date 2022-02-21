@@ -28,7 +28,6 @@ public class LabelEncoderDomainMapConstructorTest {
     columnNameToIndex.put("col1", 1);
     columnNameToIndex.put("col2", 0);
     columnNameToIndex.put("col3", 3);
-    columnNameToIndex.put("response", 5);
     
     when(mockModel.getNames()).thenReturn(new String[]{"col1", "col2", "col3", "response"});
     when(mockModel.getOrigDomainValues()).thenReturn(new String[][]{
@@ -37,9 +36,10 @@ public class LabelEncoderDomainMapConstructorTest {
             new String[]{"x"},
             new String[]{"any", "thing"}
     });
+    when(mockModel.getNumCols()).thenReturn(3);
     
     Map<Integer, CategoricalEncoder> dm = CategoricalEncoding.LabelEncoder.createCategoricalEncoders(mockModel, columnNameToIndex);
-    assertEquals(new HashSet<>(Arrays.asList(1, 3, 5)), dm.keySet());
+    assertEquals(new HashSet<>(Arrays.asList(1, 3)), dm.keySet());
     for (CategoricalEncoder ce : dm.values()) {
       assertTrue(ce instanceof LabelEncoder);
     }

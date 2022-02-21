@@ -15,11 +15,11 @@ public class LabelEncoderDomainMapConstructor extends DomainMapConstructor {
   public Map<Integer, CategoricalEncoder> create() {
     Map<Integer, CategoricalEncoder> domainMap = new HashMap<>();
     String[] columnNames = _m.getNames();
-    for (int i = 0; i < columnNames.length; i++) {
-      String colName = columnNames[i];
+    for (int i = 0; i < _m.getNumCols(); i++) {
+      String colName = i < _m.getNumCols() ? columnNames[i] : _m._responseColumn;
       Integer colIndex = _columnNameToIndex.get(colName);
       String[] domainValues = _m.getOrigDomainValues()[i];
-      if (domainValues != null && colIndex != null) {
+      if (domainValues != null) {
         domainMap.put(colIndex, new LabelEncoder(colIndex, domainValues));
       }
     }
