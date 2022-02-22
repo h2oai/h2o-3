@@ -40,6 +40,10 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     }
 
     public double auuc() {return _auuc.auuc();}
+    
+    public double auucRandom(){return _auuc.auucRandom();}
+    
+    public double qini(){return _auuc.qini();}
 
     @Override
     protected StringBuilder appendToStringMetrics(StringBuilder sb) {

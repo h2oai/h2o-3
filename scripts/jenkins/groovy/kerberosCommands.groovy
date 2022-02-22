@@ -27,6 +27,8 @@ def call(final stageConfig, final boolean getMakeTarget = false) {
             return getCommandStandalone(stageConfig)
         case H2O_HADOOP_STARTUP_MODE_STANDALONE_KEYTAB:
             return getCommandStandaloneKeytab(stageConfig)
+        case H2O_HADOOP_STARTUP_MODE_STANDALONE_DRIVER_KEYTAB:
+            return getCommandStandaloneDriverKeytab(stageConfig)
         default:
             error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
     }
@@ -119,21 +121,26 @@ private GString getCommandHadoop(
         """
 }
 
-private GString getCommandStandaloneKeytab(final stageConfig) {
+private GString getCommandStandaloneDriverKeytab(final stageConfig) {
+    def h2odriverJar = "\$(ls h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar)"
+    return getCommandStandaloneKeytab(stageConfig, h2odriverJar)
+}
+
+private GString getCommandStandaloneKeytab(final stageConfig, jar = 'build/h2o.jar') {
     return """
             klist
             kdestroy
             klist || echo 'No ticket expected'
             bash -c 'printf "%b" "addent -password -p jenkins@H2O.AI -k 1 -e aes256-cts-hmac-sha1-96\\\\nh2o\\\\nwrite_kt /tmp/jenkins.keytab" | ktutil'
-            ${getCommandStandalone(stageConfig, '-principal jenkins@H2O.AI -keytab /tmp/jenkins.keytab')}
+            ${getCommandStandalone(stageConfig, jar, '-principal jenkins@H2O.AI -keytab /tmp/jenkins.keytab')}
             echo 'h2o' | kinit        
     """
 }
 
-private GString getCommandStandalone(final stageConfig, final extraArgs = '') {
+private GString getCommandStandalone(final stageConfig, final jar = 'build/h2o.jar', final extraArgs = '') {
     def defaultPort = 54321
     return """
-            java -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
+            java -cp ${jar}:\$(cat /opt/hive-jdbc-cp):${stageConfig.customData.extraClasspath} water.H2OApp \\
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
                 -spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
@@ -159,6 +166,7 @@ private GString getCommandStandalone(final stageConfig, final extraArgs = '') {
             export KERB_PRINCIPAL=${stageConfig.customData.kerberosPrincipal}
             export CLOUD_IP=\$(hostname --ip-address)
             export CLOUD_PORT=${defaultPort}
+            export HADOOP_S3_FILESYSTEMS=${stageConfig.customData.bundledS3FileSystems}
         """
 }
 

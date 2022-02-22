@@ -575,7 +575,7 @@ def shap_summary_plot(
     :param colormap: colormap to use instead of the default blue to red colormap
     :param figsize: figure size; passed directly to matplotlib
     :param jitter: amount of jitter used to show the point density
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -712,7 +712,7 @@ def shap_explain_row_plot(
     :param plot_type: either "barplot" or "breakdown"
     :param contribution_type: One of "positive", "negative", or "both".
                               Used only for plot_type="barplot".
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -980,7 +980,7 @@ def pd_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                   
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1111,7 +1111,7 @@ def pd_multi_plot(
     :param colormap: colormap name
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1228,6 +1228,8 @@ def pd_multi_plot(
             plt.savefig(fname=save_plot_path)
         return decorate_plot_result(figure=fig)
 
+def _center(col):
+    col[:] = col - col[0]
 
 def ice_plot(
         model,  # type: h2o.model.ModelBase
@@ -1240,6 +1242,7 @@ def ice_plot(
         save_plot_path=None,  # type: Optional[str]
         show_pdp=True,  # type: bool
         binary_response_scale="response" # type: Literal["response", "logodds"]
+        centered=False # type: bool
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1261,6 +1264,7 @@ def ice_plot(
     :param show_pdp: option to turn on/off PDP line. Defaults to True.
     :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
     score. Can be one of: "response", "logodds". Defaults to "response".
+    :param centered: a bool whether to center curves around 0 at the first valid x value or not
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1312,6 +1316,8 @@ def ice_plot(
         is_factor = frame[column].isfactor()[0]
 
         if is_factor:
+            if centered:
+                warnings.warn("Centering is not supported for factor columns!")
             if frame[column].nlevels()[0] > max_levels:
                 levels = _get_top_n_levels(frame[column], max_levels)
                 frame = frame[(frame[column].isin(levels)), :]
@@ -1337,6 +1343,10 @@ def ice_plot(
             )
             response = _get_response(tmp["mean_response"], show_logodds)
             encoded_col = tmp.columns[0]
+            y_label = "Response"
+            if not is_factor and centered:
+                _center(tmp["mean_response"])
+                y_label = "Response difference"
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)),
                             response,
@@ -1360,6 +1370,8 @@ def ice_plot(
             )
             encoded_col = tmp.columns[0]
             response = _get_response(tmp["mean_response"], show_logodds)
+            if not is_factor and centered:
+                _center(tmp["mean_response"])
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), response, color="k",
                             label="Partial Dependence")
@@ -1373,6 +1385,7 @@ def ice_plot(
             column,
             " with target = \"{}\"".format(target[0]) if target else ""
         ))
+        plt.ylabel(y_label)
         ax = plt.gca()
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
@@ -1537,7 +1550,7 @@ def _varimp_plot(model, figsize, num_of_features=None, save_plot_path=None):
     :param model: H2O model
     :param figsize: Figure size
     :param num_of_features: Maximum number of variables to plot. Defaults to 10.
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :return: object that contains the resulting figure (can be accessed using result.figure())
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
@@ -1650,7 +1663,7 @@ def varimp_heatmap(
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
@@ -1766,7 +1779,7 @@ def model_correlation_heatmap(
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
@@ -1903,7 +1916,7 @@ def residual_analysis_plot(
     :param model: H2OModel
     :param frame: H2OFrame
     :param figsize: figure size; passed directly to matplotlib
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1996,7 +2009,7 @@ def learning_curve_plot(
                      automatically determine if this is suitable visualisation
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :return: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
