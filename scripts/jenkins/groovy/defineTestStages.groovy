@@ -573,6 +573,8 @@ def call(final pipelineContext) {
                     kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
                     spnegoConfigPath: 'scripts/jenkins/config/spnego.conf',
                     spnegoPropertiesPath: 'scripts/jenkins/config/spnego.properties',
+                    extraClasspath: '',
+                    bundledS3FileSystems: 's3a,s3n'
             ], pythonVersion: '2.7',
             customDockerArgs: [ '--privileged' ],
             executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
@@ -585,6 +587,18 @@ def call(final pipelineContext) {
     def standaloneKeytabStage = evaluate(stageTemplate.inspect())
     standaloneKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE KEYTAB"
     standaloneKeytabStage.customData.mode = 'STANDALONE_KEYTAB'
+
+    def standaloneDriverKeytabStage = evaluate(stageTemplate.inspect())
+    standaloneDriverKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - DRIVER KEYTAB"
+    standaloneDriverKeytabStage.customData.mode = 'STANDALONE_DRIVER_KEYTAB'
+    if (distribution.name == 'hdp' && distribution.version == '2.6') {
+      // HttpClient & related classes are relocated in h2odriver for distros based on 2.x
+      // to make Hive JDBC import work in tests we add it here manually (ideally it should be in the docker image)
+      standaloneDriverKeytabStage.customData.extraClasspath =
+              "/usr/hdp/2.6.1.0-129/hive/lib/httpclient-4.4.jar:/usr/hdp/2.6.1.0-129/hive/lib/httpcore-4.4.jar"
+      // h2odriver doesn't support S3A nor S3N (since 2.x Hadoops are obsolete, we ignore the affected tests)
+      standaloneDriverKeytabStage.customData.bundledS3FileSystems = ''
+    }
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
@@ -614,7 +628,7 @@ def call(final pipelineContext) {
     steamSparklingStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM SPARKLING"
     steamSparklingStage.customData.mode = 'STEAM_SPARKLING'
 
-    KERBEROS_STAGES += [ standaloneStage, standaloneKeytabStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
+    KERBEROS_STAGES += [ standaloneStage, standaloneKeytabStage, standaloneDriverKeytabStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
   final MULTINODE_CLUSTERS_CONFIGS = [

@@ -25,7 +25,10 @@ dependencies {
     api('com.google.guava:guava:20.0') { force = true }
     api(project(':h2o-app')) {
         exclude module: "${defaultWebserverModule}"
-        exclude module: "h2o-ext-krbstandalone"
+        exclude module: "h2o-ext-krbstandalone" // exclude here to avoid pulling all transitive dependencies
+    }
+    api(project(':h2o-ext-krbstandalone')) { // include without dependencies
+        transitive = false
     }
 }
 
