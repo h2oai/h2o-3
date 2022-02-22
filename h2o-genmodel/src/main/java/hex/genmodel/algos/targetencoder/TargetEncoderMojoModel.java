@@ -34,10 +34,11 @@ public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocesso
   public List<ColumnsToSingleMapping> _inencMapping;
   public List<ColumnsMapping> _inoutMapping;
 
+  List<String> _origNames;
   List<String> _nonPredictors;
   Map<String, EncodingMap> _encodingsByCol;
   boolean _keepOriginalCategoricalColumns;
-  
+
   /**
    * Whether during training of the model unknown categorical level was imputed with NA level. 
    * It will determine whether we are using posterior probability of NA level or prior probability when substitution didn't take place.

@@ -59,7 +59,7 @@ public class TargetEncoding implements PreprocessingStep {
         params._response_column = amlInput.response_column;
         params._seed = amlBuild.stopping_criteria.seed();
         
-        Set<String> teColumns = selectColumnsToEncode(amlTrain, params);
+        List<String> teColumns = selectColumnsToEncode(amlTrain, params);
         if (teColumns.isEmpty()) return;
         
         _aml.eventLog().warn(Stage.FeatureCreation,
@@ -90,10 +90,9 @@ public class TargetEncoding implements PreprocessingStep {
                 });
             }
         }
-        String[] keep = params.getNonPredictors();
-        params._ignored_columns = Arrays.stream(amlTrain.names())
-                .filter(col -> !teColumns.contains(col) && !ArrayUtils.contains(keep, col))
-                .toArray(String[]::new);
+        params._columns_to_encode = teColumns.stream()
+                .map(col -> new String[] {col})
+                .toArray(String[][]::new);
 
         TargetEncoder te = new TargetEncoder(params, _aml.makeKey(getType(), null, false));
         _teModel = te.trainModel().get();
@@ -166,8 +165,8 @@ public class TargetEncoding implements PreprocessingStep {
         return _defaultParams;
     }
 
-    private Set<String> selectColumnsToEncode(Frame fr, TargetEncoderParameters params) {
-        final Set<String> encode = new HashSet<>();
+    private List<String> selectColumnsToEncode(Frame fr, TargetEncoderParameters params) {
+        final Set<String> encode = new TreeSet<>();
         if (_encodeAllColumns) {
             encode.addAll(Arrays.asList(fr.names()));
         } else {
@@ -190,7 +189,7 @@ public class TargetEncoding implements PreprocessingStep {
                 amlInput.response_column
         );
         encode.removeAll(nonPredictors);
-        return encode;
+        return new ArrayList<>(encode);
     }
 
     TargetEncoderPreprocessor getTEPreprocessor() {

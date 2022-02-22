@@ -486,7 +486,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     String[] toTheEnd = _parms.getNonPredictors();
     Map<String, Integer> nameToIdx = nameToIndex(fr);
     List<Integer> toAppendAfterNumericals = new ArrayList<>();
-    String[] trainColumns = _output._names;
+    String[] trainColumns = _output._origNames != null ? _output._origNames : _output._names;
     Set<String> trainCols = new HashSet<>(Arrays.asList(trainColumns));
     String[] notInTrainColumns = Arrays.stream(fr.names())
             .filter(c -> !trainCols.contains(c))
