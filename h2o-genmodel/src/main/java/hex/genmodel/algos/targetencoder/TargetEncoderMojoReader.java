@@ -22,6 +22,8 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
 
   @Override
   protected void readModelData() throws IOException {
+    Integer n = readkv("n_orig_names");
+    if (n != null) _model._origNames = Arrays.asList(readStringArray("orig_names", n));
     _model._keepOriginalCategoricalColumns = readkv("keep_original_categorical_columns", false); // defaults to false for legacy TE Mojos
     _model._withBlending = readkv("with_blending");
     if(_model._withBlending) {

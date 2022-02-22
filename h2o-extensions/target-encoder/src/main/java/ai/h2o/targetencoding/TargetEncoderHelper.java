@@ -546,8 +546,9 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
     return frame;
   }
   
-  static void printFrame(Frame fr) {
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) fr.numRows(), false);
+  static void printFrame(Frame fr, int maxRows) {
+    maxRows = maxRows < 0 ? (int)fr.numRows() : maxRows;
+    TwoDimTable twoDimTable = fr.toTwoDimTable(0, maxRows, false);
     System.out.println(twoDimTable.toString(2, true));
   }
 

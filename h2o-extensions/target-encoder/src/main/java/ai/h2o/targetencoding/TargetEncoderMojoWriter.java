@@ -35,6 +35,12 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
 
   @Override
   protected void writeModelData() throws IOException {
+    String[] origNames = model._output._origNames;
+    if (origNames != null) {
+      int nOrigNames = origNames.length;
+      writekv("n_orig_names", nOrigNames);
+      writeStringArray(origNames, "orig_names");
+    }
     writeTargetEncodingInfo();
     writeTargetEncodingMap();
   }

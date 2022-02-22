@@ -4,6 +4,7 @@ import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import ai.h2o.targetencoding.interaction.InteractionSupport;
+import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import org.apache.log4j.Logger;
@@ -43,8 +44,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
 
   @Override
   public void init(boolean expensive) {
-    disableIgnoreConstColsFeature(expensive);
-    ignoreUnusedColumns(expensive);
+    beforeSuperInit(expensive);
     super.init(expensive);
     assert _parms._nfolds == 0 : "nfolds usage forbidden in TargetEncoder";
     
@@ -87,12 +87,14 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
       }
     }
   }
-
-  private void disableIgnoreConstColsFeature(boolean expensive) {
+  
+  private void beforeSuperInit(boolean expensive) {
+    _parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO; // ensure this is always set to AUTO to avoid encoding categoricals before applying TE
     _parms._ignore_const_cols = false;
     if (expensive && LOG.isInfoEnabled())
       LOG.info("We don't want to ignore any columns during target encoding transformation " + 
               "therefore `_ignore_const_cols` parameter was set to `false`");
+    ignoreUnusedColumns(expensive);
   }
 
   /**
@@ -106,11 +108,15 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
     if (!expensive || _parms._columns_to_encode == null || _parms.train() == null) return;
     Set<String> usedColumns = new HashSet<>(Arrays.asList(_parms.getNonPredictors()));
     for (String[] colGroup: _parms._columns_to_encode) usedColumns.addAll(Arrays.asList(colGroup));
-    Set<String> unusedColumns = new HashSet<>(Arrays.asList(_parms.train()._names));
+    Set<String> unusedColumns = new HashSet<>(Arrays.asList(_train._names));
     unusedColumns.removeAll(usedColumns);
     Set<String> ignoredColumns = _parms._ignored_columns == null ? new HashSet<>() : new HashSet<>(Arrays.asList(_parms._ignored_columns));
     // ensures consistency when _ignored_columns is provided, `init` will then validate that columns listed in `_columns_to_encode` were not ignored.
-    unusedColumns.addAll(ignoredColumns); 
+    unusedColumns.addAll(ignoredColumns);
+    if (unusedColumns.size() > 0) {  // TE is ignoring columns for its own purpose
+      _origNames = _origNames == null ? _train.names() : _origNames;
+      _origDomains = _origDomains == null ? _train.domains() : _origDomains;
+    }
     _parms._ignored_columns = unusedColumns.toArray(new String[0]);
   }
   

@@ -569,7 +569,8 @@ public class TargetEncoderPreprocessorTest {
         params._train = train._key;
         params._response_column = TARGET;
         params._fold_column = ArrayUtils.contains(train.names(), FOLDC) ? FOLDC : null;
-        params._ignored_columns = encodeAll ? null : ignoredColumns(train, TO_ENCODE, TARGET, FOLDC);
+//        params._ignored_columns = encodeAll ? null : ignoredColumns(train, TO_ENCODE, TARGET, FOLDC);
+        params._columns_to_encode = new String[][] {{TO_ENCODE}};
         params._data_leakage_handling = strategy;
         params._noise = 0;
         params._seed = 42;

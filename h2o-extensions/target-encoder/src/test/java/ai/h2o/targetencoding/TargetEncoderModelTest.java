@@ -14,9 +14,11 @@ import water.runner.H2ORunner;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.addKFoldColumn;
+import static ai.h2o.targetencoding.TargetEncoderHelper.nameToIndex;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
@@ -73,6 +75,16 @@ public class TargetEncoderModelTest extends TestUtil{
       assertNotEquals(-1, encodedColIdx2);
       assertTrue(encodedExplicit.vec(encodedColIdx2).isNumeric());
       
+      assert Arrays.stream(encodedImplicit.names()).collect(Collectors.toSet())
+              .equals(Arrays.stream(encodedExplicit.names()).collect(Collectors.toSet()));
+      // due to use of ignored_columns, the implicit mode may produce predictions with columns in a different order.
+      int[] impNewOrder = new int[encodedImplicit.numCols()];
+      Map<String, Integer> impNameIdx = nameToIndex(encodedImplicit);
+      int offset = 0;
+      for (String name : encodedExplicit.names()) {
+        impNewOrder[offset++] = impNameIdx.get(name);
+      }
+      encodedImplicit.reOrder(impNewOrder);
       assertFrameEquals(encodedExplicit, encodedImplicit, 1e-6);
       
     } finally {
@@ -411,7 +423,52 @@ public class TargetEncoderModelTest extends TestUtil{
       Scope.exit();
     }
   }
+  
+  @Test
+  public void test_transformed_frame_columns_order_with_columns_grouping() {
+    try {
+      Scope.enter();
+      final Frame train = new TestFrameBuilder()
+              .withColNames("cat2", "num2", "target", "num1", "cat1", "foldc")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, ar(  "a",  "b",   "a"))
+              .withDataForCol(1, ar(    1,    2,     3))
+              .withDataForCol(2, ar("yes", "no", "yes"))
+              .withDataForCol(3, ar(    5,    4,     3))
+              .withDataForCol(4, ar(  "A",  "B",   "C"))
+              .withDataForCol(5, ar(    0,    0,     1))
+              .build();
 
+      final Frame test = new TestFrameBuilder()
+              .withColNames("cat1", "num3", "target", "num1", "cat2")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ar(  "a",  "b",   "a"))
+              .withDataForCol(1, ar(    1,    2,     3))
+              .withDataForCol(2, ar("yes", "no", "yes"))
+              .withDataForCol(3, ar(    5,    4,     3))
+              .withDataForCol(4, ar(  "A",  "B",   "C"))
+              .build();
+
+      TargetEncoderParameters params = new TargetEncoderParameters();
+      params._data_leakage_handling = DataLeakageHandlingStrategy.None;
+      params._response_column = "target";
+      params._columns_to_encode = new String[][] {
+              {"cat1", "cat2"}, {"cat2"}
+      };
+      params._train = train._key;
+      params._fold_column = "foldc";
+      params._seed = 0XFEED;
+
+      TargetEncoder te = new TargetEncoder(params);
+      final TargetEncoderModel teModel = te.trainModel().get();
+      Scope.track_generic(teModel);
+
+      Frame trans = Scope.track(teModel.transform(test));
+      assertArrayEquals(new String[]{"num1", "cat1:cat2_te", "cat2_te", "cat2", "cat1", "num3", "target"}, trans.names());
+    } finally {
+      Scope.exit();
+    }
+  }
 
   @Test
   public void test_TE_can_be_applied_to_frames_without_target() {
@@ -580,7 +637,7 @@ public class TargetEncoderModelTest extends TestUtil{
       assertBitIdentical(encodedOri, encodedSwap);
 
       modFr = new Frame(fr);
-      modFr.add("dummy", modFr.anyVec().makeCon(Vec.T_CAT));
+      modFr.add("dummy", modFr.anyVec().makeZero(new String[] {"dum", "dumm"}));
       Frame encodedPlusOne= Scope.track(teModel.transform(modFr));
       assertNotNull(encodedPlusOne.vec("dummy"));
       encodedPlusOne.remove("dummy");
