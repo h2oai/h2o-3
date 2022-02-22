@@ -47,6 +47,19 @@ test.make_metrics_uplift_binomial <- function() {
     thr_table1 <- h2o.thresholds_and_metric_scores(m1)
     
     expect_equal(thr_table0, thr_table1)
+   
+    qini0 <- h2o.qini(m0)
+    qini1 <- h2o.qini(m1)
+    
+    expect_equal(qini0, qini1)
+ 
+    aecu_table0 <- h2o.aecu_table(m0)
+    aecu_table1 <- h2o.aecu_table(m1)
+    
+    expect_true(is.data.frame(aecu_table0))
+    expect_true(is.data.frame(aecu_table1))
+ 
+    expect_equal(aecu_table0, aecu_table1)
 }
 
 doSuite("Check making uplift binomial model metrics.", makeSuite(
