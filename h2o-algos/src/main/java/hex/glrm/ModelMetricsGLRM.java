@@ -5,6 +5,7 @@ import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
 import water.fvec.Frame;
+import water.util.ComparisonUtils;
 
 public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
   public double _numerr;
@@ -22,6 +23,18 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     this(model, frame, numerr, caterr, customMetric);
     _numcnt = numcnt;
     _catcnt = catcnt;
+  }
+  
+  @Override
+  public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+    super.isEqualUpToTolerance(comparator, other);
+    ModelMetricsGLRM specificOther = (ModelMetricsGLRM) other;
+
+    comparator.compareValuesUpToTolerance("numerr", this._numerr, specificOther._numerr);
+    comparator.compareValuesUpToTolerance("caterr", this._caterr, specificOther._caterr);
+    comparator.compare("numcnt", this._numcnt, specificOther._numcnt);
+    comparator.compare("catcnt", this._catcnt, specificOther._catcnt);
+    return comparator.isEqual();
   }
 
   public static class GlrmModelMetricsBuilder extends MetricBuilderUnsupervised<GlrmModelMetricsBuilder> {
