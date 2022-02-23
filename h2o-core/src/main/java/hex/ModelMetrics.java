@@ -120,13 +120,12 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
   
-  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    ComparisonUtils.AccumulatedComparisonResult result = new ComparisonUtils.AccumulatedComparisonResult();
-      result.compareValuesUpToTolerance("mse", this.mse(), other.mse(), proportionalTolerance);
-      result.compareValuesUpToTolerance("rmse", this.rmse(), other.rmse(), proportionalTolerance);
-      result.compare("nobs", this._nobs, other._nobs);
+  public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+    comparator.compareValuesUpToTolerance("mse", this.mse(), other.mse());
+    comparator.compareValuesUpToTolerance("rmse", this.rmse(), other.rmse());
+    comparator.compare("nobs", this._nobs, other._nobs);
       
-    return result;
+    return comparator.isEqual();
   }
 
   public static ModelMetrics defaultModelMetrics(Model model) {

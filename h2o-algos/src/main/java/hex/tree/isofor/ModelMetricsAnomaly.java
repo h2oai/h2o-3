@@ -35,14 +35,14 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
   }
 
   @Override
-  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+    super.isEqualUpToTolerance(comparator, other);
     ModelMetricsAnomaly specificOther = (ModelMetricsAnomaly) other;
+
+    comparator.compareValuesUpToTolerance("mean_score", this._mean_score, specificOther._mean_score);
+    comparator.compareValuesUpToTolerance("mean_normalized_score", this._mean_normalized_score, specificOther._mean_normalized_score);
     
-    result.compareValuesUpToTolerance("mean_score", this._mean_score, specificOther._mean_score, proportionalTolerance);
-    result.compareValuesUpToTolerance("mean_normalized_score", this._mean_normalized_score, specificOther._mean_normalized_score, proportionalTolerance);
-    
-    return result;
+    return comparator.isEqual();
   }
 
   public static class MetricBuilderAnomaly extends MetricBuilderUnsupervised<MetricBuilderAnomaly> {

@@ -48,12 +48,12 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     }
 
     @Override
-    public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-        ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+        super.isEqualUpToTolerance(comparator, other);
         ModelMetricsBinomialUplift specificOther = (ModelMetricsBinomialUplift) other;
         
-        result.compareValuesUpToTolerance("auuc", this.auuc(), specificOther.auuc(), proportionalTolerance);
-        return result;
+        comparator.compareValuesUpToTolerance("auuc", this.auuc(), specificOther.auuc());
+        return comparator.isEqual();
     }
 
     /**

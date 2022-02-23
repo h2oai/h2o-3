@@ -1,64 +1,9 @@
 package water.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 public class ComparisonUtils {
-    public static boolean compareValuesUpToTolerance(float[] first, float[] second, double proportionalTolerance) {
-        if (first == null) {
-            return second == null;
-        }
-        if (first.length != second.length) {
-            return false;
-        }
-        for (int i = 0; i < first.length; i++) {
-            if(!compareValuesUpToTolerance(first[i], second[i], proportionalTolerance)) return false;
-        }
-        return true;
-    }
-
-    public static boolean compareValuesUpToTolerance(double[] first, double[] second, double proportionalTolerance) {
-        if (first == null) {
-            return second == null;
-        }
-        if (first.length != second.length) {
-            return false;
-        }
-        for (int i = 0; i < first.length; i++) {
-            if(!compareValuesUpToTolerance(first[i], second[i], proportionalTolerance)) return false;
-        }
-        return true;
-    }
-    
-    public static boolean compareValuesUpToTolerance(double first, double second, double proportionalTolerance) {
-        if (Double.isNaN(first)) {
-            return Double.isNaN(second);
-        }
-
-        if (first == Double.POSITIVE_INFINITY) {
-            return second == Double.POSITIVE_INFINITY;
-        }
-
-        if (first == Double.NEGATIVE_INFINITY) {
-            return second == Double.NEGATIVE_INFINITY;
-        }
-
-        // covers scenario when both are 0.0.
-        if (first == second) {
-            return true;
-        }
-
-        double ratio = first / second;
-        if (ratio < 0) {
-            return false;
-        }
-
-        double difference = Math.abs(ratio - 1);
-        
-        return difference <= proportionalTolerance;
-    }
-    
-    public static class AccumulatedComparisonResult {
+    public static abstract class MetricComparator {
         private ArrayList<Difference> _differences = null;
         
         public void addDifference(Difference difference) {
@@ -66,55 +11,15 @@ public class ComparisonUtils {
             _differences.add(difference);
         }
         
-        public AccumulatedComparisonResult merge(AccumulatedComparisonResult other) {
-            if (_differences == null) {
-                _differences = other._differences;
-            } else if (other._differences != null) {
-                _differences.addAll(other._differences);
-            }
-            return this;
-        }
+        public abstract void compareValuesUpToTolerance(String description, double first, double second);
+
+        public abstract void compareValuesUpToTolerance(String description, double[] first, double[] second);
+
+        public abstract void compareValuesUpToTolerance(String description, float[] first, float[] second);
         
-        public void compareValuesUpToTolerance(String description, double first, double second, double proportionalTolerance) {
-            if (!ComparisonUtils.compareValuesUpToTolerance(first, second, proportionalTolerance)) {
-                Difference difference = new Difference(description, first, second, proportionalTolerance);
-                addDifference(difference);
-            }
-        }
+        public abstract void compare(String description, long first, long second);
 
-        public void compareValuesUpToTolerance(String description, double[] first, double[] second, double proportionalTolerance) {
-            if (!ComparisonUtils.compareValuesUpToTolerance(first, second, proportionalTolerance)) {
-                String firstString = Arrays.toString(first);
-                String secondString = Arrays.toString(second);
-                Difference difference = new Difference(description, firstString, secondString, proportionalTolerance);
-                addDifference(difference);
-            }
-        }
-
-        public void compareValuesUpToTolerance(String description, float[] first, float[] second, double proportionalTolerance) {
-            if (!ComparisonUtils.compareValuesUpToTolerance(first, second, proportionalTolerance)) {
-                String firstString = Arrays.toString(first);
-                String secondString = Arrays.toString(second);
-                Difference difference = new Difference(description, firstString, secondString, proportionalTolerance);
-                addDifference(difference);
-            }
-        }
-        
-        public void compare(String description, long first, long second) {
-            if (first != second) {
-                Difference difference = new Difference(description, first, second, 0.0);
-                addDifference(difference);
-            }
-        }
-
-        public void compare(String description, long[] first, long[] second) {
-            if (!Arrays.equals(first, second)) {
-                String firstString = Arrays.toString(first);
-                String secondString = Arrays.toString(second);
-                Difference difference = new Difference(description, firstString, secondString, 0.0);
-                addDifference(difference);
-            }
-        }
+        public abstract void compare(String description, long[] first, long[] second);
         
         public boolean isEqual() { return _differences == null; }
 
@@ -144,13 +49,11 @@ public class ComparisonUtils {
         private final String _description;
         private final Object _first;
         private final Object _second;
-        private final double _proportionalTolerance;
         
-        Difference(String description, Object first, Object second, double proportionalTolerance) {
+        Difference(String description, Object first, Object second) {
             _description = description;
             _first = first;
             _second = second;
-            _proportionalTolerance = proportionalTolerance;
         }
         
         public String getDescription() {
@@ -164,14 +67,126 @@ public class ComparisonUtils {
         public Object getSecond() {
             return _second;
         }
-        
-        public double getProportionalTolerance() {
-            return _proportionalTolerance;
-        }
 
         @Override
         public String toString() {
             return String.format("%s (%s vs. %s)", _description, _first.toString(), _second.toString());
+        }
+    }
+
+    public static class RelativeToleranceMetricComparator extends MetricComparator {
+        private final double _relativeTolerance;
+        
+        private static final Set<String> _ignoredFields = Collections.singleton("lift_top_group");
+        
+        public RelativeToleranceMetricComparator(double relativeTolerance) {
+            _relativeTolerance = relativeTolerance;
+        }
+
+        public void compareValuesUpToTolerance(String description, double first, double second) {
+            if (_ignoredFields.contains(description)) return;
+            if (!compareValuesUpToTolerance(first, second, _relativeTolerance)) {
+                Difference difference = new Difference(description, first, second);
+                addDifference(difference);
+            }
+        }
+
+        private static boolean compareValuesUpToTolerance(float[] first, float[] second, double relativeTolerance) {
+            if (first == null) {
+                return second == null;
+            }
+            if (first.length != second.length) {
+                return false;
+            }
+            for (int i = 0; i < first.length; i++) {
+                if(!compareValuesUpToTolerance(first[i], second[i], relativeTolerance)) return false;
+            }
+            return true;
+        }
+
+        public void compareValuesUpToTolerance(String description, double[] first, double[] second) {
+            if (_ignoredFields.contains(description)) return;
+            if (!compareValuesUpToTolerance(first, second, _relativeTolerance)) {
+                String firstString = Arrays.toString(first);
+                String secondString = Arrays.toString(second);
+                Difference difference = new Difference(description, firstString, secondString);
+                addDifference(difference);
+            }
+        }
+
+        private static boolean compareValuesUpToTolerance(double[] first, double[] second, double relativeTolerance) {
+            if (first == null) {
+                return second == null;
+            }
+            if (first.length != second.length) {
+                return false;
+            }
+            for (int i = 0; i < first.length; i++) {
+                if(!compareValuesUpToTolerance(first[i], second[i], relativeTolerance)) return false;
+            }
+            return true;
+        }
+
+        public void compareValuesUpToTolerance(String description, float[] first, float[] second) {
+            if (_ignoredFields.contains(description)) return;
+            if (!compareValuesUpToTolerance(first, second, _relativeTolerance)) {
+                String firstString = Arrays.toString(first);
+                String secondString = Arrays.toString(second);
+                Difference difference = new Difference(description, firstString, secondString);
+                addDifference(difference);
+            }
+        }
+
+        private static boolean compareValuesUpToTolerance(double first, double second, double relativeTolerance) {
+            if (Double.isNaN(first)) {
+                return Double.isNaN(second);
+            }
+
+            if (first == Double.POSITIVE_INFINITY) {
+                return second == Double.POSITIVE_INFINITY;
+            }
+
+            if (first == Double.NEGATIVE_INFINITY) {
+                return second == Double.NEGATIVE_INFINITY;
+            }
+
+            // covers scenario when both are 0.0.
+            if (first == second) {
+                return true;
+            }
+
+            double ratio = first / second;
+            if (ratio < 0) {
+                return false;
+            }
+
+            double difference = Math.abs(ratio - 1);
+
+            return difference <= relativeTolerance;
+        }
+
+        public void compare(String description, long first, long second) {
+            if (_ignoredFields.contains(description)) return;
+            if (first != second) {
+                Difference difference = new Difference(description, first, second);
+                addDifference(difference);
+            }
+        }
+
+        public void compare(String description, long[] first, long[] second) {
+            if (_ignoredFields.contains(description)) return;
+            if (!Arrays.equals(first, second)) {
+                String firstString = Arrays.toString(first);
+                String secondString = Arrays.toString(second);
+                Difference difference = new Difference(description, firstString, secondString);
+                addDifference(difference);
+            }
+        }
+
+        @Override
+        public String toString() {
+            String genericInformation = super.toString();
+            return String.format("relative tolerance %f - %s", _relativeTolerance, genericInformation);
         }
     }
 }

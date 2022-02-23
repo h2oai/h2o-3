@@ -50,15 +50,15 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
   @Override public float[] hr() { return _hit_ratios; }
 
   @Override
-  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+    super.isEqualUpToTolerance(comparator, other);
     ModelMetricsOrdinal specificOther = (ModelMetricsOrdinal) other;
-    
-    result.compareValuesUpToTolerance("logloss", this.logloss(), specificOther.logloss(), proportionalTolerance);
-    result.compareValuesUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance);
-    result.compareValuesUpToTolerance("hr", this.hr(), specificOther.hr(), proportionalTolerance);
+
+    comparator.compareValuesUpToTolerance("logloss", this.logloss(), specificOther.logloss());
+    comparator.compareValuesUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error());
+    comparator.compareValuesUpToTolerance("hr", this.hr(), specificOther.hr());
     // CM not supported yet.
-    return result;
+    return comparator.isEqual();
   }
 
   public static ModelMetricsOrdinal getFromDKV(Model model, Frame frame) {

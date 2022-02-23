@@ -58,12 +58,12 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
   }
 
   @Override
-  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+    super.isEqualUpToTolerance(comparator, other);
     ModelMetricsBinomialGLM specificOther = (ModelMetricsBinomialGLM) other;
     
-    result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
-    return result;
+    GLMMetrics.compareMetricsUpToTolerance(comparator, this, specificOther);
+    return comparator.isEqual();
   }
   
   public static class ModelMetricsMultinomialGLM extends ModelMetricsMultinomial implements GLMMetrics {
@@ -121,12 +121,12 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     }
 
     @Override
-    public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-      ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+      super.isEqualUpToTolerance(comparator, other);
       ModelMetricsMultinomialGLM specificOther = (ModelMetricsMultinomialGLM) other;
       
-      result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
-      return result;
+      GLMMetrics.compareMetricsUpToTolerance(comparator, this, specificOther);
+      return comparator.isEqual();
     }
   }
 
@@ -185,12 +185,12 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     }
 
     @Override
-    public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-      ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+      super.isEqualUpToTolerance(comparator, other);
       ModelMetricsOrdinalGLM specificOther = (ModelMetricsOrdinalGLM) other;
       
-      result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
-      return result;
+      GLMMetrics.compareMetricsUpToTolerance(comparator, this, specificOther);
+      return comparator.isEqual();
     }
   }
 }

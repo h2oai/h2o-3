@@ -11,12 +11,11 @@ public interface GLMMetrics {
     long residual_degrees_of_freedom();
     long null_degrees_of_freedom();
     
-    static ComparisonUtils.AccumulatedComparisonResult compareMetricsUpToTolerance(GLMMetrics first, GLMMetrics second, double proportionalTolerance) {
-        ComparisonUtils.AccumulatedComparisonResult result = new ComparisonUtils.AccumulatedComparisonResult();
-        result.compareValuesUpToTolerance("residual_deviance" ,first.residual_deviance(), second.residual_deviance(), proportionalTolerance);
-        result.compareValuesUpToTolerance("null_deviance", first.null_deviance(), second.null_deviance(), proportionalTolerance);
-        result.compareValuesUpToTolerance("residual_degrees_of_freedom", first.residual_degrees_of_freedom(), second.residual_degrees_of_freedom(), proportionalTolerance);
-        result.compareValuesUpToTolerance("null_degrees_of_freedom", first.null_degrees_of_freedom(), second.null_degrees_of_freedom(), proportionalTolerance);
-        return result;
+    static boolean compareMetricsUpToTolerance(ComparisonUtils.MetricComparator comparator, GLMMetrics first, GLMMetrics second) {
+        comparator.compareValuesUpToTolerance("residual_deviance" ,first.residual_deviance(), second.residual_deviance());
+        comparator.compareValuesUpToTolerance("null_deviance", first.null_deviance(), second.null_deviance());
+        comparator.compareValuesUpToTolerance("residual_degrees_of_freedom", first.residual_degrees_of_freedom(), second.residual_degrees_of_freedom());
+        comparator.compareValuesUpToTolerance("null_degrees_of_freedom", first.null_degrees_of_freedom(), second.null_degrees_of_freedom());
+        return comparator.isEqual();
     }
 }
