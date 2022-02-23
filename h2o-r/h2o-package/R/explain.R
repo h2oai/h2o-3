@@ -2347,6 +2347,9 @@ is_binomial <- function(model) {
 #' PDP shows the average effect of a feature while ICE plot shows the effect for a single 
 #' instance. This function will plot the effect for each decile. In contrast to the PDP, 
 #' ICE plots can provide more insight, especially when there is stronger feature interaction.
+#' Also, the plot shows the original observation values marked by semi-transparent circle on each ICE line.
+#' Please note, that the score of the original observation value may differ from score value of underlying
+#' ICE line at original observation point as ICE line is drawn as an interpolation of several points.
 #'
 #' @param model An H2OModel.
 #' @param newdata An H2OFrame.
@@ -2433,45 +2436,106 @@ h2o.ice_plot <- function(model,
     quantiles <- quantiles[c(1, round((seq_len(11) - 1) * length(quantiles) / 10))]
 
     results <- data.frame()
+    orig_values <- data.frame()
     i <- 0
     for (idx in quantiles) {
+      percentile_str <- sprintf("%dth Percentile", i * 10)
       tmp <- as.data.frame(h2o.partialPlot(
         models_info$get_model(models_info$model),
         newdata,
         column,
-        row_index = as.integer(idx),
+        row_index = as.integer(idx - 1),
         plot = FALSE,
         targets = target,
         nbins = if (is_factor) {
           h2o.nlevels(newdata[[column]]) + 1
         } else {
-          20
-        }
+          100
+        },
+        include_na = TRUE
       ))
       y_label <- "Response"
       if (!is_factor && centered) {
         tmp[["mean_response"]] <- tmp[["mean_response"]] - tmp[["mean_response"]][1]
         y_label <- "Response difference"
       }
-      tmp[["name"]] <- sprintf("%dth Percentile", i * 10)
-      i <- i + 1
+      tmp[["name"]] <- percentile_str
+
+      subdata <- as.data.frame(newdata[as.integer(idx),])[[gsub(" ", ".", column)]]
+      if (is.na(subdata)) {
+        # NAs / special values going to be handled in PUBDEV-8493 / NAs in original observations approach should be aligned
+        if (is.factor(newdata[[column]])) {
+          orig_values <- rbind(orig_values, tmp[which(tmp[[column]] == ".missing(NA)"), c(column, "name", "mean_response")])
+        } else {
+          orig_values <- rbind(orig_values, tmp[which(is.na(tmp[[column]])), c(column, "name", "mean_response")])
+        }
+        interval <-
+          paste("[", orig_values[nrow(orig_values), c(column)], ", ", orig_values[nrow(orig_values), c("mean_response")], "]", sep =
+            "")
+        message <-
+          paste(
+            "Original observation of '",
+            column,
+            "' for ",
+            percentile_str,
+            " is ",
+            interval,
+            ". Ploting of NAs is not yet supported.",
+            sep = ""
+          )
+        warning(message)
+      } else {
+        column_split = if (is.factor(subdata)) {
+          c(as.character(subdata))
+        } else {
+          c(subdata)
+        }
+        user_splits_list = list(c(column, column_split))
+        orig_tmp <- as.data.frame(
+          h2o.partialPlot(
+            models_info$get_model(models_info$model),
+            newdata,
+            column,
+            row_index = as.integer(idx - 1),
+            plot = FALSE,
+            targets = target,
+            user_splits = user_splits_list
+          )
+        )
+        orig_tmp[["name"]] <- percentile_str
+        orig_values <-
+          rbind(orig_values, orig_tmp[, c(column, "name", "mean_response")])
+      }
+      if (is.factor(newdata[[column]])) {
+        tmp <- tmp[which(tmp[[column]] != ".missing(NA)"),]
+      } else {
+        tmp <- tmp[which(!is.na(tmp[[column]])),]
+      }
       results <- rbind(results, tmp[, c(column, "name", "mean_response")])
+      i <- i + 1
     }
     results[["name"]] <- factor(
       results[["name"]],
       unlist(sapply(seq_len(11), function(i) sprintf("%dth Percentile", (i - 1) * 10)))
     )
     names(results) <- make.names(names(results))
+    names(orig_values) <- make.names(names(orig_values))
 
     col_name <- make.names(column)
 
     if (is.character(results[[col_name]])) {
       results[[col_name]] <- as.factor(results[[col_name]])
+      orig_values[[col_name]] <- as.factor(orig_values[[col_name]])
     }
     results[["text"]] <- paste0(
       "Percentile: ", results[["name"]], "\n",
       "Feature Value: ", results[[col_name]], "\n",
       "Mean Response: ", results[["mean_response"]], "\n"
+    )
+    orig_values[["text"]] <- paste0(
+      "Percentile: ", orig_values[["name"]], "\n",
+      "Feature Value: ", orig_values[[col_name]], "\n",
+      "Mean Response: ", orig_values[["mean_response"]], "\n"
     )
     y_range <- range(results$mean_response)
 
@@ -2485,7 +2549,7 @@ h2o.ice_plot <- function(model,
                                         nbins = if (is_factor) {
                                           h2o.nlevels(newdata[[column]]) + 1
                                         } else {
-                                          20
+                                          100
                                         }
           ))
         if (!is_factor && centered) {
@@ -2535,7 +2599,11 @@ h2o.ice_plot <- function(model,
       } else {
         sprintf(" with Target = \"%s\"", target)
       },
-      model@model_id
+      model@model_id,
+      caption = sprintf(" *Note that response values out of [ \"%s\",  \"%s\"] are not displayed.",
+                        min(y_range),
+                        max(y_range)
+      )
     ))
     # make the histogram closer to the axis. (0.05 is the default value)
     histogram_alignment <- ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
@@ -2555,10 +2623,31 @@ h2o.ice_plot <- function(model,
       theme_part +
       theme_part2
 
-    ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$name))
+    ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
+                                   if (is.factor(newdata[[col_name]])) {
+                                     ggplot2::aes(shape = "ICE", group = .data$name)
+                                   } else {
+                                     ggplot2::aes(linetype = "ICE", group = .data$name)
+                                   })
+    original_observations_part <- ggplot2::geom_point(data = as.data.frame(orig_values),
+                                                      size = 4.5,
+                                                      alpha = 0.5,
+                                                      ggplot2::aes(shape = "Original observations",
+                                                                   group = "Original observations"),
+                                                      x = orig_values[[column]],
+                                                      y = orig_values[['mean_response']],
+                                                      show.legend = ifelse(is.numeric(newdata[[column]]), NA, FALSE)
+    )
+    shape_legend_manual <- ggplot2::scale_shape_manual(
+      values = c("Original observations" = 19, "ICE" = 20, "Partial Dependence" = 18))
+    shape_legend_manual2 <- ggplot2::scale_linetype_manual(values = c("Partial Dependence" = "dashed", "ICE" = "solid"))
+
     color_spec <- ggplot2::scale_color_viridis_d(option = "plasma")
 
-    q <- q + ice_part + color_spec
+    q <- q +
+      ice_part +
+      original_observations_part +
+      color_spec
 
     if (show_pdp == TRUE) {
       pdp_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
@@ -2567,12 +2656,13 @@ h2o.ice_plot <- function(model,
                                      } else {
                                        ggplot2::aes(linetype = "Partial Dependence", group = "Partial Dependence")
                                      },
-                                     data = as.data.frame(pdp), color = "black"
+                                     data = pdp, color = "black"
       )
       pdp_dashed <- ggplot2::scale_linetype_manual(values = c("Partial Dependence" = "dashed"))
 
       q <- q + pdp_part + pdp_dashed
     }
+    q <- q + shape_legend_manual + shape_legend_manual2
     return(q)
   })
 }

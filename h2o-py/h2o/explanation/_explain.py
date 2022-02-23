@@ -1231,6 +1231,37 @@ def pd_multi_plot(
 def _center(col):
     col[:] = col - col[0]
 
+def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
+                        index, column, color, percentile_string):
+    PDP_RESULT_FACTOR_NAN_MARKER = '.missing(NA)'
+    user_splits = dict()
+    orig_value = frame.as_data_frame()[column][index]
+    if _isnan(orig_value):
+        if is_factor:
+            idx = np.where(tmp[encoded_col] == tmp.from_factor_to_num(encoded_col)[PDP_RESULT_FACTOR_NAN_MARKER])[0][0]
+        else:
+            idx = np.where(np.isnan(tmp[encoded_col]))[0][0]
+        # orig_null_value = tmp.from_num_to_factor(encoded_col)[tmp[encoded_col][idx]] if is_factor else tmp[encoded_col][idx]
+        orig_null_value = PDP_RESULT_FACTOR_NAN_MARKER if is_factor else np.nan
+        msg = "Original observation of \"{}\" for {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col, percentile_string, orig_null_value, tmp["mean_response"][idx])
+        warnings.warn(msg)
+        return tmp["mean_response"][idx]
+    else:
+        user_splits[column] = [orig_value]
+        orig_tmp = NumpyFrame(
+            model.partial_plot(
+                frame,
+                cols=[column],
+                plot=False,
+                row_index=index,
+                targets=target,
+                user_splits=user_splits,
+            )[0]
+        )
+        plt.scatter(orig_tmp[encoded_col], orig_tmp["mean_response"],
+                    color=[color], marker='o', s=150, alpha=0.5)
+        return orig_tmp["mean_response"]
+
 def ice_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
@@ -1252,6 +1283,9 @@ def ice_plot(
     PDP shows the average effect of a feature while ICE plot shows the effect for a single
     instance. The following plot shows the effect for each decile. In contrast to partial
     dependence plot, ICE plot can provide more insight especially when there is stronger feature interaction.
+    Also, the plot shows the original observation values marked by semi-transparent circle on each ICE line. Please note, that
+    the score of the original observation value may differ from score value of underlying ICE line at original
+    observation point as ICE line is drawn as an interpolation of several points.
 
     :param model: H2OModel
     :param frame: H2OFrame
@@ -1329,8 +1363,10 @@ def ice_plot(
         plt.figure(figsize=figsize)
 
         deciles = [int(round(frame.nrow * dec / 10)) for dec in range(11)]
+        deciles[10] = frame.nrow - 1
         colors = plt.get_cmap(colormap, 11)(list(range(11)))
         for i, index in enumerate(deciles):
+            percentile_string = "{}th Percentile".format(i * 10)
             tmp = NumpyFrame(
                 model.partial_plot(
                     frame,
@@ -1338,7 +1374,8 @@ def ice_plot(
                     plot=False,
                     row_index=index,
                     targets=target,
-                    nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
+                    nbins=100 if not is_factor else 1 + frame[column].nlevels()[0],
+                    include_na=True
                 )[0]
             )
             response = _get_response(tmp["mean_response"], show_logodds)
@@ -1347,16 +1384,18 @@ def ice_plot(
             if not is_factor and centered:
                 _center(tmp["mean_response"])
                 y_label = "Response difference"
+            _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
+                                frame, index, column, colors[i], percentile_string)
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)),
                             response,
                             color=[colors[i]],
-                            label="{}th Percentile".format(i * 10))
+                            label=percentile_string)
             else:
                 plt.plot(tmp[encoded_col],
                          response,
                          color=colors[i],
-                         label="{}th Percentile".format(i * 10))
+                         label=percentile_string)
 
         if show_pdp:
             tmp = NumpyFrame(
@@ -1365,7 +1404,7 @@ def ice_plot(
                     cols=[column],
                     plot=False,
                     targets=target,
-                    nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
+                    nbins=100 if not is_factor else 1 + frame[column].nlevels()[0]
                 )[0]
             )
             encoded_col = tmp.columns[0]
@@ -1385,11 +1424,17 @@ def ice_plot(
             column,
             " with target = \"{}\"".format(target[0]) if target else ""
         ))
+        plt.xlabel(column)
         plt.ylabel(y_label)
         ax = plt.gca()
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        # add custom legend for Original observations:
+        handles, labels = ax.get_legend_handles_labels()
+        patch = plt.plot([],[], marker="o", alpha=0.5, ms=10, ls="", mec=None, color='grey',
+                     label="Original observations")[0]
+        handles.append(patch)
+        plt.legend(handles=handles, loc='center left', bbox_to_anchor=(1, 0.5))
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
@@ -1413,6 +1458,11 @@ def _get_response(mean_response, show_logodds):
         return np.log(mean_response / (1 - mean_response))
     else:
         return mean_response
+def _isnan(value):
+    if isinstance(value, float):
+        return np.isnan(value)
+    else:
+        return False
 
 def _has_varimp(model):
     # type: (h2o.model.ModelBase) -> bool
