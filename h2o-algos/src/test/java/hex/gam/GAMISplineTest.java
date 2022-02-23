@@ -82,4 +82,39 @@ public class GAMISplineTest extends TestUtil {
         }
     }
 
+    @Test
+    public void testGamificationSimple() {
+        Scope.enter();
+        try {
+            Frame train = Scope.track(generateRealWithRangeOnly(4, 100, 0, 12345,
+                    1)); // generate training frame
+            // generate knots frame
+            double[][] pctiles = new double[][]{{-1},{-0.6},{-0.5},{-0.3},{0},{0.3},{0.5},{0.6},{1}};
+            Frame knotsFrame1 = genFrameKnots(pctiles);
+            DKV.put(knotsFrame1);
+            Scope.track(knotsFrame1);
+            // generate gamified frame
+            String[][] gamCols = new String[][]{{"C1"}, {"C2"}, {"C3"}};
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._scale = new double[]{0.1, 0.1, 0.1};
+            params._bs = new int[]{2,2,2};
+            params._family = gaussian;
+            params._response_column = "C4";
+            params._spline_orders = new int[]{2,2,2};
+            params._max_iterations = 1;
+            params._savePenaltyMat = true;
+            params._gam_columns = gamCols;
+            params._knot_ids = new Key[]{knotsFrame1._key, knotsFrame1._key, knotsFrame1._key};
+            params._train = train._key;
+            params._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            params._keep_gam_cols = true;
+            final GAMModel gam = new GAM(params).trainModel().get();
+            Scope.track_generic(gam);
+
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
 }

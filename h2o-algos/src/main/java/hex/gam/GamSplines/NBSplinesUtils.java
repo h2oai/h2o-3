@@ -1,5 +1,7 @@
 package hex.gam.GamSplines;
 
+import water.util.ArrayUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -92,5 +94,49 @@ public class NBSplinesUtils {
     
         }
         return combinedCoefficients;
+    }
+    
+    public static void combineParentCoef(double[] parentCoeff, double parentConst, double[][] currCoeff) {
+        int numBasis = currCoeff.length;
+        double[] copyParentCoef = parentCoeff.clone();
+        ArrayUtils.mult(copyParentCoef, parentConst);
+        for (int index = 0; index < numBasis; index++) {
+            if (currCoeff[index] != null) {
+                currCoeff[index] = combineCoef(copyParentCoef, currCoeff[index]);
+            }
+        }
+    }
+    
+    public static void sumCoeffs(double[][] leftCoeffs, double[][] riteCoeffs, double[][] currCoeffs) {
+        int knotInt = leftCoeffs.length;
+        for (int index=0; index < knotInt; index++) {
+            double[] leftCoef1 = leftCoeffs[index];
+            double[] riteCoef1 = riteCoeffs[index];
+            if (leftCoef1 != null || riteCoef1 != null) {
+                if (leftCoef1 != null && riteCoef1 != null) {
+                    currCoeffs[index] = addCoeffs(leftCoef1, riteCoef1);
+                } else if (leftCoef1 != null) {
+                    currCoeffs[index] = leftCoef1.clone();
+                } else { // only riteCoef1 is not null
+                    currCoeffs[index] = riteCoef1.clone();
+                }
+            }
+        }
+    }
+    
+    public static double[] addCoeffs(double[] leftCoef, double[] riteCoef) {
+        int leftLen = leftCoef.length;
+        int riteLen = riteCoef.length;
+        int coeffLen = Math.max(leftLen, riteLen);
+        double[] sumCoeffs = new double[coeffLen];
+        for (int index=0; index<coeffLen; index++) {
+            double val = 0;
+            if (index < leftLen)
+                val += leftCoef[index];
+            if (index < riteLen) 
+                val += riteCoef[index];
+            sumCoeffs[index] = val;
+        }
+        return sumCoeffs;
     }
 }
