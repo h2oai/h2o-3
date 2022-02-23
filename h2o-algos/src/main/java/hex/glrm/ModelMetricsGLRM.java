@@ -26,15 +26,15 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
   }
 
   @Override
-  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+    super.isEqualUpToTolerance(comparator, other);
     ModelMetricsGLRM specificOther = (ModelMetricsGLRM) other;
-    
-    result.compareValuesUpToTolerance("numerr", this._numerr, specificOther._numerr, proportionalTolerance);
-    result.compareValuesUpToTolerance("caterr", this._caterr, specificOther._caterr, proportionalTolerance);
-    result.compare("numcnt", this._numcnt, specificOther._numcnt);
-    result.compare("catcnt", this._catcnt, specificOther._catcnt);
-    return result;
+
+    comparator.compareValuesUpToTolerance("numerr", this._numerr, specificOther._numerr);
+    comparator.compareValuesUpToTolerance("caterr", this._caterr, specificOther._caterr);
+    comparator.compare("numcnt", this._numcnt, specificOther._numcnt);
+    comparator.compare("catcnt", this._catcnt, specificOther._catcnt);
+    return comparator.isEqual();
   }
 
   public static class GlrmModelMetricsBuilder extends MetricBuilderUnsupervised<GlrmModelMetricsBuilder> {
