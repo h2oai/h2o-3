@@ -2392,7 +2392,7 @@ h2o.ice_plot <- function(model,
                          target = NULL,
                          max_levels = 30,
                          show_pdp = TRUE,
-                         binary_response_scale = c("response", "logodds")) {
+                         binary_response_scale = c("response", "logodds"),
                          centered = FALSE) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used

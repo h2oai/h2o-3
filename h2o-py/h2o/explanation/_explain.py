@@ -1241,7 +1241,7 @@ def ice_plot(
         colormap="plasma",  # type: str
         save_plot_path=None,  # type: Optional[str]
         show_pdp=True,  # type: bool
-        binary_response_scale="response" # type: Literal["response", "logodds"]
+        binary_response_scale="response", # type: Literal["response", "logodds"]
         centered=False # type: bool
 ):  # type: (...) -> plt.Figure
     """
