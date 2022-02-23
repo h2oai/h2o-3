@@ -32,7 +32,7 @@ public class NBSplinesTypeIDerivative {
         _order = order;
         _basisIndex = basisIndex;
         _knots = extractKnots(_basisIndex, order, fullKnots);;
-        _commonConst = _order/(_order-1.0)*((_knots.get(_order) == _knots.get(0)) ? 0 : 1.0/(_knots.get(_order)-_knots.get(0)));
+        _commonConst = _order*((_knots.get(_order) == _knots.get(0)) ? 0 : 1.0/(_knots.get(_order)-_knots.get(0)));
         _leftCoeff = new double[]{1};
         _rightCoeff = new double[]{1};
         _left = formBasis(_knots, _order-1, basisIndex, 0, fullKnots.size()-1);

@@ -201,7 +201,7 @@ public class GamBasicISplineTest extends TestUtil {
         List<Double> knotsWithDuplicates = fillKnots(knots, order);
         int numBasis = knots.length+order-2;
         double[][][] manualCoefs = new double[][][]{{null, {-12.5}}, {null, {10}, {-40}}, {null, null, {20/0.3}, 
-                {-40/0.3}}, {null, null, null, {20},{-4/0.3}}, {null, null, null, null, {2/0.18},{-2/0.18}}, {null, 
+                {-10/0.3}}, {null, null, null, {20},{-4/0.3}}, {null, null, null, null, {2/0.18},{-2/0.18}}, {null, 
                 null, null, null, null, {4/0.3},{-4/0.2}}, {null, null, null, null, null, null, {2/0.06},{-2/0.03}},
                 {null, null, null, null, null, null, null, {4/0.1},{-4/0.4}}, {null, null, null, null, null, null, 
                 null, null, {5/0.4}}};
@@ -209,11 +209,18 @@ public class GamBasicISplineTest extends TestUtil {
         assertCorrectDerivativeCoeffs(allDerivatives, manualCoefs);
         
         order = 3;
-        manualCoefs = new double[][][]{{null, {56.25, 93.75}}, {null, null, {-17.5*3/0.5, -22.5*3/0.5}, {20*3/0.5, 
-                40*3/0.5}}, {}};
+        manualCoefs = new double[][][]{{null, null, {56.25, 93.75}}, {null, null, {-17.5*3/0.5, -22.5*3/0.5}, {20*3/0.5, 
+                40*3/0.5}}, {null, null, {30/0.7, 30/0.7}, {-60/0.7-120/0.7, -120/0.7-60/0.21}, {30/0.7, 30/0.21}}, 
+                {null, null, null, {120/0.6, 60/0.18}, {-30/0.6-30/0.6, -30/0.18-60/0.6}, {0,12/0.18}}, {null,
+                null, null, null, {30/0.8, 60/0.8}, {-6/0.48, -12/0.24-6/(0.8*0.18)}, {-6/0.48, 6/(0.18*0.8)}}, {null, 
+                null, null, null, null, {6/0.48, 6/(0.8*0.18)},{6/0.48, -6/(0.8*0.18)-12/0.24},{-6/0.16, 60/0.8}}, {null, null,
+                null, null, null, null,{0,12/0.18},{6/0.12+30/0.6, -60/0.6-30/0.18},{-36/0.18, 60/0.18}}, {null,
+                null, null, null, null, null, null, {-30/0.7, 30/0.21},{36/0.21+60/0.7, -60/0.21-120/0.7}, {-30/0.7, 
+                30/0.7}}, {null, null, null, null, null, null, null, null,{-60/0.5, 120/0.5},{30/0.5+7.5*3/0.5, 
+                -30/0.5-12.5*3/0.5}}, {null, null, null, null, null, null, null, null, null, {-7.5*3/0.4, 12.5*3/0.4}}};
         knotsWithDuplicates = fillKnots(knots, order);
         allDerivatives = formDerivatives(numBasis, order, knotsWithDuplicates);
-        
+        assertCorrectDerivativeCoeffs(allDerivatives, manualCoefs);
     }
 
     public static double[][][] genManualCoeffsOrder2(List<Double> fullKnots, NBSplinesTypeI[] nbSplines, int order) {
