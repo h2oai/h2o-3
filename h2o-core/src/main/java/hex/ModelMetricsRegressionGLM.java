@@ -52,11 +52,11 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression implements
   }
 
   @Override
-  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+    super.isEqualUpToTolerance(comparator, other);
     ModelMetricsRegressionGLM specificOther = (ModelMetricsRegressionGLM) other;
 
-    result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
-    return result;
+    GLMMetrics.compareMetricsUpToTolerance(comparator, this, specificOther);
+    return comparator.isEqual();
   }
 }

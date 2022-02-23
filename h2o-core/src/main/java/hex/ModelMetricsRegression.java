@@ -32,15 +32,15 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   }
 
   @Override
-  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
+    super.isEqualUpToTolerance(comparator, other);
     ModelMetricsRegression specificOther = (ModelMetricsRegression) other;
 
-    result.compareValuesUpToTolerance("residual_deviance", this.residual_deviance(), specificOther.residual_deviance(), proportionalTolerance);
-    result.compareValuesUpToTolerance("mean_residual_deviance", this.mean_residual_deviance(), specificOther.mean_residual_deviance(), proportionalTolerance);
-    result.compareValuesUpToTolerance("mae", this.mae(), specificOther.mae(), proportionalTolerance);
-    result.compareValuesUpToTolerance("rmsle", this.rmsle(), specificOther.rmsle(), proportionalTolerance);
-    return result;
+    comparator.compareValuesUpToTolerance("residual_deviance", this.residual_deviance(), specificOther.residual_deviance());
+    comparator.compareValuesUpToTolerance("mean_residual_deviance", this.mean_residual_deviance(), specificOther.mean_residual_deviance());
+    comparator.compareValuesUpToTolerance("mae", this.mae(), specificOther.mae());
+    comparator.compareValuesUpToTolerance("rmsle", this.rmsle(), specificOther.rmsle());
+    return comparator.isEqual();
   }
 
   public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {
