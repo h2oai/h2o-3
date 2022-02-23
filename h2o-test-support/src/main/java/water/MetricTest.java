@@ -186,10 +186,11 @@ public abstract class MetricTest extends TestUtil {
             Assert.assertTrue(
                     "Unexpected type of training metrics",
                     expectedTrainingMetrics.getClass() == trainingMetrics.getClass());
-            ComparisonUtils.AccumulatedComparisonResult trainingResult = expectedTrainingMetrics.isEqualUpToTolerance(trainingMetrics, tolerance);
+            ComparisonUtils.MetricComparator trainingMetricComparator = new ComparisonUtils.RelativeToleranceMetricComparator(tolerance);
+            expectedTrainingMetrics.isEqualUpToTolerance(trainingMetricComparator, trainingMetrics);
             Assert.assertTrue(
-                    "Training metrics are not equal upto proportional tolerance " + tolerance + ". " + trainingResult,
-                    trainingResult.isEqual());
+                    "Training metrics are not equal upto proportional tolerance " + tolerance + ". " + trainingMetricComparator,
+                    trainingMetricComparator.isEqual());
         }
 
         if (validationFrame != null) {
@@ -199,10 +200,11 @@ public abstract class MetricTest extends TestUtil {
             Assert.assertTrue(
                     "Unexpected type of validation metrics",
                     expectedValidationMetrics.getClass() == validationMetrics.getClass());
-            ComparisonUtils.AccumulatedComparisonResult validationResult = expectedValidationMetrics.isEqualUpToTolerance(validationMetrics, tolerance);
+            ComparisonUtils.MetricComparator validationMetricComparator = new ComparisonUtils.RelativeToleranceMetricComparator(tolerance);
+            expectedValidationMetrics.isEqualUpToTolerance(validationMetricComparator, validationMetrics);
             Assert.assertTrue(
-                    "Validation metrics are not equal upto proportional tolerance "+ tolerance + ". " + validationResult,
-                    validationResult.isEqual());
+                    "Validation metrics are not equal upto proportional tolerance "+ tolerance + ". " + validationMetricComparator,
+                    validationMetricComparator.isEqual());
         }
     }
 
