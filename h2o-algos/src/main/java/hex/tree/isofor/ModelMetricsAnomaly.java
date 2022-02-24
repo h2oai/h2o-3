@@ -39,8 +39,8 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
     super.isEqualUpToTolerance(comparator, other);
     ModelMetricsAnomaly specificOther = (ModelMetricsAnomaly) other;
 
-    comparator.compareValuesUpToTolerance("mean_score", this._mean_score, specificOther._mean_score);
-    comparator.compareValuesUpToTolerance("mean_normalized_score", this._mean_normalized_score, specificOther._mean_normalized_score);
+    comparator.compareUpToTolerance("mean_score", this._mean_score, specificOther._mean_score);
+    comparator.compareUpToTolerance("mean_normalized_score", this._mean_normalized_score, specificOther._mean_normalized_score);
     
     return comparator.isEqual();
   }

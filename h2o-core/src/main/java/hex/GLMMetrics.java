@@ -12,10 +12,10 @@ public interface GLMMetrics {
     long null_degrees_of_freedom();
     
     static boolean compareMetricsUpToTolerance(ComparisonUtils.MetricComparator comparator, GLMMetrics first, GLMMetrics second) {
-        comparator.compareValuesUpToTolerance("residual_deviance" ,first.residual_deviance(), second.residual_deviance());
-        comparator.compareValuesUpToTolerance("null_deviance", first.null_deviance(), second.null_deviance());
-        comparator.compareValuesUpToTolerance("residual_degrees_of_freedom", first.residual_degrees_of_freedom(), second.residual_degrees_of_freedom());
-        comparator.compareValuesUpToTolerance("null_degrees_of_freedom", first.null_degrees_of_freedom(), second.null_degrees_of_freedom());
+        comparator.compareUpToTolerance("residual_deviance" ,first.residual_deviance(), second.residual_deviance());
+        comparator.compareUpToTolerance("null_deviance", first.null_deviance(), second.null_deviance());
+        comparator.compareUpToTolerance("residual_degrees_of_freedom", first.residual_degrees_of_freedom(), second.residual_degrees_of_freedom());
+        comparator.compareUpToTolerance("null_degrees_of_freedom", first.null_degrees_of_freedom(), second.null_degrees_of_freedom());
         return comparator.isEqual();
     }
 }

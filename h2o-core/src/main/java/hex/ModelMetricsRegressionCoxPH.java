@@ -58,10 +58,11 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
     super.isEqualUpToTolerance(comparator, other);
     ModelMetricsRegressionCoxPH specificOther = (ModelMetricsRegressionCoxPH) other;
 
-    comparator.compareValuesUpToTolerance("concordance", this.concordance(), specificOther.concordance());
+    comparator.compareUpToTolerance("concordance", this.concordance(), specificOther.concordance());
     comparator.compare("concordant", this.concordant(), specificOther.concordant());
     comparator.compare("discordant", this.discordant(), specificOther.discordant());
     comparator.compare("tiedY", this.tiedY(), specificOther.tiedY());
+    
     return comparator.isEqual();
   }
 

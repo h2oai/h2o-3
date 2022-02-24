@@ -1,5 +1,8 @@
 package water.util;
 
+import hex.ConfusionMatrix;
+import hex.GainsLift;
+
 import java.util.*;
 
 public class ComparisonUtils {
@@ -11,11 +14,15 @@ public class ComparisonUtils {
             _differences.add(difference);
         }
         
-        public abstract void compareValuesUpToTolerance(String description, double first, double second);
+        public abstract void compareUpToTolerance(String description, double first, double second);
 
-        public abstract void compareValuesUpToTolerance(String description, double[] first, double[] second);
+        public abstract void compareUpToTolerance(String description, double[] first, double[] second);
 
-        public abstract void compareValuesUpToTolerance(String description, float[] first, float[] second);
+        public abstract void compareUpToTolerance(String description, float[] first, float[] second);
+
+        public abstract void compareUpToTolerance(String description, ConfusionMatrix first, ConfusionMatrix second);
+
+        public abstract void compareUpToTolerance(String description, GainsLift first, GainsLift second);
         
         public abstract void compare(String description, long first, long second);
 
@@ -83,15 +90,15 @@ public class ComparisonUtils {
             _relativeTolerance = relativeTolerance;
         }
 
-        public void compareValuesUpToTolerance(String description, double first, double second) {
+        public void compareUpToTolerance(String description, double first, double second) {
             if (_ignoredFields.contains(description)) return;
-            if (!compareValuesUpToTolerance(first, second, _relativeTolerance)) {
+            if (!compareUpToTolerance(first, second, _relativeTolerance)) {
                 Difference difference = new Difference(description, first, second);
                 addDifference(difference);
             }
         }
 
-        private static boolean compareValuesUpToTolerance(float[] first, float[] second, double relativeTolerance) {
+        private static boolean compareUpToTolerance(float[] first, float[] second, double relativeTolerance) {
             if (first == null) {
                 return second == null;
             }
@@ -99,14 +106,14 @@ public class ComparisonUtils {
                 return false;
             }
             for (int i = 0; i < first.length; i++) {
-                if(!compareValuesUpToTolerance(first[i], second[i], relativeTolerance)) return false;
+                if(!compareUpToTolerance(first[i], second[i], relativeTolerance)) return false;
             }
             return true;
         }
 
-        public void compareValuesUpToTolerance(String description, double[] first, double[] second) {
+        public void compareUpToTolerance(String description, double[] first, double[] second) {
             if (_ignoredFields.contains(description)) return;
-            if (!compareValuesUpToTolerance(first, second, _relativeTolerance)) {
+            if (!compareUpToTolerance(first, second, _relativeTolerance)) {
                 String firstString = Arrays.toString(first);
                 String secondString = Arrays.toString(second);
                 Difference difference = new Difference(description, firstString, secondString);
@@ -114,7 +121,7 @@ public class ComparisonUtils {
             }
         }
 
-        private static boolean compareValuesUpToTolerance(double[] first, double[] second, double relativeTolerance) {
+        private static boolean compareUpToTolerance(double[] first, double[] second, double relativeTolerance) {
             if (first == null) {
                 return second == null;
             }
@@ -122,14 +129,14 @@ public class ComparisonUtils {
                 return false;
             }
             for (int i = 0; i < first.length; i++) {
-                if(!compareValuesUpToTolerance(first[i], second[i], relativeTolerance)) return false;
+                if(!compareUpToTolerance(first[i], second[i], relativeTolerance)) return false;
             }
             return true;
         }
 
-        public void compareValuesUpToTolerance(String description, float[] first, float[] second) {
+        public void compareUpToTolerance(String description, float[] first, float[] second) {
             if (_ignoredFields.contains(description)) return;
-            if (!compareValuesUpToTolerance(first, second, _relativeTolerance)) {
+            if (!compareUpToTolerance(first, second, _relativeTolerance)) {
                 String firstString = Arrays.toString(first);
                 String secondString = Arrays.toString(second);
                 Difference difference = new Difference(description, firstString, secondString);
@@ -137,7 +144,17 @@ public class ComparisonUtils {
             }
         }
 
-        private static boolean compareValuesUpToTolerance(double first, double second, double relativeTolerance) {
+        @Override
+        public void compareUpToTolerance(String description, ConfusionMatrix first, ConfusionMatrix second) {
+            // Not supported yet
+        }
+
+        @Override
+        public void compareUpToTolerance(String description, GainsLift first, GainsLift second) {
+            // Not supported yet
+        }
+
+        private static boolean compareUpToTolerance(double first, double second, double relativeTolerance) {
             if (Double.isNaN(first)) {
                 return Double.isNaN(second);
             }
@@ -155,12 +172,7 @@ public class ComparisonUtils {
                 return true;
             }
 
-            double ratio = first / second;
-            if (ratio < 0) {
-                return false;
-            }
-
-            double difference = Math.abs(ratio - 1);
+            double difference = Math.abs(first - second) / Math.max(Math.abs(first), Math.abs(second));
 
             return difference <= relativeTolerance;
         }
