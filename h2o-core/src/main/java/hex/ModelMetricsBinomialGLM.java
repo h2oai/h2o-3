@@ -63,6 +63,7 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     ModelMetricsBinomialGLM specificOther = (ModelMetricsBinomialGLM) other;
     
     GLMMetrics.compareMetricsUpToTolerance(comparator, this, specificOther);
+    
     return comparator.isEqual();
   }
   
@@ -126,6 +127,7 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
       ModelMetricsMultinomialGLM specificOther = (ModelMetricsMultinomialGLM) other;
       
       GLMMetrics.compareMetricsUpToTolerance(comparator, this, specificOther);
+      
       return comparator.isEqual();
     }
   }
@@ -190,6 +192,7 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
       ModelMetricsOrdinalGLM specificOther = (ModelMetricsOrdinalGLM) other;
       
       GLMMetrics.compareMetricsUpToTolerance(comparator, this, specificOther);
+      
       return comparator.isEqual();
     }
   }

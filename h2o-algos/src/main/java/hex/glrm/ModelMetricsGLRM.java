@@ -34,6 +34,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     comparator.compareUpToTolerance("caterr", this._caterr, specificOther._caterr);
     comparator.compare("numcnt", this._numcnt, specificOther._numcnt);
     comparator.compare("catcnt", this._catcnt, specificOther._catcnt);
+    
     return comparator.isEqual();
   }
 

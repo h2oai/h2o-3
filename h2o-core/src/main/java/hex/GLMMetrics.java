@@ -16,6 +16,7 @@ public interface GLMMetrics {
         comparator.compareUpToTolerance("null_deviance", first.null_deviance(), second.null_deviance());
         comparator.compareUpToTolerance("residual_degrees_of_freedom", first.residual_degrees_of_freedom(), second.residual_degrees_of_freedom());
         comparator.compareUpToTolerance("null_degrees_of_freedom", first.null_degrees_of_freedom(), second.null_degrees_of_freedom());
+        
         return comparator.isEqual();
     }
 }
