@@ -21,8 +21,10 @@ How to pass this check?
     3. If you are working on a Jira with 'Fix Version' ending with '.1' you are working on a change that should go to a master branch. 
        All other changes should go to the (current) fix release branch. Such branches are prefixed 'rel-'. 
     4. Put the Jira to 'In Progress' state.
-    5. Make a code change. Include Jira ticket ID (PUBDEV-XXXX) in the commit message of one of your commits. This is not checked. 
-    5. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines. This is checked.
+    5. Specify whether your fix/change has impact on production model use (Jira field 'Production Impact'). Explicitly pick
+       'none' if there is no impact - the check is designed to pick one value.
+    6. Make a code change. Include Jira ticket ID (PUBDEV-XXXX) in the commit message of one of your commits. This is not checked. 
+    7. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines. This is checked.
 """
 
 task checkPullRequest {
@@ -94,6 +96,10 @@ def checkPull(changeId) {
             return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
                     "This jira is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch."]
         }
+    }
+    def productionImpact = jiraDetails.fields.customfield_12678
+    if (!productionImpact) {
+        return ["Jira ticket https://h2oai.atlassian.net/browse/${jiraId} doesn't specify impact of this change on production model use. Please fill in the field 'Production Impact'."]
     }
     println "Pull request #$changeId seems correct. Thank you and good luck in code review!"
     return []
