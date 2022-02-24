@@ -57,6 +57,7 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression implements
     ModelMetricsRegressionGLM specificOther = (ModelMetricsRegressionGLM) other;
 
     GLMMetrics.compareMetricsUpToTolerance(comparator, this, specificOther);
+    
     return comparator.isEqual();
   }
 }

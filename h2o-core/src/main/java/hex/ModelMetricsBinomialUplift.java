@@ -57,6 +57,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         ModelMetricsBinomialUplift specificOther = (ModelMetricsBinomialUplift) other;
         
         comparator.compareUpToTolerance("auuc", this.auuc(), specificOther.auuc());
+        
         return comparator.isEqual();
     }
 
