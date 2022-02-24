@@ -83,7 +83,7 @@ public class GAMISplineTest extends TestUtil {
     }
 
     @Test
-    public void testGamificationSimple() {
+    public void testPenaltyMatrixOrder2() {
         Scope.enter();
         try {
             Frame train = Scope.track(generateRealWithRangeOnly(4, 100, 0, 12345,
@@ -100,7 +100,7 @@ public class GAMISplineTest extends TestUtil {
             params._bs = new int[]{2,2,2};
             params._family = gaussian;
             params._response_column = "C4";
-            params._spline_orders = new int[]{2,2,2};
+            params._spline_orders = new int[]{2,3,4};
             params._max_iterations = 1;
             params._savePenaltyMat = true;
             params._gam_columns = gamCols;

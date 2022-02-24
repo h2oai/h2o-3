@@ -70,18 +70,17 @@ public class NBSplinesTypeIDerivative {
         int numBasis = knots.length+order-2;
         if (order == 1)
             return new double[numBasis][numBasis];  // derivative of order 1 NBSpline will generate 0
-
-        int totKnots = knots.length+order-2;
+        
         List<Double> knotsWithDuplicates = fillKnots(knots, order); // knot sequence over which to perform integration
         NBSplinesTypeIDerivative[] allDerivatives = formDerivatives(numBasis, order, knotsWithDuplicates);
         double[][] penaltyMat = new double[numBasis][numBasis];
         for (int i=0; i < numBasis; i++) {
             for (int j = i; j < numBasis; j++) {
-                penaltyMat[i][j] = formDerivateProduct(i, j, order, knotsWithDuplicates);
+                double[][] coeffProduct = formDerivateProduct(i, j, allDerivatives);
+                penaltyMat[i][j] = integratePolynomial(knotsWithDuplicates, coeffProduct);
                 penaltyMat[j][i] = penaltyMat[i][j];
             }
         }
-        // 
         return penaltyMat;
     }
 
@@ -99,11 +98,23 @@ public class NBSplinesTypeIDerivative {
             allDerivs[index] = new NBSplinesTypeIDerivative(index, order, fullKnots); // dMi,k(t)/dt
         return allDerivs;
     }
-    
-    public static double formDerivateProduct(int firstIndex, int secondIndex, int order, List<Double> fullKnots) {
-        NBSplinesTypeIDerivative firstDeriv = new NBSplinesTypeIDerivative(firstIndex, order, fullKnots);
-        NBSplinesTypeIDerivative secondDeriv = new NBSplinesTypeIDerivative(secondIndex, order, fullKnots);
-        return 0;
+
+    /***
+     * Form product of derivative basis function for index firstIndex, secondIndex
+     * @param firstIndex
+     * @param secondIndex
+     * @param allDeriv
+     * @return
+     */
+    public static double[][] formDerivateProduct(int firstIndex, int secondIndex, NBSplinesTypeIDerivative[] allDeriv) {
+        double[][] firstCoeff = allDeriv[firstIndex]._coeffs;
+        double[][] secondCoeff = allDeriv[secondIndex]._coeffs;
+        int numBasis = firstCoeff.length;
+        double[][] polyProduct = new double[numBasis][];
+        for (int index=0; index<numBasis; index++) {
+            if (firstCoeff[index] != null && secondCoeff[index] != null)
+                polyProduct[index] = polynomialProduct(firstCoeff[index], secondCoeff[index]);
+        }
+        return polyProduct;
     }
-    
 }

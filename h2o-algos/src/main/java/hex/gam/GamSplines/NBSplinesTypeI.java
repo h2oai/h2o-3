@@ -1,7 +1,5 @@
 package hex.gam.GamSplines;
 
-import water.util.ArrayUtils;
-
 import java.util.List;
 
 import static hex.gam.GamSplines.NBSplinesUtils.*;
@@ -46,7 +44,7 @@ public class NBSplinesTypeI {
     public static void extractNBSplineCoeffs(NBSplinesTypeI root, int order, double[] coeffParent, double constParent, int basisIndex) {
         if (order == 1) { // reach the bottom of recursion tree
             if (Math.abs(root._knots.get(1) - root._knots.get(0)) > EPS) {
-                root._nodeCoeffs[basisIndex] = combineCoef(
+                root._nodeCoeffs[basisIndex] = polynomialProduct(
                         new double[]{constParent / (root._knots.get(1) - root._knots.get(0))}, coeffParent);
             }
         } else {

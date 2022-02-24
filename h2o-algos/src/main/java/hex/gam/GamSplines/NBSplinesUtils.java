@@ -4,7 +4,6 @@ import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class NBSplinesUtils {
@@ -71,7 +70,7 @@ public class NBSplinesUtils {
      * @param coeff2
      * @return
      */
-    public static double[] combineCoef(double[] coeff1, double[] coeff2) {
+    public static double[] polynomialProduct(double[] coeff1, double[] coeff2) {
         int firstLen = coeff1.length;
         int secondLen = coeff2.length;
         int combinedLen = firstLen*secondLen;
@@ -102,7 +101,7 @@ public class NBSplinesUtils {
         ArrayUtils.mult(copyParentCoef, parentConst);
         for (int index = 0; index < numBasis; index++) {
             if (currCoeff[index] != null) {
-                currCoeff[index] = combineCoef(copyParentCoef, currCoeff[index]);
+                currCoeff[index] = polynomialProduct(copyParentCoef, currCoeff[index]);
             }
         }
     }
@@ -138,5 +137,26 @@ public class NBSplinesUtils {
             sumCoeffs[index] = val;
         }
         return sumCoeffs;
+    }
+    
+    public static double integratePolynomial(List<Double> knotsWithDuplicates, double[][] coeffProduct) {
+        double sumValue = 0;
+        int numBasis = coeffProduct.length;
+
+        for (int index=0; index < numBasis; index++) {
+            if (coeffProduct[index] != null) {
+                int orderSize = coeffProduct[index].length;
+                double firstKnot = knotsWithDuplicates.get(index);
+                double secondKnot = knotsWithDuplicates.get(index+1);
+                double[] coeffs = coeffProduct[index];
+                double tempSum = 0;
+                for (int orderIndex = 0; orderIndex < orderSize; orderIndex++) {
+                    tempSum += coeffs[orderIndex]/(orderIndex+1)*(Math.pow(secondKnot, orderIndex+1)-
+                            Math.pow(firstKnot, orderIndex+1));
+                }
+                sumValue += tempSum;
+            }
+        }
+        return sumValue;
     }
 }

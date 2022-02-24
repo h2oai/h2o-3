@@ -71,8 +71,8 @@ public class GenISplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
     @Override
     public void postGlobal() {  // scale the _penalty function according to R
         double tempMaxValue = ArrayUtils.maxValue(_maxAbsRowSum);
-      //  _s_scale = tempMaxValue*tempMaxValue/ArrayUtils.rNorm(_penaltyMat, 'i');
-      //  ArrayUtils.mult(_penaltyMat, _s_scale);
-       // _s_scale = 1.0/ _s_scale;
+        _s_scale = tempMaxValue*tempMaxValue/ArrayUtils.rNorm(_penaltyMat, 'i');
+        ArrayUtils.mult(_penaltyMat, _s_scale);
+        _s_scale = 1.0/ _s_scale;
     }
 }

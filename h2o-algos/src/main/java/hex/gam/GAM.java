@@ -591,7 +591,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         _gamFrameKeysCenter[_gamColIndex] = oneGamifiedColumn._key;
         System.arraycopy(oneGamifiedColumn.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
                 numBasis-1);
-        // extract penalty matrix        
+        // centralize penalty matrix        
         double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(_zTranspose[_gamColIndex],
                 oneGAMCol._penaltyMat), ArrayUtils.transpose(_zTranspose[_gamColIndex]));  // transform penalty as zt*S*z
         copy2DArray(transformedPenalty, _penaltyMatCenter[_gamColIndex]);
@@ -658,21 +658,22 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       Frame trainFrame = _parms.train();
       for (int index = 0; index < numGamFrame; index++) { // generate smoothers/splines
         final Frame predictVec = prepareGamVec(index, _parms, trainFrame);// extract predictors from frame
-        // numKnots for I-spline will include higher multiplicity
+        // numKnots for I-spline will be the number of basis
         final int numKnots = _parms._bs_sorted[index] == 2 ? 
-                _parms._num_knots_sorted[index] + 2 * _parms._spline_orders_sorted[index] - 2 : 
+                _parms._num_knots_sorted[index] + _parms._spline_orders_sorted[index] - 2 : 
                 _parms._num_knots_sorted[index];
         final int numKnotsM1 = numKnots - 1;
         if (_parms._bs_sorted[index] == 0 || _parms._bs_sorted[index] == 2) {  // for CS or I-spline smoothers
           _gamColNames[index] = generateGamColNames(index, _parms);
           _gamColNamesCenter[index] = new String[numKnotsM1];
           _gamColMeans[index] = new double[numKnots];
-          if (_parms._bs_sorted[index] == 0)
+          if (_parms._bs_sorted[index] == 0) { // cs spline
             generateGamColumn[index] = new CubicSplineSmoother(predictVec, _parms, index, _gamColNames[index],
-                  _knots[index][0], singlePredictorSmootherInd++);
-          else  // I-splines
+                    _knots[index][0], singlePredictorSmootherInd++);
+          } else { // I-splines
             generateGamColumn[index] = new ISplineSmoother(predictVec, _parms, index, _gamColNames[index],
                     _knots[index][0], singlePredictorSmootherInd++);
+          }
         }  else {  // TP splines with knots
           final int kPlusM = _parms._num_knots_sorted[index]+_parms._M[thinPlateInd];
           _gamColNames[index] = new String[kPlusM];

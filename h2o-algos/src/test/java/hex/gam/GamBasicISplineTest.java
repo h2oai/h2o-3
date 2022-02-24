@@ -11,15 +11,19 @@ import water.TestUtil;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import static hex.gam.GamSplines.NBSplinesTypeI.extractNBSplineCoeffs;
 import static hex.gam.GamSplines.NBSplinesTypeI.formBasis;
 import static hex.gam.GamSplines.NBSplinesTypeIDerivative.formDerivatives;
-import static hex.gam.GamSplines.NBSplinesUtils.extractKnots;
-import static hex.gam.GamSplines.NBSplinesUtils.fillKnots;
+import static hex.gam.GamSplines.NBSplinesUtils.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -223,6 +227,20 @@ public class GamBasicISplineTest extends TestUtil {
         assertCorrectDerivativeCoeffs(allDerivatives, manualCoefs);
     }
 
+    /**
+     * Test the sum of integration of polynomial is correct.
+     */
+    @Test
+    public void testIntegratePoly() {
+        List<Double> knots = fillKnots(new double[]{-1, -0.6, -0.5, -0.3, 0}, 1);
+        // test the sum of integration of 1 over -1, -0.6, 1-x over -0.6, -0.5, 1-x+x*x over -0.5, -0.3, 1-x+x*x-x*x*x 
+        // over -0.3, 0
+        double[][] coeffs = new double[][]{{1}, {1, -1}, {1, -1, 1}, {1, -1, 1, -1}};
+        double correctAnswer = 0.4+0.155+(0.2-0.5*(0.3*0.3-0.5*0.5)+(-0.3*0.3*0.3+0.5*0.5*0.5)/3)+0.356025; // integrated by hand
+        double integratedSum = integratePolynomial(knots, coeffs);
+        assertTrue(Math.abs(correctAnswer-integratedSum) < EPS);
+    }
+    
     public static double[][][] genManualCoeffsOrder2(List<Double> fullKnots, NBSplinesTypeI[] nbSplines, int order) {
         int numBasis = nbSplines.length;
         double[][][] manualCoefs = new double[numBasis][][];
@@ -262,16 +280,9 @@ public class GamBasicISplineTest extends TestUtil {
     public void assertCorrectNBSplineCoeffs(double[][][] manualCoeffs, NBSplinesTypeI[] nbSplines) {
         int numBasis = nbSplines.length;
         for (int index = 0; index < numBasis; index++) {
-           // int arrayLen = manualCoeffs[index].length;
             extractNBSplineCoeffs(nbSplines[index], nbSplines[index]._order, new double[]{1}, 1, index);
             double[][] coeffs = nbSplines[index]._nodeCoeffs;
             assert2DArrayEqual(coeffs, manualCoeffs[index]);
-/*            for (int index2 = 0; index2 < arrayLen; index2++) {
-                if (manualCoeffs[index][index2] == null)
-                    assertTrue(coeffs[index2] == null);
-                else
-                    assertArrayEquals(coeffs[index2], manualCoeffs[index][index2], EPS);
-            }*/
         }
     }
     
