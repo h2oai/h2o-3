@@ -85,12 +85,14 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     super.isEqualUpToTolerance(comparator, other);
     ModelMetricsBinomial specificOther = (ModelMetricsBinomial)other;
 
-    comparator.compareValuesUpToTolerance("auc", this.auc(), specificOther.auc());
-    comparator.compareValuesUpToTolerance("pr_auc", this.pr_auc(), specificOther.pr_auc());
-    comparator.compareValuesUpToTolerance("lift_top_group", this.lift_top_group(), specificOther.lift_top_group());
-    comparator.compareValuesUpToTolerance("logloss", this.logloss(), specificOther.logloss());
-    comparator.compareValuesUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error());
-    // CM, Gainslift, auc_obj are not supported yet.
+    comparator.compareUpToTolerance("auc", this.auc(), specificOther.auc());
+    comparator.compareUpToTolerance("pr_auc", this.pr_auc(), specificOther.pr_auc());
+    comparator.compareUpToTolerance("lift_top_group", this.lift_top_group(), specificOther.lift_top_group());
+    comparator.compareUpToTolerance("logloss", this.logloss(), specificOther.logloss());
+    comparator.compareUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error());
+    comparator.compareUpToTolerance("cm", this.cm(), specificOther.cm());
+    comparator.compareUpToTolerance("gains_lift", this.gainsLift(), specificOther.gainsLift());
+
     return comparator.isEqual();
   }
 

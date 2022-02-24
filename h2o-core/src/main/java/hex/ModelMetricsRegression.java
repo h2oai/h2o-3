@@ -36,10 +36,11 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     super.isEqualUpToTolerance(comparator, other);
     ModelMetricsRegression specificOther = (ModelMetricsRegression) other;
 
-    comparator.compareValuesUpToTolerance("residual_deviance", this.residual_deviance(), specificOther.residual_deviance());
-    comparator.compareValuesUpToTolerance("mean_residual_deviance", this.mean_residual_deviance(), specificOther.mean_residual_deviance());
-    comparator.compareValuesUpToTolerance("mae", this.mae(), specificOther.mae());
-    comparator.compareValuesUpToTolerance("rmsle", this.rmsle(), specificOther.rmsle());
+    comparator.compareUpToTolerance("residual_deviance", this.residual_deviance(), specificOther.residual_deviance());
+    comparator.compareUpToTolerance("mean_residual_deviance", this.mean_residual_deviance(), specificOther.mean_residual_deviance());
+    comparator.compareUpToTolerance("mae", this.mae(), specificOther.mae());
+    comparator.compareUpToTolerance("rmsle", this.rmsle(), specificOther.rmsle());
+    
     return comparator.isEqual();
   }
 

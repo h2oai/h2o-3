@@ -49,11 +49,11 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     super.isEqualUpToTolerance(comparator, other);
     ModelMetricsClustering specificOther = (ModelMetricsClustering) other;
 
-    comparator.compareValuesUpToTolerance("totss", this.totss(), specificOther.totss());
-    comparator.compareValuesUpToTolerance("tot_withinss", this.tot_withinss(), specificOther.tot_withinss());
-    comparator.compareValuesUpToTolerance("betweenss", this.betweenss(), specificOther.betweenss());
+    comparator.compareUpToTolerance("totss", this.totss(), specificOther.totss());
+    comparator.compareUpToTolerance("tot_withinss", this.tot_withinss(), specificOther.tot_withinss());
+    comparator.compareUpToTolerance("betweenss", this.betweenss(), specificOther.betweenss());
     comparator.compare("size", this._size, specificOther._size);
-    comparator.compareValuesUpToTolerance("withinss", this._withinss, specificOther._withinss);
+    comparator.compareUpToTolerance("withinss", this._withinss, specificOther._withinss);
             
     return comparator.isEqual();
   }

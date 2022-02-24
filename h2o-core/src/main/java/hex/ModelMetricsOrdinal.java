@@ -54,10 +54,11 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
     super.isEqualUpToTolerance(comparator, other);
     ModelMetricsOrdinal specificOther = (ModelMetricsOrdinal) other;
 
-    comparator.compareValuesUpToTolerance("logloss", this.logloss(), specificOther.logloss());
-    comparator.compareValuesUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error());
-    comparator.compareValuesUpToTolerance("hr", this.hr(), specificOther.hr());
-    // CM not supported yet.
+    comparator.compareUpToTolerance("logloss", this.logloss(), specificOther.logloss());
+    comparator.compareUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error());
+    comparator.compareUpToTolerance("hr", this.hr(), specificOther.hr());
+    comparator.compareUpToTolerance("cm", this.cm(), specificOther.cm());
+    
     return comparator.isEqual();
   }
 

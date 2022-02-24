@@ -116,8 +116,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public AUC2 auc_obj() { return null; }
   
   public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
-    comparator.compareValuesUpToTolerance("mse", this.mse(), other.mse());
-    comparator.compareValuesUpToTolerance("rmse", this.rmse(), other.rmse());
+    comparator.compareUpToTolerance("mse", this.mse(), other.mse());
+    comparator.compareUpToTolerance("rmse", this.rmse(), other.rmse());
     comparator.compare("nobs", this._nobs, other._nobs);
       
     return comparator.isEqual();

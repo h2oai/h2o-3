@@ -29,7 +29,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
   public boolean isEqualUpToTolerance(ComparisonUtils.MetricComparator comparator, ModelMetrics other) {
     super.isEqualUpToTolerance(comparator, other);
 
-    comparator.compareValuesUpToTolerance("r2", this.r2(), ((ModelMetricsSupervised)other).r2());
+    comparator.compareUpToTolerance("r2", this.r2(), ((ModelMetricsSupervised)other).r2());
     
     return comparator.isEqual();
   }
