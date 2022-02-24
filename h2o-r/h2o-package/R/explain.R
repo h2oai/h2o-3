@@ -2325,6 +2325,21 @@ h2o.pd_multi_plot <- function(object,
   })
 }
 
+is_binomial_from_model <- function(model) {
+  return(model@model$training_metrics@metrics$model_category == "Binomial")
+}
+
+is_binomial <- function(model) {
+  if ("H2OAutoML" %in% class(model)) {
+    if (model@leader@algorithm == "stackedensemble")
+      return(is_binomial_from_model(model@leader@model$metalearner_model))
+  } else if (model@algorithm == "stackedensemble"){
+    return(is_binomial_from_model(model@model$metalearner_model))
+  } else {
+    return(is_binomial_from_model(model))
+  }
+}
+
 #' Plot Individual Conditional Expectation (ICE) for each decile
 #' 
 #' Individual Conditional Expectation (ICE) plot gives a graphical depiction of the marginal 
@@ -2340,6 +2355,8 @@ h2o.pd_multi_plot <- function(object,
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
 #'                   Defaults to 30.
 #' @param show_pdp Option to turn on/off PDP line. Defaults to TRUE.
+#' @param binary_response_scale Option for binary model to display (on the y-axis) the logodds instead of the actual
+#'                          score. Can be one of: "response", "logodds". Defaults to "response".
 #' @param centered A boolean whether to center curves around 0 at the first valid x value or not. Defaults to FALSE.
 #'
 #' @return A ggplot2 object
@@ -2375,6 +2392,7 @@ h2o.ice_plot <- function(model,
                          target = NULL,
                          max_levels = 30,
                          show_pdp = TRUE,
+                         binary_response_scale = c("response", "logodds"),
                          centered = FALSE) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
@@ -2387,6 +2405,12 @@ h2o.ice_plot <- function(model,
     stop("String columns are not supported by h2o.ice_plot.")
 
   models_info <- .process_models_or_automl(model, newdata, require_single_model = TRUE)
+
+  is_binomial <- is_binomial(models_info$get_model(models_info$model))
+  binary_response_scale <- match.arg(binary_response_scale)
+  if (!is_binomial & binary_response_scale == "logodds")
+    stop("binary_response_scale cannot be set to 'logodds' value for non-binomial models!")
+  show_logodds <- is_binomial & binary_response_scale == "logodds"
 
   with_no_h2o_progress({
     if (h2o.nlevels(newdata[[column]]) > max_levels) {
@@ -2481,8 +2505,18 @@ h2o.ice_plot <- function(model,
         )
     }
 
+    if (show_logodds) {
+      results[['logodds']] <- log(results$mean_response / (1 - results$mean_response))
+      pdp[['logodds']] <- log(pdp$mean_response / (1 - pdp$mean_response))
+      y_range <- range(results[['logodds']])
+    }
+
     q <- ggplot2::ggplot(ggplot2::aes(x = .data[[col_name]],
-                                      y = .data$mean_response,
+                                      if (show_logodds) {
+                                        y = .data$logodds
+                                      } else {
+                                        y = .data$mean_response
+                                      },
                                       color = .data$name,
                                       text = .data$text),
                          data = results)
