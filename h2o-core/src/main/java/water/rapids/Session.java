@@ -11,6 +11,7 @@ import water.util.Log;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Session is a long-lasting environment supporting caching and Copy-On-Write optimization of Vecs.  This session may
@@ -51,6 +52,7 @@ public class Session {
   // set.
   private NonBlockingHashSet<Key<Vec>> GLOBALS = new NonBlockingHashSet<>();
 
+  private final Properties properties = new Properties();
 
   /**
    * Constructor
@@ -68,6 +70,18 @@ public class Session {
   /** Return this session's id. */
   public String id() {
     return id;
+  }
+
+  public void setProperty(String key, String value) {
+    if (value != null) {
+      properties.setProperty(key, value);
+    } else {
+      properties.remove(key);
+    }
+  }
+
+  public String getProperty(String key, String defaultValue) {
+    return properties.getProperty(key, defaultValue);
   }
 
   /**

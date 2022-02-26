@@ -107,5 +107,39 @@ public class JobTest extends TestUtil {
       assertEquals(Job.JobStatus.STOPPED, j.getStatus());
     }
   }
-  
+
+  @Test
+  public void tryGetDoneJob() {
+    final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
+    final long sleepMs = 1_000;
+
+    j.start(new H2O.H2OCountedCompleter() {
+      @Override
+      public void compute2() {
+        try {
+          Thread.sleep(sleepMs);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+          Thread.currentThread().interrupt();
+        }
+        tryComplete();
+      }
+    }, 1);
+
+    long t1 = System.currentTimeMillis();
+    Job<?> j2 = Job.tryGetDoneJob(j._key, 100);
+    long t2 = System.currentTimeMillis();
+
+    assertTrue(j2.isRunning());
+
+    long t3 = System.currentTimeMillis();
+    Job<?> j3 = Job.tryGetDoneJob(j._key, 950);
+    long t4 = System.currentTimeMillis();
+
+    assertTrue(j3.isDone());
+
+    assertEquals(t2 - t1, 100, 20);
+    assertEquals(t4 - t3, sleepMs - (t2 - t1), 20);
+  }
+
 }

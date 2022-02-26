@@ -86,7 +86,10 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
     parms <- list()
     parms$retained_keys <- paste0("[", paste(retained_keys, collapse=','), "]")
     
-    invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs, .params = parms))},
+    .h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs, .params = parms)
+    # remove all will also destroy all sessions, explicitly start a new one with a new ID
+    invisible(.attach.new.session(h2o.getConnection()))
+    },
     error = function(e) {
       print("Timeout on DELETE /DKV from R")
       print("Attempt thread dump...")

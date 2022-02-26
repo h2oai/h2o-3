@@ -4,10 +4,12 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.H2OError;
+import water.api.RapidsHandler;
 import water.api.RequestServer;
 import water.api.schemas3.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
+import water.rapids.Session;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 import water.util.StringUtils;
@@ -46,7 +48,7 @@ public class ServletUtils {
 
   private static final ThreadLocal<Long> _startMillis = new ThreadLocal<>();
   private static final ThreadLocal<Integer> _status = new ThreadLocal<>();
-  private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
+  private static final ThreadLocal<Transaction> _transaction = new ThreadLocal<>();
 
   private ServletUtils() {
     // not instantiable
@@ -72,19 +74,42 @@ public class ServletUtils {
     return _startMillis.get();
   }
 
-  public static void startTransaction(String userAgent) {
-    _userAgent.set(userAgent);
+  public static void startTransaction(String userAgent, String sessionKey) {
+    _transaction.set(new Transaction(userAgent, sessionKey));
   }
 
   public static void endTransaction() {
-    _userAgent.remove();
+    _transaction.remove();
+  }
+
+  private static class Transaction {
+    final String _userAgent;
+    final String _sessionKey;
+
+    Transaction(String userAgent, String sessionKey) {
+      _userAgent = userAgent;
+      _sessionKey = sessionKey;
+    }
   }
 
   /**
    * @return Thread-local User-Agent for this transaction.
    */
   public static String getUserAgent() {
-    return _userAgent.get();
+    Transaction t = _transaction.get();
+    return t != null ? t._userAgent : null;
+  }
+
+  public static String getSessionProperty(String key, String defaultValue) {
+    Transaction t = _transaction.get();
+    if (t == null || t._sessionKey == null) {
+      return defaultValue;
+    }
+    Session session = RapidsHandler.getSession(t._sessionKey);
+    if (session == null) {
+      return defaultValue;
+    }
+    return session.getProperty(key, defaultValue);
   }
 
   public static void setResponseStatus(HttpServletResponse response, int sc) {
