@@ -59,7 +59,7 @@
   }
   if (conn@https) {
     if (conn@insecure) {
-      curl::handle_setopt(handle, ssl.verifypeer = 0L, ssl.verifyhost=0L)
+      curl::handle_setopt(handle, ssl_verifypeer = 0L, ssl_verifyhost=0L)
     } else if (! is.na(conn@cacert)) {
       curl::handle_setopt(handle, cainfo = conn@cacert)
     }
