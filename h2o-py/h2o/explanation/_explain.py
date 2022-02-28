@@ -1245,7 +1245,7 @@ def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
         orig_null_value = PDP_RESULT_FACTOR_NAN_MARKER if is_factor else np.nan
         msg = "Original observation of \"{}\" for {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col, percentile_string, orig_null_value, tmp["mean_response"][idx])
         warnings.warn(msg)
-        return tmp["mean_response"][idx]
+        return tmp
     else:
         user_splits[column] = [orig_value]
         orig_tmp = NumpyFrame(
@@ -1260,7 +1260,7 @@ def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
         )
         plt.scatter(orig_tmp[encoded_col], orig_tmp["mean_response"],
                     color=[color], marker='o', s=150, alpha=0.5)
-        return orig_tmp["mean_response"]
+        return orig_tmp
 
 def ice_plot(
         model,  # type: h2o.model.ModelBase
@@ -1378,23 +1378,25 @@ def ice_plot(
                     include_na=True
                 )[0]
             )
-            response = _get_response(tmp["mean_response"], show_logodds)
             encoded_col = tmp.columns[0]
             y_label = "Response"
             if not is_factor and centered:
                 _center(tmp["mean_response"])
                 y_label = "Response difference"
-            _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
+            orig_row = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
                                 frame, index, column, colors[i], percentile_string)
+            if not _isnan(frame.as_data_frame()[column][index]):
+                tmp._data=np.append(tmp._data, orig_row._data, axis=0)
             if is_factor:
+                response = _get_response(tmp["mean_response"], show_logodds)
                 plt.scatter(factor_map(tmp.get(encoded_col)),
                             response,
                             color=[colors[i]],
                             label=percentile_string)
             else:
-                plt.plot(tmp[encoded_col],
-                         response,
-                         color=colors[i],
+                tmp._data = tmp._data[tmp._data[:,0].argsort()]
+                response = _get_response(tmp["mean_response"], show_logodds)
+                plt.plot(tmp[encoded_col], response, color=colors[i],
                          label=percentile_string)
 
         if show_pdp:

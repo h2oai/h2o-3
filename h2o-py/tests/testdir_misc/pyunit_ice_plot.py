@@ -81,13 +81,13 @@ def test_handle_orig_values():
 
                 if type_test[test_id] == "Regression":
                     assert gbm.training_model_metrics()["model_category"] == "Regression"
-                    np.testing.assert_almost_equal(orig_value_prediction, gbm.predict(frame).as_data_frame()["predict"][index], 5)
+                    np.testing.assert_almost_equal(orig_value_prediction["mean_response"], gbm.predict(frame).as_data_frame()["predict"][index], 5)
                 elif type_test[test_id] == "Binomial":
                     assert gbm.training_model_metrics()["model_category"] == "Binomial"
-                    np.testing.assert_almost_equal(orig_value_prediction, gbm.predict(frame).as_data_frame()["p1"][index], 5)
+                    np.testing.assert_almost_equal(orig_value_prediction["mean_response"], gbm.predict(frame).as_data_frame()["p1"][index], 5)
                 elif type_test[test_id] == "Multinomial":
                     assert gbm.training_model_metrics()["model_category"] == "Multinomial"
-                    np.testing.assert_almost_equal(orig_value_prediction, gbm.predict(frame).as_data_frame()[targets[test_id]][index], 5)
+                    np.testing.assert_almost_equal(orig_value_prediction["mean_response"], gbm.predict(frame).as_data_frame()[targets[test_id]][index], 5)
 
 
 def _get_cols_to_test(train, y):

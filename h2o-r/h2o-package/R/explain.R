@@ -2505,6 +2505,7 @@ h2o.ice_plot <- function(model,
         orig_tmp[["name"]] <- percentile_str
         orig_values <-
           rbind(orig_values, orig_tmp[, c(column, "name", "mean_response")])
+        results <- rbind(results, orig_tmp[, c(column, "name", "mean_response")])
       }
       if (is.factor(newdata[[column]])) {
         tmp <- tmp[which(tmp[[column]] != ".missing(NA)"),]
