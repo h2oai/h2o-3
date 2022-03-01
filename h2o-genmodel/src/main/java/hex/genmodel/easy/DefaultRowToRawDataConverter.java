@@ -53,6 +53,16 @@ public class DefaultRowToRawDataConverter<M extends GenModel> implements RowToRa
     return rawData;
   }
 
+  /**
+   * 
+   * @param columnName
+   * @param o
+   * @param catEncoder
+   * @param targetIndex
+   * @param rawData
+   * @return true if rawData can be considered as fully filled after this conversion.
+   * @throws PredictException
+   */
   protected boolean convertValue(String columnName, Object o, CategoricalEncoder catEncoder,
                                  int targetIndex, double[] rawData) throws PredictException {
     if (catEncoder == null) {
