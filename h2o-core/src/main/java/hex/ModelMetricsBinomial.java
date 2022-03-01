@@ -87,11 +87,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     comparator.compareUpToTolerance("auc", this.auc(), specificOther.auc());
     comparator.compareUpToTolerance("pr_auc", this.pr_auc(), specificOther.pr_auc());
-    comparator.compareUpToTolerance("lift_top_group", this.lift_top_group(), specificOther.lift_top_group());
     comparator.compareUpToTolerance("logloss", this.logloss(), specificOther.logloss());
     comparator.compareUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error());
     comparator.compareUpToTolerance("cm", this.cm(), specificOther.cm());
     comparator.compareUpToTolerance("gains_lift", this.gainsLift(), specificOther.gainsLift());
+    if (this.gainsLift() != null && specificOther.gainsLift() != null) {
+      comparator.compareUpToTolerance("lift_top_group", this.lift_top_group(), specificOther.lift_top_group());
+    }
 
     return comparator.isEqual();
   }
