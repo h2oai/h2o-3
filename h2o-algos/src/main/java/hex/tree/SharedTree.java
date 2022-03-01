@@ -44,6 +44,8 @@ public abstract class SharedTree<
 
   protected int _mtry;
   protected int _mtry_per_tree;
+  
+  protected GlobalInteractionConstraints _ics;
 
   public static final int MAX_NTREES = 100000;
 
@@ -610,6 +612,7 @@ public abstract class SharedTree<
     final int _workIdx;
     final int _nidIdx;
     final int _treatmentIdx;
+    final GlobalInteractionConstraints _ics;
 
     public boolean _did_split;
 
@@ -631,6 +634,7 @@ public abstract class SharedTree<
       _workIdx = workIdx;
       _nidIdx = nidIdx;
       _treatmentIdx = treatmentIdx;
+      _ics = st._ics;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -732,8 +736,8 @@ public abstract class SharedTree<
   }
 
   // Builder-specific decision node
-  protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[], Constraints cs ) {
-    return new DTree.DecidedNode(udn, hs, cs);
+  protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[], Constraints cs) {
+    return new DTree.DecidedNode(udn, hs, cs, _ics);
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

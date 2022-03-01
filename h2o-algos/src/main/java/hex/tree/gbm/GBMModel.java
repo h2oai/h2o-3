@@ -1,9 +1,6 @@
 package hex.tree.gbm;
 
 import hex.*;
-import hex.genmodel.MojoModel;
-import hex.genmodel.algos.gbm.GbmMojoModel;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.utils.DistributionFamily;
@@ -30,6 +27,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     public double _max_abs_leafnode_pred;
     public double _pred_noise_bandwidth;
     public KeyValue[] _monotone_constraints;
+    public String[][] _interaction_constraints;
 
     public GBMParameters() {
       super();
@@ -95,6 +93,14 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     // allows to override the behavior in tests (eg. create empty constraints and test execution as if constraints were used)
     Constraints emptyConstraints(int nCols) {
       return null;
+    }
+    
+    public GlobalInteractionConstraints interactionConstraints(Frame frame){
+      return new GlobalInteractionConstraints(this._interaction_constraints, frame.names());
+    }
+    
+    public BranchInteractionConstraints initialInteractionConstraints(GlobalInteractionConstraints ics){
+      return new BranchInteractionConstraints(ics.getAllAllowedColumnIndices());
     }
   }
 
