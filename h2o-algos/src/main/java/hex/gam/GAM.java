@@ -17,6 +17,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.parser.ParseDataset;
 import water.util.ArrayUtils;
 import water.util.IcedHashSet;
 import water.util.Log;
@@ -591,6 +592,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         _gamFrameKeysCenter[_gamColIndex] = oneGamifiedColumn._key;
         System.arraycopy(oneGamifiedColumn.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
                 numBasis-1);
+        // make sure I-spline coefficients >= 0
+        
         // centralize penalty matrix        
         double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(_zTranspose[_gamColIndex],
                 oneGAMCol._penaltyMat), ArrayUtils.transpose(_zTranspose[_gamColIndex]));  // transform penalty as zt*S*z
@@ -687,6 +690,39 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
       }
       ForkJoinTask.invokeAll(generateGamColumn);
+      // set up coefficient constraints for I-splines
+      Frame constraintFrame = genConstraints();
+      if (constraintFrame != null) {
+        _parms._beta_constraints = constraintFrame._key;
+        DKV.put(constraintFrame);
+      }
+    }
+    
+    public Frame genConstraints() {
+      int numGamCols = _parms._gam_columns.length;
+      String[] colNames = new String[]{"names", "lower_bounds", "upper_bounds"};
+      Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+      List<String> gamColNames = new ArrayList<>();
+      
+      for (int index=0; index<numGamCols; index++) {
+        if (_parms._bs_sorted[index] == 2)   // I-splines
+          gamColNames.addAll(Arrays.asList(_gamColNamesCenter[index]));
+      }
+      int numConstraints = gamColNames.size();
+      if (numConstraints > 0) {
+        String[] constraintNames = gamColNames.stream().toArray(String[]::new);;
+        double[] lowerBounds = new double[numConstraints];
+        double[] upperBounds = new double[numConstraints];
+        for (int index = 0; index < numConstraints; index++) {
+          upperBounds[index] = Double.MAX_VALUE;
+          lowerBounds[index] = 0.0;
+        }
+        Vec gamNames = Vec.makeVec(constraintNames, vg.addVec());
+        Vec lowBounds = Vec.makeVec(lowerBounds, vg.addVec());
+        Vec upBounds = Vec.makeVec(upperBounds, vg.addVec());
+        return new Frame(Key.<Frame>make(), colNames, new Vec[]{gamNames, lowBounds, upBounds});
+      }
+      return null;
     }
 
     void verifyGamTransformedFrame(Frame gamTransformed) {

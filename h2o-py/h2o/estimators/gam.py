@@ -94,7 +94,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  max_runtime_secs=0.0,  # type: float
                  custom_metric_func=None,  # type: Optional[str]
                  num_knots=None,  # type: Optional[List[int]]
-                 knot_ids=None,  # type: Optional[List[str]]
+                 spline_orders=None,  # type: Optional[List[int]]
+                 knot_ids=None,  # type: Optional[List[Union[None, str, H2OFrame]]]
                  gam_columns=None,  # type: Optional[List[List[str]]]
                  standardize_tp_gam_cols=False,  # type: bool
                  scale_tp_penalty_mat=False,  # type: bool
@@ -324,10 +325,12 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param num_knots: Number of knots for gam predictors
                Defaults to ``None``.
         :type num_knots: List[int], optional
-        :param knot_ids: String arrays storing frame keys of knots.  One for each gam column set specified in
-               gam_columns
+        :param spline_orders: Order of I-splines used for gam predictors
                Defaults to ``None``.
-        :type knot_ids: List[str], optional
+        :type spline_orders: List[int], optional
+        :param knot_ids: Array storing frame keys of knots.  One for each gam column set specified in gam_columns
+               Defaults to ``None``.
+        :type knot_ids: List[Union[None, str, H2OFrame]], optional
         :param gam_columns: Arrays of predictor column names for gam for smoothers using single or multiple predictors
                like {{'c1'},{'c2','c3'},{'c4'},...}
                Defaults to ``None``.
@@ -412,6 +415,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self.max_runtime_secs = max_runtime_secs
         self.custom_metric_func = custom_metric_func
         self.num_knots = num_knots
+        self.spline_orders = spline_orders
         self.knot_ids = knot_ids
         self.gam_columns = gam_columns
         self.standardize_tp_gam_cols = standardize_tp_gam_cols
@@ -1252,18 +1256,31 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self._parms["num_knots"] = num_knots
 
     @property
+    def spline_orders(self):
+        """
+        Order of I-splines used for gam predictors
+
+        Type: ``List[int]``.
+        """
+        return self._parms.get("spline_orders")
+
+    @spline_orders.setter
+    def spline_orders(self, spline_orders):
+        assert_is_type(spline_orders, None, [int])
+        self._parms["spline_orders"] = spline_orders
+
+    @property
     def knot_ids(self):
         """
-        String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns
+        Array storing frame keys of knots.  One for each gam column set specified in gam_columns
 
-        Type: ``List[str]``.
+        Type: ``List[Union[None, str, H2OFrame]]``.
         """
         return self._parms.get("knot_ids")
 
     @knot_ids.setter
     def knot_ids(self, knot_ids):
-        assert_is_type(knot_ids, None, [str])
-        self._parms["knot_ids"] = knot_ids
+        self._parms["knot_ids"] = H2OFrame._validate(knot_ids, 'knot_ids')
 
     @property
     def gam_columns(self):
