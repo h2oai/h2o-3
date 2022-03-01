@@ -1168,6 +1168,30 @@ Computing Model Metrics
 
 The ``h2o.make_metrics`` function computes a model metrics object from given predicted values (target for regression; class-1 probabilities, binomial, or per-class probabilities for classification). 
 
++------------------+---------------------------------------------------------------------------------------------------------------+
+| Parameters       | Parameter Descriptions                                                                                        |
++==================+===============================================================================================================+
+| **predicted**    | An H2OFrame containing predictions.                                                                           |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **actuals**      | An H2OFrame containing actual values.                                                                         |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **domain**       | A list of response factors for classification.                                                                |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **distribution** | A distribution for regression.                                                                                |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **weights**      | An H2OFrame containing observation weights.                                                                   |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **treatment**    | (Uplift binomial classification only) an H2OFrame containing treatment information.                           |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **auc_type**     | (Multinomial classification only) the type of aggregated AUC/AUCPR to be used to calculate this metric.       |
+|                  | One of: ``MACRO_OVO``, ``MACRO_OVR``, ``WEIGHTED_OVO``, ``WEIGHTED_OVR``, ``AUTO``, ``NONE`` (default).       |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **auuc_type**    | (Uplift binomial classification only) the type of AUUC to be used to calculate this metric.                   |
+|                  | One of: ``gini``, ``lift``, ``gain``, ``AUTO`` (default).                                                     |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **auuc_nbins**   | (Uplift binomial classification only) the number of bins to be used to calculate AUUC. Defaults to -1 (1000). |
++------------------+---------------------------------------------------------------------------------------------------------------+
+
 .. tabs::
    .. code-tab:: r R
 
@@ -1190,7 +1214,8 @@ The ``h2o.make_metrics`` function computes a model metrics object from given pre
       actual <- prostate$CAPSULE
 
       # retrieve the model metrics:
-      h2o.make_metrics(pred, actual)
+      metrics <- h2o.make_metrics(pred, actual)
+      h2o.auc(metrics)
 
    .. code-tab:: python
 
@@ -1215,7 +1240,8 @@ The ``h2o.make_metrics`` function computes a model metrics object from given pre
       pred = prostate_gbm.predict(prostate)[2]
 
       # retrieve the model metrics:
-      h2o.make_metrics(pred, actual)
+      metrics = h2o.make_metrics(pred, actual)
+      metrics.auc()
 
 
 Metric Best Practices - Regression
