@@ -695,6 +695,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (constraintFrame != null) {
         _parms._beta_constraints = constraintFrame._key;
         DKV.put(constraintFrame);
+        Scope.track(constraintFrame);
       }
     }
     
