@@ -240,6 +240,24 @@ public class GamBasicISplineTest extends TestUtil {
         double integratedSum = integratePolynomial(knots, coeffs);
         assertTrue(Math.abs(correctAnswer-integratedSum) < EPS);
     }
+
+    /**
+     * test to check polynomial multiplication is correct.  This should give us confidence that formDerivateProduct
+     * is also correct.
+     */
+    @Test
+    public void testMultiplyPoly() {
+        double[][] poly1 = new double[][]{{1}, {1,1}, {1, 1, -2}, {1, 1, -2}}; // null, 1+x, 1+x-2x*x, 1+x-2x*x
+        double[][] poly2 = new double[][]{{0}, {1}, {1, -1}, {1, 1, -3, 4}};// 1+x, 1, 1+x, 1-x, 1+x-3x*x+4*x*x*x
+        double[][] manualProduct = new double[][]{{0}, {1,1}, {1, 0, -3, 2}, {1,2,-4, -1, 10, -8}};
+        int numPoly = poly1.length;
+        for (int index=0; index<numPoly; index++) {
+            double[] polyProduct = polynomialProduct(poly1[index], poly2[index]);
+            double[] polyProductReverse = polynomialProduct(poly2[index], poly1[index]);
+            assertArrayEquals(polyProduct, manualProduct[index], EPS);
+            assertArrayEquals(polyProductReverse, manualProduct[index], EPS);
+        }
+    }
     
     public static double[][][] genManualCoeffsOrder2(List<Double> fullKnots, NBSplinesTypeI[] nbSplines, int order) {
         int numBasis = nbSplines.length;
