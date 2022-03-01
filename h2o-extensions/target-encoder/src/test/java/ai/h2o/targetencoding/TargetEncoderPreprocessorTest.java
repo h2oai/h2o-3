@@ -29,6 +29,7 @@ import water.util.RandomUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -45,9 +46,10 @@ import static water.TestUtil.*;
 @CloudSize(1)
 public class TargetEncoderPreprocessorTest {
     
-    private static String TO_ENCODE = "categorical";
-    private static String ENCODED = "categorical_te";
-    private static String NOT_ENCODED = "noTE";
+    private static String[] TO_ENCODE = {"cat1", "cat2"};
+    private static String[] ENCODED = {"cat1_te", "cat2_te", "cat1:cat2_te"};
+    private static String[] NOT_ENCODED = {"noTE"};
+    private static String[] NUMERICAL = {"num1", "num2"};
     private static String TARGET = "target";
     private static String FOLDC = "foldc";
 
@@ -72,9 +74,9 @@ public class TargetEncoderPreprocessorTest {
             
             int expectedCVModels = 3;  //3 folds -> 3 cv models
             assertEquals(expectedCVModels, model._output._cross_validation_models.length);
-            assertTrue(ArrayUtils.contains(model._output._names, ENCODED));
-            assertFalse(ArrayUtils.contains(model._output._names, TO_ENCODE));
-            assertTrue(ArrayUtils.contains(model._output._names, NOT_ENCODED));
+            for (String col: ENCODED) assertTrue(ArrayUtils.contains(model._output._names, col));
+            for (String col: TO_ENCODE) assertFalse(ArrayUtils.contains(model._output._names, col));
+            for (String col: NOT_ENCODED) assertTrue(ArrayUtils.contains(model._output._names, col));
             
             Frame preds = model.score(valid);
             Scope.track(preds);
@@ -99,9 +101,9 @@ public class TargetEncoderPreprocessorTest {
             Model model = buildModel(train, valid, tePreproc, CategoricalEncodingScheme.AUTO);
             Scope.track_generic(model);
 
-            assertTrue(ArrayUtils.contains(model._output._names, ENCODED));
-            assertFalse(ArrayUtils.contains(model._output._names, TO_ENCODE));
-            assertTrue(ArrayUtils.contains(model._output._names, NOT_ENCODED));
+            for (String col: ENCODED) assertTrue(ArrayUtils.contains(model._output._names, col));
+            for (String col: TO_ENCODE) assertFalse(ArrayUtils.contains(model._output._names, col));
+            for (String col: NOT_ENCODED) assertTrue(ArrayUtils.contains(model._output._names, col));
 
             Frame preds = model.score(valid);
             Scope.track(preds);
@@ -527,39 +529,45 @@ public class TargetEncoderPreprocessorTest {
         TestFrameBuilder builder = new TestFrameBuilder()
                 .withName("trainFrame")
                 .withColNames(withFoldColumn
-                        ? new String[] {"numerical", TO_ENCODE, NOT_ENCODED, TARGET, "foldc"}
-                        : new String[] {"numerical", TO_ENCODE, NOT_ENCODED, TARGET})
+                        ? new String[] {NUMERICAL[0], TO_ENCODE[0], NOT_ENCODED[0], TO_ENCODE[1], NUMERICAL[1], TARGET, FOLDC}
+                        : new String[] {NUMERICAL[0], TO_ENCODE[0], NOT_ENCODED[0], TO_ENCODE[1], NUMERICAL[1], TARGET})
                 .withVecTypes(withFoldColumn
-                        ? new byte[] {Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM}
-                        : new byte[] {Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT})
+                        ? new byte[] {Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM}
+                        : new byte[] {Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT})
                 .withChunkLayout(6, 6)
                 .withDataForCol(0, ar(3, 3, 3, 2, 2, 2, 1, 1, 1, 0, 0, 0))
                 .withDataForCol(1, ar("a", "b", "c", "a", "a", "b", "b", "c", "c", "a", "b", "c"))
                 .withDataForCol(2, ar("a", "b", "c", "a", "a", "b", "b", "c", "c", "a", "b", "c"))
-                .withDataForCol(3, ar("N", "Y", "N", "N", "Y", "Y", "N", "N", "N", "Y", "Y", "Y"));
+                .withDataForCol(3, ar("c", "b", "a", "c", "c", "b", "b", "a", "a", "c", "b", "a"))
+                .withDataForCol(4, ard(0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.1, 0.0, 0.0, 0.0))
+                .withDataForCol(5, ar("N", "Y", "N", "N", "Y", "Y", "N", "N", "N", "Y", "Y", "Y"));
         if (withFoldColumn)
-            builder.withDataForCol(4, ar(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3));
+            builder.withDataForCol(6, ar(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3));
         return builder.build();
     }
 
     private Frame makeValidFrame() {
         return new TestFrameBuilder()
                 .withName("validFrame")
-                .withColNames("numerical", TO_ENCODE, NOT_ENCODED, TARGET)
-                .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
-                .withDataForCol(0, ar(0, 1, 2, 3, 2, 1, 0))
-                .withDataForCol(1, ar("a", "b", "c", "b", "a", "b", "c"))
-                .withDataForCol(2, ar("a", "b", "c", "b", "a", "b", "c"))
-                .withDataForCol(3, ar("N", "Y", "Y", "N", "N", "Y", "Y"))
+                .withColNames(NUMERICAL[0], TO_ENCODE[0], NOT_ENCODED[0], TO_ENCODE[1], NUMERICAL[1], TARGET)
+                .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_CAT)
+                .withDataForCol(0, ar(0, 1, 2, 3, 4, 3, 2, 1, 0))
+                .withDataForCol(1, ar("a", "b", "c", "d", "c", "b", "a", "b", "c"))
+                .withDataForCol(2, ar("a", "b", "c", "b", "c", "a", "b", "c", "b"))
+                .withDataForCol(3, ar("c", "b", "a", "b", "c", "d", "c", "b", "a"))
+                .withDataForCol(4, ard(0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0, 0.1, 0.2))
+                .withDataForCol(5, ar("N", "Y", "Y", "N", "N", "Y", "Y", "N", "N"))
                 .build();
     }
     
     private Map<String, ?> makeRow(int seed) {
         Random rnd = new Random(seed);
         Map<String, Object> row = new HashMap();
-        row.put("numerical", (double)rnd.nextInt(5));
-        row.put(TO_ENCODE, new String[] { "a", "b", "c", "d" }[rnd.nextInt(4)]);
-        row.put(NOT_ENCODED, new String[] { "a", "b", "c", "d" }[rnd.nextInt(4)]);
+        row.put(NUMERICAL[0], (double)rnd.nextInt(5));
+        row.put(TO_ENCODE[0], new String[] { "a", "b", "c", "d", "e" }[rnd.nextInt(5)]);
+        row.put(NOT_ENCODED[0], new String[] { "a", "b", "c", "d", "e" }[rnd.nextInt(5)]);
+        row.put(TO_ENCODE[1], new String[] { "a", "b", "c", "d", "e" }[rnd.nextInt(5)]);
+        row.put(NUMERICAL[1], (double)rnd.nextInt(5)/10);
         return row;
     }
 
@@ -570,7 +578,10 @@ public class TargetEncoderPreprocessorTest {
         params._response_column = TARGET;
         params._fold_column = ArrayUtils.contains(train.names(), FOLDC) ? FOLDC : null;
 //        params._ignored_columns = encodeAll ? null : ignoredColumns(train, TO_ENCODE, TARGET, FOLDC);
-        params._columns_to_encode = new String[][] {{TO_ENCODE}};
+        params._columns_to_encode = ArrayUtils.append(
+                Arrays.stream(TO_ENCODE).map(col -> new String[] {col}).toArray(String[][]::new),
+                new String[][] {TO_ENCODE}  // adding a grouping
+        );
         params._data_leakage_handling = strategy;
         params._noise = 0;
         params._seed = 42;

@@ -4,7 +4,6 @@ import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoPreprocessor;
 
-import java.io.Serializable;
 import java.util.*;
 
 public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocessor {
@@ -31,8 +30,8 @@ public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocesso
   public boolean _withBlending;
   public double _inflectionPoint;
   public double _smoothing;
-  public List<ColumnsToSingleMapping> _inencMapping;
-  public List<ColumnsMapping> _inoutMapping;
+  public List<ColumnsToSingleMapping> _inencMapping; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _encodingsByCol).
+  public List<ColumnsMapping> _inoutMapping;         // maps input columns (or groups of columns) to their corresponding fully encoded one(s).
 
   List<String> _origNames;
   List<String> _nonPredictors;
@@ -94,19 +93,10 @@ public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocesso
       
     int predsIdx = 0;
     for (ColumnsToSingleMapping colMap : _inencMapping) {
-      String[] colGroup = colMap.from();
+      double category = computeCategoricalValue(colMap, row);
       String teColumn = colMap.toSingle();
       EncodingMap encodings = _encodingsByCol.get(teColumn);
-      int[] colsIdx = columnsIndices(colGroup);
-      
-      double category;
-      if (colsIdx.length == 1) {
-        category = row[colsIdx[0]];
-      } else {
-        assert colMap.toDomainAsNum() != null : "Missing domain for interaction between columns "+Arrays.toString(colGroup);  
-        category = interactionValue(row, colsIdx, colMap.toDomainAsNum());
-      }
-      
+
       int filled;
       if (Double.isNaN(category)) {
         filled = encodeNA(preds, predsIdx, encodings, teColumn);
@@ -133,23 +123,66 @@ public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocesso
   }
 
   /**
-   * a condensed version of the encoding logic as implemented for the training phase in {@link ai.h2o.targetencoding.interaction.InteractionsEncoder} 
+   * @return an int representing the categorical value (as domain index) or Double.NaN.
    */
-  private double interactionValue(double[] row, int[] colsIdx, long[] interactionDomain) {
+  double computeCategoricalValue(ColumnsToSingleMapping colMap, double[] row) {
+    String[] colGroup = colMap.from();
+    int[] colsIdx = columnsIndices(colGroup);
+    double[] values = new double[colsIdx.length];
+    for (int i=0; i<colsIdx.length; i++) {
+      values[i] = row[colsIdx[i]];
+    }
+    if (values.length == 1) {
+      return values[0];
+    }
+    assert colMap.toDomainAsNum() != null : "Missing domain for interaction between columns "+Arrays.toString(colGroup);
+    long interaction = encodeInteraction(colsIdx, values);
+    int catVal = Arrays.binarySearch(colMap.toDomainAsNum(), interaction);  //todo: verify that interactionDomain is always sorted
+    return catVal < 0 ? Double.NaN : catVal;
+  }
+  
+  String computeCategorical(ColumnsToSingleMapping colMap, Map<String, Object> row) {
+    String[] colGroup = colMap.from();
+    if (colGroup.length == 1) {
+      return (String)row.get(colGroup[0]);
+    }
+    int[] colsIdx = columnsIndices(colGroup);
+    double[] values = new double[colsIdx.length];
+    for (int i=0; i<colsIdx.length; i++) {
+      String colName = colGroup[i];
+      Object colCat = row.get(colName);
+      if (colCat == null) { //fast-track
+        values[i] = Double.NaN;
+      } else {
+        assert colCat instanceof String : "categorical values for feature `"+colName+"` should be passed as String";
+        String[] colDomain = getDomainValues(colName);
+        int colValue = Arrays.asList(colDomain).indexOf((String) colCat); //todo: we can use Arrays.binarySearch if domain is always sorted. Verify!!
+        values[i] = colValue < 0 ? Double.NaN : colValue;
+      }
+    }
+    assert colMap.toDomainAsNum() != null : "Missing domain for interaction between columns "+Arrays.toString(colGroup);
+    long interaction = encodeInteraction(colsIdx, values);
+    return Long.toString(interaction);
+  }
+
+  /**
+   * a condensed version of the encoding logic as implemented for the training phase in {@link ai.h2o.targetencoding.interaction.InteractionsEncoder}
+   */
+  private long encodeInteraction(int[] colsIdx, double[] colsValues) {
     // computing interaction value (see InteractionsEncoder)
     long interaction = 0;
     long multiplier = 1;
-    for (int colIdx : colsIdx) {
-      double val = row[colIdx];
+    for (int i=0; i<colsIdx.length; i++) {
+      int colIdx = colsIdx[i];
+      double val = colsValues[i];
       int domainCard = getDomainValues(colIdx).length;
       if (Double.isNaN(val) || val >= domainCard) val = domainCard;
       interaction += multiplier * val;
       multiplier *= (domainCard + 1);
     }
-    int catVal = Arrays.binarySearch(interactionDomain, interaction);
-    return catVal < 0 ? Double.NaN : catVal;
+    return interaction;
   }
-
+  
   private double computeEncodedValue(double[] numDen, double priorMean) {
     double posteriorMean = numDen[0] / numDen[1];
     if (_withBlending) {
@@ -160,7 +193,7 @@ public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocesso
       return posteriorMean;
     }
   }
-  
+
   int encodeCategory(double[] result, int startIdx, EncodingMap encodings, int category) {
     if (nclasses() > 2) {
       for (int i=0; i<nclasses()-1; i++) {
@@ -203,27 +236,6 @@ public class TargetEncoderMojoModel extends MojoModel implements MojoPreprocesso
       return 1;
     }
   }
-
-  Map<String, EncodingMap> sortByColumnIndex(final EncodingMaps encodingMaps) {
-    Map<String, EncodingMap> sorted = new TreeMap<>(new ColumnComparator(_columnNameToIdx));
-    sorted.putAll(encodingMaps.encodingMap());
-    return sorted;
-  }
-  
-  private static class ColumnComparator implements Comparator<String>, Serializable {
-    
-    private Map<String, Integer> _columnToIdx;
-
-    public ColumnComparator(Map<String, Integer> _columnToIdx) {
-      this._columnToIdx = _columnToIdx;
-    }
-
-    @Override
-    public int compare(String lhs, String rhs) {
-      return Integer.compare(_columnToIdx.get(lhs), _columnToIdx.get(rhs));
-    }
-  }
-
 
   @Override
   public ModelProcessor makeProcessor(GenModel model) {

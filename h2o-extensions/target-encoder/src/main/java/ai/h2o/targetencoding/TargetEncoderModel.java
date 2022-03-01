@@ -86,7 +86,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public final TargetEncoderParameters _parms;
     public final int _nclasses;
     public ColumnsToSingleMapping[] _input_to_encoding_column; // maps input columns (or groups of columns) to the single column being effectively encoded (= key in _target_encoding_map).
-    public ColumnsMapping[] _input_to_output_columns; // maps input columns (or groups of columns) to their corresponding encoded one(s).
+    public ColumnsMapping[] _input_to_output_columns; // maps input columns (or groups of columns) to their corresponding fully encoded one(s).
     public IcedHashMap<String, Frame> _target_encoding_map;
     public IcedHashMap<String, Boolean> _te_column_to_hasNAs; //XXX: Map is a wrong choice for this, IcedHashSet would be perfect though
     
@@ -415,8 +415,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
           }
         } // end for each target 
         
-        if (!_parms._keep_interaction_columns && colGroup.length > 1)
-          tmps.add(workingFrame.remove(colIdx));
+        if (!_parms._keep_interaction_columns && colGroup.length > 1) {
+          Vec rem = workingFrame.remove(colIdx);
+          if (rem != null) tmps.add(rem);
+        }
       } // end for each columnToEncode
       
       if (!_parms._keep_original_categorical_columns) {
@@ -424,7 +426,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         for (ColumnsMapping columnsToEncode: _output._input_to_encoding_column) {
           for (String col: columnsToEncode.from()) {
             if (removed.contains(col)) continue;
-            tmps.add(workingFrame.remove(col));
+            Vec rem = workingFrame.remove(col);
+            if (rem != null) tmps.add(rem);
             removed.add(col);
           }
         }
