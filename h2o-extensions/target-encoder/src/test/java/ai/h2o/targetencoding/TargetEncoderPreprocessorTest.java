@@ -8,7 +8,9 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.prediction.AbstractPrediction;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Ignore;
@@ -47,7 +49,11 @@ import static water.TestUtil.*;
 public class TargetEncoderPreprocessorTest {
     
     private static String[] TO_ENCODE = {"cat1", "cat2"};
-    private static String[] ENCODED = {"cat1_te", "cat2_te", "cat1:cat2_te"};
+    private static String[] ENCODED = {
+            "cat1_N_te", "cat1_Y_te", 
+            "cat2_N_te", "cat2_Y_te", 
+            "cat1:cat2_N_te", "cat1:cat2_Y_te"
+    };
     private static String[] NOT_ENCODED = {"noTE"};
     private static String[] NUMERICAL = {"num1", "num2"};
     private static String TARGET = "target";
@@ -176,11 +182,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -219,11 +222,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -261,11 +261,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -303,11 +300,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -345,11 +339,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -387,11 +378,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -429,11 +417,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -471,11 +456,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -513,11 +495,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();
@@ -540,7 +519,7 @@ public class TargetEncoderPreprocessorTest {
                 .withDataForCol(2, ar("a", "b", "c", "a", "a", "b", "b", "c", "c", "a", "b", "c"))
                 .withDataForCol(3, ar("c", "b", "a", "c", "c", "b", "b", "a", "a", "c", "b", "a"))
                 .withDataForCol(4, ard(0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.1, 0.0, 0.0, 0.0))
-                .withDataForCol(5, ar("N", "Y", "N", "N", "Y", "Y", "N", "N", "N", "Y", "Y", "Y"));
+                .withDataForCol(5, ar("N", "Y", "N", "M", "Y", "Y", "N", "M", "N", "Y", "Y", "M")); // M like maybe :)
         if (withFoldColumn)
             builder.withDataForCol(6, ar(1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3));
         return builder.build();
@@ -556,7 +535,7 @@ public class TargetEncoderPreprocessorTest {
                 .withDataForCol(2, ar("a", "b", "c", "b", "c", "a", "b", "c", "b"))
                 .withDataForCol(3, ar("c", "b", "a", "b", "c", "d", "c", "b", "a"))
                 .withDataForCol(4, ard(0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0, 0.1, 0.2))
-                .withDataForCol(5, ar("N", "Y", "Y", "N", "N", "Y", "Y", "N", "N"))
+                .withDataForCol(5, ar("N", "Y", "M", "N", "N", "Y", "Y", "M", "N")) 
                 .build();
     }
     
@@ -612,6 +591,13 @@ public class TargetEncoderPreprocessorTest {
         return model;
     }
 
+    private void comparePredictions(Frame inMemoryPredictions, MultinomialModelPrediction mojoPredictions) {
+        assertEquals(inMemoryPredictions.numCols(), mojoPredictions.classProbabilities.length+1);
+        assertEquals(inMemoryPredictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
+        assertEquals(inMemoryPredictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
+        assertEquals(inMemoryPredictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+        assertEquals(inMemoryPredictions.vec(3).at(0), mojoPredictions.classProbabilities[2], 1e-8);
+    }
 
     private RowData asRowData(Map<String,?> data) {
         RowData row = new RowData();
