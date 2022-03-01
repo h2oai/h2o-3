@@ -7,9 +7,13 @@ import hex.gam.GamSplines.NBSplinesTypeII;
 import jsr166y.ThreadLocalRandom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.MemoryManager;
+import water.Scope;
 import water.TestUtil;
+import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -256,6 +260,55 @@ public class GamBasicISplineTest extends TestUtil {
             double[] polyProductReverse = polynomialProduct(poly2[index], poly1[index]);
             assertArrayEquals(polyProduct, manualProduct[index], EPS);
             assertArrayEquals(polyProductReverse, manualProduct[index], EPS);
+        }
+    }
+
+    /***
+     * I have generated a bunch of splines using R toolbox splines2 for order = 2, 3, ..., 9 (yes, I overdid it again
+     * by checking order upto 9.  The general guideline is to use splines with order no more than 3.  But there are 
+     * always crazy people out there using splines more than 3....  I am verifying the higher orders for those people.)
+     * Here, I am generating the same splines using the same R inputs but using our own I-splines.
+     * The goal is to make sure the splines generated using R splines2 and our own Java implementation will
+     * be the same.  
+     */
+    @Test
+    public void testSplines2Compare() {
+        String inputPath = "smalldata/gam_test/spline2input.csv";
+        // test for order = 2 to 9
+        compareRSplines2Results(2, "smalldata/gam_test/spline2Order2.csv", inputPath);
+        compareRSplines2Results(3, "smalldata/gam_test/spline2Order3.csv", inputPath);
+        compareRSplines2Results(4, "smalldata/gam_test/spline2Order4.csv", inputPath);
+        compareRSplines2Results(5, "smalldata/gam_test/spline2Order5.csv", inputPath);
+        compareRSplines2Results(6, "smalldata/gam_test/spline2Order6.csv", inputPath);
+        compareRSplines2Results(7, "smalldata/gam_test/spline2Order7.csv", inputPath);
+        compareRSplines2Results(8, "smalldata/gam_test/spline2Order8.csv", inputPath);
+        compareRSplines2Results(9, "smalldata/gam_test/spline2Order9.csv", inputPath);
+        
+    }
+    
+    public static void compareRSplines2Results(int order, String resultFile, String inputFile) {
+        Scope.enter();
+        try {
+            double[] knots = new double[]{0,0.3,0.5,0.6,1};
+            ISplines ispline = new ISplines(order, knots);
+            Frame resultFrame = parseAndTrackTestFile(resultFile);
+            int numRows = (int) resultFrame.numRows()-1;
+            double[][] resultArray = MemoryManager.malloc8d((int) resultFrame.numRows(), resultFrame.numCols());
+            resultArray = new ArrayUtils.FrameToArray(0, resultFrame.numCols()-1, resultFrame.numRows(),
+                    resultArray).doAll(resultFrame).getArray();
+            double[][] inputArray = MemoryManager.malloc8d((int) resultFrame.numRows(), 1); // first row is header
+            Frame inputFrame = parseAndTrackTestFile(inputFile);
+            inputArray = new ArrayUtils.FrameToArray(0,0,resultFrame.numRows(),
+                    inputArray).doAll(inputFrame).getArray(); // first row is data
+
+
+            double[] iGamifiedValues = new double[ispline._numIBasis];
+            for (int dataIndex = 0; dataIndex < numRows; dataIndex++) {
+                ispline.gamifyVal(iGamifiedValues, inputArray[dataIndex][0]);
+                assertArrayEquals(resultArray[dataIndex+1], iGamifiedValues, EPS);
+            }
+        } finally {
+            Scope.exit();
         }
     }
     
