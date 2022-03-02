@@ -426,7 +426,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _penaltyMat = _parms._savePenaltyMat?GamUtils.allocate3DArray(numGamFrame, _parms, sameOrig):null;
       _penaltyMatCenter = GamUtils.allocate3DArray(numGamFrame, _parms, bothOneLess);
       if (_cubicSplineNum > 0)  // CS-spline only
-        _binvD = GamUtils.allocate3DArrayCS(_cubicSplineNum, _parms, firstTwoLess);
+        _binvD = GamUtils.allocate3DArrayCS(_cubicSplineNum+_iSplineNum, _parms, firstTwoLess);
       _numKnots = MemoryManager.malloc4(numGamFrame);
       _gamColNames = new String[numGamFrame][];
       _gamColNamesCenter = new String[numGamFrame][];

@@ -1,12 +1,13 @@
 from __future__ import division
 from __future__ import print_function
+from past.utils import old_div
 import sys
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 
-# In this test, we check to make sure the coefficients for I-splines are positive
+# In this test, we check to make sure scoring works
 def test_gam_nonNeg_coeffs():
     print("Checking logloss for binomial with different scale parameters")
     h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
@@ -38,16 +39,18 @@ def test_gam_nonNeg_coeffs():
 def buildModelCheckCoeff(train_data, y, gamX, family):
     numKnots = [3,4,5]
     x=["C1","C2"]
+    frames = train_data.split_frame(ratios=[0.9])
+    train_part = frames[0]
+    test_part = frames[1]
+    # building multiple models with same training / test datasets to make sure it works
     h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [0.001, 0.001, 0.001],
-                                                bs=[2,2,2], spline_orders=[2,3,4],num_knots=numKnots)
-    h2o_model.train(x=x, y=y, training_frame=train_data)   
-    # check to make sure gam column coefficients are non-negative
-    coef_dict = h2o_model.coef()
-    coef_keys = coef_dict.keys()
-    for key in coef_keys:
-        if "center" in key:
-            assert coef_dict[key] >= 0
-                
+                                                bs=[0,2,0], spline_orders=[-1,3,-1],num_knots=numKnots)
+    h2o_model.train(x=x, y=y, training_frame=train_part, validation_frame=test_part)
+    predict_frame = h2o_model.predict(test_part)
+    h2o_model2 = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [0.001, 0.001, 0.001],
+                                                bs=[0,2,0], spline_orders=[-1,3,-1],num_knots=numKnots)
+    h2o_model2.train(x=x, y=y, training_frame=train_part, validation_frame=test_part)
+    predict_frame2 = h2o_model2.predict(test_part)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_gam_nonNeg_coeffs)
