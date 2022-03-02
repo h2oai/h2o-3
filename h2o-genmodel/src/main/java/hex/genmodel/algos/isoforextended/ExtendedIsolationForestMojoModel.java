@@ -111,15 +111,21 @@ public final class ExtendedIsolationForestMojoModel extends MojoModel {
     }
   }
 
-  private static int leftChildIndex(int i) {
+  public static int leftChildIndex(int i) {
     return 2 * i + 1;
   }
 
-  private static int rightChildIndex(int i) {
+  public static int rightChildIndex(int i) {
     return 2 * i + 2;
   }
 
-  private static double anomalyScore(double pathLength, long sample_size) {
+  /**
+   * Anomaly score computation comes from Equation 1 in paper
+   *
+   * @param pathLength path from root to leaf
+   * @return anomaly score in range [0, 1]
+   */
+  public static double anomalyScore(double pathLength, long sample_size) {
     return Math.pow(2, -1 * (pathLength /
             averagePathLengthOfUnsuccessfulSearch(sample_size)));
   }

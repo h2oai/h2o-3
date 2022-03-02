@@ -6,6 +6,8 @@ import water.Keyed;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
+import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.*;
+
 /**
  * IsolationTree structure with better memory performance. Store only the data that are needed for scoring.
  */
@@ -20,14 +22,6 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
 
     public AbstractCompressedNode[] getNodes() {
         return  _nodes;
-    }
-
-    private int leftChildIndex(int i) {
-        return 2 * i + 1;
-    }
-
-    private int rightChildIndex(int i) {
-        return 2 * i + 2;
     }
 
     private CompressedNode compressedNode(AbstractCompressedNode node) {
@@ -67,20 +61,6 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
                 break;
         }
         return node.getHeight() + averagePathLengthOfUnsuccessfulSearch(compressedLeaf(node).getNumRows());
-    }
-
-    /**
-     * Gives the average path length of unsuccessful search in BST.
-     * Comes from Algorithm 3 (pathLength) and Equation 2 in paper
-     *
-     * @param n number of elements
-     */
-    public static double averagePathLengthOfUnsuccessfulSearch(long n) {
-        if (n < 2)
-            return 0;
-        if (n == 2)
-            return 1;
-        return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2.0 * (n - 1.0)) / n;
     }
 
     public byte[] toBytes() {
