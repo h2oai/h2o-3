@@ -3,12 +3,9 @@ package hex.genmodel.algos.isoforextended;
 import com.google.common.io.ByteStreams;
 import hex.genmodel.ModelMojoReader;
 import hex.genmodel.MojoReaderBackend;
-import hex.genmodel.algos.isofor.IsolationForestMojoModel;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.AnomalyDetectionPrediction;
-import hex.genmodel.utils.ArrayUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,10 +13,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class ExtendedIsolationForestMojoModelTest {
 
@@ -31,12 +26,35 @@ public class ExtendedIsolationForestMojoModelTest {
         assertNotNull(mojo);
     }
 
-
     @Test
     public void testBasic() throws Exception {
-        System.out.println("mojo._algoName = " + mojo._algoName);
-        System.out.println("mojo._ntrees = " + mojo._ntrees);
-        System.out.println("mojo score = " + Arrays.toString(mojo.score0(new double[]{3.0, 3.0}, ArrayUtils.nanArray(2))));
+        assertNotNull(mojo._compressedTrees);
+        assertEquals(mojo._ntrees, mojo._compressedTrees.length);
+
+        double[] row = new double[]{3.0, 3.0};
+
+        RowData data = new RowData();
+        for (int i = 0; i< row.length; i++) {
+            data.put(mojo._names[i], row[i]);
+        }
+
+        double[] rawPrediction = new double[2];
+        mojo.score0(row, rawPrediction);
+
+        EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(
+                new EasyPredictModelWrapper
+                        .Config()
+                        .setModel(mojo)
+        );
+
+        AnomalyDetectionPrediction prediction = (AnomalyDetectionPrediction) wrapper.predict(data);
+        assertNull(prediction.isAnomaly);
+        assertEquals(rawPrediction[1], prediction.score, 0);
+        assertEquals(rawPrediction[0], prediction.normalizedScore, 0);
+        assertNull(prediction.leafNodeAssignments);
+        assertNull(prediction.leafNodeAssignmentIds);
+        assertNull(prediction.stageProbabilities);
+        assertArrayEquals("Outputs of the model is differ from output of wrapper", rawPrediction, prediction.toPreds(), 0);
     }
 
 
