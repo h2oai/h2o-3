@@ -48,7 +48,7 @@
 
 .h2o.doRawREST.with.curl <- function(conn, url, method, parms, fileUploadInfo, binary=FALSE, parms_as_payload = FALSE, ...){
   timeout_secs <- 0
-  handle <- curl::new_handle(customrequest = method)
+  handle <- curl::new_handle(customrequest = method, followlocation = FALSE)
   if (conn@use_spnego) {
     negotiateAuth <- 4
     curl::handle_setopt(handle, httpauth = negotiateAuth, userpwd = ":")
@@ -149,7 +149,7 @@
                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
   if (! .__curlError) {
     httpStatusCode <- as.numeric(tmp$status_code)
-    httpStatusMessage <- sub(sprintf("HTTP.*?\\s%d\\s(.*?)\\s*$", httpStatusCode),
+    httpStatusMessage <- sub("HTTP.*?\\s+\\d+\\s+(.*?)\\s*$",
                              "\\1",
                              strsplit(rawToChar(tmp$headers), "[\n\r]")[[1]][[1]],
                              perl = TRUE)
