@@ -2,6 +2,8 @@ package hex.tree.isoforextended;
 
 import hex.ModelMojoWriter;
 import hex.pca.PCAModel;
+import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
+import water.DKV;
 import water.MemoryManager;
 
 import java.io.IOException;
@@ -21,6 +23,11 @@ public class ExtendedIsolationForestMojoWriter extends ModelMojoWriter<ExtendedI
 
   @Override
   protected void writeModelData() throws IOException {
-    writekv("ntrees", model._parms._ntrees); // for reference
+    writekv("ntrees", model._output._ntrees);
+    writekv("sample_size", model._output._sample_size);
+    for (int i = 0; i < model._output._ntrees; i++) {
+      CompressedIsolationTree compressedIsolationTree = DKV.getGet(model._output._iTreeKeys[i]);
+      writeblob(String.format("trees/t%02d.bin", i), compressedIsolationTree.toBytes());
+    }
   }
 }

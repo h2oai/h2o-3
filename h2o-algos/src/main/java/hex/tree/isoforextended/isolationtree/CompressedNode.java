@@ -1,5 +1,7 @@
 package hex.tree.isoforextended.isolationtree;
 
+import water.AutoBuffer;
+
 import java.util.Arrays;
 
 /**
@@ -34,5 +36,9 @@ public class CompressedNode extends AbstractCompressedNode {
 
     public double[] getP() {
         return _p;
+    }
+
+    @Override
+    public void toBytes(AutoBuffer ab) {
     }
 }

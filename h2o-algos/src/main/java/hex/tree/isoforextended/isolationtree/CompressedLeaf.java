@@ -1,5 +1,7 @@
 package hex.tree.isoforextended.isolationtree;
 
+import water.AutoBuffer;
+
 /**
  * IsolationTree Leaf Node with better memory performance. Store only the data that are needed for scoring.
  */
@@ -17,5 +19,9 @@ public class CompressedLeaf extends AbstractCompressedNode {
 
     public int getNumRows() {
         return _numRows;
+    }
+
+    @Override
+    public void toBytes(AutoBuffer ab) {
     }
 }

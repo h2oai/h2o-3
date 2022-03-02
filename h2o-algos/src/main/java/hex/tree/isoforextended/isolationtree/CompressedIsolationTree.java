@@ -1,5 +1,6 @@
 package hex.tree.isoforextended.isolationtree;
 
+import water.AutoBuffer;
 import water.Iced;
 import water.Key;
 import water.Keyed;
@@ -81,5 +82,17 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
         if (n == 2)
             return 1;
         return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2.0 * (n - 1.0)) / n;
+    }
+
+    public byte[] toBytes() {
+        AutoBuffer ab = new AutoBuffer();
+        ab.put4(compressedNode(_nodes[0]).getN().length); // size of the internal arrays
+        for(int i = 0; i < _nodes.length; i++) {
+            if (_nodes[i] != null) {
+                ab.put4(i); // node number
+                // _nodes[i].toBytes(ab);
+            }
+        }
+        return ab.bufClose();
     }
 }
