@@ -69,7 +69,6 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "check_constant_response",
       "gainslift_bins", 
       "auc_type", 
-      "interaction_constraints"
     };
 
     // Input fields
@@ -93,10 +92,6 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help="Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions", level = API.Level.expert, gridable = true)
     public double pred_noise_bandwidth;
-
-    @API(help="A set of allowed column interactions.", level= API.Level.expert)
-    public String[][] interaction_constraints;
-
 
 //    // TODO debug only, remove!
 //    @API(help="Internal flag, use new version of histo tsk if set", level = API.Level.expert, gridable = false)
