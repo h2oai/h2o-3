@@ -71,6 +71,14 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     }
 
     @Test
+    public void testInteraction6() {
+        String[][] interactions = new String[2][];
+        interactions[0] = new String[]{"AGE", "PSA"};
+        interactions[1] = new String[]{"GLEASON"};
+        testInteractionConstraints(interactions);
+    }
+
+    @Test
     public void testInteractionUnknownColError() {
         try {
             String[][] interactions = new String[2][];

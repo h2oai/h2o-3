@@ -325,7 +325,7 @@ public class DTree extends Iced {
       int cnt=0;                  // Count of possible splits
       DHistogram nhists[] = new DHistogram[currentHistos.length]; // A new histogram set
       for(int j = 0; j < currentHistos.length; j++ ) { // For every column in the new split
-        if(bcs != null && !bcs.isAllowedIndex(j)) {
+        if (bcs != null && !bcs.isAllowedIndex(j)) {
           continue;
         }
         DHistogram h = currentHistos[j];            // old histogram of column
