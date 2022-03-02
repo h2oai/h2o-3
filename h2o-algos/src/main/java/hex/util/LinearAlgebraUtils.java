@@ -259,36 +259,37 @@ public class LinearAlgebraUtils {
    */
   public static double[][] matrixMultiplyTriagonal(double[][] A, TriDiagonalMatrix B, boolean transposeResult) {
     int arow = A.length; // number of rows of result
-    int bcol = B._size+2;    // number of columns of B, K+2
-    final int lastCol = bcol-1;
-    final int secondLastCol = bcol-2; // also equal to K
-    final int kMinus1 = bcol-3;
+    final int bcol = B._size+2;    // number of columns of B, K
+    final int lastCol = bcol-1; // last column of B
+    final int secondLastCol = bcol-2; // last column
+    final int kMinus1 = bcol-3; // should be k-2 but we count from 0 and not 1, hence bcol-3 and not bcol-2
     final int kMinus2 = bcol-4;
     final double[][] result = new double[bcol][];
     RecursiveAction[] ras = new RecursiveAction[bcol];
-    for (int index = 0; index < bcol; index++) { // column  index
+    for (int index = 0; index < bcol; index++) { // go through each column of TriDiagonalMatrix B
       final int i = index;
       final double[] tempResult = new double[arow];
-      final double[] bCol = new double[B._size];
-      ras[i] = new RecursiveAction() {
+      final double[] bColVec = new double[B._size];
+      ras[i] = new RecursiveAction() { // multiply each column of B with A
         @Override protected void compute() {
           if (i==0) {
-            bCol[0] = B._first_diag[0];
+            bColVec[0] = B._first_diag[0];
           } else if (i==1) {
-            bCol[0] = B._second_diag[0];
-            bCol[1] = B._first_diag[1];
+            bColVec[0] = B._second_diag[0];
+            if (B._first_diag.length > 1)
+              bColVec[1] = B._first_diag[1];
           } else if (i==lastCol) {
-            bCol[kMinus1] = B._third_diag[kMinus1];
+            bColVec[kMinus1] = B._third_diag[kMinus1];
           } else if (i==secondLastCol) {
-            bCol[kMinus2] = B._third_diag[kMinus2];
-            bCol[kMinus1] =B._second_diag[kMinus1];
+            bColVec[kMinus2] = B._third_diag[kMinus2];
+            bColVec[kMinus1] =B._second_diag[kMinus1];
           } else {
-            bCol[i-2] = B._third_diag[i-2];
-            bCol[i-1] = B._second_diag[i-1];
-            bCol[i] = B._first_diag[i];
+            bColVec[i-2] = B._third_diag[i-2];
+            bColVec[i-1] = B._second_diag[i-1];
+            bColVec[i] = B._first_diag[i];
           }
           
-          ArrayUtils.multArrVec(A, bCol, tempResult);
+          ArrayUtils.multArrVec(A, bColVec, tempResult);
           result[i] = Arrays.copyOf(tempResult, arow);
         }
       };
