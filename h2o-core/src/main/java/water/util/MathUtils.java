@@ -815,13 +815,4 @@ public class MathUtils {
     }
     return transposed;
   }
-
-  /**
-   * Compute harmonic number estimated by natural logarithm
-   */
-  public static double harmonicNumberEstimation(long value) {
-    if (value <= 0)
-      return 0;
-    return Math.log(value) + EULER_MASCHERONI_CONSTANT;
-  }
 }
