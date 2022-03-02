@@ -40,5 +40,12 @@ public class CompressedNode extends AbstractCompressedNode {
 
     @Override
     public void toBytes(AutoBuffer ab) {
+        ab.put1('N'); // identifier of this node type
+        for (double v : _n) {
+            ab.put8d(v);
+        }
+        for (double v : _p) {
+            ab.put8d(v);
+        }
     }
 }

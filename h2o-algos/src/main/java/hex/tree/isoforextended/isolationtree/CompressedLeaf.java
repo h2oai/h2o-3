@@ -23,5 +23,7 @@ public class CompressedLeaf extends AbstractCompressedNode {
 
     @Override
     public void toBytes(AutoBuffer ab) {
+        ab.put1('L'); // identifier of this node type
+        ab.put4(_numRows);
     }
 }
