@@ -471,7 +471,7 @@ public final class DHistogram extends Iced<DHistogram> {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       long vlen = 0;
-      if(!ics.allowedInteractionContainsColumn(c)){
+      if(ics != null && !ics.allowedInteractionContainsColumn(c)){
         hs[c] = null;
       } else {
         Vec v = vecs[c];
