@@ -8,8 +8,6 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
-import hex.genmodel.easy.prediction.AbstractPrediction;
-import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
@@ -26,27 +24,23 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
-import water.util.RandomUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 import static water.TestUtil.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class TargetEncoderPreprocessorTest {
+public class TargetEncoderTransformerTest {
     
     private static String[] TO_ENCODE = {"cat1", "cat2"};
     private static String[] ENCODED = {
@@ -72,10 +66,10 @@ public class TargetEncoderPreprocessorTest {
             
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
             
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.AUTO);
             Scope.track_generic(model);
             
             int expectedCVModels = 3;  //3 folds -> 3 cv models
@@ -101,10 +95,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, valid, tePreproc, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, valid, teTrans, CategoricalEncodingScheme.AUTO);
             Scope.track_generic(model);
 
             for (String col: ENCODED) assertTrue(ArrayUtils.contains(model._output._names, col));
@@ -125,10 +119,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.AUTO);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -136,14 +130,14 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             try(ZipFile zf = new ZipFile(mojoFile)) { 
-                ZipEntry preprocessor = zf.getEntry("preprocessing/preprocessor_0/model.ini");
+                ZipEntry preprocessor = zf.getEntry("transformers/transformer_0/model.ini");
                 assertNotNull(preprocessor);
             }
 
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
         } finally {
             Scope.exit();
         }
@@ -159,10 +153,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, true, false);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, valid, tePreproc, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, valid, teTrans, CategoricalEncodingScheme.AUTO);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -170,9 +164,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -199,10 +193,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.Enum);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -210,9 +204,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -238,10 +232,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -249,9 +243,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -277,10 +271,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, true);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.Enum);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -288,9 +282,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -316,10 +310,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, true);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -327,9 +321,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -355,10 +349,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.Enum);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -366,9 +360,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -394,10 +388,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -405,9 +399,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -433,10 +427,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, true);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.Enum);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -444,9 +438,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -472,10 +466,10 @@ public class TargetEncoderPreprocessorTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, true);
             Scope.track_generic(teModel);
-            TargetEncoderPreprocessor tePreproc = new TargetEncoderPreprocessor(teModel);
-            Scope.track_generic(tePreproc);
+            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
+            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, tePreproc, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -483,9 +477,9 @@ public class TargetEncoderPreprocessorTest {
                 model.getMojo().writeTo(modelOutput);
             }
             MojoModel mojoModel = MojoModel.load(mojoFile.getPath());
-            assertNotNull(mojoModel._preprocessors);
-            assertEquals(1, mojoModel._preprocessors.length);
-            assertTrue(mojoModel._preprocessors[0] instanceof TargetEncoderMojoModel);
+            assertNotNull(mojoModel._transformers);
+            assertEquals(1, mojoModel._transformers.length);
+            assertTrue(mojoModel._transformers[0] instanceof TargetEncoderMojoModel);
 
             for(int i=0; i<50; i++) {
                 Map<String, ?> row = makeRow(i);
@@ -569,13 +563,13 @@ public class TargetEncoderPreprocessorTest {
         return te.trainModel().get();
     }
 
-    private Model buildModel(Frame train, Frame valid, TargetEncoderPreprocessor preprocessor, CategoricalEncodingScheme categoricalEncoding) {
+    private Model buildModel(Frame train, Frame valid, TargetEncoderTransformer preprocessor, CategoricalEncodingScheme categoricalEncoding) {
         GBMModel.GBMParameters params = new GBMModel.GBMParameters();
         params._seed = 987;
         params._train = train._key;
         params._valid = valid == null ? null : valid._key;
         params._response_column = TARGET;
-        params._preprocessors = preprocessor == null ? null : new Key[] {preprocessor._key};
+        params._dataTransformers = preprocessor == null ? null : new Key[] {preprocessor._key};
         params._min_rows = 1;
         params._max_depth = 1;
         params._categorical_encoding = categoricalEncoding;
@@ -649,11 +643,8 @@ public class TargetEncoderPreprocessorTest {
                 EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
                         .setConvertUnknownCategoricalLevelsToNa(true)
                         .setModel(mojoModel));
-                BinomialModelPrediction mojoPredictions = modelWrapper.predictBinomial(asRowData(row));
-                assertEquals(predictions.numCols(), mojoPredictions.classProbabilities.length+1);
-                assertEquals(predictions.vec("predict").at(0), mojoPredictions.labelIndex, 1e-8);
-                assertEquals(predictions.vec(1).at(0), mojoPredictions.classProbabilities[0], 1e-8);
-                assertEquals(predictions.vec(2).at(0), mojoPredictions.classProbabilities[1], 1e-8);
+                MultinomialModelPrediction mojoPredictions = modelWrapper.predictMultinomial(asRowData(row));
+                comparePredictions(predictions, mojoPredictions);
             }
         } finally {
             Scope.exit();

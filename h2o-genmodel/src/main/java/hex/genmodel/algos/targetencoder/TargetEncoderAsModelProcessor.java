@@ -2,17 +2,15 @@ package hex.genmodel.algos.targetencoder;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
-import hex.genmodel.MojoPreprocessor;
+import hex.genmodel.MojoTransformer;
 import hex.genmodel.easy.*;
 import hex.genmodel.easy.exception.PredictException;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static hex.genmodel.algos.targetencoder.TargetEncoderMojoModel.name2Idx;
 
-class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
+class TargetEncoderAsModelProcessor implements MojoTransformer.DataTransformer {
 
     private final GenModel _model;
     private final TargetEncoderMojoModel _teModel;
@@ -39,7 +37,7 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
     }
 
     @Override
-    public GenModel getProcessedModel() {
+    public GenModel getTransformedModel() {
         String[] newNames = _columnsToDomainAfterTE.keySet().toArray(new String[0]);
         String[][] newDomains = _columnsToDomainAfterTE.values().toArray(new String[0][]);
         return new VirtualTargetEncodedModel(_model, newNames, newDomains, _model.getResponseName());
@@ -187,7 +185,7 @@ class TargetEncoderAsModelProcessor implements MojoPreprocessor.ModelProcessor {
     }
 
     /**
-     *  This virtual model is used to "trick" further processors and especially CategoricalEncoding
+     *  This virtual model is used to "trick" further transformers and especially CategoricalEncoding
      *  to provide it with a model/frame description that looks as if TE was already applied.
      */
     private static class VirtualTargetEncodedModel extends GenModel {

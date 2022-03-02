@@ -84,8 +84,8 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   @Override
   protected final void writeModelKV() throws IOException {
-    if (model._parms._preprocessors != null) {
-      writekv("preprocessors_count", model._parms._preprocessors.length);
+    if (model._parms._dataTransformers != null) {
+      writekv("transformers_count", model._parms._dataTransformers.length);
     }
     writeModelData();
   }
@@ -97,15 +97,15 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     super.writeExtraInfo();
     writeModelDetails();
     writeModelDetailsReadme();
-    writeModelPreprocessors();
+    writeDataTransformers();
   }
   
-  protected void writeModelPreprocessors() throws IOException {
-    if (model._parms._preprocessors == null) return;
-    for (int i=0; i < model._parms._preprocessors.length; i++) {
-      Key<ModelPreprocessor> key = model._parms._preprocessors[i];
-      ModelPreprocessor mp = key.get();
-      writemodel("preprocessing/preprocessor_"+i+"/", mp.asModel().getMojo());
+  protected void writeDataTransformers() throws IOException {
+    if (model._parms._dataTransformers == null) return;
+    for (int i = 0; i < model._parms._dataTransformers.length; i++) {
+      Key<DataTransformer> key = model._parms._dataTransformers[i];
+      DataTransformer mp = key.get();
+      writemodel("transformers/transformer_"+i+"/", mp.asModel().getMojo());
     }
   }
 
