@@ -5,12 +5,12 @@ import hex.genmodel.easy.EasyPredictModelWrapper.ErrorConsumer;
 import hex.genmodel.easy.RowToRawDataConverter;
 
 
-public interface MojoPreprocessor {
+public interface MojoTransformer {
     
-    ModelProcessor makeProcessor(GenModel model);
+    DataTransformer makeDataTransformer(GenModel model);
 
     
-    interface ModelProcessor {
+    interface DataTransformer {
         /**
          * @param errorConsumer
          * @param config
@@ -20,8 +20,8 @@ public interface MojoPreprocessor {
                                                Config config);
 
         /**
-         * @return a
+         * @return a model that ...
          */
-        GenModel getProcessedModel();
+        GenModel getTransformedModel();
     }
 }

@@ -1,7 +1,7 @@
 package ai.h2o.targetencoding;
 
 import hex.Model;
-import hex.ModelPreprocessor;
+import hex.DataTransformer;
 import water.DKV;
 import water.Futures;
 import water.Key;
@@ -11,18 +11,18 @@ import java.util.Objects;
 
 import static ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy.*;
 
-public class TargetEncoderPreprocessor extends ModelPreprocessor<TargetEncoderPreprocessor> {
+public class TargetEncoderTransformer extends DataTransformer<TargetEncoderTransformer> {
     
     private TargetEncoderModel _targetEncoder;
 
-    public TargetEncoderPreprocessor(TargetEncoderModel targetEncoder) {
-        super(Key.make(Objects.toString(targetEncoder._key)+"_preprocessor"));
+    public TargetEncoderTransformer(TargetEncoderModel targetEncoder) {
+        super(Key.make(Objects.toString(targetEncoder._key)+"_transformer"));
         this._targetEncoder = targetEncoder;
         DKV.put(this);
     }
 
     @Override
-    public Frame processTrain(Frame fr, Model.Parameters params) {
+    public Frame transformTrain(Frame fr, Model.Parameters params) {
         if (useFoldTransform(params)) {
             return _targetEncoder.transformTraining(fr, params._cv_fold);
         } else {
@@ -31,7 +31,7 @@ public class TargetEncoderPreprocessor extends ModelPreprocessor<TargetEncoderPr
     }
 
     @Override
-    public Frame processValid(Frame fr, Model.Parameters params) {
+    public Frame transformValid(Frame fr, Model.Parameters params) {
         if (useFoldTransform(params)) {
             return _targetEncoder.transformTraining(fr);
         } else {
@@ -40,7 +40,7 @@ public class TargetEncoderPreprocessor extends ModelPreprocessor<TargetEncoderPr
     }
 
     @Override
-    public Frame processScoring(Frame fr, Model model) {
+    public Frame transformPredict(Frame fr, Model model) {
         return _targetEncoder.transform(fr);
     }
 

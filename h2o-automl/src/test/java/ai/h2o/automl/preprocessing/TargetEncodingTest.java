@@ -5,7 +5,7 @@ import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.preprocessing.PreprocessingStepDefinition.Type;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
-import ai.h2o.targetencoding.TargetEncoderPreprocessor;
+import ai.h2o.targetencoding.TargetEncoderTransformer;
 import hex.Model;
 import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
@@ -27,7 +27,6 @@ import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -225,19 +224,19 @@ public class TargetEncodingTest {
             System.out.println(aml.leaderboard().toTwoDimTable());
             for (Model m : aml.leaderboard().getModels()) {
                 if (m instanceof StackedEnsembleModel) {
-                    assertNull(m._parms._preprocessors);
+                    assertNull(m._parms._dataTransformers);
                     assertFalse(m.haveMojo()); // all SEs should have at least one XGB which doesn't support MOJO
                     assertFalse(m.havePojo());
                 } else if (m instanceof GLMModel 
                         || m instanceof DeepLearningModel
                         ) { // disabled for GLM with CV, because GLM refuses to follow the same CV flow as other algos.
-                    assertNull(m._parms._preprocessors);
+                    assertNull(m._parms._dataTransformers);
                     assertTrue(m.haveMojo());
                     assertTrue(m.havePojo());
                 } else {
-                    assertNotNull(m._parms._preprocessors);
-                    assertEquals(1, m._parms._preprocessors.length);
-                    assertTrue(m._parms._preprocessors[0].get() instanceof TargetEncoderPreprocessor);
+                    assertNotNull(m._parms._dataTransformers);
+                    assertEquals(1, m._parms._dataTransformers.length);
+                    assertTrue(m._parms._dataTransformers[0].get() instanceof TargetEncoderTransformer);
                     assertFalse(m.haveMojo());
                     assertFalse(m.havePojo());
                 }

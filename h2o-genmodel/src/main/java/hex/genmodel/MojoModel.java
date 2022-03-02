@@ -30,7 +30,7 @@ public abstract class MojoModel extends GenModel {
   public ModelDescriptor _modelDescriptor = null;
   public ModelAttributes _modelAttributes = null;
   public Table[] _reproducibilityInformation;
-  public MojoPreprocessor[] _preprocessors;
+  public MojoTransformer[] _transformers;
 
   /**
    * Primary factory method for constructing MojoModel instances.
@@ -96,17 +96,17 @@ public abstract class MojoModel extends GenModel {
   public RowToRawDataConverter _makeRowConverter(CategoricalEncoding categoricalEncoding,
                                                  ErrorConsumer errorConsumer,
                                                  Config config) {
-    if (_preprocessors != null) {
-      RowToRawDataConverter[] converters = new RowToRawDataConverter[_preprocessors.length+1];
+    if (_transformers != null) {
+      RowToRawDataConverter[] converters = new RowToRawDataConverter[_transformers.length+1];
       int i = 0;
-      GenModel preprocessedModel = this;
-      for (MojoPreprocessor preprocessor : _preprocessors) {
-        MojoPreprocessor.ModelProcessor processor = preprocessor.makeProcessor(preprocessedModel);
-        converters[i] = processor.makeRowConverter(errorConsumer, config);
-        preprocessedModel = processor.getProcessedModel();
+      GenModel model = this;
+      for (MojoTransformer transformer : _transformers) {
+        MojoTransformer.DataTransformer dt = transformer.makeDataTransformer(model);
+        converters[i] = dt.makeRowConverter(errorConsumer, config);
+        model = dt.getTransformedModel();
         i++;
       }
-      converters[i] = new CategoricalEncodingAsModelProcessor(preprocessedModel, this, categoricalEncoding).makeRowConverter(errorConsumer, config);
+      converters[i] = new CategoricalEncodingAsDataTransformer(model, this, categoricalEncoding).makeRowConverter(errorConsumer, config);
       return new CompositeRowToRawDataConverter<>(converters);
     }
     

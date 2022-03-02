@@ -8,10 +8,10 @@ import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
-import ai.h2o.targetencoding.TargetEncoderPreprocessor;
+import ai.h2o.targetencoding.TargetEncoderTransformer;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
-import hex.ModelPreprocessor;
+import hex.DataTransformer;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
@@ -31,7 +31,7 @@ public class TargetEncoding implements PreprocessingStep {
     private static final Completer NOOP = () -> {};
     
     private AutoML _aml;
-    private TargetEncoderPreprocessor _tePreprocessor;
+    private TargetEncoderTransformer _teTransformer;
     private TargetEncoderModel _teModel;
     private final List<Completer> _disposables = new ArrayList<>();
 
@@ -96,15 +96,15 @@ public class TargetEncoding implements PreprocessingStep {
 
         TargetEncoder te = new TargetEncoder(params, _aml.makeKey(getType(), null, false));
         _teModel = te.trainModel().get();
-        _tePreprocessor = new TargetEncoderPreprocessor(_teModel);
+        _teTransformer = new TargetEncoderTransformer(_teModel);
     }
 
     @Override
     public Completer apply(Model.Parameters params, PreprocessingConfig config) {
-        if (_tePreprocessor == null || !config.get(CONFIG_ENABLED, true)) return NOOP;
+        if (_teTransformer == null || !config.get(CONFIG_ENABLED, true)) return NOOP;
         
         if (!config.get(CONFIG_PREPARE_CV_ONLY, false))
-            params._preprocessors = (Key<ModelPreprocessor>[])ArrayUtils.append(params._preprocessors, _tePreprocessor._key);
+            params._dataTransformers = (Key<DataTransformer>[])ArrayUtils.append(params._dataTransformers, _teTransformer._key);
         
         Frame train = new Frame(params.train());
         String foldColumn = _teModel._parms._fold_column;
@@ -133,9 +133,9 @@ public class TargetEncoding implements PreprocessingStep {
 
     @Override
     public void remove() {
-        if (_tePreprocessor != null) {
-            _tePreprocessor.remove(true);
-            _tePreprocessor = null;
+        if (_teTransformer != null) {
+            _teTransformer.remove(true);
+            _teTransformer = null;
             _teModel = null;
         }
     }
@@ -192,8 +192,8 @@ public class TargetEncoding implements PreprocessingStep {
         return new ArrayList<>(encode);
     }
 
-    TargetEncoderPreprocessor getTEPreprocessor() {
-        return _tePreprocessor;
+    TargetEncoderTransformer getTEPreprocessor() {
+        return _teTransformer;
     }
 
     TargetEncoderModel getTEModel() {

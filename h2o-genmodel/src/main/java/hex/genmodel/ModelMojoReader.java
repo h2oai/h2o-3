@@ -263,15 +263,15 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   }
 
   protected final void readModelKV() throws IOException {
-    readModelPreprocessors(readkv("preprocessors_count", 0));
+    readDataTransformers(readkv("transformers_count", 0));
     readModelData();
   }
 
-  private void readModelPreprocessors(int count) throws IOException {
+  private void readDataTransformers(int count) throws IOException {
     if (count <= 0) return;
-    _model._preprocessors = new MojoPreprocessor[count];
+    _model._transformers = new MojoTransformer[count];
     for (int i=0; i < count; i++) {
-      _model._preprocessors[i] = (MojoPreprocessor) ModelMojoReader.readFrom(new NestedMojoReaderBackend(_reader, "preprocessing/preprocessor_"+i+"/"));
+      _model._transformers[i] = (MojoTransformer) ModelMojoReader.readFrom(new NestedMojoReaderBackend(_reader, "transformers/transformer_"+i+"/"));
     }
   }
 

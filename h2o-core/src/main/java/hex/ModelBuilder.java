@@ -1596,8 +1596,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if (expensive) {
       boolean scopeTrack = !_parms._is_cv_model;
-      Frame newtrain = applyPreprocessors(_train, true, scopeTrack);
-      newtrain = encodeFrameCategoricals(newtrain, scopeTrack); //we could turn this into a preprocessor later
+      Frame newtrain = applyTransformers(_train, true, scopeTrack);
+      newtrain = encodeFrameCategoricals(newtrain, scopeTrack); //we could turn this into a data transformer later
       if (newtrain != _train) {
         _origTrain = _train;
         _origNames = _train.names();
@@ -1608,7 +1608,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _origTrain = null;
       }
       if (_valid != null) {
-        Frame newvalid = applyPreprocessors(_valid, false, scopeTrack);
+        Frame newvalid = applyTransformers(_valid, false, scopeTrack);
         newvalid = encodeFrameCategoricals(newvalid, scopeTrack /* for CV, need to score one more time in outer loop */);
 //        newvalid = adaptFrameToTrain(newvalid, "Validation Frame", "_validation_frame", expensive, true);
         setValid(newvalid);
@@ -1749,17 +1749,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return adapted;
   }
 
-  private Frame applyPreprocessors(Frame fr, boolean isTraining, boolean scopeTrack) {
-    if (_parms._preprocessors == null) return fr;
+  private Frame applyTransformers(Frame fr, boolean isTraining, boolean scopeTrack) {
+    if (_parms._dataTransformers == null) return fr;
 
-    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
+    for (Key<DataTransformer> key : _parms._dataTransformers) {
       DKV.prefetch(key);
     }
     Frame result = fr;
     Frame encoded;
-    for (Key<ModelPreprocessor> key : _parms._preprocessors) {
-      ModelPreprocessor preprocessor = key.get();
-      encoded = isTraining ? preprocessor.processTrain(result, _parms) : preprocessor.processValid(result, _parms);
+    for (Key<DataTransformer> key : _parms._dataTransformers) {
+      DataTransformer dt = key.get();
+      encoded = isTraining ? dt.transformTrain(result, _parms) : dt.transformValid(result, _parms);
       if (encoded != result) trackEncoded(encoded, scopeTrack);
       result = encoded;
     }
