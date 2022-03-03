@@ -210,7 +210,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 final boolean printout = (_parms._score_each_iteration || finalScoring || (sinceLastScore > _parms._score_interval && scored)) && !_parms._disable_training_metrics;
                 if (printout) {
                     _model._output._model_summary = createModelSummaryTable();
-                    _model._output._scoring_history = createScoringHistoryTable();
+                    _model._output._scoring_history = createScoringHistoryTable(tid+1);
                     LOG.info(_model.toString());
                 }
             }
@@ -277,7 +277,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         return table;
     }
 
-    protected TwoDimTable createScoringHistoryTable() {
+    protected TwoDimTable createScoringHistoryTable(int ntreesTrained) {
         List<String> colHeaders = new ArrayList<>();
         List<String> colTypes = new ArrayList<>();
         List<String> colFormat = new ArrayList<>();
@@ -293,7 +293,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         ScoreKeeper[] sks = _model._output._scored_train;
 
         int rows = 0;
-        for (int i = 0; i < sks.length; i++) {
+        for (int i = 0; i <= ntreesTrained; i++) {
             if (i != 0 && sks[i] != null && Double.isNaN(sks[i]._anomaly_score) || sks[i] == null) continue;
             rows++;
         }
@@ -305,7 +305,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 colFormat.toArray(new String[0]),
                 "");
         int row = 0;
-        for( int i = 0; i<sks.length; i++ ) {
+        for( int i = 0; i<=ntreesTrained; i++ ) {
             if (i != 0 && sks[i] != null && Double.isNaN(sks[i]._anomaly_score) || sks[i] == null) continue;
             int col = 0;
             DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
