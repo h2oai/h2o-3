@@ -266,8 +266,14 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
-            Scope.track_generic(model);
             assertNotNull(model);
+            Scope.track_generic(model);
+
+            Frame out = model.score(train);
+            Scope.track_generic(out);
+            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+            assertEquals(train.numRows(), out.numRows());
+            model.testJavaScoring(train, out, 1e-3);
         } finally {
             Scope.exit();
         }
