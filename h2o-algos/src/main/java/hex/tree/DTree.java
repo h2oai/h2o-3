@@ -325,7 +325,9 @@ public class DTree extends Iced {
       int cnt=0;                  // Count of possible splits
       DHistogram nhists[] = new DHistogram[currentHistos.length]; // A new histogram set
       for(int j = 0; j < currentHistos.length; j++ ) { // For every column in the new split
+        // Check branch interaction constraint if it is not null 
         if (bcs != null && !bcs.isAllowedIndex(j)) {
+          // Column is denied by branch interaction constraints -> the histogram is set to null
           continue;
         }
         DHistogram h = currentHistos[j];            // old histogram of column
@@ -711,9 +713,10 @@ public class DTree extends Iced {
       }
       _splat = _split.splat(hs);
       for(int way = 0; way <2; way++ ) { // left / right
-        // Create children histograms, not yet populated, but the ranges are set
+        // Prepare the next level of constraints if monotone or interaction constraints are set
         Constraints ncs = cs != null ? _split.nextLevelConstraints(cs, way, _splat, _tree._parms) : null;
         BranchInteractionConstraints nbics = n._bics != null ? n._bics.nextLevelInteractionConstraints(ics, _split._col) : null;
+        // Create children histograms, not yet populated, but the ranges are set
         DHistogram nhists[] = _split.nextLevelHistos(hs, way,_splat, _tree._parms, ncs, nbics); //maintains the full range for NAvsREST
         assert nhists==null || nhists.length==_tree._ncols;
         // Assign a new (yet undecided) node to each child, and connect this (the parent) decided node and the newly made histograms to it

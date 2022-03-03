@@ -5,17 +5,28 @@ import water.util.ArrayUtils;
 
 import java.util.*;
 
+/**
+ * Class to process global interaction constraints information and use this information for 
+ * make a split decision in a tree.
+ */
 public class GlobalInteractionConstraints extends Iced<GlobalInteractionConstraints> {
-    
-    private Map<Integer, Set<Integer>> allowedInteractionMap;
+
+    // Map where key is column index and value is a set of columns indices which can interact with the key column
+    private Map<Integer, Set<Integer>> allowedInteractionMap; 
     
     public GlobalInteractionConstraints(String[][] userFeatureInteractions, String[] treeFeatureNames){
         this.allowedInteractionMap = new HashMap<>();
         parseInteractionsIndices(userFeatureInteractions, treeFeatureNames);
+        // There should be always at least one column index in the map as a key
         assert this.allowedInteractionMap != null;
         assert this.allowedInteractionMap.size() != 0;
     }
 
+    /**
+     * Parse input interaction constraints String array into Map to easy use for split decision.
+     * @param userInteractionConstraints input interaction constraints String array
+     * @param columnNames column names from used dataset for training to match indices correctly
+     */
     private void parseInteractionsIndices(String[][] userInteractionConstraints, String[] columnNames){
         Set<Integer> interactions;
         for (String[] list : userInteractionConstraints) {
@@ -28,7 +39,7 @@ public class GlobalInteractionConstraints extends Iced<GlobalInteractionConstrai
                 assert start != -1 : "Column name should be in defined column names.";
                 if (start > -1) {               // find exact position - no encoding  
                     interactions.add(start);
-                } else {                      // find first occur of the name with prefix - encoding
+                } else {                       // find first occur of the name with prefix - encoding
                     start = - start - 2;
                     assert columnNames[start].startsWith(item): "The column name should be find correctly.";
                     // iterate until find all encoding indices
