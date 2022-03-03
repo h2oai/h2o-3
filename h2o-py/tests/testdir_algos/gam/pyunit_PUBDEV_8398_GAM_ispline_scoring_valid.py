@@ -15,7 +15,7 @@ def test_gam_nonNeg_coeffs():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
     h2o_data["C21"] = h2o_data["C21"].asfactor()
-    buildModelCheckCoeff(h2o_data, myY, ["C11", "C12", "C13"], 'binomial')
+    buildModelCheckCoeff(h2o_data, myY, ["C11", "C12", "C13"], [3,4,5], 'binomial')
 
     print("Checking mse for gaussian with different scale parameters")
     h2o_data = h2o.import_file(
@@ -23,7 +23,7 @@ def test_gam_nonNeg_coeffs():
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
-    buildModelCheckCoeff(h2o_data, myY, ["C11", "C12", "C13"], 'gaussian')
+    buildModelCheckCoeff(h2o_data, myY, ["C11", "C12", "C13"], [2,3,4], 'gaussian')
 
     print("Checking logloss for multinomial with different scale parameters")
     h2o_data = h2o.import_file(
@@ -32,20 +32,14 @@ def test_gam_nonNeg_coeffs():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
-    buildModelCheckCoeff(h2o_data, myY, ["C6", "C7", "C8"], 'multinomial')
+    buildModelCheckCoeff(h2o_data, myY, ["C6", "C7", "C8"], [1,2,3], 'multinomial')
     print("gam scale parameter test completed successfully")    
 
 
-def buildModelCheckCoeff(train_data, y, gamX, family):
-    #numKnots = [3,4,5]
-    #scale= [0.001, 0.001, 0.001]
-    spline_order=[-1,3,-1]
-    spline_orde=[-1]
-    scale = [0.001]
-    bs_type = [0,0,0]
-    bs_type=[0]
-    numKnots=[3]
-    gamX = ["C11"]
+def buildModelCheckCoeff(train_data, y, gamX, spline_order, family):
+    numKnots = [3,4,5]
+    scale= [0.001, 0.001, 0.001]
+    bs_type = [2,2,2]
     x=["C1","C2"]
     frames = train_data.split_frame(ratios=[0.9])
     train_part = frames[0]

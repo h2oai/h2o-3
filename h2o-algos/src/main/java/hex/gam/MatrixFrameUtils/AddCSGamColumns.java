@@ -26,23 +26,31 @@ public class AddCSGamColumns extends MRTask<AddCSGamColumns> {
   Frame _gamFrame;
   
   public AddCSGamColumns(double[][][] binvD, double[][][] ztransp, double[][][] knotsMat, int[] numKnots,
-                         Frame gamColFrames) {
-    _binvD = binvD;
-    _knotsMat = knotsMat;
-    _numKnots = numKnots;
-    _numGAMcols = gamColFrames.numCols();
+                         Frame gamColFrames, int[] bsSorted) {
+    _numGAMcols = gamColFrames.numCols(); // only for CS splines
+    _binvD = new double[_numGAMcols][][];
+    _knotsMat = new double[_numGAMcols][][];
+    _ztransp = new double[_numGAMcols][][];
+    _numKnots = new int[_numGAMcols];
+    int numTotGamCols = numKnots.length;
     _vmax = MemoryManager.malloc8d(_numGAMcols);
     _vmin = MemoryManager.malloc8d(_numGAMcols);
     _gamColsOffsets = MemoryManager.malloc4(_numGAMcols);
     _gamFrame = gamColFrames; // contain predictor columns, response column
-    _ztransp = ztransp;
     int firstOffset = 0;
-    for (int ind = 0; ind < _numGAMcols; ind++) {
-      _vmax[ind] = gamColFrames.vec(ind).max();
-      _vmin[ind] = gamColFrames.vec(ind).min();
-      _gamCols2Add += _numKnots[ind]-1; // minus one from centering
-      _gamColsOffsets[ind] += firstOffset;
-      firstOffset += _numKnots[ind]-1;
+    int countCSGam = 0;
+    for (int ind = 0; ind < numTotGamCols; ind++) {
+      if (bsSorted[ind] == 0) {
+        _vmax[countCSGam] = gamColFrames.vec(countCSGam).max();
+        _vmin[countCSGam] = gamColFrames.vec(countCSGam).min();
+        _gamCols2Add += _numKnots[ind] - 1; // minus one from centering
+        _gamColsOffsets[countCSGam] += firstOffset;
+        firstOffset += _numKnots[ind] - 1;
+        _ztransp[countCSGam] = ztransp[ind];
+        _binvD[countCSGam] = binvD[ind];
+        _knotsMat[countCSGam] = knotsMat[ind];
+        _numKnots[countCSGam++] = numKnots[ind];
+      }
     }
   }
 

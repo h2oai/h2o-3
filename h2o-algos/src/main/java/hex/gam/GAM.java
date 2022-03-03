@@ -752,7 +752,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       
       if (valid() != null)  // transform the validation frame if present
         _valid = rebalance(adaptValidFrame(_parms.valid(), _valid,  _parms, _gamColNamesCenter, _binvD,
-                _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd), 
+                _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd, _cubicSplineNum), 
                 false, _result+".temporary.valid");
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
       Frame newValidFrame = _valid == null ? null : new Frame(_valid);
@@ -890,6 +890,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._output._knots = _knots;
       model._output._numKnots = _numKnots;
       model._cubicSplineNum = _cubicSplineNum;
+      model._iSplineNum = _iSplineNum;
       model._thinPlateSmoothersWithKnotsNum = _thinPlateSmoothersWithKnotsNum;
       model._output._gamColMeansRaw = _gamColMeansRaw;
       model._output._oneOGamColStd = _oneOGamColStd;
