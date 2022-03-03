@@ -1,10 +1,11 @@
 package hex.tree;
 
+import water.Iced;
 import water.util.ArrayUtils;
 
 import java.util.*;
 
-public class GlobalInteractionConstraints {
+public class GlobalInteractionConstraints extends Iced<GlobalInteractionConstraints> {
     
     private Map<Integer, Set<Integer>> allowedInteractionMap;
     
