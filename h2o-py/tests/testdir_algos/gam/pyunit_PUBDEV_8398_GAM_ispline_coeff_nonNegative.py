@@ -22,18 +22,7 @@ def test_gam_nonNeg_coeffs():
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
-    buildModelCheckCoeff(h2o_data, myY, ["C11", "C12", "C13"], 'gaussian')
-
-    print("Checking logloss for multinomial with different scale parameters")
-    h2o_data = h2o.import_file(
-    path=pyunit_utils.locate("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"))
-    h2o_data["C1"] = h2o_data["C1"].asfactor()
-    h2o_data["C2"] = h2o_data["C2"].asfactor()
-    myY = "C11"
-    h2o_data["C11"] = h2o_data["C11"].asfactor()
-    buildModelCheckCoeff(h2o_data, myY, ["C6", "C7", "C8"], 'multinomial')
-    print("gam scale parameter test completed successfully")    
-
+    buildModelCheckCoeff(h2o_data, myY, ["C11", "C12", "C13"], 'gaussian')  
 
 def buildModelCheckCoeff(train_data, y, gamX, family):
     numKnots = [3,4,5]

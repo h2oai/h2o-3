@@ -571,12 +571,12 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         gamColISplineNames[countIS++] = parms._gam_columns_sorted[vind][0];
       }
     }
-    Frame onlyGamColsCS = null;
-    Frame onlyGamColsIS = null;
+    Frame onlyGamColsCS;
+    Frame onlyGamColsIS;
     Frame gamifiedCSCols = null;
     Frame gamifiedISCols = null;
-    AddCSGamColumns genCSGamCols = null;
-    AddISGamColumns genISGamCols = null;
+    AddCSGamColumns genCSGamCols;
+    AddISGamColumns genISGamCols;
     if (numCSGamCol > 0) {
       onlyGamColsCS = new Frame(gamColCSNames, gamColCSSplines);
       genCSGamCols = new AddCSGamColumns(binvD, zTranspose, knots, parms._num_knots_sorted, onlyGamColsCS, 

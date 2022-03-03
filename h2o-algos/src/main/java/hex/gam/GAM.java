@@ -254,7 +254,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 " not match.");
     }
     _knots = generateKnotsFromKeys(); // generate knots and verify that they are given correctly
-    sortGAMParameters(_parms, _cubicSplineNum+_iSplineNum); // move cubic spline to the front and thin plate to the back
+    sortGAMParameters(_parms, _cubicSplineNum, _iSplineNum); // move cubic spline to the front and thin plate to the back
     checkThinPlateParams();
     if (_parms._saveZMatrix && ((_train.numCols() - 1 + _parms._num_knots.length) < 2))
       error("_saveZMatrix", "can only be enabled if the number of predictors plus" +
@@ -357,8 +357,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           _thinPlateSmoothersWithKnotsNum++; // record number of thin plate
         if (_parms._bs[index] == 0)
           _cubicSplineNum++;
-        if (_parms._bs[index] == 2)
+        if (_parms._bs[index] == 2) {
+          if (multinomial.equals(_parms._family) || ordinal.equals(_parms._family))
+            error("family", "multinomial and ordinal families cannot be used with I-splines.");
           _iSplineNum++;
+        }
 
         for (int innerIndex = 0; innerIndex < _parms._gam_columns[index].length; innerIndex++) {
           String cname = _parms._gam_columns[index][innerIndex];
@@ -426,7 +429,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _penaltyMat = _parms._savePenaltyMat?GamUtils.allocate3DArray(numGamFrame, _parms, sameOrig):null;
       _penaltyMatCenter = GamUtils.allocate3DArray(numGamFrame, _parms, bothOneLess);
       if (_cubicSplineNum > 0)  // CS-spline only
-        _binvD = GamUtils.allocate3DArrayCS(_cubicSplineNum+_iSplineNum, _parms, firstTwoLess);
+        _binvD = GamUtils.allocate3DArrayCS(_cubicSplineNum, _parms, firstTwoLess);
       _numKnots = MemoryManager.malloc4(numGamFrame);
       _gamColNames = new String[numGamFrame][];
       _gamColNamesCenter = new String[numGamFrame][];
@@ -640,7 +643,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         for (int index = 0; index < _numKnots; index++)
           _gamColMeans[_gamColIndex][index] = oneAugmentedColumnCenter.vec(index).mean();
         oneAugmentedColumnCenter = genOneGamCol.centralizeFrame(oneAugmentedColumnCenter,
-                _predictVec.name(0) + "_" + _splineType + "_center_", _parms);
+                _predictVec.name(0) + "_" + _splineType + "_center", _parms);
         copy2DArray(genOneGamCol._ZTransp, _zTranspose[_gamColIndex]); // copy transpose(Z)
         double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(genOneGamCol._ZTransp,
                 genOneGamCol._penaltyMat), ArrayUtils.transpose(genOneGamCol._ZTransp));  // transform penalty as zt*S*z
@@ -690,12 +693,13 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
       }
       ForkJoinTask.invokeAll(generateGamColumn);
-      // set up coefficient constraints for I-splines
-      Frame constraintFrame = genConstraints();
-      if (constraintFrame != null) {
-        _parms._beta_constraints = constraintFrame._key;
-        DKV.put(constraintFrame);
-        Scope.track(constraintFrame);
+      if (_iSplineNum > 0) {      // set up coefficient constraints for I-splines
+        Frame constraintFrame = genConstraints();
+        if (constraintFrame != null) {
+          _parms._beta_constraints = constraintFrame._key;
+          DKV.put(constraintFrame);
+          Scope.track(constraintFrame);
+        }
       }
     }
     

@@ -2,6 +2,7 @@ package hex.gam;
 
 import hex.gam.GamSplines.NBSplinesTypeIDerivative;
 import hex.glm.GLMModel;
+import org.apache.commons.math3.stat.inference.TestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -16,6 +17,8 @@ import water.util.ArrayUtils;
 
 import java.util.List;
 
+import static hex.gam.GAMModel.adaptValidFrame;
+import static hex.gam.GamBasicISplineTest.EPS;
 import static hex.gam.GamBasicISplineTest.assert2DArrayEqual;
 import static hex.gam.GamSplines.NBSplinesTypeIDerivative.formDerivatives;
 import static hex.gam.GamSplines.NBSplinesUtils.fillKnots;
@@ -28,14 +31,17 @@ import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 public class GAMISplineTest extends TestUtil {
 
     /***
-     * Test that columns are gamified correctly by comparing the one in GAM.java and using the one manually derived.
+     * This test is used to make sure that the gamification is performed properly for validation dataset and brand new
+     * dataset used for scoring.
      */
     @Test
-    public void testGamification() {
+    public void testGamificationValid() {
         Scope.enter();
         try {
             Frame train = Scope.track(generateRealWithRangeOnly(4, 100, 0, 12345, 
                     4)); // generate training frame
+            Frame test = Scope.track(generateRealWithRangeOnly(4, 100, 0, 12345,
+                    4)); // generate test frame that is exactly the same as train
             // generate knots frames
             double[] pctilesV0 = train.vec(0).pctiles();
             double[] pctilesV1 = train.vec(1).pctiles();
@@ -81,8 +87,14 @@ public class GAMISplineTest extends TestUtil {
             params._keep_gam_cols = true;
             final GAMModel gam = new GAM(params).trainModel().get();
             Scope.track_generic(gam);
-            
-           
+            Frame validGamified = adaptValidFrame(test, test,  params, gam._output._gamColNames, null,
+                    gam._output._zTranspose, gam._output._knots, null, null, null, null, 0);
+            validGamified.remove(new int[]{0,1,2});
+            DKV.put(validGamified);
+            Scope.track(validGamified);
+           Frame trainGamified = DKV.getGet(gam._output._gamTransformedTrainCenter);
+           Scope.track(trainGamified);
+           TestUtil.assertIdenticalUpToRelTolerance(validGamified, trainGamified, EPS);
         } finally {
             Scope.exit();
         }

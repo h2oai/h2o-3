@@ -37,19 +37,17 @@ public class AddCSGamColumns extends MRTask<AddCSGamColumns> {
     _vmin = MemoryManager.malloc8d(_numGAMcols);
     _gamColsOffsets = MemoryManager.malloc4(_numGAMcols);
     _gamFrame = gamColFrames; // contain predictor columns, response column
-    int firstOffset = 0;
     int countCSGam = 0;
     for (int ind = 0; ind < numTotGamCols; ind++) {
       if (bsSorted[ind] == 0) {
         _vmax[countCSGam] = gamColFrames.vec(countCSGam).max();
         _vmin[countCSGam] = gamColFrames.vec(countCSGam).min();
-        _gamCols2Add += _numKnots[ind] - 1; // minus one from centering
-        _gamColsOffsets[countCSGam] += firstOffset;
-        firstOffset += _numKnots[ind] - 1;
         _ztransp[countCSGam] = ztransp[ind];
         _binvD[countCSGam] = binvD[ind];
         _knotsMat[countCSGam] = knotsMat[ind];
-        _numKnots[countCSGam++] = numKnots[ind];
+        _numKnots[countCSGam] = numKnots[ind];
+        _gamColsOffsets[countCSGam++] += _gamCols2Add;
+        _gamCols2Add += _numKnots[ind] - 1; // minus one from centering
       }
     }
   }

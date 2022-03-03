@@ -406,10 +406,11 @@ public class GamUtils {
    * gam_columns, bs, scale, num_knots.
    * The array knots have already been moved with CS spline/I-spline in the front and TP splines in the back
    */
-  public static void sortGAMParameters(GAMParameters parms, int singlePredictorSmootherNum) {
-    int gamColNum = parms._gam_columns.length;
-    int csIsIndex = 0;
-    int tpIndex = singlePredictorSmootherNum;
+  public static void sortGAMParameters(GAMParameters parms, int csGamCol, int isGamCol) {
+    int gamColNum = parms._gam_columns.length;  // all gam cols regardless of types
+    int csIndex = 0;
+    int isIndex = csGamCol;
+    int tpIndex = csGamCol+isGamCol;
     parms._gam_columns_sorted = new String[gamColNum][];
     parms._num_knots_sorted = MemoryManager.malloc4(gamColNum);
     parms._scale_sorted = MemoryManager.malloc8d(gamColNum);
@@ -417,24 +418,26 @@ public class GamUtils {
     parms._gamPredSize = MemoryManager.malloc4(gamColNum);
     parms._spline_orders_sorted = MemoryManager.malloc4(gamColNum);
     for (int index = 0; index < gamColNum; index++) {
-      if (parms._bs[index] == 0 || parms._bs[index] == 2) { // cubic spline
-        parms._gam_columns_sorted[csIsIndex] = parms._gam_columns[index].clone();
-        parms._num_knots_sorted[csIsIndex] = parms._num_knots[index];
-        parms._scale_sorted[csIsIndex] = parms._scale[index];
-        parms._gamPredSize[csIsIndex] = parms._gam_columns_sorted[csIsIndex].length;
-        parms._bs_sorted[csIsIndex] = parms._bs[index];
+      if (parms._bs[index] == 0) { // CS spline
+        setGamParameters(parms, index, csIndex++);
+      } else if (parms._bs[index] == 2) {
+        setGamParameters(parms, index, isIndex);
         if (parms._spline_orders == null)
-          parms._spline_orders_sorted[csIsIndex++] = 1;
+          parms._spline_orders_sorted[isIndex++] = 1;
         else
-          parms._spline_orders_sorted[csIsIndex++] = parms._spline_orders[index];
-      } else {  // thin plate
-        parms._gam_columns_sorted[tpIndex] = parms._gam_columns[index].clone();
-        parms._num_knots_sorted[tpIndex] = parms._num_knots[index];
-        parms._scale_sorted[tpIndex] = parms._scale[index];
-        parms._gamPredSize[tpIndex] = parms._gam_columns_sorted[tpIndex].length;
-        parms._bs_sorted[tpIndex++] = parms._bs[index];
+          parms._spline_orders_sorted[isIndex++] = parms._spline_orders[index];
+      } else { // thin plate spline
+        setGamParameters(parms, index, tpIndex++);
       }
     }
+  }
+  
+  public static void setGamParameters(GAMParameters parms, int gamIndex, int splineIndex) {
+    parms._gam_columns_sorted[splineIndex] = parms._gam_columns[gamIndex].clone();
+    parms._num_knots_sorted[splineIndex] = parms._num_knots[gamIndex];
+    parms._scale_sorted[splineIndex] = parms._scale[gamIndex];
+    parms._gamPredSize[splineIndex] = parms._gam_columns_sorted[splineIndex].length;
+    parms._bs_sorted[splineIndex] = parms._bs[gamIndex];
   }
 
   // default value of scale is 1.0

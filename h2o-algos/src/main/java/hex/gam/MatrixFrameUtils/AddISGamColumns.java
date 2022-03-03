@@ -6,6 +6,7 @@ import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
+import water.util.ArrayUtils;
 
 public class AddISGamColumns extends MRTask<AddISGamColumns> {
     double[][][] _knotsMat; // with knots without duplication for I-spline only
@@ -56,8 +57,30 @@ public class AddISGamColumns extends MRTask<AddISGamColumns> {
         ISplines[] isBasis = new ISplines[_numGAMCols];
         double[][] basisVals = new double[_numGAMCols][];
         double[][] basisValsCenter = new double[_numGAMCols][];
-/*        for (int index=0; index<_numGAMCols; index++) {
-            isBasis = new ISplines();
-        }*/
+        for (int index=0; index<_numGAMCols; index++) {
+            isBasis[index] = new ISplines(_splineOrder[index], _knotsMat[index][0]);
+            basisVals[index] = MemoryManager.malloc8d(_numBasis[index]);
+            basisValsCenter[index] = MemoryManager.malloc8d(_numBasis[index]-1);
+        }
+        int chkLen = chk[0].len();
+        for (int rInd=0; rInd<chkLen; rInd++) {
+            for (int cInd=0; cInd<_numGAMCols; cInd++) 
+                generateOneISGAMCols(cInd, _gamColsOffsets[cInd], basisVals[cInd], basisValsCenter[cInd], 
+                        isBasis[cInd], chk[cInd].atd(rInd), newChunks);
+        }
+    }
+    
+    public void generateOneISGAMCols(int colInd, int colOffset, double[] basisVals, double[] basisValsCenter, 
+                                     ISplines isBasis, double xval, NewChunk[] newChunks) {
+        int numCenterVals = _numBasis[colInd] - 1;
+        if (!Double.isNaN(xval)) {
+            isBasis.gamifyVal(basisVals, xval);
+            basisValsCenter = ArrayUtils.multArrVec(_ztransp[colInd], basisVals, basisValsCenter);
+            for (int colIndex=0; colIndex < numCenterVals; colIndex++) 
+                newChunks[colIndex+colOffset].addNum(basisValsCenter[colIndex]);
+        } else {
+            for (int colIndex=0; colIndex < numCenterVals; colIndex++)
+                newChunks[colIndex+colOffset].addNum(Double.NaN);
+        }
     }
 }
