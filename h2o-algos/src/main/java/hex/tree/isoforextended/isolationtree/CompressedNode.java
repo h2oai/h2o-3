@@ -40,6 +40,11 @@ public class CompressedNode extends AbstractCompressedNode {
         return _p;
     }
 
+    /**
+     * The structure of the bytes is:
+     *
+     * |identifierOfTheNodeType|nvalues|pvalues|
+     */
     @Override
     public void toBytes(AutoBuffer ab) {
         ab.put1(NODE); // identifier of this node type

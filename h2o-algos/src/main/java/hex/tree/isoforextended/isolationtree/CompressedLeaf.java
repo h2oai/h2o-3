@@ -23,6 +23,11 @@ public class CompressedLeaf extends AbstractCompressedNode {
         return _numRows;
     }
 
+    /**
+     * The structure of the bytes is:
+     *
+     * |identifierOfTheNodeType|numRows|
+     */
     @Override
     public void toBytes(AutoBuffer ab) {
         ab.put1(LEAF); // identifier of this node type

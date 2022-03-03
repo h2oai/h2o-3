@@ -62,6 +62,18 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
         return node.getHeight() + averagePathLengthOfUnsuccessfulSearch(compressedLeaf(node).getNumRows());
     }
 
+    /**
+     * The structure of the bytes is:
+     *
+     * sizeOfInternalArrays -> size of random slope and intercept (size of both is always equal)
+     * nodeNumber -> index of the node in the array, byte arrays always starts with the root and ends with some 
+     *               leaf. Null node is skipped.
+     * AbstractCompressedNode -> refer to implementations for the detail of byte array
+     *
+     * |sizeOfInternalArrays|nodeNumber|CompressedNode|nodeNumber|AbstractCompressedNode|....|nodeNumber|CompressedLeaf|
+     *
+     * @return CompressedIsolationTree serialized as array of bytes
+     */
     public byte[] toBytes() {
         AutoBuffer ab = new AutoBuffer();
         assert _nodes[0] != null : "Tree is empty, there are zero nodes in the tree";
