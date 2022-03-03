@@ -4,6 +4,8 @@ import water.AutoBuffer;
 
 import java.util.Arrays;
 
+import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.NODE;
+
 /**
  * IsolationTree Node with better memory performance. Store only the data that are needed for scoring.
  * Naming convention comes from Algorithm 2 (iTree) in paper.
@@ -40,7 +42,7 @@ public class CompressedNode extends AbstractCompressedNode {
 
     @Override
     public void toBytes(AutoBuffer ab) {
-        ab.put1('N'); // identifier of this node type
+        ab.put1(NODE); // identifier of this node type
         for (double v : _n) {
             ab.put8d(v);
         }

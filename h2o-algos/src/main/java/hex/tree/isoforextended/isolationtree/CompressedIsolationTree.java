@@ -4,7 +4,6 @@ import water.AutoBuffer;
 import water.Key;
 import water.Keyed;
 import water.util.ArrayUtils;
-import water.util.MathUtils;
 
 import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.*;
 
@@ -65,6 +64,7 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
 
     public byte[] toBytes() {
         AutoBuffer ab = new AutoBuffer();
+        assert _nodes[0] != null : "Tree is empty, there are zero nodes in the tree";
         ab.put4(compressedNode(_nodes[0]).getN().length); // size of the internal arrays
         for(int i = 0; i < _nodes.length; i++) {
             if (_nodes[i] != null) {

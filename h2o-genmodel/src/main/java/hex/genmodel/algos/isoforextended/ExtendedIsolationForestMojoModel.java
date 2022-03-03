@@ -9,6 +9,9 @@ import hex.genmodel.utils.MathUtils;
 
 public final class ExtendedIsolationForestMojoModel extends MojoModel {
 
+  public static final int NODE = 'N';
+  public static final int LEAF = 'L';
+
   int _ntrees;
 
   long _sample_size;
@@ -59,22 +62,19 @@ public final class ExtendedIsolationForestMojoModel extends MojoModel {
     int sizeOfBranchingArrays = ab.get4();
     double[] tempN = new double[sizeOfBranchingArrays];
     double[] tempP = new double[sizeOfBranchingArrays];
-    int tempNodeNumber = 0;
-    int tempNodeType = 0;
-    int tempNumRows = 0;
-    int height = 0;
-    final int NODE = 'N';
-    final int LEAF = 'L';
-    int findNodeNumber = 0;
+    int tempNodeNumber, tempNodeType, tempNumRows, height = 0, findNodeNumber = 0;
+    final int SIZE_OF_NODE = 2*sizeOfBranchingArrays*8;
+    final int SIZE_OF_LEAF = 4;
     double pathLength = -1;
-    for(;;) {
+
+    while(ab.hasRemaining()) {
       tempNodeNumber = ab.get4();
       tempNodeType = ab.get1U();
       if (tempNodeNumber != findNodeNumber) {
         if (tempNodeType == NODE) {
-          ab.skip(2*sizeOfBranchingArrays*8);
+          ab.skip(SIZE_OF_NODE);
         } else if (tempNodeType == LEAF) {
-          ab.skip(4);
+          ab.skip(SIZE_OF_LEAF);
         } else {
           throw new UnsupportedOperationException("Unknown node type: " + tempNodeType);
         }
@@ -88,6 +88,7 @@ public final class ExtendedIsolationForestMojoModel extends MojoModel {
           height++;
           findNodeNumber = leftChildIndex(tempNodeNumber);
         } else {
+          // go right
           height++;
           findNodeNumber = rightChildIndex(tempNodeNumber);
         }
