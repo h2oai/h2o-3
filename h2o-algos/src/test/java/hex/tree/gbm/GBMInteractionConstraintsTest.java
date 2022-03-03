@@ -1,16 +1,20 @@
 package hex.tree.gbm;
 
+import hex.Model;
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.tree.GlobalInteractionConstraints;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 
 import java.util.*;
 
@@ -24,7 +28,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
         String[][] interactions = new String[2][];
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS", "DCAPS", "VOL"};
-        testInteractionConstraints(interactions);
+        testInteractionConstraintsSimple(interactions);
     }
 
     @Test
@@ -32,7 +36,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
         String[][] interactions = new String[2][];
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS", "DCAPS", "VOL", "GLEASON"};
-        testInteractionConstraints(interactions);
+        testInteractionConstraintsSimple(interactions);
     }
 
     @Test
@@ -40,7 +44,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
         String[][] interactions = new String[2][];
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS"};
-        testInteractionConstraints(interactions);
+        testInteractionConstraintsSimple(interactions);
     }
 
     @Test
@@ -49,7 +53,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS"};
         interactions[2] = new String[]{"DPROS", "VOL"};
-        testInteractionConstraints(interactions);
+        testInteractionConstraintsSimple(interactions);
     }
 
     @Test
@@ -58,7 +62,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS"};
         interactions[2] = new String[]{"DPROS", "VOL"};
-        testInteractionConstraints(interactions, 10, 20);
+        testInteractionConstraintsSimple(interactions, 10, 20);
     }
 
     @Test
@@ -67,7 +71,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
         interactions[0] = new String[]{"RACE"};
         interactions[1] = new String[]{"DPROS"};
         interactions[2] = new String[]{"VOL"};
-        testInteractionConstraints(interactions);
+        testInteractionConstraintsSimple(interactions);
     }
 
     @Test
@@ -75,7 +79,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
         String[][] interactions = new String[2][];
         interactions[0] = new String[]{"AGE", "PSA"};
         interactions[1] = new String[]{"GLEASON"};
-        testInteractionConstraints(interactions);
+        testInteractionConstraintsSimple(interactions);
     }
 
     @Test
@@ -84,7 +88,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             String[][] interactions = new String[2][];
             interactions[0] = new String[]{"RACE"};
             interactions[1] = new String[]{"42"};
-            testInteractionConstraints(interactions);
+            testInteractionConstraintsSimple(interactions);
         } catch (H2OModelBuilderIllegalArgumentException ex){
             assert ex.getMessage().contains("ERRR on field: _interaction_constraints: Invalid interaction constraint - there is no column '42' in the training frame.");
         }
@@ -96,7 +100,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             String[][] interactions = new String[2][];
             interactions[0] = new String[]{"RACE"};
             interactions[1] = new String[]{"CAPSULE"};
-            testInteractionConstraints(interactions);
+            testInteractionConstraintsSimple(interactions);
         } catch (H2OModelBuilderIllegalArgumentException ex){
             assert ex.getMessage().contains("ERRR on field: '_interaction_constraints': Column with the name 'CAPSULE' is used as response column and cannot be used in interaction.");
         }
@@ -108,27 +112,30 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             String[][] interactions = new String[2][];
             interactions[0] = new String[]{"RACE"};
             interactions[1] = new String[]{"ID"};
-            testInteractionConstraints(interactions);
+            testInteractionConstraintsSimple(interactions);
        } catch (H2OModelBuilderIllegalArgumentException ex){
             assert ex.getMessage().contains("ERRR on field: _interaction_constraints: Column with the name 'ID' is set in ignored columns and cannot be used in interaction.");
         }
     }
     
-    public void testInteractionConstraints(String[][] interactionConstraints) {
-        testInteractionConstraints(interactionConstraints, 3, 10);
+    public void testInteractionConstraintsSimple(String[][] interactionConstraints) {
+        testInteractionConstraintsSimple(interactionConstraints, 3, 10);
     }
     
-    public void testInteractionConstraints(String[][] interactionConstraints, int maxDepth, int ntrees) {
+    public void testInteractionConstraintsSimple(String[][] interactionConstraints, int maxDepth, int ntrees) {
         Frame fr = null;
         GBMModel model = null;
         Scope.enter();
         try {
-            fr = Scope.track(parseTestFile("smalldata/logreg/prostate.csv"));
-            fr.replace(fr.find("CAPSULE"), fr.vec("CAPSULE").toCategoricalVec());
+            final String response = "CAPSULE";
+            final String testFile = "smalldata/logreg/prostate.csv";
+            fr = parseTestFile(testFile)
+                    .toCategoricalCol(response);
             Scope.track(fr);
+            DKV.put(fr);
 
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-            parms._response_column = "CAPSULE";
+            parms._response_column = response;
             parms._ignored_columns = new String[]{"ID"};
             parms._train = fr._key;
             parms._ntrees = ntrees;
@@ -139,70 +146,66 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             model = new GBM(parms).trainModel().get();
 
             String[] names = Arrays.copyOfRange(fr.names(), 2, fr.names().length);
-            GlobalInteractionConstraints ics = new GlobalInteractionConstraints(parms._interaction_constraints, names);
-            for (int i = 0; i < parms._ntrees; i++) {
-                for (int c = 0; c < 2; c++) {
-                    System.out.println("===================");
-                    System.out.println("Tree " + i + " class "+ c +" :");
-                    SharedTreeNode[] nodes = model.getSharedTreeSubgraph(i, 0).getNodes();
-                    System.out.println(model._output._model_summary);
-                    boolean isTreeOk = checkBranches(nodes[0], ics);
-                    System.out.println("Tree is ok: " + isTreeOk);
-                    if (!isTreeOk) {
-                        for (SharedTreeNode node : nodes) {
-                            if (node.getColName() != null) {
-                                System.out.println("Node ID: " + node.getNodeNumber() + " split col name: " + node.getColName());
-                            }
-                        }
-                    }
-                    Assert.assertTrue("Tree violates interaction constraints.", isTreeOk);
-                }
-            }
+            checkTrees(model, names);
         } finally {
             if (model != null) model.delete();
             if (fr  != null) fr.remove();
             Scope.exit();
         }
     }
-
-    @Test
-    public void testInteractionConstraints() {
+    
+    public void testInteractionConstraintsOneHotEncoding(Model.Parameters.CategoricalEncodingScheme encoding) {
         Frame fr = null;
         GBMModel model = null;
         Scope.enter();
         try {
-            fr = Scope.track(parseTestFile("smalldata/logreg/prostate.csv"));
-            fr.replace(fr.find("CAPSULE"), fr.vec("CAPSULE").toCategoricalVec());
+            final String response = "CAPSULE";
+            final String testFile = "smalldata/logreg/prostate.csv";
+            fr = parseTestFile(testFile)
+                    .toCategoricalCol("RACE")
+                    .toCategoricalCol(response);
             Scope.track(fr);
+            DKV.put(fr);
+
+            String[][] interactions = new String[2][];
+            interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
+            interactions[1] = new String[]{"DPROS", "DCAPS", "VOL"};
 
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-            parms._response_column = "CAPSULE";
+            parms._response_column = response;
             parms._ignored_columns = new String[]{"ID"};
             parms._train = fr._key;
             parms._ntrees = 10;
             parms._max_depth = 3;
             parms._seed = 1234L;
+            parms._interaction_constraints = interactions;
+            parms._categorical_encoding = encoding;
 
             model = new GBM(parms).trainModel().get();
-
-            for(int i = 0; i < parms._ntrees; i++) {
-                System.out.println("===================");
-                System.out.println("Tree " + i + ":");
-                SharedTreeNode[] nodes = model.getSharedTreeSubgraph(i, 0).getNodes();
-                for (SharedTreeNode node : nodes) {
-                    if (node.getColName() != null) {
-                            System.out.println("Node ID: " + node.getNodeNumber() + " split col name: " + node.getColName());
-                    }
-                }
-            }
+            
+            String[] names = Arrays.copyOfRange(fr.names(), 2, fr.names().length);
+            checkTrees(model, names);
         } finally {
             if (model != null) model.delete();
             if (fr  != null) fr.remove();
             Scope.exit();
         }
     }
+    
+    @Test
+    public void testInteractionConstraintsOneHotEncoding(){
+        testInteractionConstraintsOneHotEncoding(Model.Parameters.CategoricalEncodingScheme.AUTO);
+    }
 
-
+    @Test
+    public void testInteractionConstraintsOneHotEncodingWrong(){
+        try {
+            testInteractionConstraintsOneHotEncoding(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit);
+        } catch (H2OModelBuilderIllegalArgumentException ex){
+                assert ex.getMessage().contains("Interaction constraints can be used when the categorical encoding is set to ``AUTO`` (``one_hot_internal`` or ``OneHotInternal``) only.");
+        }
+    }
+    
     private void collectBranchIndices(SharedTreeNode node, List<Integer> branch, List<List<Integer>> allBranches){
         if(node.isLeaf()){
             allBranches.add(new ArrayList<>(branch));
@@ -238,5 +241,26 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             }
         }
         return true;
+    }
+
+    private void checkTrees(GBMModel model, String[] names){
+        GlobalInteractionConstraints ics = new GlobalInteractionConstraints(model._parms._interaction_constraints, names);
+        for (int i = 0; i < model._parms._ntrees; i++) {
+            for (int c = 0; c < 2; c++) {
+                System.out.println("===================");
+                System.out.println("Tree " + i + " class "+ c +" :");
+                SharedTreeNode[] nodes = model.getSharedTreeSubgraph(i, 0).getNodes();
+                boolean isTreeOk = checkBranches(nodes[0], ics);
+                System.out.println("Tree is ok: " + isTreeOk);
+                if (!isTreeOk) {
+                    for (SharedTreeNode node : nodes) {
+                        if (node.getColName() != null) {
+                            System.out.println("Node ID: " + node.getNodeNumber() + " split col name: " + node.getColName());
+                        }
+                    }
+                }
+                Assert.assertTrue("Tree violates interaction constraints.", isTreeOk);
+            }
+        }
     }
 }

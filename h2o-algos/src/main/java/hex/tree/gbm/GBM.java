@@ -194,6 +194,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
     
     if ((_train != null) && (_parms._interaction_constraints != null)) {
+      if(_parms._categorical_encoding != Model.Parameters.CategoricalEncodingScheme.AUTO && _parms._categorical_encoding != Model.Parameters.CategoricalEncodingScheme.OneHotInternal){
+        error("_categorical_encoding", "Interaction constraints can be used when the categorical encoding is set to ``AUTO`` (``one_hot_internal`` or ``OneHotInternal``) only.");
+      }
       TreeUtils.checkInteractionConstraints(this, _train, _parms._interaction_constraints);
       if (error_count() == 0) {
         _ics = _parms.interactionConstraints(_train);
