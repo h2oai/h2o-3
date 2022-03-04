@@ -1,29 +1,21 @@
 package hex.gam;
 
-import hex.gam.GamSplines.NBSplinesTypeIDerivative;
 import hex.glm.GLMModel;
-import org.apache.commons.math3.stat.inference.TestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
-import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
-import java.util.List;
-
 import static hex.gam.GAMModel.adaptValidFrame;
 import static hex.gam.GamBasicISplineTest.EPS;
 import static hex.gam.GamBasicISplineTest.assert2DArrayEqual;
-import static hex.gam.GamSplines.NBSplinesTypeIDerivative.formDerivatives;
 import static hex.gam.GamTestPiping.genFrameKnots;
-import static hex.gam.GamTestPiping.massageFrame;
-import static hex.genmodel.algos.gam.GamUtilsISplines.fillKnots;
 import static hex.glm.GLMModel.GLMParameters.Family.binomial;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 
@@ -138,19 +130,6 @@ public class GAMISplineTest extends TestUtil {
             params._keep_gam_cols = true;
             final GAMModel gam = new GAM(params).trainModel().get();
             Scope.track_generic(gam);
-
-            List<Double> knotsWithDuplicate = fillKnots(new double[]{-1, -0.5, 0, 0.5, 1}, 2);
-            int numBasis = 5+2-2;
-            NBSplinesTypeIDerivative[] allDerivatives = formDerivatives(numBasis, 2, knotsWithDuplicate);
-
-            knotsWithDuplicate = fillKnots(new double[]{-1, -0.5, 0, 0.5, 1}, 3);
-            numBasis = 5+3-2;
-            allDerivatives = formDerivatives(numBasis, 3, knotsWithDuplicate);
-
-            knotsWithDuplicate = fillKnots(new double[]{-1, -0.5, 0, 0.5, 1}, 4);
-            numBasis = 5+4-2;
-            allDerivatives = formDerivatives(numBasis, 4, knotsWithDuplicate);
-            
             // manually generating penalty matrix and check for order = 2
             double[][] penaltyMat2 = new double[][]{{32, -16, 0, 0, 0}, {-16, 16, -8, 0, 0}, {0, -8, 16, -8, 0}, {0, 0,
                     -8, 16, -16}, {0, 0, 0, -16, 32}}; // manually derived.

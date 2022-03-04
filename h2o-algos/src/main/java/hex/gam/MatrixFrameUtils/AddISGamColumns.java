@@ -1,5 +1,6 @@
 package hex.gam.MatrixFrameUtils;
 
+import hex.genmodel.algos.gam.ISplines;
 import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
@@ -35,14 +36,14 @@ public class AddISGamColumns extends MRTask<AddISGamColumns> {
             if (bs[index]==2) {
                 int numBasis = numKnot[index]+splineOrder[index]-2;
                 _totGamifiedCols += numBasis;
-                _totGamifiedColCentered += numBasis-1;
+                _totGamifiedColCentered += numBasis;
                 _knotsMat[countIS] = knotsMat[index];
                 _bs[countIS] = bs[index];
                 _numKnots[countIS] = numKnot[index];
                 _numBasis[countIS] = numBasis;
                 _splineOrder[countIS] = splineOrder[index];
                 _gamColsOffsets[countIS++] = offset;
-                offset += numBasis-1;   // minus 1 for centering
+                offset += numBasis;   // minus 1 for centering
             }
         }
     }

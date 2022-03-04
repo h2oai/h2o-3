@@ -1,6 +1,7 @@
 package hex.gam.MatrixFrameUtils;
 
 import hex.gam.GAMModel;
+import hex.genmodel.algos.gam.ISplines;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;

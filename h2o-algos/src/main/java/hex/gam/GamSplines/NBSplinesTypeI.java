@@ -3,6 +3,7 @@ package hex.gam.GamSplines;
 import java.util.List;
 
 import static hex.gam.GamSplines.NBSplinesUtils.*;
+import static hex.genmodel.algos.gam.GamUtilsISplines.extractKnots;
 
 public class NBSplinesTypeI {
     private static final double EPS = 1e-12;

@@ -7,6 +7,8 @@ import java.util.List;
 import static hex.gam.GamSplines.NBSplinesTypeI.formBasis;
 import static hex.gam.GamSplines.NBSplinesTypeI.extractCoeffs;
 import static hex.gam.GamSplines.NBSplinesUtils.*;
+import static hex.genmodel.algos.gam.GamUtilsISplines.extractKnots;
+import static hex.genmodel.algos.gam.GamUtilsISplines.fillKnots;
 
 public class NBSplinesTypeIDerivative {
     /***
