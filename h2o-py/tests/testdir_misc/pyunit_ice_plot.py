@@ -30,6 +30,7 @@ def test_original_values():
 
         _assert_pyplot_was_produced(cols_to_test, gbm, train, target=targets[i])
 
+
 def test_handle_orig_values():
     type_test = ["Regression", "Binomial", "Multinomial"]
     paths = ["smalldata/titanic/titanic_expanded.csv",  "smalldata/logreg/prostate.csv", "smalldata/iris/iris2.csv"]
