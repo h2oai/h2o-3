@@ -109,6 +109,7 @@ def _assert_pyplot_was_produced(cols_to_test, model, train, target=None):
             assert isinstance(model.ice_plot(train, col, target=target).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
+
 def test_display_mode():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
     y = "fare"
