@@ -1460,6 +1460,8 @@ def _get_response(mean_response, show_logodds):
         return np.log(mean_response / (1 - mean_response))
     else:
         return mean_response
+
+
 def _isnan(value):
     if isinstance(value, float):
         return np.isnan(value)
