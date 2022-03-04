@@ -595,8 +595,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     
     if (numISplineGamCol > 0) {
       onlyGamColsIS = new Frame(gamColISplineNames, gamColISplines);
-      genISGamCols = new AddISGamColumns(zTranspose, knots, parms._num_knots_sorted, parms._bs_sorted, 
-              parms._spline_orders_sorted, onlyGamColsIS);
+      genISGamCols = new AddISGamColumns(knots, parms._num_knots_sorted, parms._bs_sorted, parms._spline_orders_sorted,
+              onlyGamColsIS);
       genISGamCols.doAll(genISGamCols._totGamifiedColCentered, Vec.T_NUM, onlyGamColsIS);
       String[] gamColsNamesIS = new String[genISGamCols._totGamifiedColCentered];
       int offset = 0;

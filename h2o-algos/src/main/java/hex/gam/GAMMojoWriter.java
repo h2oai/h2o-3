@@ -83,6 +83,14 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
     write3DArray(model._output._knots, "knots");
     write3DArray(model._output._zTranspose, "zTranspose");
     writekv("_d", model._parms._gamPredSize);
+    writekv("num_TP_col", model._thinPlateSmoothersWithKnotsNum);
+    writekv("num_CS_col", model._cubicSplineNum);
+    writekv("num_IS_col", model._iSplineNum);
+    if (model._iSplineNum > 0) {
+      writekv("spline_orders_sorted", model._parms._spline_orders_sorted);
+      writekv("spline_orders", model._parms._spline_orders);
+    }
+    
     if (model._output._zTransposeCS != null) {  // only for thin plate regression splines
       write3DIntArray(model._output._allPolyBasisList, "polynomialBasisList");
       write3DArray(model._output._zTransposeCS, "zTransposeCS");
@@ -91,7 +99,6 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
       writekv("_M", model._parms._M);
       writekv("_m", model._parms._m);
       writekv("num_knots_TP", model._parms._num_knots_tp); // an array
-      writekv("num_TP_col", model._parms._M.length);
       writekv("standardize", model._parms._standardize);
     } else {
       writekv("num_TP_col", 0);

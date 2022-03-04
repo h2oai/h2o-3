@@ -1,34 +1,28 @@
-package hex.gam.GamSplines;
+package hex.genmodel.algos.gam;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static hex.gam.GamSplines.NBSplinesUtils.extractKnots;
-import static hex.gam.GamSplines.NBSplinesUtils.fillKnots;
+import static hex.genmodel.algos.gam.GamUtilsISplines.extractKnots;
+import static hex.genmodel.algos.gam.GamUtilsISplines.fillKnots;
 
 public class ISplines {
     private final List<Double> _knotsOriginal;    // stores knots sequence, not expanded
     private final List<Double> _knotsWDuplicates;   // expanded knots with duplicates
     private final int _order;         // order of ISplines, starts from 1, 2, ...
-    private int _nKnots;        // number of knots not counting duplicates
     public int _numIBasis;     // number of I splines over knot sequence
-    private int _totKnots;      // number of knots including duplicates
     NBSplinesTypeII _bSplines;   // point to BSpline of order _order+1 over the same knot sequence
-    private final double _minKnot;
-    private final double _maxKnot;
     private final ISplineBasis[] _iSplines;
     
     public ISplines(int order, double[] knots) {
-        _knotsOriginal = Arrays.stream(knots).boxed().collect(Collectors.toList());
+       // _knotsOriginal = Arrays.stream(knots).boxed().collect(Collectors.toList());
+        _knotsOriginal = new ArrayList<>();
+        for (int index=0; index < knots.length; index++) 
+            _knotsOriginal.add(knots[index]);
         _knotsWDuplicates = fillKnots(knots, order);
         _order = order;
         _bSplines = new NBSplinesTypeII(order+1, knots);
-       // _numIBasis = _bSplines._totBasisFuncs;
         _numIBasis = knots.length+order-2;
-        _minKnot = knots[0];
-        _maxKnot = knots[knots.length-1];
         _iSplines = new ISplineBasis[_numIBasis];
         for (int index=0; index < _numIBasis; index++)
             _iSplines[index] = new ISplineBasis(index, _order, _knotsWDuplicates);

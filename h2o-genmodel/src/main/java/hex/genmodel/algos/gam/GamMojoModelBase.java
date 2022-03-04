@@ -27,12 +27,13 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   int _numsCenter;
   double[] _numNAFillsCenter;
   boolean _meanImputation;
-  double[] _beta;
   double[] _beta_no_center;
   double[] _beta_center;
   double[][] _beta_multinomial;
   double[][] _beta_multinomial_no_center; // coefficients not centered for multinomial/ordinal
   double[][] _beta_multinomial_center; // coefficients not centered for multinomial/ordinal
+  int[] _spline_orders;
+  int[] _spline_orders_sorted;
   DistributionFamily _family;
   String[][] _gam_columns;
   String[][] _gam_columns_sorted;
@@ -46,6 +47,7 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   int[] _num_knots;
   int[] _num_knots_sorted;
   int[] _num_knots_sorted_minus1;
+  int[] _numBasisSize;  // number of basis function sizes
   int[] _num_knots_TP;
   double[][][] _knots;
   double[][][] _binvD;
@@ -58,27 +60,22 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   int _betaSizePerClass;
   int _betaCenterSizePerClass;
   double _tweedieLinkPower;
-  double[][] _basisVals; // store basis values array for each gam column, avoid new memory allocation per row
-  double[][] _basisValsCenter; // store basis values array for each gam column, avoid new memory allocation per row
   double[][] _hj;   // difference between knot values
   int _numExpandedGamCols; // number of expanded gam columns
   int _numExpandedGamColsCenter; // number of expanded gam columns centered
   int _lastClass;
   int[][][] _allPolyBasisList;
-  int _num_TP_col;
-  int _num_CS_col;
+  int _numTPCol;
+  int _numCSCol;
+  int _numISCol;
   // following arrays are pre-allocated to avoid repeated memory allocation per row of scoring
-  double[][] _tpRowVals;    // store each row of predictors for each TP smoother
-  double[][] _tpDistance;  // store distance measure for each row for all smoothers
-  double[][] _tpDistzCS;   // store distance measure * zCS
-  double[][] _tpPoly;      // store polynomial basis
-  double[][] _tpDistzCSPoly; // concatenate distance measure *zCS + polynomial
-  double[][] _tpDistzCSPolyzT; // centered distance measure *zCS + polynomial
+  int[] _tpDistzCSSize;
   boolean[] _dEven;
   double[] _constantTerms;
   double[][] _gamColMeansRaw;
   double[][] _oneOGamColStd;
   boolean _standardize;
+  ISplines[] _iSplineBasis;
   
   GamMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -96,33 +93,27 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     _num_knots_sorted_minus1 = new int[_num_knots_sorted.length];
     for (int index = 0; index < _num_knots_sorted.length; index++)
       _num_knots_sorted_minus1[index] = _num_knots_sorted[index]-1;
-    if (_num_CS_col > 0) {
-      _basisVals = new double[_num_CS_col][]; // for cubic spline smoothers only
-      _basisValsCenter = new double[_num_CS_col][];
-      _hj = new double[_num_CS_col][];
-      for (int ind = 0; ind < _num_CS_col; ind++) {
-        _basisVals[ind] = new double[_num_knots_sorted[ind]];
-        _basisValsCenter[ind] = new double[_num_knots_sorted_minus1[ind]];
+    if (_numCSCol > 0) {
+      _hj = new double[_numCSCol][];
+      for (int ind = 0; ind < _numCSCol; ind++)
         _hj[ind] = ArrayUtils.eleDiff(_knots[ind][0]);
+    }
+    if (_numISCol > 0) {
+      _numBasisSize = new int[_numISCol];
+      _iSplineBasis = new ISplines[_numISCol];
+      for (int ind=0; ind<_numISCol;ind++) {
+        int absIndex = ind + _numCSCol;
+        _numBasisSize[ind] = _num_knots_sorted[absIndex]+_spline_orders_sorted[absIndex]-2;
+        _iSplineBasis[ind] = new ISplines(_spline_orders[absIndex], _knots[absIndex][0]);
       }
     }
-    if (_num_TP_col > 0) {
-      _tpRowVals = new double[_num_TP_col][];
-      _tpDistance = new double[_num_TP_col][];
-      _tpDistzCS = new double[_num_TP_col][];
-      _tpPoly = new double[_num_TP_col][];
-      _tpDistzCSPoly = new double[_num_TP_col][];
-      _tpDistzCSPolyzT = new double[_num_TP_col][];
-      _dEven = new boolean[_num_TP_col];
-      _constantTerms = new double[_num_TP_col];
-      for (int index = 0; index < _num_TP_col; index++) {
-        int absIndex = index+_num_CS_col;
-        _tpRowVals[index] = new double[_d[absIndex]];
-        _tpDistance[index] = new double[_num_knots_sorted[absIndex]];
-        _tpDistzCS[index] = new double[_num_knots_sorted[absIndex]-_M[index]];
-        _tpPoly[index] = new double[_M[index]];
-        _tpDistzCSPoly[index] = new double[_num_knots_sorted[absIndex]];
-        _tpDistzCSPolyzT[index] = new double[_num_knots_sorted[absIndex]-1];
+    if (_numTPCol > 0) {
+      _tpDistzCSSize = new int[_numTPCol];
+      _dEven = new boolean[_numTPCol];
+      _constantTerms = new double[_numTPCol];
+      for (int index = 0; index < _numTPCol; index++) {
+        int absIndex = index+ _numCSCol+_numISCol;
+        _tpDistzCSSize[index] = _num_knots_sorted[absIndex]-_M[index];
         _dEven[index] = (_d[absIndex] % 2) == 0;
         _constantTerms[index] = calTPConstantTerm(_m[index], _d[absIndex], _dEven[index]);
       }
@@ -196,6 +187,38 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
         }
     return true;  
   }
+
+  int addCSGamification(final RowData rowData, int cind, int dataIndEnd, double[] dataWithGamifiedColumns) {
+    Object dataObject = rowData.get(_gam_columns_sorted[cind][0]); // read predictor column
+    double gamColData = Double.NaN;
+    if (dataObject == null) {  // NaN, skip column gamification
+      dataIndEnd += _num_knots_sorted_minus1[cind];
+      return dataIndEnd;
+    } else { // can only test this with Python/R client
+      gamColData = (dataObject instanceof String) ? Double.parseDouble((String) dataObject) : (double) dataObject;
+    }
+    double[] basisVals = new double[_num_knots_sorted[cind]];
+    double[] basisValsCenter = new double[_num_knots_sorted_minus1[cind]];
+    GamUtilsCubicRegression.expandOneGamCol(gamColData, _binvD[cind], basisVals, _hj[cind], _knots[cind][0]);
+    multArray(basisVals, _zTranspose[cind], basisValsCenter);
+    System.arraycopy(basisValsCenter, 0, dataWithGamifiedColumns, dataIndEnd, _num_knots_sorted_minus1[cind]); // copy expanded gam to rawData
+    return dataIndEnd;
+  }
+
+  int addISGamification(final RowData rowData, int cind, int csCounter, int dataIndEnd, double[] dataWithGamifiedColumns) {
+    Object dataObject = rowData.get(_gam_columns_sorted[cind][0]); // read predictor column
+    double gamColData = Double.NaN;
+    if (dataObject == null) {  // NaN, skip column gamification
+      dataIndEnd += _num_knots_sorted_minus1[cind];
+      return dataIndEnd;
+    } else { // can only test this with Python/R client
+      gamColData = (dataObject instanceof String) ? Double.parseDouble((String) dataObject) : (double) dataObject;
+    }
+    double[] basisVals = new double[_numBasisSize[csCounter]];
+    _iSplineBasis[csCounter].gamifyVal(basisVals, gamColData);
+    System.arraycopy(basisVals, 0, dataWithGamifiedColumns, dataIndEnd, _num_knots_sorted[cind]); // copy expanded gam to rawData
+    return dataIndEnd;
+  }
   
   // this method will add to each data row the expanded gam columns with centering
   double[] addExpandGamCols(double[] rawData, final RowData rowData) { // add all expanded gam columns here
@@ -206,40 +229,16 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     double[] dataWithGamifiedColumns = nanArray(_nfeatures);  // store gamified columns
     System.arraycopy(rawData, 0, dataWithGamifiedColumns, 0, dataIndEnd);
     int tpCounter = 0;
+    int isCounter = 0;
     for (int cind = 0; cind < _num_gam_columns; cind++) { // go through all gam_columns, CS and TP
       if (_bs_sorted[cind] == 0) { // to generate basis function values for cubic regression spline
-        Object dataObject = rowData.get(_gam_columns_sorted[cind][0]); // read predictor column
-        double gam_col_data = Double.NaN;
-        if (dataObject == null) {  // NaN, skip column gamification
-          dataIndEnd += _num_knots_sorted_minus1[cind];
-          continue;
-        } else { // can only test this with Python/R client
-          gam_col_data = (dataObject instanceof String) ? Double.parseDouble((String) dataObject) : (double) dataObject;
-        }
-        GamUtilsCubicRegression.expandOneGamCol(gam_col_data, _binvD[cind], _basisVals[cind], _hj[cind], _knots[cind][0]);
-        multArray(_basisVals[cind], _zTranspose[cind], _basisValsCenter[cind]);
-        System.arraycopy(_basisValsCenter[cind], 0, dataWithGamifiedColumns, dataIndEnd, _num_knots_sorted_minus1[cind]); // copy expanded gam to rawData
+        dataIndEnd = addCSGamification(rowData, cind, dataIndEnd, dataWithGamifiedColumns);
       } else if (_bs_sorted[cind] == 1) { // tp regression
-        int relIndex = cind - _num_CS_col;
-        String[] gamCols = _gam_columns_sorted[cind];
-        double[] gamPred = grabPredictorVals(gamCols, rowData, _tpRowVals[relIndex]); // grabbing multiple predictors
-        if (gamPred == null) {
-          dataIndEnd += _num_knots_sorted_minus1[cind];
-          continue;
-        }
-        calculateDistance(_tpDistance[tpCounter], gamPred, _num_knots_sorted[cind], _knots[cind], 
-                _d[cind], _m[tpCounter], _dEven[tpCounter], _constantTerms[tpCounter], _oneOGamColStd[tpCounter],
-                _standardize); // calculate distance between row and knots, result in rowValues
-        multArray(_tpDistance[tpCounter], _zTransposeCS[tpCounter], _tpDistzCS[tpCounter]); // distance * zCS
-        calculatePolynomialBasis(_tpPoly[tpCounter], gamPred, _d[cind], _M[tpCounter], 
-                _allPolyBasisList[tpCounter], _gamColMeansRaw[tpCounter], _oneOGamColStd[tpCounter], _standardize);  // generate polynomial basis
-        // concatenate distance zCS and poly basis.
-        System.arraycopy(_tpDistzCS[tpCounter], 0, _tpDistzCSPoly[tpCounter], 0, _tpDistzCS[tpCounter].length);
-        System.arraycopy(_tpPoly[tpCounter], 0, _tpDistzCSPoly[tpCounter], _tpDistzCS[tpCounter].length, _M[tpCounter]);
-        multArray(_tpDistzCSPoly[tpCounter], _zTranspose[cind], _tpDistzCSPolyzT[tpCounter]);
-        System.arraycopy(_tpDistzCSPolyzT[tpCounter], 0, dataWithGamifiedColumns, dataIndEnd, 
-                _tpDistzCSPolyzT[tpCounter].length);
+        addTPGamification(rowData, cind, tpCounter, dataIndEnd, dataWithGamifiedColumns);
         tpCounter++;
+      } else if (_bs_sorted[cind]==2) { // perform I-spline gamification
+        addISGamification(rowData, cind, isCounter, dataIndEnd, dataWithGamifiedColumns);
+        isCounter++;
       } else {
         throw new IllegalArgumentException("spline type not implemented!");
       }
@@ -248,8 +247,36 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     return dataWithGamifiedColumns;
   }
   
-  double[] grabPredictorVals(String[] gamCols, final RowData rowData, double[] predVals) {
+  int addTPGamification(final RowData rowData, int cind, int tpCounter, int dataIndEnd, double[] dataWithGamifiedColumns) {
+    String[] gamCols = _gam_columns_sorted[cind];
+    double[] gamPred = grabPredictorVals(gamCols, rowData); // grabbing multiple predictors
+    if (gamPred == null) {
+      dataIndEnd += _num_knots_sorted_minus1[cind];
+      return dataIndEnd;
+    }
+    double[] tpDistance = new double[_num_knots_sorted[cind]];
+    calculateDistance(tpDistance, gamPred, _num_knots_sorted[cind], _knots[cind],
+            _d[cind], _m[tpCounter], _dEven[tpCounter], _constantTerms[tpCounter], _oneOGamColStd[tpCounter],
+            _standardize); // calculate distance between row and knots, result in rowValues
+    double[] tpDistzCS = new double[_tpDistzCSSize[tpCounter]];
+    multArray(tpDistance, _zTransposeCS[tpCounter], tpDistzCS); // distance * zCS
+    double[] tpPoly = new double[_M[tpCounter]];
+    calculatePolynomialBasis(tpPoly, gamPred, _d[cind], _M[tpCounter],
+            _allPolyBasisList[tpCounter], _gamColMeansRaw[tpCounter], _oneOGamColStd[tpCounter], _standardize);  // generate polynomial basis
+    // concatenate distance zCS and poly basis.
+    double[] tpDistzCSPoly = new double[_num_knots_sorted[tpCounter]];
+    double[] tpDistzCSPolyzT = new double[_num_knots_sorted_minus1[tpCounter]];
+    System.arraycopy(tpDistzCS, 0, tpDistzCSPoly, 0, tpDistzCS.length);
+    System.arraycopy(tpPoly, 0, tpDistzCSPoly, tpDistzCS.length, _M[tpCounter]);
+    multArray(tpDistzCSPoly, _zTranspose[cind], tpDistzCSPolyzT);
+    System.arraycopy(tpDistzCSPolyzT, 0, dataWithGamifiedColumns, dataIndEnd,
+            tpDistzCSPolyzT.length);
+    return dataIndEnd;
+  }
+  
+  double[] grabPredictorVals(String[] gamCols, final RowData rowData) {
     int numCol = gamCols.length;
+    double[] predVals = new double[numCol];
     for (int index = 0; index < numCol; index++) {
       Object data = rowData.get(gamCols[index]);
       if (data == null)

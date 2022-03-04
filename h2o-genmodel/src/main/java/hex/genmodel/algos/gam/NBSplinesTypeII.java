@@ -1,8 +1,7 @@
-package hex.gam.GamSplines;
+package hex.genmodel.algos.gam;
 
 import java.util.List;
-
-import static hex.gam.GamSplines.NBSplinesUtils.*;
+import static hex.genmodel.algos.gam.GamUtilsISplines.*;
 
 public class NBSplinesTypeII {
     public final int _order;   // order of splines

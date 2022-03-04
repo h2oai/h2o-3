@@ -428,6 +428,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _zTranspose = GamUtils.allocate3DArray(numGamFrame, _parms, firstOneLess);  // for centering for all smoothers 
       _penaltyMat = _parms._savePenaltyMat?GamUtils.allocate3DArray(numGamFrame, _parms, sameOrig):null;
       _penaltyMatCenter = GamUtils.allocate3DArray(numGamFrame, _parms, bothOneLess);
+      removeCenteringIS(_penaltyMatCenter, _penaltyMat, _parms);
       if (_cubicSplineNum > 0)  // CS-spline only
         _binvD = GamUtils.allocate3DArrayCS(_cubicSplineNum, _parms, firstTwoLess);
       _numKnots = MemoryManager.malloc4(numGamFrame);
@@ -589,18 +590,18 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           _gamColMeans[_gamColIndex][index] = oneGamifiedColumn.vec(index).mean();
         // centralize the gam columns
         copy2DArray(generateZTransp(oneGamifiedColumn, numBasis), _zTranspose[_gamColIndex]); // copy transpose(Z)
-        oneGamifiedColumn = centralizeFrame(oneGamifiedColumn,
-                _predictVec.name(0) + "_" + _splineType + "_center", _parms, _zTranspose[_gamColIndex]);
+/*        oneGamifiedColumn = centralizeFrame(oneGamifiedColumn,
+                _predictVec.name(0) + "_" + _splineType + "_center", _parms, _zTranspose[_gamColIndex]);*/
         DKV.put(oneGamifiedColumn);
         _gamFrameKeysCenter[_gamColIndex] = oneGamifiedColumn._key;
         System.arraycopy(oneGamifiedColumn.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
-                numBasis-1);
+                numBasis);
         // make sure I-spline coefficients >= 0
         
         // centralize penalty matrix        
-        double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(_zTranspose[_gamColIndex],
-                oneGAMCol._penaltyMat), ArrayUtils.transpose(_zTranspose[_gamColIndex]));  // transform penalty as zt*S*z
-        copy2DArray(transformedPenalty, _penaltyMatCenter[_gamColIndex]);
+/*        double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(_zTranspose[_gamColIndex],
+                oneGAMCol._penaltyMat), ArrayUtils.transpose(_zTranspose[_gamColIndex]));  // transform penalty as zt*S*z*/
+        copy2DArray(oneGAMCol._penaltyMat, _penaltyMatCenter[_gamColIndex]);
       }
     }
     
@@ -671,7 +672,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         final int numKnotsM1 = numKnots - 1;
         if (_parms._bs_sorted[index] == 0 || _parms._bs_sorted[index] == 2) {  // for CS or I-spline smoothers
           _gamColNames[index] = generateGamColNames(index, _parms);
-          _gamColNamesCenter[index] = new String[numKnotsM1];
+          if (_parms._bs_sorted[index]==2) 
+            _gamColNamesCenter[index] = new String[numKnots];
+          else
+            _gamColNamesCenter[index] = new String[numKnotsM1];
           _gamColMeans[index] = new double[numKnots];
           if (_parms._bs_sorted[index] == 0) { // cs spline
             generateGamColumn[index] = new CubicSplineSmoother(predictVec, _parms, index, _gamColNames[index],

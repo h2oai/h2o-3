@@ -52,6 +52,17 @@ public class GamUtils {
     return array3D;
   }
 
+  /***
+   * This function is used to remove the dimension change due to centering for I-splines
+   */
+  public static void removeCenteringIS(double[][][] penaltyMatCenter, double[][][] penaltyMat, GAMParameters parms) {
+    int numGamCol = parms._bs_sorted.length;
+    for (int index=0; index<numGamCol; index++)
+      if (parms._bs_sorted[index]==2) {
+        penaltyMatCenter[index] = allocate2DArray(AllocateType.sameOrig, penaltyMat[index].length);
+      }
+  }
+
   // allocate 3D array to store various information;
   public static double[][][] allocate3DArrayTP(int num2DArrays, GAMParameters parms, int[] secondDim, int[] thirdDim) {
     double[][][] array3D = new double[num2DArrays][][];

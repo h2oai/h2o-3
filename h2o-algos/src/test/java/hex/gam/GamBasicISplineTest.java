@@ -1,9 +1,9 @@
 package hex.gam;
 
-import hex.gam.GamSplines.ISplines;
 import hex.gam.GamSplines.NBSplinesTypeI;
 import hex.gam.GamSplines.NBSplinesTypeIDerivative;
-import hex.gam.GamSplines.NBSplinesTypeII;
+import hex.genmodel.algos.gam.ISplines;
+import hex.genmodel.algos.gam.NBSplinesTypeII;
 import jsr166y.ThreadLocalRandom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,12 +15,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
@@ -28,6 +23,8 @@ import static hex.gam.GamSplines.NBSplinesTypeI.extractNBSplineCoeffs;
 import static hex.gam.GamSplines.NBSplinesTypeI.formBasis;
 import static hex.gam.GamSplines.NBSplinesTypeIDerivative.formDerivatives;
 import static hex.gam.GamSplines.NBSplinesUtils.*;
+import static hex.genmodel.algos.gam.GamUtilsISplines.extractKnots;
+import static hex.genmodel.algos.gam.GamUtilsISplines.fillKnots;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
