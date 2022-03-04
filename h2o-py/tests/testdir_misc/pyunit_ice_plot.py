@@ -101,6 +101,7 @@ def _get_cols_to_test(train, y):
             cols_to_test.append(col)
     return cols_to_test
 
+
 def _assert_pyplot_was_produced(cols_to_test, model, train, target=None):
     for col in cols_to_test:
         if target is None:
