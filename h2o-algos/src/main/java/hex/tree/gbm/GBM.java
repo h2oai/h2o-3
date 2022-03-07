@@ -764,6 +764,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           LeafNode node = (LeafNode)tree.node(i);
           int quantileId = i - dnSize;
           double leafQuantile = sqt._quantiles[quantileId];
+          if (Double.isNaN(leafQuantile)) continue; // quantile can be NaN if CV or weights column is enabled
           boolean canBeReplaced = true;
           DTree.Node tmpNode = tree.node(i);
           while(tmpNode.pid() != DTree.NO_PARENT) {
