@@ -56,7 +56,6 @@ def uplift_random_forest_smoke():
     treatment_column = "treatment"
     response_column = "outcome"
     x_names = ["feature_"+str(x) for x in range(1,13)]
-    from statistics import mean
 
     train_h2o = h2o.upload_file(pyunit_utils.locate("smalldata/uplift/upliftml_train.csv"))
     train_h2o[treatment_column] = train_h2o[treatment_column].asfactor()
@@ -80,13 +79,13 @@ def uplift_random_forest_smoke():
     perf_chi, uplift_chi = uplift_train_performance_and_plot("chi_squared", x_names, treatment_column, response_column, train_h2o, seed)
 
     assert 93 < np.mean(uplift_kl) < 94, \
-        "Not expected output: Mean uplift is suspiciously different. " + str(mean(uplift_kl))
+        "Not expected output: Mean uplift is suspiciously different. " + str(np.mean(uplift_kl))
 
     assert 85 < np.mean(uplift_euc) < 86, \
-        "Not expected output: Mean uplift is suspiciously different. " + str(mean(uplift_euc))
+        "Not expected output: Mean uplift is suspiciously different. " + str(np.mean(uplift_euc))
 
     assert 405 < np.mean(uplift_chi) < 406, \
-        "Not expected output: Mean uplift is suspiciously different. " + str(mean(uplift_chi))
+        "Not expected output: Mean uplift is suspiciously different. " + str(np.mean(uplift_chi))
     
     assert 398 < perf_kl.auuc() < 399, \
         "Not expected output: AUUC is suspiciously different. " + str(perf_kl.auuc())
