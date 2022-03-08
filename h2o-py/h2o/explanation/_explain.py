@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-
+import os
 import random
 import warnings
 from collections import OrderedDict, Counter, defaultdict
@@ -1231,6 +1231,48 @@ def pd_multi_plot(
 def _center(col):
     col[:] = col - col[0]
 
+def _prepare_grouping_frames(frame, grouping_column):
+    _MAX_GROUPING_FRAME_CARDINALITY = 10
+    if grouping_column not in frame.names:
+        raise ValueError("Grouping variable '" + grouping_column + "' is not present in frame!")
+    if not frame[grouping_column].isfactor()[0]:
+        raise ValueError("Grouping variable has to be categorical!")
+    categories = frame[grouping_column].categories()
+    if len(categories) > _MAX_GROUPING_FRAME_CARDINALITY:
+        raise ValueError("Grouping column option is supported only for variables with 10 or fewer levels!")
+    frames = list()
+    for i, curr_category in enumerate(categories):
+        key = "tmp_{}{}".format(curr_category, str(i))
+        expr = "(tmp= {} (rows {} (==(cols {} [{}] ) '{}') ))".format(key, frame.frame_id, frame.frame_id, str(frame.names.index(grouping_column)), curr_category)
+        h2o.rapids(expr)
+        frames.append(h2o.get_frame(key))
+    return frames
+
+def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap):
+    frames = _prepare_grouping_frames(frame, grouping_column)
+    result = list()
+    for i, curr_frame in enumerate(frames):
+        curr_category = frame[grouping_column].categories()[i]
+        curr_save_plot_path = None
+        if save_plot_path is not None:
+            root_path, ext = os.path.splitext(save_plot_path)
+            curr_save_plot_path = root_path + "_" + curr_category + ext
+        group_label = "\ngrouping variable: {} = '{}'".format(grouping_column, curr_category)
+        plot = ice_plot(
+            model,
+            curr_frame,
+            column,
+            target,
+            max_levels,
+            figsize,
+            colormap,
+            curr_save_plot_path,
+            **{'group_label':group_label}
+        )
+        result.append(plot)
+        h2o.remove(curr_frame.key, False)
+    return result
+
 def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
                         index, column, color, percentile_string):
     PDP_RESULT_FACTOR_NAN_MARKER = '.missing(NA)'
@@ -1273,7 +1315,9 @@ def ice_plot(
         save_plot_path=None,  # type: Optional[str]
         show_pdp=True,  # type: bool
         binary_response_scale="response", # type: Literal["response", "logodds"]
-        centered=False # type: bool
+        centered=False, # type: bool
+        grouping_column=None,  # type: Optional[str]
+        **kwargs
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1299,6 +1343,8 @@ def ice_plot(
     :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
     score. Can be one of: "response", "logodds". Defaults to "response".
     :param centered: a bool whether to center curves around 0 at the first valid x value or not
+    :param grouping_column: a feature column name to group the data and provide separate sets of plots by
+    grouping feature values
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1335,6 +1381,9 @@ def ice_plot(
 
     if frame.type(column) == "string":
         raise ValueError("String columns are not supported!")
+
+    if grouping_column is not None:
+        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap)
 
     is_binomial = _is_binomial(model)
     if (not is_binomial) and (binary_response_scale == "logodds"):
@@ -1421,10 +1470,11 @@ def ice_plot(
                          label="Partial Dependence")
 
         _add_histogram(frame, column)
-        plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}".format(
+        plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}{}".format(
             model.model_id,
             column,
-            " with target = \"{}\"".format(target[0]) if target else ""
+            " with target = \"{}\"".format(target[0]) if target else "",
+            kwargs.get("group_label", "")
         ))
         plt.xlabel(column)
         plt.ylabel(y_label)
