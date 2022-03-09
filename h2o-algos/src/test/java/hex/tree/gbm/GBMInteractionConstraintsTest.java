@@ -24,7 +24,7 @@ import java.util.*;
 public class GBMInteractionConstraintsTest extends TestUtil {
     
     @Test
-    public void testInteraction() {
+    public void testTwoSeparateInteractionConstraintsSets() {
         String[][] interactions = new String[2][];
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS", "DCAPS", "VOL"};
@@ -32,7 +32,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     }
 
     @Test
-    public void testInteraction1() {
+    public void testTwoInteractionSetsOneFeatureInBoth() {
         String[][] interactions = new String[2][];
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS", "DCAPS", "VOL", "GLEASON"};
@@ -40,7 +40,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     }
 
     @Test
-    public void testInteraction2() {
+    public void testTwoInteractionSetsOneWithOneFeature() {
         String[][] interactions = new String[2][];
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS"};
@@ -48,7 +48,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     }
 
     @Test
-    public void testInteraction3() {
+    public void testThreeInteractionSets() {
         String[][] interactions = new String[3][];
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS"};
@@ -57,7 +57,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     }
 
     @Test
-    public void testInteraction4() {
+    public void testThreeInteractionSetsBiggerTrees() {
         String[][] interactions = new String[3][];
         interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
         interactions[1] = new String[]{"DPROS"};
@@ -66,7 +66,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     }
 
     @Test
-    public void testInteraction5() {
+    public void testThreeInteractionSetsWithOneFeature() {
         String[][] interactions = new String[3][];
         interactions[0] = new String[]{"RACE"};
         interactions[1] = new String[]{"DPROS"};
@@ -75,7 +75,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     }
 
     @Test
-    public void testInteraction6() {
+    public void testTwoInteractionConstraintsSmallSets() {
         String[][] interactions = new String[2][];
         interactions[0] = new String[]{"AGE", "PSA"};
         interactions[1] = new String[]{"GLEASON"};
@@ -123,16 +123,13 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     }
     
     public void testInteractionConstraintsSimple(String[][] interactionConstraints, int maxDepth, int ntrees) {
-        Frame fr = null;
-        GBMModel model = null;
         Scope.enter();
         try {
             final String response = "CAPSULE";
             final String testFile = "smalldata/logreg/prostate.csv";
-            fr = parseTestFile(testFile)
+            Frame fr = parseTestFile(testFile)
                     .toCategoricalCol(response);
             Scope.track(fr);
-            DKV.put(fr);
 
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._response_column = response;
@@ -143,29 +140,25 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             parms._seed = 1234L;
             parms._interaction_constraints = interactionConstraints;
 
-            model = new GBM(parms).trainModel().get();
-
+            GBMModel model = new GBM(parms).trainModel().get();
+            Scope.track_generic(model);
+            
             String[] names = Arrays.copyOfRange(fr.names(), 2, fr.names().length);
             checkTrees(model, names);
         } finally {
-            if (model != null) model.delete();
-            if (fr  != null) fr.remove();
             Scope.exit();
         }
     }
     
     public void testInteractionConstraintsOneHotEncoding(Model.Parameters.CategoricalEncodingScheme encoding) {
-        Frame fr = null;
-        GBMModel model = null;
         Scope.enter();
         try {
             final String response = "CAPSULE";
             final String testFile = "smalldata/logreg/prostate.csv";
-            fr = parseTestFile(testFile)
+            Frame fr = parseTestFile(testFile)
                     .toCategoricalCol("RACE")
                     .toCategoricalCol(response);
             Scope.track(fr);
-            DKV.put(fr);
 
             String[][] interactions = new String[2][];
             interactions[0] = new String[]{"AGE", "RACE", "PSA", "GLEASON"};
@@ -181,13 +174,12 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             parms._interaction_constraints = interactions;
             parms._categorical_encoding = encoding;
 
-            model = new GBM(parms).trainModel().get();
+            GBMModel model = new GBM(parms).trainModel().get();
+            Scope.track_generic(model);
             
             String[] names = Arrays.copyOfRange(fr.names(), 2, fr.names().length);
             checkTrees(model, names);
         } finally {
-            if (model != null) model.delete();
-            if (fr  != null) fr.remove();
             Scope.exit();
         }
     }
