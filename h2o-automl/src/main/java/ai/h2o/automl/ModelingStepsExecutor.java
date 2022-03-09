@@ -12,7 +12,6 @@ import hex.ModelContainer;
 import water.Iced;
 import water.Job;
 import water.Key;
-import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.Log;
 
@@ -35,9 +34,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             if (parentJob.stop_requested()) {
                 job.stop();
             }
-            try {
-                Thread.sleep(pollingIntervalInMillis);
-            } catch (InterruptedException ignored) {}
+            job.blockingWaitForDone(pollingIntervalInMillis);
         }
     }
 
@@ -169,11 +166,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                     }
                 }
 
-                try {
-                    Thread.sleep(_pollingIntervalInMillis);
-                } catch (InterruptedException e) {
-                    // keep going
-                }
+                job.blockingWaitForDone(_pollingIntervalInMillis);
                 lastWorkedSoFar = workedSoFar;
             }
 
