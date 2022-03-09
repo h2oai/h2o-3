@@ -194,6 +194,10 @@ public abstract class SharedTreeModel<
      */
     public TwoDimTable _variable_importances;
     public VarImp _varimp;
+    @Override
+    public TwoDimTable getVariableImportances() {
+      return _variable_importances;
+    }
 
     public GLMModel _calib_model;
 

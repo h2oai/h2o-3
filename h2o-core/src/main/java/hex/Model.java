@@ -1153,6 +1153,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public boolean isAutoencoder() { return false; } // Override in DeepLearning and so on.
 
+    /**
+     * Retrieves variable importances
+     * @return instance of TwoDimTable if model supports variable importances, null otherwise
+     */
+    public TwoDimTable getVariableImportances() {
+      return null;
+    }
+    
     public synchronized Key<ModelMetrics>[] clearModelMetrics(boolean keepModelTrainingMetrics) {
       Key<ModelMetrics>[] removed;
       if (keepModelTrainingMetrics) {
