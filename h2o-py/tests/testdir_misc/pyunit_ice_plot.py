@@ -83,6 +83,11 @@ def test_handle_orig_values():
 
                 if type_test[test_id] == "Regression":
                     assert gbm.training_model_metrics()["model_category"] == "Regression"
+                    # adding debug logs to help investigate current failure:
+                    print("test_id:" + str(test_id))
+                    print("i: " + str(i))
+                    print("index: " + str(i))
+                    print("len(orig_value_prediction['mean_response']): " + str(len(orig_value_prediction["mean_response"])))
                     np.testing.assert_almost_equal(orig_value_prediction["mean_response"], gbm.predict(frame).as_data_frame()["predict"][index], 5)
                 elif type_test[test_id] == "Binomial":
                     assert gbm.training_model_metrics()["model_category"] == "Binomial"
@@ -262,11 +267,11 @@ def test_show_pdd():
 
 
 pyunit_utils.run_tests([
-    test_original_values,
+    # test_original_values,
     test_handle_orig_values,
-    test_display_mode,
-    test_binary_response_scale,
-    test_show_pdd,
-    test_display_mode,
-    test_grouping_column
+    # test_display_mode,
+    # test_binary_response_scale,
+    # test_show_pdd,
+    # test_display_mode,
+    # test_grouping_column
 ])
