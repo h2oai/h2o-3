@@ -52,7 +52,7 @@ import static hex.glm.ComputationState.fillSubRange;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
-import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
+import static hex.glm.GLMModel.GLMParameters.GLMType.*;
 import static hex.glm.GLMUtils.*;
 import static water.fvec.Vec.T_NUM;
 import static water.fvec.Vec.T_STR;
@@ -2315,8 +2315,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
         Cholesky chol = _chol;
+        DataInfo activeData = _state.activeData();
         if (_parms._standardize) { // compute non-standardized t(X)%*%W%*%X
-          DataInfo activeData = _state.activeData();
           double[] beta_nostd = activeData.denormalizeBeta(beta);
           DataInfo.TransformType transform = activeData._predictor_transform;
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
@@ -2325,6 +2325,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           g.mul(_parms._obj_reg);
           chol = g.cholesky(null);
           beta = beta_nostd;
+        } else {  // just rebuild gram with latest GLM coefficients
+          Gram g = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta).doAll(activeData._adaptedFrame)._gram;
+          g.mul(_parms._obj_reg);
+          chol = g.cholesky(null);
         }
         double[][] inv = chol.getInv();
         ArrayUtils.mult(inv, _parms._obj_reg * se);

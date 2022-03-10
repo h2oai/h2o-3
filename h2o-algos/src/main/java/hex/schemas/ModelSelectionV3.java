@@ -152,20 +152,20 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 " solver ", level = API.Level.expert)
         public double beta_epsilon;
 
-        @API(help = "Converge if  objective value changes less than this."+ " Default indicates: If lambda_search"+
+        @API(help = "Converge if  objective value changes less than this."+ " Default (of -1.0) indicates: If lambda_search"+
                 " is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set to False" +
                 " and lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other value" +
                 " of lambda the default value of objective_epsilon is set to .0001.", level = API.Level.expert)
         public double objective_epsilon;
 
         @API(help = "Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS" +
-                " solver. Default indicates: If lambda_search is set to False and lambda is equal to zero, the" +
+                " solver. Default (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the" +
                 " default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If " +
                 "lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.",
                 level = API.Level.expert)
         public double gradient_epsilon;
 
-        @API(help="Likelihood divider in objective value computation, default is 1/nobs")
+        @API(help="Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs")
         public double obj_reg;
 
         @API(help = "Link function.", level = API.Level.secondary, values = {"family_default", "identity", "logit", "log",
