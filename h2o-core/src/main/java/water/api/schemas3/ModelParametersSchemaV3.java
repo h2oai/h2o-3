@@ -10,6 +10,7 @@ import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.CategoricalEncoding;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
@@ -122,7 +123,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
           values = {"AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"},
           help = "Encoding scheme for categorical features")
-  public Model.Parameters.CategoricalEncodingScheme categorical_encoding;
+  public CategoricalEncoding.Scheme categorical_encoding;
 
   @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
       help = "For every categorical feature, only use this many most frequent categorical levels for model training. Only used for categorical_encoding == EnumLimited.")

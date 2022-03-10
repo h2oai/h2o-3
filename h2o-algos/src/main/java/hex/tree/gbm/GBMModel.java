@@ -13,6 +13,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.CategoricalEncoding;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -136,7 +137,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     super.initActualParamValues();
     EffectiveParametersUtils.initFoldAssignment(_parms);
     EffectiveParametersUtils.initHistogramType(_parms);
-    EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, CategoricalEncoding.Scheme.Enum);
   }
   
   public void initActualParamValuesAfterOutputSetup(int nclasses, boolean isClassifier) {

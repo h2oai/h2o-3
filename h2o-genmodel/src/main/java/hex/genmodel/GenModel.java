@@ -246,8 +246,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   /** Return type of encoding expected by the model implementation. */
-  @Override public CategoricalEncoding getCategoricalEncoding() {
-    return DefaultCategoricalEncoding.AUTO; // by default model handles the encoding
+  @Override public ICategoricalEncoding getCategoricalEncoding() {
+    return CategoricalEncoding.AUTO; // by default model handles the encoding
   }
 
   /** Returns true if this model represents a classifier, else it is used for regression. */

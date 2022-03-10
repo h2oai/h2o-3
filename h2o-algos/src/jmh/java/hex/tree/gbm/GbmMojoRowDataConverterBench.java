@@ -1,6 +1,6 @@
 package hex.tree.gbm;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.ICategoricalEncoding;
 import hex.genmodel.ConverterFactoryProvidingModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.easy.CategoricalEncoder;
@@ -66,8 +66,8 @@ public class GbmMojoRowDataConverterBench {
 
     EasyPredictModelWrapper.ErrorConsumer errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
-    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ?
-            CategoricalEncoding.AUTO : _mojo.getCategoricalEncoding();
+    ICategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ?
+            ICategoricalEncoding.AUTO : _mojo.getCategoricalEncoding();
     Map<String, Integer> columnMapping = categoricalEncoding.createColumnMapping(_mojo);
     Map<Integer, CategoricalEncoder> domainMap = categoricalEncoding.createCategoricalEncoders(_mojo, columnMapping);
 

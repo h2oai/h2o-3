@@ -250,16 +250,16 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     @Override
     protected AdaptFrameParameters makeAdaptFrameParameters() {
         final GenModel genModel = genModel();
-        CategoricalEncoding encoding = genModel.getCategoricalEncoding();
+        ICategoricalEncoding encoding = genModel.getCategoricalEncoding();
         if (encoding.isParametrized()) {
             throw new UnsupportedOperationException(
                     "Models with categorical encoding '" + encoding + "' are not currently supported for predicting and/or calculating metrics.");
         }
-        final Parameters.CategoricalEncodingScheme encodingScheme = Parameters.CategoricalEncodingScheme.fromGenModel(encoding);
+        final water.util.CategoricalEncoding.Scheme encodingScheme = water.util.CategoricalEncoding.Scheme.fromGenModel(encoding);
         final ModelDescriptor descriptor = genModel instanceof MojoModel ? ((MojoModel) genModel)._modelDescriptor : null;
         return new AdaptFrameParameters() {
             @Override
-            public Parameters.CategoricalEncodingScheme getCategoricalEncoding() {
+            public water.util.CategoricalEncoding.Scheme getCategoricalEncoding() {
                 return encodingScheme;
             }
             @Override
@@ -287,6 +287,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             @Override
             public int getMaxCategoricalLevels() {
                 return -1; // returned but won't be used
+            }
+            @Override
+            public ToEigenVec getToEigenVec() {
+              return null;
             }
         };
     }

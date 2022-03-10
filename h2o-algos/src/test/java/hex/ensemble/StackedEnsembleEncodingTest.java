@@ -4,11 +4,7 @@ import hex.Model;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
-import hex.tree.gbm.GBM;
-import hex.tree.gbm.GBMModel;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,6 +17,7 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.CategoricalEncoding;
 import water.util.Log;
 
 import java.util.ArrayList;
@@ -37,15 +34,15 @@ public class StackedEnsembleEncodingTest extends TestUtil {
 
     @Parameterized.Parameters
     public static Iterable<?> data() {
-        return Arrays.asList(Model.Parameters.CategoricalEncodingScheme.values());
-//        return Arrays.asList(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit);
+        return Arrays.asList(CategoricalEncoding.Scheme.values());
+//        return Arrays.asList(Model.Parameters.Scheme.OneHotExplicit);
     }
 
     @Parameterized.Parameter
-    public Model.Parameters.CategoricalEncodingScheme encoding;
+    public CategoricalEncoding.Scheme encoding;
 
     @Test public void testSE_BasicCategoricalEncoding() {
-        if (encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) return; //not supported for Tree algos
+        if (encoding == CategoricalEncoding.Scheme.OneHotInternal) return; //not supported for Tree algos
         Log.info("Using encoding "+encoding);
 
         List<Lockable> deletables = new ArrayList<>();
@@ -70,7 +67,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             params._keep_cross_validation_models = false;
             params._keep_cross_validation_predictions = true;
             params._categorical_encoding = encoding;
-            if (encoding == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+            if (encoding == CategoricalEncoding.Scheme.EnumLimited) {
                 params._max_categorical_levels = 2;
             }
 
@@ -123,7 +120,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
     }
 
     @Test public void testSE_CategoricalEncodingWithUnseenCategories() {
-        if (encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) return; //not supported for Tree algos
+        if (encoding == CategoricalEncoding.Scheme.OneHotInternal) return; //not supported for Tree algos
         Log.info("Using encoding "+encoding);
 
         List<Lockable> deletables = new ArrayList<>();
@@ -148,7 +145,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             params._keep_cross_validation_models = false;
             params._keep_cross_validation_predictions = true;
             params._categorical_encoding = encoding;
-            if (encoding == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+            if (encoding == CategoricalEncoding.Scheme.EnumLimited) {
                 params._max_categorical_levels = 2;
             }
 
@@ -202,7 +199,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
     }
 
     @Test public void testSE_CategoricalEncodingWithPredictionsOnFeaturesSubset() {
-        if (encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) return; //not supported for Tree algos
+        if (encoding == CategoricalEncoding.Scheme.OneHotInternal) return; //not supported for Tree algos
         Log.info("Using encoding "+encoding);
 
         List<Lockable> deletables = new ArrayList<>();
@@ -230,7 +227,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             params._keep_cross_validation_models = false;
             params._keep_cross_validation_predictions = true;
             params._categorical_encoding = encoding;
-            if (encoding == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+            if (encoding == CategoricalEncoding.Scheme.EnumLimited) {
                 params._max_categorical_levels = 2;
             }
 

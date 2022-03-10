@@ -102,7 +102,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         // transform the target into multiple columns that each will be interpreted as a target
         // used to generate the new {targetclass}_te features
         Frame targetFr = new Frame(new String[]{targetName}, new Vec[]{targetVec});
-        Frame oheTarget = new FrameUtils.CategoricalOneHotEncoder(targetFr, new String[]{}).exec().get();
+        Frame oheTarget = new CategoricalEncoders.CategoricalOneHotEncoder().encode(targetFr);
         Scope.track(oheTarget);
         Frame expandedFr = new Frame(fr).add(oheTarget);
 //        printFrame(expandedFr);

@@ -1,8 +1,6 @@
 package hex.tree.isoforextended;
 
-import hex.Model;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
-import hex.tree.isoforextended.isolationtree.IsolationTree;
 import org.apache.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -15,10 +13,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.FrameUtils;
-import water.util.RandomUtils;
-
-import java.util.Arrays;
+import water.util.CategoricalEncoding;
 
 import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.averagePathLengthOfUnsuccessfulSearch;
 import static org.junit.Assert.*;
@@ -262,7 +257,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._ntrees = 100;
             p._sample_size = 2;
             p._extension_level = 2;
-            p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+            p._categorical_encoding = CategoricalEncoding.Scheme.OneHotExplicit;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();

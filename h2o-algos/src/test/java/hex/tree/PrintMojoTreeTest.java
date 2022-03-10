@@ -12,10 +12,10 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import water.Scope;
-import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.CategoricalEncoding;
 
 import java.io.File;
 import java.io.IOException;
@@ -263,7 +263,7 @@ public class PrintMojoTreeTest {
       p._train = train._key;
       p._seed = 0xFEED;
       p._response_column = "IsDepDelayed";
-      p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+      p._categorical_encoding = CategoricalEncoding.Scheme.OneHotExplicit;
       p._ntrees = 2;
       p._max_depth = 3;
       p._ignored_columns = new String[] { "Origin", "Dest" };
@@ -334,7 +334,7 @@ public class PrintMojoTreeTest {
       p._train = train._key;
       p._seed = 0xFEED;
       p._response_column = "IsDepDelayed";
-      p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+      p._categorical_encoding = CategoricalEncoding.Scheme.OneHotExplicit;
       p._ntrees = 2;
       p._max_depth = 3;
       p._ignored_columns = new String[] { "Origin", "Dest" };

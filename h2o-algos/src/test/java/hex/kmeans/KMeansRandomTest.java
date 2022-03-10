@@ -1,12 +1,12 @@
 package hex.kmeans;
 
-import hex.Model;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.CategoricalEncoding;
 import water.util.Log;
 
 import java.util.Random;
@@ -35,13 +35,13 @@ public class KMeansRandomTest extends TestUtil {
           for (int max_iter : new int[]{1, 10}) {
             for (boolean estimate_k : new boolean[]{false, true}) {
               for (boolean standardize : new boolean[]{false, true}) {
-                for (Model.Parameters.CategoricalEncodingScheme catEncoding : Model.Parameters.CategoricalEncodingScheme.values()) {
+                for (CategoricalEncoding.Scheme catEncoding : CategoricalEncoding.Scheme.values()) {
                   for (KMeans.Initialization init : new KMeans.Initialization[]{
                           KMeans.Initialization.Random,
                           KMeans.Initialization.Furthest,
                           KMeans.Initialization.PlusPlus,
                   }) {
-                    if (catEncoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse) continue;
+                    if (catEncoding == CategoricalEncoding.Scheme.SortByResponse) continue;
 
                     count++;
 

@@ -1,24 +1,19 @@
 package hex.aggregator;
 
 import hex.*;
-import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.CategoricalEncoding;
 import water.util.IcedInt;
 import water.util.Log;
 
 import java.util.Arrays;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
-
-  @Override
-  public ToEigenVec getToEigenVec() {
-    return LinearAlgebraUtils.toEigen;
-  }
 
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
   @Override public boolean isSupervised() { return false; }
@@ -102,8 +97,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
   @Override
   public void init(boolean expensive) {
-    if (expensive && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.AUTO){
-      _parms._categorical_encoding=Model.Parameters.CategoricalEncodingScheme.Eigen;
+    if (expensive && _parms._categorical_encoding == CategoricalEncoding.Scheme.AUTO){
+      _parms._categorical_encoding= CategoricalEncoding.Scheme.Eigen;
     }
     if (_parms._target_num_exemplars <= 0) {
       error("_target_num_exemplars", "target_num_exemplars must be > 0.");

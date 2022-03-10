@@ -1,7 +1,7 @@
 package water.api.schemas3;
 
 import hex.AUUC;
-import hex.Model.Parameters.CategoricalEncodingScheme;
+import water.util.CategoricalEncoding;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.MultinomialAucType;
 import hex.ScoreKeeper.StoppingMetric;
@@ -22,9 +22,9 @@ public interface ModelParamsValuesProviders {
     }
   }
 
-  class CategoricalEncodingSchemeValuesProvider extends EnumValuesProvider<CategoricalEncodingScheme> {
+  class CategoricalEncodingSchemeValuesProvider extends EnumValuesProvider<CategoricalEncoding.Scheme> {
     public CategoricalEncodingSchemeValuesProvider() {
-      super(CategoricalEncodingScheme.class);
+      super(CategoricalEncoding.Scheme.class);
     }
   }
 

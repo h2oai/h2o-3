@@ -13,7 +13,6 @@ import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.FriedmanPopescusH;
 import hex.tree.PlattScalingHelper;
-import hex.tree.SharedTreeModel;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import hex.util.EffectiveParametersUtils;
@@ -22,10 +21,7 @@ import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.SBPrintStream;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -267,7 +263,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   public void initActualParamValuesAfterOutputSetup(boolean isClassifier, int nclasses) {
     EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
-    EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.OneHotInternal);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, CategoricalEncoding.Scheme.OneHotInternal);
     EffectiveParametersUtils.initDistribution(_parms, nclasses);
     _parms._dmatrix_type = _output._sparse ? XGBoostModel.XGBoostParameters.DMatrixType.sparse : XGBoostModel.XGBoostParameters.DMatrixType.dense;
   }
@@ -472,7 +468,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     
     String[][] interactionConstraints = p._interaction_constraints;
     if(interactionConstraints != null && interactionConstraints.length > 0) {
-      if(!p._categorical_encoding.equals(Parameters.CategoricalEncodingScheme.OneHotInternal)){
+      if(!p._categorical_encoding.equals(CategoricalEncoding.Scheme.OneHotInternal)){
         throw new IllegalArgumentException("No support interaction constraint for categorical encoding = " + p._categorical_encoding.toString()+". Constraint interactions are available only for ``AUTO`` (``one_hot_internal`` or ``OneHotInternal``) categorical encoding.");
       }
       params.put("interaction_constraints", createInteractions(interactionConstraints, coefNames, p));

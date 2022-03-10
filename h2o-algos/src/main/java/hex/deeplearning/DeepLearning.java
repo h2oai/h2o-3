@@ -16,6 +16,7 @@ import water.fvec.Vec;
 import water.init.Linpack;
 import water.init.NetworkTest;
 import water.util.ArrayUtils;
+import water.util.CategoricalEncoding;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;
@@ -25,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static hex.util.LinearAlgebraUtils.toEigenArray;
 import static water.util.MRUtils.sampleFrame;
 import static water.util.MRUtils.sampleFrameStratified;
 
@@ -50,11 +50,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   @Override public boolean havePojo() { return true; }
   @Override public boolean haveMojo() { return true; }
-
-  @Override
-  public ToEigenVec getToEigenVec() {
-    return LinearAlgebraUtils.toEigen;
-  }
 
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
@@ -546,7 +541,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       } else { 
         EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier());
       }
-      EffectiveParametersUtils.initCategoricalEncoding(_parms, Model.Parameters.CategoricalEncodingScheme.OneHotInternal);
+      EffectiveParametersUtils.initCategoricalEncoding(_parms, CategoricalEncoding.Scheme.OneHotInternal);
     }
 
     /**

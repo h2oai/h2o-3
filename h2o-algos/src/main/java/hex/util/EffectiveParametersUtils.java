@@ -1,11 +1,11 @@
 package hex.util;
 
-import hex.AUUC;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import hex.tree.uplift.UpliftDRFModel;
+import water.util.CategoricalEncoding;
 
 public class EffectiveParametersUtils {
     
@@ -62,9 +62,9 @@ public class EffectiveParametersUtils {
 
     public static void initCategoricalEncoding(
             Model.Parameters params,
-            Model.Parameters.CategoricalEncodingScheme scheme
+            CategoricalEncoding.Scheme scheme
     ) {
-        if (params._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.AUTO) {
+        if (params._categorical_encoding == CategoricalEncoding.Scheme.AUTO) {
             params._categorical_encoding = scheme;
         }
     }

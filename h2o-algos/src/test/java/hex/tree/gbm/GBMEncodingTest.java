@@ -1,6 +1,5 @@
 package hex.tree.gbm;
 
-import hex.Model;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,6 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.util.CategoricalEncoding;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -23,14 +23,14 @@ public class GBMEncodingTest extends TestUtil {
 
     @Parameterized.Parameters
     public static Iterable<?> data() {
-        return Arrays.asList(Model.Parameters.CategoricalEncodingScheme.values());
+        return Arrays.asList(CategoricalEncoding.Scheme.values());
     }
 
     @Parameterized.Parameter
-    public Model.Parameters.CategoricalEncodingScheme encoding;
+    public CategoricalEncoding.Scheme encoding;
 
     @Test public void testGBM_BasicCategoricalEncoding() {
-        if (encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) return; //not supported for Tree algos
+        if (encoding == CategoricalEncoding.Scheme.OneHotInternal) return; //not supported for Tree algos
         Log.info("Using encoding "+encoding);
 
         try {
@@ -54,7 +54,7 @@ public class GBMEncodingTest extends TestUtil {
             parms._learn_rate = 1;
             parms._min_rows = 1;
             parms._categorical_encoding = encoding;
-            if (encoding == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+            if (encoding == CategoricalEncoding.Scheme.EnumLimited) {
                 parms._max_categorical_levels = 2;
             }
 
@@ -84,7 +84,7 @@ public class GBMEncodingTest extends TestUtil {
     }
 
     @Test public void testGBM_CategoricalEncodingWithUnseenCategories() {
-        if (encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) return; //not supported for Tree algos
+        if (encoding == CategoricalEncoding.Scheme.OneHotInternal) return; //not supported for Tree algos
         Log.info("Using encoding "+encoding);
 
         try {
@@ -107,7 +107,7 @@ public class GBMEncodingTest extends TestUtil {
             parms._learn_rate = 1;
             parms._min_rows = 1;
             parms._categorical_encoding = encoding;
-            if (encoding == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+            if (encoding == CategoricalEncoding.Scheme.EnumLimited) {
                 parms._max_categorical_levels = 2;
             }
 
@@ -136,7 +136,7 @@ public class GBMEncodingTest extends TestUtil {
     }
 
     @Test public void testGBM_CategoricalEncodingWithPredictionsOnFeaturesSubset() {
-        if (encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) return; //not supported for Tree algos
+        if (encoding == CategoricalEncoding.Scheme.OneHotInternal) return; //not supported for Tree algos
         Log.info("Using encoding "+encoding);
 
         try {
@@ -161,7 +161,7 @@ public class GBMEncodingTest extends TestUtil {
             parms._learn_rate = 1;
             parms._min_rows = 1;
             parms._categorical_encoding = encoding;
-            if (encoding == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+            if (encoding == CategoricalEncoding.Scheme.EnumLimited) {
                 parms._max_categorical_levels = 2;
             }
 

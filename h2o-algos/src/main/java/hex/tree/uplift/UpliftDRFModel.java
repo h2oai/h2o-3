@@ -6,6 +6,7 @@ import hex.tree.SharedTreeModelWithContributions;
 import hex.util.EffectiveParametersUtils;
 import water.H2O;
 import water.Key;
+import water.util.CategoricalEncoding;
 
 public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 
@@ -57,7 +58,7 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     public void initActualParamValues() {
         super.initActualParamValues();
         EffectiveParametersUtils.initHistogramType(_parms);
-        EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
+        EffectiveParametersUtils.initCategoricalEncoding(_parms, CategoricalEncoding.Scheme.Enum);
         EffectiveParametersUtils.initUpliftMetric(_parms);
     }
 

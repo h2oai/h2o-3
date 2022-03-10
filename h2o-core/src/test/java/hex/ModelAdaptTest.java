@@ -4,8 +4,7 @@ import org.junit.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
+import water.util.*;
 
 import java.util.Arrays;
 
@@ -111,7 +110,7 @@ public class ModelAdaptTest extends TestUtil {
 
   @Test public void testModelAdaptOneHotExplicit() {
     AModel.AParms p = new AModel.AParms();
-    p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+    p._categorical_encoding = CategoricalEncoding.Scheme.OneHotExplicit;
     p._response_column = "resp";
     AModel.AOutput o = new AModel.AOutput();
 
@@ -123,7 +122,7 @@ public class ModelAdaptTest extends TestUtil {
 
     String[] skipCols = new String[] { "resp" };
     Frame trnToEncode = new Frame(new String[] {"id", "dog", "resp"}, trn.vecs(new int[]{1, 2, 3}));
-    Frame trnEncoded = new FrameUtils.CategoricalOneHotEncoder(trnToEncode, skipCols).exec().get();
+    Frame trnEncoded = new CategoricalEncoders.CategoricalOneHotEncoder().encode(trnToEncode, skipCols);
     trnToEncode.remove();
 
     o.setNames(trnEncoded.names(), trnEncoded.typesStr());

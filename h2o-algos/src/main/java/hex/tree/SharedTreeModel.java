@@ -2,7 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.CategoricalEncoding;
-import hex.genmodel.DefaultCategoricalEncoding;
+import hex.genmodel.ICategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -41,8 +41,6 @@ public abstract class SharedTreeModel<
     System.arraycopy(vi.getRowHeaders(), 0, res, 0, n);
     return res;
   }
-
-  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees, PlattScalingHelper.ParamsWithCalibration {
 
@@ -131,6 +129,8 @@ public abstract class SharedTreeModel<
     public Parameters getParams() {
       return this;
     }
+    
+    @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
     /**
      * Do we need to enable strictly deterministic way of building histograms?
@@ -868,22 +868,22 @@ public abstract class SharedTreeModel<
   }
 
   @Override
-  public CategoricalEncoding getGenModelEncoding() {
+  public ICategoricalEncoding getGenModelEncoding() {
     switch (_parms._categorical_encoding) {
       case AUTO:
       case Enum:
       case SortByResponse:
-        return DefaultCategoricalEncoding.AUTO;
+        return CategoricalEncoding.AUTO;
       case OneHotExplicit:
-        return DefaultCategoricalEncoding.OneHotExplicit;
+        return CategoricalEncoding.OneHotExplicit;
       case Binary:
-        return DefaultCategoricalEncoding.Binary;
+        return CategoricalEncoding.Binary;
       case EnumLimited:
-        return DefaultCategoricalEncoding.EnumLimited;
+        return CategoricalEncoding.EnumLimited;
       case Eigen:
-        return DefaultCategoricalEncoding.Eigen;
+        return CategoricalEncoding.Eigen;
       case LabelEncoder:
-        return DefaultCategoricalEncoding.LabelEncoder;
+        return CategoricalEncoding.LabelEncoder;
       default:
         return null;
     }
@@ -895,7 +895,7 @@ public abstract class SharedTreeModel<
 
   @Override
   protected final PojoWriter makePojoWriter() {
-    CategoricalEncoding encoding = getGenModelEncoding();
+    ICategoricalEncoding encoding = getGenModelEncoding();
     if (encoding == null) {
       throw new IllegalArgumentException("Only default, SortByResponse, EnumLimited and 1-hot explicit scheme is supported for POJO/MOJO");
     }

@@ -1908,7 +1908,7 @@ public class DRFTest extends TestUtil {
       parms._mtries = -2;
       parms._seed = 1234;
       parms._min_split_improvement = 0;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+      parms._categorical_encoding = CategoricalEncoding.Scheme.OneHotExplicit;
 
       DRF job = new DRF(parms);
       DRFModel drf = job.trainModel().get();
@@ -2153,24 +2153,24 @@ public class DRFTest extends TestUtil {
             Scope.track(fr);
             DKV.put(fr);
 
-            Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
-                    Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
-                    Model.Parameters.CategoricalEncodingScheme.SortByResponse,
-                    Model.Parameters.CategoricalEncodingScheme.EnumLimited,
-                    Model.Parameters.CategoricalEncodingScheme.Enum,
-                    Model.Parameters.CategoricalEncodingScheme.Binary,
-                    Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
-                    Model.Parameters.CategoricalEncodingScheme.Eigen
+            CategoricalEncoding.Scheme[] supportedSchemes = {
+                    CategoricalEncoding.Scheme.OneHotExplicit,
+                    CategoricalEncoding.Scheme.SortByResponse,
+                    CategoricalEncoding.Scheme.EnumLimited,
+                    CategoricalEncoding.Scheme.Enum,
+                    CategoricalEncoding.Scheme.Binary,
+                    CategoricalEncoding.Scheme.LabelEncoder,
+                    CategoricalEncoding.Scheme.Eigen
             };
 
-            for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+            for (CategoricalEncoding.Scheme scheme : supportedSchemes) {
 
                 DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
                 parms._train = fr._key;
                 parms._response_column = response;
                 parms._ntrees = 5;
                 parms._categorical_encoding = scheme;
-                if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+                if (scheme == CategoricalEncoding.Scheme.EnumLimited) {
                     parms._max_categorical_levels = 3;
                 }
 
@@ -2251,17 +2251,17 @@ public class DRFTest extends TestUtil {
                   .withDataForCol(3, responseData)
                   .build();
 
-          Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
-                  Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
-                  Model.Parameters.CategoricalEncodingScheme.SortByResponse,
-                  Model.Parameters.CategoricalEncodingScheme.EnumLimited,
-                  Model.Parameters.CategoricalEncodingScheme.Enum,
-                  Model.Parameters.CategoricalEncodingScheme.Binary,
-                  Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
-                  Model.Parameters.CategoricalEncodingScheme.Eigen
+          CategoricalEncoding.Scheme[] supportedSchemes = {
+                  CategoricalEncoding.Scheme.OneHotExplicit,
+                  CategoricalEncoding.Scheme.SortByResponse,
+                  CategoricalEncoding.Scheme.EnumLimited,
+                  CategoricalEncoding.Scheme.Enum,
+                  CategoricalEncoding.Scheme.Binary,
+                  CategoricalEncoding.Scheme.LabelEncoder,
+                  CategoricalEncoding.Scheme.Eigen
           };
 
-          for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+          for (CategoricalEncoding.Scheme scheme : supportedSchemes) {
               DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
               parms._train = train._key;
               parms._response_column = "P";

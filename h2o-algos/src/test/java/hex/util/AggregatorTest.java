@@ -2,7 +2,6 @@ package hex.util;
 
 import hex.CreateFrame;
 import hex.DataInfo;
-import hex.Model;
 import hex.aggregator.Aggregator;
 import hex.aggregator.AggregatorModel;
 import org.junit.Assert;
@@ -14,6 +13,7 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.util.CategoricalEncoding;
 import water.util.Log;
 
 import static water.fvec.FVecFactory.makeByteVec;
@@ -67,7 +67,7 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+    parms._categorical_encoding = CategoricalEncoding.Scheme.Eigen;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
@@ -96,7 +96,7 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+    parms._categorical_encoding = CategoricalEncoding.Scheme.Eigen;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
@@ -125,7 +125,7 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Enum;
+    parms._categorical_encoding = CategoricalEncoding.Scheme.Enum;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
@@ -178,7 +178,7 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._target_num_exemplars = 5;
-    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Enum;
+    parms._categorical_encoding = CategoricalEncoding.Scheme.Enum;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
@@ -232,7 +232,7 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._target_num_exemplars = 5;
-    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
+    parms._categorical_encoding = CategoricalEncoding.Scheme.EnumLimited;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
@@ -263,7 +263,7 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._transform = DataInfo.TransformType.NORMALIZE;
-    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+    parms._categorical_encoding = CategoricalEncoding.Scheme.Binary;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
@@ -296,7 +296,7 @@ public class AggregatorTest extends TestUtil {
     parms._train = frame._key;
     parms._target_num_exemplars = 278;
     parms._transform = DataInfo.TransformType.NORMALIZE;
-    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+    parms._categorical_encoding = CategoricalEncoding.Scheme.OneHotExplicit;
     long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");

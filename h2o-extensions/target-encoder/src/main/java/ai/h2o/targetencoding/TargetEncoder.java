@@ -4,7 +4,6 @@ import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import ai.h2o.targetencoding.interaction.InteractionSupport;
-import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import org.apache.log4j.Logger;
@@ -14,6 +13,7 @@ import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.CategoricalEncoding;
 import water.util.IcedHashMap;
 
 import java.util.*;
@@ -89,7 +89,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
   }
   
   private void beforeSuperInit(boolean expensive) {
-    _parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO; // ensure this is always set to AUTO to avoid encoding categoricals before applying TE
+    _parms._categorical_encoding = CategoricalEncoding.Scheme.AUTO; // ensure this is always set to AUTO to avoid encoding categoricals before applying TE
     _parms._ignore_const_cols = false;
     if (expensive && LOG.isInfoEnabled())
       LOG.info("We don't want to ignore any columns during target encoding transformation " + 

@@ -3,7 +3,7 @@ package ai.h2o.targetencoding;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.Model;
-import hex.Model.Parameters.CategoricalEncodingScheme;
+import water.util.CategoricalEncoding.Scheme;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -24,6 +24,7 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
+import water.util.CategoricalEncoding;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -69,7 +70,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
             
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, null, teTrans, Scheme.AUTO);
             Scope.track_generic(model);
             
             int expectedCVModels = 3;  //3 folds -> 3 cv models
@@ -98,7 +99,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, valid, teTrans, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, valid, teTrans, CategoricalEncoding.Scheme.AUTO);
             Scope.track_generic(model);
 
             for (String col: ENCODED) assertTrue(ArrayUtils.contains(model._output._names, col));
@@ -122,7 +123,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.AUTO);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -156,7 +157,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, valid, teTrans, CategoricalEncodingScheme.AUTO);
+            Model model = buildModel(train, valid, teTrans, CategoricalEncoding.Scheme.AUTO);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -196,7 +197,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.Enum);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -235,7 +236,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -274,7 +275,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.Enum);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -313,7 +314,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -352,7 +353,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.Enum);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -391,7 +392,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -430,7 +431,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.Enum);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -469,7 +470,7 @@ public class TargetEncoderTransformerTest {
             TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
             Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -563,7 +564,7 @@ public class TargetEncoderTransformerTest {
         return te.trainModel().get();
     }
 
-    private Model buildModel(Frame train, Frame valid, TargetEncoderTransformer preprocessor, CategoricalEncodingScheme categoricalEncoding) {
+    private Model buildModel(Frame train, Frame valid, TargetEncoderTransformer preprocessor, CategoricalEncoding.Scheme categoricalEncoding) {
         GBMModel.GBMParameters params = new GBMModel.GBMParameters();
         params._seed = 987;
         params._train = train._key;
@@ -626,7 +627,7 @@ public class TargetEncoderTransformerTest {
             Scope.enter();
             Frame train = makeTrainFrame(true); //without the fold column, the test pass: reordering issue
 
-            Model model = buildModel(train, null, null, CategoricalEncodingScheme.OneHotExplicit);
+            Model model = buildModel(train, null, null, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");

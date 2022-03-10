@@ -4,7 +4,7 @@ import hex.Distribution;
 import hex.DistributionFactory;
 import hex.LinkFunction;
 import hex.Model;
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.ICategoricalEncoding;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.CompressedTree;
 import hex.tree.SharedTreePojoWriter;
@@ -27,7 +27,7 @@ class GbmPojoWriter extends SharedTreePojoWriter {
         _link_function = distribution._linkFunction;
     }
 
-    GbmPojoWriter(Model<?, ?, ?> model, CategoricalEncoding encoding,
+    GbmPojoWriter(Model<?, ?, ?> model, ICategoricalEncoding encoding,
                   boolean binomialOpt, CompressedTree[][] trees,
                   double initF, boolean balanceClasses,
                   DistributionFamily distributionFamily, LinkFunction linkFunction) {

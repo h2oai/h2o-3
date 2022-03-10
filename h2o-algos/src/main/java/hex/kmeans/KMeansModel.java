@@ -15,6 +15,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
+import water.util.CategoricalEncoding;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
@@ -23,7 +24,6 @@ import java.util.Arrays;
 import static hex.genmodel.GenModel.Kmeans_preprocessData;
 
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   public static class KMeansParameters extends ClusteringModel.ClusteringParameters {
     public String algoName() { return "KMeans"; }
@@ -38,7 +38,8 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
     public boolean _estimate_k = false;       // If enabled, iteratively find up to _k clusters
     public int[] _cluster_size_constraints = null;
-
+    
+    @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
@@ -77,7 +78,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
   public void initActualParamValues() {
     super.initActualParamValues();
     EffectiveParametersUtils.initFoldAssignment(_parms);
-    EffectiveParametersUtils.initCategoricalEncoding(_parms, Model.Parameters.CategoricalEncodingScheme.Enum);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, CategoricalEncoding.Scheme.Enum);
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {

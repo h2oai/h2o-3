@@ -24,7 +24,13 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
-  public ToEigenVec getToEigenVec() { return null; }
+  /**
+   * @deprecated 
+   * Use {@link _parms.getToEigenVec()} instead
+   */
+  @Deprecated
+  public ToEigenVec getToEigenVec() { return _parms == null ? null : _parms.getToEigenVec(); }
+  
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
 
   // initialized to be non-null to provide nicer exceptions when used incorrectly (instead of NPE)
@@ -1643,7 +1649,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (restructured)
         _train.restructure(_train.names(), vecs);
     }
-    boolean names_may_differ = _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary;
+    boolean names_may_differ = _parms._categorical_encoding == CategoricalEncoding.Scheme.Binary;
     boolean names_differ = _valid !=null && ArrayUtils.difference(_train._names, _valid._names).length != 0;;
     assert (!expensive || names_may_differ || !names_differ);
     if (names_differ && names_may_differ) {
@@ -1766,15 +1772,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (!scopeTrack) Scope.untrack(result); // otherwise encoded frame is fully removed on CV model completion, raising exception when computing CV scores.
     return result;
   }
-
+  
   private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
-    Frame encoded = FrameUtils.categoricalEncoder(
-            fr, 
-            _parms.getNonPredictors(),
-            _parms._categorical_encoding, 
-            getToEigenVec(), 
-            _parms._max_categorical_levels
-    );
+    Frame encoded = CategoricalEncoding.newEncoder(_parms._categorical_encoding, _parms).encode(fr, _parms.getNonPredictors());
     if (encoded != fr) trackEncoded(encoded, scopeTrack);
     return encoded;
   }

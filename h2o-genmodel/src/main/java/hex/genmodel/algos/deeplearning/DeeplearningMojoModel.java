@@ -2,8 +2,8 @@ package hex.genmodel.algos.deeplearning;
 
 import hex.ModelCategory;
 import hex.genmodel.CategoricalEncoding;
-import hex.genmodel.DefaultCategoricalEncoding;
 import hex.genmodel.GenModel;
+import hex.genmodel.ICategoricalEncoding;
 import hex.genmodel.MojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import java.io.Serializable;
@@ -193,18 +193,18 @@ public class DeeplearningMojoModel extends MojoModel {
   }
   
   @Override
-  public CategoricalEncoding getCategoricalEncoding() {
+  public ICategoricalEncoding getCategoricalEncoding() {
     switch (_genmodel_encoding) {
       case "AUTO":
       case "SortByResponse":
       case "OneHotInternal":
-        return DefaultCategoricalEncoding.AUTO;
+        return CategoricalEncoding.AUTO;
       case "Binary":
-        return DefaultCategoricalEncoding.Binary;
+        return CategoricalEncoding.Binary;
       case "Eigen":
-        return DefaultCategoricalEncoding.Eigen;
+        return CategoricalEncoding.Eigen;
       case "LabelEncoder":
-        return DefaultCategoricalEncoding.LabelEncoder;
+        return CategoricalEncoding.LabelEncoder;
       default:
         return null;
     }

@@ -19,11 +19,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
     public enum ModelType {RULES, RULES_AND_LINEAR, LINEAR}
 
-    @Override
-    public ToEigenVec getToEigenVec() {
-        return LinearAlgebraUtils.toEigen;
-    }
-
     GLMModel glmModel;
 
     RuleEnsemble ruleEnsemble;
@@ -77,6 +72,11 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
                 rfit.error("min_rule_length", "min_rule_length cannot be greater than max_rule_length. Current values:  min_rule_length = " + rfit._parms._min_rule_length
                         + ", max_rule_length = " + rfit._parms._max_rule_length + ".");
             }
+        }
+        
+        @Override
+        public ToEigenVec getToEigenVec() {
+            return LinearAlgebraUtils.toEigen;
         }
     }
 

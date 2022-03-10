@@ -2,14 +2,13 @@ package hex.tree.isofor;
 
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.utils.ArrayUtils;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Frame;
-import water.util.SBPrintStream;
+import water.util.CategoricalEncoding;
 import water.util.TwoDimTable;
 
 
@@ -105,8 +104,8 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
         _parms._stopping_metric = ScoreKeeper.StoppingMetric.anomaly_score;
       }
     }
-    if (_parms._categorical_encoding == Parameters.CategoricalEncodingScheme.AUTO) {
-      _parms._categorical_encoding = Parameters.CategoricalEncodingScheme.Enum;
+    if (_parms._categorical_encoding == CategoricalEncoding.Scheme.AUTO) {
+      _parms._categorical_encoding = CategoricalEncoding.Scheme.Enum;
     }
   }
 

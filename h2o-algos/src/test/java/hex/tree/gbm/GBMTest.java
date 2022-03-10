@@ -173,24 +173,24 @@ public class GBMTest extends TestUtil {
       Scope.track(fr);
       DKV.put(fr);
 
-      Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
-              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
-              Model.Parameters.CategoricalEncodingScheme.SortByResponse,
-              Model.Parameters.CategoricalEncodingScheme.EnumLimited,
-              Model.Parameters.CategoricalEncodingScheme.Enum,
-              Model.Parameters.CategoricalEncodingScheme.Binary,
-              Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
-              Model.Parameters.CategoricalEncodingScheme.Eigen
+      CategoricalEncoding.Scheme[] supportedSchemes = {
+              CategoricalEncoding.Scheme.OneHotExplicit,
+              CategoricalEncoding.Scheme.SortByResponse,
+              CategoricalEncoding.Scheme.EnumLimited,
+              CategoricalEncoding.Scheme.Enum,
+              CategoricalEncoding.Scheme.Binary,
+              CategoricalEncoding.Scheme.LabelEncoder,
+              CategoricalEncoding.Scheme.Eigen
       };
       
-      for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+      for (CategoricalEncoding.Scheme scheme : supportedSchemes) {
 
         GBMModel.GBMParameters parms = makeGBMParameters();
         parms._train = fr._key;
         parms._response_column = response;
         parms._ntrees = 5;
         parms._categorical_encoding = scheme;
-        if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+        if (scheme == CategoricalEncoding.Scheme.EnumLimited) {
           parms._max_categorical_levels = 3;
         }
 
@@ -3371,8 +3371,8 @@ public class GBMTest extends TestUtil {
 
   @Test
   public void testCatEncoding() {
-    for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
-      if (c != Model.Parameters.CategoricalEncodingScheme.AUTO) continue;
+    for (CategoricalEncoding.Scheme c : CategoricalEncoding.Scheme.values()) {
+      if (c != CategoricalEncoding.Scheme.AUTO) continue;
       Frame tfr = null;
       GBMModel gbm = null;
       Frame fr2 = null;
@@ -3401,8 +3401,8 @@ public class GBMTest extends TestUtil {
 
   @Test
   public void testCatEncodingCV() {
-    for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
-      if (c != Model.Parameters.CategoricalEncodingScheme.AUTO) continue;
+    for (CategoricalEncoding.Scheme c : CategoricalEncoding.Scheme.values()) {
+      if (c != CategoricalEncoding.Scheme.AUTO) continue;
       Frame tfr = null;
       GBMModel gbm = null;
 
@@ -3620,7 +3620,7 @@ public class GBMTest extends TestUtil {
           parms._learn_rate = 1;
           parms._nbins_cats = nbins_cats;
           if (sort_cats)
-            parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.SortByResponse;
+            parms._categorical_encoding = CategoricalEncoding.Scheme.SortByResponse;
 
           GBM job = new GBM(parms);
           model = job.trainModel().get();

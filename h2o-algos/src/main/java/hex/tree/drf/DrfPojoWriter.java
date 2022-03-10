@@ -1,7 +1,7 @@
 package hex.tree.drf;
 
 import hex.Model;
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.ICategoricalEncoding;
 import hex.tree.CompressedTree;
 import hex.tree.SharedTreePojoWriter;
 import water.util.SBPrintStream;
@@ -16,7 +16,7 @@ class DrfPojoWriter extends SharedTreePojoWriter {
         _balance_classes = model._parms._balance_classes;
     }
 
-    DrfPojoWriter(Model<?, ?, ?> model, CategoricalEncoding encoding,
+    DrfPojoWriter(Model<?, ?, ?> model, ICategoricalEncoding encoding,
                   boolean binomialOpt, CompressedTree[][] trees,
                   boolean balanceClasses) {
         super(model._key, model._output, encoding, binomialOpt, trees, null);

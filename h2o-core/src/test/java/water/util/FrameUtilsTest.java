@@ -1,22 +1,16 @@
 package water.util;
 
 import hex.CreateFrame;
-import hex.Model;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.FrameTestUtil;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-
-import java.util.ArrayList;
-import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -68,8 +62,7 @@ public class FrameUtilsTest extends TestUtil {
         auxFrames[i]._names[0] = catNames[i];
         mainFrame.add(auxFrames[i]);
       }
-      FrameUtils.CategoricalBinaryEncoder cbed = new FrameUtils.CategoricalBinaryEncoder(mainFrame, null);
-      transformedFrame = cbed.exec().get();
+      transformedFrame = new CategoricalEncoders.CategoricalBinaryEncoder().encode(mainFrame);
       assert transformedFrame != null : "Unable to transform a frame";
 
       Assert.assertEquals("Wrong number of columns after converting to binary encoding",
@@ -112,8 +105,7 @@ public class FrameUtilsTest extends TestUtil {
               .withDataForCol(2, ar("A", "B", "A", "C", null, "B", "A"))
               .withChunkLayout(2, 2, 2, 1)
               .build();
-      Frame result = FrameUtils.categoricalEncoder(f, new String[]{"CatCol1"},
-              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, null, -1);
+      Frame result = new CategoricalEncoders.CategoricalOneHotEncoder().encode(f, new String[]{"CatCol1"});
       Scope.track(result);
       assertArrayEquals(
               new String[]{"NumCol", "CatCol2.A", "CatCol2.B", "CatCol2.C", "CatCol2.missing(NA)", "CatCol1"},
@@ -166,8 +158,7 @@ public class FrameUtilsTest extends TestUtil {
       Scope.track(fr);
       fr.toCategoricalCol("AGE");
       
-      Frame enc = FrameUtils.categoricalEncoder(
-              fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 5);
+      Frame enc = new CategoricalEncoders.CategoricalEnumLimitedEncoder(5).encode(fr);
       Scope.track(enc);
       
       System.out.println(enc.toTwoDimTable());
@@ -188,8 +179,7 @@ public class FrameUtilsTest extends TestUtil {
               .withDataForCol(0, new String[]{null, null, null, null, "c", "c", "c", "b", "b", "a"})
               .build();
 
-      Frame enc = FrameUtils.categoricalEncoder(
-              fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 2);
+      Frame enc = new CategoricalEncoders.CategoricalEnumLimitedEncoder(2).encode(fr);
       Scope.track(enc);
 
       System.out.println(enc.toTwoDimTable());

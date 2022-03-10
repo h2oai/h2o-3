@@ -2082,7 +2082,7 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{20,20};
       parms._seed = 0xdecaf;
       parms._nfolds = 3;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+      parms._categorical_encoding = CategoricalEncoding.Scheme.Binary;
 
       dl = new DeepLearning(parms).trainModel().get();
 
@@ -2129,7 +2129,7 @@ public class DeepLearningTest extends TestUtil {
       parms._reproducible = true;
       parms._hidden = new int[]{20,20};
       parms._seed = 0xdecaf;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+      parms._categorical_encoding = CategoricalEncoding.Scheme.Eigen;
       parms._score_training_samples = 0;
 
       dl = new DeepLearning(parms).trainModel().get();
@@ -2167,7 +2167,7 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{20,20};
       parms._seed = 0xdecaf;
       parms._nfolds = 3;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+      parms._categorical_encoding = CategoricalEncoding.Scheme.Eigen;
       parms._score_training_samples = 0;
 
       dl = new DeepLearning(parms).trainModel().get();
@@ -2209,7 +2209,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._nfolds = 3;
       parms._distribution = huber;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+      parms._categorical_encoding = CategoricalEncoding.Scheme.Binary;
 
       dl = new DeepLearning(parms).trainModel().get();
 
@@ -2231,7 +2231,7 @@ public class DeepLearningTest extends TestUtil {
       parms2._nfolds = 3;
       parms2._distribution = AUTO;
       parms2._loss = DeepLearningParameters.Loss.Huber;
-      parms2._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+      parms2._categorical_encoding = CategoricalEncoding.Scheme.Binary;
 
       dl2 = new DeepLearning(parms2).trainModel().get();
 
@@ -2485,9 +2485,7 @@ public class DeepLearningTest extends TestUtil {
       }
       Log.info(mainFrame, 0, 100);
 
-      FrameUtils.CategoricalEigenEncoder cbed =
-              new FrameUtils.CategoricalEigenEncoder(new DeepLearning(new DeepLearningParameters()).getToEigenVec(), mainFrame, null);
-      transformedFrame = cbed.exec().get();
+      transformedFrame =  new CategoricalEncoders.CategoricalEigenEncoder(new DeepLearningParameters()).encode(mainFrame);
       assert transformedFrame != null : "Unable to transform a frame";
 
       Assert.assertEquals("Wrong number of columns after converting to eigen encoding",
@@ -2774,16 +2772,16 @@ public class DeepLearningTest extends TestUtil {
           Scope.track(fr);
           DKV.put(fr);
     
-          Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
-                  Model.Parameters.CategoricalEncodingScheme.AUTO,
-                  Model.Parameters.CategoricalEncodingScheme.OneHotInternal,
-                  Model.Parameters.CategoricalEncodingScheme.SortByResponse,
-                  Model.Parameters.CategoricalEncodingScheme.Binary,
-                  Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
-                  Model.Parameters.CategoricalEncodingScheme.Eigen
+          CategoricalEncoding.Scheme[] supportedSchemes = {
+                  CategoricalEncoding.Scheme.AUTO,
+                  CategoricalEncoding.Scheme.OneHotInternal,
+                  CategoricalEncoding.Scheme.SortByResponse,
+                  CategoricalEncoding.Scheme.Binary,
+                  CategoricalEncoding.Scheme.LabelEncoder,
+                  CategoricalEncoding.Scheme.Eigen
           };
     
-          for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+          for (CategoricalEncoding.Scheme scheme : supportedSchemes) {
     
               DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
               parms._train = fr._key;

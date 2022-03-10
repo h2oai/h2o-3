@@ -9,10 +9,10 @@ import java.util.Map;
 public class CategoricalEncodingAsDataTransformer implements MojoTransformer.DataTransformer {
 
     private final GenModel _transformerModel;
-    private final CategoricalEncoding _categoricalEncoding;
+    private final ICategoricalEncoding _categoricalEncoding;
     private final MojoModel _model;
     
-    public CategoricalEncodingAsDataTransformer(GenModel transformerModel, MojoModel model, CategoricalEncoding categoricalEncoding) {
+    public CategoricalEncodingAsDataTransformer(GenModel transformerModel, MojoModel model, ICategoricalEncoding categoricalEncoding) {
         _transformerModel = transformerModel;
         _categoricalEncoding = categoricalEncoding;
         _model = model;

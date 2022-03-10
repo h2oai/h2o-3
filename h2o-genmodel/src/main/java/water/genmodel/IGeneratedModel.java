@@ -1,6 +1,6 @@
 package water.genmodel;
 
-import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.ICategoricalEncoding;
 
 /**
  * A generic interface to access generated models.
@@ -40,7 +40,7 @@ public interface IGeneratedModel {
      */
     public int getNumResponseClasses();
 
-    public CategoricalEncoding getCategoricalEncoding();
+    public ICategoricalEncoding getCategoricalEncoding();
 
     /** @return true if this model represents a classifier, else it is used for regression. */
     public boolean isClassifier();

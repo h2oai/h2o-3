@@ -25,6 +25,7 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.CategoricalEncoding;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
@@ -794,8 +795,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   private boolean unsupportedCategoricalEncoding() {
-    return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Enum ||
-            _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Eigen;
+    return _parms._categorical_encoding == CategoricalEncoding.Scheme.Enum ||
+            _parms._categorical_encoding == CategoricalEncoding.Scheme.Eigen;
   }
 
 }

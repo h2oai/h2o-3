@@ -1,6 +1,5 @@
 package hex.tree.xgboost;
 
-import hex.Model;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.attributes.parameters.ModelParameter;
 import org.junit.Assert;
@@ -14,6 +13,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.CategoricalEncoding;
 
 import java.util.Map;
 
@@ -121,7 +121,7 @@ public class XGBoostModelTest {
       parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
       parms._interaction_constraints = new String[][]{new String[]{"fYear", "fMonth"}, new String[]{"Origin", "Distance"}};
       parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
+      parms._categorical_encoding = CategoricalEncoding.Scheme.AUTO;
       parms._ntrees = 5;
 
       final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();

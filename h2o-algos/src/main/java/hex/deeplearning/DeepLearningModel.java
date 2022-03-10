@@ -2,7 +2,7 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.genmodel.CategoricalEncoding;
-import hex.genmodel.DefaultCategoricalEncoding;
+import hex.genmodel.ICategoricalEncoding;
 import hex.genmodel.utils.DistributionFamily;
 import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
@@ -33,10 +33,6 @@ import static water.H2O.technote;
  */
 
 public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
-  @Override public ToEigenVec getToEigenVec() {
-    return LinearAlgebraUtils.toEigen;
-  }
-
   /**
    * The Deep Learning model output contains a few extra fields in addition to the metrics in Model.Output
    * 1) Scoring history (raw data)
@@ -952,7 +948,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info());
     final DeepLearningParameters p = model_info.get_params();
-    CategoricalEncoding encoding = getGenModelEncoding();
+    ICategoricalEncoding encoding = getGenModelEncoding();
     if (encoding == null) {
       throw new IllegalArgumentException("Only default, OneHotInternal, Binary, Eigen, LabelEncoder and SortByResponse categorical_encoding scheme is supported for POJO/MOJO");
     }
@@ -960,11 +956,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
     sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
     sb.ip("public int nclasses() { return "+ (p._autoencoder ? neurons[neurons.length-1].units : _output.nclasses()) + "; }").nl();
-    if (encoding != DefaultCategoricalEncoding.AUTO) {
-      sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." +
+    if (encoding != hex.genmodel.CategoricalEncoding.AUTO) {
+      sb.ip("public hex.genmodel.ICategoricalEncoding getCategoricalEncoding() { return hex.genmodel.ICategoricalEncoding." +
               encoding.name() + "; }").nl();
     }
-    if (encoding == DefaultCategoricalEncoding.Eigen) {
+    if (encoding == CategoricalEncoding.Eigen) {
       sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
     }
     if (model_info().data_info()._nums > 0) {
@@ -1714,6 +1710,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       Automatic, Quadratic, CrossEntropy, ModifiedHuber, Huber, Absolute, Quantile
     }
 
+    @Override public ToEigenVec getToEigenVec() {
+      return LinearAlgebraUtils.toEigen;
+    }
+
     /**
      * Validate model parameters
      * @param dl DL Model Builder (Driver)
@@ -1746,10 +1746,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           dl.error("_nfolds", "N-fold cross-validation is not supported for Autoencoder.");
         }
       }
-      if (_categorical_encoding==CategoricalEncodingScheme.Enum) {
+      if (_categorical_encoding== water.util.CategoricalEncoding.Scheme.Enum) {
         dl.error("_categorical_encoding", "Cannot use Enum encoding for categoricals - need numbers!");
       }
-      if (_categorical_encoding==CategoricalEncodingScheme.OneHotExplicit) {
+      if (_categorical_encoding== water.util.CategoricalEncoding.Scheme.OneHotExplicit) {
         dl.error("_categorical_encoding", "Won't use explicit Enum encoding for categoricals - it's much faster with OneHotInternal!");
       }
       if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
@@ -2151,10 +2151,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;
         }
-        if (fromParms._categorical_encoding==CategoricalEncodingScheme.AUTO) {
+        if (fromParms._categorical_encoding== water.util.CategoricalEncoding.Scheme.AUTO) {
           if (!fromParms._quiet_mode)
             Log.info("_categorical_encoding: Automatically enabling OneHotInternal categorical encoding.");
-          toParms._categorical_encoding = CategoricalEncodingScheme.OneHotInternal;
+          toParms._categorical_encoding = water.util.CategoricalEncoding.Scheme.OneHotInternal;
          }
         if (fromParms._mini_batch_size > 1) {
           Log.warn("_mini_batch_size", "Only mini-batch size = 1 is supported right now.");
@@ -2294,18 +2294,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     return super.isDistributionHuber() || get_params()._distribution == DistributionFamily.huber;
   }
 
-  @Override protected CategoricalEncoding getGenModelEncoding() {
+  @Override protected ICategoricalEncoding getGenModelEncoding() {
     switch (_parms._categorical_encoding) {
       case AUTO:
       case SortByResponse:
       case OneHotInternal:
-        return DefaultCategoricalEncoding.AUTO;
+        return CategoricalEncoding.AUTO;
       case Binary:
-        return DefaultCategoricalEncoding.Binary;
+        return CategoricalEncoding.Binary;
       case Eigen:
-        return DefaultCategoricalEncoding.Eigen;
+        return CategoricalEncoding.Eigen;
       case LabelEncoder:
-        return DefaultCategoricalEncoding.LabelEncoder;
+        return CategoricalEncoding.LabelEncoder;
       default:
         return null;
     }

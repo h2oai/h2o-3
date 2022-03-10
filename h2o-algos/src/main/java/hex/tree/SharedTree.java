@@ -38,7 +38,7 @@ public abstract class SharedTree<
   private static final boolean DEBUG_PUBDEV_6686 = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.pubdev6686");
 
   public boolean shouldReorder(Vec v) {
-    return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse
+    return _parms._categorical_encoding == CategoricalEncoding.Scheme.SortByResponse
            && v.cardinality() > _parms._nbins_cats;  // no need to sort categoricals with fewer than nbins_cats - they will be sorted in every leaf anyway
   }
 
@@ -104,11 +104,6 @@ public abstract class SharedTree<
   @Override protected boolean computePriorClassDistribution(){ return true;}
 
   @Override
-  public ToEigenVec getToEigenVec() {
-    return LinearAlgebraUtils.toEigen;
-  }
-
-  @Override
   protected void ignoreInvalidColumns(int npredictors, boolean expensive) {
     // Drop invalid columns
     new FilterCols(npredictors) {
@@ -133,7 +128,7 @@ public abstract class SharedTree<
     if( _parms._min_rows < 0 )
       error("_min_rows", "Requested min_rows must be greater than 0");
 
-    if (_parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) {
+    if (_parms._categorical_encoding == CategoricalEncoding.Scheme.OneHotInternal) {
       error("_categorical_encoding", "Cannot use OneHotInternal categorical encoding for tree methods.");
     }
 

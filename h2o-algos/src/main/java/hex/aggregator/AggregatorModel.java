@@ -17,11 +17,6 @@ import java.util.Arrays;
 
 public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> implements Model.ExemplarMembers {
 
-  @Override
-  public ToEigenVec getToEigenVec() {
-    return LinearAlgebraUtils.toEigen;
-  }
-
   public static class AggregatorParameters extends Model.Parameters {
     public String algoName() { return "Aggregator"; }
     public String fullName() { return "Aggregator"; }
@@ -38,6 +33,11 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
     public boolean _save_mapping_frame = false;
     public int _num_iteration_without_new_exemplar = 500;
+    
+    @Override
+    public ToEigenVec getToEigenVec() {
+      return LinearAlgebraUtils.toEigen;
+    }
   }
 
   public static class AggregatorOutput extends Model.Output {

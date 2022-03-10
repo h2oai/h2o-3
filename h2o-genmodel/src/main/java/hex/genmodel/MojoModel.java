@@ -93,7 +93,7 @@ public abstract class MojoModel extends GenModel {
    * leading underscore required for MOJO compatibility 
    * as this method is not part of API, but called directly by EasyPredictModelWRapper.
    */
-  public RowToRawDataConverter _makeRowConverter(CategoricalEncoding categoricalEncoding,
+  public RowToRawDataConverter _makeRowConverter(ICategoricalEncoding categoricalEncoding,
                                                  ErrorConsumer errorConsumer,
                                                  Config config) {
     if (_transformers != null) {

@@ -185,7 +185,7 @@ class TargetEncoderAsModelProcessor implements MojoTransformer.DataTransformer {
     }
 
     /**
-     *  This virtual model is used to "trick" further transformers and especially CategoricalEncoding
+     *  This virtual model is used to "trick" further transformers and especially ICategoricalEncoding
      *  to provide it with a model/frame description that looks as if TE was already applied.
      */
     private static class VirtualTargetEncodedModel extends GenModel {

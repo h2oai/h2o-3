@@ -5,6 +5,7 @@ import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
 import water.Key;
 import water.fvec.NewChunk;
+import water.util.CategoricalEncoding;
 import water.util.MathUtils;
 
 public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
@@ -37,7 +38,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     super.initActualParamValues();
     EffectiveParametersUtils.initFoldAssignment(_parms);
     EffectiveParametersUtils.initHistogramType(_parms);
-    EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, CategoricalEncoding.Scheme.Enum);
   }
 
   public void initActualParamValuesAfterOutputSetup(boolean isClassifier) {

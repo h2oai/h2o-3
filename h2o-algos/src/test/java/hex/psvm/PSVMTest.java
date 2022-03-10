@@ -10,7 +10,9 @@ import water.*;
 import water.fvec.*;
 import water.rapids.ast.prims.math.AstSgn;
 import water.test.util.ConfusionMatrixUtils;
-import water.util.FrameUtils;
+import water.util.CategoricalEncoder;
+import water.util.CategoricalEncoders;
+import water.util.CategoricalEncoding;
 
 import static org.junit.Assert.*;
 
@@ -148,7 +150,7 @@ public class PSVMTest extends TestUtil {
 
         if (encode) {
           fr.insertVec(0, "RACE", fr.remove("RACE"));
-          Frame encoded = new FrameUtils.CategoricalOneHotEncoder(fr, new String[]{"CAPSULE"}).exec().get();
+          Frame encoded = new CategoricalEncoders.CategoricalOneHotEncoder().encode(fr, new String[]{"CAPSULE"});
           Scope.track(encoded);
           
           fr = encoded;

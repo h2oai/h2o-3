@@ -21,6 +21,7 @@ import water.fvec.Vec;
 import water.parser.ParseSetup;
 import water.test.util.ConfusionMatrixUtils;
 import water.util.ArrayUtils;
+import water.util.CategoricalEncoding;
 
 import java.io.File;
 import java.util.Random;
@@ -367,12 +368,12 @@ public class IsolationForestTest extends TestUtil {
             Scope.track(fr);
             DKV.put(fr);
 
-            Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
-                    Model.Parameters.CategoricalEncodingScheme.AUTO,
+            CategoricalEncoding.Scheme[] supportedSchemes = {
+                    CategoricalEncoding.Scheme.AUTO,
                     // TODO EnumLimited, Binary, LabelEncoder, Eigen in PUBDEV-7612
             };
 
-            for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+            for (CategoricalEncoding.Scheme scheme : supportedSchemes) {
 
                 IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
                 parms._train = fr._key;

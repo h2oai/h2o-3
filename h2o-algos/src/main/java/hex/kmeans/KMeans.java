@@ -24,7 +24,6 @@ import static hex.genmodel.GenModel.Kmeans_preprocessData;
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
 public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
   // Convergence tolerance
   final static private double TOLERANCE = 1e-4;
 
