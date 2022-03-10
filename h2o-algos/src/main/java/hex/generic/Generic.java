@@ -31,6 +31,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         allowedAlgos.add("glm");
         allowedAlgos.add("xgboost");
         allowedAlgos.add("isolationforest");
+        allowedAlgos.add("extendedisolationforest");
         allowedAlgos.add("drf");
         allowedAlgos.add("deeplearning");
         allowedAlgos.add("stackedensemble");
