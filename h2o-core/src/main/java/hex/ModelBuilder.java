@@ -533,11 +533,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected int nModelsInParallel(int folds, int defaultParallelization) {
     if (!_parms._parallelize_cross_validation) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
     int parallelization = defaultParallelization;
-    if (_train.byteSize() < 1e6) 
+    if (isSmallData()) 
       parallelization = folds; //for small data, parallelize over CV models
     return Math.min(parallelization, H2O.ARGS.nthreads);
   }
 
+  protected boolean isSmallData() {
+    return _train.byteSize() < 1e6;
+  }
+  
   private double maxRuntimeSecsPerModel(int cvModelsCount, int parallelization) {
     return cvModelsCount > 0
         ? _parms._max_runtime_secs / Math.ceil((double)cvModelsCount / parallelization + 1)
@@ -608,6 +612,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     ModelBuilder<M, P, O>[] cvModelBuilders = null;
     try {
       Scope.enter();
+      final int parallelization = nModelsInParallel(N);
 
       // Step 1: Assign each row to a fold
       final FoldAssignment foldAssignment = cv_AssignFold(N);
@@ -616,12 +621,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final Vec[] weights = cv_makeWeights(N, foldAssignment);
 
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-      cvModelBuilders = cv_makeFramesAndBuilders(N, weights);
+      cvModelBuilders = cv_makeFramesAndBuilders(N, parallelization, weights);
 
       // Step 4: Run all the CV models (and optionally train the main model in parallel to the CV training)
       final boolean buildMainModel;
       if (useParallelMainModelBuilding(N)) {
-        int parallelization = nModelsInParallel(N);
         Log.info(_desc + " will be trained in parallel to the Cross-Validation models " +
                 "(up to " + parallelization + " models running at the same time).");
         BlockingQueue<ModelTrainingEventsPublisher.Event> events = new LinkedBlockingQueue<>();
@@ -635,7 +639,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         new SubModelBuilder(_job, builders, parallelization).bulkBuildModels();
         buildMainModel = false;
       } else {
-        cv_buildModels(N, cvModelBuilders);
+        cv_buildModels(cvModelBuilders, parallelization);
         buildMainModel = true;
       }
       
@@ -741,7 +745,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  private ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
+  private ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders(int N, int parallelization, Vec[] weights) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
@@ -753,7 +757,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     List<Frame> cvFramesForFailedModels = new ArrayList<>();
-    double cv_max_runtime_secs = maxRuntimeSecsPerModel(N, nModelsInParallel(N));
+    double cv_max_runtime_secs = maxRuntimeSecsPerModel(N, parallelization);
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
@@ -773,6 +777,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
       cv_mb._parms._is_cv_model = true;
+      // For small data save the parallelization level, give the model builder chance to adjust resource usage
+      // use case: xgboost - more threads working on little amount of data is inefficient 
+      //           for very small it is better to have 1 thread working and the CV models itself run in parallel
+      //           (CV models are built independently, however building 1 model in multiple thread introduces overhead,
+      //            the overhead has to be worth it - which doesn't hold on small data)
+      cv_mb._parms._cv_parallelization = isSmallData() ? parallelization : 0;
       cv_mb._parms._cv_fold = i;
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
       cv_mb._parms.setTrain(cvTrain._key);       // All submodels have a weight column, which the main model does not
@@ -814,8 +824,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 4: Run all the CV models and launch the main model
-  public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    makeCVModelBuilder(cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
+  private void cv_buildModels(ModelBuilder<M, P, O>[] cvModelBuilders, int parallelization) {
+    makeCVModelBuilder(cvModelBuilders, parallelization).bulkBuildModels();
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
   

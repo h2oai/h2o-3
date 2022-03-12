@@ -407,8 +407,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Check for constant response
     public boolean _check_constant_response = true;
 
-    public boolean _is_cv_model; //internal helper
-    public int _cv_fold = -1; //internal use
+    // Internal use
+    public boolean _is_cv_model; 
+    public int _cv_parallelization; // maximum number of models that will be running in parallel, can be 0 (meaning: don't restrict the resources) 
+    public int _cv_fold = -1;
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only

@@ -442,10 +442,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     assert ObjectiveType.fromXGBoost((String) params.get("objective")) != null;
 
     final int nthreadMax = getMaxNThread();
-    final int nthread = p._nthread != -1 ? Math.min(p._nthread, nthreadMax) : nthreadMax;
-    if (nthread < p._nthread) {
-      LOG.warn("Requested nthread=" + p._nthread + " but the cluster has only " + nthreadMax + " available." +
-              "Training will use nthread=" + nthread + " instead of the user specified value.");
+    final int nthread;
+    if (p._nthread == -1) { // auto
+      nthread = p._is_cv_model && p._cv_parallelization > 0 ? 
+              Math.max(nthreadMax / p._cv_parallelization, 1) : nthreadMax; 
+    } else { // user given
+      nthread = Math.min(p._nthread, nthreadMax);
+      if (nthread < p._nthread) {
+        LOG.warn("Requested nthread=" + p._nthread + " but the cluster has only " + nthreadMax + " available." +
+                "Training will use nthread=" + nthread + " instead of the user specified value.");
+      }
     }
     params.put("nthread", nthread);
 
