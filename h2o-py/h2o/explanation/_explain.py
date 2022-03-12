@@ -1289,7 +1289,7 @@ def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
         warnings.warn(msg)
         return tmp
     else:
-        user_splits[column] = [orig_value]
+        user_splits[column] = [str(orig_value)] if is_factor else [orig_value]
         orig_tmp = NumpyFrame(
             model.partial_plot(
                 frame,
@@ -1411,8 +1411,7 @@ def ice_plot(
 
         plt.figure(figsize=figsize)
 
-        deciles = [int(round(frame.nrow * dec / 10)) for dec in range(11)]
-        deciles[10] = frame.nrow - 1
+        deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
         colors = plt.get_cmap(colormap, 11)(list(range(11)))
         for i, index in enumerate(deciles):
             percentile_string = "{}th Percentile".format(i * 10)
