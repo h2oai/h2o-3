@@ -2262,7 +2262,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
             "explained_deviance_valid": x["explained_deviance_valid"],
             "coefficients": [dict(zip(ns, y)) for y in x["coefficients"]],
         }
-        if "coefficients_std" in x:
+        if "coefficients_std" in x and not(x["coefficients_std"] == None):
             res["coefficients_std"] = [dict(zip(ns, y)) for y in x["coefficients_std"]]
         return res
 
