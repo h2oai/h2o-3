@@ -81,8 +81,9 @@ def test_handle_orig_values():
                     )[0]
                 )
                 encoded_col = tmp.columns[0]
+                factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column)) if is_factor else None
                 orig_value_prediction = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, gbm,
-                                                            frame, index, column, colors[i], percentile_string)
+                                                            frame, index, column, colors[i], percentile_string, factor_map)
 
                 if (is_factor and math.isnan(factor_map([frame[index, column]])[0])) or (not is_factor and math.isnan(frame[index, column])):
                     orig_test_value = orig_value_prediction["mean_response"][orig_value_prediction.nrow - 1]
