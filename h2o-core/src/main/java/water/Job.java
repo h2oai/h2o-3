@@ -7,6 +7,7 @@ import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
@@ -480,4 +481,45 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       }
   }
   @Override public Class<KeyV3.JobKeyV3> makeSchema() { return KeyV3.JobKeyV3.class; }
+
+  /**
+   * Tries to retrieve a completed Job from DKV. It will wait
+   * up to given timeout period if the requested job is still running - giving it
+   * a chance to complete before this method has to return.
+   * 
+   * @param key job key
+   * @param timeMillis timeout period in milliseconds, if job is still running it will wait
+   *                   up to this amount of time for the job to finish
+   * @return null, if job doesn't exist, a Job instance otherwise
+   */
+  public static Job<?> tryGetDoneJob(Key<Job> key, long timeMillis) {
+    final Value val = DKV.get(key);
+    if (val == null) {
+      throw new IllegalArgumentException("Job is missing");
+    }
+    final Iced<?> ice = val.get();
+    if (!(ice instanceof Job)) {
+      throw new IllegalArgumentException("Must be a Job not a " + ice.getClass());
+    }
+    final Job<?> j = (Job<?>) ice;
+    if (timeMillis > 0 && !j.isStopped()) {
+      j.waitForDone(timeMillis);
+    }
+    return j;
+  }
+
+  void waitForDone(long timeMillis) {
+    final Barrier2 bar = _barrier;
+    if (bar == null)
+      return;
+
+    try {
+      bar.get(timeMillis, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (Exception e) {
+      Log.trace(e);
+    }
+  }
+
 }

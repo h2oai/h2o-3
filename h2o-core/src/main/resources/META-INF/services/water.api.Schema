@@ -123,6 +123,7 @@ water.api.schemas3.RemoveV3
 water.api.schemas3.RequestSchemaV3
 water.api.schemas3.RouteV3
 water.api.schemas3.SaveToHiveTableV3
+water.api.schemas3.SessionPropertyV3
 water.api.schemas3.SchemaMetadataV3
 water.api.schemas3.SchemaV3
 water.api.schemas3.ShutdownV3

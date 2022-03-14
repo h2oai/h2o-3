@@ -475,6 +475,14 @@ public class RegisterV3Api extends AbstractRegister {
             "DELETE /3/InitID", RapidsHandler.class, "endSession",
             "End a session.");
 
+    context.registerEndpoint("setSessionProperty",
+            "POST /3/SessionProperties", RapidsHandler.class, "setSessionProperty",
+            "Set session property.");
+
+    context.registerEndpoint("getSessionProperty",
+            "GET /3/SessionProperties", RapidsHandler.class, "getSessionProperty",
+            "Get session property.");
+
     context.registerEndpoint("garbageCollect",
             "POST /3/GarbageCollect", GarbageCollectHandler.class, "gc",
             "Explicitly call System.gc().");
