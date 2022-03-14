@@ -7,11 +7,12 @@ sys.path.insert(1, os.path.join("..", "..", ".."))
 import matplotlib
 matplotlib.use("Agg")  # remove warning from python2 (missing TKinter)
 import h2o
+import math
 import matplotlib.pyplot
 from tests import pyunit_utils
 from h2o.estimators import *
 from h2o.explanation._explain import *
-from h2o.explanation._explain import _handle_orig_values
+from h2o.explanation._explain import _handle_orig_values, _factor_mapper
 
 
 def test_original_values():
@@ -57,6 +58,8 @@ def test_handle_orig_values():
         frame = train.sort(gbm.actual_params["response_column"])
         for column in cols_to_test:
             is_factor = frame[column].isfactor()[0]
+            if is_factor:
+                factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
             deciles = [int(round(frame.nrow * dec / 10)) for dec in range(11)]
             deciles[10] = frame.nrow - 1
             colors = plt.get_cmap(colormap, 11)(list(range(11)))
@@ -81,20 +84,20 @@ def test_handle_orig_values():
                 orig_value_prediction = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, gbm,
                                                             frame, index, column, colors[i], percentile_string)
 
+                if (is_factor and math.isnan(factor_map([frame[index, column]])[0])) or (not is_factor and math.isnan(frame[index, column])):
+                    orig_test_value = orig_value_prediction["mean_response"][orig_value_prediction.nrow - 1]
+                else:
+                    orig_test_value = orig_value_prediction["mean_response"]
+
                 if type_test[test_id] == "Regression":
                     assert gbm.training_model_metrics()["model_category"] == "Regression"
-                    # adding debug logs to help investigate current failure:
-                    print("test_id:" + str(test_id))
-                    print("i: " + str(i))
-                    print("index: " + str(i))
-                    print("len(orig_value_prediction['mean_response']): " + str(len(orig_value_prediction["mean_response"])))
-                    np.testing.assert_almost_equal(orig_value_prediction["mean_response"], gbm.predict(frame).as_data_frame()["predict"][index], 5)
+                    np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()["predict"][index], 5)
                 elif type_test[test_id] == "Binomial":
                     assert gbm.training_model_metrics()["model_category"] == "Binomial"
-                    np.testing.assert_almost_equal(orig_value_prediction["mean_response"], gbm.predict(frame).as_data_frame()["p1"][index], 5)
+                    np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()["p1"][index], 5)
                 elif type_test[test_id] == "Multinomial":
                     assert gbm.training_model_metrics()["model_category"] == "Multinomial"
-                    np.testing.assert_almost_equal(orig_value_prediction["mean_response"], gbm.predict(frame).as_data_frame()[targets[test_id]][index], 5)
+                    np.testing.assert_almost_equal(orig_test_value, gbm.predict(frame).as_data_frame()[targets[test_id]][index], 5)
 
 
 def _get_cols_to_test(train, y):
@@ -267,11 +270,11 @@ def test_show_pdd():
 
 
 pyunit_utils.run_tests([
-    # test_original_values,
+    test_original_values,
     test_handle_orig_values,
-    # test_display_mode,
-    # test_binary_response_scale,
-    # test_show_pdd,
-    # test_display_mode,
-    # test_grouping_column
+    test_display_mode,
+    test_binary_response_scale,
+    test_show_pdd,
+    test_display_mode,
+    test_grouping_column
 ])
