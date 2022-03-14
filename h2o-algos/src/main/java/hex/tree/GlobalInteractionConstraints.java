@@ -2,6 +2,9 @@ package hex.tree;
 
 import water.Iced;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
+import water.util.IcedHashSet;
+import water.util.IcedInt;
 
 import java.util.*;
 
@@ -12,10 +15,10 @@ import java.util.*;
 public class GlobalInteractionConstraints extends Iced<GlobalInteractionConstraints> {
 
     // Map where key is column index and value is a set of columns indices which can interact with the key column
-    private Map<Integer, Set<Integer>> allowedInteractionMap; 
+    private IcedHashMap<IcedInt, IcedHashSet<IcedInt>> allowedInteractionMap; 
     
     public GlobalInteractionConstraints(String[][] userFeatureInteractions, String[] treeFeatureNames){
-        this.allowedInteractionMap = new HashMap<>();
+        this.allowedInteractionMap = new IcedHashMap<>();
         parseInteractionsIndices(userFeatureInteractions, treeFeatureNames);
         // There should be always at least one column index in the map as a key
         assert this.allowedInteractionMap != null;
@@ -28,9 +31,9 @@ public class GlobalInteractionConstraints extends Iced<GlobalInteractionConstrai
      * @param columnNames column names from used dataset for training to match indices correctly
      */
     private void parseInteractionsIndices(String[][] userInteractionConstraints, String[] columnNames){
-        Set<Integer> interactions;
+        IcedHashSet<IcedInt> interactions;
         for (String[] list : userInteractionConstraints) {
-            interactions = new HashSet<>();
+            interactions = new IcedHashSet<>();
             for (int i = 0; i < list.length; i++) {
                 String item = list[i];
                 // first find only name
@@ -38,14 +41,14 @@ public class GlobalInteractionConstraints extends Iced<GlobalInteractionConstrai
                 // find start index and add indices until end index
                 assert start != -1 : "Column name should be in defined column names.";
                 if (start > -1) {               // find exact position - no encoding  
-                    interactions.add(start);
+                    interactions.add(new IcedInt(start));
                 } else {                       // find first occur of the name with prefix - encoding
                     start = - start - 2;
                     assert columnNames[start].startsWith(item): "The column name should be find correctly.";
                     // iterate until find all encoding indices
                     int end = start;
                     while (end < columnNames.length && columnNames[end].startsWith(item)) {
-                        interactions.add(end);
+                        interactions.add(new IcedInt(end));
                         end++;
                     }
                 }
@@ -54,27 +57,30 @@ public class GlobalInteractionConstraints extends Iced<GlobalInteractionConstrai
         }
     }
 
-    private void addInteractionsSetToMap(Set<Integer> interactions){
-        for (Integer index : interactions) {
+    private void addInteractionsSetToMap(IcedHashSet<IcedInt> interactions){
+        for (IcedInt index : interactions) {
             if (!allowedInteractionMap.containsKey(index)) {
                 allowedInteractionMap.put(index, interactions);
             } else {
-                Set<Integer> set = new HashSet<>(allowedInteractionMap.get(index));
+                IcedHashSet<IcedInt> set = new IcedHashSet<>();
+                set.addAll(allowedInteractionMap.get(index));
                 set.addAll(interactions);
                 allowedInteractionMap.put(index, set);
             }
         }
     }
     
-    public Set<Integer> getAllowedInteractionForIndex(int columnIndex){
-        return allowedInteractionMap.get(columnIndex);
+    public IcedHashSet<IcedInt> getAllowedInteractionForIndex(int columnIndex){
+        return allowedInteractionMap.get(new IcedInt(columnIndex));
     }
     
     public boolean allowedInteractionContainsColumn(int columnIndex){
-        return allowedInteractionMap.containsKey(columnIndex);
+        return allowedInteractionMap.containsKey(new IcedInt(columnIndex));
     }
     
-    public Set<Integer> getAllAllowedColumnIndices(){
-        return allowedInteractionMap.keySet();
+    public IcedHashSet<IcedInt> getAllAllowedColumnIndices(){
+        IcedHashSet<IcedInt> indices = new IcedHashSet<>();
+        indices.addAll(allowedInteractionMap.keySet());
+        return indices;
     }
 }

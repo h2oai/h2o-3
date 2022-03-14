@@ -15,6 +15,8 @@ import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
+import water.util.IcedHashSet;
+import water.util.IcedInt;
 
 import java.util.*;
 
@@ -173,7 +175,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             parms._seed = 1234L;
             parms._interaction_constraints = interactions;
             parms._categorical_encoding = encoding;
-
+            
             GBMModel model = new GBM(parms).trainModel().get();
             Scope.track_generic(model);
             
@@ -216,7 +218,7 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     private boolean checkBranches(SharedTreeNode root, GlobalInteractionConstraints ics){
         List<List<Integer>> allBranches = new ArrayList<>();
         collectBranchIndices(root, new ArrayList<>(), allBranches);
-        Set<Integer> allowed;
+        IcedHashSet<IcedInt> allowed;
         for(List<Integer> branch : allBranches){
             allowed = ics.getAllowedInteractionForIndex(branch.get(0));
             for (int i = 1; i < branch.size(); i++){
@@ -226,9 +228,11 @@ public class GBMInteractionConstraintsTest extends TestUtil {
                     return false;
                 }
                 if (i < branch.size() - 1) {
-                    Set<Integer> interception = new HashSet<>(allowed);
+                    IcedHashSet<IcedInt> interception = new IcedHashSet<>();
+                    interception.addAll(allowed);
                     interception.retainAll(ics.getAllowedInteractionForIndex(colIndex));
-                    allowed = new HashSet<>(interception);
+                    allowed = new IcedHashSet<>();
+                    allowed.addAll(interception);
                 }
             }
         }

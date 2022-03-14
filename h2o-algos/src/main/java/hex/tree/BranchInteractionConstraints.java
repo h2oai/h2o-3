@@ -1,6 +1,8 @@
 package hex.tree;
 
 import water.Iced;
+import water.util.IcedHashSet;
+import water.util.IcedInt;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -11,9 +13,10 @@ import java.util.Set;
 public class BranchInteractionConstraints extends Iced<BranchInteractionConstraints> {
     
     // Set of allowed column indices in current split but with information from previous split decision
-    Set<Integer> allowedInteractionIndices;
+    // Set<Integer> allowedInteractionIndices;
+    IcedHashSet<IcedInt> allowedInteractionIndices;
     
-    public BranchInteractionConstraints(Set<Integer> allowedInteractionIndices){
+    public BranchInteractionConstraints(IcedHashSet<IcedInt> allowedInteractionIndices){
         this.allowedInteractionIndices = allowedInteractionIndices;
     }
     
@@ -28,9 +31,13 @@ public class BranchInteractionConstraints extends Iced<BranchInteractionConstrai
      * @param set input set 
      * @return intersection of branch set and input set
      */
-    public Set<Integer> intersection(Set<Integer> set){
-        Set<Integer> output = new HashSet<>(set);
-        output.retainAll(this.allowedInteractionIndices);
+    public IcedHashSet<IcedInt> intersection(IcedHashSet<IcedInt> set){
+        IcedHashSet<IcedInt> output = new IcedHashSet<>();
+        for(IcedInt i: set){
+            if (allowedInteractionIndices.contains(i)) {
+                output.add(i);
+            }
+        }
         return output;
     }
 
@@ -44,8 +51,8 @@ public class BranchInteractionConstraints extends Iced<BranchInteractionConstrai
         assert ics != null : "Interaction constraints: Global interaction constraints object cannot be null.";
         assert ics.allowedInteractionContainsColumn(colIndex) : "Input column index should be in the allowed interaction map.";
         assert this.allowedInteractionIndices != null : "Interaction constraints: Branch allowed interaction set cannot be null.";
-        Set<Integer> allowedInteractions = ics.getAllowedInteractionForIndex(colIndex);
-        Set<Integer> intersection = intersection(allowedInteractions);
+        IcedHashSet<IcedInt> allowedInteractions = ics.getAllowedInteractionForIndex(colIndex);
+        IcedHashSet<IcedInt> intersection = intersection(allowedInteractions);
         return new BranchInteractionConstraints(intersection);
     }
 }
