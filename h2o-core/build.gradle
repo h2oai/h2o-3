@@ -22,7 +22,7 @@ dependencies {
   api project(":h2o-jaas-pam")
 
   api 'com.google.code.gson:gson:2.9.0'
-  api 'commons-lang:commons-lang:3.12.0'
+  api 'commons-lang:commons-lang:2.6'
   
   // Duke library: collection of String comparators
   api('no.priv.garshol.duke:duke:1.2') {
