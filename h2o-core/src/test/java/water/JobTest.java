@@ -113,18 +113,7 @@ public class JobTest extends TestUtil {
     final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
     final long sleepMs = 1_000;
 
-    j.start(new H2O.H2OCountedCompleter() {
-      @Override
-      public void compute2() {
-        try {
-          Thread.sleep(sleepMs);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-          Thread.currentThread().interrupt();
-        }
-        tryComplete();
-      }
-    }, 1);
+    j.start(new SleepTask(sleepMs), 1);
 
     long t1 = System.currentTimeMillis();
     Job<?> j2 = Job.tryGetDoneJob(j._key, 100);
@@ -140,6 +129,44 @@ public class JobTest extends TestUtil {
 
     assertEquals(t2 - t1, 100, 20);
     assertEquals(t4 - t3, sleepMs - (t2 - t1), 20);
+  }
+
+  @Test
+  public void testBlockingWaitForDone() {
+    final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
+    final long sleepMs = 1_000;
+
+    j.start(new SleepTask(sleepMs), 1);
+
+    int timesWaited = 0;
+    for (int i = 0; i < 10; i++) {
+      if (!j.isRunning())
+        break;
+      j.blockingWaitForDone(150);
+      timesWaited++;
+    }
+
+    assertFalse(j.isRunning());
+    assertEquals(7, timesWaited, 1);
+  }
+
+  private static class SleepTask extends H2O.H2OCountedCompleter<SleepTask> {
+    private final long _sleep_ms;
+
+    private SleepTask(long sleepMs) {
+      _sleep_ms = sleepMs;
+    }
+
+    @Override
+    public void compute2() {
+      try {
+        Thread.sleep(_sleep_ms);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
+      tryComplete();
+    }
   }
 
 }

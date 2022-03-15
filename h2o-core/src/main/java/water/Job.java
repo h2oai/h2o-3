@@ -503,22 +503,53 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     }
     final Job<?> j = (Job<?>) ice;
     if (timeMillis > 0 && !j.isStopped()) {
-      j.waitForDone(timeMillis);
+      j.blockingWaitForDone(timeMillis, false);
     }
     return j;
   }
 
-  void waitForDone(long timeMillis) {
+  void blockingWaitForDone(long timeMillis, boolean checkConsistency) {
     final Barrier2 bar = _barrier;
-    if (bar == null)
+    if (bar == null) {
+      if (checkConsistency) {
+        if (isRunning()) { // barrier is only removed after job is stopped
+          throw new IllegalStateException("Running job is in an inconsistent state (barrier is missing)");
+        }
+      }
       return;
+    }
 
     try {
-      bar.get(timeMillis, TimeUnit.MILLISECONDS);
+      bar.get(timeMillis, TimeUnit.MILLISECONDS, true);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     } catch (Exception e) {
       Log.trace(e);
+    }
+  }
+
+  private static boolean FORCE_SLEEP_WAITING = H2O.getSysBoolProperty("job.sleep_wait_for_done", false); 
+  
+  /**
+   * Waits if necessary for at most the given time for the Job
+   * to complete. The wait is always blocking regardless if called from
+   * an F/J thread or a regular thread.
+   * 
+   * @param timeoutMillis the maximum time in milliseconds to wait
+   */
+  public void blockingWaitForDone(long timeoutMillis) {
+    if (FORCE_SLEEP_WAITING) {
+      sleep(timeoutMillis); // for debugging to be able to prove that blockingWaitForDone saves time compared to just sleep
+    } else {
+      blockingWaitForDone(timeoutMillis, true);
+    }
+  }
+
+  private static void sleep(long timeoutMillis) {
+    try {
+      Thread.sleep(timeoutMillis);
+    } catch (InterruptedException ignored) {
+      Thread.currentThread().interrupt();
     }
   }
 

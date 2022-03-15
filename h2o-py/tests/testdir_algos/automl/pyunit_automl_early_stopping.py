@@ -91,13 +91,13 @@ def test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_mode
 
 def test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_runtime_wins():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_all_stopping_constraints", seed=1, max_models=20, max_runtime_secs=12)
+    aml = H2OAutoML(project_name="py_all_stopping_constraints", seed=1, max_models=100, max_runtime_secs=5)
     aml.train(y=ds.target, training_frame=ds.train)
     max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
     max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
-    assert max_runtime == 12
-    assert max_models == 20
-    assert aml.leaderboard.nrows < 20
+    assert max_runtime == 5
+    assert max_models == 100
+    assert aml.leaderboard.nrows < 100
     assert int(aml.training_info['duration_secs']) < 2*max_runtime  # being generous to avoid errors on slow Jenkins
 
 
