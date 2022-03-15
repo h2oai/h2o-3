@@ -50,6 +50,12 @@ function(p) {
   p
 }
 
+isClient<-
+function() {
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
+  return(res$is_client)
+}
+
 #' Compute a path distance.
 #'
 #' We are looking for a directory `root`. Recursively ascend the directory structure until the root is found.

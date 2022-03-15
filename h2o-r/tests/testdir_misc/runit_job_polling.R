@@ -22,6 +22,12 @@ train.models <- function(prostate.hex) {
 }
 
 test.job.polling <- function() {
+    if (isClient()) {
+        # Backend-waiting polling will not be any faster in the client mode because Job is owned by a different
+        # node other than the one that is exposing the rest api (=client) 
+        return()
+    }
+
     prostate.hex <- h2o.importFile(locate("smalldata/logreg/prostate.csv"))
 
     prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
