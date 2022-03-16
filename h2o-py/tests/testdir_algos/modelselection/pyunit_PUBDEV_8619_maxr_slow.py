@@ -8,10 +8,11 @@ from h2o.estimators.model_selection import H2OModelSelectionEstimator
 
 # test to find out why maxr is slow
 def test_maxr_slow():
-    train = h2o.create_frame(rows=142000, cols=189, seed=12345)
+    train = pyunit_utils.random_dataset_real_only(14200, 189, misFrac=0.0, randSeed=1234)
+  #  train = h2o.create_frame(rows=142000, cols=189, seed=12345)
 
     predictors = train.columns
-    response = "C1"
+    response = predictors[0]
     predictors.remove(response)
 
     maxrModel = H2OModelSelectionEstimator(mode="maxr", max_predictor_number=10, intercept=True)
