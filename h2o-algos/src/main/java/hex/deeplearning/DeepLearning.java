@@ -164,7 +164,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     if( !_parms._quiet_mode ) {
       warn("_epochs", "Setting optimal _epochs to " + _parms._epochs + " for cross-validation main model based on early stopping of cross-validation models.");
       warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
-      warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
+      if (_parms._main_model_time_budget_factor == 0)
+        warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
     }
   }
   
