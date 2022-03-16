@@ -11,6 +11,7 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.hadoop.hdfs.util.ByteArrayManager;
 import water.*;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
@@ -73,7 +74,16 @@ public final class PersistHdfs extends Persist {
         Log.debug("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are NOT loaded!");
       }
     }
+    // add manually passed configuration
+    configureFromProperties(conf, H2O.ARGS.hadoop_properties);
     CONF = conf;
+  }
+
+  static void configureFromProperties(Configuration conf, Properties props) {
+    for (Object propertyKey : Collections.list(props.keys())) {
+      String propertyValue = props.getProperty((String) propertyKey);
+      conf.set((String) propertyKey, propertyValue);
+    }
   }
 
   // Loading HDFS files

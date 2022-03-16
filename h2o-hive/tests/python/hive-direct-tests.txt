@@ -1,0 +1,2 @@
+pyunit_hive_import_varchar_direct.py
+pyunit_hive_import_direct.py

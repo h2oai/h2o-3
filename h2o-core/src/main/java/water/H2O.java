@@ -412,6 +412,9 @@ final public class H2O {
     /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
+    /** -Hkey=value; additional configuration to merge into the Hadoop Configuration */
+    public final Properties hadoop_properties = new Properties();
+
     //-----------------------------------------------------------------------------------
     // Recovery
     //-----------------------------------------------------------------------------------
@@ -666,6 +669,13 @@ final public class H2O {
       }
       else if (s.matches("hdfs_skip")) {
         trgt.hdfs_skip = true;
+      }
+      else if (s.matches("H")) {
+        i = s.incrementAndCheck(i, args);
+        String key = args[i];
+        i = s.incrementAndCheck(i, args);
+        String value = args[i];
+        trgt.hadoop_properties.setProperty(key, value);
       }
       else if (s.matches("aws_credentials")) {
         i = s.incrementAndCheck(i, args);

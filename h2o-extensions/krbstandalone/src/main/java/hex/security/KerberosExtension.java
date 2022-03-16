@@ -4,12 +4,15 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import water.AbstractH2OExtension;
 import water.H2O;
+import water.init.StandaloneKerberosComponent;
 import water.persist.PersistHdfs;
 import water.persist.security.HdfsDelegationTokenRefresher;
 import water.util.Log;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Authenticates the H2O Node to access secured Hadoop cluster in a standalone mode.
@@ -83,6 +86,7 @@ public class KerberosExtension extends AbstractH2OExtension {
                 "s (user specified " + _args.hdfs_token_refresh_interval + ").");
         HdfsDelegationTokenRefresher.startRefresher(conf, _args.principal, _args.keytab_path, refreshIntervalSecs);
       }
+      initComponents(conf, _args);
     } else {
       Log.info("Kerberos not configured");
       if (_args.hdfs_token_refresh_interval != null) {
@@ -94,6 +98,17 @@ public class KerberosExtension extends AbstractH2OExtension {
       if (_args.principal != null) {
         Log.warn("Option principal ignored because Kerberos is not configured.");
       }
+    }
+  }
+
+  static void initComponents(Configuration conf, H2O.OptArgs args) {
+    List<StandaloneKerberosComponent> components = StandaloneKerberosComponent.loadAll();
+    List<String> componentNames = components.stream().map(StandaloneKerberosComponent::name).collect(Collectors.toList()); 
+    Log.info("Standalone Kerberos components: " + componentNames);
+    for (StandaloneKerberosComponent component : components) {
+      boolean active = component.initComponent(conf, args);
+      String statusMsg = active ? "successfully initialized" : "not active"; 
+      Log.info("Component " + component.name() + " " + statusMsg + ".");
     }
   }
 
