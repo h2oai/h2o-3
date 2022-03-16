@@ -212,15 +212,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   }
 
-  public GLMModel addSubmodel(Submodel sm) { // copy from checkpoint model
-    _output._submodels = ArrayUtils.append(_output._submodels,sm);
-    _output.setSubmodelIdx(_output._submodels.length-1);
+  public GLMModel addSubmodel(int idx, Submodel sm) { // copy from checkpoint model
+    if (_output._submodels != null && _output._submodels.length > idx) {
+      _output._submodels[idx] = sm;
+    } else {
+      assert _output._submodels == null || idx == _output._submodels.length;
+      _output._submodels = ArrayUtils.append(_output._submodels, sm);
+    }
+    _output.setSubmodelIdx(idx);
     return this;
   }
 
-  public GLMModel updateSubmodel(Submodel sm) {
-    assert sm.lambda_value == _output._submodels[_output._submodels.length-1].lambda_value;
-    _output._submodels[_output._submodels.length-1] = sm;
+  public GLMModel updateSubmodel(int idx, Submodel sm) {
+    assert sm.lambda_value == _output._submodels[idx].lambda_value && sm.alpha_value == _output._submodels[idx].alpha_value;
+    _output._submodels[idx] = sm;
     return this;
   }
 
