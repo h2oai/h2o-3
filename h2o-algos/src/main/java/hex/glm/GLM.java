@@ -656,11 +656,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         case AUTO:
           if (nclasses() == 1 & _parms._link != Link.family_default && _parms._link != Link.identity 
                   && _parms._link != Link.log && _parms._link != Link.inverse) {
-            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default, identity, log or inverse."));
+            error("_family", H2O.technote(2, "AUTO for underlying response requires the link to be family_default, identity, log or inverse."));
           } else if (nclasses() == 2 & _parms._link != Link.family_default && _parms._link != Link.logit) {
-            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or logit."));
+            error("_family", H2O.technote(2, "AUTO for underlying response requires the link to be family_default or logit."));
           } else if (nclasses() > 2 & _parms._link != Link.family_default & _parms._link != Link.multinomial) {
-            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or multinomial."));
+            error("_family", H2O.technote(2, "AUTO for underlying response requires the link to be family_default or multinomial."));
           }
           break;
         case binomial:
