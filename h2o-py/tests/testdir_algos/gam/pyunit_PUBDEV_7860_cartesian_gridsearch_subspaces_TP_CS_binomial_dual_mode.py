@@ -35,10 +35,10 @@ def test_gridsearch():
                                        'num_knots': [[5, 10, 12], [6, 11, 13]],
                                        'gam_columns': [["c_0", ["c_1", "c_2"], ["c_3", "c_4", "c_5"]],
                                                        ["c_1", ["c_2", "c_3"], ["c_4", "c_5", "c_6"]]]}]}
-    h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="binomial", keep_gam_cols=True), 
+    h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="binomial", keep_gam_cols=True, seed=0),
                               hyper_params=hyper_parameters, search_criteria=search_criteria)
     h2o_model.train(x = myX, y = myY, training_frame = h2o_data)
-    h2o_model2 = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="binomial", keep_gam_cols=True),
+    h2o_model2 = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="binomial", keep_gam_cols=True, seed=0),
                               hyper_params=hyper_parameters2, search_criteria=search_criteria)
     h2o_model2.train(x = myX, y = myY, training_frame = h2o_data)
     # compare two models by checking their coefficients.  They should be the same

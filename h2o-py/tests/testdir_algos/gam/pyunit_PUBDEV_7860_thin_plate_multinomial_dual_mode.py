@@ -20,10 +20,10 @@ def test_gam_dual_mode_multinomial():
     gam_cols1 =["C6", ["C7", "C8"], "C9", "C10"]
     gam_cols2 = [["C6"], ["C7", "C8"], ["C9"], ["C10"]]
     h2o_model1 = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=gam_cols1, bs=[1, 1, 0, 0], 
-                                                 max_iterations = 2)
+                                                 max_iterations=2, seed=0)
     h2o_model1.train(x=x, y=y, training_frame=train, validation_frame=test)
     h2o_model2 = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=gam_cols2, bs=[1, 1, 0, 0], 
-                                                 max_iterations = 2)
+                                                 max_iterations=2, seed=0)
     h2o_model2.train(x=x, y=y, training_frame=train, validation_frame=test)
     # check that both models produce the same coefficients
     print(h2o_model1.coef())

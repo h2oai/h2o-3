@@ -24,7 +24,7 @@ def test_compare_R():
     trainB = frames[0]
     testB = frames[1]
     gamB = H2OGeneralizedAdditiveEstimator(family='binomial', gam_columns = gamCols, bs = bsT, scale = scaleP, 
-                                           num_knots = numKnots, lambda_search=True)
+                                           num_knots = numKnots, lambda_search=True, seed=0)
     gamB.train(x = myX, y = myY, training_frame = trainB, validation_frame = testB)
     gamPred = gamB.predict(testB)
     temp = gamPred['predict'] == testB['response']
@@ -43,7 +43,7 @@ def test_compare_R():
     trainB = frames[0]
     testB = frames[1]
     gamG = H2OGeneralizedAdditiveEstimator(family='gaussian', gam_columns = gamCols, bs = bsT, scale = scaleP,
-                                       num_knots = numKnots, lambda_search=True)
+                                       num_knots = numKnots, lambda_search=True, seed=42)
     gamG.train(x = myX, y = myY, training_frame = trainB, validation_frame = testB)
     gamMSE = gamG.model_performance(valid=True).mse()
     rMSE = 0.0006933308
