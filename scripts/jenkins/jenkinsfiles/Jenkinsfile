@@ -47,7 +47,7 @@ try {
               // clear the folder
               deleteDir()
               // checkout H2O-3
-              retryWithTimeout(60, 3) {
+              retryWithTimeout(180, 3) {
                 echo "###### Checkout H2O-3 ######"
                 if (env.ghprbPullId) {
                   // building PR from fork

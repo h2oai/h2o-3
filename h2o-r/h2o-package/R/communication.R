@@ -105,7 +105,7 @@
 
   beginTimeSeconds <- as.numeric(proc.time())[3L]
 
-  header <- c('Connection' = 'close')
+  header <- .default.headers(conn)
   if(!is.na(conn@cookies)) {
     header['Cookie'] <- paste0(conn@cookies, collapse=';')
   }
@@ -183,6 +183,13 @@
        httpStatusCode = httpStatusCode,
        httpStatusMessage = httpStatusMessage,
        payload = payload)
+}
+
+.default.headers <- function(conn) {
+  c(
+    'Connection' = 'close',
+    'Session-Key' = conn@mutable$session_id
+  )
 }
 
 .h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, parms_as_payload = FALSE, ...) {
@@ -294,8 +301,7 @@
   beginTimeSeconds = as.numeric(proc.time())[3L]
 
   tmp <- NULL
-  header <- c('Connection' = 'close')
-
+  header <- .default.headers(conn)
   if(!is.na(conn@cookies)) {
     header['Cookie'] = paste0(conn@cookies, collapse=';')
   }

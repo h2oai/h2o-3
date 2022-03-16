@@ -26,11 +26,7 @@ public class RapidsHandler extends Handler {
     if (StringUtils.isNullOrEmpty(rapids.session_id))
       rapids.session_id = "_specialSess";
 
-    Session ses = RapidsHandler.SESSIONS.get(rapids.session_id);
-    if (ses == null) {
-      ses = new Session(rapids.session_id);
-      RapidsHandler.SESSIONS.put(rapids.session_id, ses);
-    }
+    final Session ses = getOrCreateSession(rapids.session_id);
 
     Val val;
     try {
@@ -54,6 +50,19 @@ public class RapidsHandler extends Handler {
     }
   }
 
+  public static Session getSession(String sessionId) {
+     return RapidsHandler.SESSIONS.get(sessionId);
+  }
+
+  Session getOrCreateSession(String sessionId) {
+    Session ses = getSession(sessionId);
+    if (ses == null) {
+      ses = new Session(sessionId);
+      RapidsHandler.SESSIONS.put(sessionId, ses);
+    }
+    return ses;
+  }
+  
   public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
     Iterator<AstRoot> iterator = ServiceLoader.load(AstRoot.class).iterator();
     List<AstRoot> rapids = new ArrayList<>();
@@ -86,6 +95,7 @@ public class RapidsHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public InitIDV3 startSession(int version, InitIDV3 p) {
     p.session_key = "_sid" + Key.make().toString().substring(0,5);
+    p.session_properties_allowed = sessionPropertiesAllowed();
     return p;
   }
 
@@ -99,7 +109,36 @@ public class RapidsHandler extends Handler {
         throw SESSIONS.get(p.session_key).endQuietly(ex);
       }
     }
+    p.session_properties_allowed = sessionPropertiesAllowed();
     return p;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public SessionPropertyV3 setSessionProperty(int version, SessionPropertyV3 p) {
+    if (!sessionPropertiesAllowed()) {
+      throw new IllegalStateException("Using session properties is disabled by the admin.");
+    }
+    Session session = getOrCreateSession(p.session_key);
+    session.setProperty(p.key, p. value);
+    return p;
+  }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public SessionPropertyV3 getSessionProperty(int version, SessionPropertyV3 p) {
+    p.value = null;
+    if (!sessionPropertiesAllowed()) {
+      return p;
+    }
+    Session session = getSession(p.session_key);
+    if (session == null) {
+      return p;
+    }
+    p.value = session.getProperty(p.key, null);
+    return p;
+  }
+
+  boolean sessionPropertiesAllowed() {
+    return H2O.getSysBoolProperty("session.allow_properties", true);
   }
 
   public static class StartSession4 extends RestApiHandler<InputSchemaV4, SessionIdV4> {

@@ -6,6 +6,7 @@ import water.api.schemas3.JobsV3;
 import water.api.schemas4.input.JobIV4;
 import water.api.schemas4.output.JobV4;
 import water.exceptions.H2ONotFoundArgumentException;
+import water.server.ServletUtils;
 import water.util.Log;
 
 public class JobsHandler extends Handler {
@@ -31,19 +32,40 @@ public class JobsHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public JobsV3 fetch(int version, JobsV3 s) {
-    Key key = s.job_id.key();
-    Value val = DKV.get(key);
-    if( null == val ) throw new IllegalArgumentException("Job is missing");
-    Iced ice = val.get();
-    if( !(ice instanceof Job) ) throw new IllegalArgumentException("Must be a Job not a "+ice.getClass());
+    Key<Job> key = s.job_id.key();
 
-    Job j = (Job) ice;
+    long waitingStartedAt = System.currentTimeMillis();
+    long waitMs = fetchJobTimeoutMs();
+    Job<?> j = Job.tryGetDoneJob(key, waitMs);
+    long waitingEndedAt = System.currentTimeMillis();
+    if (Log.isLoggingFor(Log.TRACE)) {
+      Log.trace("Waited for job result for " + (waitingEndedAt - waitingStartedAt) + "ms.");
+    }
+
+    JobV3 job;
+    try {
+      job = (JobV3) SchemaServer.schema(version, j);
+    } catch (H2ONotFoundArgumentException e) { // no special schema for this job subclass, so fall back to JobV3
+      job = new JobV3().fillFromImpl(j);
+    }
+    job.fillFromImpl(j);
+
     s.jobs = new JobV3[1];
-    // s.fillFromImpl(jobs);
-    try { s.jobs[0] = (JobV3) SchemaServer.schema(version, j).fillFromImpl(j); }
-    // no special schema for this job subclass, so fall back to JobV3
-    catch (H2ONotFoundArgumentException e) { s.jobs[0] = new JobV3().fillFromImpl(j); }
+    s.jobs[0] = job;
     return s;
+  }
+
+  static long fetchJobTimeoutMs() {
+    String timeoutSpec = ServletUtils.getSessionProperty("job.fetch_timeout_ms", null);
+    if (timeoutSpec == null) {
+      return -1;
+    }
+    try {
+      return Long.parseLong(timeoutSpec);
+    } catch (Exception e) {
+      Log.trace(e);
+      return -1;
+    }
   }
 
   public JobsV3 cancel(int version, JobsV3 c) {
