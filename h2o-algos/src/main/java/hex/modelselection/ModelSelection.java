@@ -9,10 +9,9 @@ import water.Key;
 import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.Log;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
@@ -117,6 +116,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         _numPredictors = _predictorNames.length;
 
         if (maxr.equals(_parms._mode) || allsubsets.equals(_parms._mode)) { // check for maxr and allsubsets
+            if (_parms._lambda == null && !_parms._lambda_search && _parms._alpha == null)
+                _parms._lambda = new double[]{0.0}; // disable regularization if not specified
             if (nclasses() > 1)
                 error("response", "'allsubsets' and 'maxr' only works with regression.");
             
@@ -227,13 +228,14 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                         _parms, _foldColumn, _glmNFolds, _foldAssignment); // forward step
                 validSubset.removeAll(currSubsetIndices);
                 _job.update(predNum, "Finished building all models with "+predNum+" predictors.");
-                if (predNum < _numPredictors) {
+                if (predNum < _numPredictors && predNum > 1) {
                     GLMModel currBestR2Model = replacement(currSubsetIndices, coefNames, bestR2Model.r2(), _parms,
                             _glmNFolds, _foldColumn, validSubset, _foldAssignment);
-                    if (currBestR2Model != null)
+                    if (currBestR2Model != null) {
+                        bestR2Model.delete();
                         bestR2Model = currBestR2Model;
+                    }
                 }
-                Scope.untrack(bestR2Model.getKey());
                 DKV.put(bestR2Model);
                 model._output.updateBestModels(bestR2Model, predNum - 1);
             }
@@ -290,7 +292,6 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                         _foldColumn);
                 // find best GLM Model with highest R2 value
                 GLMModel bestModel = buildExtractBestR2Model(trainingFrames,_parms, _glmNFolds, _foldColumn, _foldAssignment);
-                Scope.untrack(bestModel.getKey());  // untrack best model
                 DKV.put(bestModel);
                 // extract R2 and collect the best R2 and the predictors set
                 int index = predNum-1;
@@ -332,7 +333,6 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         GLM[] glmBuilder = buildGLMBuilders(trainingParams);
         // call parallel build
         GLM[] glmResults = ModelBuilderHelper.trainModelsParallel(glmBuilder, parms._nparallelism);
-        Stream.of(glmResults).map(GLM::get).forEach(Scope::track_generic);
         // find best GLM Model with highest R2 value
         return findBestModel(glmResults);
     }
@@ -354,15 +354,15 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      */
     public static GLMModel forwardStep(List<Integer> currSubsetIndices, List<String> coefNames, int predPos, 
                                        List<Integer> validSubsets, ModelSelectionModel.ModelSelectionParameters parms,
-                                       String foldColumn, int glmNFolds, Model.Parameters.FoldAssignmentScheme foldAssignment) {
+                                       String foldColumn, int glmNFolds, 
+                                       Model.Parameters.FoldAssignmentScheme foldAssignment, Set<BitSet> usedCombo) {
         String[] predictorNames = coefNames.stream().toArray(String[]::new);
         // generate training frames
         Frame[] trainingFrames = generateMaxRTrainingFrames(parms, predictorNames, foldColumn,
-                currSubsetIndices, predPos, validSubsets);
+                currSubsetIndices, predPos, validSubsets, usedCombo);
         // find GLM model with best R2 value and return it
         GLMModel bestModel = buildExtractBestR2Model(trainingFrames, parms, glmNFolds, foldColumn, foldAssignment);
         List<String> coefUsed = extraModelColumnNames(coefNames, bestModel);
-
         for (int predIndex = coefUsed.size()-1; predIndex >= 0; predIndex--) {
             int index = coefNames.indexOf(coefUsed.get(predIndex));
             if (!currSubsetIndices.contains(index)) {
@@ -372,6 +372,14 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         }
         removeTrainingFrames(trainingFrames);
         return bestModel;
+    }
+
+    public static GLMModel forwardStep(List<Integer> currSubsetIndices, List<String> coefNames, int predPos,
+                                       List<Integer> validSubsets, ModelSelectionModel.ModelSelectionParameters parms,
+                                       String foldColumn, int glmNFolds,
+                                       Model.Parameters.FoldAssignmentScheme foldAssignment) {
+        return forwardStep(currSubsetIndices, coefNames, predPos, validSubsets, parms, foldColumn, glmNFolds, 
+                foldAssignment, null);
     }
 
     /**
@@ -391,6 +399,11 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                                        int glmNFolds, String foldColumn, List<Integer> validSubset,
                                        Model.Parameters.FoldAssignmentScheme foldAssignment) {
         int currSubsetSize = currSubsetIndices.size();
+        
+        Integer[] sortedCurrSubset = currSubsetIndices.toArray(new Integer[0]);
+        Arrays.sort(sortedCurrSubset);
+        Set<BitSet> usedCombos = new HashSet<>();
+        usedCombos.add(setBitSet(currSubsetIndices.stream().mapToInt(i->i).toArray(), coefNames.size()));
         int lastBestR2PosIndex = -1;
         GLMModel bestR2Model = null;
         GLMModel[] bestR2Models = new GLMModel[currSubsetSize];
@@ -404,16 +417,16 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     int predIndexRemoved = oneLessSubset.remove(index);
                     validSubset.add(predIndexRemoved);
                     bestR2Models[index] = forwardStep(oneLessSubset, coefNames, index, validSubset, parms,
-                            foldColumn, glmNFolds, foldAssignment);
+                            foldColumn, glmNFolds, foldAssignment, usedCombos);
                     subsetsCombo[index] = oneLessSubset.stream().mapToInt(i->i).toArray();
                     r2PredPosIndex[index] = index;
                     validSubset.remove(validSubset.indexOf(predIndexRemoved));
                 }
             }
             int bestR2ModelIndex = findBestR2Model(bestR2, bestR2Models);
-            if (bestR2ModelIndex < 0)   // done with replacement step
+            if (bestR2ModelIndex < 0) {  // done with replacement step
                 break;
-            else {
+            } else {
                 bestR2Model = bestR2Models[bestR2ModelIndex];
                 bestR2 = bestR2Model.r2();
                 currSubsetIndices = Arrays.stream(subsetsCombo[bestR2ModelIndex]).boxed().collect(Collectors.toList()); 
