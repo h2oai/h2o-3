@@ -1163,8 +1163,8 @@ Using the previously imported and split airlines dataset, run the following to r
     ks
     0.20072346203696562
 
-Computing Model Metrics
-'''''''''''''''''''''''
+Computing Model Metrics from General Predictions
+''''''''''''''''''''''''''''''''''''''''''''''''
 
 The ``make_metrics`` function computes a model metrics object from given predicted values (target for regression; class-1 probabilities, binomial, or per-class probabilities for classification). 
 
