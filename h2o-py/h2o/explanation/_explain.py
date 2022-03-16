@@ -951,8 +951,12 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
         plt.xticks(mapping(range(nf.nlevels(column))), nf.levels(column))
     plt.ylim(ylims)
 
-def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp, **kwargs):
-    frame = frame.sort(model.actual_params["response_column"])
+def _handle_selection_by_deciles(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, observation_selection_params):
+    if (observation_selection_params.get("base") == "score"):
+        base = model.actual_params["response_column"]
+    else:
+        base = observation_selection_params.get("variable")
+    frame = frame.sort(base)
     deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
     colors = plt.get_cmap(colormap, 11)(list(range(11)))
     for i, index in enumerate(deciles):
@@ -964,17 +968,13 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
                 plot=False,
                 row_index=index,
                 targets=target,
-                nbins=20 if not is_factor else 1 + frame[column].nlevels()[0],
+                nbins=observation_selection_params.get('simulation_num_points') if not is_factor else 1 + frame[column].nlevels()[0],
                 include_na=True
             )[0]
         )
         encoded_col = tmp.columns[0]
-        y_label = "Response"
         if not is_factor and centered:
             _center(tmp["mean_response"])
-            y_label = "Response difference"
-        if show_logodds:
-            y_label = "log(odds)"
         orig_row = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
                                        frame, index, column, colors[i], percentile_string, factor_map)
         if not _isnan(frame.as_data_frame()[column][index]):
@@ -993,14 +993,45 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
                      color=colors[i],
                      label=percentile_string)
 
+def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp,
+                observation_selection, **kwargs):
+    method, observation_selection_params = get_observation_selection_method(observation_selection)
+    seed = observation_selection_params.get("seed")
+    if (seed != -1):
+        random.seed(seed)
+
+    sampling_range = observation_selection_params.get("sampling_range")
+    if sampling_range != -1:
+        sampled_frame = frame[list(range(0, frame.ncols)), random.sample(range(0, frame.nrows), 3)]
+    else:
+        sampled_frame = frame
+
+    if method == "deciles":
+        _handle_selection_by_deciles(model, sampled_frame, colormap, plt, target,
+                                     is_factor, column, show_logodds, centered, factor_map, observation_selection_params)
+    elif method == "pattern_identification":
+        a = 1
+        # todo _handle_selection_by_pattern_identification
+        ValueError("Observation selection by pattern identification is not yet supported!")
+    else:
+        a = 1
+        # todo _handle_selection_by_simple_random_selection
+        ValueError("Observation selection by simple random selection is not yet supported!")
+
+    y_label = "Response"
+    if not is_factor and centered:
+        y_label = "Response difference"
+    if show_logodds:
+        y_label = "log(odds)"
+
     if show_pdp:
         tmp = NumpyFrame(
             model.partial_plot(
-                frame,
+                sampled_frame,
                 cols=[column],
                 plot=False,
                 targets=target,
-                nbins=100 if not is_factor else 1 + frame[column].nlevels()[0]
+                nbins=observation_selection_params.get('simulation_num_points') if not is_factor else 1 + sampled_frame[column].nlevels()[0]
             )[0]
         )
         encoded_col = tmp.columns[0]
@@ -1014,7 +1045,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
             plt.plot(tmp[encoded_col], response, color="k", linestyle="dashed",
                      label="Partial Dependence")
 
-    _add_histogram(frame, column)
+    _add_histogram(sampled_frame, column)
     plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}{}".format(
         model.model_id,
         column,
@@ -1094,6 +1125,22 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
     fig = plt.gcf()
     return fig
 
+def get_observation_selection_method(observation_selection):
+    deciles = observation_selection.get("deciles")
+    if (deciles is not None):
+        return ["deciles", deciles]
+    else:
+        pattern_identification = observation_selection.get("pattern_identification")
+        if (pattern_identification is not None):
+            return ["pattern_identification", pattern_identification]
+        else:
+            simple_random_selection = observation_selection.get("simple_random_selection")
+            if (simple_random_selection is not None):
+                return ["simple_random_selection", simple_random_selection]
+            else:
+                raise ValueError("Observation selection method has to be one of: 'deciles', 'pattern_identification', 'simple_random_selection'!")
+
+
 def pd_ice_common(
         model,  # type: h2o.model.model_base.ModelBase
         frame,  # type: h2o.H2OFrame
@@ -1109,6 +1156,7 @@ def pd_ice_common(
         centered=False, # type: bool
         is_ice=False, # type: bool
         grouping_column=None,  # type: Optional[str]
+        observation_selection={"deciles":{"base":"score", "variable":None, "sampling_range":-1, "simulation_num_points":100, "seed":-1}},
         **kwargs
 ):
     """
@@ -1131,6 +1179,7 @@ def pd_ice_common(
     :param is_ice: a bool whether the caller of this method is ice_plot or pd_plot
     :param grouping_column A feature column name to group the data and provide separate sets of plots
                            by grouping feature values
+    :param observation_selection     todo
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     """
@@ -1177,7 +1226,7 @@ def pd_ice_common(
         plt.figure(figsize=figsize)
         if is_ice:
             fig = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map,
-                       show_pdp, **kwargs)
+                       show_pdp, observation_selection, **kwargs)
         else:
             fig = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, **kwargs)
 
@@ -1221,6 +1270,7 @@ def pd_plot(
     score. Can be one of: "response", "logodds". Defaults to "response".
     :param grouping_column A feature column name to group the data and provide separate sets of plots
                            by grouping feature values
+    :param observation_selection todo
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1515,6 +1565,7 @@ def ice_plot(
         binary_response_scale="response",  # type: Literal["response", "logodds"]
         centered=False,  # type: bool
         grouping_column=None,  # type: Optional[str]
+        observation_selection={"deciles":{"base":"score", "variable":None, "sampling_range":-1, "simulation_num_points":100, "seed":-1}},
         **kwargs
 ):  # type: (...) -> plt.Figure
     """
@@ -1569,8 +1620,8 @@ def ice_plot(
     >>> # Create the individual conditional expectations plot
     >>> gbm.ice_plot(test, column="alcohol")
     """
-    return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap,
-                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, **kwargs)
+    return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap, save_plot_path, show_pdp,
+                         binary_response_scale, centered, True, grouping_column, observation_selection, **kwargs)
 
 
 def _is_binomial(model):
