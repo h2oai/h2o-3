@@ -80,12 +80,6 @@ public class KerberosExtension extends AbstractH2OExtension {
       if (ugi != null) {
         Log.info("Kerberos subsystem initialized. Using user '" + ugi.getShortUserName() + "'.");
       }
-      if (_args.hdfs_token_refresh_interval != null) {
-        long refreshIntervalSecs = parseRefreshIntervalToSecs(_args.hdfs_token_refresh_interval);
-        Log.info("HDFS token will be refreshed every " + refreshIntervalSecs + 
-                "s (user specified " + _args.hdfs_token_refresh_interval + ").");
-        HdfsDelegationTokenRefresher.startRefresher(conf, _args.principal, _args.keytab_path, refreshIntervalSecs);
-      }
       initComponents(conf, _args);
     } else {
       Log.info("Kerberos not configured");
@@ -112,18 +106,6 @@ public class KerberosExtension extends AbstractH2OExtension {
     }
   }
 
-  private long parseRefreshIntervalToSecs(String refreshInterval) {
-    try {
-      if (!refreshInterval.contains("P")) { // convenience - allow user to specify just "10M", instead of requiring "PT10M"
-        refreshInterval = "PT" + refreshInterval;
-      }
-      return Duration.parse(refreshInterval.toLowerCase()).getSeconds();  
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Unable to parse refresh interval, got " + refreshInterval + 
-              ". Example of correct specification '4H' (token will be refreshed every 4 hours).", e);
-    }
-  }
-  
   private UserGroupInformation loginDefaultUser() {
     try {
       UserGroupInformation.loginUserFromSubject(null);
