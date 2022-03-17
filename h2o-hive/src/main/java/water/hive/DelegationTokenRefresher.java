@@ -2,11 +2,13 @@ package water.hive;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSClient;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import water.H2O;
 import water.MRTask;
 import water.Paxos;
+import water.persist.security.HdfsDelegationTokenRefresher;
 import water.util.BinaryFileTransfer;
 import water.util.FileUtils;
 
@@ -45,15 +47,9 @@ public class DelegationTokenRefresher implements Runnable {
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
     boolean useKeytab = conf.getBoolean(H2O_HIVE_USE_KEYTAB, true);
     String authKeytab = useKeytab ? conf.get(H2O_AUTH_KEYTAB) : null;
-    String hiveJdbcUrlPattern = conf.get(H2O_HIVE_JDBC_URL_PATTERN);
-    String hiveHost = conf.get(H2O_HIVE_HOST);
+
     String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
-    final String hiveJdbcUrl;
-    if (authKeytab != null) {
-      hiveJdbcUrl = HiveTokenGenerator.makeHivePrincipalJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
-    } else {
-      hiveJdbcUrl = HiveTokenGenerator.makeHiveDelegationTokenJdbcUrl(hiveJdbcUrlPattern, hiveHost);
-    }
+    String hiveJdbcUrl = makeHiveJdbcUrl(conf, hivePrincipal, authKeytab != null);
     if (hiveJdbcUrl != null) {
       String authKeytabPath;
       if (authKeytab != null) {
@@ -66,7 +62,31 @@ public class DelegationTokenRefresher implements Runnable {
       log("Delegation token refresh not active.", null);
     }
   }
-  
+
+  private static String makeHiveJdbcUrl(Configuration conf, String hivePrincipal, boolean useKeytab) {
+    String hiveJdbcUrlPattern = conf.get(H2O_HIVE_JDBC_URL_PATTERN);
+    String hiveHost = conf.get(H2O_HIVE_HOST);
+    final String hiveJdbcUrl;
+    if (useKeytab) {
+      hiveJdbcUrl = HiveTokenGenerator.makeHivePrincipalJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+    } else {
+      hiveJdbcUrl = HiveTokenGenerator.makeHiveDelegationTokenJdbcUrl(hiveJdbcUrlPattern, hiveHost);
+    }
+    return hiveJdbcUrl;
+  }
+
+  public static boolean startRefresher(Configuration conf, H2O.OptArgs args) {
+    final String authKeytabPath = args.keytab_path;
+    final String authPrincipal = args.principal;
+    final String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
+    final String hiveJdbcUrl = makeHiveJdbcUrl(conf, hivePrincipal, authKeytabPath != null);
+    if (hiveJdbcUrl == null)
+      return false;
+    new DelegationTokenRefresher(authPrincipal, authKeytabPath, null, hiveJdbcUrl, hivePrincipal)
+            .start();
+    return true;
+  }
+
   private static String writeKeytabToFile(String authKeytab, String tmpDir) throws IOException {
     FileUtils.makeSureDirExists(tmpDir);
     String fileName = tmpDir + File.separator + "auth_keytab";
