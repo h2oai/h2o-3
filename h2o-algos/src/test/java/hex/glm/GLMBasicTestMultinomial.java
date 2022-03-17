@@ -94,7 +94,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
     try {
       Scope.enter();
       Frame df = parseTestFile("smalldata/glm_test/rollup_stat_test.csv");
-      df.replace(df.numCols()-1,df.vec("RACE").toCategoricalVec()).remove();
+      df.replace(df.numCols() - 1, df.vec("RACE").toCategoricalVec()).remove();
       Scope.track(df);
       DKV.put(df);
       GLMModel.GLMParameters params = new GLMModel.GLMParameters();
@@ -109,6 +109,9 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._train = df._key;
       GLMModel model = new GLM(params).trainModel().get();
       Scope.track_generic(model);
+    } catch (IllegalArgumentException e) {
+      // Keeping this test since it can be useful in future once beta constraints are supported with multinomial family
+      assertEquals("ERRR on field: non_negative:  does not work with multinomial family.\n", e.getMessage());
     } finally {
       Scope.exit();
     }

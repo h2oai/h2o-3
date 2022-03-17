@@ -41,7 +41,7 @@ If you want to supply the beta constraints for a standardized model, scale your 
 
 **Notes**:
 
-- ``beta_constraints`` is not supported for ``family="multinomial"``. 
+- ``beta_constraints`` is not supported for ``family="multinomial"`` or ``family="ordinal"``.
 - P-values cannot be computed for constrained problems.
 
 Related Parameters

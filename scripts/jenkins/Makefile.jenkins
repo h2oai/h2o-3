@@ -470,6 +470,8 @@ test-hadoop-common-smoke-hive-basic:
 	echo "Hive version 3 installed, not running Hive tests."
 test-hadoop-common-smoke-hive-spnego:
 	echo "Hive version 3 installed, not running Hive tests."
+test-hadoop-common-smoke-hive-jdbc-spnego:
+	echo "Hive version 3 installed, not running Hive tests."
 else
 test-hadoop-common-smoke-hive-basic:
 	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
@@ -477,6 +479,8 @@ test-hadoop-common-smoke-hive-basic:
 test-hadoop-common-smoke-hive-spnego:
 	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 	cd h2o-hive/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+test-hadoop-common-smoke-hive-jdbc-spnego:
+	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL --excludelist hive-direct-tests.txt
 endif
 
 test-hadoop-common-smoke-basic:
@@ -499,12 +503,16 @@ test-kerberos-common-spnego:
 test-kerberos-hadoop-2-standalone: test-kerberos-common-spnego
 	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
+test-kerberos-hadoop-2-standalone-driver: test-kerberos-hadoop-2-standalone test-hadoop-common-smoke-hive-jdbc-spnego
+
 test-kerberos-hadoop-2-hdp: test-hadoop-2-smoke-standalone test-hadoop-common-smoke-hive-basic
 
 test-kerberos-hadoop-2-spnego: test-kerberos-hadoop-2-standalone test-hadoop-common-smoke-hive-spnego
 
 test-kerberos-hadoop-3-standalone: test-kerberos-common-spnego
 	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+
+test-kerberos-hadoop-3-standalone-driver: test-kerberos-hadoop-3-standalone test-hadoop-common-smoke-hive-jdbc-spnego
 
 test-kerberos-hadoop-3-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-smoke-hive-basic
 

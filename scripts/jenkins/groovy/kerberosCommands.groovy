@@ -123,21 +123,21 @@ private GString getCommandHadoop(
 
 private GString getCommandStandaloneDriverKeytab(final stageConfig) {
     def h2odriverJar = "\$(ls h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar)"
-    return getCommandStandaloneKeytab(stageConfig, h2odriverJar)
+    return getCommandStandaloneKeytab(stageConfig, h2odriverJar, '-H h2o.hive.principal hive/localhost@H2O.AI -H h2o.hive.jdbc.host localhost:10000')
 }
 
-private GString getCommandStandaloneKeytab(final stageConfig, jar = 'build/h2o.jar') {
+private GString getCommandStandaloneKeytab(final stageConfig, final jar = 'build/h2o.jar', final hiveArgs = '') {
     return """
             klist
             kdestroy
             klist || echo 'No ticket expected'
             bash -c 'printf "%b" "addent -password -p jenkins@H2O.AI -k 1 -e aes256-cts-hmac-sha1-96\\\\nh2o\\\\nwrite_kt /tmp/jenkins.keytab" | ktutil'
-            ${getCommandStandalone(stageConfig, jar, '-principal jenkins@H2O.AI -keytab /tmp/jenkins.keytab')}
+            ${getCommandStandalone(stageConfig, jar, "-principal jenkins@H2O.AI -keytab /tmp/jenkins.keytab", hiveArgs)}
             echo 'h2o' | kinit        
     """
 }
 
-private GString getCommandStandalone(final stageConfig, final jar = 'build/h2o.jar', final extraArgs = '') {
+private GString getCommandStandalone(final stageConfig, final jar = 'build/h2o.jar', final authArgs = '', final hiveArgs = '') {
     def defaultPort = 54321
     return """
             java -cp ${jar}:\$(cat /opt/hive-jdbc-cp):${stageConfig.customData.extraClasspath} water.H2OApp \\
@@ -146,7 +146,7 @@ private GString getCommandStandalone(final stageConfig, final jar = 'build/h2o.j
                 -spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
                 -login_conf ${stageConfig.customData.spnegoConfigPath} \\
                 -spnego_properties ${stageConfig.customData.spnegoPropertiesPath} \\
-                ${extraArgs} \\
+                ${authArgs} ${hiveArgs} \\
                 > standalone_h2o.log 2>&1 & 
             for i in \$(seq 4); do
               if grep "Open H2O Flow in your web browser" standalone_h2o.log

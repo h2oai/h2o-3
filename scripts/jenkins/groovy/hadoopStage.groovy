@@ -96,8 +96,9 @@ private String getMakeTargetSuffix(final stageConfig) {
             return "-spnego"
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
         case H2O_HADOOP_STARTUP_MODE_STANDALONE_KEYTAB:
-        case H2O_HADOOP_STARTUP_MODE_STANDALONE_DRIVER_KEYTAB:
             return "-standalone"
+        case H2O_HADOOP_STARTUP_MODE_STANDALONE_DRIVER_KEYTAB:
+            return "-standalone-driver"
         default:
             error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported by the makefile (cannot make Makefile target)")
     }
