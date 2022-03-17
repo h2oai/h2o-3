@@ -11,6 +11,10 @@ At times when working with real-world data, regression models can yield counteri
 
 To enforce the algorithm to only use positive coefficients, you are (in a sense) indicating that you know that the features are all correlated with positive outcomes. As such, this option is generally only useful if you know the predictive features are positively correlated with the outcome. In superlearning, this does hold true. But you should use caution when enabling this command, keeping in mind that your best chance for catching overfitting with some negative coefficients performing worse is when your model has unseen data that looks a little different. 
 
+**Notes**:
+
+- ``non_negative`` is not supported for ``family="multinomial"`` or ``family="ordinal"``.
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
