@@ -538,7 +538,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
    * @param timeoutMillis the maximum time in milliseconds to wait
    */
   public void blockingWaitForDone(long timeoutMillis) {
-    if (FORCE_SLEEP_WAITING) {
+    if (H2O.ARGS.client || FORCE_SLEEP_WAITING) { // in client-mode the job is actually running on a different node
       sleep(timeoutMillis); // for debugging to be able to prove that blockingWaitForDone saves time compared to just sleep
     } else {
       blockingWaitForDone(timeoutMillis, true);
