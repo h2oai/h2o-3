@@ -1533,7 +1533,6 @@ public class StackedEnsembleTest extends TestUtil {
             GLMModel.GLMParameters glmParams =  (GLMModel.GLMParameters) stackedEnsembleParameters._metalearner_parameters;
             glmParams._generate_scoring_history = true;
             glmParams._score_iteration_interval = (glmParams._valid == null) ? 5 : -1;
-            glmParams._non_negative = true;
             glmParams._alpha = new double[] {0.5, 1.0};
             glmParams._standardize = false;
 
