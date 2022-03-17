@@ -228,7 +228,11 @@ public class Metalearners {
             parms._score_iteration_interval = (parms._valid == null) ? 5 : -1;
 
             //specific to AUTO mode
-            parms._non_negative = true;
+            // beta_constraints/non_negative are not supported for multinomial and ordinal families
+            parms._non_negative = !(
+                    parms._family.equals(GLMParameters.Family.multinomial) ||
+                    parms._family.equals(GLMParameters.Family.ordinal)
+            );
             //parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
 
             // feature columns are already homogeneous (probabilities); when standardization is enabled,

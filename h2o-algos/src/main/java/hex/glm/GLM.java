@@ -656,11 +656,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         case AUTO:
           if (nclasses() == 1 & _parms._link != Link.family_default && _parms._link != Link.identity 
                   && _parms._link != Link.log && _parms._link != Link.inverse) {
-            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default, identity, log or inverse."));
+            error("_family", H2O.technote(2, "AUTO for underlying response requires the link to be family_default, identity, log or inverse."));
           } else if (nclasses() == 2 & _parms._link != Link.family_default && _parms._link != Link.logit) {
-            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or logit."));
+            error("_family", H2O.technote(2, "AUTO for underlying response requires the link to be family_default or logit."));
           } else if (nclasses() > 2 & _parms._link != Link.family_default & _parms._link != Link.multinomial) {
-            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or multinomial."));
+            error("_family", H2O.technote(2, "AUTO for underlying response requires the link to be family_default or multinomial."));
           }
           break;
         case binomial:
@@ -787,7 +787,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (hasOffsetCol() && ordinal.equals(_parms._family)) 
         error("offset_column", " does not work with ordinal family right now.  Will be fixed in" +
                 " the future.");
-      
+
+      if ((_parms._family.equals(multinomial) || _parms._family.equals(ordinal)) &&
+              (_parms._beta_constraints != null || _parms._non_negative)) {
+        error(_parms._non_negative ? "non_negative" : "beta_constraints",
+                " does not work with " + _parms._family + " family.");
+      }
+
       boolean standardizeQ = _parms._HGLM?false:_parms._standardize;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, standardizeQ ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
               _parms.missingValuesHandling() == MissingValuesHandling.Skip, 
