@@ -324,7 +324,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         // main_model_time_budget_factor * cv_max_runtime * nfold/(nfold-1) since the main model uses data from all folds to train.
         // Main intention is to prevent GLM/DeepLearning non-converging main model to spend
         // way more time than it should while giving well-behaved models enough time to converge.
-        params._main_model_time_budget_factor = 1;
+        params._main_model_time_budget_factor = 2;
     }
     
     protected void setCrossValidationParams(Model.Parameters params) {
