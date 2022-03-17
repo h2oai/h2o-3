@@ -114,7 +114,7 @@ test-pyunit-fault-tolerance: init-lookup lookup-fault-tolerance-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --numnodes 3 --jvm.xmx 4g --testlist .lookup.txt
 
 test-pyunit-medium-large:
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 40g
 
 test-py-single-test:
 	@echo "test=$$SINGLE_TEST_PATH"
