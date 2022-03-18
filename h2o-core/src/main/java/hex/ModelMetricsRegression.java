@@ -133,20 +133,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       if(w == 0 || Double.isNaN(w)) return ds;
       // Compute error
       double err = yact[0] - ds[0]; // Error: distance from the actual
-      double err_msle = Math.pow(Math.log1p(ds[0]) - Math.log1p(yact[0]),2); //Squared log error
       _sumsqe += w*err*err;       // Squared error
-      _abserror += w*Math.abs(err);
-      _rmslerror += w*err_msle;
       assert !Double.isNaN(_sumsqe);
-      
-      // Deviance method is not supported in custom distribution
-      if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist ._family != DistributionFamily.custom)) {
-        if (m != null && !m.isDistributionHuber()) {
-          _sumdeviance += m.deviance(w, yact[0], ds[0]);
-        } else if (_dist != null) {
-          _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
-        }
-      }
       
       _count++;
       _wcount += w;
@@ -171,31 +159,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
 
     ModelMetricsRegression computeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       double mse = _sumsqe / _wcount;
-      double mae = _abserror/_wcount; //Mean Absolute Error
-      double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
-      if (adaptedFrame ==null) adaptedFrame = f;
-      double meanResDeviance = 0;
-      if (m != null && m.isDistributionHuber()){
-        assert(_sumdeviance==0); // should not yet be computed
-        if (preds != null) {
-          Vec actual = adaptedFrame.vec(m._parms._response_column);
-          Vec weight = adaptedFrame.vec(m._parms._weights_column);
-
-          //compute huber delta based on huber alpha quantile on absolute prediction error
-          double huberDelta = computeHuberDelta(actual, preds.anyVec(), weight, m._parms._huber_alpha);
-
-          // make a deep copy of the model's current distribution state (huber delta)
-          _dist = IcedUtils.deepCopy(m._dist);
-          _dist.setHuberDelta(huberDelta);
-
-          meanResDeviance = new MeanResidualDeviance(_dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
-        }
-      } else if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist._family != DistributionFamily.custom) ) {
-        meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
-      } else {
-        meanResDeviance = Double.NaN;
-      }
-      ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance, _customMetric);
+      ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), Double.NaN, Double.NaN, Double.NaN, _customMetric);
       return mm;
     }
   }

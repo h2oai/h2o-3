@@ -2360,9 +2360,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // compute full validation on train and test
       Log.info(LogMsg("Scoring after " + timeSinceLastScoring() + "ms"));
       long t1 = System.currentTimeMillis();
-      Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
-      _model.score(train).delete();
-      scorePostProcessing(train, t1);
+      Frame train = DKV.getGet(_parms._train); // need to keep this frame to get scoring metrics back
+
+      if (_parms._just_r2) {
+        Frame adaptFr = _model.adaptFrameForMetrics(train);
+        ModelMetrics.MetricBuilder<?> mb = ((GLMMetricBuilder) _model.scoreMetrics(adaptFr))._metricBuilder;
+      
+        double sigma = mb.weightedSigma();
+        double mse = mb._sumsqe / mb._wcount;
+        double var = sigma * sigma;
+        double r2 =  1.0 - mse / var;
+
+        long t2 = System.currentTimeMillis();
+        Log.info("R2 computed in " + (t2 - t1) + "ms");
+
+        _model._output._r2 = r2;
+        _model.update(_job._key);
+      } else {
+        _model.score(train).delete();
+        scorePostProcessing(train, t1);
+      }
     }
 
     private void scorePostProcessing(Frame train, long t1) {
@@ -2731,10 +2748,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         scoreAndUpdateModel();
       TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
               (null != _parms._valid), false, _model._output.getModelCategory(), false);
-      _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
-              scoring_history_early_stop);
-      _model._output._varimp = _model._output.calculateVarimp();
-      _model._output._variable_importances = calcVarImp(_model._output._varimp);
+      if (!_parms._just_r2) {
+        _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
+                scoring_history_early_stop);
+        _model._output._varimp = _model._output.calculateVarimp();
+        _model._output._variable_importances = calcVarImp(_model._output._varimp);
+      }
       _model.update(_job._key);
 /*      if (_vcov != null) {
         _model.setVcov(_vcov);

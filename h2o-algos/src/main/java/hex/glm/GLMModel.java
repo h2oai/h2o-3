@@ -261,6 +261,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     @Override public long progressUnits() { return GLM.WORK_TOTAL; }
     public boolean _standardize = true;
     public boolean _useDispersion1 = false; // internal use only, not for users
+    public boolean _just_r2 = false;
     public Family _family;
     public Family[] _rand_family;   // for HGLM
     public Link _link;
@@ -1153,6 +1154,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return domains;
   }
 
+  @Override
+  public double r2() {
+    if (!Double.isNaN(_output._r2)) {
+      return _output._r2;
+    }
+    return super.r2();
+  }
+
   public void setZValues(double [] zValues, double dispersion, boolean dispersionEstimated) {
     _output._zvalues = zValues;
     _output._dispersion = dispersion;
@@ -1200,6 +1209,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         res[i] = _global_beta[i]/_zvalues[i];
       return res;
     }
+
+    public double _r2 = Double.NaN;
     
     public double[] getZValues() {
       return _zvalues;

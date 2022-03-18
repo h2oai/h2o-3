@@ -208,6 +208,7 @@ public class ModelSelectionUtils {
             params[index]._nfolds = nfolds;
             params[index]._fold_column = foldColumn;
             params[index]._fold_assignment = foldAssignment;
+            params[index]._just_r2 = true;
         }
         return params;
     }

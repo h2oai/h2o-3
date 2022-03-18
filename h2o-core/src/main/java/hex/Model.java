@@ -1877,6 +1877,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
+
+  public Frame adaptFrameForMetrics(Frame fr) {
+    return adaptFrameForScore(fr, true, new LinkedList<>());
+  }
+
   protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics, List<Frame> tmpFrames) {
     Frame adaptFr = new Frame(fr);
     applyPreprocessors(adaptFr, tmpFrames);
