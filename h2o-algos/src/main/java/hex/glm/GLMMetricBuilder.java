@@ -83,17 +83,6 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
     if(weight == 0)return ds;
     _metricBuilder.perRow(ds,yact,weight,offset,m);
-    if (_glmf._family.equals(Family.negativebinomial))
-      _log_likelihood += m.likelihood(weight, yact[0], ds[0]);
-    if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      if(_glmf._family == Family.multinomial || _glmf._family == Family.ordinal)
-        add2(yact[0], ds, weight, offset);
-      else if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial ||
-              _glmf._family.equals(Family.fractionalbinomial))
-        add2(yact[0], ds[2], weight, offset);
-      else
-        add2(yact[0], ds[0], weight, offset);
-    }
     return ds;
   }
 
