@@ -1,7 +1,9 @@
 package hex;
 
+import hex.encoding.OneHotCategoricalEncoder;
 import org.junit.*;
 import water.*;
+import hex.encoding.CategoricalEncoding;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
@@ -122,7 +124,7 @@ public class ModelAdaptTest extends TestUtil {
 
     String[] skipCols = new String[] { "resp" };
     Frame trnToEncode = new Frame(new String[] {"id", "dog", "resp"}, trn.vecs(new int[]{1, 2, 3}));
-    Frame trnEncoded = new CategoricalEncoders.CategoricalOneHotEncoder().encode(trnToEncode, skipCols);
+    Frame trnEncoded = new OneHotCategoricalEncoder().encode(trnToEncode, skipCols);
     trnToEncode.remove();
 
     o.setNames(trnEncoded.names(), trnEncoded.typesStr());

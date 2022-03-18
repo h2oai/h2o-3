@@ -13,7 +13,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 
 import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.averagePathLengthOfUnsuccessfulSearch;
 import static org.junit.Assert.*;

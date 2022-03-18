@@ -5,7 +5,7 @@ import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import hex.tree.uplift.UpliftDRFModel;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 
 public class EffectiveParametersUtils {
     

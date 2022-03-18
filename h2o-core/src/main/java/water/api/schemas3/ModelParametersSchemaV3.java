@@ -10,7 +10,7 @@ import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;

@@ -9,7 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 import water.util.Log;
 
 import java.util.Arrays;

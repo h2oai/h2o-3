@@ -5,7 +5,7 @@ import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
 import water.Key;
 import water.fvec.NewChunk;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 import water.util.MathUtils;
 
 public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {

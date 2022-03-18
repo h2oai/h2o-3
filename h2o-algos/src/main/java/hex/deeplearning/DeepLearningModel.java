@@ -1746,10 +1746,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           dl.error("_nfolds", "N-fold cross-validation is not supported for Autoencoder.");
         }
       }
-      if (_categorical_encoding== water.util.CategoricalEncoding.Scheme.Enum) {
+      if (_categorical_encoding== hex.encoding.CategoricalEncoding.Scheme.Enum) {
         dl.error("_categorical_encoding", "Cannot use Enum encoding for categoricals - need numbers!");
       }
-      if (_categorical_encoding== water.util.CategoricalEncoding.Scheme.OneHotExplicit) {
+      if (_categorical_encoding== hex.encoding.CategoricalEncoding.Scheme.OneHotExplicit) {
         dl.error("_categorical_encoding", "Won't use explicit Enum encoding for categoricals - it's much faster with OneHotInternal!");
       }
       if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
@@ -2151,10 +2151,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;
         }
-        if (fromParms._categorical_encoding== water.util.CategoricalEncoding.Scheme.AUTO) {
+        if (fromParms._categorical_encoding== hex.encoding.CategoricalEncoding.Scheme.AUTO) {
           if (!fromParms._quiet_mode)
             Log.info("_categorical_encoding: Automatically enabling OneHotInternal categorical encoding.");
-          toParms._categorical_encoding = water.util.CategoricalEncoding.Scheme.OneHotInternal;
+          toParms._categorical_encoding = hex.encoding.CategoricalEncoding.Scheme.OneHotInternal;
          }
         if (fromParms._mini_batch_size > 1) {
           Log.warn("_mini_batch_size", "Only mini-batch size = 1 is supported right now.");

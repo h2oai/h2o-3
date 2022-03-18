@@ -1,4 +1,4 @@
-package water.util;
+package hex.encoding;
 
 import water.fvec.Frame;
 

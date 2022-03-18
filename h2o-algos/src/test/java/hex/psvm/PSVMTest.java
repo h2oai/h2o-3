@@ -1,6 +1,7 @@
 package hex.psvm;
 
 import hex.*;
+import hex.encoding.OneHotCategoricalEncoder;
 import hex.genmodel.algos.psvm.ScorerFactory;
 import hex.genmodel.algos.psvm.SupportVectorScorer;
 import hex.splitframe.ShuffleSplitFrame;
@@ -10,9 +11,6 @@ import water.*;
 import water.fvec.*;
 import water.rapids.ast.prims.math.AstSgn;
 import water.test.util.ConfusionMatrixUtils;
-import water.util.CategoricalEncoder;
-import water.util.CategoricalEncoders;
-import water.util.CategoricalEncoding;
 
 import static org.junit.Assert.*;
 
@@ -150,7 +148,7 @@ public class PSVMTest extends TestUtil {
 
         if (encode) {
           fr.insertVec(0, "RACE", fr.remove("RACE"));
-          Frame encoded = new CategoricalEncoders.CategoricalOneHotEncoder().encode(fr, new String[]{"CAPSULE"});
+          Frame encoded = new OneHotCategoricalEncoder().encode(fr, new String[]{"CAPSULE"});
           Scope.track(encoded);
           
           fr = encoded;

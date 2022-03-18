@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 
 import hex.*;
+import hex.encoding.EigenCategoricalEncoder;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.tools.PredictCsv;
@@ -10,6 +11,7 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import water.*;
+import hex.encoding.CategoricalEncoding;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
@@ -2485,7 +2487,7 @@ public class DeepLearningTest extends TestUtil {
       }
       Log.info(mainFrame, 0, 100);
 
-      transformedFrame =  new CategoricalEncoders.CategoricalEigenEncoder(new DeepLearningParameters()).encode(mainFrame);
+      transformedFrame =  new EigenCategoricalEncoder(new DeepLearningParameters()).encode(mainFrame);
       assert transformedFrame != null : "Unable to transform a frame";
 
       Assert.assertEquals("Wrong number of columns after converting to eigen encoding",

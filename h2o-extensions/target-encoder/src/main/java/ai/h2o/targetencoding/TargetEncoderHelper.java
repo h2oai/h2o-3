@@ -1,5 +1,6 @@
 package ai.h2o.targetencoding;
 
+import hex.encoding.OneHotCategoricalEncoder;
 import water.*;
 import water.fvec.*;
 import water.fvec.task.FillNAWithLongValueTask;
@@ -102,7 +103,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         // transform the target into multiple columns that each will be interpreted as a target
         // used to generate the new {targetclass}_te features
         Frame targetFr = new Frame(new String[]{targetName}, new Vec[]{targetVec});
-        Frame oheTarget = new CategoricalEncoders.CategoricalOneHotEncoder().encode(targetFr);
+        Frame oheTarget = new OneHotCategoricalEncoder().encode(targetFr);
         Scope.track(oheTarget);
         Frame expandedFr = new Frame(fr).add(oheTarget);
 //        printFrame(expandedFr);

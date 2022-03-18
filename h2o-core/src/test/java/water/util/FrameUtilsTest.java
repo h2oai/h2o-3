@@ -1,6 +1,9 @@
 package water.util;
 
 import hex.CreateFrame;
+import hex.encoding.BinaryCategoricalEncoder;
+import hex.encoding.EnumLimitedCategoricalEncoder;
+import hex.encoding.OneHotCategoricalEncoder;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -62,7 +65,7 @@ public class FrameUtilsTest extends TestUtil {
         auxFrames[i]._names[0] = catNames[i];
         mainFrame.add(auxFrames[i]);
       }
-      transformedFrame = new CategoricalEncoders.CategoricalBinaryEncoder().encode(mainFrame);
+      transformedFrame = new BinaryCategoricalEncoder().encode(mainFrame);
       assert transformedFrame != null : "Unable to transform a frame";
 
       Assert.assertEquals("Wrong number of columns after converting to binary encoding",
@@ -105,7 +108,7 @@ public class FrameUtilsTest extends TestUtil {
               .withDataForCol(2, ar("A", "B", "A", "C", null, "B", "A"))
               .withChunkLayout(2, 2, 2, 1)
               .build();
-      Frame result = new CategoricalEncoders.CategoricalOneHotEncoder().encode(f, new String[]{"CatCol1"});
+      Frame result = new OneHotCategoricalEncoder().encode(f, new String[]{"CatCol1"});
       Scope.track(result);
       assertArrayEquals(
               new String[]{"NumCol", "CatCol2.A", "CatCol2.B", "CatCol2.C", "CatCol2.missing(NA)", "CatCol1"},
@@ -158,7 +161,7 @@ public class FrameUtilsTest extends TestUtil {
       Scope.track(fr);
       fr.toCategoricalCol("AGE");
       
-      Frame enc = new CategoricalEncoders.CategoricalEnumLimitedEncoder(5).encode(fr);
+      Frame enc = new EnumLimitedCategoricalEncoder(5).encode(fr);
       Scope.track(enc);
       
       System.out.println(enc.toTwoDimTable());
@@ -179,7 +182,7 @@ public class FrameUtilsTest extends TestUtil {
               .withDataForCol(0, new String[]{null, null, null, null, "c", "c", "c", "b", "b", "a"})
               .build();
 
-      Frame enc = new CategoricalEncoders.CategoricalEnumLimitedEncoder(2).encode(fr);
+      Frame enc = new EnumLimitedCategoricalEncoder(2).encode(fr);
       Scope.track(enc);
 
       System.out.println(enc.toTwoDimTable());

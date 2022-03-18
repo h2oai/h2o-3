@@ -10,6 +10,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.*;
+import hex.encoding.CategoricalEncoding;
 import water.fvec.*;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
@@ -255,11 +256,11 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             throw new UnsupportedOperationException(
                     "Models with categorical encoding '" + encoding + "' are not currently supported for predicting and/or calculating metrics.");
         }
-        final water.util.CategoricalEncoding.Scheme encodingScheme = water.util.CategoricalEncoding.Scheme.fromGenModel(encoding);
+        final CategoricalEncoding.Scheme encodingScheme = CategoricalEncoding.Scheme.fromGenModel(encoding);
         final ModelDescriptor descriptor = genModel instanceof MojoModel ? ((MojoModel) genModel)._modelDescriptor : null;
         return new AdaptFrameParameters() {
             @Override
-            public water.util.CategoricalEncoding.Scheme getCategoricalEncoding() {
+            public CategoricalEncoding.Scheme getCategoricalEncoding() {
                 return encodingScheme;
             }
             @Override

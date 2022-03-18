@@ -13,7 +13,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 import water.util.TwoDimTable;
 
 import java.util.*;

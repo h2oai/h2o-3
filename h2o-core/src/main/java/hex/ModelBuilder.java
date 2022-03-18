@@ -6,6 +6,7 @@ import jsr166y.CountedCompleter;
 import water.*;
 import water.api.FSIOException;
 import water.api.HDFSIOException;
+import hex.encoding.CategoricalEncoding;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
@@ -1735,8 +1736,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               _parms, 
               expensive,
               true, 
-              null, 
-              getToEigenVec(), 
+              null,
               _workspace.getToDelete(expensive), 
               catEncoded
       );
@@ -1774,7 +1774,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   
   private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
-    Frame encoded = CategoricalEncoding.newEncoder(_parms._categorical_encoding, _parms).encode(fr, _parms.getNonPredictors());
+    Frame encoded = CategoricalEncoding
+            .getEncoder(_parms._categorical_encoding, _parms)
+            .encode(fr, _parms.getNonPredictors());
     if (encoded != fr) trackEncoded(encoded, scopeTrack);
     return encoded;
   }

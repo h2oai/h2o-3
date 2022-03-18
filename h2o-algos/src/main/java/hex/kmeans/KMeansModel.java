@@ -15,7 +15,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 

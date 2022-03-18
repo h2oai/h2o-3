@@ -3,7 +3,7 @@ package ai.h2o.targetencoding;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.Model;
-import water.util.CategoricalEncoding.Scheme;
+import hex.encoding.CategoricalEncoding.Scheme;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -24,7 +24,7 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 
 import java.io.File;
 import java.io.FileOutputStream;

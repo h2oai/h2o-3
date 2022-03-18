@@ -1,5 +1,7 @@
 package hex;
 
+import hex.encoding.CategoricalEncoder;
+import hex.encoding.NoopCategoricalEncoder;
 import hex.genmodel.*;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.tree.ContributionComposer;
@@ -22,13 +24,14 @@ import water.api.StreamingSchema;
 import water.api.schemas3.KeyV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
+import hex.encoding.CategoricalEncodingSupport;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.persist.Persist;
 import water.udf.CFuncRef;
 import water.util.*;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -366,7 +369,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return _seed;
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
-    public water.util.CategoricalEncoding.Scheme _categorical_encoding = water.util.CategoricalEncoding.Scheme.AUTO;
+    public CategoricalEncoding.Scheme _categorical_encoding = CategoricalEncoding.Scheme.AUTO;
     public int _max_categorical_levels = 10;
 
     public DistributionFamily _distribution = DistributionFamily.AUTO;
@@ -1563,7 +1566,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             expensive,
             computeMetrics,
             _output.interactionBuilder(),
-            getToEigenVec(),
             _toDelete,
             catEncoded
     );
@@ -1573,16 +1575,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return _parms;
   }
 
-  public interface AdaptFrameParameters {
-    water.util.CategoricalEncoding.Scheme getCategoricalEncoding();
+  public interface AdaptFrameParameters extends CategoricalEncodingSupport {
     String getWeightsColumn();
     String getOffsetColumn();
     String getFoldColumn();
     String getResponseColumn();
     String getTreatmentColumn();
     double missingColumnsType();
-    int getMaxCategoricalLevels();
-    ToEigenVec getToEigenVec();
     default String[] getNonPredictors() {
       return Arrays.stream(new String[]{getWeightsColumn(), getOffsetColumn(), getFoldColumn(), getResponseColumn(), getTreatmentColumn()})
               .filter(Objects::nonNull)
@@ -1605,7 +1604,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public static String[] adaptTestForTrain(final Frame test, final String[] origNames, final String[][] origDomains,
                                            String[] names, String[][] domains, final AdaptFrameParameters parms,
                                            final boolean expensive, final boolean computeMetrics,
-                                           final InteractionBuilder interactionBldr, final ToEigenVec tev,
+                                           final InteractionBuilder interactionBldr,
                                            final IcedHashMap<Key, String> toDelete, final boolean catEncoded)
           throws IllegalArgumentException {
     String[] msg = new String[0];
@@ -1628,14 +1627,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
-    // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
-    final boolean checkCategoricals = !catEncoded && Arrays.asList(
-            water.util.CategoricalEncoding.Scheme.Binary,
-            water.util.CategoricalEncoding.Scheme.LabelEncoder,
-            water.util.CategoricalEncoding.Scheme.Eigen,
-            water.util.CategoricalEncoding.Scheme.EnumLimited,
-            water.util.CategoricalEncoding.Scheme.OneHotExplicit
-    ).indexOf(parms.getCategoricalEncoding()) >= 0;
+    final CategoricalEncoder catEncoder = CategoricalEncoding.getEncoder(parms.getCategoricalEncoding(), parms);
+    final boolean checkCategoricals = !catEncoded && !(catEncoder instanceof NoopCategoricalEncoder);
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
     if (checkCategoricals && origNames != null) {
@@ -1756,10 +1749,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // check if we first need to expand categoricals before calling this method again
       if (hasCategoricalPredictors) {
-        Frame updated = CategoricalEncoding.newEncoder(parms.getCategoricalEncoding(), parms).encode(test, parms.getNonPredictors());
+        Frame updated = CategoricalEncoding
+                .getEncoder(parms.getCategoricalEncoding(), parms)
+                .encode(test, parms.getNonPredictors());
         toDelete.put(updated._key, "categorically encoded frame");
         test.restructure(updated.names(), updated.vecs()); //updated in place
-        String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
+        String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, toDelete, true /*catEncoded*/);
         msgs.addAll(Arrays.asList(msg2));
         return msgs.toArray(new String[msgs.size()]);
       }
@@ -1939,7 +1934,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   private void encodeCategoricals(Frame fr, List<Frame> tmpFrames) {
-    Frame encoded = CategoricalEncoding.newEncoder(_parms._categorical_encoding, _parms).encode(fr, _parms.getNonPredictors());
+    Frame encoded = CategoricalEncoding
+            .getEncoder(_parms._categorical_encoding, _parms)
+            .encode(fr, _parms.getNonPredictors());
     tmpFrames.add(encoded);
     fr.restructure(encoded.names(), encoded.vecs()); //inplace
   }

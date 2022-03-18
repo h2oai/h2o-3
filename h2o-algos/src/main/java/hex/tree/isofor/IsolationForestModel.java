@@ -8,7 +8,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.fvec.Frame;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 import water.util.TwoDimTable;
 
 
@@ -186,7 +186,6 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
               expensive,
               true,
               _output.interactionBuilder(),
-              getToEigenVec(),
               _toDelete,
               false
       );

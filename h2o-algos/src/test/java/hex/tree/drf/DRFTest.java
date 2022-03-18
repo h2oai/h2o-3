@@ -16,6 +16,7 @@ import hex.tree.SharedTreeModel;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import water.*;
+import hex.encoding.CategoricalEncoding;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;

@@ -15,7 +15,7 @@ import water.Scope;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 
 import java.io.File;
 import java.io.IOException;

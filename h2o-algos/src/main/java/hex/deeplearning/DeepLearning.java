@@ -16,7 +16,7 @@ import water.fvec.Vec;
 import water.init.Linpack;
 import water.init.NetworkTest;
 import water.util.ArrayUtils;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;

@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import water.*;
 import water.api.StreamingSchema;
+import hex.encoding.CategoricalEncoding;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.parser.BufferedString;

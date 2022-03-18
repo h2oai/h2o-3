@@ -19,6 +19,7 @@ import hex.util.EffectiveParametersUtils;
 import org.apache.log4j.Logger;
 import water.*;
 import water.codegen.CodeGeneratorPipeline;
+import hex.encoding.CategoricalEncoding;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;

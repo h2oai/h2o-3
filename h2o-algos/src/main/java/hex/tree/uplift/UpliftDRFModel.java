@@ -6,7 +6,7 @@ import hex.tree.SharedTreeModelWithContributions;
 import hex.util.EffectiveParametersUtils;
 import water.H2O;
 import water.Key;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 
 public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 

@@ -21,7 +21,7 @@ import water.fvec.Vec;
 import water.parser.ParseSetup;
 import water.test.util.ConfusionMatrixUtils;
 import water.util.ArrayUtils;
-import water.util.CategoricalEncoding;
+import hex.encoding.CategoricalEncoding;
 
 import java.io.File;
 import java.util.Random;
