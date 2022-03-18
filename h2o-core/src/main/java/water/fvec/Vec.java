@@ -177,7 +177,7 @@ public class Vec extends Keyed<Vec> {
   // bytesize) bounces through the DKV to fetch the latest copy of the Rollups
   // - lest a Vec.set changes the rollups and we return a stale copy.
   transient private Key _rollupStatsKey;
-  private boolean _volatile;
+  public boolean _volatile;
 
   /** Returns the categorical toString mapping array, or null if not an categorical column.
    *  Not a defensive clone (to expensive to clone; coding error to change the
@@ -928,9 +928,10 @@ public class Vec extends Keyed<Vec> {
    *  @return A set of percentiles */
   public double[] pctiles() { return RollupStats.get(this, true)._pctiles;   }
 
+  public RollupStats _rollups;
 
   /** Compute the roll-up stats as-needed */
-  private RollupStats rollupStats() { return RollupStats.get(this); }
+  public RollupStats rollupStats() { return _rollups != null ? _rollups : RollupStats.get(this); }
 
   public void startRollupStats(Futures fs) { startRollupStats(fs,false);}
 

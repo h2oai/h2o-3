@@ -508,9 +508,9 @@ public class Frame extends Lockable<Frame> {
   public Vec[] bulkRollups() {
     Futures fs = new Futures();
     Vec[] vecs = vecs();
-    for(Vec v : vecs)  v.startRollupStats(fs);
+    for(Vec v : vecs)  if (!v.isVolatile()) v.startRollupStats(fs);
     fs.blockForPending();
-    return vecs;
+    return vecs();
   }
 
   /** Majority class for categorical columns; -1 for non-categorical columns.
