@@ -8,8 +8,10 @@ import water.H2O;
 import water.Key;
 import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.C8DVolatileChunk;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
+import water.fvec.Vec;
 import water.util.Log;
 
 import java.util.ArrayList;
@@ -67,7 +69,18 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
 
         // hack - overwrite original frame
         rebalanced_fr._key = _parms._train;
+
+        int len = (int) rebalanced_fr.numRows();
+        for (int i = 0; i < rebalanced_fr.numCols(); i++) {
+            Vec v = rebalanced_fr.vec(i);
+            double[] data = v.chunkForRow(0).getDoubles(new double[len], 0, len);
+            Vec dv = v.makeVolatileDoubles(1)[0];
+            dv.chunkForChunkIdx(0).setVolatile(data);
+            rebalanced_fr.replace(i, dv);
+        }
         DKV.put(rebalanced_fr);
+        
+        
 
         return rebalanced_fr;
     }
