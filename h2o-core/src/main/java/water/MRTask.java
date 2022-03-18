@@ -626,10 +626,20 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     _run_local = runLocal;     // Run locally by copying data, or run globally?
     assert checkRunLocal() : "MRTask is expected to be running in a local-mode but _run_local = false";
     setupLocal0();              // Local setup
-    H2O.submitTask(this);       // Begin normal execution on a FJ thread
+    
+    _run_single = fr.anyVec().nChunks() == 1 && getClass().getName().startsWith("hex.glm.");
+
+    if (_run_single) {
+      compute2();
+      postLocal0();
+    } else {
+      H2O.submitTask(this);       // Begin normal execution on a FJ thread
+    }
     return self();
   }
 
+  boolean _run_single = false;
+  
   private boolean checkRunLocal() {
     if (!Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.checkRunLocal"))
       return true;
@@ -643,6 +653,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * Note: the desired name 'get' is final in ForkJoinTask.  
    */
   public final T getResult(boolean fjManagedBlock) {
+    if (_run_single) {
+      return self();
+    }
     assert getCompleter()==null; // No completer allowed here; FJ never awakens threads with completers
     do {
       try {
@@ -847,7 +860,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     }
     if(_profile!=null)
       _profile._mapdone = System.currentTimeMillis();
-    tryComplete();
+    if (!_run_single) {
+      tryComplete();
+    }
   }
 
   /** OnCompletion - reduce the left and right into self.  Called internal by
