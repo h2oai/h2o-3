@@ -6,16 +6,15 @@ import hex.glm.GLMModel;
 import water.DKV;
 import water.H2O;
 import water.Key;
-import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.RebalanceDataSet;
 import water.util.Log;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static hex.genmodel.utils.MathUtils.combinatorial;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
@@ -49,6 +48,24 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
     @Override
     protected int nModelsInParallel(int folds) {
         return nModelsInParallel(1,2);  // disallow nfold cross-validation
+    }
+
+    @Override
+    protected Frame rebalance(Frame original_fr, boolean local, String name) {
+        if (original_fr == null)
+            return null;
+        int chunks = 1;
+        Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
+        Key newKey = Key.makeUserHidden(name + ".chunks" + chunks);
+        RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
+        H2O.submitTask(rb).join();
+        Frame rebalanced_fr = DKV.get(newKey).get();
+
+        // hack - overwrite original frame
+        rebalanced_fr._key = _parms._train;
+        DKV.put(rebalanced_fr);
+
+        return rebalanced_fr;
     }
 
     @Override
