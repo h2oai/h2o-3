@@ -1,7 +1,7 @@
 ``distribution``
 ----------------
 
-- Available in: GBM, Deep Learning, XGBoost
+- Available in: GBM, Deep Learning, XGBoost, AutoML
 - Hyperparameter: yes
 
 Description
@@ -159,6 +159,120 @@ Where:
 +-------------------+---------------------------------------------------------------------------+
 
 **Note**: Inversion, Ologit, Ologlog, and Oprobit are not associated with concrete distributions but can be used with a custom distribution.
+
+AutoML
+~~~~~~
+
+AutoML supports distribution parameter by passing the ``distribution`` to the individual algos, in case of GLM ``distribution`` is converted to
+a corresponding family. Algos that don't support the specified distribution will use the default ``AUTO`` distribution which corresponds to
+``bernoulli`` for binary classification, ``multinomial`` for multinomial classification, and ``gaussian`` for regression.
+
+**Available distributions in AutoML:**
+
++--------------------+--------------+-----+-----+-----+---------+
+|                    | DeepLearning | DRF | GBM | GLM | XGBoost |
++====================+==============+=====+=====+=====+=========+
+| Bernoulli/Binomial |       X      |  X  |  X  |  X  |    X    |
++--------------------+--------------+-----+-----+-----+---------+
+| Multinomial        |       X      |  X  |  X  |  X  |    X    |
++--------------------+--------------+-----+-----+-----+---------+
+| Gaussian           |       X      |  X  |  X  |  X  |    X    |
++--------------------+--------------+-----+-----+-----+---------+
+| Poisson            |       X      |     |  X  |  X  |    X    |
++--------------------+--------------+-----+-----+-----+---------+
+| NegativeBinomial   |              |     |     |  X  |         |
++--------------------+--------------+-----+-----+-----+---------+
+| Gamma              |       X      |     |  X  |  X  |    X    |
++--------------------+--------------+-----+-----+-----+---------+
+| Laplace            |       X      |     |  X  |     |         |
++--------------------+--------------+-----+-----+-----+---------+
+| Quantile           |       X      |     |  X  |     |         |
++--------------------+--------------+-----+-----+-----+---------+
+| Huber              |       X      |     |  X  |     |         |
++--------------------+--------------+-----+-----+-----+---------+
+| Tweedie            |       X      |     |  X  |  X  |    X    |
++--------------------+--------------+-----+-----+-----+---------+
+
+
+.. tabs::
+   .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # import the cars dataset:
+        # this dataset is used to classify whether or not a car is economical based on
+        # the car's displacement, power, weight, and acceleration, and the year it was made
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors <- c("displacement","power", "weight", "acceleration", "year")
+        response <- "cylinders"
+
+        # split into train and validation sets
+        cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]]
+
+        # try using the distribution parameter:
+        # train AutoML
+        aml_poisson <- h2o.automl(x = predictors, y = response, training_frame = train,
+                                  validation_frame = valid,
+                                  distribution = "poisson",
+                                  max_models = 10,
+                                  seed = 1234)
+        print(aml_poisson@leaderboard)
+
+        # AutoML with tweedie distribution with default value of tweedie_power=1.5
+        aml_tweedie <- h2o.automl(x = predictors, y = response, training_frame = train,
+                                  validation_frame = valid,
+                                  distribution = "tweedie",
+                                  max_models = 10,
+                                  seed = 1234)
+        print(aml_tweedie@leaderboard)
+
+        # AutoML with tweedie distribution with a specified value of tweedie_power=1.75
+        aml_tweedie2 <- h2o.automl(x = predictors, y = response, training_frame = train,
+                                   validation_frame = valid,
+                                   distribution = list(distribution = "tweedie", tweedie_power = 1.75),
+                                   max_models = 10,
+                                   seed = 1234)
+        print(aml_tweedie2@leaderboard)
+
+   .. code-tab:: python
+
+        import h2o
+        from h2o.automl import H2OAutoML
+        h2o.init()
+
+        # import the cars dataset:
+        # this dataset is used to classify whether or not a car is economical based on
+        # the car's displacement, power, weight, and acceleration, and the year it was made
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response = "cylinders"
+
+        # split into train and validation sets
+        train, valid = cars.split_frame(ratios=[.8], seed=1234)
+
+        # try using the distribution parameter:
+        # Initialize and train AutoML
+        aml_poisson = H2OAutoML(distribution="poisson", seed=1234, max_models=10)
+        aml_poisson.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
+        print(aml_poisson.leaderboard)
+
+        # AutoML with tweedie distribution with default value of tweedie_power=1.5
+        aml_tweedie = H2OAutoML(distribution="tweedie", seed=1234, max_models=10)
+        aml_tweedie.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
+        print(aml_tweedie.leaderboard)
+
+        # AutoML with tweedie distribution with a specified value of tweedie_power=1.75
+        aml_tweedie2 = H2OAutoML(distribution=dict(distribution="tweedie", tweedie_power=1.75), seed=1234, max_models=10)
+        aml_tweedie2.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
+        print(aml_tweedie2.leaderboard)
+
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
