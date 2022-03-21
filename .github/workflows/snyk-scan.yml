@@ -6,6 +6,7 @@ on:
     branches:
       - 'master'
       - 'rel-*'
+      - 'devops/snyk-security-scan-integration'
 
 jobs:
   snyk_scan_test:
