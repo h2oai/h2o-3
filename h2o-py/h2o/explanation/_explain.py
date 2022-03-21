@@ -1445,6 +1445,7 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
                 show_pdp,
                 binary_response_scale,
                 centered,
+                grouping_column=None,
                 **{'group_label':group_label}
             )
         else:
