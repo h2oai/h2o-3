@@ -1459,8 +1459,25 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public void setSubmodelIdx(int l){
       _selected_submodel_idx = l;
       _best_lambda_idx = l; // kept to ensure backward compatibility
-      _selected_alpha_idx = l / _lambda_array_size ;
-      _selected_lambda_idx = l % _lambda_array_size;
+      _selected_alpha_idx = 0;
+      _selected_lambda_idx = 0;
+
+      double alphaTmp = _submodels[0].alpha_value;
+      double lambdaTmp = _submodels[0].lambda_value;
+      for (int i = 0; i <l; i++) {
+
+        if (_submodels[i] == null || lambdaTmp != _submodels[i].lambda_value)
+          _selected_lambda_idx ++;
+        if (_submodels[i] != null && alphaTmp != _submodels[i].alpha_value) {
+          _selected_alpha_idx ++;
+          _selected_lambda_idx = 0;
+        }
+        if (_submodels[i] != null) {
+          lambdaTmp = _submodels[i].lambda_value;
+          alphaTmp = _submodels[i].alpha_value;
+        }
+      }
+
       if (_random_coefficient_names != null) 
         _ubeta = Arrays.copyOf(_submodels[l].ubeta, _submodels[l].ubeta.length);
       if(_multinomial || _ordinal) {
@@ -1585,13 +1602,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _output._model_summary.set(0, 1, _parms._link.toString());
       String regularization = "None";
       if (_parms._lambda != null && !(_parms._lambda.length == 1 && _parms._lambda[0] == 0)) { // have regularization
-        if (_parms._alpha[_output._selected_alpha_idx] == 0)
+        if (_output.bestSubmodel().alpha_value == 0)
           regularization = "Ridge ( lambda = ";
-        else if (_parms._alpha[_output._selected_alpha_idx] == 1)
+        else if (_output.bestSubmodel().alpha_value == 1)
           regularization = "Lasso (lambda = ";
         else
-          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_parms._alpha[_output._selected_alpha_idx], 4) + ", lambda = ";
-        regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._selected_lambda_idx], 4) + " )";
+          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_output.bestSubmodel().alpha_value, 4) + ", lambda = ";
+        regularization = regularization + MathUtils.roundToNDigits(_output.bestSubmodel().lambda_value, 4) + " )";
       }
       _output._model_summary.set(0, 2, regularization);
       int lambdaSearch = 0;

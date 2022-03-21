@@ -143,21 +143,22 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
 
-  /* This method aligns the submodels across CV folds.
+  /* This method aligns the submodels across CV folds. It will keep only those alpha values that were the best at least in
+   * one CV fold.
    *
    * In the following depiction each submodel is represented by a tuple (alpha_value, lambda_value). Ideally each CV fold
    * should have the same submodels but there can be differences due to max_iteration and max_runtime_secs constraint.
    * Iterations are reset when alpha value change which can cause missing model in the middle and max_runtime_secs constraint
    * can cause missing submodels at the end of the submodel array.
    *
-   *  CV1:
-   *   +------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *  CV1:                                                                                              Best submodel
+   *   +------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+-V------+
    *   | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 | 1, 0.6 | 1, 0.5 | 1, 0.4 |
    *   +------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
-   *  CV2:
-   *   +------+--------+--------+--------+--------+--------+------+--------+--------+--------+
-   *   | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 0, 0.5 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 |
-   *   +------+--------+--------+--------+--------+--------+------+--------+--------+--------+
+   *  CV2:                                          Best submodel
+   *   +------+--------+--------+--------+--------+-V------+------+--------+--------+--------+--------+----------+
+   *   | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 0, 0.5 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 | 0.8, 1 | 0.8, 0.9 |
+   *   +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+----------+
    *
    *    ||
    *    ||
@@ -178,8 +179,35 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    *
    */
   private double[] alignSubModelsAcrossCVModels(ModelBuilder[] cvModelBuilders) {
+    // Get only the best alphas
+    double[] alphas = Arrays.stream(cvModelBuilders)
+            .mapToDouble(cv -> {
+              GLM g = (GLM)cv;
+              return g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value;
+            })
+            .distinct()
+            .toArray();
+
+    // Get corresponding indices for the best alphas and sort them in the same order as in _parms.alpha
+    int[] alphaIndices = new int[alphas.length];
+    int k = 0;
+    for (int i = 0; i < _parms._alpha.length; i++) {
+      for (int j = 0; j < alphas.length; j++) {
+        if (alphas[j] == _parms._alpha[i]) {
+          alphaIndices[k] = i;
+          if (k < j) {
+            // swap to keep the same order as in _parms.alpha
+            final double tmpAlpha = alphas[k];
+            alphas[k] = alphas[j];
+            alphas[j] = tmpAlpha;
+          }
+          k++;
+        }
+      }
+    }
+
     // maximum index of alpha change across all the folds
-    int[] alphaChangePoints = new int[_parms._alpha.length + 1];
+    int[] alphaChangePoints = new int[alphas.length + 1];
     int[] alphaSubmodels = new int[_parms._alpha.length];
     for (int i = 0; i < cvModelBuilders.length; ++i) {
       GLM g = (GLM) cvModelBuilders[i];
@@ -191,34 +219,45 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
-    for (int i = 0; i < _parms._alpha.length; i++) {
-      alphaChangePoints[i + 1] = alphaChangePoints[i] + alphaSubmodels[i];
+    for (int i = 0; i < alphas.length; i++) {
+      alphaChangePoints[i + 1] = alphaChangePoints[i] + alphaSubmodels[alphaIndices[i]];
     }
 
-    double[] lambdas = new double[alphaChangePoints[_parms._alpha.length]];
+    double[] lambdas = new double[alphaChangePoints[alphas.length]];
     for (int i = 0; i < cvModelBuilders.length; ++i) {
       GLM g = (GLM) cvModelBuilders[i];
-      Submodel[] alignedSubmodels = new Submodel[alphaChangePoints[_parms._alpha.length]];
+      Submodel[] alignedSubmodels = new Submodel[alphaChangePoints[alphas.length]];
 
       double lastAlpha = -1;
       int alphaIdx = -1;
-      int k = 0;
+      k = 0;
       int nNullsUntilSelectedSubModel = 0;
       for (int j = 0; j < g._model._output._submodels.length; j++) {
         if (lastAlpha != g._model._output._submodels[j].alpha_value) {
           lastAlpha = g._model._output._submodels[j].alpha_value;
-          alphaIdx++;
-          k = 0;
-          if (g._model._output._selected_submodel_idx > j) {
-            nNullsUntilSelectedSubModel += alphaChangePoints[alphaIdx] - j;
+
+          if (alphaIdx + 1 < alphas.length && lastAlpha == alphas[alphaIdx+1]) {
+            k = 0;
+            alphaIdx++;
+
+          if (g._model._output._selected_submodel_idx >= j)
+            nNullsUntilSelectedSubModel = alphaChangePoints[alphaIdx] - j;
           }
         }
+        if (alphaIdx < 0 || g._model._output._submodels[j].alpha_value != alphas[alphaIdx])
+          continue;
         alignedSubmodels[alphaChangePoints[alphaIdx] + k] = g._model._output._submodels[j];
         assert lambdas[alphaChangePoints[alphaIdx] + k] == 0 || lambdas[alphaChangePoints[alphaIdx] + k] == g._model._output._submodels[j].lambda_value;
         lambdas[alphaChangePoints[alphaIdx] + k++] = g._model._output._submodels[j].lambda_value;
       }
-      g._model._output._selected_submodel_idx += nNullsUntilSelectedSubModel;
+      assert g._model._output._selected_submodel_idx == g._model._output._best_submodel_idx;
+      assert g._model._output._selected_submodel_idx == g._model._output._best_lambda_idx;
+      assert (g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value ==
+              alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].alpha_value) &&
+              (g._model._output._submodels[g._model._output._selected_submodel_idx].lambda_value ==
+                      alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].lambda_value);
       g._model._output._submodels = alignedSubmodels;
+      g._model._output.setSubmodelIdx(g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel);
     }
     return lambdas;
   }
