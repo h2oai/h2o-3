@@ -4,16 +4,12 @@ import water.Iced;
 import water.util.IcedHashSet;
 import water.util.IcedInt;
 
-import java.util.HashSet;
-import java.util.Set;
-
 /**
  * Local branch interaction constraints class to save information about allowed interaction between columns indices
  */
 public class BranchInteractionConstraints extends Iced<BranchInteractionConstraints> {
     
     // Set of allowed column indices in current split but with information from previous split decision
-    // Set<Integer> allowedInteractionIndices;
     IcedHashSet<IcedInt> allowedInteractionIndices;
     
     public BranchInteractionConstraints(IcedHashSet<IcedInt> allowedInteractionIndices){
