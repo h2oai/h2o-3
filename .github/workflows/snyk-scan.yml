@@ -44,8 +44,8 @@ jobs:
 
       - uses: actions/setup-python@v1
         with:
-          python-version: "3.5"
-      - name: Snyk scan for Python 3.5 dependencies
+          python-version: "3.6"
+      - name: Snyk scan for Python 3.6 dependencies
         if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan2
         continue-on-error: true
@@ -112,8 +112,8 @@ jobs:
           
       - uses: actions/setup-python@v1
         with:
-          python-version: "3.5"
-      - name: Snyk scan for Python 3.5 dependencies
+          python-version: "3.6"
+      - name: Snyk scan for Python 3.6 dependencies
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
