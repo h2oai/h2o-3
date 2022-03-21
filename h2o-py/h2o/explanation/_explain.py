@@ -995,8 +995,9 @@ def _handle_selection_by_deciles(model, frame, colormap, plt, target, is_factor,
 
 def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp,
                 observation_selection, **kwargs):
-    method, observation_selection_params = get_observation_selection_method(observation_selection)
-    seed = observation_selection_params.get("seed")
+    observation_selection_params = setup_observation_selection(observation_selection)
+    method = observation_selection_params.get("method")
+    seed = observation_selection_params.get("sampling_seed")
     if (seed != -1):
         random.seed(seed)
 
@@ -1010,11 +1011,9 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
         _handle_selection_by_deciles(model, sampled_frame, colormap, plt, target,
                                      is_factor, column, show_logodds, centered, factor_map, observation_selection_params)
     elif method == "pattern_identification":
-        a = 1
         # todo _handle_selection_by_pattern_identification
         ValueError("Observation selection by pattern identification is not yet supported!")
     else:
-        a = 1
         # todo _handle_selection_by_simple_random_selection
         ValueError("Observation selection by simple random selection is not yet supported!")
 
@@ -1125,21 +1124,48 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
     fig = plt.gcf()
     return fig
 
-def get_observation_selection_method(observation_selection):
-    deciles = observation_selection.get("deciles")
-    if (deciles is not None):
-        return ["deciles", deciles]
-    else:
-        pattern_identification = observation_selection.get("pattern_identification")
-        if (pattern_identification is not None):
-            return ["pattern_identification", pattern_identification]
-        else:
-            simple_random_selection = observation_selection.get("simple_random_selection")
-            if (simple_random_selection is not None):
-                return ["simple_random_selection", simple_random_selection]
-            else:
-                raise ValueError("Observation selection method has to be one of: 'deciles', 'pattern_identification', 'simple_random_selection'!")
+def setup_observation_selection(observation_selection):
+    DEFAULT_DECILES_SETUP = {"method":"deciles", "base":"score", "variable":None, "sampling_range":-1,"simulation_num_points":100, "sampling_seed":-1}
+    DEFAULT_PATTERN_IDENTIFICATION_SETUP =  {"method":"pattern_identification", "pattern_sampling_range":1000, "sampling_range":-1, "num_lines":10, "simulation_num_points":100, "sampling_seed":-1}
+    DEFAULT_SIMPLE_RANDOM_SELECTION_SETUP = {"method":"simple_random_selection", "sampling_range":-1,"simulation_num_points":100, "seed":-1}
 
+    DECILES_SUPPORTED_OPTIONS = ["method", "base", "variable", "sampling_range", "simulation_num_points", "seed"]
+    PATTERN_IDENTIFICATION_SUPPORTED_OPTIONS = ["method", "pattern_sampling_range", "sampling_range", "num_lines", "simulation_num_points", "sampling_seed"]
+    SIMPLE_RANDOM_SELECTION_SUPPORTED_OPTIONS = ["method", "sampling_range", "num_lines", "simulation_num_points", "sampling_seed"]
+
+    if isinstance(observation_selection, str):
+        if observation_selection == "deciles":
+            return DEFAULT_DECILES_SETUP
+        elif observation_selection == "pattern_identification":
+            return DEFAULT_PATTERN_IDENTIFICATION_SETUP
+        elif observation_selection == "simple_random_selection":
+            return DEFAULT_SIMPLE_RANDOM_SELECTION_SETUP
+        else:
+            raise ValueError("Observation selection method has to be one of: 'deciles', 'pattern_identification', 'simple_random_selection'!")
+    elif isinstance(observation_selection, dict):
+        method = observation_selection.get("method")
+        if method is None:
+            raise ValueError("Observation selection method has to be specified and one of: 'deciles', 'pattern_identification', 'simple_random_selection'!")
+        elif method == "deciles":
+            return set_observation_selection_values(DECILES_SUPPORTED_OPTIONS, DEFAULT_DECILES_SETUP, observation_selection)
+        elif method == "pattern_identification":
+            return set_observation_selection_values(PATTERN_IDENTIFICATION_SUPPORTED_OPTIONS, DEFAULT_PATTERN_IDENTIFICATION_SETUP, observation_selection)
+        elif method == "simple_random_selection":
+            return set_observation_selection_values(SIMPLE_RANDOM_SELECTION_SUPPORTED_OPTIONS, DEFAULT_SIMPLE_RANDOM_SELECTION_SETUP, observation_selection)
+        else:
+            raise ValueError("Observation selection method has to be one of: 'deciles', 'pattern_identification', 'simple_random_selection'!")
+    else:
+        raise ValueError("Wrong format of observation_selection parameter: has to be string or dict!")
+
+def set_observation_selection_values(supported_options, default_setup, observation_selection):
+    res = default_setup
+    method = observation_selection["method"]
+    for key in observation_selection.keys():
+        if key not in supported_options:
+            raise ValueError("Unsupported option " + key + " for observation selection by " + method)
+        else:
+            res[key] = observation_selection[key]
+    return res
 
 def pd_ice_common(
         model,  # type: h2o.model.model_base.ModelBase
@@ -1156,7 +1182,9 @@ def pd_ice_common(
         centered=False, # type: bool
         is_ice=False, # type: bool
         grouping_column=None,  # type: Optional[str]
-        observation_selection={"deciles":{"base":"score", "variable":None, "sampling_range":-1, "simulation_num_points":100, "seed":-1}},
+        observation_selection = {"method":"deciles", "base":"score", "variable":None, "sampling_range":-1,"simulation_num_points":100, "sampling_seed":-1},
+        #observation_selection={  "deciles":{"base":"score", "variable":None, "sampling_range":-1, "simulation_num_points":100, "seed":-1}},
+
         **kwargs
 ):
     """
@@ -1179,7 +1207,23 @@ def pd_ice_common(
     :param is_ice: a bool whether the caller of this method is ice_plot or pd_plot
     :param grouping_column A feature column name to group the data and provide separate sets of plots
                            by grouping feature values
-    :param observation_selection     todo
+    :param observation_selection A string in case specifying only the observation selection method. One of "deciles"
+            (default), "pattern_identification", "simple_random_selection". Or a dict in case further setting are
+            required to be setup. Supported options for further setup are:
+                "base" -  todo options descriptions
+                "variable" -
+                "sampling_range" -
+                "simulation_num_points" -
+                "sampling_seed" -
+                "num_lines" -
+                "pattern_sampling_range" -
+            For "method" = "deciles", supported options are: "base", "variable", "sampling_range",
+            "simulation_num_points", "sampling_seed", "pattern_sampling_range".
+            For method = "pattern_identification", supported options are: pattern_sampling_range, sampling_range,
+            num_lines, simulation_num_points, sampling_seed.
+            For method = "simple_random_selection", supported options are: sampling_range, num_lines,
+            simulation_num_points, sampling_seed.
+
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     """
@@ -1198,7 +1242,7 @@ def pd_ice_common(
         target = [target]
 
     if grouping_column is not None:
-        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered)
+        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered, observation_selection)
 
     factor_map = None
     if is_factor:
@@ -1472,7 +1516,7 @@ def _prepare_grouping_frames(frame, grouping_column):
     return frames
 
 
-def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered):
+def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered, observation_selection):
     frames = _prepare_grouping_frames(frame, grouping_column)
     result = list()
     for i, curr_frame in enumerate(frames):
@@ -1495,6 +1539,8 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
                 show_pdp,
                 binary_response_scale,
                 centered,
+                grouping_column=None,
+                observation_selection=observation_selection,
                 **{'group_label':group_label}
             )
         else:
@@ -1565,7 +1611,8 @@ def ice_plot(
         binary_response_scale="response",  # type: Literal["response", "logodds"]
         centered=False,  # type: bool
         grouping_column=None,  # type: Optional[str]
-        observation_selection={"deciles":{"base":"score", "variable":None, "sampling_range":-1, "simulation_num_points":100, "seed":-1}},
+        observation_selection = "deciles",#{"method":"deciles", "base":"score", "variable":None, "sampling_range":-1,"simulation_num_points":100, "seed":-1},
+      #  observation_selection={"deciles":{"base":"score", "variable":None, "sampling_range":-1, "simulation_num_points":100, "seed":-1}},
         **kwargs
 ):  # type: (...) -> plt.Figure
     """
@@ -1594,6 +1641,24 @@ def ice_plot(
     :param centered: a bool whether to center curves around 0 at the first valid x value or not
     :param grouping_column: a feature column name to group the data and provide separate sets of plots by
     grouping feature values
+        :param observation_selection A string in case specifying only the observation selection method. One of "deciles"
+            (default), "pattern_identification", "simple_random_selection". Or a dict in case further setting are
+            required to be setup. Supported options for further setup are:
+                base -  todo options descriptions
+                variable -
+                sampling_range -
+                simulation_num_points -
+                sampling_seed -
+                num_lines -
+                pattern_sampling_range -
+            For method = "deciles", supported options are: base, variable, sampling_range,
+            simulation_num_points, sampling_seed, num_lines, pattern_sampling_range.
+            For method = "pattern_identification", supported options are: pattern_sampling_range, sampling_range,
+            simulation_num_points, sampling_seed.
+            For method = "simple_random_selection", supported options are: sampling_range, num_lines,
+            simulation_num_points, sampling_seed.
+            Example of such a dict is: observation_selection = {method="deciles", base = "score",
+            simulation_num_points=100}
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:

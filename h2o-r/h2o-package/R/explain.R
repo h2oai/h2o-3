@@ -1065,7 +1065,9 @@ pd_ice_common <- function(model,
                           binary_response_scale = c("response", "logodds"),
                           centered,
                           is_ice = FALSE,
-                          grouping_column = NULL) {
+                          grouping_column = NULL,
+                          observation_selection = list(method = "deciles", base = "score", variable = NULL, sampling_range = -1, simulation_num_points = 100, sampling_seed = -1) ) {
+                        #  observation_selection=list(deciles = list(base="score", variable=NULL, sampling_range=-1, simulatioin_num_points=100, seed=-1))) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   if (missing(column))
@@ -1102,23 +1104,82 @@ pd_ice_common <- function(model,
 
   with_no_h2o_progress({
     if (is_ice) {
-      return(handle_ice(model, newdata, column, target, centered, show_logodds, show_pdp, models_info))
+      return(handle_ice(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, observation_selection))
     } else {
       return(handle_pdp(newdata, column, target, show_logodds, row_index, models_info))
     }
   })
 }
 
-handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info) {
-  .data <- NULL
-  margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
-  is_factor <- is.factor(newdata[[column]])
-  if (is_factor) {
-    margin <- ggplot2::margin(16.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
-    if (centered)
-      warning("Centering is not supported for factor columns!")
+.set_observation_selection_values <- function(supported_options, default_setup, observation_selection, method) {
+  res = default_setup
+  method = observation_selection$method
+  for (key in names(observation_selection)) {
+    if (!(key %in% supported_options)) {
+      top("Unsupported option " + key + " for observation selection by " + method)
+    } else {
+      res$key = observation_selection$key
+    }
+  }
+  return(res)
+}
+
+.setup_observation_selection <- function(observation_selection) {
+  DEFAULT_DECILES_SETUP = list(method = "deciles", base = "score", variable = NULL, sampling_range = -1, simulation_num_points = 100, sampling_seed = -1)
+  DEFAULT_PATTERN_IDENTIFICATION_SETUP = list(method = "deciles", base = "score", variable = NULL, sampling_range = -1, simulation_num_points = 100, sampling_seed = -1)
+  DEFAULT_SIMPLE_RANDOM_SELECTION_SETUP = list(method = "deciles", base = "score", variable = NULL, sampling_range = -1, simulation_num_points = 100, sampling_seed = -1)
+
+  DECILES_SUPPORTED_OPTIONS =c("method", "base", "variable", "sampling_range", "simulation_num_points", "seed")
+  PATTERN_IDENTIFICATION_SUPPORTED_OPTIONS = c("method", "pattern_sampling_range", "sampling_range", "num_lines", "simulation_num_points", "sampling_seed")
+  SIMPLE_RANDOM_SELECTION_SUPPORTED_OPTIONS = c("method", "sampling_range", "num_lines", "simulation_num_points", "sampling_seed")
+
+  if (is.character(observation_selection)) {
+    if (observation_selection == "deciles")
+      return(DEFAULT_DECILES_SETUP)
+    else if (observation_selection == "pattern_identification") {
+      return(DEFAULT_PATTERN_IDENTIFICATION_SETUP)
+    } else if (observation_selection == "simple_random_selection") {
+      return(DEFAULT_SIMPLE_RANDOM_SELECTION_SETUP)
+    } else {
+      stop("Observation selection method has to be one of: 'deciles', 'pattern_identification', 'simple_random_selection'!")
+    }
+  } else if (is.list(observation_selection)) {
+    method = observation_selection$method
+    if (is.null(method)){
+      stop("Observation selection method has to be specified and one of: 'deciles', 'pattern_identification', 'simple_random_selection'!")
+    } else if (method == "deciles") {
+      .set_observation_selection_values(DEFAULT_DECILES_SETUP, DECILES_SUPPORTED_OPTIONS, observation_selection)
+    } else if (method == "pattern_identification") {
+      .set_observation_selection_values(DEFAULT_PATTERN_IDENTIFICATION_SETUP, PATTERN_IDENTIFICATION_SUPPORTED_OPTIONS, observation_selection)
+    } else if (method == "simple_random_selection") {
+      .set_observation_selection_values(DEFAULT_SIMPLE_RANDOM_SELECTION_SETUP, SIMPLE_RANDOM_SELECTION_SUPPORTED_OPTIONS, observation_selection)
+    } else {
+      stop("Wrong format of observation_selection parameter: has to be string or dict!")
+    }
+  } else {
+    stop("Wrong format of observation_selection parameter: has to be string or list! ")
   }
 
+
+  deciles <- observation_selection$deciles
+  if (!is.null(deciles)) {
+    return(c("deciles", deciles))
+  } else {
+    pattern_identification <- observation_selection$pattern_identification
+    if (!is.null(pattern_identification)) {
+      return(c("pattern_identification", pattern_identification))
+    } else {
+      simple_random_selection <- observation_selection$simple_random_selection
+      if (!is.null(simple_random_selection)) {
+        return(c("simple_random_selection", simple_random_selection))
+      } else {
+        stop("Observation selection method has to be one of: 'deciles', 'pattern_identification', 'simple_random_selection'!")
+      }
+    }
+  }
+}
+
+.handle_selection_by_deciles <- function(model, newdata, column, target, is_factor) {
   quantiles <- order(as.data.frame(newdata[[models_info$y]])[[models_info$y]])
   quantiles <- quantiles[c(1, round((seq_len(11) - 1) * length(quantiles) / 10))]
 
@@ -1141,13 +1202,10 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
       },
       include_na = TRUE
     ))
-    y_label <- "Response"
+
     if (!is_factor && centered) {
       tmp[["mean_response"]] <- tmp[["mean_response"]] - tmp[["mean_response"]][1]
-      y_label <- "Response difference"
     }
-    if (show_logodds)
-      y_label <- "log(odds)"
     tmp[["name"]] <- percentile_str
 
     subdata <- as.data.frame(newdata[as.integer(idx),])[[gsub(" ", ".", column)]]
@@ -1203,7 +1261,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     }
     results <- rbind(results, tmp[, c(column, "name", "mean_response")])
     i <- i + 1
- }
+  }
   results[["name"]] <- factor(
     results[["name"]],
     unlist(sapply(seq_len(11), function(i) sprintf("%dth Percentile", (i - 1) * 10)))
@@ -1228,6 +1286,61 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     "Mean Response: ", orig_values[["mean_response"]], "\n"
   )
   y_range <- range(results$mean_response)
+
+  if (show_logodds) {
+    results[['logodds']] <- log(results$mean_response / (1 - results$mean_response))
+    pdp[['logodds']] <- log(pdp$mean_response / (1 - pdp$mean_response))
+    y_range <- range(results[['logodds']])
+  }
+
+  return(c(results, orig_values, y_range))
+}
+
+handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, observation_selection) {
+  .data <- NULL
+  margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
+  is_factor <- is.factor(newdata[[column]])
+  if (is_factor) {
+    margin <- ggplot2::margin(16.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
+    if (centered)
+      warning("Centering is not supported for factor columns!")
+  }
+
+  res <- .setup_observation_selection(observation_selection)
+
+  method <- res$method
+  observation_selection_params <- res
+
+  # todo: seed here
+  seed <- observation_selection_params$sampling_seed
+  if (seed != -1)
+    #generate seed for sampling
+
+  sampling_range <- observation_selection_params$sampling_range
+  if (sampling_range != -1)
+    sampled_frame = frame # here todo sampling
+  else
+    sampled_frame = frame
+
+  if (method == "deciles") {
+    # handle selection by deciles
+    res <- .handle_selection_by_deciles(model, sampled_frame, column, target, is_factor, show_logodds)
+    return(c(results, orig_values, y_range))
+    results <- res[[1]]
+    orig_values <- res[[2]]
+    y_range <- res[[2]]
+  } else if (method == "pattern_identification") {
+    # handle selection by pattern identification
+  } else {
+    # handle selection by simple random selection
+  }
+
+  y_label <- "Response"
+  if (!is_factor && centered) {
+    y_label <- "Response difference"
+  }
+  if (show_logodds)
+    y_label <- "log(odds)"
 
   if (show_pdp == TRUE) {
     pdp <-
@@ -1260,9 +1373,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
   }
 
   if (show_logodds) {
-    results[['logodds']] <- log(results$mean_response / (1 - results$mean_response))
     pdp[['logodds']] <- log(pdp$mean_response / (1 - pdp$mean_response))
-    y_range <- range(results[['logodds']])
   }
 
   q <- ggplot2::ggplot(ggplot2::aes(x = .data[[col_name]],
@@ -2726,6 +2837,7 @@ is_binomial <- function(model) {
 #' @param centered A boolean whether to center curves around 0 at the first valid x value or not. Defaults to FALSE.
 #' @param grouping_column A feature column name to group the data and provide separate sets of plots
 #'                          by grouping feature values
+#' @param observation_selection
 #'
 #' @return A ggplot2 object
 #' @examples
@@ -2762,8 +2874,10 @@ h2o.ice_plot <- function(model,
                          show_pdp = TRUE,
                          binary_response_scale = c("response", "logodds"),
                          centered = FALSE,
-                         grouping_column = NULL) {
-  return(pd_ice_common(model, newdata, column, target, NULL, max_levels, show_pdp, binary_response_scale, centered, TRUE, grouping_column))
+                         grouping_column = NULL,
+                         observation_selection = list(method = "deciles", base = "score", variable = NULL, sampling_range = -1, simulation_num_points = 100, sampling_seed = -1)) {
+  return(pd_ice_common(model, newdata, column, target, NULL, max_levels, show_pdp, binary_response_scale, centered, TRUE, grouping_column, observation_selection))
+
 }
 
 

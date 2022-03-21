@@ -272,10 +272,10 @@ def test_show_pdd():
 
 pyunit_utils.run_tests([
     test_original_values,
-    test_handle_orig_values,
-    test_display_mode,
-    test_binary_response_scale,
-    test_show_pdd,
-    test_display_mode,
-    test_grouping_column
+    # test_handle_orig_values,
+    # test_display_mode,
+    # test_binary_response_scale,
+    # test_show_pdd,
+    # test_display_mode,
+    # test_grouping_column
 ])
