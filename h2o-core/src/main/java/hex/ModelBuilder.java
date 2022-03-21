@@ -1759,7 +1759,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Frame encoded;
     for (Key<DataTransformer> key : _parms._dataTransformers) {
       DataTransformer dt = key.get();
-      encoded = isTraining ? dt.transformTrain(result, _parms) : dt.transformValid(result, _parms);
+      encoded = dt.transform(result, _parms, isTraining ? DataTransformer.Stage.Training : DataTransformer.Stage.Validation);
       if (encoded != result) trackEncoded(encoded, scopeTrack);
       result = encoded;
     }

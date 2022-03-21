@@ -1949,7 +1949,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame result = fr;
     for (Key<DataTransformer> key : _parms._dataTransformers) {
       DataTransformer transformer = key.get();
-      result = transformer.transformPredict(result, this);
+      result = transformer.transform(result, this._parms, DataTransformer.Stage.Scoring);
       tmpFrames.add(result);
     }
     fr.restructure(result.names(), result.vecs()); //inplace
