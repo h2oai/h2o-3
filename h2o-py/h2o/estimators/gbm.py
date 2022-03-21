@@ -79,7 +79,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  col_sample_rate_change_per_level=1.0,  # type: float
                  col_sample_rate_per_tree=1.0,  # type: float
                  min_split_improvement=1e-05,  # type: float
-                 histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
+                 histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]
                  max_abs_leafnode_pred=None,  # type: Optional[float]
                  pred_noise_bandwidth=0.0,  # type: float
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
@@ -261,7 +261,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :type min_split_improvement: float
         :param histogram_type: What type of histogram to use for finding optimal split points
                Defaults to ``"auto"``.
-        :type histogram_type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
+        :type histogram_type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]
         :param max_abs_leafnode_pred: Maximum absolute value of a leaf node prediction
                Defaults to ``∞``.
         :type max_abs_leafnode_pred: float
@@ -1740,8 +1740,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         What type of histogram to use for finding optimal split points
 
-        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]``, defaults to
-        ``"auto"``.
+        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]``,
+        defaults to ``"auto"``.
 
         :examples:
 
@@ -1767,7 +1767,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @histogram_type.setter
     def histogram_type(self, histogram_type):
-        assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"))
+        assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"))
         self._parms["histogram_type"] = histogram_type
 
     @property

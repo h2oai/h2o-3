@@ -240,7 +240,9 @@ public class RequestServer extends HttpServlet {
    */
   public void doGeneric(String method, HttpServletRequest request, HttpServletResponse response) {
     try {
-      ServletUtils.startTransaction(request.getHeader("User-Agent"));
+      String userAgent = request.getHeader("User-Agent");
+      String sessionKey = request.getHeader("Session-Key");
+      ServletUtils.startTransaction(userAgent, sessionKey);
 
       // Note that getServletPath does an un-escape so that the %24 of job id's are turned into $ characters.
       String uri = request.getServletPath();

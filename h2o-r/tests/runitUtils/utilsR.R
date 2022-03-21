@@ -50,6 +50,12 @@ function(p) {
   p
 }
 
+isClient<-
+function() {
+  res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
+  return(res$is_client)
+}
+
 #' Compute a path distance.
 #'
 #' We are looking for a directory `root`. Recursively ascend the directory structure until the root is found.
@@ -371,8 +377,37 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
   genDummyCols(df.clone, use_all_factor_levels)
 }
 
+.print_curl_info <- function () {
+  cat("/----------------------------------------CURL INFO----------------------------------------\\\n")
+  if (!getOption("prefer_RCurl", FALSE) && requireNamespace("curl")) {
+    cat("                    ##################################################\n",
+        "                    #               USING curl PACKAGE               #\n",
+        paste0("                    #               prefer_RCurl == ", getOption("prefer_RCurl", FALSE) ,
+          if (getOption("prefer_RCurl", FALSE)) " " else "",
+               "            #\n"),
+        paste0("                    #               curl installed? == ", requireNamespace("curl"),
+               if (requireNamespace("curl")) " " else "",
+               "         #\n"),
+        "                    ##################################################\n", sep="")
+    print(curl::curl_version())
+  } else {
+    cat("                    ##################################################\n",
+        "                    #              USING RCurl PACKAGE               #\n",
+        paste0("                    #              prefer_RCurl == ", getOption("prefer_RCurl", FALSE) ,
+               if (getOption("prefer_RCurl", FALSE)) " " else "",
+               "             #\n"),
+        paste0("                    #              curl installed? == ", requireNamespace("curl"),
+               if (requireNamespace("curl")) " " else "",
+               "          #\n"),
+        "                    ##################################################\n", sep="")
+    print(RCurl::curlVersion())
+  }
+  cat("\\-----------------------------------------------------------------------------------------/\n")
+}
+
 doTest<-
 function(testDesc, test) {
+    .print_curl_info()
     reporter <- MultiReporter$new(list(
         CheckReporter$new(),
         # SummaryReporter$new(),

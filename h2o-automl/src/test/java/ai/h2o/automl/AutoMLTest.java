@@ -2,6 +2,7 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.StepDefinition.Step;
 import hex.Model;
+import hex.ScoreKeeper;
 import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsembleModel;
@@ -17,8 +18,11 @@ import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Lockable;
+import water.Scope;
+import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.logging.LoggingLevel;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
@@ -236,10 +240,9 @@ public class AutoMLTest extends water.TestUtil {
       fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
-      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.DRF, Algo.GLM};
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost, Algo.DeepLearning, Algo.DRF, Algo.GLM};
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(8);
-//      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(15);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
       autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
@@ -534,9 +537,9 @@ public class AutoMLTest extends water.TestUtil {
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
-      assertEquals(0.9, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(1, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(test.numRows(), aml.getValidationFrame().numRows());
-      assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(aml.getValidationFrame().numRows(), aml.getLeaderboardFrame().numRows());
     } finally {
       if (aml != null) aml.delete();
       if (fr != null) fr.remove();
@@ -561,7 +564,7 @@ public class AutoMLTest extends water.TestUtil {
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
-      assertEquals(0.8, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(0.9, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(0.1, (double)aml.getValidationFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
     } finally {
@@ -749,6 +752,35 @@ public class AutoMLTest extends water.TestUtil {
       // Cleanup
       if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
+    }
+  }
+  
+  @Test(expected = H2OAutoMLException.class)
+  public void test_run_fails_after_multiple_consecutive_model_failures() {
+    AutoML aml = null;
+    try {
+      Scope.enter();
+      int seed = 0;
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      Frame fr = Scope.track(parseTestFile("./smalldata/extdata/australia.csv")); //regression task
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "runoffnew";
+      // no model limit
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GLM}; // our GLM ignores stopping metric, probably due to lambda search, ad therefore doesn't fail, making the test logic more complex
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_control.stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.lift_top_group);  // stopping metric incompatible with regression
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      Scope.track_generic(aml);
+      aml.get();
+    } catch (Exception e) {
+      long count = Arrays.stream(aml.eventLog()._events).filter(ev -> ev.getLevel() == LoggingLevel.ERROR).count();
+      assertEquals(aml._maxConsecutiveModelFailures, count);
+      assertEquals(0, aml.leaderboard().getModelCount());
+      throw e;
+    } finally {
+      Scope.exit();
     }
   }
 }

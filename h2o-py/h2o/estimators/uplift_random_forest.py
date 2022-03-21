@@ -30,9 +30,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
-                 balance_classes=False,  # type: bool
-                 class_sampling_factors=None,  # type: Optional[List[float]]
-                 max_after_balance_size=5.0,  # type: float
                  ntrees=50,  # type: int
                  max_depth=20,  # type: int
                  min_rows=1.0,  # type: float
@@ -44,16 +41,11 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  mtries=-2,  # type: int
                  sample_rate=0.632,  # type: float
                  sample_rate_per_class=None,  # type: Optional[List[float]]
-                 checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  col_sample_rate_change_per_level=1.0,  # type: float
                  col_sample_rate_per_tree=1.0,  # type: float
-                 histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
+                 histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
-                 calibrate_model=False,  # type: bool
-                 calibration_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
-                 custom_metric_func=None,  # type: Optional[str]
-                 export_checkpoints_dir=None,  # type: Optional[str]
                  check_constant_response=True,  # type: bool
                  treatment_column="treatment",  # type: str
                  uplift_metric="auto",  # type: Literal["auto", "kl", "euclidean", "chi_squared"]
@@ -85,18 +77,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :param ignore_const_cols: Ignore constant columns.
                Defaults to ``True``.
         :type ignore_const_cols: bool
-        :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
-               Defaults to ``False``.
-        :type balance_classes: bool
-        :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not
-               specified, sampling factors will be automatically computed to obtain class balance during training.
-               Requires balance_classes.
-               Defaults to ``None``.
-        :type class_sampling_factors: List[float], optional
-        :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
-               less than 1.0). Requires balance_classes.
-               Defaults to ``5.0``.
-        :type max_after_balance_size: float
         :param ntrees: Number of trees.
                Defaults to ``50``.
         :type ntrees: int
@@ -135,9 +115,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                to 1.0), for each tree
                Defaults to ``None``.
         :type sample_rate_per_class: List[float], optional
-        :param checkpoint: Model checkpoint to resume training with.
-               Defaults to ``None``.
-        :type checkpoint: Union[None, str, H2OEstimator], optional
         :param col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must be >
                0.0 and <= 2.0)
                Defaults to ``1.0``.
@@ -147,44 +124,31 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :type col_sample_rate_per_tree: float
         :param histogram_type: What type of histogram to use for finding optimal split points
                Defaults to ``"auto"``.
-        :type histogram_type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
+        :type histogram_type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]
         :param categorical_encoding: Encoding scheme for categorical features
                Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
-        :param calibrate_model: Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide
-               more accurate estimates of class probabilities.
-               Defaults to ``False``.
-        :type calibrate_model: bool
-        :param calibration_frame: Calibration frame for Platt Scaling
-               Defaults to ``None``.
-        :type calibration_frame: Union[None, str, H2OFrame], optional
         :param distribution: Distribution function
                Defaults to ``"auto"``.
         :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
                "quantile", "huber"]
-        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
-               Defaults to ``None``.
-        :type custom_metric_func: str, optional
-        :param export_checkpoints_dir: Automatically export generated models to this directory.
-               Defaults to ``None``.
-        :type export_checkpoints_dir: str, optional
         :param check_constant_response: Check if response column is constant. If enabled, then an exception is thrown if
                the response column is a constant value.If disabled, then model will train regardless of the response
                column being a constant value or not.
                Defaults to ``True``.
         :type check_constant_response: bool
-        :param treatment_column: Define column which will be use for computing uplift gain to select best split for a
-               tree. The column has to devide dataset into treatment (value 1) and control (value 0) group.
+        :param treatment_column: Define the column which will be used for computing uplift gain to select best split for
+               a tree. The column has to divide the dataset into treatment (value 1) and control (value 0) groups.
                Defaults to ``"treatment"``.
         :type treatment_column: str
-        :param uplift_metric: Divergence metric used to find best split when building an upplift tree.
+        :param uplift_metric: Divergence metric used to find best split when building an uplift tree.
                Defaults to ``"auto"``.
         :type uplift_metric: Literal["auto", "kl", "euclidean", "chi_squared"]
-        :param auuc_type: AUUC metric used to calculate Area under Uplift.
+        :param auuc_type: Metric used to calculate Area Under Uplift Curve.
                Defaults to ``"auto"``.
         :type auuc_type: Literal["auto", "qini", "lift", "gain"]
-        :param auuc_nbins: Number of bins to calculate Area under Uplift.
+        :param auuc_nbins: Number of bins to calculate Area Under Uplift Curve.
                Defaults to ``-1``.
         :type auuc_nbins: int
         """
@@ -198,9 +162,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.response_column = response_column
         self.ignored_columns = ignored_columns
         self.ignore_const_cols = ignore_const_cols
-        self.balance_classes = balance_classes
-        self.class_sampling_factors = class_sampling_factors
-        self.max_after_balance_size = max_after_balance_size
         self.ntrees = ntrees
         self.max_depth = max_depth
         self.min_rows = min_rows
@@ -212,16 +173,11 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.mtries = mtries
         self.sample_rate = sample_rate
         self.sample_rate_per_class = sample_rate_per_class
-        self.checkpoint = checkpoint
         self.col_sample_rate_change_per_level = col_sample_rate_change_per_level
         self.col_sample_rate_per_tree = col_sample_rate_per_tree
         self.histogram_type = histogram_type
         self.categorical_encoding = categorical_encoding
-        self.calibrate_model = calibrate_model
-        self.calibration_frame = calibration_frame
         self.distribution = distribution
-        self.custom_metric_func = custom_metric_func
-        self.export_checkpoints_dir = export_checkpoints_dir
         self.check_constant_response = check_constant_response
         self.treatment_column = treatment_column
         self.uplift_metric = uplift_metric
@@ -323,50 +279,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def ignore_const_cols(self, ignore_const_cols):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
-
-    @property
-    def balance_classes(self):
-        """
-        Balance training data class counts via over/under-sampling (for imbalanced data).
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("balance_classes")
-
-    @balance_classes.setter
-    def balance_classes(self, balance_classes):
-        assert_is_type(balance_classes, None, bool)
-        self._parms["balance_classes"] = balance_classes
-
-    @property
-    def class_sampling_factors(self):
-        """
-        Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
-        be automatically computed to obtain class balance during training. Requires balance_classes.
-
-        Type: ``List[float]``.
-        """
-        return self._parms.get("class_sampling_factors")
-
-    @class_sampling_factors.setter
-    def class_sampling_factors(self, class_sampling_factors):
-        assert_is_type(class_sampling_factors, None, [float])
-        self._parms["class_sampling_factors"] = class_sampling_factors
-
-    @property
-    def max_after_balance_size(self):
-        """
-        Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes.
-
-        Type: ``float``, defaults to ``5.0``.
-        """
-        return self._parms.get("max_after_balance_size")
-
-    @max_after_balance_size.setter
-    def max_after_balance_size(self, max_after_balance_size):
-        assert_is_type(max_after_balance_size, None, float)
-        self._parms["max_after_balance_size"] = max_after_balance_size
 
     @property
     def ntrees(self):
@@ -526,20 +438,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self._parms["sample_rate_per_class"] = sample_rate_per_class
 
     @property
-    def checkpoint(self):
-        """
-        Model checkpoint to resume training with.
-
-        Type: ``Union[None, str, H2OEstimator]``.
-        """
-        return self._parms.get("checkpoint")
-
-    @checkpoint.setter
-    def checkpoint(self, checkpoint):
-        assert_is_type(checkpoint, None, str, H2OEstimator)
-        self._parms["checkpoint"] = checkpoint
-
-    @property
     def col_sample_rate_change_per_level(self):
         """
         Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0)
@@ -572,14 +470,14 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         """
         What type of histogram to use for finding optimal split points
 
-        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]``, defaults to
-        ``"auto"``.
+        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"]``,
+        defaults to ``"auto"``.
         """
         return self._parms.get("histogram_type")
 
     @histogram_type.setter
     def histogram_type(self, histogram_type):
-        assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"))
+        assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin", "uniform_robust"))
         self._parms["histogram_type"] = histogram_type
 
     @property
@@ -598,34 +496,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self._parms["categorical_encoding"] = categorical_encoding
 
     @property
-    def calibrate_model(self):
-        """
-        Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
-        of class probabilities.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("calibrate_model")
-
-    @calibrate_model.setter
-    def calibrate_model(self, calibrate_model):
-        assert_is_type(calibrate_model, None, bool)
-        self._parms["calibrate_model"] = calibrate_model
-
-    @property
-    def calibration_frame(self):
-        """
-        Calibration frame for Platt Scaling
-
-        Type: ``Union[None, str, H2OFrame]``.
-        """
-        return self._parms.get("calibration_frame")
-
-    @calibration_frame.setter
-    def calibration_frame(self, calibration_frame):
-        self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
-
-    @property
     def distribution(self):
         """
         Distribution function
@@ -639,34 +509,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def distribution(self, distribution):
         assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
-
-    @property
-    def custom_metric_func(self):
-        """
-        Reference to custom evaluation function, format: `language:keyName=funcName`
-
-        Type: ``str``.
-        """
-        return self._parms.get("custom_metric_func")
-
-    @custom_metric_func.setter
-    def custom_metric_func(self, custom_metric_func):
-        assert_is_type(custom_metric_func, None, str)
-        self._parms["custom_metric_func"] = custom_metric_func
-
-    @property
-    def export_checkpoints_dir(self):
-        """
-        Automatically export generated models to this directory.
-
-        Type: ``str``.
-        """
-        return self._parms.get("export_checkpoints_dir")
-
-    @export_checkpoints_dir.setter
-    def export_checkpoints_dir(self, export_checkpoints_dir):
-        assert_is_type(export_checkpoints_dir, None, str)
-        self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
     @property
     def check_constant_response(self):
@@ -687,8 +529,8 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     @property
     def treatment_column(self):
         """
-        Define column which will be use for computing uplift gain to select best split for a tree. The column has to
-        devide dataset into treatment (value 1) and control (value 0) group.
+        Define the column which will be used for computing uplift gain to select best split for a tree. The column has
+        to divide the dataset into treatment (value 1) and control (value 0) groups.
 
         Type: ``str``, defaults to ``"treatment"``.
         """
@@ -702,7 +544,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     @property
     def uplift_metric(self):
         """
-        Divergence metric used to find best split when building an upplift tree.
+        Divergence metric used to find best split when building an uplift tree.
 
         Type: ``Literal["auto", "kl", "euclidean", "chi_squared"]``, defaults to ``"auto"``.
         """
@@ -716,7 +558,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     @property
     def auuc_type(self):
         """
-        AUUC metric used to calculate Area under Uplift.
+        Metric used to calculate Area Under Uplift Curve.
 
         Type: ``Literal["auto", "qini", "lift", "gain"]``, defaults to ``"auto"``.
         """
@@ -730,7 +572,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     @property
     def auuc_nbins(self):
         """
-        Number of bins to calculate Area under Uplift.
+        Number of bins to calculate Area Under Uplift Curve.
 
         Type: ``int``, defaults to ``-1``.
         """

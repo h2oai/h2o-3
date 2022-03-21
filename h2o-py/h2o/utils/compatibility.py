@@ -66,8 +66,7 @@ from future.utils import PY2, PY3, with_metaclass
 __all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",
            "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
            "apply", "cmp", "coerce", "execfile", "file", "long", "raw_input", "reduce", "reload", "unicode", "xrange",
-           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", "repr2")
-
+           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", "repr2", "PList")
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -84,6 +83,7 @@ if True:
         else:
             return gen.__next__
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Disabled functions
 #   -- attempt to use any of these functions will raise an AssertionError now!
@@ -95,6 +95,7 @@ def _disabled_function(name):
         """Disabled function, DO NOT USE."""
         raise NameError("Function %s is not available in Python 3, and was disabled in Python 2 as well." % name)
     return disabled
+
 
 if PY2:
     _native_unicode = unicode
@@ -153,9 +154,30 @@ def bytes_iterator(s):
     else:
         raise TypeError("String argument expected, got %s" % type(s))
 
+
 def repr2(x):
     """Analogous to repr(), but will suppress 'u' prefix when repr-ing a unicode string."""
     s = repr(x)
     if len(s) >= 2 and s[0] == "u" and (s[1] == "'" or s[1] == '"'):
         s = s[1:]
     return s
+
+
+def _is_py2_unicode(s):
+    return PY2 and type(s) is _native_unicode
+    
+
+class PList(list):
+    """
+    Wrapper for printable lists ensuring that the list is printed/represented the same way in Py2 and Py3
+    """
+    
+    def __init__(self, arr):
+        super(PList, self).__init__(arr)
+        
+    def __str__(self):
+        return str([str(it) if _is_py2_unicode(it) else it for it in self])
+    
+    def __repr__(self):
+        return repr([str(it) if _is_py2_unicode(it) else it for it in self])
+    

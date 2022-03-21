@@ -187,7 +187,7 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
           for (int i = 0; i < vals.length; ++i) vals[i] = ab.get();
           val = (V)vals;
         } else if(isIntegrVal(mode))
-          val = (V) (new Integer(ab.get4()));
+          val = (V) ((Integer) ab.get4());
         else if(isBoolVal(mode))
           val = (V) (ab.get1() == 1 ? Boolean.TRUE : Boolean.FALSE);
         else if (isFloatVal(mode))

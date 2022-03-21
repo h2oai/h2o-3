@@ -27,7 +27,6 @@ buildscript {
         classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:7.0.0'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'org.testng:testng:6.8'
-        classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.5.2'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
@@ -93,6 +92,7 @@ ext {
       project(':h2o-logger'),
       project(':h2o-logging-impl-classic'),
       project(':h2o-logging-impl-log4j2'),
+      project(':h2o-logging-safe4j'),
       project(':h2o-genmodel-ext-jgrapht'),
       project(':h2o-k8s'),
       project(':h2o-k8s-int'),
@@ -127,6 +127,7 @@ ext {
       project(':h2o-ext-mojo-pipeline'),
       project(':h2o-ext-steam'),
       project(':h2o-ext-target-encoder'),
+      project(':h2o-ext-example'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
@@ -137,6 +138,7 @@ ext {
       project(':h2o-logger'),
       project(':h2o-logging-impl-classic'),
       project(':h2o-logging-impl-log4j2'),
+      project(':h2o-logging-safe4j'),
       project(':h2o-genmodel-ext-jgrapht'),
       project(':h2o-k8s'),
       project(':h2o-k8s-int'),
@@ -174,7 +176,7 @@ ext {
     //
     junitVersion  = '4.12'
     jets3tVersion = '0.7.1'
-    awsJavaSdkVersion = '1.8.3'
+    awsJavaSdkVersion = '1.12.127'
 
     //
     // Optional H2O modules which can be included h2o.jar assembly
@@ -283,7 +285,11 @@ subprojects {
             apply from: "$rootDir/gradle/animalSniffer.gradle"
         }
         if (testNeedsCiProject.contains(project)) {
-            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
+            if (isCi) {
+                logger.info("Running in CI mode, tests for $project will be enabled.")
+            } else {
+                logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
+            }
             project.testSingleNode.enabled = isCi
             project.testMultiNode.enabled = isCi
         }

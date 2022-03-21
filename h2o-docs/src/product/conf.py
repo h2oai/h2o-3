@@ -18,6 +18,9 @@ import recommonmark
 from recommonmark.transform import AutoStructify
 from recommonmark.parser import CommonMarkParser
 import sphinx_rtd_theme
+from future.utils import PY2
+
+__open_kwargs = {} if PY2 else {'encoding': 'utf-8'}
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -58,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'H2O'
-copyright = u'2016-2021 H2O.ai'
+copyright = u'2016-2022 H2O.ai'
 author = u'h2o'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -67,7 +70,7 @@ author = u'h2o'
 #
 # The short X.Y version.
 if os.path.exists("project_version"):
-    f = open("project_version", "r")
+    f = open("project_version", "r", **__open_kwargs)
     version = f.readline().strip()
 else:
     version = "AnonDeveloperBuild"

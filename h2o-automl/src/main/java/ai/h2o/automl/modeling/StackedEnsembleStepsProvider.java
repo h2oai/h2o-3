@@ -26,6 +26,13 @@ public class StackedEnsembleStepsProvider
                  , ModelParametersProvider<StackedEnsembleParameters> {
 
     public static class StackedEnsembleSteps extends ModelingSteps {
+        @Override
+        protected void cleanup() {
+            super.cleanup();
+            Arrays.stream(aml().leaderboard().getModels())
+                    .filter(model -> model instanceof StackedEnsembleModel)
+                    .forEach(model -> ((StackedEnsembleModel) model).deleteBaseModelPredictions());
+        }
 
         static final String NAME = Algo.StackedEnsemble.name();
 
@@ -36,7 +43,10 @@ public class StackedEnsembleStepsProvider
             StackedEnsembleModelStep(String id, Metalearner.Algorithm algo, int priorityGroup, int weight, AutoML autoML) {
                 super(NAME, Algo.StackedEnsemble, id, priorityGroup, weight, autoML);
                 _metalearnerAlgo = algo;
-                _ignoredConstraints = new AutoML.Constraint[] {AutoML.Constraint.MODEL_COUNT};
+                _ignoredConstraints = new AutoML.Constraint[] {
+                        AutoML.Constraint.MODEL_COUNT,    // do not include SEs in model count (current contract: max_models = max_base_models).
+                        AutoML.Constraint.FAILURE_COUNT   // do not increment failures on SEs (several issues can occur with SEs during reruns, we should still add the error to event log, but not fail AutoML).
+                };
             }
 
             @Override

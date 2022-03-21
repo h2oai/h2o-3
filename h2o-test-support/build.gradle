@@ -15,3 +15,8 @@ dependencies {
   testRuntimeOnly project(":${defaultWebserverModule}")
   testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
 }
+
+test {
+  // Defeat task 'test' by excluding everything (there are no actual tests in this module).
+  exclude '**'
+}

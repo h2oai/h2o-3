@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
+import static hex.util.DistributionUtils.familyToDistribution;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
@@ -350,18 +351,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
   }
 
-  private DistributionFamily familyToDistribution(GLMModel.GLMParameters.Family aFamily) {
-    if (aFamily == GLMModel.GLMParameters.Family.binomial) {
-      return DistributionFamily.bernoulli;
-    }
-    try {
-      return Enum.valueOf(DistributionFamily.class, aFamily.toString());
-    }
-    catch (IllegalArgumentException e) {
-      throw new H2OIllegalArgumentException("Don't know how to find the right DistributionFamily for Family: " + aFamily);
-    }
-  }
-
   private DistributionFamily distributionFamily(Model aModel) {
     // TODO: hack alert: In DRF, _parms._distribution is always set to multinomial.  Yay.
     if (aModel instanceof DRFModel)
@@ -681,7 +670,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
               +_parms._base_models.length+" were specified but none of those were found: "+Arrays.toString(_parms._base_models));
   }
   
-  void deleteBaseModelPredictions() {
+  public void deleteBaseModelPredictions() {
     if (_output._base_model_predictions_keys != null) {
       for (Key<Frame> key : _output._base_model_predictions_keys) {
         if (_output._levelone_frame_id != null && key.get() != null)
@@ -730,16 +719,19 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   @Override
   public void deleteCrossValidationModels() {
-    _output._metalearner.deleteCrossValidationModels();
+    if (_output._metalearner != null)
+      _output._metalearner.deleteCrossValidationModels();
   }
 
   @Override
   public void deleteCrossValidationPreds() {
-    _output._metalearner.deleteCrossValidationPreds();
+    if (_output._metalearner != null)
+      _output._metalearner.deleteCrossValidationPreds();
   }
 
   @Override
   public void deleteCrossValidationFoldAssignment() {
-    _output._metalearner.deleteCrossValidationFoldAssignment();
+    if (_output._metalearner != null)
+      _output._metalearner.deleteCrossValidationFoldAssignment();
   }
 }

@@ -46,6 +46,152 @@
       sprintf("%s://%s:%s/%s/%s/%s", scheme, conn@ip, as.character(conn@port), conn@context_path, h2oRestApiVersion, urlSuffix)
 }
 
+.h2o.doRawREST.with.curl <- function(conn, url, method, parms, fileUploadInfo, binary=FALSE, parms_as_payload = FALSE, ...){
+  timeout_secs <- 0
+  handle <- curl::new_handle(customrequest = method, followlocation = FALSE)
+  if (conn@use_spnego) {
+    negotiateAuth <- 4
+    curl::handle_setopt(handle, httpauth = negotiateAuth, userpwd = ":")
+  } else if (!is.na(conn@username)) {
+    userpwd <- sprintf("%s:%s", conn@username, conn@password)
+    basicAuth <- 1L
+    curl::handle_setopt(handle, userpwd = userpwd, httpauth = basicAuth)
+  }
+  if (conn@https) {
+    if (conn@insecure) {
+      curl::handle_setopt(handle, ssl_verifypeer = 0L, ssl_verifyhost=0L)
+    } else if (! is.na(conn@cacert)) {
+      curl::handle_setopt(handle, cainfo = conn@cacert)
+    }
+  }
+  if (!is.na(conn@proxy)) {
+    curl::handle_setopt(handle, proxy = conn@proxy)
+  } else if (conn@ip == "localhost" || conn@ip == "127.0.0.1") {
+    curl::handle_setopt(handle, noproxy="127.0.0.1,localhost")
+  }
+
+  queryString <- ""
+  i <- 1L
+  while (i <= length(parms)) {
+    name <- names(parms)[i]
+    value <- parms[i]
+    escaped_value <- curl::curl_escape(value)
+    if (i > 1L) {
+      queryString <- sprintf("%s&", queryString)
+    }
+    queryString <- sprintf("%s%s=%s", queryString, name, escaped_value)
+    i <- i + 1L
+  }
+  postBody <- ""
+  if (missing(fileUploadInfo)) {
+    # This is the typical case.
+    if (method == "POST") {
+      postBody <- queryString
+    } else if (nzchar(queryString)) {
+      url <- sprintf("%s?%s", url, queryString)
+    }
+  } else {
+    stopifnot(method == "POST")
+    if (nzchar(queryString)) {
+      url <- sprintf("%s?%s", url, queryString)
+    }
+  }
+  #For parms_as_payload
+  if(parms_as_payload == TRUE){
+    postBody <- jsonlite::toJSON(parms, auto_unbox=TRUE, pretty=TRUE)
+    postBody <- sub('\"\\{', '\\{',postBody)
+    postBody <- sub('\\}\"', '\\}',postBody)
+  }
+
+  beginTimeSeconds <- as.numeric(proc.time())[3L]
+
+  header <- .default.headers(conn)
+  if(!is.na(conn@cookies)) {
+    header['Cookie'] <- paste0(conn@cookies, collapse=';')
+  }
+  curl::handle_setopt(handle, timeout = timeout_secs, useragent = R.version.string)
+
+  if (.h2o.isLogging()) {
+    .h2o.logRest("------------------------------------------------------------")
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("Time:     %s", as.character(format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"))))
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("%-9s %s", method, url))
+    .h2o.logRest(sprintf("postBody: %s", postBody))
+  }
+
+  .__curlError <- FALSE
+  .__curlErrorMessage <- ""
+  httpStatusCode <- -1L
+  httpStatusMessage <- ""
+  payload <- ""
+
+  if ((method != "GET") && (method != "DELETE")) {
+    if (!missing(fileUploadInfo)) {
+      stopifnot(method == "POST")
+      header['Expect'] <- ''
+      curl::handle_setform(handle, fileUploadInfo = curl::form_file(fileUploadInfo$filename))
+    } else if (method == "POST") {
+      if (!parms_as_payload) {
+        header['Expect'] <- ''
+      }else {
+        header["Content-Type"] <- "application/json"
+      }
+      curl::handle_setopt(handle, postfields = postBody)
+    } else {
+      message <- sprintf("Unknown HTTP method %s", method)
+      stop(message)
+    }
+  }
+  curl::handle_setheaders(handle, .list = header)
+
+  tmp <- tryCatch(curl::curl_fetch_memory(url = URLencode(url), handle = handle),
+                  error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+  if (! .__curlError) {
+    httpStatusCode <- as.numeric(tmp$status_code)
+    httpStatusMessage <- sub("HTTP.*?\\s+\\d+\\s+(.*?)\\s*$",
+                             "\\1",
+                             strsplit(rawToChar(tmp$headers), "[\n\r]")[[1]][[1]],
+                             perl = TRUE)
+    if(binary){
+      payload <- as(tmp$content, "raw") #Return binary payload as is for output such as MOJOs and genmodel.jar
+    }else{
+      payload <- rawToChar(as(tmp$content, "raw")) #convert binary payload to text for other REST calls as they expect text responses
+    }
+  }
+
+  endTimeSeconds <- as.numeric(proc.time())[3L]
+  deltaSeconds <- endTimeSeconds - beginTimeSeconds
+  deltaMillis <- deltaSeconds * 1000.0
+
+  if (.h2o.isLogging()) {
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("curlError:         %s", as.character(.__curlError)))
+    .h2o.logRest(sprintf("curlErrorMessage:  %s", .__curlErrorMessage))
+    .h2o.logRest(sprintf("httpStatusCode:    %d", httpStatusCode))
+    .h2o.logRest(sprintf("httpStatusMessage: %s", httpStatusMessage))
+    .h2o.logRest(sprintf("millis:            %s", as.character(as.integer(deltaMillis))))
+    .h2o.logRest("")
+    .h2o.logRest(payload)
+    .h2o.logRest("")
+  }
+
+  list(url = url,
+       postBody = postBody,
+       curlError = .__curlError,
+       curlErrorMessage = .__curlErrorMessage,
+       httpStatusCode = httpStatusCode,
+       httpStatusMessage = httpStatusMessage,
+       payload = payload)
+}
+
+.default.headers <- function(conn) {
+  c(
+    'Connection' = 'close',
+    'Session-Key' = conn@mutable$session_id
+  )
+}
+
 .h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, parms_as_payload = FALSE, ...) {
   timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
@@ -72,6 +218,15 @@
   }
 
   url = .h2o.calcBaseURL(conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
+
+  if (!getOption("prefer_RCurl", FALSE) && requireNamespace("curl"))
+    return(.h2o.doRawREST.with.curl(conn = conn,
+                                    url = url,
+                                    method = method,
+                                    parms = parms,
+                                    fileUploadInfo = fileUploadInfo,
+                                    binary = binary,
+                                    parms_as_payload = parms_as_payload, ...))
 
   opts = curlOptions()
   if (conn@use_spnego) {
@@ -146,8 +301,7 @@
   beginTimeSeconds = as.numeric(proc.time())[3L]
 
   tmp <- NULL
-  header <- c('Connection' = 'close')
-
+  header <- .default.headers(conn)
   if(!is.na(conn@cookies)) {
     header['Cookie'] = paste0(conn@cookies, collapse=';')
   }
@@ -792,7 +946,6 @@ h2o.clusterInfo <- function() {
   cat("    H2O Connection port:       ", port, "\n")
   cat("    H2O Connection proxy:      ", proxy, "\n")
   cat("    H2O Internal Security:     ", res$internal_security_enabled, "\n")
-  cat("    H2O API Extensions:        ", paste(extensions, collapse = ", "), "\n")
   cat("    R Version:                 ", R.version.string, "\n")
 
   cpusLimited <- sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)

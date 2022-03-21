@@ -285,8 +285,12 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     cat("           > h2o.init(nthreads = -1)\n")
     cat("\n")
   }
-  conn@mutable$session_id <- .init.session_id()
+  .attach.new.session(conn)
   invisible(conn)
+}
+
+.attach.new.session <- function(conn) {
+  conn@mutable$session_id <- .init.session_id()
 }
 
 #' Connect to a running H2O instance.
@@ -473,11 +477,40 @@ h2o.resume <- function(recovery_dir=NULL) {
   invisible(.h2o.__remoteSend(.h2o.__RESUME, method = "POST", .params = parms))
 }
 
+.set.session.property <- function(session_key, key, value) {
+  parms <- list(
+    session_key = session_key,
+    key = key
+  )
+  if (!is.null(value)) {
+    parms$value <- value
+  }
+  invisible(.h2o.__remoteSend(.h2o.__SESSION_PROPERTIES, method = "POST", .params = parms))
+}
+
+.get.session.property <- function(session_key, key) {
+  parms <- list(
+    session_key = session_key,
+    key = key
+  )
+  result <- .h2o.__remoteSend(.h2o.__SESSION_PROPERTIES, method = "GET", .params = parms)
+  print(result)
+  result$value
+}
+
 #
 # Get a session ID at init
 .init.session_id <- function() {
   res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = "InitID")))
-  res$session_key
+  session_key <- res$session_key
+  # this is running as a part of init/connect - we need to be careful if someone is trying to connect to an older version
+  # crashing in init would be bad
+  if ("session_properties_allowed" %in% names(res)) {
+    if (res$session_properties_allowed) {
+      .set.session.property(session_key, "job.fetch_timeout_ms", "1000")
+    }
+  }
+  session_key
 }
 
 #---------------------------- H2O Jar Initialization -------------------------------#

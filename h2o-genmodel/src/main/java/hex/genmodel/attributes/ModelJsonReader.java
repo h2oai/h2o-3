@@ -150,8 +150,7 @@ public class ModelJsonReader {
         Objects.requireNonNull(modelJson);
         JsonElement potentialTableJson = findInJson(modelJson, tablePath);
         if (potentialTableJson.isJsonNull()) {
-            LOG.warn(String.format("Failed to extract element '%s' MojoModel dump.",
-                    tablePath));
+            LOG.debug(String.format("Table '%s' doesn't exist in MojoModel dump.", tablePath));
             return null;
         }
         return readTableJson(potentialTableJson.getAsJsonObject());

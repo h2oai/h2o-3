@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
 import ai.h2o.automl.ModelSelectionStrategies.LeaderboardHolder;
 import ai.h2o.automl.ModelSelectionStrategy.Selection;
+import ai.h2o.automl.StepResultState.ResultStatus;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
@@ -20,6 +21,7 @@ import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.grid.HyperSpaceWalker;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
@@ -57,17 +59,24 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final Map<String, Object[]> hyperParams,
             final HyperSpaceSearchCriteria searchCriteria)
     {
+        assert resultKey != null;
+        assert baseParams != null;
+        assert hyperParams.size() > 0;
+        assert searchCriteria != null;
         applyPreprocessing(baseParams);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
-        return GridSearch.startGridSearch(
-                resultKey,
-                baseParams,
-                hyperParams,
-                new GridSearch.SimpleParametersBuilderFactory<>(),
-                searchCriteria,
-                GridSearch.SEQUENTIAL_MODEL_BUILDING
-        );
+        return GridSearch.create(
+                resultKey, 
+                HyperSpaceWalker.BaseWalker.WalkerFactory.create(
+                        baseParams, 
+                        hyperParams,
+                        new GridSearch.SimpleParametersBuilderFactory<>(), 
+                        searchCriteria
+                ))
+                .withParallelism(GridSearch.SEQUENTIAL_MODEL_BUILDING)
+                .withMaxConsecutiveFailures(aml()._maxConsecutiveModelFailures)
+                .start();
     }
 
     @SuppressWarnings("unchecked")
@@ -75,29 +84,25 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final Key<M> resultKey,
             final MP params
     ) {
+        assert resultKey != null;
+        assert params != null;
         Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
         applyPreprocessing(params);
         ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
         builder._parms = params;
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
-        try {
-            builder.init(false);          // validate parameters
-            if (builder._messages.length > 0) {
-                for (ModelBuilder.ValidationMessage vm : builder._messages) {
-                    if (vm.log_level() == Log.WARN) {
-                        aml().eventLog().warn(Stage.ModelTraining, vm.field()+" param, "+vm.message());
-                    } else if (vm.log_level() == Log.ERRR) {
-                        aml().eventLog().error(Stage.ModelTraining, vm.field()+" param, "+vm.message());
-                    }
+        builder.init(false);          // validate parameters
+        if (builder._messages.length > 0) {
+            for (ModelBuilder.ValidationMessage vm : builder._messages) {
+                if (vm.log_level() == Log.WARN) {
+                    aml().eventLog().warn(Stage.ModelTraining, vm.field()+" param, "+vm.message());
+                } else if (vm.log_level() == Log.ERRR) {
+                    aml().eventLog().error(Stage.ModelTraining, vm.field()+" param, "+vm.message());
                 }
             }
-            return builder.trainModelOnH2ONode();
-        } catch (H2OIllegalArgumentException exception) {
-            aml().eventLog().error(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);
-            onDone(null);
-            return null;
         }
+        return builder.trainModelOnH2ONode();
     }
 
     private transient AutoML _aml;
@@ -148,6 +153,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     public boolean isResumable() {
         return false;
+    }
+    
+    public boolean ignores(AutoML.Constraint constraint) {
+        return ArrayUtils.contains(_ignoredConstraints, constraint);
     }
 
     /**
@@ -470,7 +479,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setCustomParams(parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
-            if (ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)) {
+            if (ignores(AutoML.Constraint.TIMEOUT)) {
                 parms._max_runtime_secs = 0;
             } else {
                 Work work = getAllocatedWork();
@@ -547,7 +556,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             try {
                 defaults = baseParms.getClass().newInstance();
             } catch (Exception e) {
-                aml().eventLog().warn(Stage.ModelTraining, "Internal error doing hyperparameter search");
+                aml().eventLog().error(Stage.ModelTraining, "Internal error doing hyperparameter search");
                 throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
             }
 
@@ -579,7 +588,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
             Work work = getAllocatedWork();
             // for time limit, this is allocated in proportion of the entire work budget.
-            double maxAssignedTimeSecs = ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)
+            double maxAssignedTimeSecs = ignores(AutoML.Constraint.TIMEOUT)
                     ? 0
                     : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3;
             // SE predicate can be removed if/when we decide to include SEs in the max_models limit
@@ -667,7 +676,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Job<Models> job = new Job<>(key, Models.class.getName(), _description);
             Work work = getAllocatedWork();
 
-            double maxAssignedTimeSecs = ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)
+            double maxAssignedTimeSecs = ignores(AutoML.Constraint.TIMEOUT)
                     ? 0
                     : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
 
@@ -690,21 +699,32 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 @Override
                 public void compute2() {
                     Countdown countdown = Countdown.fromSeconds(maxAssignedTimeSecs);
-                    ModelingStepsExecutor localExecutor = new ModelingStepsExecutor(selectionLeaderboard.get(), selectionEventLog, countdown);
-                    localExecutor.start();
-                    Job<Models> innerTraining = startTraining(selectionKey, maxAssignedTimeSecs);
-                    localExecutor.monitor(innerTraining, SelectionStep.this, job);
+                    Selection selection = null;
+                    try {
+                        ModelingStepsExecutor localExecutor = new ModelingStepsExecutor(selectionLeaderboard.get(), selectionEventLog, countdown);
+                        localExecutor.start();
+                        Job<Models> innerTraining = startTraining(selectionKey, maxAssignedTimeSecs);
+                        StepResultState state = localExecutor.monitor(innerTraining, SelectionStep.this, job);
 
-                    Log.debug("Selection leaderboard " + selectionLeaderboard.get()._key, selectionLeaderboard.get().toLogString());
-                    Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys());
-                    Leaderboard lb = aml().leaderboard();
-                    Log.debug("Selection result for job " + key, ToStringBuilder.reflectionToString(selection));
-                    lb.removeModels(selection._remove, false); // do remove the model immediately from DKV: if it were part of a grid, it prevents the grid from being resumed.
-                    aml().trackKeys(selection._remove);
-                    lb.addModels(selection._add);
-
-                    result.unlock(job);
-                    result.addModels(selection._add);
+                        if (state.is(ResultStatus.success)) {
+                            Log.debug("Selection leaderboard "+selectionLeaderboard.get()._key, selectionLeaderboard.get().toLogString());
+                            selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys());
+                            Leaderboard lb = aml().leaderboard();
+                            Log.debug("Selection result for job "+key, ToStringBuilder.reflectionToString(selection));
+                            lb.removeModels(selection._remove, false); // do remove the model immediately from DKV: if it were part of a grid, it prevents the grid from being resumed.
+                            aml().trackKeys(selection._remove);
+                            lb.addModels(selection._add);
+                        } else if (state.is(ResultStatus.failed)) {
+                            throw (RuntimeException)state.error();
+                        } else if (state.is(ResultStatus.cancelled)) {
+                            throw new Job.JobCancelledException();
+                        }
+                    } finally {
+                        result.unlock(job);
+                        if (selection != null) {
+                            result.addModels(selection._add);
+                        }
+                    }
                     tryComplete();
                 }
 

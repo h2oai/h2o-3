@@ -35,6 +35,7 @@ include 'h2o-genmodel-ext-xgboost'
 include 'h2o-ext-xgboost'
 include 'h2o-ext-krbstandalone'
 include 'h2o-ext-steam'
+include 'h2o-ext-example'
 include 'h2o-webserver-iface'
 include 'h2o-jetty-8'
 include 'h2o-jetty-9'
@@ -51,8 +52,8 @@ include 'h2o-genmodel-ext-deepwater'
 include 'h2o-clustering'
 include 'h2o-logging-impl-classic'
 include 'h2o-logging-impl-log4j2'
+include 'h2o-logging-safe4j'
 include 'h2o-k8s-comp'
-
 
 // Make structure flat and avoid annoying dummy modules
 rootProject.children.each { project ->

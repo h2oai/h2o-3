@@ -754,7 +754,7 @@ class H2OBinomialModel(ModelBase):
         :param str timestep: A unit of measurement for the x-axis.
         :param str metric: A unit of measurement for the y-axis.
         :param bool server: if True, then generate the image inline (using matplotlib's "Agg" backend)
-        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig
         
         :returns: object that contains the resulting figure (can be accessed using result.figure())
 

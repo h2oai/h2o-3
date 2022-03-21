@@ -412,6 +412,9 @@ final public class H2O {
     /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
+    /** -Hkey=value; additional configuration to merge into the Hadoop Configuration */
+    public final Properties hadoop_properties = new Properties();
+
     //-----------------------------------------------------------------------------------
     // Recovery
     //-----------------------------------------------------------------------------------
@@ -666,6 +669,13 @@ final public class H2O {
       }
       else if (s.matches("hdfs_skip")) {
         trgt.hdfs_skip = true;
+      }
+      else if (s.matches("H")) {
+        i = s.incrementAndCheck(i, args);
+        String key = args[i];
+        i = s.incrementAndCheck(i, args);
+        String value = args[i];
+        trgt.hadoop_properties.setProperty(key, value);
       }
       else if (s.matches("aws_credentials")) {
         i = s.incrementAndCheck(i, args);
@@ -1141,7 +1151,7 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
-  private static AtomicLong nextModelNum = new AtomicLong(0);
+  private static final AtomicLong nextModelNum = new AtomicLong(0);
   
   /**
    * Calculate a unique model id that includes User-Agent info (if it can be discovered).
@@ -1201,7 +1211,7 @@ final public class H2O {
     // I actually tried only doing the addAndGet only for POST requests (and junk UUID otherwise),
     // but that didn't eliminate the gaps.
     long n = sequenceSource.addAndGet(1);
-    sb.append(Long.toString(CLUSTER_ID)).append("_").append(Long.toString(n));
+    sb.append(CLUSTER_ID).append("_").append(n);
 
     return sb.toString();
   }

@@ -37,6 +37,10 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Plat
   }
   public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
   public TwoDimTable _variable_importances; // gain
+  @Override
+  public TwoDimTable getVariableImportances() {
+    return _variable_importances;
+  }
   public TwoDimTable _variable_importances_cover;
   public TwoDimTable _variable_importances_frequency;
   public XgbVarImp _varimp;

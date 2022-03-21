@@ -18,7 +18,7 @@ public class DTreeTest {
     int[] rows  = new int[]   {0,          1,          2,   3  };
 
     DHistogram hs = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, false, true, 0.01,
-            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null, false);
+            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null, false, false, null, null);
     hs.init();
     hs.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0, null);
 
@@ -32,7 +32,7 @@ public class DTreeTest {
 
     // 3. allow negative (!!!) split improvement, min_rows = #NAs + 1
     DHistogram hsN = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, false, true, -9,
-            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null, false);
+            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null, false, false, null, null);
     hsN.init();
     hsN.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0, null);
     DTree.Split s3 = DTree.findBestSplitPoint(hsN, 0, 21, 0, Double.NaN, Double.NaN, false, null);
@@ -75,7 +75,7 @@ public class DTreeTest {
     assertEquals(min_pred, c._min, 0);
     assertEquals(max_pred, c._max, 0);
     return new DHistogram("test_hs", nbins, 2, (byte) 0, 0, 10, false, false, 0.01,
-            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, c, false);
+            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, c, false, false, null, null);
   }
   
   private static ExpectedSplitInfo updateHisto(DHistogram hs, final double min_pred, final double max_pred, double na_percent) {

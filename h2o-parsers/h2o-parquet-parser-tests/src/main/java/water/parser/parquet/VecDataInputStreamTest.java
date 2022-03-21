@@ -1,15 +1,16 @@
 package water.parser.parquet;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.NullOutputStream;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.MRTask;
-import water.TestUtil;
+import water.*;
 import water.fvec.*;
 import water.persist.VecDataInputStream;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -24,8 +25,10 @@ public class VecDataInputStreamTest extends TestUtil {
 
   @Test
   public void testReadVecAsInputStream() throws Exception {
-    Vec v0 = Vec.makeCon(0.0d, 10000L, 10, true);
-    Vec v = makeRandomByteVec(v0);
+    final Vec v0 = Vec.makeCon(0.0d, 10000L, 10, true);
+    assertNotNull(v0);
+    final Vec v = makeRandomByteVec(v0);
+    assertNotNull(v);
     try {
       InputStream t = new TestInputStream(v);
       assertTrue(t.read() >= 0);
@@ -38,15 +41,37 @@ public class VecDataInputStreamTest extends TestUtil {
       assertEquals(-1, t.read()); // reached the end of the stream
       assertEquals(0, t.available());
     } finally {
-      if (v0 != null) v0.remove();
-      if (v != null) v.remove();
+      v0.remove();
+      v.remove();
     }
   }
 
+  @Test
+  public void testSequentialBufferedReading() throws IOException {
+    final Vec v0 = Vec.makeCon(0.0d, 10000L, 10, true);
+    assertNotNull(v0);
+    final Vec v = makeRandomByteVec(v0);
+    assertNotNull(v);
+    try {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      IOUtils.copyLarge(new VecDataInputStream(v), baos);
+      byte[] bytes = baos.toByteArray();
+      for (int cidx = 0; cidx < v.nChunks(); cidx++) {
+        Chunk c = v.chunkForChunkIdx(cidx);
+        byte[] expected = c.asBytes();
+        byte[] actual = Arrays.copyOfRange(bytes, (int) c.start(), (int) c.start() + c.len());
+        assertArrayEquals("Chunk #" + cidx + " needs to have same data", expected, actual);
+      }
+    } finally {
+      v0.remove();
+      v.remove();
+    }
+  }
+  
   private static class TestInputStream extends InputStream {
 
-    private InputStream ref;
-    private InputStream tst;
+    private final InputStream ref;
+    private final InputStream tst;
 
     private TestInputStream(Vec v) {
       this.ref = new ByteArrayInputStream(chunkBytes(v));
@@ -137,7 +162,7 @@ public class VecDataInputStreamTest extends TestUtil {
     byte[] local = new byte[(int) v.length()];
     int len = 0;
     for (int i = 0; i < v.nChunks(); i++) {
-      byte src[] = v.chunkForChunkIdx(i).asBytes();
+      byte[] src = v.chunkForChunkIdx(i).asBytes();
       System.arraycopy(src, 0, local, len, src.length);
       len += src.length;
     }

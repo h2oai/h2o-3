@@ -5,7 +5,20 @@ import water.fvec.Frame;
 
 public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements ScoreKeeper.ScoreKeeperAware {
 
+  /**
+   * The raw number that an algorithm is using to count final anomaly score.
+   * E.g. raw number for Isolation Forest algorithm to count final anomaly score is mean path length
+   * of the observation (input row) from root to a leaf.
+   */
   public final double _mean_score;
+
+  /**
+   * Mean normalized score should be (but not necessary is) a number between 0 and 1. Try to follow convention that higher number means
+   * "more anomalous" observation (input row) and number more close to 0 means standard (not anomalous) observation (input row).
+   *
+   * Always refer to the algorithm's documentation for proper definition of this number.
+   * E.g. formula for normalization of Isolation Forest's score is different from the formula for Extended Isolation Forest.
+   */
   public final double _mean_normalized_score;
 
   public ModelMetricsAnomaly(Model model, Frame frame, CustomMetric customMetric,
@@ -25,7 +38,7 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
   @Override
   protected StringBuilder appendToStringMetrics(StringBuilder sb) {
     sb.append(" Number of Observations: ").append(_nobs).append("\n");
-    sb.append(" Mean Anomaly Score: ").append(_mean_score).append("\n");
+    sb.append(" Mean Score: ").append(_mean_score).append("\n");
     sb.append(" Mean Normalized Anomaly Score: ").append(_mean_normalized_score).append("\n");
     return sb;
   }

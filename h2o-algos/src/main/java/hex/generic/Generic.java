@@ -36,6 +36,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         allowedAlgos.add("stackedensemble");
         allowedAlgos.add("coxph");
         allowedAlgos.add("rulefit");
+        allowedAlgos.add("gam");
         
         ALLOWED_MOJO_ALGOS = Collections.unmodifiableSet(allowedAlgos);
     }
@@ -48,6 +49,15 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
 
     public Generic(boolean startup_once) {
         super(new GenericModelParameters(), startup_once);
+    }
+
+    @Override
+    public void init(boolean expensive) {
+        super.init(expensive);
+        if (_parms._path != null && _parms._model_key != null) {
+            error("_path", 
+                    "Path cannot be set for MOJO that is supposed to be loaded from distributed memory (key=" + _parms._model_key + ").");
+        }
     }
 
     @Override

@@ -16,8 +16,9 @@ test.glm_reg_path <- function() {
     x = as.matrix(d2[,3:9])
     y = as.matrix(d2[,2])
     m_net = glmnet(x=x,y=y,family='binomial')
+    mNetBeta <- as.matrix(m_net$beta)
     for(i in 1:length(regpath$lambdas)){
-      coefs_net = m_net$beta[,i]
+      coefs_net = mNetBeta[,i]
       coefs_h2o = regpath$coefficients[i,]
       diff = max(abs((coefs_h2o[names(coefs_net)] - coefs_net)/max(1,coefs_net)))
       expect_false(diff > 1e-3)
@@ -34,8 +35,9 @@ test.glm_reg_path <- function() {
     regpath$explained_deviance_train
     expect_false(is.null(regpath$explained_deviance_valid))
     n = min(length(m_net$lambda),dim(regpath$coefficients)[1])
+    mNetBeta <- as.matrix(m_net$beta)
     for(i in 1:n){
-          coefs_net = m_net$beta[,i]
+          coefs_net = mNetBeta[,i]
           coefs_h2o = regpath$coefficients[i,]
           diff = max(abs((coefs_h2o[names(coefs_net)] - coefs_net)/max(1,coefs_net)))
           expect_false(diff > 1e-3)

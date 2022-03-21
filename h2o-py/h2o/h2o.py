@@ -23,6 +23,9 @@ from .exceptions import H2OError, H2ODeprecationWarning
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.xgboost import H2OXGBoostEstimator
+from .estimators.infogram import H2OInfogram
+from .estimators.deeplearning import H2OAutoEncoderEstimator, H2ODeepLearningEstimator
+from .estimators.extended_isolation_forest import H2OExtendedIsolationForestEstimator
 from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
@@ -2272,7 +2275,7 @@ def upload_mojo(mojo_path, model_id=None):
     """
     response = api("POST /3/PostFile", filename=mojo_path)
     frame_key = response["destination_frame"]
-    mojo_estimator = H2OGenericEstimator(model_key=get_frame(frame_key), path=mojo_path, model_id=model_id)
+    mojo_estimator = H2OGenericEstimator(model_key=get_frame(frame_key), model_id=model_id)
     mojo_estimator.train()
     print(mojo_estimator)
     return mojo_estimator

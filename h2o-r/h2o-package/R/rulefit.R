@@ -34,11 +34,12 @@
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
-#' @param rule_generation_ntrees specifies the number of trees to build in the tree model. Defaults to 50. Defaults to 50.
+#' @param rule_generation_ntrees Specifies the number of trees to build in the tree model. Defaults to 50. Defaults to 50.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
-#' @param remove_duplicates \code{Logical}. whether to remove rules which are identical to an earlier rule. Defaults to true. Defaults to
+#' @param remove_duplicates \code{Logical}. Whether to remove rules which are identical to an earlier rule. Defaults to true. Defaults to
 #'        TRUE.
+#' @param lambda Lambda for LASSO regressor.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -88,7 +89,8 @@ h2o.rulefit <- function(x,
                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                         rule_generation_ntrees = 50,
                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
-                        remove_duplicates = TRUE)
+                        remove_duplicates = TRUE,
+                        lambda = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -137,6 +139,8 @@ h2o.rulefit <- function(x,
     parms$auc_type <- auc_type
   if (!missing(remove_duplicates))
     parms$remove_duplicates <- remove_duplicates
+  if (!missing(lambda))
+    parms$lambda <- lambda
 
   # Error check and build model
   model <- .h2o.modelJob('rulefit', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -157,6 +161,7 @@ h2o.rulefit <- function(x,
                                         rule_generation_ntrees = 50,
                                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         remove_duplicates = TRUE,
+                                        lambda = NULL,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -210,6 +215,8 @@ h2o.rulefit <- function(x,
     parms$auc_type <- auc_type
   if (!missing(remove_duplicates))
     parms$remove_duplicates <- remove_duplicates
+  if (!missing(lambda))
+    parms$lambda <- lambda
 
   # Build segment-models specific parameters
   segment_parms <- list()
@@ -223,3 +230,47 @@ h2o.rulefit <- function(x,
   segment_models <- .h2o.segmentModelsJob('rulefit', segment_parms, parms, h2oRestApiVersion=3)
   return(segment_models)
 }
+
+
+#' Evaluates validity of the given rules on the given data. Returns a frame with a column per each input rule id, 
+#' representing a flag whether given rule is applied to the observation or not.
+#'
+#' @param model A trained rulefit model.  
+#' @param frame A frame on which rule validity is to be evaluated
+#' @param rule_ids Rule ids to be evaluated against the frame
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' titanic <- h2o.importFile(
+#'  "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+#' )
+#' response = "survived"
+#' predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
+#' titanic[,response] <- as.factor(titanic[,response])
+#' titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
+#' 
+#' splits <- h2o.splitFrame(data = titanic, ratios = .8, seed = 1234)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#' 
+#' rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, validation_frame = test, 
+#' min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules")
+#' h2o.predict_rules(rfit, train, c("M1T0N7, M1T49N7, M1T16N7", "M1T36N7", "M2T19N19"))
+#' }
+#' @export
+h2o.predict_rules <- function(model, frame, rule_ids) {
+    o <- model
+    if (is(o, "H2OModel")) {
+        if (o@algorithm == "rulefit"){
+            return(.newExpr("rulefit.predict.rules", model@model_id, frame, rule_ids))
+        } else {
+            warning(paste0("No calculation available for this model"))
+            return(NULL)
+        }
+    } else {
+        warning(paste0("No calculation available for ", class(o)))
+        return(NULL)
+    }
+}
+

@@ -1305,16 +1305,17 @@ h2o.melt <- function(x, id_vars, value_vars=NULL, var_name="variable", value_nam
     .newExpr("melt", chk.H2OFrame(x), .str.list(id_vars), .str.list(value_vars), .quote(var_name), .quote(value_name), skipna)
 }
 
-# H2O topBottomN
-#
-# topBottomN function will will grab the top N percent or botom N percent of values of a column and return it in a
-#  H2OFrame.
-#
-# @param x an H2OFrame
-# @param column is a column name or column index to grab the top N percent value from
-# @param nPercent a top percentage values to grab
-# @param grabTopN if -1 grab bottom percentage, 1 grab top percentage
-# @return An H2OFrame with 2 columns: first column is the original row indices, second column contains the values
+#' H2O topBottomN
+#'
+#' topBottomN function will will grab the top N percent or botom N percent of values of a column and return it in a
+#'  H2OFrame.
+#'
+#' @param x an H2OFrame
+#' @param column is a column name or column index to grab the top N percent value from
+#' @param nPercent a top percentage values to grab
+#' @param grabTopN if -1 grab bottom percentage, 1 grab top percentage
+#' @return An H2OFrame with 2 columns: first column is the original row indices, second column contains the values
+#' @export
 h2o.topBottomN <- function(x, column, nPercent, grabTopN){
   cnames = names(x)
   colIndex=0
@@ -5048,7 +5049,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
       col.idx <- match(col.name, colnames(data))
 
     # no such column, stop!
-      if( is.na(col.idx) ) stop('No column named ', col.name, ' in ', substitute(data), '.')
+      if( any(is.na(col.idx)) ) stop('No column(s) named "', paste0(col.name[is.na(col.idx)], collapse = '", "'), '" in ', substitute(data), '.')
     # got a good column index, return it.
       col.idx
     }

@@ -1,13 +1,12 @@
 # Py2 compat
 from __future__ import print_function
-
-import matplotlib
 from future import standard_library
 
 standard_library.install_aliases()
 from past.builtins import basestring
 
 # standard lib
+from contextlib import contextmanager
 import copy
 import datetime
 from decimal import *
@@ -15,6 +14,7 @@ import fnmatch
 from functools import reduce
 import imp
 import importlib
+import io
 import json
 import math
 import os
@@ -37,6 +37,7 @@ except:
     from io import StringIO  # py3
     
 # 3rd parties
+import matplotlib
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
@@ -46,14 +47,15 @@ import scipy.special
 sys.path.insert(1, "../../")
 
 import h2o
+from h2o.utils.compatibility import PY2
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
 from h2o.model.ordinal import H2OOrdinalModel
 from h2o.model.regression import H2ORegressionModel
 from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
-    H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2ORandomForestEstimator, \
-    H2OPrincipalComponentAnalysisEstimator
+    H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
+    H2ORandomForestEstimator, H2OPrincipalComponentAnalysisEstimator
 from h2o.utils.typechecks import is_type
 from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
 
@@ -104,6 +106,9 @@ class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(**kwargs)
 
+    def __getitem__(self, item):
+        return self.__dict__.get(item)
+
     def __str__(self):
         return str(self.__dict__)
 
@@ -122,6 +127,84 @@ class Namespace:
 
 def ns(**kwargs):
     return Namespace(**kwargs)
+
+
+class _XStringIO(io.StringIO):
+    
+    def __init__(self, alt=None):
+        super(_XStringIO, self).__init__()
+        self._alt = alt
+        
+    def write(self, s):
+        if PY2:
+            s = unicode(s)
+        if self._alt is not None:
+            self._alt.write(s)
+        return super(_XStringIO, self).write(s)
+    
+    def flush(self):
+        if self._alt is not None:
+            self._alt.flush()
+        return super(_XStringIO, self).flush()
+    
+    @property
+    def encoding(self):
+        return self._alt.encoding if self._alt else sys.getdefaultencoding()
+        
+    @property
+    def lines(self):
+        return self.getvalue().splitlines()
+    
+    @property
+    def text(self):
+        return self.getvalue()
+
+
+class _CaptureStream(object):  # inspired by Py3 contextlib._RedirectStream
+
+    def __init__(self, stream=None, captured_stream_enabled=True):
+        self._stream = stream
+        self._new_target = None
+        self._captured_stream_enabled = captured_stream_enabled
+        # We use a list of old targets to make this CM re-entrant
+        self._old_targets = []
+
+    def __enter__(self):
+        old_target = getattr(sys, self._stream)
+        self._old_targets.append(old_target)
+        self._new_target = _XStringIO(old_target if self._captured_stream_enabled else None)
+        setattr(sys, self._stream, self._new_target)
+        return self._new_target
+
+    def __exit__(self, exctype, excinst, exctb):
+        setattr(sys, self._stream, self._old_targets.pop())
+
+
+@contextmanager
+def capture_output(default_output_enabled=True):
+    """
+    Captures writes to stdout and stderr
+    All captures are accessible from the object yielded by this context manager for further inspection:
+     - prints to `stdout` are accessible from its `out` property.
+     - prints to `stderr` are accessible from its `err` property.
+    
+    :param default_output_enabled: True if the default print behaviour is maintained. Defaults to True.
+    :return: a namespace with a key for each output stream.
+    :examples:
+    
+    >>> with capture_output() as c:
+    ...     import warnings
+    ...     print("Hey")
+    ...     print("You")
+    ...     warnings.warn("Pozor!")
+    ... assert len(c.out.lines) == 2
+    ... assert c.out.lines == ["Hey", "You"]
+    ... assert "Pozor!" in c.err.text
+    """
+    
+    with _CaptureStream("stdout", default_output_enabled) as out:
+        with _CaptureStream("stderr", default_output_enabled) as err:
+            yield ns(out=out, err=err)
 
 
 def gen_random_uuid(numberUUID):
@@ -4459,6 +4542,11 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
 def assert_equals(expected, actual, message=""):
     assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
 
+
+def assert_not_equal(expected, actual, message=""):
+    assert expected != actual, ("{0}\nactual\t:{1}".format(message, expected))
+
+
 def test_plot_result_saving(plot_result1, path1, plot_result2, path2):
     plot_result1.figure().savefig(path1)
     assert os.path.isfile(path1)
@@ -4466,3 +4554,12 @@ def test_plot_result_saving(plot_result1, path1, plot_result2, path2):
     assert isinstance(plot_result2.figure() , matplotlib.pyplot.Figure)
     assert os.path.isfile(path2)
     os.remove(path2)
+
+
+def set_forbidden_paths(paths):
+    forbidden = "'" + "','".join(paths) + "'" if paths else ""
+    h2o.rapids("(testing.setreadforbidden [" + forbidden + "])")
+
+
+def clear_forbidden_paths():
+    set_forbidden_paths([])

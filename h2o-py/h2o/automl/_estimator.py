@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import functools as ft
 from inspect import getdoc
 import re
@@ -9,6 +11,7 @@ from h2o.estimators import H2OEstimator
 from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
+from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import check_id
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from ._base import H2OAutoMLBaseMixin, _fetch_state
@@ -124,7 +127,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     """
 
     def __init__(self,
-                 nfolds=5,
+                 nfolds=-1,
                  balance_classes=False,
                  class_sampling_factors=None,
                  max_after_balance_size=5.0,
@@ -154,7 +157,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         
         :param int nfolds: Number of folds for k-fold cross-validation.
             Use ``0`` to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
-            Defaults to ``5``.
+            Defaults to ``-1``.
 
         :param bool balance_classes: Specify whether to oversample the minority classes to balance the class distribution. This option can increase
             the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size
@@ -323,14 +326,16 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         return project_name
 
     def __validate_nfolds(self, nfolds):
-        assert nfolds == 0 or nfolds > 1, "nfolds set to %s; use nfolds >=2 if you want cross-validated metrics and Stacked Ensembles or use nfolds = 0 to disable." % nfolds
+        assert nfolds in (-1, 0) or nfolds > 1, ("nfolds set to %s; use nfolds >=2 if you want cross-validated metrics "
+                                                 "and Stacked Ensembles or use nfolds = 0 to disable or nfolds = -1 to "
+                                                 "let h2o choose automatically." % nfolds)
         return nfolds
 
     def __validate_modeling_plan(self, modeling_plan):
         if modeling_plan is None:
             return None
 
-        supported_aliases = ['all', 'defaults', 'grids']
+        supported_aliases = PList(['all', 'defaults', 'grids'])
 
         def assert_is_step_def(sd):
             assert 'name' in sd, "each definition must have a 'name' key"
@@ -640,7 +645,6 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         levels = ['debug', 'info', 'warn', 'error']
         if verbosity is None or verbosity.lower() not in levels:
             return
-
         try:
             if job.progress > state.get('last_job_progress', 0):
                 events_table = _fetch_state(job.dest_key, properties=[], verbosity=verbosity)['json']['event_log_table']

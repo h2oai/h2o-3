@@ -538,7 +538,7 @@ public class h2odriver extends Configured implements Tool {
     }
 
     void announceNodeCloudSize(String ip, int port, String leaderWebServerIp, int leaderWebServerPort, int cloudSize) throws Exception {
-      System.out.println("H2O node " + ip + ":" + port + " reports H2O cluster size " + cloudSize + " [leader is " + leaderWebServerIp + ":" + leaderWebServerIp + "]");
+      System.out.println("H2O node " + ip + ":" + port + " reports H2O cluster size " + cloudSize + " [leader is " + leaderWebServerIp + ":" + leaderWebServerPort + "]");
       if (cloudSize == _targetCloudSize) {
         announceCloudReadyNode(leaderWebServerIp, leaderWebServerPort);
       }
@@ -2088,7 +2088,7 @@ public class h2odriver extends Configured implements Tool {
     } else {
       haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
     }
-    if ((refreshHiveTokens && !haveHiveToken) || refreshHdfsTokens) {
+    if ((refreshHiveTokens && !haveHiveToken) || refreshHdfsTokens || refreshS3ATokens) {
       if (runAsUser != null) 
         j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
       if (principal != null) 

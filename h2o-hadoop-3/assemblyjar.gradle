@@ -14,6 +14,7 @@ dependencies {
     api project(":h2o-ext-steam")
     api "org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion"
     api "org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopMavenArtifactVersion"
+    api "org.apache.hadoop:hadoop-aws:$hadoopMavenArtifactVersion"
     // Libraries need for Google Cloud Storage strongly require this Guava version
     api('com.google.guava:guava:20.0') { force = true }
     api(project(':h2o-app')) {

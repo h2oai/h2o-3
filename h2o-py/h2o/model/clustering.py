@@ -8,17 +8,16 @@ from .model_base import ModelBase
 class H2OClusteringModel(ModelBase):
     "For examples: from h2o.estimators.kmeans import H2OKMeansEstimator"
 
-    def size(self, train=False, valid=False, xval=False):
+    def size(self, train=False, valid=False):
         """
         Get the sizes of each cluster.
 
         If all are False (default), then return the training metric value.
         If more than one options is set to True, then return a dictionary of metrics where
-        the keys are "train", "valid", and "xval".
+        the keys are "train" and "valid". This metric is not available in cross-validation metrics.
 
         :param bool train: If True, return the cluster sizes for the training data.
         :param bool valid: If True, return the cluster sizes for the validation data.
-        :param bool xval: If True, return the cluster sizes for each of the cross-validated splits.
 
         :returns: The cluster sizes for the specified key(s).
 
@@ -30,16 +29,14 @@ class H2OClusteringModel(ModelBase):
         >>> size = km.size() # <- Default: return training metrics
         >>> size
         >>> size1 = km.size(train=False,
-        ...                 valid=False,
-        ...                 xval=True)
+        ...                 valid=False)
         >>> size1
         """
-        tm = ModelBase._get_metrics(self, train, valid, xval)
+        tm = ModelBase._get_metrics(self, train, valid, False)
         m = {}
         for k, v in tm.items():
             m[k] = None if v is None else [v[2] for v in v._metric_json["centroid_stats"].cell_values]
         return list(m.values())[0] if len(m) == 1 else m
-
 
     def num_iterations(self):
         """Get the number of iterations it took to converge or reach max iterations.
@@ -53,7 +50,6 @@ class H2OClusteringModel(ModelBase):
         """
         o = self._model_json["output"]
         return o["model_summary"]["number_of_iterations"][0]
-
 
     def betweenss(self, train=False, valid=False, xval=False):
         """
@@ -88,7 +84,6 @@ class H2OClusteringModel(ModelBase):
             m[k] = None if v is None else v._metric_json["betweenss"]
         return list(m.values())[0] if len(m) == 1 else m
 
-
     def totss(self, train=False, valid=False, xval=False):
         """
         Get the total sum of squares.
@@ -116,7 +111,6 @@ class H2OClusteringModel(ModelBase):
         for k, v in tm.items():
             m[k] = None if v is None else v._metric_json["totss"]
         return list(m.values())[0] if len(m) == 1 else m
-
 
     def tot_withinss(self, train=False, valid=False, xval=False):
         """
@@ -151,18 +145,16 @@ class H2OClusteringModel(ModelBase):
             m[k] = None if v is None else v._metric_json["tot_withinss"]
         return list(m.values())[0] if len(m) == 1 else m
 
-
-    def withinss(self, train=False, valid=False, xval=False):
+    def withinss(self, train=False, valid=False):
         """
         Get the within cluster sum of squares for each cluster.
 
         If all are False (default), then return the training metric value.
         If more than one options is set to True, then return a dictionary of metrics where
-        the keys are "train", "valid", and "xval".
+        the keys are "train" and "valid". This metric is not available in cross-validation metrics.
 
         :param bool train: If True, return the total sum of squares value for the training data.
         :param bool valid: If True, return the total sum of squares value for the validation data.
-        :param bool xval: If True, return the total sum of squares value for each of the cross-validated splits.
 
         :returns: The total sum of squares values for the specified key(s).
 
@@ -174,28 +166,25 @@ class H2OClusteringModel(ModelBase):
         >>> withinss = km.withinss() # <- Default: return training metrics
         >>> withinss
         >>> withinss2 = km.withinss(train=True,
-        ...                         valid=True,
-        ...                         xval=True)
+        ...                         valid=True)
         >>> withinss2
         """
-        tm = ModelBase._get_metrics(self, train, valid, xval)
+        tm = ModelBase._get_metrics(self, train, valid, False)
         m = {}
         for k, v in tm.items():
             m[k] = None if v is None else [z[-1] for z in v._metric_json["centroid_stats"].cell_values]
         return list(m.values())[0] if len(m) == 1 else m
 
-
-    def centroid_stats(self, train=False, valid=False, xval=False):
+    def centroid_stats(self, train=False, valid=False):
         """
         Get the centroid statistics for each cluster.
 
         If all are False (default), then return the training metric value.
         If more than one options is set to True, then return a dictionary of metrics where
-        the keys are "train", "valid", and "xval".
+        the keys are "train" and "valid". This metric is not available in cross-validation metircs.
 
         :param bool train: If True, return the centroid statistic for the training data.
         :param bool valid: If True, return the centroid statistic for the validation data.
-        :param bool xval: If True, return the centroid statistic for each of the cross-validated splits.
 
         :returns: The centroid statistics for the specified key(s).
 
@@ -207,16 +196,14 @@ class H2OClusteringModel(ModelBase):
         >>> centroid_stats = km.centroid_stats() # <- Default: return training metrics
         >>> centroid_stats
         >>> centroid_stats1 = km.centroid_stats(train=True,
-        ...                                     valid=False,
-        ...                                     xval=False)
+        ...                                     valid=False)
         >>> centroid_stats1
         """
-        tm = ModelBase._get_metrics(self, train, valid, xval)
+        tm = ModelBase._get_metrics(self, train, valid, False)
         m = {}
         for k, v in tm.items():
             m[k] = None if v is None else v._metric_json["centroid_stats"]
         return list(m.values())[0] if len(m) == 1 else m
-
 
     def centers(self):
         """The centers for the KMeans model.
@@ -232,9 +219,6 @@ class H2OClusteringModel(ModelBase):
         cvals = o["centers"].cell_values
         centers = [list(cval[1:]) for cval in cvals]
         return centers
-
-        
-
 
     def centers_std(self):
         """The standardized centers for the kmeans model.

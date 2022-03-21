@@ -976,7 +976,33 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
      * member of a ForkJoinPool and was interrupted while waiting
      * @throws TimeoutException if the wait timed out
      */
-    public final V get(long timeout, TimeUnit unit)
+    public final V get(long timeout, TimeUnit unit) 
+        throws InterruptedException, ExecutionException, TimeoutException {
+        return get(timeout, unit, false);
+    }
+
+    /**
+     * Waits if necessary for at most the given time for the computation
+     * to complete, and then retrieves its result, if available.
+     * 
+     * This version of the method allows forcing blocking wait even
+     * for F/J threads.
+     * 
+     * @see #get
+     * @param timeout the maximum time to wait
+     * @param unit the time unit of the timeout argument
+     * @param canBlock if enabled allows even a F/J thread to wait for 
+     *                 the task to complete 
+     *                 (just like it would for a regular thread)
+     * @return the computed result
+     * @throws CancellationException if the computation was cancelled
+     * @throws ExecutionException if the computation threw an
+     * exception
+     * @throws InterruptedException if the current thread is not a
+     * member of a ForkJoinPool and was interrupted while waiting
+     * @throws TimeoutException if the wait timed out
+     */
+    public final V get(long timeout, TimeUnit unit, boolean canBlock)
         throws InterruptedException, ExecutionException, TimeoutException {
         if (Thread.interrupted())
             throw new InterruptedException();
@@ -987,13 +1013,12 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
             ForkJoinPool p = null;
             ForkJoinPool.WorkQueue w = null;
             Thread t = Thread.currentThread();
-            if (t instanceof ForkJoinWorkerThread) {
+            if (!canBlock && t instanceof ForkJoinWorkerThread) {
                 ForkJoinWorkerThread wt = (ForkJoinWorkerThread)t;
                 p = wt.pool;
                 w = wt.workQueue;
                 s = p.helpJoinOnce(w, this); // no retries on failure
             }
-            boolean canBlock = false;
             boolean interrupted = false;
             try {
                 while ((s = status) >= 0) {

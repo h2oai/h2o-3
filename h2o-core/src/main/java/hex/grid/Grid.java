@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
@@ -60,7 +61,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   private static final Key<Model> NO_MODEL_FAILURES_KEY = Key.makeUserHidden("GridSearchFailureEmptyModelKey");
 
   /**
-   * A failure occured during hyperspace exploration.
+   * Failure that occurred during hyperspace exploration.
    */
   public static final class SearchFailure<MP extends Model.Parameters> extends Iced<SearchFailure> {
 
@@ -99,8 +100,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
      *
      * @param params    model parameters which caused model builder failure, can be null
      * @param rawParams array of "raw" parameter values
-     * @params failureDetails  textual description of model building failure
-     * @params stackTrace  stringify stacktrace
+     * @param failureDetails  textual description of model building failure
+     * @param stackTrace  stringify stacktrace
      */
     private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails, String stackTrace) {
       assert rawParams != null : "API has to always pass rawParams";
@@ -128,15 +129,20 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     
     private void appendWarningMessage(String[] hyper_parameter, String checkField) {
       if (hyper_parameter != null && Arrays.asList(hyper_parameter).contains(checkField)) {
-        String warningMessage = "Adding alpha array to hyperparameter runs slower with gridsearch.  This is " +
-                "due to the fact that the algo has to run initialization for every alpha value.  Setting the alpha " +
-                "array as a model parameter will skip the initialization and run faster overall.";
-        Log.warn(warningMessage);
-        // Append message
-        String[] m = _warning_details;
-        String[] nm = Arrays.copyOf(m, m.length + 1);
-        nm[m.length] = warningMessage;
-        _warning_details = nm;
+        String warningMessage = null;
+        if ("alpha".equals(checkField)) {
+          warningMessage = "Adding alpha array to hyperparameter runs slower with gridsearch. " +
+                  "This is due to the fact that the algo has to run initialization for every alpha value. " +
+                  "Setting the alpha array as a model parameter will skip the initialization and run faster overall.";
+        }
+        if (warningMessage != null) {
+          Log.warn(warningMessage);
+          // Append message
+          String[] m = _warning_details;
+          String[] nm = Arrays.copyOf(m, m.length+1);
+          nm[m.length] = warningMessage;
+          _warning_details = nm;
+        }
       }
     }
 
@@ -160,7 +166,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
      * <p> Should be used only from <code>GridSearch</code> job.</p>
      *
      * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
-     * @params e exception causing a failure
+     * @param e exception causing a failure
      */
     /* package */ void appendFailedModelParameters(Object[] rawParams, Exception e) {
       assert rawParams != null : "Raw parameters should be always != null !";
@@ -264,7 +270,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   }
 
 
-  /**
+  /*
    * Ask the Grid for a suggested next hyperparameter value, given an existing Model as a starting
    * point and the complete set of hyperparameter limits. Returning a NaN signals there is no next
    * suggestion, which is reasonable if the obvious "next" value does not exist (e.g. exhausted all
@@ -327,8 +333,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @param modelKey Model the failures are related to
    * @param params    model parameters which caused model builder failure, can be null
    * @param rawParams array of "raw" parameter values
-   * @params failureDetails  textual description of model building failure
-   * @params stackTrace  stringify stacktrace
+   * @param t the exception causing a failure
    */
   private void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final String[] rawParams,
                                            final Throwable t) {
@@ -336,15 +341,15 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       final String stackTrace = StringUtils.toString(t);
       final Key<Model> searchedKey = modelKey != null ? modelKey : NO_MODEL_FAILURES_KEY;
       SearchFailure searchFailure = _failures.get(searchedKey);
-      if ((searchFailure == null)) {
+      if (searchFailure == null) {
         searchFailure = new SearchFailure(_params.getClass());
-          _failures.put(searchedKey, searchFailure);
+        _failures.put(searchedKey, searchFailure);
       }
       searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
       searchFailure.appendWarningMessage(_hyper_names, "alpha");
   }
 
-  private static boolean isJobCanceled(final Throwable t) {
+  static boolean isJobCanceled(final Throwable t) {
     for (Throwable ex = t; ex != null; ex = ex.getCause()) {
       if (ex instanceof Job.JobCancelledException) {
         return true;
@@ -362,7 +367,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * <p> Should be used only from <code>GridSearch</code> job.</p>
    *
    * @param params model parameters which caused model builder failure
-   * @params e  exception causing a failure
+   * @param t the exception causing a failure
    */
   void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Throwable t) {
     assert params != null : "Model parameters should be always != null !";
@@ -379,7 +384,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * <p> Should be used only from <code>GridSearch</code> job.</p>
    *
    * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
-   * @params e exception causing a failure
+   * @param e the exception causing a failure
    */
   void appendFailedModelParameters(final Key<Model> modelKey, final Object[] rawParams, final Exception e) {
     assert rawParams != null : "Raw parameters should be always != null !";
@@ -441,6 +446,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     }
     searchFailure.appendWarningMessage(_hyper_names, "alpha");
     return searchFailure;
+  }
+  
+  public int countTotalFailures() {
+    return _failures.values().stream().mapToInt(SearchFailure::getFailureCount).sum();
   }
 
   /**
@@ -598,7 +607,6 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    *
    * @param gridExportDir Full path to the folder this {@link Grid} should be saved to
    * @return Path of the file written
-   * @throws IOException Error serializing the grid.
    */
   public List<String> exportBinary(final String gridExportDir, final boolean exportModels, ModelExportOption... options) {
     Objects.requireNonNull(gridExportDir);

@@ -62,6 +62,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     double[] normrespsub;
     int[] catoffsets;
     public TwoDimTable _variable_importances;
+    @Override
+    public TwoDimTable getVariableImportances() {
+      return _variable_importances;
+    }
 
     @Override public ModelCategory getModelCategory() {
       return autoencoder ? ModelCategory.AutoEncoder : super.getModelCategory();
@@ -503,8 +507,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
           stopped_early = true;
         }
+        // note: stopping metric should be known at this point and setting problemType is redundant
+        ScoreKeeper.ProblemType problemType = get_params()._autoencoder ? 
+                ScoreKeeper.ProblemType.autoencoder : ScoreKeeper.ProblemType.forSupervised(_output.isClassifier());
         if (ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(scoring_history()),
-                get_params()._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_output.isClassifier()), get_params()._stopping_metric, get_params()._stopping_tolerance, "model's last", true
+                get_params()._stopping_rounds, problemType, get_params()._stopping_metric, get_params()._stopping_tolerance, "model's last", true
         )) {
           Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
           stopped_early = true;

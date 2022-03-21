@@ -8,7 +8,9 @@ public class AnomalyDetectionPrediction extends AbstractPrediction {
   public Boolean isAnomaly;
 
   /**
-   * Mean path length of data in the trees. Smaller number means more anomalous point, higher number means more normal point.
+   * The raw number that an algorithm is using to count final anomaly score.
+   *
+   * E.g. for Isolation Forest this number is mean path length of data in the trees. Smaller number means more anomalous point, higher number means more normal point.
    */
   public double score;
 

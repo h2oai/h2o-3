@@ -4,10 +4,16 @@ import water.webserver.iface.H2OHttpConfig;
 
 public class ConnectionConfiguration {
 
+    private final boolean _secure;
     private final String _scheme;
 
     public ConnectionConfiguration(boolean isSecured) {
+        _secure = isSecured;
         _scheme = isSecured ? "https" : "http";
+    }
+
+    public boolean isSecure() {
+        return _secure;
     }
 
     public int getRequestHeaderSize() {

@@ -342,7 +342,7 @@ public class Response implements HttpServletResponse
                 error_handler = _connection.getConnector().getServer().getBean(ErrorHandler.class);
             if (error_handler!=null)
             {
-                request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(code));
+                request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
                 request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
                 request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
                 request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME,request.getServletName());

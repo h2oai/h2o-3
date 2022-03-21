@@ -10,8 +10,13 @@ def test_rollup_stats():
     df = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/rollup_stat_test.csv"))
     df["RACE"] = df["RACE"].asfactor()  # this is important
     glm = H2OGeneralizedLinearEstimator(generate_scoring_history=True, score_iteration_interval=5, non_negative=True,
-                                    alpha=[0.5, 1.0], standardize=False, nfolds=5, seed=7)
-    glm.train(y="RACE", training_frame=df)
+                                        alpha=[0.5, 1.0], standardize=False, nfolds=5, seed=7)
+    try:
+        glm.train(y="RACE", training_frame=df)
+    except (OSError, EnvironmentError) as e:
+        # Keeping this test as it might be useful once beta constraints are supported
+        # with multinomial family.
+        assert "non_negative:  does not work with multinomial family." in str(e)
 
 
 if __name__ == "__main__":

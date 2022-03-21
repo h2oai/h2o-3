@@ -258,14 +258,9 @@ def gen_module(schema, algo):
     for p in extended_params:
         pname = p.get('pname')
         if pname == 'model_id':
-            init_model_id = get_customizations_for(algo, 'extensions.__init__model_id')
-            if init_model_id:
-                yield reformat_block(init_model_id, 8)
-            else:
-                yield "        self._id = self._parms['model_id'] = model_id"
+            yield "        self._id = self._parms['model_id'] = model_id"
         else:
             yield "        self.%s = %s" % (pname, pname)
-            
     rest_api_version = get_customizations_for(algo, 'rest_api_version')
     if rest_api_version:
         yield '        self._parms["_rest_version"] = %s' % rest_api_version
@@ -338,6 +333,7 @@ def algo_to_classname(algo):
     if algo == "coxph": return "H2OCoxProportionalHazardsEstimator"
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
     if algo == "xgboost": return "H2OXGBoostEstimator"
+    if algo == "infogram": return "H2OInfogram"
     if algo == "gbm": return "H2OGradientBoostingEstimator"
     if algo == "glm": return "H2OGeneralizedLinearEstimator"
     if algo == "glrm": return "H2OGeneralizedLowRankEstimator"
@@ -355,7 +351,7 @@ def algo_to_classname(algo):
     if algo == "anovaglm": return "H2OANOVAGLMEstimator"
     if algo == "targetencoder": return "H2OTargetEncoderEstimator"
     if algo == "rulefit": return "H2ORuleFitEstimator"
-    if algo == "maxrglm": return "H2OMaxRGLMEstimator"
+    if algo == "modelselection": return "H2OModelSelectionEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 
@@ -454,7 +450,8 @@ def main():
         naivebayes="naive_bayes",
         isolationforest="isolation_forest",
         extendedisolationforest="extended_isolation_forest",
-        upliftdrf="uplift_random_forest"
+        upliftdrf="uplift_random_forest",
+        modelselection="model_selection"
     )
     algo_to_category = dict(
         svd="Miscellaneous",

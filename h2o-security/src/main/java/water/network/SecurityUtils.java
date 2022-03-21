@@ -1,5 +1,8 @@
 package water.network;
 
+import water.network.util.ExternalKeytool;
+import water.network.util.JavaVersionUtils;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,14 +11,20 @@ import java.util.Properties;
 
 public class SecurityUtils {
 
-    private static SecureRandom RANDOM = new SecureRandom();
+    private static final SecureRandom RANDOM = new SecureRandom();
     private static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-    private final static String[] keyToolCandidates = new String[]{
-            "sun.security.tools.KeyTool",      // Java6
-            "sun.security.tools.keytool.Main", // Java7+
-            "com.ibm.crypto.tools.KeyTool"     // IBM Java
-    };
+    private final static String[] keyToolCandidates;
+
+    static {
+        final int ver = JavaVersionUtils.getMajorVersion();
+        keyToolCandidates = new String[] {
+                ver >= 16 ? ExternalKeytool.class.getName() : null, // Java 16 and later (don't access sun-private API) 
+                "sun.security.tools.KeyTool",      // Java 6
+                "sun.security.tools.keytool.Main", // Java 7 - Java 15
+                "com.ibm.crypto.tools.KeyTool"     // IBM Java
+        };
+    }
 
     private static StoreCredentials generateKeystore(String password, String location) throws Exception {
         return generateKeystore(password, "h2o-internal.jks", location);
@@ -53,7 +62,7 @@ public class SecurityUtils {
         return new StoreCredentials(name, location, password);
     }
 
-    private static Class<?> getKeyToolClass() {
+    static Class<?> getKeyToolClass() {
         for (String keyToolCandidate : keyToolCandidates) {
             try {
                 return Class.forName(keyToolCandidate);
@@ -62,9 +71,9 @@ public class SecurityUtils {
             }
         }
 
-        // Unsuported JRE/JDK
-        throw new IllegalStateException("This version of Java is not supported. " +
-                "Please use Oracle/OpenJDK/IBM JDK version 6/7/8 or later");
+        // Unsupported JRE/JDK
+        throw new IllegalStateException("Your Java version doesn't support generating keystore. " +
+                "Please use Oracle/OpenJDK version 8 or later.");
     }
 
     public static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
@@ -88,7 +97,7 @@ public class SecurityUtils {
     }
 
     public static String generateSSLConfig(SSLCredentials credentials) throws IOException {
-        File temp = File.createTempFile("h2o-internal-" + Long.toString(System.nanoTime()), "-ssl.properties");
+        File temp = File.createTempFile("h2o-internal-" + System.nanoTime(), "-ssl.properties");
         temp.deleteOnExit();
         return generateSSLConfig(credentials, temp.getAbsolutePath());
     }
@@ -100,17 +109,10 @@ public class SecurityUtils {
         sslConfig.put("h2o_ssl_jks_password", credentials.jks.pass);
         sslConfig.put("h2o_ssl_jts", credentials.jts.name);
         sslConfig.put("h2o_ssl_jts_password", credentials.jts.pass);
-        FileOutputStream output = new FileOutputStream(file);
-        try {
+        try (FileOutputStream output = new FileOutputStream(file)) {
             sslConfig.store(output, "");
-            output.close();
-        } finally {
-            try {
-                output.close();
-            } catch (IOException e) {
-                // ignore
-            }
         }
+        // ignore
         return file;
     }
 
@@ -119,9 +121,9 @@ public class SecurityUtils {
     }
 
     public static class StoreCredentials {
-        public String name = null;
-        public String path = null;
-        public String pass = null;
+        public String name;
+        public String path;
+        public String pass;
 
         StoreCredentials(String name, String path, String pass) {
             this.name = name;

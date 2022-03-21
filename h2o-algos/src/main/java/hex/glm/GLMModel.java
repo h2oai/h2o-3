@@ -1200,6 +1200,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         res[i] = _global_beta[i]/_zvalues[i];
       return res;
     }
+    
+    public double[] getZValues() {
+      return _zvalues;
+    }
+
+    @Override
+    public TwoDimTable getVariableImportances() {
+      return _variable_importances;
+    }
+
     @Override public ModelCategory getModelCategory() {
       return _binomial?ModelCategory.Binomial:(_multinomial?ModelCategory.Multinomial:(_ordinal?ModelCategory.Ordinal:ModelCategory.Regression));
     }

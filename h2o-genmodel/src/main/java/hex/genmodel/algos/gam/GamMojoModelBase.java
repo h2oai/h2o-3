@@ -17,7 +17,7 @@ import static hex.genmodel.algos.gam.GamUtilsThinPlateRegression.*;
 import static hex.genmodel.utils.ArrayUtils.multArray;
 import static hex.genmodel.utils.ArrayUtils.nanArray;
 
-public abstract class GamMojoModelBase extends MojoModel implements ConverterFactoryProvidingModel {
+public abstract class GamMojoModelBase extends MojoModel implements ConverterFactoryProvidingModel, Cloneable {
   public LinkFunctionType _link_function;
   boolean _useAllFactorLevels;
   int _cats;
@@ -91,7 +91,7 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     }
     return gamScore0(row, preds);
   }
-  
+
   void init() {
     _num_knots_sorted_minus1 = new int[_num_knots_sorted.length];
     for (int index = 0; index < _num_knots_sorted.length; index++)
@@ -129,7 +129,18 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     }
     _lastClass = _nclasses - 1;
   }
-  
+
+  @Override
+  public GenModel internal_threadSafeInstance() {
+    try {
+      GamMojoModelBase clonedMojo = (GamMojoModelBase) clone();
+      clonedMojo.init();
+      return clonedMojo;
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   abstract double[] gamScore0(double[] row, double[] preds);
   
   private void imputeMissingWithMeans(double[] data) {

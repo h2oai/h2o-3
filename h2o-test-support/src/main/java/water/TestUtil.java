@@ -45,7 +45,7 @@ public class TestUtil extends Iced {
   /**
    * Minimal cloud size to start test.
    */
-  protected static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
+  public static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
   /**
    * Default time in ms to wait for clouding
    */
@@ -623,7 +623,7 @@ public class TestUtil extends Iced {
   }
 
   private static boolean runWithoutLocalFiles() {
-    return Boolean.valueOf(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
+    return Boolean.parseBoolean(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
 
   protected static void downloadTestFileFromS3(String fname) throws IOException {
@@ -631,8 +631,12 @@ public class TestUtil extends Iced {
       fname = fname.substring(2);
     File f = new File(fname);
     if (!f.exists()) {
-      if (f.getParentFile() != null)
-        f.getParentFile().mkdirs();
+      if (f.getParentFile() != null) {
+        boolean dirsCreated = f.getParentFile().mkdirs();
+        if (! dirsCreated) {
+          Log.warn("Failed to create directory:" + f.getParentFile());
+        }
+      }
       File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
       org.apache.commons.io.FileUtils.copyURLToFile(
               new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
@@ -760,6 +764,20 @@ public class TestUtil extends Iced {
   public static Frame parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER);
+    if (skippedColumns != null) {
+      guessedSetup.setSkippedColumns(skippedColumns);
+      guessedSetup.setParseColumnIndices(guessedSetup.getNumberColumns(), skippedColumns);
+    }
+
+    if (transformer != null)
+      guessedSetup = transformer.transformSetup(guessedSetup);
+    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
+  }
+
+  public static Frame parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer, 
+                                    int[] skippedColumns, int psetup) {
+    NFSFileVec nfs = makeNfsFileVec(fname);
+    ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, psetup);
     if (skippedColumns != null) {
       guessedSetup.setSkippedColumns(skippedColumns);
       guessedSetup.setParseColumnIndices(guessedSetup.getNumberColumns(), skippedColumns);

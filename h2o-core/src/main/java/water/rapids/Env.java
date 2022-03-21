@@ -22,6 +22,7 @@ import water.rapids.ast.prims.reducers.*;
 import water.rapids.ast.prims.repeaters.*;
 import water.rapids.ast.prims.search.*;
 import water.rapids.ast.prims.string.*;
+import water.rapids.ast.prims.testing.AstSetReadForbidden;
 import water.rapids.ast.prims.time.*;
 import water.rapids.ast.prims.timeseries.*;
 import water.rapids.vals.ValFrame;
@@ -303,6 +304,9 @@ public class Env extends Iced {
     init(new AstSetProperty());
     init(new AstPerfectAUC());
 
+    // Test Support
+    init(new AstSetReadForbidden());
+    
     // Search
     init(new AstMatch());
     init(new AstWhich());

@@ -1,7 +1,7 @@
 ``ntrees``
 ----------
 
-- Available in: GBM, DRF, XGBoost, Isolation Forest, Extended Isolation Forest
+- Available in: GBM, DRF, XGBoost, Isolation Forest, Extended Isolation Forest, Uplift DRF
 - Hyperparameter: yes
 
 Description

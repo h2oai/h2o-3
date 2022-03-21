@@ -6,6 +6,7 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from h2o.utils.metaclass import deprecated_params, deprecated_property
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -23,6 +24,7 @@ class H2ORuleFitEstimator(H2OEstimator):
     algo = "rulefit"
     supervised_learning = True
 
+    @deprecated_params({'Lambda': 'lambda_'})
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
@@ -40,6 +42,7 @@ class H2ORuleFitEstimator(H2OEstimator):
                  rule_generation_ntrees=50,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  remove_duplicates=True,  # type: bool
+                 lambda_=None,  # type: Optional[List[float]]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -90,15 +93,18 @@ class H2ORuleFitEstimator(H2OEstimator):
                Defaults to ``"auto"``.
         :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
                "quantile", "huber"]
-        :param rule_generation_ntrees: specifies the number of trees to build in the tree model. Defaults to 50.
+        :param rule_generation_ntrees: Specifies the number of trees to build in the tree model. Defaults to 50.
                Defaults to ``50``.
         :type rule_generation_ntrees: int
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-        :param remove_duplicates: whether to remove rules which are identical to an earlier rule. Defaults to true.
+        :param remove_duplicates: Whether to remove rules which are identical to an earlier rule. Defaults to true.
                Defaults to ``True``.
         :type remove_duplicates: bool
+        :param lambda_: Lambda for LASSO regressor.
+               Defaults to ``None``.
+        :type lambda_: List[float], optional
         """
         super(H2ORuleFitEstimator, self).__init__()
         self._parms = {}
@@ -118,6 +124,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         self.rule_generation_ntrees = rule_generation_ntrees
         self.auc_type = auc_type
         self.remove_duplicates = remove_duplicates
+        self.lambda_ = lambda_
 
     @property
     def training_frame(self):
@@ -296,7 +303,7 @@ class H2ORuleFitEstimator(H2OEstimator):
     @property
     def rule_generation_ntrees(self):
         """
-        specifies the number of trees to build in the tree model. Defaults to 50.
+        Specifies the number of trees to build in the tree model. Defaults to 50.
 
         Type: ``int``, defaults to ``50``.
         """
@@ -325,7 +332,7 @@ class H2ORuleFitEstimator(H2OEstimator):
     @property
     def remove_duplicates(self):
         """
-        whether to remove rules which are identical to an earlier rule. Defaults to true.
+        Whether to remove rules which are identical to an earlier rule. Defaults to true.
 
         Type: ``bool``, defaults to ``True``.
         """
@@ -336,6 +343,21 @@ class H2ORuleFitEstimator(H2OEstimator):
         assert_is_type(remove_duplicates, None, bool)
         self._parms["remove_duplicates"] = remove_duplicates
 
+    @property
+    def lambda_(self):
+        """
+        Lambda for LASSO regressor.
+
+        Type: ``List[float]``.
+        """
+        return self._parms.get("lambda")
+
+    @lambda_.setter
+    def lambda_(self, lambda_):
+        assert_is_type(lambda_, None, numeric, [numeric])
+        self._parms["lambda"] = lambda_
+
+    Lambda = deprecated_property('Lambda', lambda_)
 
     def rule_importance(self):
         """
@@ -346,3 +368,17 @@ class H2ORuleFitEstimator(H2OEstimator):
         if self._model_json["algo"] != "rulefit":
             raise H2OValueError("This function is available for Rulefit models only")
         return self._model_json["output"]['rule_importance']
+
+    def predict_rules(self, frame, rule_ids):
+        """
+        Evaluates validity of the given rules on the given data. 
+
+        :param frame: H2OFrame on which rule validity is to be evaluated
+        :param rule_ids: string array of rule ids to be evaluated against the frame
+        :return: H2OFrame with a column per each input ruleId, representing a flag whether given rule is applied to the observation or not.
+        """
+        from h2o.frame import H2OFrame
+        from h2o.utils.typechecks import assert_is_type
+        from h2o.expr import ExprNode
+        assert_is_type(frame, H2OFrame)
+        return H2OFrame._expr(expr=ExprNode("rulefit.predict.rules", self, frame, rule_ids))

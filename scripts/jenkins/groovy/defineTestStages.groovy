@@ -95,6 +95,10 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Explain', target: 'test-pyunit-explain', pythonVersion: '3.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
@@ -339,16 +343,16 @@ def call(final pipelineContext) {
       imageSpecifier: "r-3.5.3-jdk-11"
     ],
     [
-      stageName: 'Java 14 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 14,
+      stageName: 'Java 16 JUnit', target: 'test-junit-16-jenkins', pythonVersion: '2.7', javaVersion: 16,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-14"
+      imageSpecifier: "python-2.7-jdk-16"
     ],
     [
-      stageName: 'Java 15 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 15,
+      stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '2.7', javaVersion: 17,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-15"
+      imageSpecifier: "python-2.7-jdk-17"
     ],
     [
       stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
@@ -419,7 +423,15 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ],
     [
-      stageName: 'Java 11 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 11,
+      stageName: 'Java 16 Smoke', target: 'test-junit-16-smoke-jenkins', javaVersion: 16, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 17 Smoke', target: 'test-junit-17-smoke-jenkins', javaVersion: 17, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ],
+    [
+      stageName: 'Java 11 JUnit', target: 'test-junit-11-jenkins', pythonVersion: '2.7', javaVersion: 11,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-2.7-jdk-11"
@@ -561,6 +573,8 @@ def call(final pipelineContext) {
                     kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
                     spnegoConfigPath: 'scripts/jenkins/config/spnego.conf',
                     spnegoPropertiesPath: 'scripts/jenkins/config/spnego.properties',
+                    extraClasspath: '',
+                    bundledS3FileSystems: 's3a,s3n'
             ], pythonVersion: '2.7',
             customDockerArgs: [ '--privileged' ],
             executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
@@ -573,6 +587,18 @@ def call(final pipelineContext) {
     def standaloneKeytabStage = evaluate(stageTemplate.inspect())
     standaloneKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE KEYTAB"
     standaloneKeytabStage.customData.mode = 'STANDALONE_KEYTAB'
+
+    def standaloneDriverKeytabStage = evaluate(stageTemplate.inspect())
+    standaloneDriverKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - DRIVER KEYTAB"
+    standaloneDriverKeytabStage.customData.mode = 'STANDALONE_DRIVER_KEYTAB'
+    if (distribution.name == 'hdp' && distribution.version == '2.6') {
+      // HttpClient & related classes are relocated in h2odriver for distros based on 2.x
+      // to make Hive JDBC import work in tests we add it here manually (ideally it should be in the docker image)
+      standaloneDriverKeytabStage.customData.extraClasspath =
+              "/usr/hdp/2.6.1.0-129/hive/lib/httpclient-4.4.jar:/usr/hdp/2.6.1.0-129/hive/lib/httpcore-4.4.jar"
+      // h2odriver doesn't support S3A nor S3N (since 2.x Hadoops are obsolete, we ignore the affected tests)
+      standaloneDriverKeytabStage.customData.bundledS3FileSystems = ''
+    }
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
@@ -602,7 +628,7 @@ def call(final pipelineContext) {
     steamSparklingStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM SPARKLING"
     steamSparklingStage.customData.mode = 'STEAM_SPARKLING'
 
-    KERBEROS_STAGES += [ standaloneStage, standaloneKeytabStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
+    KERBEROS_STAGES += [ standaloneStage, standaloneKeytabStage, standaloneDriverKeytabStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
   final MULTINODE_CLUSTERS_CONFIGS = [

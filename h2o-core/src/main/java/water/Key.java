@@ -43,8 +43,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  */
 final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparable {
   // The Key!!!
-  // Limited to 512 random bytes - to fit better in UDP packets.
-  static final int KEY_LENGTH = 512;
   public final byte[] _kb;      // Key bytes, wire-line protocol
   transient final int _hash;    // Hash on key alone (and not value)
 
@@ -244,7 +242,6 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   // Construct a new Key.
   private Key(byte[] kb) {
-    if( kb.length > KEY_LENGTH ) throw new IllegalArgumentException("Key length would be "+kb.length);
     _kb = kb;
     // Quicky hash: http://en.wikipedia.org/wiki/Jenkins_hash_function
     int hash = 0;

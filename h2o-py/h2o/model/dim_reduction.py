@@ -102,7 +102,7 @@ class H2ODimReductionModel(ModelBase):
 
         :param str type: either ``"barplot"`` or ``"lines"``.
         :param bool server: if true set server settings to matplotlib and do not show the graph
-        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig
         
         :returns: Object that contains the resulting scree plot (can be accessed like result.figure()).
         """

@@ -32,6 +32,7 @@ public class ScoreKeeper extends Iced {
   public double _anomaly_score = Double.NaN;
   public double _anomaly_score_normalized = Double.NaN;
   public double _AUUC;
+  public double _qini;
 
   public ScoreKeeper() {}
 
@@ -111,6 +112,7 @@ public class ScoreKeeper extends Iced {
       ((ScoreKeeperAware) m).fillTo(this);
     } else if (m instanceof ModelMetricsBinomialUplift){
       _AUUC = ((ModelMetricsBinomialUplift)m).auuc();
+      _qini = ((ModelMetricsBinomialUplift)m).qini();
     }
     if (m._custom_metric != null )
       _custom_metric =  m._custom_metric.value;
@@ -222,7 +224,8 @@ public class ScoreKeeper extends Iced {
   public enum ProblemType {
     regression(StoppingMetric.deviance),
     classification(StoppingMetric.logloss),
-    anomaly_detection(StoppingMetric.anomaly_score);
+    anomaly_detection(StoppingMetric.anomaly_score),
+    autoencoder(StoppingMetric.MSE);
 
     private final StoppingMetric _defaultMetric;
     

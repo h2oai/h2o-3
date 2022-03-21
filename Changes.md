@@ -2,6 +2,184 @@
 
 ## H2O
 
+### Zorn (3.36.0.3) - 2/16/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/3/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8567]](https://h2oai.atlassian.net/browse/PUBDEV-8567) - Fixed S3 file downloads not working by adding `aws_java_sdk_sts` as a dependency of H2O persist S3.
+- [[PUBDEV-8563]](https://h2oai.atlassian.net/browse/PUBDEV-8563) - Added note to GBM, DRF, IF, and EIF that `build_tree_one_node=True` does not work with current release.
+- [[PUBDEV-8557]](https://h2oai.atlassian.net/browse/PUBDEV-8557) - Extended AWS default credential chain instead of replacing it.
+- [[PUBDEV-8553]](https://h2oai.atlassian.net/browse/PUBDEV-85653) - Fixed import failures for URLs longer than 152 characters.
+- [[PUBDEV-8552]](https://h2oai.atlassian.net/browse/PUBDEV-8552) -  Fix AutoML ignoring `verbosity` setting.
+- [[PUBDEV-8524]](https://h2oai.atlassian.net/browse/PUBDEV-8524) - Fixed Huber distribution bug for `deviance`.
+
+#### Improvement
+
+- [[PUBDEV-8475]](https://h2oai.atlassian.net/browse/PUBDEV-8475) - Removed “H2O API Extensions” from `h2o.init()` output.
+
+#### Docs
+
+- [[PUBDEV-8569]](https://h2oai.atlassian.net/browse/PUBDEV-8569) - Corrected typos and inconsistencies in Admissible ML documentation.
+- [[PUBDEV-8546]](https://h2oai.atlassian.net/browse/PUBDEV-8546) - Updated copyright year in documentation.
+- [[PUBDEV-8535]](https://h2oai.atlassian.net/browse/PUBDEV-8535) - Clarified feasible intervals for tweedie power.
+- [[PUBDEV-8466]](https://h2oai.atlassian.net/browse/PUBDEV-8466) - Clarified Java requirements when running H2O on Hadoop.
+
+
+### Zorn (3.36.0.2) - 1/25/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8540]](https://h2oai.atlassian.net/browse/PUBDEV-8540) - Updated XGBoostMojoModel to only consider the number of built trees, not the value of ``ntrees``.
+- [[PUBDEV-8537]](https://h2oai.atlassian.net/browse/PUBDEV-8537) - Fixed issue in AutoEncoder’s early stopping automatic selection by setting ``AUTO = MSE`` instead of ``deviance``.
+- [[PUBDEV-8530]](https://h2oai.atlassian.net/browse/PUBDEV-8530) - Fixed MOJO imports to retain information on weights column.
+- [[PUBDEV-8519]](https://h2oai.atlassian.net/browse/PUBDEV-8519) - Fixed XGBoost errors on Infogram by improving support for XGBoost.
+- [[PUBDEV-8517]](https://h2oai.atlassian.net/browse/PUBDEV-8517) - Fixed MOJO import automatically re-using original Model ID for current release cycle.
+- [[PUBDEV-8513]](https://h2oai.atlassian.net/browse/PUBDEV-8513) - Fixed import of Parquet files from S3.
+- [[PUBDEV-8507]](https://h2oai.atlassian.net/browse/PUBDEV-8507) - Fixed `h2o.group_by` warning present in documentation example caused by function only reading the first column when several are provided.
+- [[PUBDEV-8488]](https://h2oai.atlassian.net/browse/PUBDEV-8488) - Added check to ensure that a model supports MOJOs to prevent production of bad MOJOs.
+- [[PUBDEV-8483]](https://h2oai.atlassian.net/browse/PUBDEV-8483) - Fixed Python warnings before model training when training with offset, weights, and fold columns.
+- [[PUBDEV-8481]](https://h2oai.atlassian.net/browse/PUBDEV-8481) - Fixed MOJO upload in Python.
+- [[PUBDEV-8460]](https://h2oai.atlassian.net/browse/PUBDEV-8460) - Fixed error in uploading pandas DataFrame to H2O by enforcing `uft-8` encoding.
+- [[PUBDEV-8386]](https://h2oai.atlassian.net/browse/PUBDEV-8386) - Customized FormAuthenticator to use relative redirects.
+
+
+#### Improvement
+
+- [[PUBDEV-8521]](https://h2oai.atlassian.net/browse/PUBDEV-8521) - Removed numpy dependency for Infogram.
+
+#### New Feature
+
+- [[PUBDEV-8428]](https://h2oai.atlassian.net/browse/PUBDEV-8428) - Added backward selection method for ModelSelection. 
+
+#### Task
+
+- [[PUBDEV-8542]](https://h2oai.atlassian.net/browse/PUBDEV-8542) - Added support to PredictCsv for testing concurrent predictions.
+
+#### Docs
+
+- [[PUBDEV-8527]](https://h2oai.atlassian.net/browse/PUBDEV-8527) -  Added backward mode documentation to ModelSelection.
+- [[PUBDEV-8468]](https://h2oai.atlassian.net/browse/PUBDEV-8468) - Updated Kubernetes Headless Service and StatefulSet documentation.
+
+### Zorn (3.36.0.1) - 12/29/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8447]](https://h2oai.atlassian.net/browse/PUBDEV-8447) - Fixed differences in H2O’s random behavior across Java versions by disabling Stream API in this task. 
+- [[PUBDEV-8413]](https://h2oai.atlassian.net/browse/PUBDEV-8413) - Fixed CoxPH summary method in Python to return H2OTwoDimTable.
+- [[PUBDEV-8386]](https://h2oai.atlassian.net/browse/PUBDEV-8386) - Fixed form authentication not working by enforcing relative redirects in Jetty.
+- [[PUBDEV-7752]](https://h2oai.atlassian.net/browse/PUBDEV-7752) - Fixed exception raised in K-Means when a model is built using `nfolds` by disabling centroid stats for Cross-Validation.
+
+
+#### Improvement
+
+- [[PUBDEV-8474]](https://h2oai.atlassian.net/browse/PUBDEV-8474) - Removed `ymu` and `rank` visibility from FlowUI.
+- [[PUBDEV-8452]](https://h2oai.atlassian.net/browse/PUBDEV-8452) - Exposed `lambda` in Rulefit to have better control over regularization strength. 
+- [[PUBDEV-8444]](https://h2oai.atlassian.net/browse/PUBDEV-8444) - Implemented sequential replacement method with ModelSelection.
+- [[PUBDEV-8439]](https://h2oai.atlassian.net/browse/PUBDEV-8439) - Improved rule extraction from trees in RuleFit.
+- [[PUBDEV-8420]](https://h2oai.atlassian.net/browse/PUBDEV-8420) - Improved exception handling in AutoML and Grids to prevent model failure.
+- [[PUBDEV-8258]](https://h2oai.atlassian.net/browse/PUBDEV-8258) - Ensured Infogram uses validation frame and cross-validation when enabled.
+- [[PUBDEV-7542]](https://h2oai.atlassian.net/browse/PUBDEV-7542) - Added dynamic stacking metalearning strategy for Stacked Ensemble in AutoML.
+
+#### New Feature
+
+- [[PUBDEV-8414]](https://h2oai.atlassian.net/browse/PUBDEV-8414) - Added support and rule coverage to RuleFit.
+- [[PUBDEV-8391]](https://h2oai.atlassian.net/browse/PUBDEV-8391) - Added support for importing GAM MOJO.
+- [[PUBDEV-8379]](https://h2oai.atlassian.net/browse/PUBDEV-8379) - Added a convenience tool that converts MOJO to POJO from the command line.
+- [[PUBDEV-8378]](https://h2oai.atlassian.net/browse/PUBDEV-8378) - Added support allowing users to modify floating point representation in POJO.
+- [[PUBDEV-8371]](https://h2oai.atlassian.net/browse/PUBDEV-8371) - Added experimental support for importing POJO for in-H2O scoring.
+- [[PUBDEV-8341]](https://h2oai.atlassian.net/browse/PUBDEV-8341) - Added official support for Java 16 and 17.
+- [[PUBDEV-8334]](https://h2oai.atlassian.net/browse/PUBDEV-8334) - Added Java 16 and 17 to the cluster.
+- [[PUBDEV-8322]](https://h2oai.atlassian.net/browse/PUBDEV-8322) - Added a compatibility K8s module that allows older versions of H2O to run on K8s.
+- [[PUBDEV-8204]](https://h2oai.atlassian.net/browse/PUBDEV-8204) - Added ability to convert MOJO to POJO for tree models.
+- [[PUBDEV-8135]](https://h2oai.atlassian.net/browse/PUBDEV-8135) - Added support enabling users to configure S3 with S3A configuration.
+- [[PUBDEV-8075]](https://h2oai.atlassian.net/browse/PUBDEV-8075) - Implemented the Infogram model.
+- [[PUBDEV-4940]](https://h2oai.atlassian.net/browse/PUBDEV-4940) - Implemented the Uplift DRF algorithm.
+
+#### Task
+
+- [[PUBDEV-8335]](https://h2oai.atlassian.net/browse/PUBDEV-8335) - Upgraded to Gradle 7 to support Java 16+.
+- [[PUBDEV-8222]](https://h2oai.atlassian.net/browse/PUBDEV-8222) - Added R API for Infogram.
+
+#### Docs
+
+- [[PUBDEV-8449]](https://h2oai.atlassian.net/browse/PUBDEV-8449) - Added documentation on Infogram to the User Guide.
+- [[PUBDEV-8379]](https://h2oai.atlassian.net/browse/PUBDEV-8379) - Added documentation on ModelSelection to the User Guide.
+- [[PUBDEV-8384]](https://h2oai.atlassian.net/browse/PUBDEV-8384) - Added notebook on floating point issue for POJO and FAQ documentation on POJO split points.
+- [[PUBDEV-8327]](https://h2oai.atlassian.net/browse/PUBDEV-8327) - Fixed bullet list formatting issues. 
+- [[PUBDEV-7903]](https://h2oai.atlassian.net/browse/PUBDEV-7903) - Updated R Reference Guide list.
+
+### Zizler (3.34.0.8) - 1/13/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/8/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8514]](https://h2oai.atlassian.net/browse/PUBDEV-8514) - Fixed MOJO import automatically re-using original Model ID.
+
+#### Security
+
+- [[PUBDEV-8515]](https://h2oai.atlassian.net/browse/PUBDEV-8515) - Upgraded to log4j 2.17.1.
+
+### Zizler (3.34.0.7) - 12/21/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/7/index.html</a>
+
+#### Security
+
+- Fixed CVE-2021-45105 log4j vulnerability.
+
+### Zizler (3.34.0.6) - 12/15/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/6/index.html</a>
+
+#### Security
+
+- Fixed CVE-2021-45046 log4j vulnerability.
+
+### Zizler (3.34.0.5) - 12/13/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/5/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8448]](https://h2oai.atlassian.net/browse/PUBDEV-8448) - Fixed permutation variable importance to correctly work with weights.
+- [[PUBDEV-8426]](https://h2oai.atlassian.net/browse/PUBDEV-8426) - Fixed data removal issue in GAM caused by fitting two different models on the same DataFrame.
+
+#### Improvement
+
+- [[PUBDEV-8427]](https://h2oai.atlassian.net/browse/PUBDEV-8427) - Added `coef()` and `coef_norm()` functions to MaxRGLM.
+- [[PUBDEV-8408]](https://h2oai.atlassian.net/browse/PUBDEV-8408) - Added ability that labels observations that match rules in Rulefit.
+- [[PUBDEV-8397]](https://h2oai.atlassian.net/browse/PUBDEV-8397) - Updated parquet parser to handle dates allowing H2O `import_file()` to import date columns from Spark DataFrame.
+- [[PUBDEV-8383]](https://h2oai.atlassian.net/browse/PUBDEV-8383) - Consolidated Rulefit rules to remove unnecessary splits.
+- [[PUBDEV-8212]](https://h2oai.atlassian.net/browse/PUBDEV-8212) -  Improved the efficiency of job polling in AutoML.
+- [[PUBDEV-8176]](https://h2oai.atlassian.net/browse/PUBDEV-8176) - Deduplicated Rulefit rules in post-processing step.
+
+#### New Feature
+
+- [[PUBDEV-8425]](https://h2oai.atlassian.net/browse/PUBDEV-8425) - Added option to mimic the “ActiveProcessorCount” for older JVMs.
+
+#### Task
+
+- [[PUBDEV-8433]](https://h2oai.atlassian.net/browse/PUBDEV-8433) - Added warning in GLRM for when users set `model_id` and `representation_name` to the same string to help avoid a collision of model and frame using the same key.
+- [[PUBDEV-8421]](https://h2oai.atlassian.net/browse/PUBDEV-8421) - Added `rank` and `ymu` model outputs to GLM.
+
+#### Docs
+- [[PUBDEV-8451]](https://h2oai.atlassian.net/browse/PUBDEV-8451) - Added link to the Change Log in the User Guide index.
+- [[PUBDEV-8443]](https://h2oai.atlassian.net/browse/PUBDEV-8443) - Updated parameter list for MaxRGLM and outlined that MaxRGLM only support regression.
+- [[PUBDEV-8432]](https://h2oai.atlassian.net/browse/PUBDEV-8432) -  Updated MaxRGLM examples to use new functions `coef()`, `coef_norm()`, and `result()`.
+- [[PUBDEV-8424]](https://h2oai.atlassian.net/browse/PUBDEV-8424) - Added examples in R/Python on how to get reproducibility information.
+- [[PUBDEV-8361]](https://h2oai.atlassian.net/browse/PUBDEV-8361) - Fixed local build warnings for Python Module documentation.
+
+#### Security
+- Upgraded to log4j 2.15.0 to address vulnerability CVE-2021-44228.
+
+
 ### Zizler (3.34.0.4) - 11/17/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index.html</a>

@@ -113,7 +113,7 @@ def test_suite_clean_cv_predictions():
         for m in models.base:
             assert_cv_predictions_on_model(m, False)
         for m in models.se:
-            assert not h2o.get_model(h2o.get_model(m).metalearner()['name']).cross_validation_predictions()
+            assert not h2o.get_model(h2o.get_model(m).metalearner().model_id).cross_validation_predictions()
 
     def test_param_enabled():
         print("\n=== enabling "+kcvp+" ===")
@@ -126,7 +126,7 @@ def test_suite_clean_cv_predictions():
         for m in models.base:
             assert_cv_predictions_on_model(m)
         for m in models.se:
-            assert_cv_predictions_on_model(h2o.get_model(m).metalearner()['name'])
+            assert_cv_predictions_on_model(h2o.get_model(m).metalearner().model_id)
 
     def test_param_disabled():
         print("\n=== disabling "+kcvp+" ===")
@@ -138,7 +138,7 @@ def test_suite_clean_cv_predictions():
         for m in models.base:
             assert_cv_predictions_on_model(m, False)
         for m in models.se:
-            assert not h2o.get_model(h2o.get_model(m).metalearner()['name']).cross_validation_predictions()
+            assert not h2o.get_model(h2o.get_model(m).metalearner().model_id).cross_validation_predictions()
 
     def test_SE_retraining_fails_when_param_disabled():
         print("\n=== disabling "+kcvp+" and retraining ===")
@@ -226,7 +226,7 @@ def test_suite_clean_cv_models():
         for m in models.base:
             assert not h2o.get_model(m).cross_validation_models(), "unexpected cv models for model "+m
         for m in models.se:
-            metal = h2o.get_model(h2o.get_model(m).metalearner()['name'])
+            metal = h2o.get_model(h2o.get_model(m).metalearner().model_id)
             assert not metal.cross_validation_models(), "unexpected cv models for metalearner of model "+m
 
     def test_param_enabled():
@@ -244,7 +244,7 @@ def test_suite_clean_cv_models():
         for m in models.base:
             assert h2o.get_model(m).cross_validation_models(), "missing cv models for model "+m
         for m in models.se:
-            metal = h2o.get_model(h2o.get_model(m).metalearner()['name'])
+            metal = h2o.get_model(h2o.get_model(m).metalearner().model_id)
             assert metal.cross_validation_models(), "missing cv models for metalearner of model "+m
 
     def test_param_disabled():
@@ -261,7 +261,7 @@ def test_suite_clean_cv_models():
         for m in models.base:
             assert not h2o.get_model(m).cross_validation_models(), "unexpected cv models for model "+m
         for m in models.se:
-            metal = h2o.get_model(h2o.get_model(m).metalearner()['name'])
+            metal = h2o.get_model(h2o.get_model(m).metalearner().model_id)
             assert not metal.cross_validation_models(), "unexpected cv models for metalearner of model "+m
 
     return [
@@ -398,10 +398,7 @@ def test_suite_remove_automl():
             models_base=max_models + num_SEs,
             cv_models=0,
             predictions=0,
-            metrics=(len(keys['models_base']) * 2  # for each model, 1 on training_frame, 1 on leaderboard frame (those are extracted from original training_frame)
-                     + max_models * 1  # for each non-SE model, 1 on validation frame
-                     + (num_SEs * 2)  # for each SE metalearner, 1 on levelone training, 1 on levelone validation
-                     )
+            metrics=(2*len(keys['models_all']))   # for each model, 1 on training_frame, 1 on validation frame which is also the leaderboard frame
         )
         for k, v in expectations.items():
             assert len(keys[k]) == v, "expected {} {}, but got {}".format(v, k, len(keys[k]))

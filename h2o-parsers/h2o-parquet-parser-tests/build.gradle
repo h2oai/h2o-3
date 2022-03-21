@@ -12,4 +12,5 @@ dependencies {
     api("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {
         exclude module: "servlet-api"
     }
+    testRuntimeOnly project(":${defaultWebserverModule}")
 }

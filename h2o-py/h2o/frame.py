@@ -30,10 +30,10 @@ from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGUR
 from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
-                                    can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
+                                    can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized, 
+                                    check_frame_id)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
-from h2o.model.model_base import _get_numpy
 
 __all__ = ("H2OFrame", )
 
@@ -84,6 +84,7 @@ class H2OFrame(Keyed):
 
     # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
     __LOCAL_EXPANSION_ON_SINGLE_IMPORT__ = True
+    __fdopen_kwargs = {} if PY2 else {'encoding': 'utf-8'}
 
     #-------------------------------------------------------------------------------------------------------------------
     # Construction
@@ -139,7 +140,7 @@ class H2OFrame(Keyed):
 
         # create a temporary file that will be written to
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
-        tmp_file = os.fdopen(tmp_handle, 'w')
+        tmp_file = os.fdopen(tmp_handle, 'w', **H2OFrame.__fdopen_kwargs)
         # create a new csv writer object thingy
         csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(column_names)
@@ -159,7 +160,7 @@ class H2OFrame(Keyed):
             raise H2OValueError("A sparse matrix expected, got %s" % type(matrix))
 
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".svmlight")
-        out = os.fdopen(tmp_handle, "wt")
+        out = os.fdopen(tmp_handle, 'wt', **H2OFrame.__fdopen_kwargs)
         if destination_frame is None:
             destination_frame = _py_tmp_key(h2o.connection().session_id)
 
@@ -385,7 +386,9 @@ class H2OFrame(Keyed):
         """
         if not len(self.columns) == 1:
             raise H2OValueError("dtype is only supported for one column frames")
-        np = _get_numpy("H2OFrame.dtype")
+        if not can_use_numpy():
+            raise ImportError("H2OFrame.dtype function requires numpy to be installed")
+        import numpy as np
         type_map = {
             "enum": np.str, 
             "string": np.str, 
@@ -3843,7 +3846,7 @@ class H2OFrame(Keyed):
             or a single number for the number of breaks; or a list containing the split points, e.g:
             ``[-50, 213.2123, 9324834]``. If breaks is "fd", the MAD is used over the IQR in computing bin width.
         :param bool plot: If True (default), then a plot will be generated using ``matplotlib``.
-        :param save_plot_path: a path to save the plot via using mathplotlib function savefig.
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig.
 
         :returns: If ``plot`` is False, return H2OFrame with these columns: breaks, counts, mids_true,
             mids, and density; otherwise this method draws a plot and returns H2OFrame and a plot (can be accessed 

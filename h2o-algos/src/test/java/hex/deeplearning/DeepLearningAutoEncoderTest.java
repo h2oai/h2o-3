@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.easy.RowData;
@@ -67,13 +66,20 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._epochs = 13.3;
         p._force_load_balance = true;
         p._elastic_averaging = false;
+
+        // same parameters for the non-standardized model
+        DeepLearningParameters pNoStand = (DeepLearningParameters) p.clone();
+        pNoStand._standardize = false;
+
+        // train default
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel mymodel = dl.trainModel().get();
+        Assert.assertEquals(ScoreKeeper.StoppingMetric.MSE, p._stopping_metric); // AE early-stops on MSE
 
-        p._stopping_metric = ScoreKeeper.StoppingMetric.AUTO; // reset to auto as it got evaluated during previous model building
-        p._standardize = false;
-        DeepLearning dlNoStand = new DeepLearning(p);
+        // train non-standardized
+        DeepLearning dlNoStand = new DeepLearning(pNoStand);
         DeepLearningModel mymodelNoStand = dlNoStand.trainModel().get();
+        Assert.assertEquals(ScoreKeeper.StoppingMetric.MSE, pNoStand._stopping_metric);
 
         Frame l2_frame_train=null, l2_frame_test=null;
 
@@ -162,10 +168,10 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           }
 
           // check that the all outliers are found (and nothing else)
-          Assert.assertTrue(outliers.contains(new Long(20)));
-          Assert.assertTrue(outliers.contains(new Long(21)));
-          Assert.assertTrue(outliers.contains(new Long(22)));
-          Assert.assertTrue(outliers.size() == 3);
+          Assert.assertTrue(outliers.contains(20L));
+          Assert.assertTrue(outliers.contains(21L));
+          Assert.assertTrue(outliers.contains(22L));
+          Assert.assertEquals(3, outliers.size());
 
           // check if reconstruction error is the same from model and mojo model too - test case for PUBDEV-6030
           // also check if reconstruction error is calculated correctly if the parameter standardize is set to false 

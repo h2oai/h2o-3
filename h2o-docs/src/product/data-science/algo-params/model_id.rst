@@ -1,7 +1,7 @@
 ``model_id``
 ------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, Word2Vec, Stacked Ensembles, XGBoost, Aggregator, CoxPH, Isolation Forest, Extended Isolation Forest
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, Word2Vec, Stacked Ensembles, XGBoost, Aggregator, CoxPH, Isolation Forest, Extended Isolation Forest, Uplift DRF
 - Hyperparameter: no
 
 Description

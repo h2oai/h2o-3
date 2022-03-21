@@ -15,7 +15,7 @@ class CompareUpliftDrfWithCausalMl(unittest.TestCase):
                      "Tested only on >3.5, causalml is not supported on lower python version")
     def test_uplift_compare(self):
         from causalml.inference.tree import UpliftRandomForestClassifier
-        from causalml.metrics import auuc_score
+        from causalml.metrics import auuc_score, qini_score
         h2o.init(strict_version_check=False)
         treatment_column = "treatment"
         response_column = "outcome"
@@ -96,9 +96,11 @@ class CompareUpliftDrfWithCausalMl(unittest.TestCase):
 
         # calculate auuc using CausalML package
         auuc = auuc_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=False)
+        qini = qini_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=False)
 
+        perf_test = h2o_drfs[2].model_performance(testing_df)
         # compare AUUC calculation with CausalML
-        h2o_auuc_qain_test = h2o_drfs[2].model_performance(testing_df).auuc()
+        h2o_auuc_qain_test = perf_test.auuc()
         print("AUUC calculation:")
         diff = abs(auuc["h2o"] - h2o_auuc_qain_test)
         print("CausalML H2O: %f H2O: %f diff: %f" % (auuc["h2o"], h2o_auuc_qain_test, diff))
@@ -107,6 +109,17 @@ class CompareUpliftDrfWithCausalMl(unittest.TestCase):
 
         diff = abs(auuc["causal"] - auuc["h2o"])
         print("CausalML: %f H2O: %f diff: %f" % (auuc["causal"], auuc["h2o"], diff))
+
+        # compare Qini calculation with CausalML
+        h2o_qini_qain_test = perf_test.qini()
+        print("Qini calculation:")
+        diff = abs(qini["h2o"] - h2o_qini_qain_test)
+        print("CausalML H2O: %f H2O: %f diff: %f" % (qini["h2o"], h2o_qini_qain_test, diff))
+        assert diff < 6, \
+            "Absolute difference between causalML package and H2O Qini calculation is higher than is expected: %f" % diff
+
+        diff = abs(qini["causal"] - qini["h2o"])
+        print("CausalML: %f H2O: %f diff: %f" % (qini["causal"], qini["h2o"], diff))
 
         # test plot_auuc
         perf = h2o_drfs[0].model_performance(testing_df)

@@ -3,7 +3,8 @@ package water.network;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
+import water.network.util.ExternalKeytool;
+import water.network.util.JavaVersionUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,6 +43,18 @@ public class SecurityUtilsTest {
             if(props.exists()) {
                 props.deleteOnExit();
             }
+        }
+    }
+
+    @Test
+    public void testGetKeytoolClass() {
+        Class<?> ktClass = SecurityUtils.getKeyToolClass();
+        assertNotNull(ktClass);
+
+        if (JavaVersionUtils.getMajorVersion() < 16) {
+            assertEquals("sun.security.tools.keytool.Main", ktClass.getName());
+        } else {
+            assertTrue(ktClass.isAssignableFrom(ExternalKeytool.class));
         }
     }
 

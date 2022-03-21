@@ -138,9 +138,9 @@ public final class DHistogram extends Iced<DHistogram> {
   public final boolean _checkFloatSplits;
   transient float[] _splitPtsFloat;
   public final long _seed;
-  public transient boolean _hasQuantiles;
-  public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
-
+  public transient boolean _absoluteSplitPts;
+  public Key _globalQuantilesKey; // key under which original top-level quantiles are stored;
+  final double[] _customSplitPoints; // explicitly given split points (for UniformRobust)
 
 
   /**
@@ -184,75 +184,8 @@ public final class DHistogram extends Iced<DHistogram> {
 
   DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
              double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
-             Constraints cs, boolean checkFloatSplits) {
-    assert nbins >= 1;
-    assert nbins_cats >= 1;
-    assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
-    if (cs != null) {
-      _pred1 = cs._min;
-      _pred2 = cs._max;
-      if (!cs.needsGammaDenom() && !cs.needsGammaNom()) {
-        _vals_dim = Double.isNaN(_pred1) && Double.isNaN(_pred2) ? 3 : 5;
-        _dist = cs._dist;
-      } else if (!cs.needsGammaNom()) {
-        _vals_dim = 6;
-        _dist = cs._dist;
-      } else {
-        _vals_dim = 7;
-        _dist = cs._dist;
-      }
-    } else {
-      _pred1 = Double.NaN;
-      _pred2 = Double.NaN;
-      _vals_dim = 3;
-      _dist = null;
-    }
-    _isInt = isInt;
-    _name = name;
-    _min = min;
-    _minInt = (int) min;
-    _maxEx = maxEx;             // Set Exclusive max
-    _min2 = Double.MAX_VALUE;   // Set min/max to outer bounds
-    _maxIn= -Double.MAX_VALUE;
-    _intOpt = intOpt;
-    _initNA = initNA;
-    _minSplitImprovement = minSplitImprovement;
-    _histoType = histogramType;
-    _useUplift = false;
-    _upliftMetric = null;
-    _seed = seed;
-    while (_histoType == HistogramType.RoundRobin) {
-      HistogramType[] h = HistogramType.values();
-      _histoType = h[(int)Math.abs(seed++ % h.length)];
-    }
-    if (_histoType== HistogramType.AUTO)
-      _histoType= HistogramType.UniformAdaptive;
-    assert(_histoType!= HistogramType.RoundRobin);
-    _globalQuantilesKey = globalQuantilesKey;
-    // See if we can show there are fewer unique elements than nbins.
-    // Common for e.g. boolean columns, or near leaves.
-    int xbins = isInt == 2 ? nbins_cats : nbins;
-    if (isInt > 0 && maxEx - min <= xbins) {
-      assert ((long) min) == min : "Overflow for integer/categorical histogram: minimum value cannot be cast to long without loss: (long)" + min + " != " + min + "!";                // No overflow
-      xbins = (char) ((long) maxEx - (long) min);  // Shrink bins
-      _step = 1.0f;                           // Fixed step size
-    } else {
-      _step = xbins / (maxEx - min);              // Step size for linear interpolation, using mul instead of div
-      if(_step <= 0 || Double.isInfinite(_step) || Double.isNaN(_step))
-        throw new StepOutOfRangeException(name,_step, xbins, maxEx, min);
-    }
-    _nbin = (char) xbins;
-    assert(_nbin>0);
-    assert(_vals == null);
-    _checkFloatSplits = checkFloatSplits;
-
-    if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
-    // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
-  }
-
-  DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
-             double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
-             Constraints cs, boolean checkFloatSplits, boolean useUplift, UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType) {
+             Constraints cs, boolean checkFloatSplits, boolean useUplift, UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType,
+             double[] customSplitPoints) {
     assert nbins >= 1;
     assert nbins_cats >= 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -285,11 +218,12 @@ public final class DHistogram extends Iced<DHistogram> {
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
     _seed = seed;
-    while (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
-      SharedTreeModel.SharedTreeParameters.HistogramType[] h = SharedTreeModel.SharedTreeParameters.HistogramType.values();
-      _histoType = h[(int)Math.abs(seed++ % h.length)];
+    if (_histoType == HistogramType.RoundRobin) {
+      HistogramType[] h = HistogramType.ROUND_ROBIN_CANDIDATES;
+      _histoType = h[(int)Math.abs(seed % h.length)];
     }
-    if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
+    assert _histoType != SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin;
+    if (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
       _histoType= SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
     assert(_histoType!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin);
     _globalQuantilesKey = globalQuantilesKey;
@@ -324,6 +258,7 @@ public final class DHistogram extends Iced<DHistogram> {
     assert(_nbin>0);
     assert(_vals == null);
     _checkFloatSplits = checkFloatSplits;
+    _customSplitPoints = customSplitPoints;
     if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
@@ -339,7 +274,7 @@ public final class DHistogram extends Iced<DHistogram> {
     // out of range of any bin - however this binning call only happens during
     // model-building.
     int idx1;
-    double pos = _hasQuantiles ? col_data : ((col_data - _min) * _step);
+    double pos = _absoluteSplitPts ? col_data : ((col_data - _min) * _step);
     if (_splitPts != null) {
       idx1 = pos == 0.0 ? _zeroSplitPntPos : Arrays.binarySearch(_splitPts, pos);
       if (idx1 < 0) idx1 = -idx1 - 2;
@@ -366,7 +301,8 @@ public final class DHistogram extends Iced<DHistogram> {
   }
 
   public double binAt( int b ) {
-    if (_hasQuantiles) return _splitPts[b];
+    if (_absoluteSplitPts)
+      return _splitPts[b];
     return _min + (_splitPts == null ? b : _splitPts[b]) / _step;
   }
 
@@ -377,6 +313,19 @@ public final class DHistogram extends Iced<DHistogram> {
     return nbins() + (hasNABin() ? 1 : 0);
   }
   public double bins(int b) { return w(b); }
+
+  // return number of empty bins (doesn't consider the NA bin) 
+  public int nonEmptyBins() {
+    if (_vals == null)
+      return 0;
+    int nonEmpty = 0;
+    for (int i = 0; i < _vals.length - _vals_dim; i += _vals_dim) { // don't count NA (last bin)
+      if (_vals[i] > 0) {
+        nonEmpty++;
+      }
+    }
+    return nonEmpty;
+  }
 
   public boolean hasNABin() {
     if (_vals == null)
@@ -412,7 +361,7 @@ public final class DHistogram extends Iced<DHistogram> {
               _histoType = HistogramType.UniformAdaptive;
             }
             else {
-              _hasQuantiles=true;
+              _absoluteSplitPts = true;
               _nbin = (char)_splitPts.length;
               if (LOG.isTraceEnabled()) LOG.trace("Refined splitPoints: " + Arrays.toString(_splitPts));
             }
@@ -420,7 +369,17 @@ public final class DHistogram extends Iced<DHistogram> {
         }
       }
     }
-    else assert(_histoType== HistogramType.UniformAdaptive);
+    else if (_histoType == HistogramType.UniformRobust) {
+      if (_customSplitPoints != null) {
+        defineSplitPointsFromCustomSplitPoints(_customSplitPoints);
+      } else {
+        // no custom split points were given - meaning no issue was found with data distribution of the column
+        // and UniformRobust should behave just like UniformAdaptive (for now)
+        _histoType = HistogramType.UniformAdaptive;
+      }
+    } else { // UniformAdaptive is all that is left
+      assert _histoType == HistogramType.UniformAdaptive;
+    }
     if (_splitPts != null) {
       // Inject canonical representation of zero - convert "negative zero" to 0.0d
       // This is for PUBDEV-7161 - Arrays.binarySearch used in bin() method is not able to find a negative zero,
@@ -449,9 +408,22 @@ public final class DHistogram extends Iced<DHistogram> {
       }
     }
     assert !_intOpt || _splitPts == null : "Integer-optimization cannot be enabled when split points are defined";
-    assert !_intOpt || _histoType == HistogramType.UniformAdaptive : "Integer-optimization can only be enabled for histogram type 'UniformAdaptive'.";
+    assert !_intOpt || _histoType == HistogramType.UniformAdaptive || _histoType == HistogramType.UniformRobust : "Integer-optimization can only be enabled for histogram type 'UniformAdaptive' or 'UniformRobust'.";
   }
-  
+
+  void defineSplitPointsFromCustomSplitPoints(double[] customSplitPoints) {
+    _splitPts = customSplitPoints;
+    _splitPts = ArrayUtils.limitToRange(_splitPts, _min, _maxEx);
+    if (_splitPts.length <= 1) {
+      _splitPts = null; // abort, fall back to uniform binning
+      _histoType = HistogramType.UniformAdaptive;
+    }
+    else {
+      _absoluteSplitPts = true;
+      _nbin = (char)(_splitPts.length - 1);
+    }
+  }
+
   // Merge two equal histograms together.  Done in a F/J reduce, so no
   // synchronization needed.
   public void add( DHistogram dsh ) {
@@ -508,7 +480,7 @@ public final class DHistogram extends Iced<DHistogram> {
         byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
         boolean intOpt = useIntOpt(v, parms, cs);
         hs[c] = nacnt == vlen || v.isConst(true) ?
-            null : make(fr._names[c], nbins, type, minIn, maxEx, intOpt, nacnt > 0, seed, parms, globalQuantilesKey[c], cs, checkFloatSplits);
+            null : make(fr._names[c], nbins, type, minIn, maxEx, intOpt, nacnt > 0, seed, parms, globalQuantilesKey[c], cs, checkFloatSplits, null);
       } catch(StepOutOfRangeException e) {
         hs[c] = null;
         LOG.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
@@ -520,12 +492,12 @@ public final class DHistogram extends Iced<DHistogram> {
 
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
                                 long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, 
-                                Constraints cs, boolean checkFloatSplits) {
+                                Constraints cs, boolean checkFloatSplits, double[] customSplitPoints) {
     boolean useUplift = isUplift(parms);
     UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType = useUplift ?
             ((UpliftDRFModel.UpliftDRFParameters) parms)._uplift_metric : null;
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, intOpt, hasNAs,
-            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, checkFloatSplits, useUplift, upliftMetricType);
+            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, checkFloatSplits, useUplift, upliftMetricType, customSplitPoints);
   }
 
   private static boolean isUplift(SharedTreeModel.SharedTreeParameters parms) {
@@ -551,7 +523,8 @@ public final class DHistogram extends Iced<DHistogram> {
       return false;
     }
     if (parms._histogram_type != HistogramType.AUTO &&
-            parms._histogram_type != HistogramType.UniformAdaptive) {
+            parms._histogram_type != HistogramType.UniformAdaptive && 
+            parms._histogram_type != HistogramType.UniformRobust) {
       // we cannot handle non-integer split points in fast-binning
       return false;
     }

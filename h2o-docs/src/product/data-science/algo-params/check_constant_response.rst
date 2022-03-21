@@ -1,7 +1,7 @@
 ``check_constant_response``
 ---------------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, Uplift DRF
 - Hyperparameter: no
 
 Description

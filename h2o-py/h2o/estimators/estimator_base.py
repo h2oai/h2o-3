@@ -58,6 +58,7 @@ class H2OEstimator(ModelBase):
     """
     
     supervised_learning = None  # overridden in implementation
+    __default_params = None     # mangled/hidden: use `_default_param_value` to access default param values internally.
 
     def __init__(self):
         super(H2OEstimator, self).__init__()
@@ -96,7 +97,7 @@ class H2OEstimator(ModelBase):
         self._job = None
         model_json = h2o.api("GET /%d/Models/%s" % (self._rest_version, model_key))["models"][0]
         self._resolve_model(model_key, model_json)
-
+    
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
               model_id=None, verbose=False):
@@ -223,7 +224,7 @@ class H2OEstimator(ModelBase):
                                             required=self._options_.get('requires_training_frame', True) and not has_default_training_frame)
         validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
         assert_is_type(y, None, int, str)
-        assert_is_type(x, None, int, str, [str, int], {str, int})
+        assert_is_type(x, None, int, str, ModelBase, [str, int], {str, int})
         assert_is_type(ignored_columns, None, [str, int], {str, int})
         assert_is_type(offset_column, None, int, str)
         assert_is_type(fold_column, None, int, str)
@@ -281,6 +282,8 @@ class H2OEstimator(ModelBase):
                         ignored_columns_set.add(ic)
             if x is None:
                 xset = set(names) - {y} - ignored_columns_set
+            elif isinstance(x, ModelBase) and hasattr(x, '_extract_x_from_model'):
+                xset = x._extract_x_from_model()
             else:
                 xset = set()
                 if is_type(x, int, str): x = [x]
@@ -510,6 +513,9 @@ class H2OEstimator(ModelBase):
         elif model_type == "TargetEncoder":
             metrics_class = H2OTargetEncoderMetrics
             model_class = None
+        elif model_type == "Unknown":
+            metrics_class = None
+            model_class = None
         else:
             raise NotImplementedError(model_type)
         if valid_metrics_class is None:
@@ -519,12 +525,23 @@ class H2OEstimator(ModelBase):
     def _check_and_save_parm(self, parms, parameter_name, parameter_value):
         """
         If a parameter is not stored in parms dict save it there (even though the value is None).
-        Else check if the parameter has been already set during initialization of estimator. If yes, check the new value is the same or not. If the values are different, set the last passed value to params dict and throw UserWarning.
+        Else check if the parameter has been already set during initialization of estimator. 
+            If yes, check the new value is the same or not.
+            If the values are different, set the last passed value to params dict and throw UserWarning.
         """
         if parameter_name not in parms:
             parms[parameter_name] = parameter_value
         elif parameter_value is not None and parms[parameter_name] != parameter_value:
+            prev_value = parms[parameter_name]
             parms[parameter_name] = parameter_value
-            warnings.warn("\n\n\t`%s` parameter has been already set and had a different value in `train` method. The last passed value \"%s\" is used." % (parameter_name, parameter_value), UserWarning, stacklevel=2)
+            if prev_value != self._default_param_value(parameter_name):
+                warnings.warn("\n\n\t`%s` parameter has been already set and had a different value in `train` method."
+                              " The last passed value \"%s\" is used." % (parameter_name, parameter_value), 
+                              UserWarning, 
+                              stacklevel=4)  # warning should refer to the original call to `train`, `train_xxx`
 
-
+    @classmethod
+    def _default_param_value(cls, param_name):
+        if cls.__default_params is None:
+            cls.__default_params = cls()
+        return getattr(cls.__default_params, param_name)

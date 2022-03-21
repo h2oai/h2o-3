@@ -56,6 +56,7 @@ task runGenerateRESTAPIBindingsSrc(type: Exec) {
     workingDir binDir
     // Note: by default the generated sources get written to ./h2o-bindings/src-gen/*
     environment "H2O_JARFILE", configurations.srcGenCompile.getSingleFile()
+    environment "H2O_JAVA_VERSION", JavaVersion.current()
     commandLine getOsSpecificCommandLine([pythonexe, "gen_all.py"])
 }
 

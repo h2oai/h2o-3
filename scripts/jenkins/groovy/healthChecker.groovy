@@ -93,7 +93,7 @@ class HealthChecker {
         return """
             available=\$(df -BG ${path} --output=avail | tail -1 | tr -d %[:space:]G)
             if [ \$available -lt ${minFreeSpaceGB} ]; then 
-                echo "Disk space utilization for ${path} exceeded -> Available \${used}GB, required is at least ${minFreeSpaceGB}GB";
+                echo "Disk space utilization for ${path} exceeded -> Available \${available}GB, required is at least ${minFreeSpaceGB}GB";
                 exit 1 
             else 
                 echo "${path} space check passed"

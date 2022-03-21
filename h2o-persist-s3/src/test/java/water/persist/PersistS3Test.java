@@ -3,6 +3,9 @@ package water.persist;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -12,15 +15,22 @@ import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
+import water.parser.ParseSetup;
+import water.rapids.Rapids;
+import water.rapids.Val;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.FileUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.net.URL;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
@@ -470,5 +480,112 @@ public class PersistS3Test extends TestUtil {
     assertEquals(defaultProviders.length, extendedProviders.length);
   }
 
+  @Test
+  public void testImportParquetFromS3() {
+    checkEnv();
 
+    final ArrayList<String> keys = new ArrayList<>();
+    final ArrayList<String> fails = new ArrayList<>();
+    final ArrayList<String> deletions = new ArrayList<>();
+    final ArrayList<String> files = new ArrayList<>();
+
+    try {
+      Scope.enter();
+      H2O.getPM().importFiles("s3://h2o-public-test-data/smalldata/parser/parquet/airlines-simple.snappy.parquet", 
+              null, files, keys, fails, deletions);
+
+      assertEquals(0, fails.size());
+      assertEquals(0, deletions.size());
+      assertEquals(1, files.size()); // Parse including files in sub folders
+      assertEquals(1, keys.size());
+
+      Frame fromS3 = DKV.getGet(keys.get(0));
+      Scope.track(fromS3);
+
+      FileVec localVec = makeNfsFileVec("smalldata/parser/parquet/airlines-simple.snappy.parquet");
+      assertNotNull(localVec);
+      Scope.track(localVec);
+
+      assertEquals(localVec.length(), fromS3.anyVec().length());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testParseParquetFromS3() throws IOException {
+    checkEnv();
+
+    try {
+      Scope.enter();
+      URI parquetDatasetUri = URI.create("s3://h2o-public-test-data/smalldata/parser/parquet/airlines-simple.snappy.parquet");
+      Key<?> parquetKey = H2O.getPM().anyURIToKey(parquetDatasetUri);
+      Scope.track_generic(parquetKey.get());
+      
+      ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{parquetKey}, false, ParseSetup.GUESS_HEADER);
+      assertEquals("PARQUET", guessedSetup.getParseType().name());
+
+      Frame fromS3 = ParseDataset.parse(Key.make(), new Key[]{parquetKey}, true, guessedSetup);
+      Scope.track(fromS3);
+
+      Frame fromLocal = parseTestFile("./smalldata/parser/parquet/airlines-simple.snappy.parquet");
+      Scope.track(fromLocal);
+
+      assertFrameEquals(fromLocal, fromS3, 0.0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testGeneratePresignedURL() throws IOException {
+    checkEnv();
+    
+    Date expiration = new Date(new Date().getTime() + 360_0000); // in 6 minutes
+    URL url = new PersistS3().generatePresignedUrl("s3://test.0xdata.com/h2o-unit-tests/iris.csv", expiration);
+
+    String httpsUrl = url.toString();
+    assertEquals("https", httpsUrl.substring(0, 5).toLowerCase());
+
+    final String httpUrl = "http" + httpsUrl.substring(5);
+    final byte[] bytes;
+    try (InputStream is = new URL(httpUrl).openStream()) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      IOUtils.copyLarge(is, baos);
+      bytes = baos.toByteArray();
+    }
+
+    assertNotNull(bytes);
+    assertEquals(4551, bytes.length);
+  }
+
+  @Test
+  public void testRapidPresign() {
+    checkEnv();
+
+    Val val = Rapids.exec("(s3.generate.presigned.URL 's3://test.0xdata.com/h2o-unit-tests/iris.csv' 3600000)");
+    assertTrue(val.isStr());
+
+    assertTrue(val.getStr().toLowerCase().startsWith("https"));
+  }
+
+  @Test
+  public void testCredentialsProviderContainsAwsDefault() {
+    AWSCredentialsProvider[] providers = PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain();
+    List<String> providerClasses = Arrays.stream(providers)
+            .map(Object::getClass).map(Class::getName)
+            .collect(Collectors.toList());
+    assertEquals(Arrays.asList(
+            "water.persist.PersistS3$H2ODynamicCredentialsProvider", 
+            "water.persist.PersistS3$H2OArgCredentialsProvider", 
+            "com.amazonaws.auth.DefaultAWSCredentialsProviderChain"), providerClasses);
+  }
+
+  private static void checkEnv() {
+    // This test is only runnable in environment with Amazon credentials properly set {AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY}
+    Consumer<Object> checkImpl = isCI() ? Assert::assertNotNull : Assume::assumeNotNull; // assert in CI, assume elsewhere
+    checkImpl.accept(System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME));
+    checkImpl.accept(System.getenv(AWS_SECRET_KEY_PROPERTY_NAME));
+  }
+  
 }

@@ -86,16 +86,14 @@ stackedensemble.max_runtime_secs_is_obeyed.test <- function() {
         blending_frame <- h2o.rbind(blending_frame, blending_frame)
     }
     # Train a stacked ensemble using the GBM and RF above
-    error <- tryCatch(h2o.stackedEnsemble(x = x,
+    expect_error(h2o.stackedEnsemble(x = x,
                                  y = y,
                                  training_frame = train,
                                  model_id = "my_ensemble_l1",
                                  base_models = list(my_gbm@model_id, my_rf@model_id),
                                  max_runtime_secs = max_runtime_secs,
                                  blending_frame = blending_frame
-                                ),
-             error = function(e) e)
-    expect_equal(error$message, "Meta learner didn't get to be trained in time. Try increasing max_runtime_secs or setting it to 0 (unlimited).")
+                                ))
 }
 
 doSuite("Stacked Ensemble max_runtime_secs Test", makeSuite(

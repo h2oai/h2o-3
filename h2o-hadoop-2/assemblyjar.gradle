@@ -10,7 +10,7 @@ def hasCustomHdfsDep = ext.has("hdfsDependency") && (ext.get("hdfsDependency") !
 
 if (hasCustomHdfsDep) {
   configurations {
-    compile.exclude group: "org.apache.hadoop", module: "$defaultHdfsDependency"
+    api.exclude group: "org.apache.hadoop", module: "$defaultHdfsDependency"
   }
 }
 
@@ -48,6 +48,9 @@ dependencies {
   }
   api(project(':h2o-hive')) {
     transitive = false
+  }
+  api(project(":h2o-ext-krbstandalone")) {
+    transitive = false // we just need hadoop-auth which is provided by the hadoop-client dependency
   }
   api("org.apache.parquet:parquet-avro:${defaultParquetVersion}") // required by h2o-hive
 

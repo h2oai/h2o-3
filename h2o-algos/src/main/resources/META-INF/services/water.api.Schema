@@ -19,10 +19,6 @@ hex.schemas.DeepLearningModelV3
 hex.schemas.DeepLearningModelV3$DeepLearningModelOutputV3
 hex.schemas.DeepLearningV3
 hex.schemas.DeepLearningV3$DeepLearningParametersV3
-hex.schemas.ExampleModelV3
-hex.schemas.ExampleModelV3$ExampleModelOutputV3
-hex.schemas.ExampleV3
-hex.schemas.ExampleV3$ExampleParametersV3
 hex.schemas.GBMModelV3
 hex.schemas.GBMModelV3$GBMModelOutputV3
 hex.schemas.GBMV3
@@ -102,10 +98,10 @@ hex.schemas.ANOVAGLMModelV3
 hex.schemas.ANOVAGLMModelV3$ANOVAGLMModelOutputV3
 hex.schemas.ANOVAGLMV3$ANOVAGLMParametersV3
 hex.schemas.ANOVAGLMV3
-hex.schemas.MaxRGLMModelV3
-hex.schemas.MaxRGLMModelV3$MaxRGLMModelOutputV3
-hex.schemas.MaxRGLMV3
-hex.schemas.MaxRGLMV3$MaxRGLMParametersV3
+hex.schemas.ModelSelectionModelV3
+hex.schemas.ModelSelectionModelV3$ModelSelectionModelOutputV3
+hex.schemas.ModelSelectionV3
+hex.schemas.ModelSelectionV3$ModelSelectionParametersV3
 hex.schemas.UpliftDRFModelV3
 hex.schemas.UpliftDRFModelV3$UpliftDRFModelOutputV3
 hex.schemas.UpliftDRFV3

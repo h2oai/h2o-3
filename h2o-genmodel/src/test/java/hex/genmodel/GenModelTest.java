@@ -2,6 +2,11 @@ package hex.genmodel;
 
 import org.junit.Test;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+
 import static org.junit.Assert.*;
 
 public class GenModelTest {
@@ -49,5 +54,23 @@ public class GenModelTest {
     GenModel.setInput(row, to, 1, 3, catOffsets, null, null, false, false);
     assertArrayEquals(new float[]{0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 42}, to, 0);
   }
+
+  @Test
+  public void testGetOutputDomains() throws IOException {
+    URL mojoSource = getClass().getResource("/hex/genmodel/algos/gbm/gbm_variable_importance.zip");
+    assertNotNull(mojoSource);
+    MojoReaderBackend r = MojoReaderBackendFactory.createReaderBackend(mojoSource, MojoReaderBackendFactory.CachingStrategy.MEMORY);
+    MojoModel mojo = MojoModel.load(r);
+
+    final String[][] outputDomains = mojo.getOutputDomains();
+    assertEquals(3, outputDomains.length);
+    assertArrayEquals(new String[]{"0", "1"}, outputDomains[0]);
+    assertNull(outputDomains[1]);
+    assertNull(outputDomains[2]);
+
+    final String[] outputNames = mojo.getOutputNames();
+    assertArrayEquals(new String[]{"predict", "p0", "p1"}, outputNames);
+  }
   
+
 }

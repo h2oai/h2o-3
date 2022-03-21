@@ -2,6 +2,7 @@ package hex.generic;
 
 import hex.Model;
 import hex.ModelCategory;
+import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
 import hex.coxph.CoxPH;
 import hex.coxph.CoxPHModel;
@@ -10,6 +11,8 @@ import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.Metalearner;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleModel;
+import hex.gam.GAM;
+import hex.gam.GAMModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.rulefit.RuleFit;
@@ -1341,7 +1344,7 @@ public class GenericModelTest extends TestUtil {
             try (FileWriter wr = new FileWriter(pojoFile)) {
                 IOUtils.write(pojoCode, wr);
             }
-            
+
             GenericModel generic = Generic.importMojoModel(pojoFile.getAbsolutePath(), true);
             Scope.track_generic(generic);
 
@@ -1356,4 +1359,103 @@ public class GenericModelTest extends TestUtil {
         }
     }
 
+    @Test
+    public void testGAM_binomial() throws IOException {
+        final GAMModel.GAMParameters gamParameters = new GAMModel.GAMParameters();
+        gamParameters._family = GLMModel.GLMParameters.Family.binomial;
+        gamParameters._response_column = "CAPSULE";
+        gamParameters._seed = 0XFEED;
+        gamParameters._ignored_columns = new String[] {"ID"};
+        gamParameters._alpha = new double[]{0.5};
+        gamParameters._lambda_search = false;
+        gamParameters._gam_columns = new String[][]{{"AGE"}};
+
+        checkGAM(gamParameters, "./smalldata/prostate/prostate.csv");
+    }
+
+    @Test
+    public void testGAM_gaussian() throws IOException {
+        final GAMModel.GAMParameters gamParameters = new GAMModel.GAMParameters();
+        gamParameters._family = GLMModel.GLMParameters.Family.gaussian;
+        gamParameters._response_column = "C21";
+        gamParameters._seed = 0XFEED;
+        gamParameters._alpha = new double[]{0.0};
+        gamParameters._lambda = new double[]{0.0};
+        gamParameters._lambda_search = false;
+        gamParameters._gam_columns = new String[][]{{"C11"}, {"C12"}, {"C13"}};
+        gamParameters._max_iterations = 3;
+        gamParameters._scale = new double[]{1.0, 1.0, 1.0};
+
+        checkGAM(gamParameters, "./smalldata/glm_test/gaussian_20cols_10000Rows.csv", "C1", "C2");
+    }
+
+    @Test
+    public void testGAM_multinomial() throws IOException {
+        final GAMModel.GAMParameters gamParameters = new GAMModel.GAMParameters();
+        gamParameters._family = GLMModel.GLMParameters.Family.multinomial;
+        gamParameters._response_column = "C11";
+        gamParameters._seed = 0XFEED;
+        gamParameters._alpha = new double[]{0.0};
+        gamParameters._lambda = new double[]{0.0};
+        gamParameters._lambda_search = false;
+        gamParameters._gam_columns = new String[][]{{"C6"}, {"C7"}, {"C8"}};
+        gamParameters._max_iterations = 3;
+        gamParameters._scale = new double[]{1.0, 1.0, 1.0};
+
+        checkGAM(gamParameters, "./smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv", "C1", "C2");
+    }
+
+    private void checkGAM(GAMModel.GAMParameters gamParameters, String dataset, String... catCols) throws IOException {
+        try {
+            Scope.enter();
+
+            final Frame trainingFrame = parseTestFile(dataset);
+            if (gamParameters._family == GLMModel.GLMParameters.Family.binomial || 
+                    gamParameters._family == GLMModel.GLMParameters.Family.multinomial) {
+                trainingFrame.toCategoricalCol(gamParameters._response_column);
+            }
+            for (String catCol : catCols) {
+                trainingFrame.toCategoricalCol(catCol);
+            }
+            Scope.track(trainingFrame);
+            gamParameters._train = trainingFrame._key;
+
+            // 0. Train a GAM model
+            final GAM gam = new GAM(gamParameters);
+            final GAMModel gamModel = gam.trainModel().get();
+            assertNotNull(gamModel);
+            Scope.track_generic(gamModel);
+
+            final Frame originalModelPredictions = gamModel.score(trainingFrame);
+            Scope.track(originalModelPredictions);
+
+            // 1. Sanity check - make sure MOJO is actually consistent with in-H2O predictions before go further
+            assertTrue(gamModel.testJavaScoring(trainingFrame, originalModelPredictions, 1e-6));
+
+            // 2. Import MOJO into a Generic model
+            final File mojoFile = File.createTempFile("mojo", "zip");
+            gamModel.getMojo().writeTo(new FileOutputStream(mojoFile));
+            GenericModel genericModel = Generic.importMojoModel(mojoFile.getAbsolutePath(), false);
+            Scope.track_generic(genericModel);
+            assertTrue(genericModel.hasBehavior(GenericModel.ModelBehavior.USE_MOJO_PREDICT));
+            
+            // 3. Score Generic model
+            final Frame genericModelPredictions = genericModel.score(trainingFrame);
+            Scope.track(genericModelPredictions);
+
+            // Compare - predictions should be almost identical (up to the same tolerance as in-H2O and MOJO model predictions)
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions, 1e-6));
+
+            // for now, we just produce regular metrics (not GAM specific metrics)
+            Key<ModelMetrics>[] genericModelMetrics = genericModel._output.getModelMetrics();
+            assertTrue(genericModelMetrics.length > 0);
+            ModelMetrics mm = DKV.getGet(genericModelMetrics[0]);
+
+            assertEquals(gamModel._output._training_metrics._MSE, mm._MSE, 1e-6);
+            assertEquals(gamModel._output._training_metrics._nobs, mm._nobs, 1e-6);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
 }

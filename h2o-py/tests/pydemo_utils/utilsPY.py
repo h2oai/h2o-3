@@ -2,6 +2,7 @@
 import json
 import codecs
 
+
 def ipy_notebook_exec(path, save_and_norun=None):
     notebook = json.load(codecs.open(path, "r", "utf-8"))
     program = ''

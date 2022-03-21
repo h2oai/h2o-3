@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
- * MOJO support for GBM model.
+ * MOJO support for XGBoost model.
  */
 public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
@@ -35,7 +35,7 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
     writekv("use_all_factor_levels", model._output._useAllFactorLevels);
     writekv("sparse", model._output._sparse);
     writekv("booster", model._parms._booster.toString());
-    writekv("ntrees", model._parms._ntrees);
+    writekv("ntrees", model._output._ntrees);
     writeblob("feature_map", model.model_info().getFeatureMap().getBytes(Charset.forName("UTF-8")));
     writekv("use_java_scoring_by_default", true);
     if (model._output._calib_model != null) {

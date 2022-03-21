@@ -46,24 +46,26 @@ test-package-r:
 
 init-lookup:
 	rm -f h2o-{r,py}/tests/.lookup.txt
+	mkdir -p h2o-{r,py}/tests
 
 lookup-automl-tests: init-lookup
-	mkdir -p h2o-{r,py}/tests
 	find h2o-r/tests -name '*automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 	
 lookup-automl-smoke-tests: init-lookup
-	mkdir -p h2o-{r,py}/tests
 	find h2o-r/tests -name '*SMOKE_automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*SMOKE_automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
-lookup-fault-tolerance-tests:
-	mkdir -p h2o-{r,py}/tests
+lookup-fault-tolerance-tests: init-lookup
 	find h2o-r/tests -name '*fault_tolerance*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*fault_tolerance*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
+lookup-explain-tests: init-lookup
+	find h2o-r/tests -name '*explain*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests -name '*explain*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+
 lookup-demos-tests: init-lookup
-	mkdir -p h2o-{r,py}/tests/testdir_demos
+	mkdir h2o-{r,py}/tests/testdir_demos
 	find h2o-r/tests/testdir_demos -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests/testdir_demos -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
@@ -90,8 +92,11 @@ test-py-demos:
 test-pyunit-demos:
 	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
-test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests
+test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests lookup-explain-tests
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --excludelist .lookup.txt
+
+test-pyunit-explain: lookup-explain-tests
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 3 --jvm.xmx 4g --testlist .lookup.txt
 
 test-pyunit-single-node:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 4g --testlist ../../tests/pyunitSingleNodeList
@@ -281,6 +286,8 @@ test-package-java:
 		h2o-persist-hdfs/build/libs/h2o-persist-hdfs-*.jar \
 		h2o-persist-s3/src/ \
 		h2o-persist-s3/build/libs/h2o-persist-s3-*.jar \
+		h2o-persist-http/src/ \
+		h2o-persist-http/build/libs/h2o-persist-http-*.jar \
 		h2o-security/src/ \
 		h2o-security/build/libs/h2o-security-*.jar \
 		h2o-extensions/xgboost/src/ \
@@ -313,7 +320,7 @@ test-package-java:
 		h2o-clustering/tests/ \
 		scripts/run.py h2o-py/tests_rest_smoke scripts/test-xgb-gpu-smoke.sh \
 		scripts/jenkins/hadoop/ \
-		sort_crash.csv tests/doOnlyJunitSmokeTestList \
+		tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
 	find . -name "*.gradle" | zip -q -r test-package-java \
 	    -x h2o-web/* \
@@ -361,12 +368,26 @@ test-junit-xgb-multi-jenkins:
 test-junit-xgb-multi:
 	./gradlew h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
-test-junit-1x:
+test-junit-11:
 	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
 
-test-junit-1x-jenkins:
+test-junit-11-jenkins:
 	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-1x
+	@$(MAKE) -f $(THIS_FILE) test-junit-11
+
+test-junit-16-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-16
+
+test-junit-16:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-17-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17
+
+test-junit-17:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-latest-jenkins:
 	$(call sed_test_scripts)
@@ -382,6 +403,20 @@ test-junit-smoke:
 test-junit-latest-smoke-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-latest-smoke
+
+test-junit-16-smoke:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-16-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-16-smoke
+
+test-junit-17-smoke:
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED" DOONLY=$$(head -n 1 tests/doOnlyJunitSmokeTestList) ./gradlew h2o-core:test h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-17-smoke-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-17-smoke
 
 test-rest-smoke:
 	cd h2o-py/tests_rest_smoke && ../../scripts/run.py --wipeall --geterrs --wipeall --numclouds 2 --jvm.xmx 2g
@@ -435,6 +470,8 @@ test-hadoop-common-smoke-hive-basic:
 	echo "Hive version 3 installed, not running Hive tests."
 test-hadoop-common-smoke-hive-spnego:
 	echo "Hive version 3 installed, not running Hive tests."
+test-hadoop-common-smoke-hive-jdbc-spnego:
+	echo "Hive version 3 installed, not running Hive tests."
 else
 test-hadoop-common-smoke-hive-basic:
 	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --ldap.username $$LDAP_USERNAME --ldap.password $$LDAP_PASSWORD
@@ -442,6 +479,8 @@ test-hadoop-common-smoke-hive-basic:
 test-hadoop-common-smoke-hive-spnego:
 	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 	cd h2o-hive/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+test-hadoop-common-smoke-hive-jdbc-spnego:
+	cd h2o-hive/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL --excludelist hive-direct-tests.txt
 endif
 
 test-hadoop-common-smoke-basic:
@@ -464,12 +503,16 @@ test-kerberos-common-spnego:
 test-kerberos-hadoop-2-standalone: test-kerberos-common-spnego
 	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
+test-kerberos-hadoop-2-standalone-driver: test-kerberos-hadoop-2-standalone test-hadoop-common-smoke-hive-jdbc-spnego
+
 test-kerberos-hadoop-2-hdp: test-hadoop-2-smoke-standalone test-hadoop-common-smoke-hive-basic
 
 test-kerberos-hadoop-2-spnego: test-kerberos-hadoop-2-standalone test-hadoop-common-smoke-hive-spnego
 
 test-kerberos-hadoop-3-standalone: test-kerberos-common-spnego
 	cd h2o-hadoop-3/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+
+test-kerberos-hadoop-3-standalone-driver: test-kerberos-hadoop-3-standalone test-hadoop-common-smoke-hive-jdbc-spnego
 
 test-kerberos-hadoop-3-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-smoke-hive-basic
 

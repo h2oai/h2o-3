@@ -142,6 +142,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return Optional.of((B) BUILDERS[idx]);
   }
 
+  @SuppressWarnings("unchecked")
+  public static <P extends Model.Parameters> P makeParameters(String algo) {
+    return (P) make(algo, null, null)._parms;
+  }
+
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
   public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
@@ -645,7 +650,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
-      cv_mainModelScores(N, mbs, cvModelBuilders);
+      if (!cvModelBuilders[0].getName().equals("infogram")) // infogram does not support scoring
+        cv_mainModelScores(N, mbs, cvModelBuilders);
 
       _job.setReadyForView(true);
       DKV.put(_job);
@@ -836,18 +842,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      M cvModel = cvModelBuilders[i].dest().get();
-      cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */
-              || _parms._keep_cross_validation_predictions
-              || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
-        String predName = cvModelBuilders[i].getPredictionKey();
-        Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
-        result.makeModelMetrics(cvValid, adaptFr);
-        mbs[i] = result.getMetricBuilder();
-        DKV.put(cvModel);
-      } else {
-        mbs[i] = cvModel.scoreMetrics(adaptFr);
+      if (!cvModelBuilders[i].getName().equals("infogram")) {
+        M cvModel = cvModelBuilders[i].dest().get();
+        cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
+        if (nclasses() == 2 /* need holdout predictions for gains/lift table */
+                || _parms._keep_cross_validation_predictions
+                || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
+          String predName = cvModelBuilders[i].getPredictionKey();
+          Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
+          result.makeModelMetrics(cvValid, adaptFr);
+          mbs[i] = result.getMetricBuilder();
+          DKV.put(cvModel);
+        } else {
+          mbs[i] = cvModel.scoreMetrics(adaptFr);
+        }
       }
       // free resources as early as possible
       Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
@@ -857,6 +865,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       weights[2*i  ].remove(fs);
       weights[2*i+1].remove(fs);
     }
+    
     fs.blockForPending();
     return mbs;
   }
@@ -903,13 +912,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._cross_validation_models = _parms._keep_cross_validation_models ? cvModKeys : null;
     Key<Frame>[] predKeys = new Key[N];
     mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;
-
+    
     for (int i = 0; i < N; ++i) {
-      if (i > 0) mbs[0].reduce(mbs[i]);
       cvModKeys[i] = cvModelBuilders[i]._result;
       predKeys[i] = Key.make(cvModelBuilders[i].getPredictionKey());
     }
-
+    
+    cv_makeAggregateModelMetircs(mbs);
+    
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || mainModel.isDistributionHuber())) {
       Key<Frame> cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
@@ -933,7 +943,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       int count = Model.deleteAll(predKeys);
       Log.info(count+" CV predictions were removed");
     }
-
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
     if (holdoutPreds != null) {
       if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keysList());
@@ -977,6 +986,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._total_run_time = _build_model_countdown.elapsedTime();
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
+  }
+  
+  public void cv_makeAggregateModelMetircs(ModelMetrics.MetricBuilder[] mbs){
+    for (int i = 1; i < mbs.length; ++i) {
+      mbs[0].reduceForCV(mbs[i]);
+    }
   }
 
   private String getPredictionKey() {

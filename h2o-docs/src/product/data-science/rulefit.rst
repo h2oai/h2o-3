@@ -67,6 +67,8 @@ Defining a RuleFit Model (Beta API)
 
 - **remove_duplicates**: Specify whether to remove rules which are identical to an earlier rule. Defaults to true.
 
+- **lambda**: Specify the regularization strength for LASSO regressor.
+
 
 Interpreting a RuleFit Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

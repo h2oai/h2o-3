@@ -23,8 +23,6 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
   final boolean _computeMetrics;
   final private int _rank;
   int _nclass;
-  transient double[] _ds = new double[3];
-  transient float[] _yact = new float[1];
 
   public MetricBuilderGAM(String[] domain, double[] ymu, GLMModel.GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, int nclass, MultinomialAucType aucType) {
     super(domain==null?0:domain.length, domain);

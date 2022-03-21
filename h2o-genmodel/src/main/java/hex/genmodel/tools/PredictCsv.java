@@ -15,6 +15,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Simple driver program for reading a CSV file and making predictions.  Added support for separators that are
@@ -26,21 +30,40 @@ import java.util.*;
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java" target="_blank">here on github</a>.
  */
 public class PredictCsv {
-  private String inputCSVFileName;
-  private String outputCSVFileName;
-  private boolean useDecimalOutput = false;
-  public char separator = ',';   // separator used to delimite input datasets
-  public boolean setInvNumNA = false;    // enable .setConvertInvalidNumbersToNa(true)
-  public boolean getTreePath = false; // enable tree models to obtain the leaf-assignment information
-  public boolean predictContributions = false; // enable tree models to predict contributions instead of regular predictions
-  boolean returnGLRMReconstruct = false; // for GLRM, return x factor by default unless set this to true
-  public int glrmIterNumber = -1;  // for GLRM, default to 100.
+  private final String inputCSVFileName;
+  private final String outputCSVFileName;
+  private final boolean useDecimalOutput;
+  private final char separator;
+  private final boolean setInvNumNA;
+  private final boolean getTreePath;
+  private final boolean predictContributions;
+  private final boolean returnGLRMReconstruct;
+  private final int glrmIterNumber;
+  private final boolean outputHeader;
+
   // Model instance
   private EasyPredictModelWrapper modelWrapper;
 
+  private PredictCsv(
+          String inputCSVFileName, String outputCSVFileName, 
+          boolean useDecimalOutput, char separator, boolean setInvNumNA, 
+          boolean getTreePath, boolean predictContributions, boolean returnGLRMReconstruct, int glrmIterNumber,
+          boolean outputHeader) {
+    this.inputCSVFileName = inputCSVFileName;
+    this.outputCSVFileName = outputCSVFileName;
+    this.useDecimalOutput = useDecimalOutput;
+    this.separator = separator;
+    this.setInvNumNA = setInvNumNA;
+    this.getTreePath = getTreePath;
+    this.predictContributions = predictContributions;
+    this.returnGLRMReconstruct = returnGLRMReconstruct;
+    this.glrmIterNumber = glrmIterNumber;
+    this.outputHeader = outputHeader;
+  }
+
   public static void main(String[] args) {
-    // Parse command line arguments
-    PredictCsv main = make(args, null);
+    PredictCsvCollection predictors = buildPredictCsv(args);
+    PredictCsv main = predictors.main;
 
     // Run the main program
     try {
@@ -51,13 +74,44 @@ public class PredictCsv {
       e.printStackTrace();
       System.exit(1);
     }
+
+    if (predictors.concurrent.length > 0) {
+      try {
+        ExecutorService executor = Executors.newFixedThreadPool(predictors.concurrent.length);
+        List<PredictCsvCallable> callables = new ArrayList<>(predictors.concurrent.length);
+        for (int i = 0; i < predictors.concurrent.length; i++) {
+          callables.add(new PredictCsvCallable(predictors.concurrent[i]));
+        }
+        int numExceptions = 0;
+        for (Future<Exception> future : executor.invokeAll(callables)) {
+          Exception e = future.get();
+          if (e != null) {
+            e.printStackTrace();
+            numExceptions++;
+          }
+        }
+        if (numExceptions > 0) {
+          throw new Exception("Some predictors failed (#failed=" + numExceptions + ")");
+        }
+      } catch (Exception e) {
+        System.out.println("Concurrent predict error: " + e.getMessage());
+        System.out.println();
+        e.printStackTrace();
+        System.exit(1);
+      }
+    }
+
     // Predictions were successfully generated.
     System.exit(0);
   }
 
+  // Only meant to be used in tests
   public static PredictCsv make(String[] args, GenModel model) {
-    PredictCsv predictor = new PredictCsv();
-    predictor.parseArgs(args);
+    final PredictCsvCollection predictorCollection = buildPredictCsv(args);
+    if (predictorCollection.concurrent.length != 0) {
+      throw new UnsupportedOperationException("Predicting with concurrent predictors is not supported in programmatic mode.");
+    }
+    final PredictCsv predictor = predictorCollection.main;
     if (model != null) {
       try {
         predictor.setModelWrapper(model);
@@ -98,7 +152,7 @@ public class PredictCsv {
   }
 
   private void writeTreePathNames(BufferedWriter output) throws Exception {
-    String[] columnNames = ((SharedTreeMojoModel) modelWrapper.getModel()).getDecisionPathNames();
+    String[] columnNames = ((SharedTreeMojoModel) modelWrapper.m).getDecisionPathNames();
     writeColumnNames(output, columnNames);
   }
 
@@ -119,55 +173,48 @@ public class PredictCsv {
     ModelCategory category = modelWrapper.getModelCategory();
     CSVReader reader = new CSVReader(new FileReader(inputCSVFileName), separator);
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
-    int lastCommaAutoEn = -1; // for deeplearning model in autoencoder mode
 
     // Emit outputCSV column names.
-    switch (category) {
-      case Binomial:
-      case Multinomial:
-      case Regression:
-        if (getTreePath) {
-          writeTreePathNames(output);
-        } else if (predictContributions) {
-          writeContributionNames(output);
-        } else
-          writeHeader(modelWrapper.getModel().getOutputNames(), output);
-        break;
+    if (outputHeader) {
+      switch (category) {
+        case Binomial:
+        case Multinomial:
+        case Regression:
+          if (getTreePath) {
+            writeTreePathNames(output);
+          } else if (predictContributions) {
+            writeContributionNames(output);
+          } else
+            writeHeader(modelWrapper.m.getOutputNames(), output);
+          break;
 
-      case DimReduction:  // will write factor or the predicted value depending on what the user wants
-        if (returnGLRMReconstruct) {
-          int datawidth;
-          String head;
-          String[] colnames = this.modelWrapper.getModel().getNames();
+        case DimReduction:  // will write factor or the predicted value depending on what the user wants
+          if (returnGLRMReconstruct) {
+            int datawidth;
+            String[] colnames = this.modelWrapper.m.getNames();
+            datawidth = ((GlrmMojoModel) modelWrapper.m)._permutation.length;
+            int lastData = datawidth - 1;
+            for (int index = 0; index < datawidth; index++) {  // add the numerical column names
+              output.write("reconstr_" + colnames[index]);
 
-          datawidth = ((GlrmMojoModel) modelWrapper.getModel())._permutation.length;
-          head = "reconstr_";
-          int lastData = datawidth - 1;
-          for (int index = 0; index < datawidth; index++) {  // add the numerical column names
-            String temp = returnGLRMReconstruct ? head + colnames[index]:head + (index + 1);
-            output.write(temp);
+              if (index < lastData)
+                output.write(',');
+            }
+          } else
+            writeHeader(modelWrapper.m.getOutputNames(), output);
+          break;
 
-            if (index < lastData)
-              output.write(',');
-          }
-        } else
-          writeHeader(modelWrapper.getModel().getOutputNames(), output);
-        break;
-
-      default:
-        writeHeader(modelWrapper.getModel().getOutputNames(), output);
+        default:
+          writeHeader(modelWrapper.m.getOutputNames(), output);
+      }
+      output.write("\n");
     }
-    output.write("\n");
 
     // Loop over inputCSV one row at a time.
     //
-    // TODO: performance of scoring can be considerably improved if instead of scoring each row at a time we passed
-    //       all the rows to the score function, in which case it can evaluate each tree for each row, avoiding
-    //       multiple rounds of fetching each tree from the filesystem.
-    //
     int lineNum=1;    // count number of lines of input dataset file parsed
     try {
-      String[] inputColumnNames = null;
+      String[] inputColumnNames;
       String[] splitLine;
       //Reader in the column names here.
       if ((splitLine = reader.readNext()) != null) {
@@ -189,8 +236,7 @@ public class PredictCsv {
             AutoEncoderModelPrediction p = modelWrapper.predictAutoEncoder(row);
             for (int i=0; i < p.reconstructed.length; i++) {
               output.write(myDoubleToString(p.reconstructed[i]));
-
-              if (i < lastCommaAutoEn)
+              if (i < p.reconstructed.length)
                 output.write(',');
             }
             break;
@@ -340,14 +386,6 @@ public class PredictCsv {
       output.write(myDoubleToString(contributions[i]));
     }
   }
-  
-  private void loadModel(String modelName) throws Exception {
-    try {
-      loadMojo(modelName);
-    } catch (IOException e) {
-      loadPojo(modelName);  // may throw an exception too
-    }
-  }
 
   private void setModelWrapper(GenModel genModel) throws IOException {
     EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
@@ -364,33 +402,16 @@ public class PredictCsv {
     if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
 
-    modelWrapper = new EasyPredictModelWrapper(config);
-  } 
-
-  private void loadPojo(String className) throws Exception {
-    GenModel genModel = (GenModel) Class.forName(className).newInstance();
-    setModelWrapper(genModel);
-  }
-
-  private void loadMojo(String modelName) throws IOException {
-    GenModel genModel = MojoModel.load(modelName);
-    EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA);
-
-    if (getTreePath)
-      config.setEnableLeafAssignment(true);
-
-    if (predictContributions)
-      config.setEnableContributions(true);
-
-    if (returnGLRMReconstruct)
-      config.setEnableGLRMReconstrut(true);
-    
     if (glrmIterNumber > 0)   // set GLRM Mojo iteration number
       config.setGLRMIterNumber(glrmIterNumber);
-    
-    modelWrapper = new EasyPredictModelWrapper(config);
+
+    setModelWrapper(new EasyPredictModelWrapper(config));
   }
 
+  private void setModelWrapper(EasyPredictModelWrapper modelWrapper) {
+    this.modelWrapper = modelWrapper;
+  } 
+  
   private static void usage() {
     System.out.println();
     System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PredictCsv --mojo mojoName");
@@ -410,21 +431,20 @@ public class PredictCsv {
             " models instead of regular model predictions");
     System.out.println("     --glrmReconstruct will return the reconstructed dataset for GLRM mojo instead of X factor derived from the dataset.");
     System.out.println("     --glrmIterNumber integer indicating number of iterations to go through when constructing X factor derived from the dataset.");
+    System.out.println("     --testConcurrent integer (for testing) number of concurrent threads that will be making predictions.");
     System.out.println();
     System.exit(1);
   }
 
   private void checkMissingColumns(final String[] parsedColumnNamesArr) {
-    final String[] modelColumnNames = modelWrapper.getModel()._names;
+    final String[] modelColumnNames = modelWrapper.m._names;
     final Set<String> parsedColumnNames = new HashSet<>(parsedColumnNamesArr.length);
-    for (int i = 0; i < parsedColumnNamesArr.length; i++) {
-      parsedColumnNames.add(parsedColumnNamesArr[i]);
-    }
+    Collections.addAll(parsedColumnNames, parsedColumnNamesArr);
 
     List<String> missingColumns = new ArrayList<>();
     for (String columnName : modelColumnNames) {
 
-      if (!parsedColumnNames.contains(columnName) && !columnName.equals(modelWrapper.getModel()._responseColumn)) {
+      if (!parsedColumnNames.contains(columnName) && !columnName.equals(modelWrapper.m._responseColumn)) {
         missingColumns.add(columnName);
       } else {
         parsedColumnNames.remove(columnName);
@@ -459,19 +479,110 @@ public class PredictCsv {
     }
   }
 
-  private void parseArgs(String[] args) {
+  private static class PredictCsvCollection {
+    private final PredictCsv main;
+    private final PredictCsv[] concurrent;
+    private PredictCsvCollection(PredictCsv main, PredictCsv[] concurrent) {
+      this.main = main;
+      this.concurrent = concurrent;
+    }
+  }
+  
+  private static PredictCsvCollection buildPredictCsv(String[] args) {
     try {
-      String pojoMojoModelNames = ""; // store Pojo/Mojo/Model names
-      int loadType = 0; // 0: load pojo, 1: load mojo, 2: load model, -1: special value when PredictCsv is used embedded and instance of Model is passed directly
+      PredictCsvBuilder builder = new PredictCsvBuilder();
+      builder.parseArgs(args);
+      final GenModel genModel;
+      switch (builder.loadType) {
+        case -1:
+          genModel = null;
+          break;
+        case 0:
+          genModel = loadPojo(builder.pojoMojoModelNames);
+          break;
+        case 1:
+          genModel = loadMojo(builder.pojoMojoModelNames);
+          break;
+        case 2:
+          genModel = loadModel(builder.pojoMojoModelNames);
+          break;
+        default:
+          throw new IllegalStateException("Unexpected value of loadType = " + builder.loadType);
+      }
+      PredictCsv mainPredictCsv = builder.newPredictCsv();
+      if (genModel != null) {
+        mainPredictCsv.setModelWrapper(genModel);
+      }
+      PredictCsv[] concurrentPredictCsvs = new PredictCsv[builder.testConcurrent];
+      for (int id = 0; id < concurrentPredictCsvs.length; id++) {
+        PredictCsv concurrentPredictCsv = builder.newConcurrentPredictCsv(id);
+        concurrentPredictCsv.setModelWrapper(mainPredictCsv.modelWrapper); // re-use both the wrapper and the MOJO
+        concurrentPredictCsvs[id] = concurrentPredictCsv;
+      }
+      return new PredictCsvCollection(mainPredictCsv, concurrentPredictCsvs);
+    } catch (Exception e) {
+      e.printStackTrace();
+      usage();
+      throw new IllegalStateException("Should not be reachable");
+    }
+  }
+
+  private static GenModel loadPojo(String className) throws Exception {
+    return (GenModel) Class.forName(className).newInstance();
+  }
+
+  private static GenModel loadMojo(String modelName) throws IOException {
+    return MojoModel.load(modelName);
+  }
+
+  private static GenModel loadModel(String modelName) throws Exception {
+    try {
+      return loadMojo(modelName);
+    } catch (IOException e) {
+      return loadPojo(modelName);  // may throw an exception too
+    }
+  }
+
+  private static class PredictCsvBuilder {
+    // For PredictCsv
+    private String inputCSVFileName;
+    private String outputCSVFileName;
+    private boolean useDecimalOutput;
+    private char separator = ',';           // separator used to delimite input datasets
+    private boolean setInvNumNA;            // enable .setConvertInvalidNumbersToNa(true)
+    private boolean getTreePath;            // enable tree models to obtain the leaf-assignment information
+    private boolean predictContributions;   // enable tree models to predict contributions instead of regular predictions
+    private boolean returnGLRMReconstruct;  // for GLRM, return x factor by default unless set this to true
+    private int glrmIterNumber = -1;        // for GLRM, default to 100.
+    private boolean outputHeader = true;    // should we write-out header to output files?
+
+    // For Model Loading
+    private int loadType = 0; // 0: load pojo, 1: load mojo, 2: load model, -1: special value when PredictCsv is used embedded and instance of Model is passed directly
+    private String pojoMojoModelNames = ""; // store Pojo/Mojo/Model names
+
+    private int testConcurrent = 0;
+
+    private PredictCsv newPredictCsv() {
+      return new PredictCsv(inputCSVFileName, outputCSVFileName, useDecimalOutput, separator, setInvNumNA,
+              getTreePath, predictContributions, returnGLRMReconstruct, glrmIterNumber, outputHeader);
+    }
+
+    private PredictCsv newConcurrentPredictCsv(int id) {
+      return new PredictCsv(inputCSVFileName, outputCSVFileName + "." + id, useDecimalOutput, separator, setInvNumNA,
+              getTreePath, predictContributions, returnGLRMReconstruct, glrmIterNumber, outputHeader);
+    }
+
+    private void parseArgs(String[] args) {
       for (int i = 0; i < args.length; i++) {
         String s = args[i];
-        if (s.equals("--header")) continue;
+        if (s.equals("--header")) 
+          continue;
         if (s.equals("--decimal"))
           useDecimalOutput = true;
         else if (s.equals("--glrmReconstruct"))
-          returnGLRMReconstruct =true;
+          returnGLRMReconstruct = true;
         else if (s.equals("--setConvertInvalidNum"))
-          setInvNumNA=true;
+          setInvNumNA = true;
         else if (s.equals("--leafNodeAssignment"))
           getTreePath = true;
         else if (s.equals("--predictContributions")) {
@@ -483,28 +594,61 @@ public class PredictCsv {
           if (i >= args.length) usage();
           String sarg = args[i];
           switch (s) {
-            case "--model":  pojoMojoModelNames=sarg; loadType=2; break;//loadModel(sarg); break;
-            case "--mojo":   pojoMojoModelNames=sarg; loadType=1; break;//loadMojo(sarg); break;
-            case "--pojo":   pojoMojoModelNames=sarg; loadType=0; break;//loadPojo(sarg); break;
-            case "--input":  inputCSVFileName = sarg; break;
-            case "--output": outputCSVFileName = sarg; break;
-            case "--separator": separator=sarg.charAt(sarg.length()-1); break;
-            case "--glrmIterNumber": glrmIterNumber=Integer.valueOf(sarg); break;
+            case "--model":
+              pojoMojoModelNames = sarg;
+              loadType = 2;
+              break;
+            case "--mojo":
+              pojoMojoModelNames = sarg;
+              loadType = 1;
+              break;
+            case "--pojo":
+              pojoMojoModelNames = sarg;
+              loadType = 0;
+              break;
+            case "--input":
+              inputCSVFileName = sarg;
+              break;
+            case "--output":
+              outputCSVFileName = sarg;
+              break;
+            case "--separator":
+              separator = sarg.charAt(sarg.length() - 1);
+              break;
+            case "--glrmIterNumber":
+              glrmIterNumber = Integer.parseInt(sarg);
+              break;
+            case "--testConcurrent":
+              testConcurrent = Integer.parseInt(sarg);
+              break;
+            case "--outputHeader":
+              outputHeader = Boolean.parseBoolean(sarg);
+              break;
             default:
               System.out.println("ERROR: Unknown command line argument: " + s);
               usage();
           }
         }
       }
-      switch(loadType) {
-        case -1: break;
-        case  0: loadPojo(pojoMojoModelNames); break;
-        case  1: loadMojo(pojoMojoModelNames); break;
-        case  2: loadModel(pojoMojoModelNames); break;
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-      usage();
     }
   }
+  
+  private static class PredictCsvCallable implements Callable<Exception> {
+    private final PredictCsv predictCsv;
+
+    private PredictCsvCallable(PredictCsv predictCsv) {
+      this.predictCsv = predictCsv;
+    }
+
+    @Override
+    public Exception call() throws Exception {
+      try {
+        predictCsv.run();
+      } catch (Exception e) {
+        return e;
+      }
+      return null;
+    }
+  } 
+  
 }
