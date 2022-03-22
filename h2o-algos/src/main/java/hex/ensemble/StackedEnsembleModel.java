@@ -58,7 +58,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   @Override
   public boolean haveMojo() {
-    return super.haveMojo() && Stream.of(_parms._base_models).map(DKV::<Model>getGet).allMatch(Model::haveMojo);
+    return super.haveMojo() 
+            && Stream.of(_parms._base_models)
+                     .filter(this::isUsefulBaseModel)
+                     .map(DKV::<Model>getGet)
+                     .allMatch(Model::haveMojo);
   }
 
   public static class StackedEnsembleParameters extends Model.Parameters {
