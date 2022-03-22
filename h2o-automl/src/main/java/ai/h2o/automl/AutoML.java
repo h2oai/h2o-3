@@ -13,7 +13,6 @@ import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
-import hex.ensemble.StackedEnsembleModel;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -328,11 +327,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (modelBuilding.exploitation_ratio > 1) {
       throw new H2OIllegalArgumentException("`exploitation_ratio` must be between 0 and 1.");
     }
-    if (modelBuilding.modeling_plan == null) {
-      modelBuilding.modeling_plan = ModelingPlans.defaultPlan();
-    }
   }
-
+  
   private void validateEarlyStopping(AutoMLStoppingCriteria stoppingCriteria, AutoMLInput input) {
     if (stoppingCriteria.max_models() <= 0 && stoppingCriteria.max_runtime_secs() <= 0) {
       stoppingCriteria.set_max_runtime_secs(3600);
@@ -380,13 +376,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   ModelingStep[] getExecutionPlan() {
-    return _executionPlan == null ? (_executionPlan = session().getModelingStepsRegistry().getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
+    if (_executionPlan == null) {
+      _executionPlan = session().getModelingStepsRegistry().getOrderedSteps(selectModelingPlan(null), this);
+    }
+    return _executionPlan;
   }
-  
-  void setModelingPlan(StepDefinition[] modelingPlan) {
-    _buildSpec.build_models.modeling_plan = modelingPlan;
+
+  StepDefinition[] selectModelingPlan(StepDefinition[] plan) {
+    if (_buildSpec.build_models.modeling_plan == null) {
+      // as soon as user specifies max_models, consider that user expects reproducibility.
+      _buildSpec.build_models.modeling_plan = plan != null ? plan
+              : _buildSpec.build_control.stopping_criteria.max_models() > 0 ? ModelingPlans.REPRODUCIBLE
+              : ModelingPlans.defaultPlan();
+    }
+    return _buildSpec.build_models.modeling_plan;
   }
-  
+
   void planWork() {
     Set<IAlgo> skippedAlgos = new HashSet<>();
     if (_buildSpec.build_models.exclude_algos != null) {

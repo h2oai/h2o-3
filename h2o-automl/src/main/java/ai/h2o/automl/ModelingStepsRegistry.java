@@ -47,9 +47,9 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
      * @return the list of {@link ModelingStep}s to execute according to the given modeling plan.
      */
     public ModelingStep[] getOrderedSteps(StepDefinition[] modelingPlan, AutoML aml) {
+        modelingPlan = aml.selectModelingPlan(modelingPlan);
         aml.eventLog().info(Stage.Workflow, "Loading execution steps: "+Arrays.toString(modelingPlan));
         List<ModelingStep> orderedSteps = new ArrayList<>();
-        aml.setModelingPlan(modelingPlan);
         for (StepDefinition def : modelingPlan) {
             ModelingSteps steps = aml.session().getModelingSteps(def._name);
             if (steps == null) continue;
