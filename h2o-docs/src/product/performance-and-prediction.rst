@@ -1163,6 +1163,87 @@ Using the previously imported and split airlines dataset, run the following to r
     ks
     0.20072346203696562
 
+Computing Model Metrics from General Predictions
+''''''''''''''''''''''''''''''''''''''''''''''''
+
+The ``make_metrics`` function computes a model metrics object from given predicted values (target for regression; class-1 probabilities, binomial, or per-class probabilities for classification).
+
++------------------+---------------------------------------------------------------------------------------------------------------+
+| Parameters       | Parameter Descriptions                                                                                        |
++==================+===============================================================================================================+
+| **predicted**    | An H2OFrame containing predictions.                                                                           |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **actuals**      | An H2OFrame containing actual values.                                                                         |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **domain**       | A list of response factors for classification.                                                                |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **distribution** | A distribution for regression.                                                                                |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **weights**      | An H2OFrame containing observation weights.                                                                   |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **treatment**    | (Uplift binomial classification only) an H2OFrame containing treatment information.                           |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **auc_type**     | (Multinomial classification only) the type of aggregated AUC/AUCPR to be used to calculate this metric.       |
+|                  | One of: ``MACRO_OVO``, ``MACRO_OVR``, ``WEIGHTED_OVO``, ``WEIGHTED_OVR``, ``AUTO``, ``NONE`` (default).       |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **auuc_type**    | (Uplift binomial classification only) the type of AUUC to be used to calculate this metric.                   |
+|                  | One of: ``gini``, ``lift``, ``gain``, ``AUTO`` (default).                                                     |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **auuc_nbins**   | (Uplift binomial classification only) the number of bins to be used to calculate AUUC. Defaults to -1 (1000). |
++------------------+---------------------------------------------------------------------------------------------------------------+
+
+.. tabs::
+   .. code-tab:: r R
+
+      library(h2o)
+      h2o.init()
+
+      # import the prostate dataset:
+      prostate = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+      # set the predictors and response:
+      prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+      y <- "CAPSULE"
+      x <- c("AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
+
+      # build and train the model:
+      prostate_gbm <- h2o.gbm(x = x, y = y, training_frame = prostate)
+
+      # set the 'predictors' and 'actuals':
+      pred <- h2o.predict(prostate_gbm, prostate)[, 3]
+      actual <- prostate$CAPSULE
+
+      # retrieve the model metrics:
+      metrics <- h2o.make_metrics(pred, actual)
+      h2o.auc(metrics)
+
+   .. code-tab:: python
+
+      import h2o
+      from h2o.estimators import H2OUpliftRandomForestEstimator
+      h2o.init()
+
+      # import the prostate dataset:
+      prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+      # set the predictors and response:
+      x = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+      y = "CAPSULE"
+      prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+
+      # build and train the model:
+      prostate_gbm = H2OGradientBoostingEstimator()
+      prostate_gbm.train(x=x, y=y, training_frame=prostate)
+
+      # set the 'predicted' and 'actuals':
+      actual = prostate["CAPSULE"]
+      pred = prostate_gbm.predict(prostate)[2]
+
+      # retrieve the model metrics:
+      metrics = h2o.make_metrics(pred, actual)
+      metrics.auc()
+
+
 Metric Best Practices - Regression
 '''''''''''''''''''''''''''''''''''
 
