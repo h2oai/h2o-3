@@ -1,10 +1,7 @@
-// WARNING: This is a modified copy of the main assembly with some dependencies excluded
-// TODO: refactor the build script to avoid code duplication
-
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java-library'
 
-description = "Minimal H2O Application Assembly - includes all algos, but has only limited support for data sources"
+description = "H2O Application Assembly for Secure deployments using H2O Steam"
 
 apply from: '../standalone_assembly.gradle'
 
@@ -13,11 +10,33 @@ dependencies {
     api(project(":h2o-app")) {
         exclude module: "${defaultWebserverModule}"
     }
-    api project(":h2o-logging-impl-log4j2")
     runtimeOnly project(":h2o-jetty-9-minimal")
+    api project(":h2o-logging-impl-log4j2")
     api project(":h2o-web")
+    api project(":h2o-persist-gcs")
+    api(project(":h2o-persist-s3")) {
+        exclude group: "org.apache.hadoop"
+    }
     api project(":h2o-persist-http")
-    api project(":h2o-ext-mojo-pipeline")
+    api(project(":h2o-persist-hdfs")) {
+        exclude group: "org.apache.hadoop"
+    }
+    api(project(":h2o-parquet-parser")) {
+        exclude group: "org.apache.hadoop"
+    }
+    api "org.apache.hadoop:hadoop-hdfs-client:3.3.2"
+    api("org.apache.hadoop:hadoop-common:3.3.2") {
+        exclude group: "com.sun.jersey"
+        exclude group: "javax.servlet"
+        exclude group: "org.apache.avro"
+        exclude group: "org.apache.curator"
+        exclude group: "org.apache.zookeeper"
+        exclude group: "org.eclipse.jetty"
+    }
+    api("org.apache.hadoop:hadoop-aws:3.3.2") {
+        exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
+    }
+    api project(":h2o-k8s-int")
 }
 
 shadowJar {
@@ -37,7 +56,7 @@ shadowJar {
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
     file = file("${buildDir}/reports/license/dependency-license.xml")
-    resource = "META-INF/license/h2o-depedencies-licenses.xml"
+    resource = "META-INF/license/h2o-depenencies-licenses.xml"
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer)
 }
