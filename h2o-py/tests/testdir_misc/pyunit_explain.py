@@ -64,8 +64,8 @@ def test_varimp():
     assert len(varimp_2[1]) == 4
     assert len(varimp_2[2]) == 3
 
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
-    assert isinstance(h2o.varimp_heatmap(aml.leaderboard.head(3), num_of_features=3), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(aml.leaderboard[aml.leaderboard["model_id"].grep("Stacked", invert=True, output_logical=True), :].head(3), num_of_features=3).figure(), matplotlib.pyplot.Figure)
 
 
 def test_explanation_single_model_regression():
