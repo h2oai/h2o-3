@@ -975,9 +975,10 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
             y_label = "Response difference"
         if show_logodds:
             y_label = "log(odds)"
+        orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
         orig_row = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
-                                       frame, index, column, colors[i], percentile_string, factor_map)
-        if not _isnan(frame.as_data_frame()[column][index]):
+                                       frame, index, column, colors[i], percentile_string, factor_map, orig_value)
+        if not _isnan(orig_value) or orig_value != '':
             tmp._data = np.append(tmp._data, orig_row._data, axis=0)
         if is_factor:
             response = _get_response(tmp["mean_response"], show_logodds)
@@ -1468,11 +1469,10 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
 
 
 def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
-                        index, column, color, percentile_string, factor_map):
+                        index, column, color, percentile_string, factor_map, orig_value):
     PDP_RESULT_FACTOR_NAN_MARKER = '.missing(NA)'
     user_splits = dict()
-    orig_value = frame.as_data_frame()[column][index]
-    if _isnan(orig_value):
+    if _isnan(orig_value) or orig_value == "":
         if is_factor:
             idx = np.where(tmp[encoded_col] == tmp.from_factor_to_num(encoded_col)[PDP_RESULT_FACTOR_NAN_MARKER])[0][0]
         else:
