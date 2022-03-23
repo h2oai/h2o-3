@@ -2120,7 +2120,7 @@ Example:
                          gainslift_bins = 20)
 
         # Plot the Gains/Lift chart:
-        h2o.plot_gains_lift(model)
+        h2o.gains_lift_plot(model)
 
     .. code-tab:: python
 
@@ -2138,7 +2138,7 @@ Example:
                     training_frame=airlines)
 
         # Plot the Gains/Lift chart:
-        model.plot_gains_lift()
+        model.gains_lift_plot()
 
 .. figure:: images/gainslift_plot.png
     :alt: Gains/Lift Plot

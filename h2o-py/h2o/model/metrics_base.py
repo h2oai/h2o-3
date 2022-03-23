@@ -1439,7 +1439,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         elif type == "pr":
             return self._plot_pr(server, save_plot_path, plot)
         elif type == "gains_lift":
-            return self.plot_gains_lift(server=server, save_plot_path=save_plot_path, plot=plot)
+            return self.gains_lift_plot(server=server, save_plot_path=save_plot_path, plot=plot)
     
     def _plot_roc(self, server=False, save_to_file=None, plot=True):
         if plot:
@@ -1774,7 +1774,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         return None
 
     @deprecated_params({'save_to_file': 'save_plot_path'})
-    def plot_gains_lift(self, type="both", server=False, save_plot_path=None, plot=True):
+    def gains_lift_plot(self, type="both", server=False, save_plot_path=None, plot=True):
         """
         Plot Gains/Lift curves.
 

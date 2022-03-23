@@ -123,6 +123,7 @@ reference:
       - h2o.flow
       - h2o.gainsLift
       - h2o.gains_lift
+      - h2o.gains_lift_plot
       - h2o.gbm
       - h2o.generic
       - h2o.genericModel
@@ -245,7 +246,6 @@ reference:
       - h2o.permutation_importance
       - h2o.permutation_importance_plot
       - h2o.pivot
-      - h2o.plot_gains_lift
       - h2o.prcomp
       - h2o.predict
       - h2o.predict_json

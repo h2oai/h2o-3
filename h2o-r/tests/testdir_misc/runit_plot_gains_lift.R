@@ -3,7 +3,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 # test that plot(performance) generates a curve plot
-test.plot_gains_lift <- function() {
+test.gains_lift_plot <- function() {
     # Importing prostate.csv data
     prostate.hex <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame="prostate.hex")
     # Converting CAPSULE and RACE columns to factors
@@ -18,16 +18,16 @@ test.plot_gains_lift <- function() {
 
     # Plot using metrics
     plot(perf, type='gains_lift')
-    h2o.plot_gains_lift(perf) # type = "both" (default)
-    h2o.plot_gains_lift(perf, type = "gains")
-    h2o.plot_gains_lift(perf, type = "lift")
+    h2o.gains_lift_plot(perf) # type = "both" (default)
+    h2o.gains_lift_plot(perf, type = "gains")
+    h2o.gains_lift_plot(perf, type = "lift")
 
     # Plot using model
     plot(prostate.gbm, type='gains_lift')
-    h2o.plot_gains_lift(prostate.gbm)
-    h2o.plot_gains_lift(prostate.gbm, type = "gains")
-    h2o.plot_gains_lift(prostate.gbm, type = "lift")
+    h2o.gains_lift_plot(prostate.gbm)
+    h2o.gains_lift_plot(prostate.gbm, type = "gains")
+    h2o.gains_lift_plot(prostate.gbm, type = "lift")
 }
 
-doTest("Plot Gains Lift", test.plot_gains_lift)
+doTest("Plot Gains Lift", test.gains_lift_plot)
 

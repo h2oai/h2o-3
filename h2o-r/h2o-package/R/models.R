@@ -4377,10 +4377,10 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 #' data <- h2o.importFile(
 #' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 #' model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = data, ntrees = 1)
-#' h2o.plot_gains_lift(model)
+#' h2o.gains_lift_plot(model)
 #' }
 #' @export
-setGeneric("h2o.plot_gains_lift", function(object, type = c("both", "gains", "lift"), ...) {})
+setGeneric("h2o.gains_lift_plot", function(object, type = c("both", "gains", "lift"), ...) {})
 
 .gains_lift_plot <- function(gain_table, type) {
   labels <- character()
@@ -4434,7 +4434,7 @@ setGeneric("h2o.plot_gains_lift", function(object, type = c("both", "gains", "li
 #' @param object H2OModelMetrics object
 #' @param type What curve to plot. One of "both", "gains", "lift".
 #' @export
-setMethod("h2o.plot_gains_lift", "H2OModelMetrics", function(object, type = c("both", "gains", "lift")) {
+setMethod("h2o.gains_lift_plot", "H2OModelMetrics", function(object, type = c("both", "gains", "lift")) {
   gain_table <- h2o.gainsLift(object)
   .gains_lift_plot(gain_table, type = match.arg(type))
 })
@@ -4444,7 +4444,7 @@ setMethod("h2o.plot_gains_lift", "H2OModelMetrics", function(object, type = c("b
 #' @param type What curve to plot. One of "both", "gains", "lift".
 #' @param xval if TRUE, use cross-validation metrics
 #' @export
-setMethod("h2o.plot_gains_lift", "H2OModel", function(object, type = c("both", "gains", "lift"), xval = FALSE) {
+setMethod("h2o.gains_lift_plot", "H2OModel", function(object, type = c("both", "gains", "lift"), xval = FALSE) {
   gain_table <- h2o.gainsLift(object, xval = xval)
   .gains_lift_plot(gain_table, type = match.arg(type))
 })
@@ -4481,7 +4481,7 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
     ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
     graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
   } else if (type == "gains_lift") {
-    h2o.plot_gains_lift(x, ...)
+    h2o.gains_lift_plot(x, ...)
   }
 }
 

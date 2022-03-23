@@ -854,7 +854,7 @@ class H2OBinomialModel(ModelBase):
         return self._delegate_to_metrics('gains_lift', train, valid, xval)
 
     @deprecated_params({'save_to_file': 'save_plot_path'})
-    def plot_gains_lift(self, type="both", xval=False, server=False, save_plot_path=None, plot=True):
+    def gains_lift_plot(self, type="both", xval=False, server=False, save_plot_path=None, plot=True):
         """
         Plot Gains/Lift curves.
 
@@ -866,7 +866,7 @@ class H2OBinomialModel(ModelBase):
 
         :returns: Gains lift table + the resulting plot (can be accessed using result.figure())
         """
-        return self._delegate_to_metrics('plot_gains_lift', type=type, xval=xval, server=server, save_plot_path=save_plot_path, plot=plot)
+        return self._delegate_to_metrics('gains_lift_plot', type=type, xval=xval, server=server, save_plot_path=save_plot_path, plot=plot)
 
     def kolmogorov_smirnov(self):
         """

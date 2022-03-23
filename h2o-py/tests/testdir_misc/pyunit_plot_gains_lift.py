@@ -19,23 +19,23 @@ def plot_test():
     air_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=100, max_depth=3, learn_rate=0.01)
     air_gbm.train(x=myX, y=myY, training_frame=air_train, validation_frame=air_valid)
 
-    air_gbm.plot_gains_lift(server=True)
-    air_gbm.plot_gains_lift(type="gains", server=True)
-    air_gbm.plot_gains_lift(type="lift", server=True)
+    air_gbm.gains_lift_plot(server=True)
+    air_gbm.gains_lift_plot(type="gains", server=True)
+    air_gbm.gains_lift_plot(type="lift", server=True)
 
     # Plot for train set
     perf_train = air_gbm.model_performance(train=True)
     perf_train.plot(type="gains_lift", server=True)
-    perf_train.plot_gains_lift(server=True)
-    perf_train.plot_gains_lift(type="gains", server=True)
-    perf_train.plot_gains_lift(type="lift", server=True)
+    perf_train.gains_lift_plot(server=True)
+    perf_train.gains_lift_plot(type="gains", server=True)
+    perf_train.gains_lift_plot(type="lift", server=True)
 
     # Plot for valid set
     perf_valid = air_gbm.model_performance(valid=True)
     perf_valid.plot(type="gains_lift", server=True)
-    perf_valid.plot_gains_lift(server=True)
-    perf_valid.plot_gains_lift(type="gains", server=True)
-    perf_valid.plot_gains_lift(type="lift", server=True)
+    perf_valid.gains_lift_plot(server=True)
+    perf_valid.gains_lift_plot(type="gains", server=True)
+    perf_valid.gains_lift_plot(type="lift", server=True)
 
 
 pyunit_utils.standalone_test(plot_test)
