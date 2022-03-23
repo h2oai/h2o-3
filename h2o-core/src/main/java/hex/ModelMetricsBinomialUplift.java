@@ -35,15 +35,19 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             sb.append("Qini AUUC: ").append((float) _auuc.auucByType(AUUC.AUUCType.qini)).append("\n");
             sb.append("Lift AUUC: ").append((float) _auuc.auucByType(AUUC.AUUCType.lift)).append("\n");
             sb.append("Gain AUUC: ").append((float) _auuc.auucByType(AUUC.AUUCType.gain)).append("\n");
+            sb.append("Normalized Qini AUUC: ").append((float) _auuc.auucNormalizedByType(AUUC.AUUCType.qini)).append("\n");
+            sb.append("Normalized Lift AUUC: ").append((float) _auuc.auucNormalizedByType(AUUC.AUUCType.lift)).append("\n");
+            sb.append("Normalized Gain AUUC: ").append((float) _auuc.auucNormalizedByType(AUUC.AUUCType.gain)).append("\n");
+            sb.append("Qini: ").append((float) _auuc.qini()).append("\n");
         }
         return sb.toString();
     }
 
     public double auuc() {return _auuc.auuc();}
     
-    public double auucRandom(){return _auuc.auucRandom();}
-    
     public double qini(){return _auuc.qini();}
+    
+    public double auucNormalized(){return _auuc.auucNormalized();}
 
     @Override
     protected StringBuilder appendToStringMetrics(StringBuilder sb) {

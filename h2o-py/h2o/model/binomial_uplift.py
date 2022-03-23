@@ -49,6 +49,46 @@ class H2OBinomialUpliftModel(ModelBase):
         assert metric in [None, 'qini', 'lift', 'gain'], "AUUC metric "+metric+" should be None, 'qini','lift' or 'gain'."
         return self._delegate_to_metrics(metric=metric, method='auuc', train=train, valid=valid)
 
+    def auuc_normalized(self, train=False, valid=False, metric=None):
+        """
+            Retrieve normalized area under uplift curve (AUUC) value for the specified metrics in model params.
+            
+            If all are False (default), then return the training metric normalized AUUC value.
+            If more than one options is set to True, then return a dictionary of metrics where the 
+            keys are "train" and "valid".
+            
+            :param bool train: If True, return the AUUC value for the training data.
+            :param bool valid: If True, return the AUUC value for the validation data.
+            :param metric: AUUC metric type ("qini", "lift", "gain", default is None which means metric set in parameters) 
+        
+            
+            :returns: Normalized AUUC value for the specified key(s).
+    
+            :examples:
+            
+            >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+            >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+            >>> treatment_column = "treatment"
+            >>> response_column = "conversion"
+            >>> train[treatment_column] = train[treatment_column].asfactor()
+            >>> train[response_column] = train[response_column].asfactor()
+            >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+            >>>
+            >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+            ...                                               max_depth=5,
+            ...                                               treatment_column=treatment_column,
+            ...                                               uplift_metric="qini",
+            ...                                               distribution="bernoulli",
+            ...                                               gainslift_bins=10,
+            ...                                               min_rows=10,
+            ...                                               auuc_type="gain")
+            >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+            >>> uplift_model.auuc_normalized() # <- Default: return training metric value
+            >>> uplift_model.auuc_normalized(train=True,  valid=True)
+        """
+        assert metric in [None, 'qini', 'lift', 'gain'], "AUUC metric "+metric+" should be None, 'qini','lift' or 'gain'."
+        return self._delegate_to_metrics(metric=metric, method='auuc_normalized', train=train, valid=valid)
+
     def uplift(self, train=False, valid=False, metric="qini"):
         """
         Retrieve uplift values for the specified metrics. 
@@ -87,6 +127,45 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         assert metric in ['qini', 'lift', 'gain'], "Uplift metric "+metric+" should be 'qini','lift' or 'gain'."
         return self._delegate_to_metrics(metric, method='uplift', train=train, valid=valid)
+
+    def uplift_normalized(self, train=False, valid=False, metric="qini"):
+        """
+        Retrieve normalized uplift values for the specified metrics. 
+        
+        If all are False (default), then return the training metric normalized uplift values.
+        If more than one options is set to True, then return a dictionary of metrics where the 
+        keys are "train" and "valid".
+        
+        :param bool train: If True, return the uplift values for the training data.
+        :param bool valid: If True, return the uplift values for the validation data.
+        :param metric: Uplift metric type ("qini", "lift", "gain", default is "qini") 
+        
+        :returns: a list of normalized uplift values for the specified key(s).
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.uplift() # <- Default: return training metric value
+        >>> uplift_model.uplift(train=True, metric="gain")
+        """
+        assert metric in ['qini', 'lift', 'gain'], "Uplift metric "+metric+" should be 'qini','lift' or 'gain'."
+        return self._delegate_to_metrics(metric, method='uplift_normalized', train=train, valid=valid)
 
     def n(self, train=False, valid=False):
         """

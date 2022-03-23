@@ -96,6 +96,7 @@ class CompareUpliftDrfWithCausalMl(unittest.TestCase):
 
         # calculate auuc using CausalML package
         auuc = auuc_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=False)
+        auuc_normalized = auuc_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=True)
         qini = qini_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=False)
 
         perf_test = h2o_drfs[2].model_performance(testing_df)
@@ -108,6 +109,17 @@ class CompareUpliftDrfWithCausalMl(unittest.TestCase):
             "Absolute difference between causalML package and H2O AUUC calculation is higher than is expected: %f" % diff
 
         diff = abs(auuc["causal"] - auuc["h2o"])
+        print("CausalML: %f H2O: %f diff: %f" % (auuc["causal"], auuc["h2o"], diff))
+
+        # compare normalized AUUC calculation with CausalML
+        h2o_auuc_normalized_qain_test = perf_test.auuc_normalized()
+        print("AUUC normalized calculation:")
+        diff = abs(auuc_normalized["h2o"] - h2o_auuc_normalized_qain_test)
+        print("CausalML H2O: %f H2O: %f diff: %f" % (auuc_normalized["h2o"], h2o_auuc_normalized_qain_test, diff))
+        assert diff < 0.01, \
+            "Absolute difference between causalML package and H2O AUUC calculation is higher than is expected: %f" % diff
+
+        diff = abs(auuc_normalized["causal"] - auuc_normalized["h2o"])
         print("CausalML: %f H2O: %f diff: %f" % (auuc["causal"], auuc["h2o"], diff))
 
         # compare Qini calculation with CausalML

@@ -19,7 +19,7 @@ import java.util.TreeSet;
 /**
  * Object to calculate uplift curve and area under uplift curve
  */
-public class AUUC extends Iced{
+public class AUUC extends Iced {
     public final int _nBins;              // max number of bins; can be less if there are fewer points
     public final int _maxIdx;             // id that maximize uplift
     public final double[] _ths;           // threshold of predictions created based on quantile computation
@@ -30,7 +30,8 @@ public class AUUC extends Iced{
     public final long[] _frequency;       // number of data in each bin
     public final long[] _frequencyCumsum; // cumulative sum of frequency to plot AUUC
     public double[][] _uplift;            // output uplift values
-    public double[][] _upliftRandom;      // output random uplift values  
+    public double[][] _upliftRandom;      // output random uplift values
+    public double[][] _upliftNormalized;  // output normalized uplift values
     public final long _n;                 // number of data
     
     public static final int NBINS = 1000;
@@ -40,6 +41,7 @@ public class AUUC extends Iced{
     public double[] _auucs;              // areas under random uplif curve for all metrics
     public double[] _auucsRandom;        // areas under random uplift curve for all metrics
     public double[] _aecu;               // average excess cumulative uplift (auuc - auuc random)
+    public double[] _auucsNormalized;     // normalized auuc
     
     public double threshold( int idx ) { return _ths[idx]; }
     public long treatment( int idx ) { return _treatment[idx]; }
@@ -48,24 +50,26 @@ public class AUUC extends Iced{
     public long yControl( int idx ) { return _yControl[idx]; }
     public long frequency( int idx ) { return _frequency[idx]; }
     public double uplift( int idx) { return _uplift[_auucTypeIndx][idx]; }
+    
     public double[] upliftByType(AUUCType type){
         int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
         return _uplift[idx];
     }
-    public double upliftRandom( int idx) { return _upliftRandom[_auucTypeIndx][idx]; }
+
+    public double[] upliftNormalizedByType(AUUCType type){
+        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        return _upliftNormalized[idx];
+    }
+    
     public double[] upliftRandomByType(AUUCType type){
         int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
         return _upliftRandom[idx];
-    }
-    public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType) {
-        this(NBINS, probs, y, uplift, auucType);
     }
     
     public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType, int nbins) {
         this(nbins, probs, y, uplift, auucType);
     }
-
-
+    
     public AUUC(int nBins, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(new AUUCImpl(calculateQuantileThresholds(nBins, probs)).doAll(probs, y, uplift)._bldr, auucType);
     }
@@ -90,9 +94,10 @@ public class AUUC extends Iced{
         _frequencyCumsum = Arrays.copyOf(bldr._frequency, _nBins);
         _uplift = new double[AUUCType.values().length][_nBins];
         _upliftRandom = new double[AUUCType.values().length][_nBins];
+        _upliftNormalized = new double[AUUCType.values().length][_nBins];
         
         // Rollup counts
-        long tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0, tmpf= 0;
+        long tmpt=0, tmpc=0, tmptp=0, tmpcp=0, tmpf=0;
         for( int i=0; i<_nBins; i++ ) {
             tmpt += _treatment[i]; _treatment[i] = tmpt;
             tmpc += _control[i]; _control[i] = tmpc;
@@ -104,11 +109,13 @@ public class AUUC extends Iced{
         // these methods need to be call in this order
         setUplift();
         setUpliftRandom();
+        setUpliftNormalized();
         
         if (trueProbabilities) {
             _auucs = computeAuucs();
             _auucsRandom = computeAuucsRandom();
             _aecu = computeAecu();
+            _auucsNormalized = computeAuucsNormalized();
             _maxIdx = _auucType.maxCriterionIdx(this);
         } else {
             _maxIdx = 0;
@@ -136,6 +143,22 @@ public class AUUC extends Iced{
             double a = _uplift[i][maxIndex]/_frequencyCumsum[maxIndex];
             for (int j = 0; j < _nBins; j++) {
                 _upliftRandom[i][j] = a * _frequencyCumsum[j];
+            }
+        }
+    }
+
+    public void setUpliftNormalized(){
+        for(int i=0; i<AUUCType.VALUES.length; i++) {
+            int maxIndex = _nBins-1;
+            int liftIndex = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(AUUCType.lift);
+            if (i == liftIndex){
+                _upliftNormalized[i] = _uplift[i];
+            } else {
+                double a = _uplift[i][maxIndex];
+                assert a != 0 : "Max uplift should not be 0.";
+                for (int j = 0; j < _nBins; j++) {
+                    _upliftNormalized[i][j] = _uplift[i][j] / a;
+                }
             }
         }
     }
@@ -185,14 +208,6 @@ public class AUUC extends Iced{
         }
         return quantiles;
     }
-    
-    private double computeAuuc(double[] uplift){
-        double area = 0;
-        for( int i = 0; i < _nBins; i++ ) {
-            area += uplift[i] * frequency(i);
-        }
-        return area/(_n+1);
-    }
 
     private double[] computeAuucs(){
         return computeAuucs(_uplift);
@@ -201,6 +216,8 @@ public class AUUC extends Iced{
     private double[] computeAuucsRandom(){
         return computeAuucs(_upliftRandom);
     }
+    
+    private double[] computeAuucsNormalized() {return computeAuucs(_upliftNormalized);}
 
     private double[] computeAuucs(double[][] uplift){
         AUUCType[] auucTypes = AUUCType.VALUES;
@@ -238,6 +255,11 @@ public class AUUC extends Iced{
         return aecu(idx);
     }
 
+    public double auucNormalizedByType(AUUCType type){
+        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        return auucNormalized(idx);
+    }
+
     public double auuc(int idx){ return _auucs[idx]; }
     
     public double auuc(){ return auuc(_auucTypeIndx); }
@@ -250,9 +272,11 @@ public class AUUC extends Iced{
     
     public double aecu(int idx) { return _aecu[idx];}
     
-    public double aecu(){ return aecu(_auucTypeIndx);}
-    
     public double qini(){ return aecuByType(AUUCType.qini);}
+
+    public double auucNormalized(int idx){ return _auucsNormalized[idx]; }
+
+    public double auucNormalized(){ return auucNormalized(_auucTypeIndx); }
 
     private static class AUUCImpl extends MRTask<AUUCImpl> {
         final double[] _thresholds;
