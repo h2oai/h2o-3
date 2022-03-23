@@ -257,7 +257,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               (g._model._output._submodels[g._model._output._selected_submodel_idx].lambda_value ==
                       alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].lambda_value);
       g._model._output._submodels = alignedSubmodels;
-      g._model._output.setSubmodelIdx(g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel);
+      g._model._output.setSubmodelIdx(g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel, _parms);
     }
     return lambdas;
   }
@@ -339,7 +339,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _xval_sd = Arrays.copyOf(_xval_sd, lmin_max + 1);
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
-        g._model._output.setSubmodelIdx(bestId);
+        g._model._output.setSubmodelIdx(bestId, _parms);
       }
       double bestDev = _xval_deviances[bestId];
       double bestDev1se = bestDev + _xval_sd[bestId];
@@ -2835,7 +2835,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if ((_parms._lambda_search || _parms._generate_scoring_history) && (_parms._score_each_iteration || 
                   timeSinceLastScoring() > _scoringInterval || ((_parms._score_iteration_interval > 0) &&
                   ((_state._iter % _parms._score_iteration_interval) == 0)))) {
-            _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount); // quick and easy way to set submodel parameters
+            _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount, _parms); // quick and easy way to set submodel parameters
             scoreAndUpdateModel(); // update partial results
           }
           _job.update(_workPerIteration, "iter=" + _state._iter + " lmb=" +
@@ -2861,9 +2861,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
       if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate))
-        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel);  // reset best_submodel_idx to what xval has found
+        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel, _parms);  // reset best_submodel_idx to what xval has found
       else
-        _model._output.pickBestModel();
+        _model._output.pickBestModel(_parms);
       if (_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
         _model.setVcov(_vcov);
         _model.update(_job._key);

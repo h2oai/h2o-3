@@ -219,7 +219,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       assert _output._submodels == null || idx == _output._submodels.length;
       _output._submodels = ArrayUtils.append(_output._submodels, sm);
     }
-    _output.setSubmodelIdx(idx);
+    _output.setSubmodelIdx(idx, _parms);
     return this;
   }
 
@@ -233,7 +233,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     int id = _output._submodels.length-1;
     _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,_output._submodels[id].alpha_value,beta,
             iter,devianceTrain,devianceTest, _totalBetaLength);
-    _output.setSubmodelIdx(id);
+    _output.setSubmodelIdx(id, _parms);
   }
 
   public void update(double [] beta, double[] ubeta, double devianceTrain, double devianceTest,int iter){
@@ -242,7 +242,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             devianceTrain,devianceTest, _totalBetaLength);
     sm.ubeta = Arrays.copyOf(ubeta, ubeta.length);
     _output._submodels[id] = sm;
-    _output.setSubmodelIdx(id);
+    _output.setSubmodelIdx(id, _parms);
   }
 
   protected GLMModel deepClone(Key<GLMModel> result) {
@@ -1386,7 +1386,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return res;
     }
 
-    public Submodel pickBestModel() {
+    public Submodel pickBestModel(GLMParameters parms) {
       int bestId = 0;
       Submodel best = _submodels[0];
       for(int i = 1; i < _submodels.length; ++i) {
@@ -1396,7 +1396,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           best = sm;
         }
       }
-      setSubmodelIdx(_best_submodel_idx = bestId);
+      setSubmodelIdx(_best_submodel_idx = bestId, parms);
       return best;
     }
 
@@ -1455,28 +1455,19 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public double[][] get_global_beta_multinomial(){return _global_beta_multinomial;}
 
+    private int indexOf(double needle, double[] haystack) {
+      for (int i = 0; i < haystack.length; i++) {
+        if (needle == haystack[i]) return i;
+      }
+      return -1;
+    }
+
     // set model coefficients to that of submodel index l
-    public void setSubmodelIdx(int l){
+    public void setSubmodelIdx(int l, GLMParameters parms){
       _selected_submodel_idx = l;
       _best_lambda_idx = l; // kept to ensure backward compatibility
-      _selected_alpha_idx = 0;
-      _selected_lambda_idx = 0;
-
-      double alphaTmp = _submodels[0].alpha_value;
-      double lambdaTmp = _submodels[0].lambda_value;
-      for (int i = 0; i <l; i++) {
-
-        if (_submodels[i] == null || lambdaTmp != _submodels[i].lambda_value)
-          _selected_lambda_idx ++;
-        if (_submodels[i] != null && alphaTmp != _submodels[i].alpha_value) {
-          _selected_alpha_idx ++;
-          _selected_lambda_idx = 0;
-        }
-        if (_submodels[i] != null) {
-          lambdaTmp = _submodels[i].lambda_value;
-          alphaTmp = _submodels[i].alpha_value;
-        }
-      }
+      _selected_alpha_idx = indexOf(_submodels[l].alpha_value, parms._alpha);
+      _selected_lambda_idx = indexOf(_submodels[l].lambda_value, parms._lambda);
 
       if (_random_coefficient_names != null) 
         _ubeta = Arrays.copyOf(_submodels[l].ubeta, _submodels[l].ubeta.length);
