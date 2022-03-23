@@ -150,7 +150,8 @@ final class ModelingPlans {
                     new Step("def_2", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
                     new Step("def_1", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
                     new Step("def_3", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
-                    new Step("grid_1", 4, 3*DEFAULT_GRID_TRAINING_WEIGHT)
+                    new Step("grid_1", 4, 3*DEFAULT_GRID_TRAINING_WEIGHT),
+                    new Step("lr_search", 7, DEFAULT_GRID_TRAINING_WEIGHT)
             ),
             new StepDefinition(Algo.GLM.name(),
                     new Step("def_1", 1, DEFAULT_MODEL_TRAINING_WEIGHT)
@@ -165,7 +166,8 @@ final class ModelingPlans {
                     new Step("def_3", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
                     new Step("def_4", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
                     new Step("def_1", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
-                    new Step("grid_1", 4, 2*DEFAULT_GRID_TRAINING_WEIGHT)
+                    new Step("grid_1", 4, 2*DEFAULT_GRID_TRAINING_WEIGHT),
+                    new Step("lr_annealing", 7, DEFAULT_MODEL_TRAINING_WEIGHT)
             ),
             new StepDefinition(Algo.DeepLearning.name(),
                     new Step("def_1", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
@@ -177,9 +179,9 @@ final class ModelingPlans {
                     new Step("resume_best_grids", 6, 2*DEFAULT_GRID_TRAINING_WEIGHT)
             ),
             new StepDefinition(Algo.StackedEnsemble.name(),
-                    new Step("best_of_family_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
-                    new Step("all_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
-                    new Step("monotonic", 7, DEFAULT_MODEL_TRAINING_WEIGHT)
+                    new Step("monotonic", 9, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("best_of_family_xglm", 10, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("all_xglm", 10, DEFAULT_MODEL_TRAINING_WEIGHT)
             )
   };
 

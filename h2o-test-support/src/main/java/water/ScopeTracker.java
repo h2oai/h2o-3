@@ -24,9 +24,8 @@ public class ScopeTracker extends ExternalResource implements Serializable {
   }
 
   @SuppressWarnings("unchecked")
-  public final <T extends Keyed> T track(Keyed<T> keyed) {
-    Scope.track_generic(keyed);
-    return (T) keyed;
+  public final <T extends Keyed<T>> T track(T keyed) {
+    return Scope.track_generic(keyed);
   }
 
 }

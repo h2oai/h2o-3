@@ -92,6 +92,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     aml.submit();
     return aml;
   }
+  
+  static AutoML startAutoML(AutoMLBuildSpec buildSpec, boolean testMode) {
+    AutoML aml = new AutoML(buildSpec);
+    aml._testMode = testMode;
+    aml.submit();
+    return aml;
+  }
 
   @Override
   public Class<AutoMLV99.AutoMLKeyV3> makeSchema() {
@@ -159,8 +166,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
+  transient StepResultState[] _stepsResults;
 
   private boolean _useAutoBlending;
+  private boolean _testMode;  // when on, internal states are kept for inspection
   /**
    * DO NOT USE explicitly: for schema/reflection only.
    */
@@ -696,6 +705,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       if (!exceededSearchLimits(step)) {
         StepResultState state = _modelingStepsExecutor.submit(step, job());
         log.info("AutoML step returned with state: "+state.toString());
+        if (_testMode) _stepsResults = ArrayUtils.append(_stepsResults, state);
         if (state.is(ResultStatus.success)) {
           _consecutiveModelFailures.set(0);
           completed.add(step);

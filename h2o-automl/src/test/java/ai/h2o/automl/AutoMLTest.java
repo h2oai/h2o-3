@@ -257,6 +257,31 @@ public class AutoMLTest extends water.TestUtil {
       if(fr != null) fr.delete();
     }
   }
+  
+  @Test public void test_automl_behaviour_when_using_both_max_models_and_max_runtime_secs() {
+    try {
+      Scope.enter();
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      Frame fr = Scope.track_generic(parseTestFile("./smalldata/logreg/prostate_train.csv"));
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+//      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost, Algo.DeepLearning, Algo.DRF, Algo.GLM};
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(10);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(100);
+
+      AutoML aml = Scope.track_generic(AutoML.startAutoML(autoMLBuildSpec, true));
+      aml.get();
+      
+      //as max_models is provided, no time budget is assigned to the models by default, 
+      // even when user also provides max_runtime_secs: in this case, the latter only acts as a global limit
+      // and cancels the last training step.
+      StepResultState[] steps = aml._stepsResults;
+      StepResultState lastStep = steps[steps.length - 1];
+      assert lastStep.is(StepResultState.ResultStatus.cancelled);
+    } finally {
+      Scope.exit();
+    }
+  }
 
 
   @Ignore
@@ -307,7 +332,6 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = true;
       autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 

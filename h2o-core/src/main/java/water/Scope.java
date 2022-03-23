@@ -69,7 +69,7 @@ public class Scope {
     track_impl(scope, k);
   }
 
-  static public <T extends Keyed> Keyed<T> track_generic(Keyed<T> keyed) {
+  static public <T extends Keyed<T>> T track_generic(T keyed) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
     track_impl(scope, keyed._key);
