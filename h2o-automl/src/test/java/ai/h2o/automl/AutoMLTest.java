@@ -276,6 +276,7 @@ public class AutoMLTest extends water.TestUtil {
       // even when user also provides max_runtime_secs: in this case, the latter only acts as a global limit
       // and cancels the last training step.
       StepResultState[] steps = aml._stepsResults;
+      assert steps.length < autoMLBuildSpec.build_control.stopping_criteria.max_models();
       StepResultState lastStep = steps[steps.length - 1];
       assert lastStep.is(StepResultState.ResultStatus.cancelled);
     } finally {
