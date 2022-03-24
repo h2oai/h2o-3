@@ -292,6 +292,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int lidx = 0; // index into submodel
       int bestId = 0;   // submodel indedx with best Deviance from xval
       int cnt = 0;
+
+      boolean lambdasSorted = _parms._lambda.length > 1;
+      for (int i = 1; i < _parms._lambda.length; i++) {
+        if (_parms._lambda[i] >= _parms._lambda[i - 1]) {
+          lambdasSorted = false;
+          break;
+        }
+      }
+
       for (; lidx < lmin_max; ++lidx) { // search through submodel with same lambda and alpha values
         double testDev = 0;
         double testDevSq = 0;
@@ -324,7 +333,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         // early stopping - no reason to move further if we're overfitting
         // cannot be used if we have multiple alphas
-        if ((_parms._alpha == null || _parms._alpha.length <= 1) && testDevAvg > bestTestDev && ++cnt == 3) {
+        if ((_parms._alpha == null || _parms._alpha.length <= 1) &&
+                lambdasSorted &&
+                testDevAvg > bestTestDev &&
+                ++cnt == 3) {
           lmin_max = lidx;
           break;
         }
