@@ -133,3 +133,15 @@ specifying the classpath:
       unzip h2o-|version|.zip
       cd h2o-|version|
       java -cp h2odriver.jar water.H2OApp
+
+
+Can I configure HDFS multiple times?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Yes, you can specify multiple Hadoop configuration files at once and each provided resource will be processed.
+
+For example, if you need to specify both ``core-sit.xml`` and ``hdfs-site.xml`` you can configure both at once:
+
+::
+    
+    java -jar h2o.jar -hdfs_config core-site.xml -hdfs_config hdfs-site.xml
