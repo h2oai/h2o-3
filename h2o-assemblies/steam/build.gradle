@@ -5,6 +5,10 @@ description = "H2O Application Assembly for Secure deployments using H2O Steam"
 
 apply from: '../standalone_assembly.gradle'
 
+configurations {
+    api.exclude module: "h2o-jaas-pam"
+}
+
 // Dependencies
 dependencies {
     api(project(":h2o-app")) {
