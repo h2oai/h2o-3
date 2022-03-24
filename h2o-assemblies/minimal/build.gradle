@@ -8,6 +8,10 @@ description = "Minimal H2O Application Assembly - includes all algos, but has on
 
 apply from: '../standalone_assembly.gradle'
 
+configurations {
+    api.exclude module: "h2o-jaas-pam"
+}
+
 // Dependencies
 dependencies {
     api(project(":h2o-app")) {

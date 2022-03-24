@@ -5,6 +5,10 @@ description = "H2O Application Assembly for Secure deployments using H2O Steam"
 
 apply from: '../standalone_assembly.gradle'
 
+configurations {
+    api.exclude module: "h2o-jaas-pam"
+}
+
 // Dependencies
 dependencies {
     api(project(":h2o-app")) {
@@ -13,17 +17,21 @@ dependencies {
     runtimeOnly project(":h2o-jetty-9-minimal")
     api project(":h2o-logging-impl-log4j2")
     api project(":h2o-web")
+    // Kubernetes support
+    api project(":h2o-k8s-int")
+    // Persist layer - exclude Hadoop wherever applicable
+    api project(":h2o-persist-http")
     api project(":h2o-persist-gcs")
     api(project(":h2o-persist-s3")) {
         exclude group: "org.apache.hadoop"
     }
-    api project(":h2o-persist-http")
     api(project(":h2o-persist-hdfs")) {
         exclude group: "org.apache.hadoop"
     }
     api(project(":h2o-parquet-parser")) {
         exclude group: "org.apache.hadoop"
     }
+    // Force latest version Hadoop with unused components excluded - we need Hadoop for Parquet and S3A export 
     api "org.apache.hadoop:hadoop-hdfs-client:3.3.2"
     api("org.apache.hadoop:hadoop-common:3.3.2") {
         exclude group: "com.sun.jersey"
@@ -36,7 +44,8 @@ dependencies {
     api("org.apache.hadoop:hadoop-aws:3.3.2") {
         exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
     }
-    api project(":h2o-k8s-int")
+    // Upgrade dependencies coming from Hadoop to address vulnerabilities 
+    api "org.apache.commons:commons-compress:1.21"
 }
 
 shadowJar {
