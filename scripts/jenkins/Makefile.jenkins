@@ -69,11 +69,19 @@ lookup-demos-tests: init-lookup
 	find h2o-r/tests/testdir_demos -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests/testdir_demos -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
+lookup-steam-assembly-tests: init-lookup
+	find h2o-py/tests -name '*parquet*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+	find h2o-py/tests -name '*s3*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+	cat tests/pyunitSmokeTestList >>h2o-py/tests/.lookup.txt
+
 test-py-smoke:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
 
 test-py-smoke-minimal:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g --h2ojar ../../h2o-assemblies/minimal/build/libs/minimal.jar 
+
+test-py-smoke-steam: lookup-steam-assembly-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 6 --jvm.xmx 3g --h2ojar ../../h2o-assemblies/steam/build/libs/steam.jar 
 
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
@@ -242,6 +250,11 @@ test-package-gradle:
 test-package-minimal:
 	zip -q -r test-package-minimal \
 	    h2o-assemblies/minimal/build/libs/minimal.jar \
+		tests/leakCheckKeywords
+
+test-package-steam:
+	zip -q -r test-package-steam \
+	    h2o-assemblies/steam/build/libs/steam.jar \
 		tests/leakCheckKeywords
 
 test-package-java:

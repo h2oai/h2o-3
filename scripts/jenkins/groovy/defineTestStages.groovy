@@ -72,6 +72,11 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_MINIMAL]
     ],
     [
+      stageName: 'Py3.7 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.7', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_STEAM]
+    ],
+    [
       stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '2.7', javaVersion: 8,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
