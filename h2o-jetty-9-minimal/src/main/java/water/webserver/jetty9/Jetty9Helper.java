@@ -1,9 +1,14 @@
 package water.webserver.jetty9;
 
+import org.eclipse.jetty.security.*;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -16,6 +21,7 @@ import water.webserver.iface.LoginType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 
 class Jetty9Helper {
 
@@ -82,9 +88,55 @@ class Jetty9Helper {
             return jettyServer;
         }
 
-        throw new UnsupportedOperationException(
-                "Authentication type '" + config.loginType + "' is not supported by this version of H2O."
-        );
+        final LoginService loginService;
+        final Authenticator authenticator;
+        switch (config.loginType) {
+            case HASH:
+                loginService = new HashLoginService("H2O", config.login_conf);
+                authenticator = new BasicAuthenticator();
+                break;
+            case LDAP:
+            case KERBEROS:
+            case PAM:
+            case SPNEGO:
+            default:
+                throw new UnsupportedOperationException(
+                        "Authentication type '" + config.loginType + "' is not supported by this version of H2O."
+                );
+        }
+        final IdentityService identityService = new DefaultIdentityService();
+        loginService.setIdentityService(identityService);
+        jettyServer.addBean(loginService);
+
+        // Set a security handler as the first handler in the chain.
+        final ConstraintSecurityHandler security = new ConstraintSecurityHandler();
+
+        // Set up a constraint to authenticate all calls, and allow certain roles in.
+        final Constraint constraint = new Constraint();
+        constraint.setName("auth");
+        constraint.setAuthenticate(true);
+
+        constraint.setRoles(new String[]{Constraint.ANY_AUTH});
+
+        final ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setPathSpec("/*"); // Lock down all API calls
+        mapping.setConstraint(constraint);
+        security.setConstraintMappings(Collections.singletonList(mapping));
+
+        // Authentication / Authorization
+        security.setLoginService(loginService);
+        security.setAuthenticator(authenticator);
+
+        final SessionHandler sessionHandler = new SessionHandler();
+        if (config.session_timeout > 0) {
+            sessionHandler.setMaxInactiveInterval(config.session_timeout * 60);
+        }
+        sessionHandler.setHandler(security);
+        jettyServer.setSessionIdManager(sessionHandler.getSessionIdManager());
+
+        // Pass-through to H2O if authenticated.
+        jettyServer.setHandler(sessionHandler);
+        return security;
     }
 
     /**

@@ -1,25 +1,9 @@
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'java-library'
-apply plugin: 'com.github.hierynomus.license'
 
 description = "H2O Application Assembly"
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-
-// Exclude unwanted dependencies
-configurations {
-    api.exclude module: 'junit'
-    api.exclude module: 'mockito-all'
-    api.exclude module: 'zookeeper'
-    api.exclude module: 'javax.mail.glassfish'
-    api.exclude module: 'servlet-api'
-    api.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
-    api.exclude group: 'org.openjdk.jmh'
-    api.exclude group: 'log4j'
-    api.exclude module: 'h2o-logging-impl-classic'
-}
+apply from: '../standalone_assembly.gradle'
 
 // Dependencies
 dependencies {
@@ -39,33 +23,6 @@ dependencies {
     }
     api project(":h2o-parquet-parser")
     api project(":h2o-k8s-int")
-}
-
-jar {
-    enabled = false
-}
-
-//
-// Bundle optional modules
-// The process is defined by convention. There are two flags:
-//  - -Pwith${componentName}=true - enables component "componentName" and includes it in assembly
-//  - -P${componentName}Version=3.14 - overrides default component version
-//
-for (comp in optionalComponents) {
-    def compName = comp['name']
-    def compVersion = comp['version']
-    def compEnabled = comp['enabled']
-    def compPropName = "with${compName.capitalize()}"
-    def compPropVersionName = "${compName}Version"
-
-    if (!project.hasProperty(compPropVersionName)) {
-        project.ext.set(compPropVersionName, compVersion)
-    }
-    if (compEnabled || project.hasProperty(compPropName) && project.property(compPropName)) {
-        logger.lifecycle("== ${project.path}: Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
-        apply from: "$rootDir/gradle/components/${compName}.gradle"
-    }
-
 }
 
 shadowJar {
@@ -94,10 +51,6 @@ shadowJar {
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer)
 }
 
-artifacts {
-  archives shadowJar
-}
-
 //
 // Copying the resulting assembly into parent for convenient scripting
 // project build directory
@@ -114,61 +67,5 @@ task copyJar(type: Copy) {
     rename { it.replace(assembly, allInOne) }
 }
 
-downloadLicenses {
-    ext.apacheTwo = license('Apache License, Version 2.0', 'http://opensource.org/licenses/Apache-2.0')
-    ext.bsd = license('BSD License', 'http://www.opensource.org/licenses/bsd-license.php')
-
-    licenses = [
-            'commons-beanutils:commons-beanutils:1.7.0': apacheTwo,
-            'asm:asm-parent:3.1': bsd,
-            'org.codehaus.jettison:jettison:1.1': apacheTwo,
-            'javax.servlet.jsp:jsp-api:2.1': license('CDDL + GPLv2 with classpath exception', 'https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html'),
-            'org.apache.zookeeper:zookeeper:3.4.6': apacheTwo
-    ]
-
-    aliases = [
-            (apacheTwo) : ['The Apache Software License, Version 2.0', 'Apache 2', 'Apache License Version 2.0', 'Apache License, Version 2.0', 'Apache License 2.0', license('Apache License', 'http://www.apache.org/licenses/LICENSE-2.0')],
-            (bsd) : ['BSD', license('New BSD License', 'http://www.opensource.org/licenses/bsd-license.php')]
-    ]
-}
-
-task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
-    doLast {
-        def jsonLicensesFile = file("${buildDir}/reports/license/dependency-license.json")
-        def csvLicensesFile = file("${buildDir}/reports/license/dependency-license.csv")
-        def uniqueLicenseFile = file("${buildDir}/reports/license/unique-licenses.txt")
-        def licenses = new groovy.json.JsonSlurper().parseText(jsonLicensesFile.text)
-        def uniqueLicenses = [] as Set
-        csvLicensesFile.withWriter('UTF-8') { w ->
-            w.writeLine '"Dependency","File","License Name","License URL"'
-            licenses.dependencies.each { dep ->
-                def depLicenses = dep.licenses.collectEntries {
-                    boolean licenseValid = it.name != "No license found"
-                    if (licenseValid) {
-                        [(it.name): it.url]
-                    } else {
-                        if (dep.name == "asm:asm-parent:3.1") {
-                            // FIXME: manual override, this doesn't work for some reason!
-                            ["BSD License": "http://www.opensource.org/licenses/bsd-license.php"]
-                        } else
-                            throw new StopExecutionException("License not found for dependency ${dep.name}. Please define dependency manually.")
-                    }
-                }
-                depLicenses.each { name, url ->
-                    w.writeLine "${dep.name},${dep.file},\"${name}\",${url}"
-                }
-                uniqueLicenses += (depLicenses.keySet() as List).sort().join("; ")
-            }
-        }
-        uniqueLicenseFile.withWriter{ w ->
-            (uniqueLicenses as List).sort().each { w.writeLine it }
-        }
-    }
-}
-
-// Include licences
-shadowJar.dependsOn(licenseReport)
 // Execute always copyJar
 shadowJar.finalizedBy copyJar
-// Run shadowJar as part of build
-jar.finalizedBy shadowJar

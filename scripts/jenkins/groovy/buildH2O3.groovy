@@ -74,6 +74,13 @@ def call(final pipelineContext) {
                                 makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
                                 activatePythonEnv = true
                             }
+                            makeTarget(pipelineContext) {
+                                target = 'test-package-steam'
+                                hasJUnit = false
+                                archiveFiles = false
+                                makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                                activatePythonEnv = true
+                            }
                         } else {
                             makeTarget(pipelineContext) {
                                 target = 'test-package-gradle'
