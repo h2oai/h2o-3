@@ -40,7 +40,7 @@
 
     #Check for correct section headers. In this case it is [init] & [general] (case insensitive).
     #Can update vector of acceptable headers in time.
-    if(grepl("\\[|\\]",Lines) && all(!(c("[init]","[general]") %in% Lines))){
+    if(any(grepl("\\[|\\]",Lines)) && all(!(c("[init]","[general]") %in% Lines))){
       return()
     }
     close(connection)
@@ -70,12 +70,12 @@
     close(connection)
 
     #If no headers are present & no leading #(indicate comments) & no empty strings return NULL
-    if(grepl("^=",Lines) && !grepl("^#",Lines) && any(Lines=="")){
+    if(any(grepl("^=",Lines)) && !any(grepl("^#",Lines)) && any(Lines=="")){
       return()
     }
 
     #If no section headers, then we parse the list itself and return the final parsed data frame
-    if(!(grepl("^=",Lines)) && !grepl("^#",Lines)){
+    if(!(any(grepl("^=",Lines))) && !any(grepl("^#",Lines))){
       ini_to_df <- data.frame(t(d$V2))
       colnames(ini_to_df) <- d$V1
       colnames(ini_to_df) <- trimws(colnames(ini_to_df))

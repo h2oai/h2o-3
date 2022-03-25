@@ -257,11 +257,11 @@ h2o.getModel <- function(model_id) {
 
       if(type == "numeric" && class(value) == "list" && length(value) == 0) #Special case when using deep learning with 0 hidden units
         value <- 0
-      else if (type == "numeric" && value == "Infinity")
-        value <- Inf
-      else if (type == "numeric" && value == "-Infinity")
-        value <- -Inf
-
+      else if (type == "numeric") {
+        value[value == "Infinity"] <- Inf
+        value[value == "-Infinity"] <- -Inf
+        value <- as.numeric(value)
+      }
       # Parse frame information to a key
       if (type == "H2OFrame")
         value <- value$name

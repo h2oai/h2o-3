@@ -92,7 +92,7 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
                              col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
                              custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="\\") {
-  if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
+  if(!is.character(path) || any(is.na(path)) || any(!nzchar(path))) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))

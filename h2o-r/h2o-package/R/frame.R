@@ -1225,8 +1225,8 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
   stop('No column named ', by, ' in ', substitute(data), '.')
   } else if(is.integer(by)) { vars <- by }
   else if(is.numeric(by)) {   vars <- as.integer(by) }  # this will happen eg c(1,2,3)
-  if( vars <= 0L || vars > (ncol(data)) )
-  stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
+  if(any(vars <= 0L | vars > (ncol(data))))
+    stop('Column ', vars, ' out of range for frame columns ', ncol(data), '.')
   gb.cols <- .row.col.selector(vars,envir=parent.frame())
   }
 
@@ -1726,7 +1726,7 @@ NULL
     stop(paste0("Row must be selected as an integer index, character, logical, or H2OFrame but got ", class(row)))
   }
   # Boolean check for negative indexes
-  is_neg_idx <- !missing(col) && !missing(row) && !is.H2OFrame(row) && !is.H2OFrame(col) && ((is.numeric(col) && col <= 0) || (is.numeric(row) && row <= 0))
+  is_neg_idx <- !missing(col) && !missing(row) && !is.H2OFrame(row) && !is.H2OFrame(col) && ((is.numeric(col) && any(col <= 0)) || (is.numeric(row) && any(row <= 0)))
   # Have a row & column selector with negative col or negative row indexes?
   if(is_neg_idx){
     if( is.logical(col) ) { # Columns by boolean choice
@@ -1770,7 +1770,7 @@ NULL
   }
 
   # Have a row selector?
-  if( !missing(row) && (is.H2OFrame(row) || !is.na(row)) && !(is_neg_idx)) {
+  if( !missing(row) && (is.H2OFrame(row) || !all(is.na(row))) && !(is_neg_idx)) {
     if( !is.H2OFrame(row) )    # Generic R expression
       row <- .row.col.selector(substitute(row), row,envir=parent.frame())
     data <- .newExpr("rows",data,row) # Row selector
@@ -2400,7 +2400,7 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
   chk.H2OFrame(data)
   allRow <- missing(row)
   allCol <- missing(col)
-  if( !allCol && is.na(col) ) col <- as.list(match.call())$col
+  if( !allCol && all(is.na(col)) ) col <- as.list(match.call())$col
 
   # Named column assignment; the column name was passed in as "row"
   # fr["baz"] <- qux
@@ -2416,7 +2416,7 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
   if(!allCol && !is.numeric(col) && !base::is.character(col))
     stop("`col` must be missing or a numeric or character vector")
   if( !is.null(value) && !is.H2OFrame(value) ) {
-    if( is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
+    if( length(value) == 1 && is.na(value) ) value <- NA_integer_  # pick an NA... any NA (the damned numeric one will do)
     else if( !is.numeric(value) && !base::is.character(value) )
       stop("`value` can only be an H2OFrame object or a numeric or character vector")
   }
@@ -2442,7 +2442,7 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
       }
     } else idx <- col
     if( is.null(value) ) return(`[.H2OFrame`(data,row=-idx)) # Assign a null: delete by selecting inverse columns
-      if( idx==(ncol(data)+1) && is.na(name) ) name <- paste0("C",idx)
+      if(length(idx) == 1 && idx == (ncol(data) + 1) && is.na(name)) name <- paste0("C",idx)
     cols <- .row.col.selector(idx, envir=parent.frame())
   }
 
@@ -2625,7 +2625,7 @@ h2o.summary <- function(object, factors=6L, exact_quantiles=FALSE, ...) {
   result <- as.table(as.matrix(cols))
   }
   }
-  if( is.null(result) || dim(result) == 0 ) return(NULL)
+  if( is.null(result) || all(dim(result) == 0) ) return(NULL)
   colnames(result) <- cnames
   rownames(result) <- rep("", nrow(result))
   # Print warning if approx quantiles are computed
@@ -4769,7 +4769,7 @@ generate_col_ind <-function(data, by) {
     group.cols <- as.integer(by)
   }
 
-  if(group.cols <= 0L || group.cols > ncol(data)) {
+  if(any(group.cols <= 0L | group.cols > ncol(data))) {
    stop('Column ', group.cols, ' out of range for frame columns ', ncol(data), '.')
   }
 
@@ -5011,7 +5011,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
   } else if(is.numeric(by)) {   # this will happen eg c(1,2,3)
     group.cols <- as.integer(by)
   }
-  if(group.cols <= 0L || group.cols > ncol(data))
+  if(any(group.cols <= 0L | group.cols > ncol(data)))
     stop('Column ', group.cols, ' out of range for frame columns ', ncol(data), '.')
   args <- c(args,.row.col.selector(group.cols,envir=parent.frame()))
 
@@ -5172,7 +5172,7 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
   }
 
   # Change cols from 1 base notation to 0 base notation then verify the column is within range of the dataset
-  if(vars <= 0L || vars > ncol(X))
+  if(any(vars <= 0L | vars > ncol(X)))
     stop('Column ', vars, ' out of range for frame columns ', ncol(X), '.')
   vars <- .row.col.selector(vars,envir=parent.frame())
 
@@ -5191,7 +5191,7 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
 
   # Look for an H2O function that works on an H2OFrame; it will be handed an H2OFrame of 1 col
   fr.name <- paste0(fname,".H2OFrame")
-  if( exists(fr.name) ) {
+  if( length(fr.name) == 1 && exists(fr.name) ) {  # anonymous function has multiple parts
     FUN <- get(fr.name)         # Resolve function to the H2O flavor
     # Add in any default args
     args <- formals(FUN)[-1L]
@@ -5260,7 +5260,7 @@ apply <- function(X, MARGIN, FUN, ...) {
 
   # Look for an H2O function that works on an H2OFrame; it will be handed an H2OFrame of 1 col
   fr.name <- paste0(fname,".H2OFrame")
-  if( exists(fr.name) ) {
+  if( length(fr.name) == 1 && exists(fr.name) ) {
     FUN <- get(fr.name)         # Resolve function to the H2O flavor
     # Add in any default args
     args <- formals(FUN)[-1L]
