@@ -224,15 +224,22 @@ public class TargetEncodingTest {
             aml.get();
             System.out.println(aml.leaderboard().toTwoDimTable());
             for (Model m : aml.leaderboard().getModels()) {
-                if (m instanceof StackedEnsembleModel 
-                        || m instanceof GLMModel
+                if (m instanceof StackedEnsembleModel) {
+                    assertNull(m._parms._preprocessors);
+                    assertFalse(m.haveMojo()); // all SEs should have at least one XGB which doesn't support MOJO
+                    assertFalse(m.havePojo());
+                } else if (m instanceof GLMModel 
                         || m instanceof DeepLearningModel
                         ) { // disabled for GLM with CV, because GLM refuses to follow the same CV flow as other algos.
                     assertNull(m._parms._preprocessors);
+                    assertTrue(m.haveMojo());
+                    assertTrue(m.havePojo());
                 } else {
                     assertNotNull(m._parms._preprocessors);
                     assertEquals(1, m._parms._preprocessors.length);
                     assertTrue(m._parms._preprocessors[0].get() instanceof TargetEncoderPreprocessor);
+                    assertFalse(m.haveMojo());
+                    assertFalse(m.havePojo());
                 }
             }
         } finally {
