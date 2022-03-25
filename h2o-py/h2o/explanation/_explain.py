@@ -951,33 +951,100 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
         plt.xticks(mapping(range(nf.nlevels(column))), nf.levels(column))
     plt.ylim(ylims)
 
-def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp, **kwargs):
+
+def _append_graphing_data(graphing_data, data_to_append, original_observation_value, frame_id, centered, show_logoods,
+                          row_id, **kwargs):
+    grouping_variable_value = kwargs.get("grouping_variable_value", None)
+    response_type = data_to_append.col_types[data_to_append.col_header.index("mean_response")]
+    grouping_variable_type = "string" if type(grouping_variable_value) is str else "double" # todo test this
+    bin_type = data_to_append.col_types[0]
+
+    col_header = ["sample_id", "row_id", "column", "mean_response", "simulated_x_value", "is_original_observation"]
+    col_types = ["string", "int", "string", response_type, bin_type, "bool"]
+    table_header = "ICE plot graphing output" + kwargs.get("group_label", "")
+
+    if grouping_variable_value is not None:
+        col_header.append("grouping_variable_value")
+        col_types.append(grouping_variable_type)
+    centering_value = None
+    if centered:
+        col_header.append("centered_response")
+        col_types.append(response_type)
+        centering_value = data_to_append
+    if show_logoods:
+        col_header.append("log(odds)")
+        col_types.append(response_type)
+
+    if graphing_data is None:
+        return h2o.two_dim_table.H2OTwoDimTable(col_header=col_header, col_types=col_types, table_header=table_header,
+                                                cell_values=_extract_graphing_data_values(data_to_append, frame_id,
+                                                                                          grouping_variable_value,
+                                                                                          original_observation_value,
+                                                                                          centering_value, show_logoods,
+                                                                                          row_id))
+    if data_to_append is None:
+        return graphing_data
+
+    new_values = graphing_data._cell_values + _extract_graphing_data_values(data_to_append, frame_id,
+                                                                            grouping_variable_value,
+                                                                            original_observation_value, centering_value,
+                                                                            show_logoods, row_id)
+    return h2o.two_dim_table.H2OTwoDimTable(col_header=graphing_data.col_header, col_types=graphing_data.col_types,
+                                            cell_values=new_values, table_header=table_header)
+
+
+def _extract_graphing_data_values(data, frame_id, grouping_variable_value, original_obseervation, centering_value,
+                                  show_logodds, row_id):
+    res_data = []
+    column = data.col_header[0]
+    for row in data.cell_values:
+        new_row = [frame_id, row_id, column, row[1], row[0], original_obseervation == row[0]]
+        if grouping_variable_value is not None:
+            new_row.append(grouping_variable_value)
+        if centering_value is not None:
+            new_row.append(row[1] - centering_value)
+        if show_logodds:
+            new_row.append(np.log(row[1] / (1 - row[1])))
+        res_data.append(new_row)
+    return res_data
+
+
+def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp,
+                output_graphing_data, nbins, **kwargs):
     frame = frame.sort(model.actual_params["response_column"])
     deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
     colors = plt.get_cmap(colormap, 11)(list(range(11)))
+    data = None
     for i, index in enumerate(deciles):
         percentile_string = "{}th Percentile".format(i * 10)
-        tmp = NumpyFrame(
-            model.partial_plot(
-                frame,
-                cols=[column],
-                plot=False,
-                row_index=index,
-                targets=target,
-                nbins=20 if not is_factor else 1 + frame[column].nlevels()[0],
-                include_na=True
-            )[0]
-        )
-        encoded_col = tmp.columns[0]
+        pd_data = model.partial_plot(
+            frame,
+            cols=[column],
+            plot=False,
+            row_index=index,
+            targets=target,
+            nbins=nbins if not is_factor else 1 + frame[column].nlevels()[0],
+            include_na=True
+        )[0]
+        tmp = NumpyFrame(pd_data)
         y_label = "Response"
         if not is_factor and centered:
-            _center(tmp["mean_response"])
             y_label = "Response difference"
+            _center(tmp["mean_response"])
         if show_logodds:
             y_label = "log(odds)"
+
+        encoded_col = tmp.columns[0]
         orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
-        orig_row = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
+        orig_vals = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
                                        frame, index, column, colors[i], percentile_string, factor_map, orig_value)
+        orig_row = orig_vals[0]
+        if output_graphing_data:
+            data = _append_graphing_data(data, pd_data, frame[index, column], frame.frame_id,
+                                         not is_factor and centered, show_logodds, index, **kwargs)
+            if not is_factor or not frame[index, column] in data["simulated_x_value"]:
+                data = _append_graphing_data(data, orig_vals[1], frame[index, column], frame.frame_id,
+                                             not is_factor and centered, show_logodds, index, **kwargs)
         if not _isnan(orig_value) or orig_value != '':
             tmp._data = np.append(tmp._data, orig_row._data, axis=0)
         if is_factor:
@@ -1001,7 +1068,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
                 cols=[column],
                 plot=False,
                 targets=target,
-                nbins=100 if not is_factor else 1 + frame[column].nlevels()[0]
+                nbins=nbins if not is_factor else 1 + frame[column].nlevels()[0]
             )[0]
         )
         encoded_col = tmp.columns[0]
@@ -1040,14 +1107,16 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
     plt.tight_layout(rect=[0, 0, 0.85, 1])
     fig = plt.gcf()
-    return fig
+    return [fig, data]
 
-def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, **kwargs):
+
+def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index,
+                output_graphing_data, nbins, **kwargs):
     color = plt.get_cmap(colormap)(0)
-    tmp = NumpyFrame(
-        model.partial_plot(frame, cols=[column], plot=False,
-                           row_index=row_index, targets=target,
-                           nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
+    data = model.partial_plot(frame, cols=[column], plot=False,
+                              row_index=row_index, targets=target,
+                              nbins=nbins if not is_factor else 1 + frame[column].nlevels()[0])[0]
+    tmp = NumpyFrame(data)
     encoded_col = tmp.columns[0]
     response = _get_response(tmp["mean_response"], show_logodds)
     stddev_response = _get_stddev_response(tmp["stddev_response"], tmp["mean_response"], show_logodds)
@@ -1093,7 +1162,7 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    return [fig, data if output_graphing_data else None]
 
 def pd_ice_common(
         model,  # type: h2o.model.model_base.ModelBase
@@ -1110,6 +1179,8 @@ def pd_ice_common(
         centered=False, # type: bool
         is_ice=False, # type: bool
         grouping_column=None,  # type: Optional[str]
+        output_graphing_data=False, # type: bool
+        nbins=100, # type: int
         **kwargs
 ):
     """
@@ -1132,6 +1203,8 @@ def pd_ice_common(
     :param is_ice: a bool whether the caller of this method is ice_plot or pd_plot
     :param grouping_column A feature column name to group the data and provide separate sets of plots
                            by grouping feature values
+    :param output_graphing_data: a bool whether to output final graphing data to a frame
+    :param nbins: Number of bins used.
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     """
@@ -1150,7 +1223,9 @@ def pd_ice_common(
         target = [target]
 
     if grouping_column is not None:
-        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered)
+        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize,
+                                colormap, is_ice, row_index, show_pdp, binary_response_scale, centered,
+                                output_graphing_data, nbins)
 
     factor_map = None
     if is_factor:
@@ -1177,14 +1252,16 @@ def pd_ice_common(
     with no_progress():
         plt.figure(figsize=figsize)
         if is_ice:
-            fig = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map,
-                       show_pdp, **kwargs)
+            res = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered,
+                              factor_map,
+                              show_pdp, output_graphing_data, nbins, **kwargs)
         else:
-            fig = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, **kwargs)
+            res = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map,
+                              row_index, output_graphing_data, nbins, **kwargs)
 
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(figure=fig)
+        return decorate_plot_result(figure=res[0], res=res[1])
 
 def pd_plot(
         model,  # type: h2o.model.model_base.ModelBase
@@ -1198,6 +1275,8 @@ def pd_plot(
         save_plot_path=None, # type: Optional[str]
         binary_response_scale="response", # type: Literal["response", "logodds"]
         grouping_column=None,  # type: Optional[str]
+        output_graphing_data=False,  # type: bool
+        nbins = 100,  # type: int
         **kwargs
 ):
     """
@@ -1222,6 +1301,8 @@ def pd_plot(
     score. Can be one of: "response", "logodds". Defaults to "response".
     :param grouping_column A feature column name to group the data and provide separate sets of plots
                            by grouping feature values
+    :param output_graphing_data: a bool whether to output final graphing data to a frame
+    :param nbins: Number of bins used.
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1249,7 +1330,7 @@ def pd_plot(
     >>> gbm.pd_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, row_index, target, max_levels, figsize, colormap, save_plot_path,
-                         True, binary_response_scale, None, False, grouping_column, **kwargs)
+                         True, binary_response_scale, None, False, grouping_column, output_graphing_data, nbins, **kwargs)
 
 
 
@@ -1423,7 +1504,7 @@ def _prepare_grouping_frames(frame, grouping_column):
     return frames
 
 
-def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered):
+def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered, output_graphing_data, nbins):
     frames = _prepare_grouping_frames(frame, grouping_column)
     result = list()
     for i, curr_frame in enumerate(frames):
@@ -1447,7 +1528,9 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
                 binary_response_scale,
                 centered,
                 grouping_column=None,
-                **{'group_label':group_label}
+                output_graphing_data=output_graphing_data,
+                nbins=nbins,
+                **{'group_label':group_label, 'grouping_variable_value':curr_category}
             )
         else:
             plot = pd_plot(
@@ -1461,7 +1544,10 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
                 colormap,
                 curr_save_plot_path,
                 binary_response_scale,
-                **{'group_label':group_label}
+                grouping_column=None,
+                output_graphing_data=output_graphing_data,
+                nbins=nbins,
+                **{'group_label':group_label, 'grouping_variable_value':curr_category}
             )
         result.append(plot)
         h2o.remove(curr_frame.key, False)
@@ -1485,22 +1571,21 @@ def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
         return tmp
     else:
         user_splits[column] = [str(orig_value)] if is_factor else [orig_value]
-        orig_tmp = NumpyFrame(
-            model.partial_plot(
-                frame,
-                cols=[column],
-                plot=False,
-                row_index=index,
-                targets=target,
-                user_splits=user_splits,
-            )[0]
-        )
+        pp_table = model.partial_plot(
+            frame,
+            cols=[column],
+            plot=False,
+            row_index=index,
+            targets=target,
+            user_splits=user_splits,
+        )[0]
+        orig_tmp = NumpyFrame(pp_table)
         if is_factor:
             # preserve the same factor-to-num mapping
             orig_tmp._data[0,0] = factor_map([orig_value])[0]
         plt.scatter(orig_tmp[encoded_col], orig_tmp["mean_response"],
                     color=[color], marker='o', s=150, alpha=0.5)
-        return orig_tmp
+        return [orig_tmp, pp_table]
 
 
 def ice_plot(
@@ -1516,6 +1601,8 @@ def ice_plot(
         binary_response_scale="response",  # type: Literal["response", "logodds"]
         centered=False,  # type: bool
         grouping_column=None,  # type: Optional[str]
+        output_graphing_data=False, #type: bool
+        nbins=100,  # type: int
         **kwargs
 ):  # type: (...) -> plt.Figure
     """
@@ -1544,6 +1631,8 @@ def ice_plot(
     :param centered: a bool whether to center curves around 0 at the first valid x value or not
     :param grouping_column: a feature column name to group the data and provide separate sets of plots by
     grouping feature values
+    :param output_graphing_data: a bool whether to output final graphing data to a frame
+    :param nbins: Number of bins used.
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1571,7 +1660,7 @@ def ice_plot(
     >>> gbm.ice_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap,
-                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, **kwargs)
+                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, output_graphing_data, nbins, **kwargs)
 
 
 def _is_binomial(model):
