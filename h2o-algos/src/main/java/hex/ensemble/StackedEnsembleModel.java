@@ -15,6 +15,7 @@ import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.ReflectionUtils;
+import water.util.TwoDimTable;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -357,6 +358,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     if (null != this._output._metalearner._output._cross_validation_metrics) {
       this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics
               .deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
+      this._output._cross_validation_metrics_summary = (TwoDimTable) this._output._metalearner._output._cross_validation_metrics_summary.clone();
     }
   }
 
