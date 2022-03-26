@@ -260,7 +260,6 @@ h2o.getModel <- function(model_id) {
       else if (type == "numeric") {
         value[value == "Infinity"] <- Inf
         value[value == "-Infinity"] <- -Inf
-        value <- as.numeric(value)
       }
       # Parse frame information to a key
       if (type == "H2OFrame")
