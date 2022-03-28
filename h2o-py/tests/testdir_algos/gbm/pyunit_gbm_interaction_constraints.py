@@ -16,7 +16,8 @@ def test_interaction_constraints():
     ntrees = 5
     prostate_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", 
                                                 ntrees=ntrees, 
-                                                interaction_constraints=constraints)
+                                                interaction_constraints=constraints,
+                                                seed=42)
     prostate_gbm.train(x=list(range(2, 9)), y=1, training_frame=prostate)
 
     prostate_gbm.predict(prostate)
@@ -37,9 +38,13 @@ def test_interaction_constraints():
     # check trees features
     for i in range(ntrees):
         tree = H2OTree(model=prostate_gbm, tree_number=i)
-        tree_features = set(tree.features)
+        tree_features = set(filter(None, tree.features))
+        print("iteration: "+str(i))
+        print(set(constraints[0]))
+        print(set(constraints[1]))
         print(tree_features)
-        assert set(constraints[0]).issubset(tree_features) or set(constraints[1]).issubset(tree_features)
+        
+        assert tree_features.issubset(set(constraints[0])) or tree_features.issubset(set(constraints[1]))
 
 
 if __name__ == "__main__":
