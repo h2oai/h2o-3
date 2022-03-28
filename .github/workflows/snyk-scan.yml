@@ -6,11 +6,10 @@ on:
     branches:
       - 'master'
       - 'rel-*'
-      - 'devops/snyk-security-scan-integration'
 
 jobs:
   snyk_scan_test:
-    #if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -33,7 +32,7 @@ jobs:
           java-version: "8"
           distribution: 'adopt'
       - name: Snyk scan for Java dependencies 
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
         id: scan1
         continue-on-error: true
         run: |
@@ -46,7 +45,7 @@ jobs:
         with:
           python-version: "3.6"
       - name: Snyk scan for Python 3.6 dependencies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan2
         continue-on-error: true
         env:
@@ -60,7 +59,7 @@ jobs:
         with:
           node-version: '12.x'
       - name: Snyk scan for Node dependencies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
         id: scan3
         continue-on-error: true
         run: |
@@ -79,7 +78,7 @@ jobs:
           exit 1
           
   snyk_scan_monitor:
-    #if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -104,14 +103,14 @@ jobs:
         run: |
           sudo apt-get install -y libkrb5-dev
           pip install -r h2o-py/requirements.txt                  
-          snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/master/h2o-py/requirements.txt      
+          snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/requirements.txt      
 
       - uses: actions/setup-node@v1
         with:
           node-version: '12.x'
       - name: Snyk scan for Node dependencies
         run: |
-          snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-web/package.json --project-name=H2O-3/master/h2o-web/package.json  -d 
+          snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-web/package.json --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-web/package.json  -d 
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -125,7 +124,7 @@ jobs:
             echo ""
             echo "##### SCAN $file START #####"
             echo ""
-            snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=$file --project-name=H2O-3/master/$file -d --skip-unresolved 
+            snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=$file --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/$file -d --skip-unresolved 
             echo "##### SCAN $file END #####"
           done
         env:
