@@ -5,11 +5,11 @@ on:
   push:
     branches:
       - 'master'
-      - 'rel-*'
+      - '*'
 
 jobs:
   snyk_scan_test:
-    if: ${{ github.event_name == 'pull_request' }}
+    #if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -54,20 +54,6 @@ jobs:
           sudo apt-get install -y libkrb5-dev
           pip install -r h2o-py/requirements.txt            
           snyk test -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved   
-  
-      - uses: actions/setup-python@v1
-        with:
-          python-version: "2.7"
-      - name: Snyk scan for Python 2.7 dependencies
-        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
-        id: scan3
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          pip install --upgrade setuptools
-          pip install -r h2o-py/test-requirements.txt
-          snyk test --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved
 
       - uses: actions/setup-node@v1
         with:
@@ -93,7 +79,7 @@ jobs:
           exit 1
           
   snyk_scan_monitor:
-    if: ${{ github.event_name == 'push' }}
+    #if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -119,17 +105,6 @@ jobs:
           sudo apt-get install -y libkrb5-dev
           pip install -r h2o-py/requirements.txt                  
           snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/requirements.txt      
-
-      - uses: actions/setup-python@v1
-        with:
-          python-version: "2.7"
-      - name: Snyk scan for Python 2.7 dependencies
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          pip install --upgrade setuptools
-          pip install -r h2o-py/test-requirements.txt
-          snyk monitor --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/test-requirements.txt         
 
       - uses: actions/setup-node@v1
         with:
