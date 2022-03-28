@@ -61,7 +61,7 @@ jobs:
           node-version: '12.x'
       - name: Snyk scan for Node dependencies
         #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
-        id: scan4
+        id: scan3
         continue-on-error: true
         run: |
           snyk test --file=h2o-web/package.json -d --fail-on=all 
@@ -69,14 +69,13 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Check Snyk scan results
-        #if: steps.scan1.outcome == 'failure' || steps.scan2.outcome == 'failure' || steps.scan3.outcome == 'failure' || steps.scan4.outcome == 'failure'
+        if: steps.scan1.outcome == 'failure' || steps.scan2.outcome == 'failure' || steps.scan3.outcome == 'failure' || steps.scan4.outcome == 'failure'
         shell: bash
         run: |
           echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
                 Snyk scan for Java dependencies - ${{ steps.scan1.outcome }}
-                Snyk scan for Python 3.5 dependencies - ${{ steps.scan2.outputs.result }}
-                Snyk scan for Python 2.7 dependencies - ${{ steps.scan3.outcome }}
-                Snyk scan for Node dependencies - ${{ steps.scan4.outputs.result }}"
+                Snyk scan for Python 3.5 dependencies - ${{ steps.scan2.outputs.outcome }}
+                Snyk scan for Node dependencies - ${{ steps.scan4.outputs.outcome }}"
           exit 1
           
   snyk_scan_monitor:
