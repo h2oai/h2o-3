@@ -33,7 +33,7 @@ jobs:
           java-version: "8"
           distribution: 'adopt'
       - name: Snyk scan for Java dependencies 
-        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
         id: scan1
         continue-on-error: true
         run: |
@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: "3.6"
       - name: Snyk scan for Python 3.6 dependencies
-        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan2
         continue-on-error: true
         env:
@@ -60,7 +60,7 @@ jobs:
         with:
           node-version: '12.x'
       - name: Snyk scan for Node dependencies
-        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
         id: scan4
         continue-on-error: true
         run: |
@@ -69,7 +69,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Check Snyk scan results
-        if: steps.scan1.outcome == 'failure' || steps.scan2.outcome == 'failure' || steps.scan3.outcome == 'failure' || steps.scan4.outcome == 'failure'
+        #if: steps.scan1.outcome == 'failure' || steps.scan2.outcome == 'failure' || steps.scan3.outcome == 'failure' || steps.scan4.outcome == 'failure'
         shell: bash
         run: |
           echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
