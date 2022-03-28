@@ -142,7 +142,7 @@ class CompareUpliftDrfWithCausalMl(unittest.TestCase):
         print(h2o_drfs[0].auuc())
         print(perf.auuc_table())
         print(h2o_drfs[0].auuc_table())
-
+        
 
 suite = unittest.TestLoader().loadTestsFromTestCase(CompareUpliftDrfWithCausalMl)
 unittest.TextTestRunner().run(suite)

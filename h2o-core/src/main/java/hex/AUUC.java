@@ -10,6 +10,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -149,16 +150,11 @@ public class AUUC extends Iced {
 
     public void setUpliftNormalized(){
         for(int i=0; i<AUUCType.VALUES.length; i++) {
-            int maxIndex = _nBins-1;
+            int maxIndex = _nBins - 1;
             int liftIndex = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(AUUCType.lift);
-            if (i == liftIndex){
-                _upliftNormalized[i] = _uplift[i];
-            } else {
-                double a = _uplift[i][maxIndex];
-                assert a != 0 : "Max uplift should not be 0.";
-                for (int j = 0; j < _nBins; j++) {
-                    _upliftNormalized[i][j] = _uplift[i][j] / a;
-                }
+            double a = i == liftIndex || _uplift[i][maxIndex] == 0 ? 1 : Math.abs(_uplift[i][maxIndex]);
+            for (int j = 0; j < _nBins; j++) {
+                _upliftNormalized[i][j] = _uplift[i][j] / a;
             }
         }
     }
