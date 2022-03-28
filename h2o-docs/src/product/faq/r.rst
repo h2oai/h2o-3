@@ -370,6 +370,29 @@ entering the following in Terminal:
 
 --------------
 
+R got stuck after some time with CURL related error
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``Unexpected CURL error: Failed to connect to 127.0.0.1 port 54321: Connection reset by peer``
+or
+``Unexpected CURL error: getaddrinfo() thread failed to start``
+
+This is most likely caused by a bug in ``RCurl`` library. H2O's R client is able to use newer ``curl`` package if present.
+The R package ``curl`` has to be version 4.3.0 or newer.
+
+In case you want to use the ``RCurl`` package one option is to downgrade (version 7.67.0 or lower) the system curl library
+or recompile the system curl library with ``--disable-socketpair``, this option was added in curl 7.73.0.
+
+--------------
+
+R client uses curl package instead of RCurl package
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Starting from h2o-3 3.38.0.1, the R client tries to use ``curl`` R package for communication with backend if the system has
+new enough ``curl`` R package (version 4.3.0 or newer). This behavior can be disabled by setting ``options("prefer_RCurl" = TRUE)``.
+
+--------------
+
 .. raw:: html
 
    <!---

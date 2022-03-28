@@ -379,7 +379,7 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
 
 .print_curl_info <- function () {
   cat("/----------------------------------------CURL INFO----------------------------------------\\\n")
-  if (!getOption("prefer_RCurl", FALSE) && requireNamespace("curl")) {
+  if (use.package("curl", version = "4.3.0", use = !getOption("prefer_RCurl", FALSE))) {
     cat("                    ##################################################\n",
         "                    #               USING curl PACKAGE               #\n",
         paste0("                    #               prefer_RCurl == ", getOption("prefer_RCurl", FALSE) ,
@@ -389,6 +389,7 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
                if (requireNamespace("curl")) " " else "",
                "         #\n"),
         "                    ##################################################\n", sep="")
+    print(paste("curl R package version:", packageVersion("curl")))
     print(curl::curl_version())
   } else {
     cat("                    ##################################################\n",
@@ -400,6 +401,7 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
                if (requireNamespace("curl")) " " else "",
                "          #\n"),
         "                    ##################################################\n", sep="")
+    print(paste("RCurl R package version:", packageVersion("RCurl")))
     print(RCurl::curlVersion())
   }
   cat("\\-----------------------------------------------------------------------------------------/\n")
