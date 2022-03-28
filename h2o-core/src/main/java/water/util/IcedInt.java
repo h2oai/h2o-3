@@ -4,7 +4,7 @@ import water.H2O.H2OCountedCompleter;
 import water.Iced;
 import water.TAtomic;
 
-public class IcedInt extends Iced {
+public class IcedInt extends Iced<IcedInt> {
   public int _val;
   public IcedInt(int v){_val = v;}
   @Override public boolean equals( Object o ) {
