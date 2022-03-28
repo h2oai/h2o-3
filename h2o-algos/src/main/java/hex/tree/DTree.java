@@ -324,9 +324,10 @@ public class DTree extends Iced {
       // Build a next-gen split point from the splitting bin
       int cnt=0;                  // Count of possible splits
       DHistogram nhists[] = new DHistogram[currentHistos.length]; // A new histogram set
+      boolean checkBranchInteractions = bcs != null;
       for(int j = 0; j < currentHistos.length; j++ ) { // For every column in the new split
         // Check branch interaction constraint if it is not null 
-        if (bcs != null && !bcs.isAllowedIndex(j)) {
+        if (checkBranchInteractions && !bcs.isAllowedIndex(j)) {
           // Column is denied by branch interaction constraints -> the histogram is set to null
           continue;
         }
