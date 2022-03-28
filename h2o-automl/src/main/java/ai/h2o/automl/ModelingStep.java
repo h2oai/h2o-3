@@ -368,11 +368,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
 
         if (parms._stopping_metric == StoppingMetric.AUTO) {
-            String sort_metric = getSortMetric();
-            parms._stopping_metric = sort_metric == null ? StoppingMetric.AUTO
-                    : sort_metric.equals("auc")  ? StoppingMetric.logloss
-                    : sort_metric.equals("rmse") ? StoppingMetric.deviance
-                    : metricValueOf(sort_metric);
+            parms._stopping_metric = aml().getResponseColumn().cardinality() == -1 ? StoppingMetric.deviance : StoppingMetric.logloss;
         }
 
         if (parms._stopping_rounds == defaults._stopping_rounds)
