@@ -5,6 +5,7 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import hex.*;
+import hex.Model.Parameters.CategoricalEncodingScheme;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
@@ -49,6 +50,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static hex.Model.Contributions.*;
+import static hex.Model.Parameters.CategoricalEncodingScheme.Eigen;
+import static hex.Model.Parameters.CategoricalEncodingScheme.Enum;
 import static hex.genmodel.utils.DistributionFamily.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
@@ -2891,6 +2894,36 @@ public class XGBoostTest extends TestUtil {
 
     } finally {
       Rabit.shutdown();
+    }
+  }
+
+  @Test
+  public void testSomeCategoricalEncodingIsNotSupported() {
+    ExpectedException exceptionRule = ExpectedException.none();
+    Scope.enter();
+    try {
+      String response = "RainTomorrow";
+      Frame df = loadWeather(response);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+      parms._train = df._key;
+      parms._response_column = response;
+
+      for (CategoricalEncodingScheme categoricalEncoding : Arrays.asList(Eigen, Enum)) {
+        parms._categorical_encoding = categoricalEncoding;
+        try {
+          exceptionRule = ExpectedException.none();
+          new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+        }
+        catch (H2OModelBuilderIllegalArgumentException e) {
+          exceptionRule.expect(H2OModelBuilderIllegalArgumentException.class);
+          exceptionRule.expectMessage(categoricalEncoding + " encoding is not supported");
+        }
+      }
+    } finally {
+      Scope.exit();
     }
   }
 }
