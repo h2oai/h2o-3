@@ -951,6 +951,240 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
         plt.xticks(mapping(range(nf.nlevels(column))), nf.levels(column))
     plt.ylim(ylims)
 
+def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp, **kwargs):
+    frame = frame.sort(model.actual_params["response_column"])
+    deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
+    colors = plt.get_cmap(colormap, 11)(list(range(11)))
+    for i, index in enumerate(deciles):
+        percentile_string = "{}th Percentile".format(i * 10)
+        tmp = NumpyFrame(
+            model.partial_plot(
+                frame,
+                cols=[column],
+                plot=False,
+                row_index=index,
+                targets=target,
+                nbins=20 if not is_factor else 1 + frame[column].nlevels()[0],
+                include_na=True
+            )[0]
+        )
+        encoded_col = tmp.columns[0]
+        y_label = "Response"
+        if not is_factor and centered:
+            _center(tmp["mean_response"])
+            y_label = "Response difference"
+        if show_logodds:
+            y_label = "log(odds)"
+        orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
+        orig_row = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
+                                       frame, index, column, colors[i], percentile_string, factor_map, orig_value)
+        if not _isnan(orig_value) or orig_value != '':
+            tmp._data = np.append(tmp._data, orig_row._data, axis=0)
+        if is_factor:
+            response = _get_response(tmp["mean_response"], show_logodds)
+            plt.scatter(factor_map(tmp.get(encoded_col)),
+                        response,
+                        color=[colors[i]],
+                        label=percentile_string)
+        else:
+            tmp._data = tmp._data[tmp._data[:,0].argsort()]
+            response = _get_response(tmp["mean_response"], show_logodds)
+            plt.plot(tmp[encoded_col],
+                     response,
+                     color=colors[i],
+                     label=percentile_string)
+
+    if show_pdp:
+        tmp = NumpyFrame(
+            model.partial_plot(
+                frame,
+                cols=[column],
+                plot=False,
+                targets=target,
+                nbins=100 if not is_factor else 1 + frame[column].nlevels()[0]
+            )[0]
+        )
+        encoded_col = tmp.columns[0]
+        response = _get_response(tmp["mean_response"], show_logodds)
+        if not is_factor and centered:
+            _center(tmp["mean_response"])
+        if is_factor:
+            plt.scatter(factor_map(tmp.get(encoded_col)), response, color="k",
+                        label="Partial Dependence")
+        else:
+            plt.plot(tmp[encoded_col], response, color="k", linestyle="dashed",
+                     label="Partial Dependence")
+
+    _add_histogram(frame, column)
+    plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}{}".format(
+        model.model_id,
+        column,
+        " with target = \"{}\"".format(target[0]) if target else "",
+        kwargs.get("group_label", "")
+    ))
+    plt.xlabel(column)
+    plt.ylabel(y_label)
+
+    ax = plt.gca()
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    # add custom legend for Original observations:
+    handles, labels = ax.get_legend_handles_labels()
+    patch = plt.plot([],[], marker="o", alpha=0.5, ms=10, ls="", mec=None, color='grey',
+                     label="Original observations")[0]
+    handles.append(patch)
+    plt.legend(handles=handles, loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.grid(True)
+    if is_factor:
+        plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
+    fig = plt.gcf()
+    return fig
+
+def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, **kwargs):
+    color = plt.get_cmap(colormap)(0)
+    tmp = NumpyFrame(
+        model.partial_plot(frame, cols=[column], plot=False,
+                           row_index=row_index, targets=target,
+                           nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
+    encoded_col = tmp.columns[0]
+    response = _get_response(tmp["mean_response"], show_logodds)
+    stddev_response = _get_stddev_response(tmp["stddev_response"], tmp["mean_response"], show_logodds)
+
+    if is_factor:
+        plt.errorbar(factor_map(tmp.get(encoded_col)), response,
+                     yerr=stddev_response, fmt='o', color=color,
+                     ecolor=color, elinewidth=3, capsize=0, markersize=10)
+    else:
+        plt.plot(tmp[encoded_col], response, color=color)
+        plt.fill_between(tmp[encoded_col], response - stddev_response,
+                         response + stddev_response, color=color, alpha=0.2)
+
+    _add_histogram(frame, column)
+
+    if row_index is None:
+        plt.title("Partial Dependence plot for \"{}\"{}{}".format(
+            column,
+            " with target = \"{}\"".format(target[0]) if target else "",
+            kwargs.get("group_label", "")
+        ))
+        plt.ylabel("log(odds)" if show_logodds else "Mean Response")
+    else:
+        if is_factor:
+            plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
+                        label="Instance value")
+        else:
+            plt.axvline(frame[row_index, column], c="k", linestyle="dotted",
+                        label="Instance value")
+        plt.title("Individual Conditional Expectation for column \"{}\" and row {}{}{}".format(
+            column,
+            row_index,
+            " with target = \"{}\"".format(target[0]) if target else "",
+            kwargs.get("group_label", "")
+        ))
+        plt.ylabel("log(odds)" if show_logodds else "Response")
+    ax = plt.gca()
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    plt.xlabel(column)
+    plt.grid(True)
+    if is_factor:
+        plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+    plt.tight_layout()
+    fig = plt.gcf()
+    return fig
+
+def pd_ice_common(
+        model,  # type: h2o.model.model_base.ModelBase
+        frame,  # type: h2o.H2OFrame
+        column,  # type: str
+        row_index=None,  # type: Optional[int]
+        target=None,  # type: Optional[str]
+        max_levels=30,  # type: int
+        figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
+        colormap="Dark2",  # type: str
+        save_plot_path=None, # type: Optional[str]
+        show_pdp=True,  # type: bool
+        binary_response_scale="response", # type: Literal["response", "logodds"]
+        centered=False, # type: bool
+        is_ice=False, # type: bool
+        grouping_column=None,  # type: Optional[str]
+        **kwargs
+):
+    """
+    Common base for partial dependence plot and ice plot.
+
+    :param model: H2O Model object
+    :param frame: H2OFrame
+    :param column: string containing column name
+    :param row_index: if None, do partial dependence, if integer, do individual
+                      conditional expectation for the row specified by this integer
+    :param target: (only for multinomial classification) for what target should the plot be done
+    :param max_levels: maximum number of factor levels to show
+    :param figsize: figure size; passed directly to matplotlib
+    :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
+                     pd_multi_plot
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig
+    :param show_pdp: option to turn on/off PDP line. Defaults to True.
+    :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
+    :param centered: a bool whether to center curves around 0 at the first valid x value or not
+    :param is_ice: a bool whether the caller of this method is ice_plot or pd_plot
+    :param grouping_column A feature column name to group the data and provide separate sets of plots
+                           by grouping feature values
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+
+    """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+
+    if frame.type(column) == "string":
+        raise ValueError("String columns are not supported!")
+
+    is_factor = frame[column].isfactor()[0]
+
+    if target is not None:
+        if isinstance(target, (list, tuple)):
+            if len(target) > 1:
+                raise ValueError("Only one target can be specified!")
+            target = target[0]
+        target = [target]
+
+    if grouping_column is not None:
+        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered)
+
+    factor_map = None
+    if is_factor:
+        if centered:
+            warnings.warn("Centering is not supported for factor columns!")
+        if frame[column].nlevels()[0] > max_levels:
+            levels = _get_top_n_levels(frame[column], max_levels)
+            if row_index is not None:
+                levels = list(set(levels + [frame[row_index, column]]))
+            frame = frame[(frame[column].isin(levels)), :]
+            # decrease the number of levels to the actual number of levels in the subset
+            frame[column] = frame[column].ascharacter().asfactor()
+        factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
+
+    is_binomial = _is_binomial(model)
+    if (not is_binomial) and (binary_response_scale == "logodds"):
+        raise ValueError("binary_response_scale cannot be set to 'logodds' value for non-binomial models!")
+
+    if binary_response_scale not in ["logodds", "response"]:
+        raise ValueError("Unsupported value for binary_response_scale!")
+
+    show_logodds = is_binomial and binary_response_scale == "logodds"
+
+    with no_progress():
+        plt.figure(figsize=figsize)
+        if is_ice:
+            fig = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map,
+                       show_pdp, **kwargs)
+        else:
+            fig = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, **kwargs)
+
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 def pd_plot(
         model,  # type: h2o.model.model_base.ModelBase
@@ -961,7 +1195,10 @@ def pd_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
-        save_plot_path=None # type: Optional[str]
+        save_plot_path=None, # type: Optional[str]
+        binary_response_scale="response", # type: Literal["response", "logodds"]
+        grouping_column=None,  # type: Optional[str]
+        **kwargs
 ):
     """
     Plot partial dependence plot.
@@ -981,6 +1218,10 @@ def pd_plot(
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
+    :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
+    score. Can be one of: "response", "logodds". Defaults to "response".
+    :param grouping_column A feature column name to group the data and provide separate sets of plots
+                           by grouping feature values
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1007,76 +1248,9 @@ def pd_plot(
     >>> # Create partial dependence plot
     >>> gbm.pd_plot(test, column="alcohol")
     """
-    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    is_factor = frame[column].isfactor()[0]
-    if is_factor:
-        if frame[column].nlevels()[0] > max_levels:
-            levels = _get_top_n_levels(frame[column], max_levels)
-            if row_index is not None:
-                levels = list(set(levels + [frame[row_index, column]]))
-            frame = frame[(frame[column].isin(levels)), :]
-            # decrease the number of levels to the actual number of levels in the subset
-            frame[column] = frame[column].ascharacter().asfactor()
+    return pd_ice_common(model, frame, column, row_index, target, max_levels, figsize, colormap, save_plot_path,
+                         True, binary_response_scale, None, False, grouping_column, **kwargs)
 
-    if target is not None and not isinstance(target, list):
-        target = [target]
-
-    if frame.type(column) == "string":
-        raise ValueError("String columns are not supported!")
-
-    color = plt.get_cmap(colormap)(0)
-    with no_progress():
-        plt.figure(figsize=figsize)
-        is_factor = frame[column].isfactor()[0]
-        if is_factor:
-            factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
-        tmp = NumpyFrame(
-            model.partial_plot(frame, cols=[column], plot=False,
-                               row_index=row_index, targets=target,
-                               nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
-        encoded_col = tmp.columns[0]
-        if is_factor:
-            plt.errorbar(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
-                         yerr=tmp["stddev_response"], fmt='o', color=color,
-                         ecolor=color, elinewidth=3, capsize=0, markersize=10)
-        else:
-            plt.plot(tmp[encoded_col], tmp["mean_response"], color=color)
-            plt.fill_between(tmp[encoded_col], tmp["mean_response"] - tmp["stddev_response"],
-                             tmp["mean_response"] + tmp["stddev_response"], color=color, alpha=0.2)
-
-        _add_histogram(frame, column)
-
-        if row_index is None:
-            plt.title("Partial Dependence plot for \"{}\"{}".format(
-                column,
-                " with target = \"{}\"".format(target[0]) if target else ""
-            ))
-            plt.ylabel("Mean Response")
-        else:
-            if is_factor:
-                plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
-                            label="Instance value")
-            else:
-                plt.axvline(frame[row_index, column], c="k", linestyle="dotted",
-                            label="Instance value")
-            plt.title("Individual Conditional Expectation for column \"{}\" and row {}{}".format(
-                column,
-                row_index,
-                " with target = \"{}\"".format(target[0]) if target else ""
-            ))
-            plt.ylabel("Response")
-        ax = plt.gca()
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        plt.xlabel(column)
-        plt.grid(True)
-        if is_factor:
-            plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
-        plt.tight_layout()
-        fig = plt.gcf()
-        if save_plot_path is not None:
-            plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(figure=fig)
 
 
 def pd_multi_plot(
@@ -1248,7 +1422,8 @@ def _prepare_grouping_frames(frame, grouping_column):
         frames.append(h2o.get_frame(key))
     return frames
 
-def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap):
+
+def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered):
     frames = _prepare_grouping_frames(frame, grouping_column)
     result = list()
     for i, curr_frame in enumerate(frames):
@@ -1258,34 +1433,54 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
             root_path, ext = os.path.splitext(save_plot_path)
             curr_save_plot_path = root_path + "_" + curr_category + ext
         group_label = "\ngrouping variable: {} = '{}'".format(grouping_column, curr_category)
-        plot = ice_plot(
-            model,
-            curr_frame,
-            column,
-            target,
-            max_levels,
-            figsize,
-            colormap,
-            curr_save_plot_path,
-            **{'group_label':group_label}
-        )
+        if is_ice:
+            plot = ice_plot(
+                model,
+                curr_frame,
+                column,
+                target,
+                max_levels,
+                figsize,
+                colormap,
+                curr_save_plot_path,
+                show_pdp,
+                binary_response_scale,
+                centered,
+                grouping_column=None,
+                **{'group_label':group_label}
+            )
+        else:
+            plot = pd_plot(
+                model,
+                frame,
+                column,
+                row_index,
+                target,
+                max_levels,
+                figsize,
+                colormap,
+                curr_save_plot_path,
+                binary_response_scale,
+                **{'group_label':group_label}
+            )
         result.append(plot)
         h2o.remove(curr_frame.key, False)
     return result
 
+
 def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
-                        index, column, color, percentile_string):
+                        index, column, color, percentile_string, factor_map, orig_value):
     PDP_RESULT_FACTOR_NAN_MARKER = '.missing(NA)'
     user_splits = dict()
-    orig_value = frame.as_data_frame()[column][index]
-    if _isnan(orig_value):
+    if _isnan(orig_value) or orig_value == "":
         if is_factor:
             idx = np.where(tmp[encoded_col] == tmp.from_factor_to_num(encoded_col)[PDP_RESULT_FACTOR_NAN_MARKER])[0][0]
         else:
             idx = np.where(np.isnan(tmp[encoded_col]))[0][0]
         # orig_null_value = tmp.from_num_to_factor(encoded_col)[tmp[encoded_col][idx]] if is_factor else tmp[encoded_col][idx]
         orig_null_value = PDP_RESULT_FACTOR_NAN_MARKER if is_factor else np.nan
-        msg = "Original observation of \"{}\" for {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col, percentile_string, orig_null_value, tmp["mean_response"][idx])
+        percentile_string = "for " + percentile_string if percentile_string is not None else ""
+        msg = "Original observation of \"{}\" {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col, percentile_string, orig_null_value, tmp["mean_response"][idx])
         warnings.warn(msg)
         return tmp
     else:
@@ -1300,9 +1495,13 @@ def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
                 user_splits=user_splits,
             )[0]
         )
+        if is_factor:
+            # preserve the same factor-to-num mapping
+            orig_tmp._data[0,0] = factor_map([orig_value])[0]
         plt.scatter(orig_tmp[encoded_col], orig_tmp["mean_response"],
                     color=[color], marker='o', s=150, alpha=0.5)
         return orig_tmp
+
 
 def ice_plot(
         model,  # type: h2o.model.ModelBase
@@ -1314,8 +1513,8 @@ def ice_plot(
         colormap="plasma",  # type: str
         save_plot_path=None,  # type: Optional[str]
         show_pdp=True,  # type: bool
-        binary_response_scale="response", # type: Literal["response", "logodds"]
-        centered=False, # type: bool
+        binary_response_scale="response",  # type: Literal["response", "logodds"]
+        centered=False,  # type: bool
         grouping_column=None,  # type: Optional[str]
         **kwargs
 ):  # type: (...) -> plt.Figure
@@ -1371,129 +1570,9 @@ def ice_plot(
     >>> # Create the individual conditional expectations plot
     >>> gbm.ice_plot(test, column="alcohol")
     """
-    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if target is not None:
-        if isinstance(target, (list, tuple)):
-            if len(target) > 1:
-                raise ValueError("Only one target can be specified!")
-            target = target[0]
-        target = [target]
+    return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap,
+                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, **kwargs)
 
-    if frame.type(column) == "string":
-        raise ValueError("String columns are not supported!")
-
-    if grouping_column is not None:
-        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap)
-
-    is_binomial = _is_binomial(model)
-    if (not is_binomial) and (binary_response_scale == "logodds"):
-        raise ValueError("binary_response_scale cannot be set to 'logodds' value for non-binomial models!")
-
-    if binary_response_scale not in ["logodds", "response"]:
-        raise ValueError("Unsupported value for binary_response_scale!")
-
-    show_logodds = is_binomial and binary_response_scale == "logodds"
-
-    with no_progress():
-        frame = frame.sort(model.actual_params["response_column"])
-        is_factor = frame[column].isfactor()[0]
-
-        if is_factor:
-            if centered:
-                warnings.warn("Centering is not supported for factor columns!")
-            if frame[column].nlevels()[0] > max_levels:
-                levels = _get_top_n_levels(frame[column], max_levels)
-                frame = frame[(frame[column].isin(levels)), :]
-                # decrease the number of levels to the actual number of levels in the subset
-                frame[column] = frame[column].ascharacter().asfactor()
-
-            factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
-
-        plt.figure(figsize=figsize)
-
-        deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
-        colors = plt.get_cmap(colormap, 11)(list(range(11)))
-        for i, index in enumerate(deciles):
-            percentile_string = "{}th Percentile".format(i * 10)
-            tmp = NumpyFrame(
-                model.partial_plot(
-                    frame,
-                    cols=[column],
-                    plot=False,
-                    row_index=index,
-                    targets=target,
-                    nbins=100 if not is_factor else 1 + frame[column].nlevels()[0],
-                    include_na=True
-                )[0]
-            )
-            encoded_col = tmp.columns[0]
-            y_label = "Response"
-            if not is_factor and centered:
-                _center(tmp["mean_response"])
-                y_label = "Response difference"
-            orig_row = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
-                                frame, index, column, colors[i], percentile_string)
-            if not _isnan(frame.as_data_frame()[column][index]):
-                tmp._data=np.append(tmp._data, orig_row._data, axis=0)
-            if is_factor:
-                response = _get_response(tmp["mean_response"], show_logodds)
-                plt.scatter(factor_map(tmp.get(encoded_col)),
-                            response,
-                            color=[colors[i]],
-                            label=percentile_string)
-            else:
-                tmp._data = tmp._data[tmp._data[:,0].argsort()]
-                response = _get_response(tmp["mean_response"], show_logodds)
-                plt.plot(tmp[encoded_col], response, color=colors[i],
-                         label=percentile_string)
-
-        if show_pdp:
-            tmp = NumpyFrame(
-                model.partial_plot(
-                    frame,
-                    cols=[column],
-                    plot=False,
-                    targets=target,
-                    nbins=100 if not is_factor else 1 + frame[column].nlevels()[0]
-                )[0]
-            )
-            encoded_col = tmp.columns[0]
-            response = _get_response(tmp["mean_response"], show_logodds)
-            if not is_factor and centered:
-                _center(tmp["mean_response"])
-            if is_factor:
-                plt.scatter(factor_map(tmp.get(encoded_col)), response, color="k",
-                            label="Partial Dependence")
-            else:
-                plt.plot(tmp[encoded_col], response, color="k", linestyle="dashed",
-                         label="Partial Dependence")
-
-        _add_histogram(frame, column)
-        plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}{}".format(
-            model.model_id,
-            column,
-            " with target = \"{}\"".format(target[0]) if target else "",
-            kwargs.get("group_label", "")
-        ))
-        plt.xlabel(column)
-        plt.ylabel(y_label)
-        ax = plt.gca()
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        # add custom legend for Original observations:
-        handles, labels = ax.get_legend_handles_labels()
-        patch = plt.plot([],[], marker="o", alpha=0.5, ms=10, ls="", mec=None, color='grey',
-                     label="Original observations")[0]
-        handles.append(patch)
-        plt.legend(handles=handles, loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.grid(True)
-        if is_factor:
-            plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
-        plt.tight_layout(rect=[0, 0, 0.85, 1])
-        fig = plt.gcf()
-        if save_plot_path is not None:
-            plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(figure=fig)
 
 def _is_binomial(model):
     if isinstance(model, h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator):
@@ -1501,14 +1580,23 @@ def _is_binomial(model):
     else:
         return _is_binomial_from_model(model)
 
+
 def _is_binomial_from_model(model):
     return model._model_json["output"]["model_category"] == "Binomial"
+
 
 def _get_response(mean_response, show_logodds):
     if show_logodds:
         return np.log(mean_response / (1 - mean_response))
     else:
         return mean_response
+
+
+def _get_stddev_response(stdev_response, mean_response, show_logodds):
+    if show_logodds:
+        return 1 / np.sqrt(len(mean_response) * mean_response * (1 - mean_response))
+    else:
+        return stdev_response
 
 
 def _isnan(value):
