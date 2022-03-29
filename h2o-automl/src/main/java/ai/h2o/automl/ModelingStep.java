@@ -128,7 +128,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         _priorityGroup = priorityGroup;
         _weight = weight;
         _aml = autoML;
-        _description = provider+" "+id;
+        _description = provider+":"+id;
     }
     
     public String getProvider() {
