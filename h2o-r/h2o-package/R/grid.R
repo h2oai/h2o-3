@@ -255,7 +255,7 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing, verbose = FALSE) {
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })
   hyper_names <- lapply(json$hyper_names, function(name) { name })
   failed_params <- lapply(json$failed_params, function(param) {
-                          x <- if (is.null(param) || is.na(param)) NULL else param
+                          x <- if (all(is.null(param) | is.na(param))) NULL else param
                           x
                         })
   failure_details <- lapply(json$failure_details, function(msg) { msg })
