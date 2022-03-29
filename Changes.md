@@ -8,6 +8,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/4/index.h
 
 #### Bug
 
+- [[PUBDEV-8634]](https://h2oai.atlassian.net/browse/PUBDEV-8634) - Fixed logic operations error in R package. 
 - [[PUBDEV-8626]](https://h2oai.atlassian.net/browse/PUBDEV-8626) - Clarified that `enum` and `eigen` `categorical_encoding` values do not work for XGBoost.
 
 #### Improvement
