@@ -194,7 +194,7 @@ ice_plot_display_mode <- function() {
 
 doSuite("Explanation Tests", makeSuite(
     test_original_values,
-    # ice_plot_display_mode,
-    # ice_plot_test_binary_response_scale,
-    # ice_plot_display_mode_grouping_column,
+    ice_plot_display_mode,
+    ice_plot_test_binary_response_scale,
+    ice_plot_display_mode_grouping_column,
 ))
