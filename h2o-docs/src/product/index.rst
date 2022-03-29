@@ -159,3 +159,12 @@ Additional Resources:
 
    api-reference
 
+.. toctree::
+   :maxdepth: 2
+
+   additional-resources
+
+.. toctree::
+
+   Recent Changes <https://github.com/h2oai/h2o-3/blob/master/Changes.md>
+
