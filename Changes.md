@@ -2,6 +2,23 @@
 
 ## H2O
 
+### Zorn (3.36.0.4) - 3/30/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/4/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8626]](https://h2oai.atlassian.net/browse/PUBDEV-8626) - Clarified that `enum` and `eigen` `categorical_encoding` values do not work for XGBoost.
+
+#### Improvement
+
+- [[PUBDEV-8485]](https://h2oai.atlassian.net/browse/PUBDEV-8485) - Added the Qini value metric to Uplift DRF.
+
+#### Docs
+
+- [[PUBDEV-8505]](https://h2oai.atlassian.net/browse/PUBDEV-8505) - Added information on the `make_metrics` command to the Performance and Prediction section of the User Guide.
+
+
 ### Zorn (3.36.0.3) - 2/16/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/3/index.html</a>
