@@ -1065,7 +1065,10 @@ pd_ice_common <- function(model,
                           binary_response_scale = c("response", "logodds"),
                           centered,
                           is_ice = FALSE,
-                          grouping_column = NULL) {
+                          grouping_column = NULL,
+                          output_graphing_data = FALSE,
+                          grouping_variable_value = NULL,
+                          nbins = 100) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   if (missing(column))
@@ -1088,7 +1091,7 @@ pd_ice_common <- function(model,
 
   if (!is.null(grouping_column)) {
     return(.handle_grouping(newdata, grouping_column, column, target, max_levels, show_pdp, model, is_ice,
-                            row_index, binary_response_scale, centered))
+                            row_index, binary_response_scale, centered, output_graphing_data, nbins))
   }
 
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
@@ -1102,14 +1105,62 @@ pd_ice_common <- function(model,
 
   with_no_h2o_progress({
     if (is_ice) {
-      return(handle_ice(model, newdata, column, target, centered, show_logodds, show_pdp, models_info))
+      return(handle_ice(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value, nbins))
     } else {
-      return(handle_pdp(newdata, column, target, show_logodds, row_index, models_info))
+      return(handle_pdp(newdata, column, target, show_logodds, row_index, models_info, nbins))
     }
   })
 }
 
-handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info) {
+.extract_graphing_data_values <- function(data, frame_id, grouping_variable_value, original_observation,
+                                          centering_value, show_logodds, row_id) {
+  new_part <- data.frame()
+  for (i in 1:length(data[[1]])) {
+    if (is.na(data[[1]][[i]])) {
+      is_original_observation = is.na(original_observation)
+    } else {
+      is_original_observation = original_observation == data[[1]][[i]]
+    }
+    new_row <- data.frame(
+      sample_id = frame_id,
+      row_id = row_id,
+      column = names(data)[[1]],
+      mean_response = data[["mean_response"]][[i]],
+      simulated_x_value = data[[1]][[i]],
+      is_original_observation = is_original_observation
+    )
+    if (!is.null(grouping_variable_value)) {
+      new_row = cbind(new_row, data.frame(grouping_variable_value = grouping_variable_value))
+    }
+    if (!is.null(centering_value)) {
+      new_row = cbind(new_row, data.frame(centered_response = data[["mean_response"]][[i]] - centering_value))
+    }
+    if (show_logodds) {
+      new_row = cbind(new_row, data.frame(logodds = log(data[["mean_response"]][[i]] / (1 - data[["mean_response"]][[i]]))))
+    }
+
+    new_part <- rbind(new_part, new_row)
+  }
+  
+  return(new_part)
+}
+
+.append_graphing_data <- function(output_graphing_data, data_to_append, original_observation_value, frame_id, centered, show_logoods,
+                                  row_id, grouping_variable_value) {
+  if (length(data_to_append) == 0 || is.null(data_to_append)) {
+    return(output_graphing_data)
+  }
+  centering_value <- if (centered) data_to_append[['mean_response']][[1]] else NULL
+  new_part <- .extract_graphing_data_values(data_to_append, frame_id, grouping_variable_value, original_observation_value, centering_value, show_logoods, row_id)
+  
+  if (length(output_graphing_data) == 0 ||is.null(output_graphing_data)) {
+    return(new_part)
+  } else {
+    return(rbind(output_graphing_data, new_part))
+  }
+}
+
+handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value=NULL, nbins) {
   .data <- NULL
   margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
   is_factor <- is.factor(newdata[[column]])
@@ -1124,6 +1175,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
 
   results <- data.frame()
   orig_values <- data.frame()
+  graphing_data <- data.frame()
   i <- 0
   for (idx in quantiles) {
     percentile_str <- sprintf("%dth Percentile", i * 10)
@@ -1137,10 +1189,14 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
       nbins = if (is_factor) {
         h2o.nlevels(newdata[[column]]) + 1
       } else {
-        100
+        nbins
       },
       include_na = TRUE
     ))
+
+    subdata <- as.data.frame(newdata[as.integer(idx),])[[gsub(" ", ".", column)]]
+    if (output_graphing_data)
+      graphing_data <- .append_graphing_data(graphing_data, tmp, subdata, h2o.getId(newdata), !is_factor && centered, show_logodds, as.integer(idx), grouping_variable_value)
     y_label <- "Response"
     if (!is_factor && centered) {
       tmp[["mean_response"]] <- tmp[["mean_response"]] - tmp[["mean_response"]][1]
@@ -1150,7 +1206,6 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
       y_label <- "log(odds)"
     tmp[["name"]] <- percentile_str
 
-    subdata <- as.data.frame(newdata[as.integer(idx),])[[gsub(" ", ".", column)]]
     if (is.na(subdata)) {
       # NAs / special values going to be handled in PUBDEV-8493 / NAs in original observations approach should be aligned
       if (is.factor(newdata[[column]])) {
@@ -1192,6 +1247,9 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
         )
       )
       orig_tmp[["name"]] <- percentile_str
+      if (!is_factor && centered) {
+        orig_tmp[["mean_response"]] <- orig_tmp[["mean_response"]] - orig_tmp[["mean_response"]][1]
+      }
       orig_values <-
         rbind(orig_values, orig_tmp[, c(column, "name", "mean_response")])
       results <- rbind(results, orig_tmp[, c(column, "name", "mean_response")])
@@ -1239,7 +1297,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
                                     nbins = if (is_factor) {
                                       h2o.nlevels(newdata[[column]]) + 1
                                     } else {
-                                      100
+                                      nbins
                                     }
       ))
     if (!is_factor && centered) {
@@ -1262,6 +1320,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
   if (show_logodds) {
     results[['logodds']] <- log(results$mean_response / (1 - results$mean_response))
     pdp[['logodds']] <- log(pdp$mean_response / (1 - pdp$mean_response))
+    orig_values[['logodds']] <- log(orig_values$mean_response / (1 - orig_values$mean_response))
     y_range <- range(results[['logodds']])
   }
 
@@ -1319,13 +1378,14 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
                                  } else {
                                    ggplot2::aes(linetype = "ICE", group = .data$name)
                                  })
+  y_val = if (show_logodds) orig_values[['logodds']] else orig_values[['mean_response']]
   original_observations_part <- ggplot2::geom_point(data = as.data.frame(orig_values),
                                                     size = 4.5,
                                                     alpha = 0.5,
                                                     ggplot2::aes(shape = "Original observations",
                                                                  group = "Original observations"),
                                                     x = orig_values[[column]],
-                                                    y = orig_values[['mean_response']],
+                                                    y = y_val,
                                                     show.legend = ifelse(is.numeric(newdata[[column]]), NA, FALSE)
   )
   shape_legend_manual <- ggplot2::scale_shape_manual(
@@ -1353,7 +1413,12 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     q <- q + pdp_part + pdp_dashed
   }
   q <- q + shape_legend_manual + shape_legend_manual2
-  return(q)
+  
+  if (output_graphing_data) {
+    list(figure=q, graphing_data=graphing_data)
+  } else {
+    return(q)
+  }
 }
 
 get_y_values <- function(mean, stddev) {
@@ -1364,7 +1429,7 @@ get_y_values <- function(mean, stddev) {
   l <- list(y_range = y_range, y_min = y_min, y_max = y_max, y_vals = y_vals)
 }
 
-handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_info) {
+handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_info, nbins) {
   .data <- NULL
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
   if (h2o.isfactor(newdata[[column]]))
@@ -1381,7 +1446,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
                     nbins = if (is.factor(newdata[[column]])) {
                       h2o.nlevels(newdata[[column]]) + 1
                     } else {
-                      20
+                      nbins
                     },
                     row_index = row_index
     )
@@ -1478,14 +1543,14 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
 
 #' SHAP Summary Plot
 #'
-#' SHAP summary plot shows the contribution of the features for each instance (row of data). 
+#' SHAP summary plot shows the contribution of the features for each instance (row of data).
 #' The sum of the feature contributions and the bias term is equal to the raw prediction
 #' of the model, i.e., prediction before applying inverse link function.
 #'
 #' @param model An H2O tree-based model. This includes Random Forest, GBM and XGboost
 #'              only. Must be a binary classification or regression model.
 #' @param newdata An H2O Frame, used to determine feature contributions.
-#' @param columns List of columns or list of indices of columns to show. 
+#' @param columns List of columns or list of indices of columns to show.
 #'                If specified, then the \code{top_n_features} parameter will be ignored.
 #' @param top_n_features Integer specifying the maximum number of columns to show (ranked by variable importance).
 #' @param sample_size Integer specifying the maximum number of observations to be plotted.
@@ -1694,13 +1759,13 @@ h2o.shap_summary_plot <-
 #'              only. Must be a binary classification or regression model.
 #' @param newdata An H2O Frame, used to determine feature contributions.
 #' @param row_index Instance row index.
-#' @param columns List of columns or list of indices of columns to show. 
+#' @param columns List of columns or list of indices of columns to show.
 #'                If specified, then the \code{top_n_features} parameter will be ignored.
 #' @param top_n_features Integer specifying the maximum number of columns to show (ranked by their contributions).
 #'        When \code{plot_type = "barplot"}, then \code{top_n_features} features will be chosen
 #'        for each contribution_type.
 #' @param plot_type Either "barplot" or "breakdown".  Defaults to "barplot".
-#' @param contribution_type When \code{plot_type == "barplot"}, plot one of "negative", 
+#' @param contribution_type When \code{plot_type == "barplot"}, plot one of "negative",
 #'                          "positive", or "both" contributions.  Defaults to "both".
 #' @return A ggplot2 object.
 #' @examples
@@ -1976,15 +2041,15 @@ h2o.shap_explain_row_plot <-
 #' Variable Importance Heatmap across multiple models
 #'
 #' Variable importance heatmap shows variable importance across multiple models.
-#' Some models in H2O return variable importance for one-hot (binary indicator) 
+#' Some models in H2O return variable importance for one-hot (binary indicator)
 #' encoded versions of categorical columns (e.g. Deep Learning, XGBoost).  In order
 #' for the variable importance of categorical columns to be compared across all model
-#' types we compute a summarization of the the variable importance across all one-hot 
+#' types we compute a summarization of the the variable importance across all one-hot
 #' encoded features and return a single variable importance for the original categorical
 #' feature. By default, the models and variables are ordered by their similarity.
 #'
 #' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
-#' @param top_n Integer specifying the number models shown in the heatmap 
+#' @param top_n Integer specifying the number models shown in the heatmap
 #'              (based on leaderboard ranking). Defaults to 20.
 #' @return A ggplot2 object.
 #' @examples
@@ -2153,9 +2218,9 @@ h2o.model_correlation <- function(object, newdata, top_n = 20, cluster_models = 
 #' are ordered by their similarity (as computed by hierarchical clustering).
 #'
 #' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
-#' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame, 
+#' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame,
 #'                so this should be a holdout set.
-#' @param top_n Integer specifying the number models shown in the heatmap (used only with an 
+#' @param top_n Integer specifying the number models shown in the heatmap (used only with an
 #'              AutoML object, and based on the leaderboard ranking.  Defaults to 20.
 #' @param cluster_models Logical.  Order models based on their similarity.  Defaults to TRUE.
 #' @param triangular Print just the lower triangular part of correlation matrix.  Defaults to TRUE.
@@ -2240,11 +2305,11 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 
 #' Residual Analysis
 #'
-#' Do Residual Analysis and plot the fitted values vs residuals on a test dataset. 
-#' Ideally, residuals should be randomly distributed. Patterns in this plot can indicate 
-#' potential problems with the model selection, e.g., using simpler model than necessary, 
-#' not accounting for heteroscedasticity, autocorrelation, etc.  If you notice "striped" 
-#' lines of residuals, that is just an indication that your response variable was integer 
+#' Do Residual Analysis and plot the fitted values vs residuals on a test dataset.
+#' Ideally, residuals should be randomly distributed. Patterns in this plot can indicate
+#' potential problems with the model selection, e.g., using simpler model than necessary,
+#' not accounting for heteroscedasticity, autocorrelation, etc.  If you notice "striped"
+#' lines of residuals, that is just an indication that your response variable was integer
 #' valued instead of real valued.
 #'
 #' @param model An H2OModel.
@@ -2308,7 +2373,7 @@ h2o.residual_analysis_plot <- function(model, newdata) {
 }
 
 #' Plot partial dependence for a variable
-#' 
+#'
 #' Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
 #' on the response. The effect of a variable is measured in change in the mean response.
 #' PDP assumes independence between the feature for which is the PDP computed and the rest.
@@ -2324,6 +2389,7 @@ h2o.residual_analysis_plot <- function(model, newdata) {
 #'                          score. Can be one of: "response", "logodds". Defaults to "response".
 #' @param grouping_column A feature column name to group the data and provide separate sets of plots
 #'                          by grouping feature values
+#' @param nbins A number of bins used. Defaults to 100.
 #'
 #' @return A ggplot2 object
 #' @examples
@@ -2359,13 +2425,14 @@ h2o.pd_plot <- function(object,
                         row_index = NULL,
                         max_levels = 30,
                         binary_response_scale = c("response", "logodds"),
-                        grouping_column = NULL) {
-  return(pd_ice_common(object, newdata, column, target, row_index, max_levels, FALSE, binary_response_scale, FALSE, FALSE, grouping_column))
+                        grouping_column = NULL,
+                        nbins = 100) {
+  return(pd_ice_common(object, newdata, column, target, row_index, max_levels, FALSE, binary_response_scale, FALSE, FALSE, grouping_column, FALSE, nbins))
 }
 
 
 #' Plot partial dependencies for a variable across multiple models
-#' 
+#'
 #' Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
 #' on the response. The effect of a variable is measured in change in the mean response.
 #' PDP assumes independence between the feature for which is the PDP computed and the rest.
@@ -2373,7 +2440,7 @@ h2o.pd_plot <- function(object,
 #' @param object Either a list of H2O models/model_ids or an H2OAutoML object.
 #' @param newdata An H2OFrame.
 #' @param column A feature column name to inspect.  Character string.
-#' @param best_of_family If TRUE, plot only the best model of each algorithm family; 
+#' @param best_of_family If TRUE, plot only the best model of each algorithm family;
 #'                       if FALSE, plot all models. Defaults to TRUE.
 #' @param target If multinomial, plot PDP just for \code{target} category.
 #' @param row_index Optional. Calculate Individual Conditional Expectation (ICE) for row, \code{row_index}.  Integer.
@@ -2653,7 +2720,7 @@ h2o.pd_multi_plot <- function(object,
   return(frames)
 }
 
-.handle_grouping <- function (newdata, grouping_variable, column, target, max_levels, show_pdp, model, is_ice, row_index, binary_response_scale, centered) {
+.handle_grouping <- function (newdata, grouping_variable, column, target, max_levels, show_pdp, model, is_ice, row_index, binary_response_scale, centered, output_graphing_data, nbins) {
   frames <- .prepare_grouping_frames(newdata, grouping_variable)
   result <- list()
   i <- 1
@@ -2667,7 +2734,12 @@ h2o.pd_multi_plot <- function(object,
         max_levels,
         show_pdp,
         binary_response_scale,
-        centered
+        centered,
+        grouping_column = NULL,
+        output_graphing_data = output_graphing_data,
+        grouping_variable = grouping_variable,
+        grouping_variable_value = curr_frame[[grouping_variable]][[1]],
+        nbins = nbins
       )
     } else {
       plot <- h2o.pd_plot(
@@ -2677,7 +2749,8 @@ h2o.pd_multi_plot <- function(object,
         target,
         row_index,
         max_levels,
-        binary_response_scale
+        binary_response_scale,
+        nbins = nbins
       )
     }
     subtitle <- paste0("grouping variable: ", grouping_variable, " = '", as.data.frame(curr_frame[[grouping_variable]])[1,1], "'")
@@ -2704,11 +2777,11 @@ is_binomial <- function(model) {
 }
 
 #' Plot Individual Conditional Expectation (ICE) for each decile
-#' 
-#' Individual Conditional Expectation (ICE) plot gives a graphical depiction of the marginal 
-#' effect of a variable on the response. ICE plots are similar to partial dependence plots (PDP); 
-#' PDP shows the average effect of a feature while ICE plot shows the effect for a single 
-#' instance. This function will plot the effect for each decile. In contrast to the PDP, 
+#'
+#' Individual Conditional Expectation (ICE) plot gives a graphical depiction of the marginal
+#' effect of a variable on the response. ICE plots are similar to partial dependence plots (PDP);
+#' PDP shows the average effect of a feature while ICE plot shows the effect for a single
+#' instance. This function will plot the effect for each decile. In contrast to the PDP,
 #' ICE plots can provide more insight, especially when there is stronger feature interaction.
 #' Also, the plot shows the original observation values marked by semi-transparent circle on each ICE line.
 #' Please note, that the score of the original observation value may differ from score value of underlying
@@ -2726,6 +2799,8 @@ is_binomial <- function(model) {
 #' @param centered A boolean whether to center curves around 0 at the first valid x value or not. Defaults to FALSE.
 #' @param grouping_column A feature column name to group the data and provide separate sets of plots
 #'                          by grouping feature values
+#' @param output_graphing_data A bool whether to output final graphing data to a frame. Defaults to FALSE.
+#' @param nbins A number of bins used. Defaults to 100.
 #'
 #' @return A ggplot2 object
 #' @examples
@@ -2762,8 +2837,13 @@ h2o.ice_plot <- function(model,
                          show_pdp = TRUE,
                          binary_response_scale = c("response", "logodds"),
                          centered = FALSE,
-                         grouping_column = NULL) {
-  return(pd_ice_common(model, newdata, column, target, NULL, max_levels, show_pdp, binary_response_scale, centered, TRUE, grouping_column))
+                         grouping_column = NULL,
+                         output_graphing_data = FALSE,
+                         nbins = 100,
+                         ...) {
+  kwargs <- list(...)
+  grouping_variable_value = kwargs$grouping_variable_value
+  return(pd_ice_common(model, newdata, column, target, NULL, max_levels, show_pdp, binary_response_scale, centered, TRUE, grouping_column, output_graphing_data, grouping_variable_value, nbins))
 }
 
 

@@ -970,7 +970,7 @@ def _append_graphing_data(graphing_data, data_to_append, original_observation_va
     if centered:
         col_header.append("centered_response")
         col_types.append(response_type)
-        centering_value = data_to_append
+        centering_value = data_to_append['mean_response'][0]
     if show_logoods:
         col_header.append("log(odds)")
         col_types.append(response_type)
@@ -993,12 +993,12 @@ def _append_graphing_data(graphing_data, data_to_append, original_observation_va
                                             cell_values=new_values, table_header=table_header)
 
 
-def _extract_graphing_data_values(data, frame_id, grouping_variable_value, original_obseervation, centering_value,
+def _extract_graphing_data_values(data, frame_id, grouping_variable_value, original_observation, centering_value,
                                   show_logodds, row_id):
     res_data = []
     column = data.col_header[0]
     for row in data.cell_values:
-        new_row = [frame_id, row_id, column, row[1], row[0], original_obseervation == row[0]]
+        new_row = [frame_id, row_id, column, row[1], row[0], original_observation == row[0]]
         if grouping_variable_value is not None:
             new_row.append(grouping_variable_value)
         if centering_value is not None:
