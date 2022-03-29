@@ -467,23 +467,28 @@ public final class DHistogram extends Iced<DHistogram> {
    * @return array of DHistograms objects 
    */
   public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey,
-                                         Constraints cs, boolean checkFloatSplits) {
+                                         Constraints cs, boolean checkFloatSplits, GlobalInteractionConstraints ics) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
-      Vec v = vecs[c];
-      final double minIn = v.isCategorical() ? 0 : Math.max(v.min(),-Double.MAX_VALUE); // inclusive vector min
-      final double maxIn = v.isCategorical() ? v.domain().length-1 : Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
-      final double maxEx = v.isCategorical() ? v.domain().length : find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
-      final long vlen = v.length();
-      final long nacnt = v.naCnt();
-      try {
-        byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
-        boolean intOpt = useIntOpt(v, parms, cs);
-        hs[c] = nacnt == vlen || v.isConst(true) ?
-            null : make(fr._names[c], nbins, type, minIn, maxEx, intOpt, nacnt > 0, seed, parms, globalQuantilesKey[c], cs, checkFloatSplits, null);
-      } catch(StepOutOfRangeException e) {
+      long vlen = 0;
+      if(ics != null && !ics.allowedInteractionContainsColumn(c)){
         hs[c] = null;
-        LOG.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
+      } else {
+        Vec v = vecs[c];
+        final double minIn = v.isCategorical() ? 0 : Math.max(v.min(), -Double.MAX_VALUE); // inclusive vector min
+        final double maxIn = v.isCategorical() ? v.domain().length - 1 : Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
+        final double maxEx = v.isCategorical() ? v.domain().length : find_maxEx(maxIn, v.isInt() ? 1 : 0);     // smallest exclusive max
+        vlen = v.length();
+        final long nacnt = v.naCnt();
+        try {
+          byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
+          boolean intOpt = useIntOpt(v, parms, cs);
+          hs[c] = nacnt == vlen || v.isConst(true) ?
+                  null : make(fr._names[c], nbins, type, minIn, maxEx, intOpt, nacnt > 0, seed, parms, globalQuantilesKey[c], cs, checkFloatSplits, null);
+        } catch (StepOutOfRangeException e) {
+          hs[c] = null;
+          LOG.warn("Column " + fr._names[c] + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
+        }
       }
       assert (hs[c] == null || vlen > 0);
     }

@@ -92,6 +92,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 interaction_constraints=None,  # type: Optional[List[List[str]]]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -305,6 +306,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        :param interaction_constraints: A set of allowed column interactions.
+               Defaults to ``None``.
+        :type interaction_constraints: List[List[str]], optional
         """
         super(H2OGradientBoostingEstimator, self).__init__()
         self._parms = {}
@@ -367,6 +371,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self.check_constant_response = check_constant_response
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
+        self.interaction_constraints = interaction_constraints
 
     @property
     def training_frame(self):
@@ -2137,5 +2142,19 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+    @property
+    def interaction_constraints(self):
+        """
+        A set of allowed column interactions.
+
+        Type: ``List[List[str]]``.
+        """
+        return self._parms.get("interaction_constraints")
+
+    @interaction_constraints.setter
+    def interaction_constraints(self, interaction_constraints):
+        assert_is_type(interaction_constraints, None, [[str]])
+        self._parms["interaction_constraints"] = interaction_constraints
 
 
