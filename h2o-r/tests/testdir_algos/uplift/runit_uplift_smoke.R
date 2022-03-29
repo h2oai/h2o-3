@@ -34,8 +34,8 @@ test.uplift <- function() {
   expected_values_aecu_gain <- c(160.6661, 194.0419, 153.8334)
   expected_values_aecu_lift <- c(0.2285321, 0.2765652, 0.2206898)
     
-  expected_values_auuc_norm_qini <- c(-2.065915, -2.674466, -1.897307)
-  expected_values_auuc_norm_gain <- c(-2.010038, -2.531569, -1.902846)
+  expected_values_auuc_norm_qini <- c(2.065915, 2.674466, 1.897307)
+  expected_values_auuc_norm_gain <- c(2.010038, 2.531569, 1.902846)
   expected_values_auuc_norm_lift <- c(0.2125203, 0.2605544, 0.2046642)
     
   for (i in 1:length(uplift_metrics)) {
@@ -119,7 +119,7 @@ test.uplift <- function() {
     expect_equal(auuc_gain_norm, expected_values_auuc_norm_gain[i], tolerance=1e-6)
     expect_equal(auuc_lift_norm, expected_values_auuc_norm_lift[i], tolerance=1e-6)
 
-      plot(perf)
+    plot(perf)
   }
 }
 
