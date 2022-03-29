@@ -219,7 +219,7 @@
 
   url = .h2o.calcBaseURL(conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
 
-  if (!getOption("prefer_RCurl", FALSE) && requireNamespace("curl"))
+  if (use.package("curl", version = "4.3.0", use = !getOption("prefer_RCurl", FALSE)))
     return(.h2o.doRawREST.with.curl(conn = conn,
                                     url = url,
                                     method = method,
