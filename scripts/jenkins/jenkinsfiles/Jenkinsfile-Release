@@ -540,7 +540,7 @@ EOF
                         steam: "steam"
                     ]
                     assemblies.each { assemblyName, imageType ->
-                        def BUILD_H2O_DOCKER_STAGE_NAME = "Build H2O Docker container (${imageType})")
+                        def BUILD_H2O_DOCKER_STAGE_NAME = "Build H2O Docker container (${imageType})"
                         stage(BUILD_H2O_DOCKER_STAGE_NAME) {
                             try {
                                 pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
