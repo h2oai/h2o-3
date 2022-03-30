@@ -531,89 +531,75 @@ EOF
                             pipelineContext.getBuildSummary().markStageFailed(this, HELM_STAGE_NAME)
                             e.printStackTrace()
                         }
-                    }
+                    }    
+                }
+
+                if (params.BUILD_H2O_DOCKER) {
+                    def assemblies = [
+                        main: "open-source",
+                        steam: "steam"
+                    ]
+                    assemblies.each { assemblyName, imageType ->
+                        def BUILD_H2O_DOCKER_STAGE_NAME = "Build H2O Docker container (${imageType})")
+                        stage(BUILD_H2O_DOCKER_STAGE_NAME) {
+                            try {
+                                pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                                pipelineContext.getBuildSummary().setStageDetails(this, BUILD_H2O_DOCKER_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                                withCredentials([
+                                      usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME'),
+                                      string(credentialsId: 'H2O_RED_HAT_REGISTRY_KEY', variable: 'H2O_RED_HAT_REGISTRY_KEY'),
+                                      string(credentialsId: 'H2O_RED_HAT_PID', variable: 'H2O_RED_HAT_PID'),
+                                      string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')
+                                      ]) {
+                                    env["H2O_ASSEMBLY"] = "main"
+                                    imageType = "open-source"
+                                    if (params.TEST_RELEASE) {
+                                        env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-${imageType}-k8s-test"
+                                        // Test release goes to opsh2oai namespace
+                                        env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                        // the most recent test build is always latest
+                                        env["DOCKER_IMAGE_TAG"] = env["BRANCH_NAME"] + "-" + currentBuild.number
     
-    /*
-                        if (params.BUILD_CONDA) {
-    
-                            final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
-                            final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { Double.parseDouble(it) >= 3.6 }
-    
-                            // build for all Python versions
-                            for (pyVersion in pyVersions) {
-                                def uploadToCondaStageName = "Build Py${pyVersion} Conda Packages"
-                                stage(uploadToCondaStageName) {
-    
-*/
-    
-    
-                    if (params.BUILD_H2O_DOCKER) {
-                        def assemblies = [
-                            main: "open-source",
-                            steam: "steam"
-                        ]
-                        assemblies.each { assemblyName, imageType ->
-                            def BUILD_H2O_DOCKER_STAGE_NAME = "Build H2O Docker container (${imageType})")
-                            stage(BUILD_H2O_DOCKER_STAGE_NAME) {
-                                try {
-                                    pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                                    pipelineContext.getBuildSummary().setStageDetails(this, BUILD_H2O_DOCKER_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                                    withCredentials([
-                                          usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME'),
-                                          string(credentialsId: 'H2O_RED_HAT_REGISTRY_KEY', variable: 'H2O_RED_HAT_REGISTRY_KEY'),
-                                          string(credentialsId: 'H2O_RED_HAT_PID', variable: 'H2O_RED_HAT_PID'),
-                                          string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')
-                                          ]) {
-                                        env["H2O_ASSEMBLY"] = "main"
-                                        imageType = "open-source"
-                                        if (params.TEST_RELEASE) {
-                                            env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-${imageType}-k8s-test"
-                                            // Test release goes to opsh2oai namespace
-                                            env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
-                                            // the most recent test build is always latest
-                                            env["DOCKER_IMAGE_TAG"] = env["BRANCH_NAME"] + "-" + currentBuild.number
-        
+                                        sh """
+                                          cd ${env.BUILD_NUMBER_DIR}
+                                          make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
+                                        """
+                                    } else {
+                                        env["DOCKER_IMAGE_NAME"] = "h2oai/h2o-${imageType}-k8s"
+                                        // Normal releases go to h2oai/ namespace
+                                        if (env.NIGHTLY_BUILD) {
+                                            // If the build is not a test build and is nightly, then re-write the latest nightly
+                                            env["DOCKER_IMAGE_TAG"] = "nightly"
                                             sh """
                                               cd ${env.BUILD_NUMBER_DIR}
-                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
+                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
                                             """
                                         } else {
-                                            env["DOCKER_IMAGE_NAME"] = "h2oai/h2o-${imageType}-k8s"
-                                            // Normal releases go to h2oai/ namespace
-                                            if (env.NIGHTLY_BUILD) {
-                                                // If the build is not a test build and is nightly, then re-write the latest nightly
-                                                env["DOCKER_IMAGE_TAG"] = "nightly"
+                                            env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
+                                            if (params.UPDATE_LATEST) {
+                                                // If the build is not a test build and is an ordinary release, update the version tag.
+                                                // The "latest" tag means stable. If UPDATE_LATEST is set to true, also update the latest docker tag.
+                                                env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                                sh """
+                                                  cd ${env.BUILD_NUMBER_DIR}
+                                                  make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
+                                                """
+                                            } else {
+                                                // If the build is not a test build and is an ordinary release, update the latest tag.
+                                                // The "latest" tag means stable. If UPDATE_LATEST is set to false do not update the latest tag and push only the version tag.
+                                                // Push to Red Hat either way
                                                 sh """
                                                   cd ${env.BUILD_NUMBER_DIR}
                                                   make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
                                                 """
-                                            } else {
-                                                env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
-                                                if (params.UPDATE_LATEST) {
-                                                    // If the build is not a test build and is an ordinary release, update the version tag.
-                                                    // The "latest" tag means stable. If UPDATE_LATEST is set to true, also update the latest docker tag.
-                                                    env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
-                                                    sh """
-                                                      cd ${env.BUILD_NUMBER_DIR}
-                                                      make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
-                                                    """
-                                                } else {
-                                                    // If the build is not a test build and is an ordinary release, update the latest tag.
-                                                    // The "latest" tag means stable. If UPDATE_LATEST is set to false do not update the latest tag and push only the version tag.
-                                                    // Push to Red Hat either way
-                                                    sh """
-                                                      cd ${env.BUILD_NUMBER_DIR}
-                                                      make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
-                                                    """
-                                                }
                                             }
                                         }
                                     }
-                                    pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_H2O_DOCKER_STAGE_NAME)
-                                } catch (Exception e) {
-                                    pipelineContext.getBuildSummary().markStageFailed(this, BUILD_H2O_DOCKER_STAGE_NAME)
-                                    e.printStackTrace()
                                 }
+                                pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_H2O_DOCKER_STAGE_NAME)
+                            } catch (Exception e) {
+                                pipelineContext.getBuildSummary().markStageFailed(this, BUILD_H2O_DOCKER_STAGE_NAME)
+                                e.printStackTrace()
                             }
                         }
                     }
@@ -664,7 +650,7 @@ private setReleaseJobProperties(final pipelineContext) {
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
             booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
-            booleanParam(defaultValue: true, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER')
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER')
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
