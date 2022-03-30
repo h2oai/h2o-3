@@ -262,4 +262,17 @@ public class ArrayUtils {
     return r;
   }
 
+  /**
+   *
+   * @param data vector (1 x n)
+   * @param p vector (1 x n)
+   * @param n vector (1 x n)
+   * @return Result of matrix operation (data - p) * n
+   */
+  public static double subAndMul(double[] data, double[] p, double[] n) {
+    double res = 0;
+    for (int col=0; col<data.length; col++)
+      res += (data[col] - p[col]) * n[col];
+    return res;
+  }
 }

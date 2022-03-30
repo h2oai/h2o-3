@@ -1,5 +1,6 @@
 package hex.tree.isoforextended.isolationtree;
 
+import water.AutoBuffer;
 import water.Iced;
 
 /**
@@ -15,4 +16,9 @@ public abstract class AbstractCompressedNode extends Iced<AbstractCompressedNode
     public int getHeight() {
         return _height;
     }
+
+    /**
+     * Serialize Node to the byte buffer
+     */
+    public abstract void toBytes(AutoBuffer ab);
 }

@@ -3,12 +3,14 @@ package hex.tree.isoforextended;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.tree.CompressedTree;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.Frame;
+
+import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.anomalyScore;
+import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.averagePathLengthOfUnsuccessfulSearch;
 
 /**
  * 
@@ -52,22 +54,11 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         }
         pathLength = pathLength / _output._ntrees;
         LOG.trace("Path length " + pathLength);
-        double anomalyScore = anomalyScore(pathLength);
+        double anomalyScore = anomalyScore(pathLength, _output._sample_size);
         LOG.trace("Anomaly score " + anomalyScore);
         preds[0] = anomalyScore;
         preds[1] = pathLength;
         return preds;
-    }
-
-    /**
-     * Anomaly score computation comes from Equation 1 in paper
-     *
-     * @param pathLength path from root to leaf
-     * @return anomaly score in range [0, 1]
-     */
-    private double anomalyScore(double pathLength) {
-        return Math.pow(2, -1 * (pathLength / 
-                CompressedIsolationTree.averagePathLengthOfUnsuccessfulSearch(_output._sample_size)));
     }
 
     public static class ExtendedIsolationForestParameters extends Model.Parameters {
@@ -156,5 +147,10 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
             ab.getKey(iTreeKey, fs);
         }
         return super.readAll_impl(ab,fs);
+    }
+
+    @Override
+    public ExtendedIsolationForestMojoWriter getMojo() {
+        return new ExtendedIsolationForestMojoWriter(this);
     }
 }
