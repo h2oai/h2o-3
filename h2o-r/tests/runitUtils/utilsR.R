@@ -410,6 +410,10 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
 doTest<-
 function(testDesc, test) {
     .print_curl_info()
+    Sys.setenv(
+      "_R_CHECK_LENGTH_1_LOGIC2_" = "verbose",
+      "_R_CHECK_LENGTH_1_CONDITION_" = "verbose"
+    )
     reporter <- MultiReporter$new(list(
         CheckReporter$new(),
         # SummaryReporter$new(),

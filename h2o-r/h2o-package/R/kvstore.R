@@ -260,11 +260,19 @@ h2o.getModel <- function(model_id) {
 
       if(type == "numeric" && class(value) == "list" && length(value) == 0) #Special case when using deep learning with 0 hidden units
         value <- 0
-      else if (type == "numeric" && value == "Infinity")
-        value <- Inf
-      else if (type == "numeric" && value == "-Infinity")
-        value <- -Inf
+      else if (type == "numeric") {
+        value[value == "Infinity"] <- Inf
+        value[value == "-Infinity"] <- -Inf
 
+        # if there is no loss of information for integers, convert to numeric
+        num_value <- as.numeric(value)
+        if (is.character(value) && all(
+          grepl(".", value, fixed = TRUE) | # Not an integer
+          !is.finite(num_value) | # Or not a finite number (NaN/Inf)
+          (-2^.Machine$double.digits <= num_value & # Or lies between the min and max fully representable number
+            num_value <= 2^.Machine$double.digits)))
+          value <- num_value
+      }
       # Parse frame information to a key
       if (type == "H2OFrame")
         value <- value$name

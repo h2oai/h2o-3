@@ -3003,7 +3003,7 @@ h2o.metric <- function(object, thresholds, metric, transform=NULL) {
           }
         }
       }
-    } else if (thresholds == 'max' && missing(metric)) {
+    } else if (all(thresholds == 'max') && missing(metric)) {
       metrics <- object@metrics$max_criteria_and_metric_scores
     } else {
       if (missing(metric)) {
@@ -3011,7 +3011,7 @@ h2o.metric <- function(object, thresholds, metric, transform=NULL) {
       } else {
         h2o_metric <- unlist(lapply(metric, function(m) ifelse(m %in% avail_metrics, m, ifelse(m %in% names(.h2o.metrics_aliases), .h2o.metrics_aliases[m], m))))
       }
-      if (thresholds == 'max') thresholds <- h2o.find_threshold_by_max_metric(object, h2o_metric)
+      if (all(thresholds == 'max')) thresholds <- h2o.find_threshold_by_max_metric(object, h2o_metric)
       metrics <- lapply(thresholds, function(t,o,m) h2o.find_row_by_threshold(o, t)[, m], object, h2o_metric)
       if (!missing(transform) && 'op' %in% names(transform)) {
         metrics <- lapply(metrics, transform$op)
@@ -3977,7 +3977,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
   if( is(thresholds, "list") ) thresholds_list = thresholds
     else {
       if( is.null(thresholds) ) thresholds_list = list()
-      else thresholds_list = list(thresholds)
+      else thresholds_list = as.list(thresholds)
   }
 
   # error check the metrics_list and thresholds_list
@@ -5043,14 +5043,12 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       legendColors <- c()
       legendLtys <- c()
       legendPchs <- c()
-      legendBtys <- c()
       for ( i in 1: length(targets)) {
         # target label
         legendTargets <- append(legendTargets, targets[i])
         legendColors <- append(legendColors, colors[i])
         legendLtys <- append(legendLtys, lty)
         legendPchs <- append(legendPchs, pch)
-        legendBtys <- append(legendBtys, "n")
         # target NAN line label
         if (has_NA[i]) {
           legendTargets <- append(legendTargets, paste(targets[i], " NAN"))
@@ -5058,9 +5056,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
           legendLtys <- append(legendLtys, 5)
         } 
         legendPchs <- append(legendPchs, NULL)
-        legendBtys <- append(legendBtys, NULL)
       }
-      legend("topright", legend=legendTargets, col=legendColors, lty=legendLtys, pch=legendPchs, bty=legendBtys, ncol=length(pps))
+      legend("topright", legend=legendTargets, col=legendColors, lty=legendLtys, pch=legendPchs, bty="n", ncol=length(pps))
     }  else {
       legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))
     }
