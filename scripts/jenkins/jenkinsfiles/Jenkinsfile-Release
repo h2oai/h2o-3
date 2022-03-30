@@ -551,8 +551,7 @@ EOF
                                       string(credentialsId: 'H2O_RED_HAT_PID', variable: 'H2O_RED_HAT_PID'),
                                       string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')
                                       ]) {
-                                    env["H2O_ASSEMBLY"] = "main"
-                                    imageType = "open-source"
+                                    env["H2O_ASSEMBLY"] = assemblyName
                                     if (params.TEST_RELEASE) {
                                         env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-${imageType}-k8s-test"
                                         // Test release goes to opsh2oai namespace
