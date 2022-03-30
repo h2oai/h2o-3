@@ -44,6 +44,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.ComputationState.extractSubRange;
@@ -262,7 +263,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               (g._model._output._submodels[g._model._output._selected_submodel_idx].lambda_value ==
                       alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].lambda_value);
       g._model._output._submodels = alignedSubmodels;
-      g._model._output.setSubmodelIdx(g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel, _parms);
+      g._model._output.setSubmodelIdx(g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel, g._parms);
     }
     return alphasAndLambdas;
   }
@@ -282,17 +283,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(_parms._max_runtime_secs != 0) _parms._max_runtime_secs = 0;
       double bestTestDev = Double.POSITIVE_INFINITY;
       double[] alphasAndLambdas = alignSubModelsAcrossCVModels(cvModelBuilders);
-      _xval_deviances = new double[alphasAndLambdas.length/2];
-      _xval_sd = new double[alphasAndLambdas.length/2];
+      int numOfSubmodels = alphasAndLambdas.length / 2;
       int lmin_max = 0;
-      for (int i = 0; i < cvModelBuilders.length; ++i) {  // find the highest best_submodel_idx we need to go through
-        GLM g = (GLM) cvModelBuilders[i];
-        lmin_max = Math.max(lmin_max, g._model._output._selected_submodel_idx);
-      }
-      int lidx = 0; // index into submodel
-      int bestId = 0;   // submodel indedx with best Deviance from xval
-      int cnt = 0;
-
       boolean lambdasSorted = _parms._lambda.length > 1;
       for (int i = 1; i < _parms._lambda.length; i++) {
         if (_parms._lambda[i] >= _parms._lambda[i - 1]) {
@@ -300,7 +292,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         }
       }
+      if (lambdasSorted) {
+        for (int i = 0; i < cvModelBuilders.length; ++i) {  // find the highest best_submodel_idx we need to go through
+          GLM g = (GLM) cvModelBuilders[i];
+          lmin_max = Math.max(lmin_max, g._model._output._selected_submodel_idx + 1); // lmin_max is exclusive upper bound
+        }
+      } else {
+        lmin_max = numOfSubmodels; // Number of submodels
+      }
 
+      _xval_deviances = new double[lmin_max];
+      _xval_sd = new double[lmin_max];
+
+      int lidx = 0; // index into submodel
+      int bestId = 0;   // submodel indedx with best Deviance from xval
+      int cnt = 0;
       for (; lidx < lmin_max; ++lidx) { // search through submodel with same lambda and alpha values
         double testDev = 0;
         double testDevSq = 0;
@@ -311,14 +317,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             try {
               g._insideCVCheck = true;
               g._state.setAlpha(alphasAndLambdas[lidx]); // recompute the submodel using the proper alpha value
-              g._driver.computeSubmodel(lidx, alphasAndLambdas[lidx + alphasAndLambdas.length/2], Double.NaN, Double.NaN);
+              g._driver.computeSubmodel(lidx, alphasAndLambdas[lidx + numOfSubmodels], Double.NaN, Double.NaN);
             } finally {
               g._insideCVCheck = false;
               g._state.setAlpha(alpha);
             }
           }
           assert alphasAndLambdas[lidx] == g._model._output._submodels[lidx].alpha_value &&
-                  alphasAndLambdas[lidx + alphasAndLambdas.length/2] == g._model._output._submodels[lidx].lambda_value;
+                  alphasAndLambdas[lidx + numOfSubmodels] == g._model._output._submodels[lidx].lambda_value;
 
           testDev += g._model._output._submodels[lidx].devianceValid;
           testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
@@ -347,20 +353,70 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (Key k : g._toRemove)
             Keyed.remove(k);
       }
-      _parms._lambda = Arrays.copyOf(_parms._lambda, lmin_max + 1);
-      _xval_deviances = Arrays.copyOf(_xval_deviances, lmin_max + 1);
-      _xval_sd = Arrays.copyOf(_xval_sd, lmin_max + 1);
+
+      if (_parms._alpha != null && _parms._alpha.length > 1) {
+        final int finalBestId = bestId;
+        // All the alphas are the same for the winning model
+        assert Arrays.stream(cvModelBuilders)
+                .mapToDouble(cv -> ((GLM) cv)._model._output._submodels[finalBestId].alpha_value)
+                .distinct()
+                .count() == 1;
+        _parms._alpha = new double[]{((GLM) cvModelBuilders[0])._model._output._submodels[finalBestId].alpha_value};
+
+        // Since we are considering just one alpha, we need to adapt the submodels, xval metrics and related indices
+        int selectedAlphaStart = Integer.MAX_VALUE;
+        int selectedAlphaEnd = -1;
+        for (int i = 0; i < numOfSubmodels; i++) {
+          if (alphasAndLambdas[i] == _parms._alpha[0]) {
+            selectedAlphaStart = Math.min(selectedAlphaStart, i);
+            selectedAlphaEnd = Math.max(selectedAlphaEnd, i);
+          }
+        }
+        selectedAlphaEnd ++; // Upper-bound is exclusive (e.g., in copyOfRange)
+
+        for (int i = 0; i < cvModelBuilders.length; i++) {
+          ((GLM)cvModelBuilders[i])._model._output._submodels = Arrays.copyOfRange(((GLM)cvModelBuilders[i])._model._output._submodels,
+                  selectedAlphaStart,
+                  selectedAlphaEnd);
+        }
+        bestId = bestId - selectedAlphaStart;
+        lmin_max = Math.min(lmin_max - selectedAlphaStart, selectedAlphaEnd - selectedAlphaStart);
+        _parms._lambda = IntStream.range(selectedAlphaStart, selectedAlphaEnd)
+                .mapToDouble(i -> alphasAndLambdas[numOfSubmodels + i])
+                .toArray();
+        _xval_deviances = Arrays.copyOfRange(_xval_deviances, selectedAlphaStart, selectedAlphaEnd);
+        _xval_sd = Arrays.copyOfRange(_xval_sd,  selectedAlphaStart, selectedAlphaEnd);
+      } else {
+        _parms._lambda = Arrays.copyOf(_parms._lambda, lmin_max + 1);
+        _xval_deviances = Arrays.copyOf(_xval_deviances, lmin_max + 1);
+        _xval_sd = Arrays.copyOf(_xval_sd, lmin_max + 1);
+      }
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
-        g._model._output.setSubmodelIdx(bestId, _parms);
+        g._model._output.setSubmodelIdx(bestId, g._parms);
       }
       double bestDev = _xval_deviances[bestId];
       double bestDev1se = bestDev + _xval_sd[bestId];
-      int bestId1se = bestId;
-      while (bestId1se > 0 && _xval_deviances[bestId1se - 1] <= bestDev1se)
-        --bestId1se;
+      final Submodel[] submodels = ((GLM)cvModelBuilders[0])._model._output._submodels;
+      Integer[] orderedLambdaIndices = IntStream
+              .range(0, numOfSubmodels)
+              .filter(i -> Double.isFinite(_xval_deviances[i]))
+              .boxed()
+              .sorted((a,b) -> (int) Math.signum(submodels[b].lambda_value - submodels[a].lambda_value))
+              .toArray(Integer[]::new);
+    int finalBestId1 = bestId;
+    int bestId1se = IntStream
+              .range(0, orderedLambdaIndices.length)
+              .filter(i -> orderedLambdaIndices[i] == finalBestId1)
+              .findFirst()
+              .orElse(orderedLambdaIndices.length - 1);
+
+      while (bestId1se > 0 && _xval_deviances[orderedLambdaIndices[bestId1se - 1]] <= bestDev1se)
+          --bestId1se;
+      // get the index into _parms.lambda/_xval_deviances etc
       _lambdaCVEstimate = ((GLM) cvModelBuilders[0])._model._output._submodels[bestId].lambda_value;
       _bestCVSubmodel = bestId;
+      bestId1se = orderedLambdaIndices[bestId1se];
       _model._output._lambda_1se = bestId1se; // submodel ide with bestDev+one sigma
       _model._output._selected_submodel_idx = bestId; // set best submodel id here
 
