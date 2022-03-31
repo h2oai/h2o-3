@@ -23,7 +23,6 @@ def h2oget_timezone():
     assert timezones.nrow == 467, "h2o.get_timezone() returns frame with wrong row number."
     assert timezones.ncol == 1, "h2o.get_timezone() returns frame with wrong column number."
 
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oget_timezone)
 else:
