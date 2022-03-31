@@ -1174,7 +1174,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public TwoDimTable _variable_importances;
     public VarImp _varimp;  // should contain the same content as standardized coefficients
     int _lambda_array_size; // store number of lambdas to iterate over
-    public int _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
+    public double _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
     public double _lambda_min = -1; // starting lambda value when lambda search is enabled
     public double _lambda_max = -1; // minimum lambda value calculated when lambda search is enabled
     public int _selected_lambda_idx; // lambda index with best deviance
@@ -1185,8 +1185,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double lambda_best(){return _submodels.length == 0 ? -1 : _submodels[_best_submodel_idx].lambda_value;}
     public double dispersion(){ return _dispersion;}
     public double alpha_best() { return _submodels.length == 0 ? -1 : _submodels[_selected_submodel_idx].alpha_value;}
-    public double lambda_1se(){return (_lambda_1se==-1 || _submodels.length==0 || _lambda_1se>=_submodels.length) ?
-            -1 : _submodels[_lambda_1se].lambda_value;}
+    public double lambda_1se(){
+      return _lambda_1se; // (_lambda_1se==-1 || _submodels.length==0 || _lambda_1se>=_submodels.length) ? -1 : _submodels[_lambda_1se].lambda_value;
+    }
     public int bestSubmodelIndex() { return _selected_submodel_idx; }
     public double lambda_selected(){
       return _submodels[_selected_submodel_idx].lambda_value;

@@ -119,7 +119,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override public boolean haveMojo() { return true; }
 
   private double _lambdaCVEstimate = Double.NaN; // lambda cross-validation estimate
-  private int _bestCVSubmodel;  // best submodel index found during cv
   private boolean _doInit = true;  // flag setting whether or not to run init
   private double [] _xval_deviances;  // store cross validation average deviance
   private double [] _xval_sd;         // store the standard deviation of cross-validation
@@ -285,7 +284,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double[] alphasAndLambdas = alignSubModelsAcrossCVModels(cvModelBuilders);
       int numOfSubmodels = alphasAndLambdas.length / 2;
       int lmin_max = 0;
-      boolean lambdasSorted = _parms._lambda.length > 1;
+      boolean lambdasSorted = _parms._lambda.length >= 1;
       for (int i = 1; i < _parms._lambda.length; i++) {
         if (_parms._lambda[i] >= _parms._lambda[i - 1]) {
           lambdasSorted = false;
@@ -354,71 +353,38 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             Keyed.remove(k);
       }
 
-      if (_parms._alpha != null && _parms._alpha.length > 1) {
-        final int finalBestId = bestId;
-        // All the alphas are the same for the winning model
-        assert Arrays.stream(cvModelBuilders)
-                .mapToDouble(cv -> ((GLM) cv)._model._output._submodels[finalBestId].alpha_value)
-                .distinct()
-                .count() == 1;
-        _parms._alpha = new double[]{((GLM) cvModelBuilders[0])._model._output._submodels[finalBestId].alpha_value};
-
-        // Since we are considering just one alpha, we need to adapt the submodels, xval metrics and related indices
-        int selectedAlphaStart = Integer.MAX_VALUE;
-        int selectedAlphaEnd = -1;
-        for (int i = 0; i < numOfSubmodels; i++) {
-          if (alphasAndLambdas[i] == _parms._alpha[0]) {
-            selectedAlphaStart = Math.min(selectedAlphaStart, i);
-            selectedAlphaEnd = Math.max(selectedAlphaEnd, i);
-          }
-        }
-        selectedAlphaEnd ++; // Upper-bound is exclusive (e.g., in copyOfRange)
-
-        for (int i = 0; i < cvModelBuilders.length; i++) {
-          ((GLM)cvModelBuilders[i])._model._output._submodels = Arrays.copyOfRange(((GLM)cvModelBuilders[i])._model._output._submodels,
-                  selectedAlphaStart,
-                  selectedAlphaEnd);
-        }
-        bestId = bestId - selectedAlphaStart;
-        lmin_max = Math.min(lmin_max - selectedAlphaStart, selectedAlphaEnd - selectedAlphaStart);
-        _parms._lambda = IntStream.range(selectedAlphaStart, selectedAlphaEnd)
-                .mapToDouble(i -> alphasAndLambdas[numOfSubmodels + i])
-                .toArray();
-        _xval_deviances = Arrays.copyOfRange(_xval_deviances, selectedAlphaStart, selectedAlphaEnd);
-        _xval_sd = Arrays.copyOfRange(_xval_sd,  selectedAlphaStart, selectedAlphaEnd);
-      } else {
-        _parms._lambda = Arrays.copyOf(_parms._lambda, lmin_max + 1);
-        _xval_deviances = Arrays.copyOf(_xval_deviances, lmin_max + 1);
-        _xval_sd = Arrays.copyOf(_xval_sd, lmin_max + 1);
-      }
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
         g._model._output.setSubmodelIdx(bestId, g._parms);
       }
+
       double bestDev = _xval_deviances[bestId];
       double bestDev1se = bestDev + _xval_sd[bestId];
-      final Submodel[] submodels = ((GLM)cvModelBuilders[0])._model._output._submodels;
+      int finalBestId = bestId;
       Integer[] orderedLambdaIndices = IntStream
-              .range(0, numOfSubmodels)
-              .filter(i -> Double.isFinite(_xval_deviances[i]))
-              .boxed()
-              .sorted((a,b) -> (int) Math.signum(submodels[b].lambda_value - submodels[a].lambda_value))
-              .toArray(Integer[]::new);
-    int finalBestId1 = bestId;
-    int bestId1se = IntStream
-              .range(0, orderedLambdaIndices.length)
-              .filter(i -> orderedLambdaIndices[i] == finalBestId1)
-              .findFirst()
-              .orElse(orderedLambdaIndices.length - 1);
+                .range(0, lmin_max)
+                .filter(i -> alphasAndLambdas[i] == alphasAndLambdas[finalBestId]) // get just the lambdas corresponding to the selected alpha
+                .boxed()
+                .sorted((a,b) -> (int) Math.signum(alphasAndLambdas[b+numOfSubmodels] - alphasAndLambdas[a+numOfSubmodels]))
+                .toArray(Integer[]::new);
+      int bestId1se = IntStream
+                .range(0, orderedLambdaIndices.length)
+                .filter(i -> orderedLambdaIndices[i] == finalBestId)
+                .findFirst()
+                .orElse(orderedLambdaIndices.length - 1);
 
       while (bestId1se > 0 && _xval_deviances[orderedLambdaIndices[bestId1se - 1]] <= bestDev1se)
           --bestId1se;
       // get the index into _parms.lambda/_xval_deviances etc
-      _lambdaCVEstimate = ((GLM) cvModelBuilders[0])._model._output._submodels[bestId].lambda_value;
-      _bestCVSubmodel = bestId;
+      _lambdaCVEstimate = alphasAndLambdas[numOfSubmodels + bestId];
       bestId1se = orderedLambdaIndices[bestId1se];
-      _model._output._lambda_1se = bestId1se; // submodel ide with bestDev+one sigma
-      _model._output._selected_submodel_idx = bestId; // set best submodel id here
+      _model._output._lambda_1se = alphasAndLambdas[numOfSubmodels + bestId1se]; // submodel ide with bestDev+one sigma
+
+      // set the final selected alpha and lambda
+      _parms._alpha = new double[] {alphasAndLambdas[bestId]};
+      _parms._lambda = new double[] {alphasAndLambdas[numOfSubmodels + bestId]};
+      _model._output._selected_submodel_idx = 0; // set best submodel id here
+
 
     if (_parms._generate_scoring_history)
       generateCVScoringHistory(cvModelBuilders);
@@ -2930,9 +2896,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
       if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate))
-        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel, _parms);  // reset best_submodel_idx to what xval has found
+        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = 0, _model._parms);  // reset best_submodel_idx to what xval has found
       else
-        _model._output.pickBestModel(_parms);
+        _model._output.pickBestModel(_model._parms);
       if (_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
         _model.setVcov(_vcov);
         _model.update(_job._key);
