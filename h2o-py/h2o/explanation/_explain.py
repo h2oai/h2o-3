@@ -1036,14 +1036,14 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
 
         encoded_col = tmp.columns[0]
         orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
-        orig_vals = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
+        orig_vals = _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model,
                                        frame, index, column, colors[i], percentile_string, factor_map, orig_value)
-        orig_row = orig_vals[0]
+        orig_row = NumpyFrame(orig_vals)
         if output_graphing_data:
             data = _append_graphing_data(data, pd_data, frame[index, column], frame.frame_id,
                                          not is_factor and centered, show_logodds, index, **kwargs)
-            if not is_factor or not frame[index, column] in data["simulated_x_value"]:
-                data = _append_graphing_data(data, orig_vals[1], frame[index, column], frame.frame_id,
+            if (not is_factor or not frame[index, column] in data["simulated_x_value"]) and not _isnan(frame[index, column]): #nan is already there
+                data = _append_graphing_data(data, orig_vals, frame[index, column], frame.frame_id,
                                              not is_factor and centered, show_logodds, index, **kwargs)
         if not _isnan(orig_value) or orig_value != '':
             tmp._data = np.append(tmp._data, orig_row._data, axis=0)
@@ -1554,9 +1554,10 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
     return result
 
 
-def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
+def _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model, frame,
                         index, column, color, percentile_string, factor_map, orig_value):
     PDP_RESULT_FACTOR_NAN_MARKER = '.missing(NA)'
+    tmp = NumpyFrame(pd_data)
     user_splits = dict()
     if _isnan(orig_value) or orig_value == "":
         if is_factor:
@@ -1566,9 +1567,16 @@ def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
         # orig_null_value = tmp.from_num_to_factor(encoded_col)[tmp[encoded_col][idx]] if is_factor else tmp[encoded_col][idx]
         orig_null_value = PDP_RESULT_FACTOR_NAN_MARKER if is_factor else np.nan
         percentile_string = "for " + percentile_string if percentile_string is not None else ""
-        msg = "Original observation of \"{}\" {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col, percentile_string, orig_null_value, tmp["mean_response"][idx])
+        msg = "Original observation of \"{}\" {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col,
+                                                                                                            percentile_string,
+                                                                                                            orig_null_value,
+                                                                                                            tmp[
+                                                                                                                "mean_response"][
+                                                                                                                idx])
         warnings.warn(msg)
-        return tmp
+        res_data = h2o.two_dim_table.H2OTwoDimTable(cell_values=[list(pd_data.cell_values[idx])],
+                                                    col_header=pd_data.col_header, col_types=pd_data.col_types)
+        return res_data
     else:
         user_splits[column] = [str(orig_value)] if is_factor else [orig_value]
         pp_table = model.partial_plot(
@@ -1585,7 +1593,7 @@ def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
             orig_tmp._data[0,0] = factor_map([orig_value])[0]
         plt.scatter(orig_tmp[encoded_col], orig_tmp["mean_response"],
                     color=[color], marker='o', s=150, alpha=0.5)
-        return [orig_tmp, pp_table]
+        return pp_table
 
 
 def ice_plot(
