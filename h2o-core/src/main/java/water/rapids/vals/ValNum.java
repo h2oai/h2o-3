@@ -15,6 +15,9 @@ public class ValNum extends Val {
   @Override public int type() { return NUM; }
   @Override public boolean isNum() { return true; }
   @Override public double getNum() { return _d; }
+  @Override public String getStr() {
+    return Double.isNaN(_d) ? null : super.getStr();
+  }
   @Override public String toString() { return String.valueOf(_d); }
 
   public void setNum(double d) {

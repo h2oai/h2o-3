@@ -1,5 +1,6 @@
 package water.util;
 
+import hex.genmodel.InMemoryMojoReaderBackend;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
@@ -619,6 +620,63 @@ public class VecUtils {
     }
 
     return newDomain;
+  }
+
+  public static class CollectDomainWeights extends MRTask<CollectDomainWeights> {
+    private final int _s;
+    // OUT
+    private double[] _d;
+
+    public CollectDomainWeights(int s) {
+      _s = s;
+    }
+
+    @Override
+    public void map(Chunk c, Chunk weights) {
+      _d = MemoryManager.malloc8d(_s + 1);
+      for (int row = 0; row < c._len; row++)
+        if (!c.isNA(row)) {
+          double weight = weights != null ? weights.atd(row) : 1;
+          int level = (int) c.at8(row);
+          _d[level] += weight;
+        }
+    }
+
+    @Override
+    public void map(Chunk c) {
+      map(c, (Chunk) null);
+    }
+
+    @Override
+    public void reduce(CollectDomainWeights mrt) { 
+      if (mrt._d != null) {
+        ArrayUtils.add(_d, mrt._d);
+      }
+    }
+  }
+
+  /**
+   * Collect the frequencies of each level in a categorical Vec.
+   * 
+   * @param vec categorical Vec
+   * @param weights optional weight Vec
+   * @return (weighted) frequencies of each level of the input Vec
+   */
+  public static double[] collectDomainWeights(final Vec vec, final Vec weights) {
+    if (!vec.isCategorical())
+      throw new IllegalArgumentException("Unable to collect domain on a non-categorical vector.");
+    final CollectDomainWeights cdw = new CollectDomainWeights((int) vec.max());
+    if (weights != null) {
+      if (weights.naCnt() > 0) {
+        throw new IllegalArgumentException("The vector of weights cannot contain any NAs");
+      }
+      if (weights.min() < 0) {
+        throw new IllegalArgumentException("Negative weights are not allowed.");
+      }
+      return cdw.doAll(vec, weights)._d;
+    } else {
+      return cdw.doAll(vec)._d;
+    }
   }
 
   public static void deleteVecs(Vec[] vs, int cnt) {
