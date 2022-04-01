@@ -952,9 +952,31 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
     plt.ylim(ylims)
 
 
+    """
+    Returns a table (H2OTwoDimTable) in output form required when output_graphing_data = True. Contains provided graphing_data 
+    table content expanded by data extracted from data_to_append table and formed to fit into graphing_data form 
+    (columns, types). Input tables output_graphing_data and graphing_data stay unchanged, returned expanded table is a 
+    new H2OTwoDimTable instance.
+    
+    If graphing_data is None, only data_to_append table content is extracted and together with other input information 
+    is formed into new output table of required form.
+    
+    If data_to_append is None, there is notheng to extract and append so original graphing_data is returned.
+    
+    :param graphing_data: H2OTwoDimTable, table to be returned when output_graphing_data = True
+    :param data_to_append: H2OTwoDimTable, table that contains new data to be extracted and appended to graphing_data in
+     the new resulting table
+    :param original_observation_value: original observation value of current ICE line
+    :param frame_id: string, identificator of sample on which current ICE line is being calculated
+    :param centered: boolean, whether centering is turned on/off for current ICE line calculation
+    :param show_logoods: boolean, whether logoods calculation is turned on/off for current ICE line
+    :param row_id: int, identification of the row of sample on which current ICE line is being calculated
+
+    :returns: H2OTwoDimTable table
+    """
 def _append_graphing_data(graphing_data, data_to_append, original_observation_value, frame_id, centered, show_logoods,
                           row_id, **kwargs):
-    grouping_variable_value = kwargs.get("grouping_variable_value", None)
+    grouping_variable_value = kwargs.get("grouping_variable_value")
     response_type = data_to_append.col_types[data_to_append.col_header.index("mean_response")]
     grouping_variable_type = "string" if type(grouping_variable_value) is str else "double" # todo test this
     bin_type = data_to_append.col_types[0]
@@ -1023,7 +1045,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
             plot=False,
             row_index=index,
             targets=target,
-            nbins=nbins if not is_factor else 1 + frame[column].nlevels()[0],
+            nbins=nbins if not is_factor else (1 + frame[column].nlevels()[0]),
             include_na=True
         )[0]
         tmp = NumpyFrame(pd_data)
@@ -1068,7 +1090,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
                 cols=[column],
                 plot=False,
                 targets=target,
-                nbins=nbins if not is_factor else 1 + frame[column].nlevels()[0]
+                nbins=nbins if not is_factor else (1 + frame[column].nlevels()[0])
             )[0]
         )
         encoded_col = tmp.columns[0]
@@ -1115,7 +1137,7 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
     color = plt.get_cmap(colormap)(0)
     data = model.partial_plot(frame, cols=[column], plot=False,
                               row_index=row_index, targets=target,
-                              nbins=nbins if not is_factor else 1 + frame[column].nlevels()[0])[0]
+                              nbins=nbins if not is_factor else (1 + frame[column].nlevels()[0]))[0]
     tmp = NumpyFrame(data)
     encoded_col = tmp.columns[0]
     response = _get_response(tmp["mean_response"], show_logodds)
