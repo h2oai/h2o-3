@@ -4944,6 +4944,34 @@ h2o.relevel <- function(x,y) {
   .newExpr("relevel", x, .quote(y))
 }
 
+#' Reorders levels of factor columns by the frequencies for the individual levels. 
+#'
+#' The levels of a factor are reordered so that the most frequency level is at level 0, 
+#' remaining levels are ordered from the second most frequent to the least frequent.
+#'
+#' @param x H2O frame with some factor columns
+#' @param weights_column optional name of weights column
+#' @return new reordered frame
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Convert iris dataset to an H2OFrame
+#' iris_hf <- as.h2o(iris)
+#' # Look at current ordering of the Species column levels
+#' h2o.levels(iris_hf["Species"])
+#' # "setosa"     "versicolor" "virginica" 
+#' # Change the reference level to "virginica"
+#' iris_hf["Species"] <- h2o.relevel_by_frequency(x = iris_hf["Species"])
+#' # Observe new ordering
+#' h2o.levels(iris_hf["Species"])
+#' # "virginica"  "versicolor" "setosa"
+#' }
+#' @export
+h2o.relevel_by_frequency <- function(x, weights_column=NULL) {
+  .newExpr("relevel.by.freq", x, ifelse(is.null(weights_column), NA, .quote(weights_column)))
+}
 
 #' Group and Apply by Column
 #'
