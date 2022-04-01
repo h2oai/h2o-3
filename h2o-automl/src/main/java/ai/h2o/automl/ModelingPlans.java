@@ -132,9 +132,7 @@ final class ModelingPlans {
                     ).toArray(Step[]::new),
                     {
                             new Step("monotonic", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
-//                            new Step("best_of_family_xgboost", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
                             new Step("best_of_family_gbm", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
-//                            new Step("all_xgboost", 7, DEFAULT_MODEL_TRAINING_WEIGHT),
                             new Step("all_gbm", 7, DEFAULT_MODEL_TRAINING_WEIGHT),
                             new Step("best_of_family_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
                             new Step("all_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
