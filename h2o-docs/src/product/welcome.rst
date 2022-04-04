@@ -949,6 +949,7 @@ First, a headless service must be created on Kubernetes:
   kind: Service
   metadata:
     name: h2o-service
+    namespace: default
   spec:
     type: ClusterIP
     clusterIP: None
@@ -980,7 +981,7 @@ We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/doc
   kind: StatefulSet
   metadata:
     name: h2o-stateful-set
-    namespace: h2o-statefulset
+    namespace: default
   spec:
     serviceName: h2o-service
     podManagementPolicy: "Parallel"
@@ -1005,7 +1006,7 @@ We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/doc
                 protocol: TCP
             env:
             - name: H2O_KUBERNETES_SERVICE_DNS
-              value: h2o-service.h2o-statefulset.svc.cluster.local
+              value: h2o-service.default.svc.cluster.local
             - name: H2O_NODE_LOOKUP_TIMEOUT
               value: '180'
             - name: H2O_NODE_EXPECTED_COUNT
@@ -1013,7 +1014,7 @@ We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/doc
 
 The environment variables used are described below:
 
-- ``H2O_KUBERNETES_SERVICE_DNS`` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the ``<service-name>.<project-name>.svc.cluster.local`` pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address. It must match the specifics of your Kubernetes implementation.
+- ``H2O_KUBERNETES_SERVICE_DNS`` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the ``<service-name>.<project-namespace>.svc.cluster.local`` pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address. It must match the specifics of your Kubernetes implementation.
 - ``H2O_NODE_LOOKUP_TIMEOUT`` - **[OPTIONAL]** Node lookup constraint. Specify the time before the node lookup times out.
 - ``H2O_NODE_EXPECTED_COUNT`` - **[OPTIONAL]** Node lookup constraint. This is the expected number of H2O pods to be discovered.
 - ``H2O_KUBERNETES_API_PORT`` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.
