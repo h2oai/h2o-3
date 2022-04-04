@@ -13,10 +13,7 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -143,7 +140,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
             List<Integer> validSubset = IntStream.rangeClosed(0, 6).boxed().collect(Collectors.toList());
             String[] predictorNames = new String[]{"CAPSULE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"};
             Frame[] trainingFrames1 = generateMaxRTrainingFrames(parms, predictorNames, null,
-                    currSubsetIndices, 0,validSubset); // trainingFrames with 1 predictors only
+                    currSubsetIndices, 0,validSubset, new HashSet<BitSet>()); // trainingFrames with 1 predictors only
             removeTrainingFrames(trainingFrames1);
             String[][] correctTrainCols1 = new String[][]{{"CAPSULE", "AGE"}, {"RACE", "AGE"},{"DPROS", "AGE"},
                     {"DCAPS", "AGE"},{"PSA", "AGE"},{"VOL", "AGE"},{"GLEASON", "AGE"}};
@@ -151,7 +148,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
             currSubsetIndices.add(0);
             validSubset.removeAll(currSubsetIndices);
             Frame[] trainingFrames2 = generateMaxRTrainingFrames(parms, predictorNames, null,
-                    currSubsetIndices, 1,validSubset); // trainingFrames with 2 predictors only
+                    currSubsetIndices, 1,validSubset, new HashSet<BitSet>()); // trainingFrames with 2 predictors only
             removeTrainingFrames(trainingFrames2);
             String[][] correctTrainCols2 = new String[][]{{"CAPSULE", "RACE", "AGE"}, {"CAPSULE", "DPROS", "AGE"}, 
                     {"CAPSULE", "DCAPS", "AGE"}, {"CAPSULE", "PSA", "AGE"}, {"CAPSULE", "VOL", "AGE"}, 
@@ -163,13 +160,13 @@ public class ModelSelectionMaxRTests extends TestUtil {
                     {"CAPSULE", "PSA", "DPROS", "AGE"}, {"CAPSULE", "PSA", "DCAPS", "AGE"}, 
                     {"CAPSULE", "PSA", "VOL", "AGE"}, {"CAPSULE", "PSA", "GLEASON", "AGE"}};
             Frame[] trainingFrames3 = generateMaxRTrainingFrames(parms, predictorNames, null,
-                    currSubsetIndices, 2,validSubset); // trainingFrames with 3 predictors only
+                    currSubsetIndices, 2,validSubset, new HashSet<BitSet>()); // trainingFrames with 3 predictors only
             removeTrainingFrames(trainingFrames3);
             assertCorrectTrainingFrames(trainingFrames3, correctTrainCols3);
             currSubsetIndices.add(6);
             validSubset.removeAll(currSubsetIndices);
             Frame[] trainingFrames4 = generateMaxRTrainingFrames(parms, predictorNames, null,
-                    currSubsetIndices, 2, validSubset); // trainingFrames with 3 predictors only
+                    currSubsetIndices, 2, validSubset, new HashSet<BitSet>()); // trainingFrames with 3 predictors only
             removeTrainingFrames(trainingFrames4);
             String[][] correctTrainCols4 = new String[][]{{"CAPSULE", "PSA", "GLEASON", "RACE", "AGE"}, 
                     {"CAPSULE", "PSA", "GLEASON", "DPROS", "AGE"}, {"CAPSULE", "PSA", "GLEASON", "DCAPS", "AGE"}, 
@@ -356,6 +353,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
         validSubset.removeAll(changedSubset);
         GLMModel bestR2Model = forwardStep(changedSubset, coefNames, newPredInd, validSubset, parms,
                 null, 0, null);
+        Scope.track_generic(bestR2Model);
         String[] modelCoefNames = bestR2Model._output.coefficientNames();
         assertArrayEquals(bestR2Coeff, modelCoefNames);
     }

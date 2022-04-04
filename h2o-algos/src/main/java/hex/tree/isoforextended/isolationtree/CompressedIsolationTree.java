@@ -1,10 +1,11 @@
 package hex.tree.isoforextended.isolationtree;
 
-import water.Iced;
+import water.AutoBuffer;
 import water.Key;
 import water.Keyed;
 import water.util.ArrayUtils;
-import water.util.MathUtils;
+
+import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.*;
 
 /**
  * IsolationTree structure with better memory performance. Store only the data that are needed for scoring.
@@ -20,14 +21,6 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
 
     public AbstractCompressedNode[] getNodes() {
         return  _nodes;
-    }
-
-    private int leftChildIndex(int i) {
-        return 2 * i + 1;
-    }
-
-    private int rightChildIndex(int i) {
-        return 2 * i + 2;
     }
 
     private CompressedNode compressedNode(AbstractCompressedNode node) {
@@ -70,16 +63,27 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
     }
 
     /**
-     * Gives the average path length of unsuccessful search in BST.
-     * Comes from Algorithm 3 (pathLength) and Equation 2 in paper
+     * The structure of the bytes is:
      *
-     * @param n number of elements
+     * sizeOfInternalArrays -> size of random slope and intercept (size of both is always equal)
+     * nodeNumber -> index of the node in the array, byte arrays always starts with the root and ends with some 
+     *               leaf. Null node is skipped.
+     * AbstractCompressedNode -> refer to implementations for the detail of byte array
+     *
+     * |sizeOfInternalArrays|nodeNumber|CompressedNode|nodeNumber|AbstractCompressedNode|....|nodeNumber|CompressedLeaf|
+     *
+     * @return CompressedIsolationTree serialized as array of bytes
      */
-    public static double averagePathLengthOfUnsuccessfulSearch(long n) {
-        if (n < 2)
-            return 0;
-        if (n == 2)
-            return 1;
-        return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2.0 * (n - 1.0)) / n;
+    public byte[] toBytes() {
+        AutoBuffer ab = new AutoBuffer();
+        assert _nodes[0] != null : "Tree is empty, there are zero nodes in the tree";
+        ab.put4(compressedNode(_nodes[0]).getN().length); // size of the internal arrays
+        for(int i = 0; i < _nodes.length; i++) {
+            if (_nodes[i] != null) {
+                ab.put4(i); // node number
+                _nodes[i].toBytes(ab);
+            }
+        }
+        return ab.bufClose();
     }
 }

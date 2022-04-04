@@ -113,7 +113,7 @@ Supported MOJOs
   :align: middle
 
 +---------------+------------+------------+
-| Algorithm     | Importable | Exportable |
+| Algorithm     | Exportable | Importable |
 +===============+============+============+
 | AutoML**      | |yes|      | |yes|      |
 +---------------+------------+------------+
@@ -148,7 +148,7 @@ Supported MOJOs
 | Isolation     | |yes|      | |yes|      |
 | Forest        |            |            |
 +---------------+------------+------------+
-| Extended      | |no|       | |no|       |
+| Extended      | |yes|      | |yes|      |
 | Isolation     |            |            |
 | Forest        |            |            |
 +---------------+------------+------------+

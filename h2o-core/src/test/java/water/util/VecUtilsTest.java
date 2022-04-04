@@ -5,10 +5,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import water.DKV;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+
+import java.util.Arrays;
 
 /**
  * Test VecUtils interface.
@@ -82,4 +85,24 @@ public class VecUtilsTest extends TestUtil {
       if (result != null) result.remove();
     }
   }
+
+  @Test
+  public void testCollectDomainWeights() {
+    try {
+      Scope.enter();
+      Frame frame = new TestFrameBuilder().withColNames("C1", "C2")
+              .withName("testFrame")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, new double[]{1, 0.5, 0, 3, 4})
+              .withDataForCol(1, new String[]{"a", "a", "b", "c", null})
+              .build();
+      Assert.assertNotNull(frame);
+
+      double[] weights = VecUtils.collectDomainWeights(frame.vec(1), frame.vec(0));
+      Assert.assertArrayEquals(new double[]{1.5, 0.0, 3.0}, weights, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }
