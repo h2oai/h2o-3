@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-Use this option to specify the maximum amount of seconds dedicated to the training of each individual model in the AutoML run. This option defaults to 0 (disabled). Note that setting this parameter can affect AutoML reproducibility.
+Use this option to specify the maximum amount of seconds dedicated to the training of each individual model in the AutoML run. This option defaults to 0 (disabled). Note that models constrained by a time budget are not guaranteed reproducible.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
