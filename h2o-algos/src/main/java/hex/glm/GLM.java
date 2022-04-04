@@ -119,6 +119,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override public boolean haveMojo() { return true; }
 
   private double _lambdaCVEstimate = Double.NaN; // lambda cross-validation estimate
+  private int _bestCVSubmodel;  // best submodel index found during cv
   private boolean _doInit = true;  // flag setting whether or not to run init
   private double [] _xval_deviances;  // store cross validation average deviance
   private double [] _xval_sd;         // store the standard deviation of cross-validation
@@ -381,10 +382,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _model._output._lambda_1se = alphasAndLambdas[numOfSubmodels + bestId1se]; // submodel ide with bestDev+one sigma
 
       // set the final selected alpha and lambda
-      _parms._alpha = new double[] {alphasAndLambdas[bestId]};
-      _parms._lambda = new double[] {alphasAndLambdas[numOfSubmodels + bestId]};
-      _model._output._selected_submodel_idx = 0; // set best submodel id here
-
+      _parms._alpha = new double[]{alphasAndLambdas[bestId]};
+      if (_parms._lambda_search) {
+        int newLminMax = 0;
+        int newBestId = 0;
+        for (int i = 0; i < lmin_max; i++) {
+          if (alphasAndLambdas[i] == _parms._alpha[0]) {
+            newLminMax++;
+            if (i < bestId) newBestId++;
+          }
+        }
+        _parms._lambda = Arrays.copyOf(_parms._lambda, newLminMax+1);
+        _model._output._selected_submodel_idx = newBestId;
+        _bestCVSubmodel = newBestId;
+        _xval_deviances = Arrays.copyOfRange(_xval_deviances, bestId-newBestId, lmin_max + 1);
+        _xval_sd = Arrays.copyOfRange(_xval_sd, bestId-newBestId, lmin_max + 1);
+      } else {
+        _parms._lambda = new double[]{alphasAndLambdas[numOfSubmodels + bestId]};
+        _model._output._selected_submodel_idx = 0; // set best submodel id here
+        _bestCVSubmodel = 0;
+      }
 
     if (_parms._generate_scoring_history)
       generateCVScoringHistory(cvModelBuilders);
@@ -2895,8 +2912,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
-      if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate))
-        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = 0, _model._parms);  // reset best_submodel_idx to what xval has found
+      if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate) && _bestCVSubmodel < _model._output._submodels.length)
+        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel, _model._parms);  // reset best_submodel_idx to what xval has found
       else
         _model._output.pickBestModel(_model._parms);
       if (_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
