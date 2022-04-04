@@ -152,7 +152,7 @@ NULL
 .h2o.processResponseWarnings <- function(res) {
   if(length(res$messages) != 0L){
     warn <- lapply(res$messages, function(y) {
-      if(class(y) == "list" && y$message_type == "WARN" )
+      if(is.list(y) && y$message_type == "WARN" )
         paste0(y$message, ".\n")
       else ""
     })
@@ -5406,7 +5406,7 @@ setMethod('show', 'H2ONode',
 
 print.H2ONode <- function(node){
   cat("Node ID", node@id, "\n\n")
-  if(class(node) == "H2OLeafNode"){
+  if (inherits(node, "H2OLeafNode")){
     cat("Terminal node. Prediction is", node@prediction)
     return()
   }

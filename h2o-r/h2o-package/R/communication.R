@@ -993,7 +993,7 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
   i <- 0
   while (i < 30) {
     rawResponse <- try(.h2o.doSafeGET(urlSuffix = myJobUrlSuffix, doValidation=!jobPollSuccess))
-    if(class(rawResponse) == "try-error" && jobPollSuccess){
+    if (inherits(rawResponse, "try-error") && jobPollSuccess){
       error_type <- attr(rawResponse,"condition")
       if (jobIsRecoverable) {
         print(sprintf("Job request failed %s, waiting for cluster to restart.", error_type$message))
@@ -1014,7 +1014,7 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
   }
 
   # If request is still errored, stop with last error
-  if(class(rawResponse) == "try-error") {
+  if(inherits(rawResponse, "try-error")) {
     stop(rawResponse)
   }
 

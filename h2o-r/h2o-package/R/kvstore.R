@@ -258,7 +258,7 @@ h2o.getModel <- function(model_id) {
       type    <- mapping$type
       scalar  <- mapping$scalar
 
-      if(type == "numeric" && class(value) == "list" && length(value) == 0) #Special case when using deep learning with 0 hidden units
+      if (type == "numeric" && inherits(value, "list") && length(value) == 0) #Special case when using deep learning with 0 hidden units
         value <- 0
       else if (type == "numeric") {
         value[value == "Infinity"] <- Inf
@@ -430,7 +430,7 @@ as.data.frame.H2OSegmentModels <- function(x, ...) {
 #' @export
 h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_name="") {
   
-  if (class(model) == "H2OAutoML") {
+  if (inherits(model, "H2OAutoML")) {
     model <- model@leader
   }
   
@@ -510,7 +510,7 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' @export
 h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="", filename="") {
   
-  if (class(model) == "H2OAutoML") {
+  if (inherits(model, "H2OAutoML")) {
     model <- model@leader
   }
 
