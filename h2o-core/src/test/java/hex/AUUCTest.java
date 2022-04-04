@@ -53,6 +53,20 @@ public class AUUCTest extends TestUtil {
         double resultAUUC = ArrayUtils.sum(causalMlGain)/(causalMlGain.length+1);
         assert auuc.auuc() - resultAUUC < 10e-10;
     }
+    
+    @Test
+    public void testAUUCNormalizedCompareCausalMl() {
+        double[] probs =  new double[]{0.1, -0.1, 0.2, 0.5, 0.55, 0.13, -0.2, 0.11, 0.3, 0.9};
+        double[] y =  new double[]     {0, 0, 0, 1, 1, 0, 0, 0, 1, 1};
+        double[] treatment =  new double[]{0, 0, 0, 0, 1, 1, 1, 1, 1, 1};
+        AUUC auuc = doAUUC(10, probs, y, treatment, AUUC.AUUCType.gain);
+
+        double[] causalMlGainNormalized = new double[]{0, 0, 0, 0, 1, 0.6, 0.28, 0.85333, 1.26, 1};
+        assert equalTwoArrays(causalMlGainNormalized, auuc.upliftNormalizedByType(AUUC.AUUCType.gain), 1e-2);
+        
+        double resultAUUCNormalized = ArrayUtils.sum(causalMlGainNormalized)/(causalMlGainNormalized.length+1);
+        assert auuc.auucNormalized() - resultAUUCNormalized < 10e-6;
+    }
 
     private static AUUC doAUUC(int nbins, double[] probs, double[] y, double[] treatment) {
         return doAUUC(nbins, probs, y, treatment, AUUC.AUUCType.AUTO);

@@ -120,6 +120,7 @@ test.uplift <- function() {
     expect_equal(auuc_lift_norm, expected_values_auuc_norm_lift[i], tolerance=1e-6)
 
     plot(perf)
+    plot(perf, normalize=TRUE)  
   }
 }
 

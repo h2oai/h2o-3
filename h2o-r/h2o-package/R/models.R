@@ -4475,32 +4475,41 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
 }
 
 #' @export
-plot.H2OBinomialUpliftMetrics <- function(x, metric="AUTO", main, ...) {
+plot.H2OBinomialUpliftMetrics <- function(x, metric="AUTO", normalize=FALSE, main, ...) {
     if(!metric %in% c("AUTO", "qini", "lift", "gain")) stop("metric must be 'AUTO', 'qini' or 'lift' or 'gain'")
     if (metric == "AUTO") metric = "qini"
     xaxis <- "Number Targeted"; yaxis = paste("Cumulative", metric)
     if(missing(main)) {
-        main <- paste("Cumulative Uplift Curve - ", metric)
+        if(normalize){
+          main <- paste("Cumulative Uplift Curve normalized - ", metric)
+        } else {
+          main <- paste("Cumulative Uplift Curve - ", metric)
+        }
         if(x@on_train) {
             main <- paste(main, "(on train)")
         } else if (x@on_valid) {
             main <- paste(main, "(on valid)")
         }
     }
-    metric.auuc <- h2o.auuc(x, metric)
-    main <- paste(main, "\nAUUC=", metric.auuc)
+    if(normalize){
+      metric.auuc <- h2o.auuc_normalized(x, metric)
+      ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, "_normalized", sep="")))
+      main <- paste(main, "\nAUUC normalized =", metric.auuc)  
+    } else {
+      metric.auuc <- h2o.auuc(x, metric)
+      ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, sep="")))
+      main <- paste(main, "\nAUUC=", metric.auuc)
+    }
     xdata <- x@metrics$thresholds_and_metric_scores$n
-    ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, sep="")))
     a <- ydata[length(ydata)-1] / xdata[length(xdata)-1]
     yrnd <- xdata * a
     graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(ydata, 0),max(ydata)), xlim=c(min(xdata),max(xdata)), type='l', lty=1, col='blue', lwd=2, panel.first = grid())
     graphics::lines(xdata, yrnd, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(yrnd, 0),max(yrnd)), xlim=c(min(xdata),max(xdata)), type='l', lty=2, col='black', lwd=2, panel.first = grid())        
-    if(metric == 'lift'){
+    if(metric == 'lift') {
         legend("topright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)  
     } else {
         legend("bottomright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)  
     }
-    
 }
 
 #' @export

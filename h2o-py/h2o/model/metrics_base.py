@@ -2168,7 +2168,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         return self._metric_json["aecu_table"]
 
-    def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="AUTO", normalized=False):
+    def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="AUTO", normalize=False):
         """
         Plot Uplift Curve. 
         
@@ -2177,7 +2177,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
             (number of observations and uplift values)
         :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
-        :param normalized If True, normalized values are ploted
+        :param normalize If True, normalized values are ploted
 
         :examples:
         
@@ -2210,7 +2210,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
             plt.ylabel('Cumulative '+metric)
             plt.xlabel('Number Targeted')
             rnd = self.uplift_random(metric)
-            if normalized:
+            if normalize:
                 plt.title('Cumulate Uplift Curve - '+metric+"\n"+r'Normalized AUUC={0:.4f}'.format(self.auuc_normalized(metric)))
                 uplift = self.uplift_normalized(metric)
                 if metric != "lift":
