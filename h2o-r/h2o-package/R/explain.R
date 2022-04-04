@@ -2801,6 +2801,7 @@ is_binomial <- function(model) {
 #'                          by grouping feature values
 #' @param output_graphing_data A bool whether to output final graphing data to a frame. Defaults to FALSE.
 #' @param nbins A number of bins used. Defaults to 100.
+#' @param ... Custom parameters.
 #'
 #' @return A ggplot2 object
 #' @examples
