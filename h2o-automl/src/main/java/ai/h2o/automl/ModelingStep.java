@@ -128,15 +128,29 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         _priorityGroup = priorityGroup;
         _weight = weight;
         _aml = autoML;
-        _description = provider+":"+id;
+        _description = provider+" "+id;
     }
-    
+
+    /**
+     * Each provider (usually one class) defining a collection of steps must have a unique name.
+     * @return the name of the provider (usually simply the name of an algo) defining this step. 
+     */
     public String getProvider() {
         return _provider;
     }
-    
+
+    /**
+     * @return the step identifier: should be unique inside its provider.
+     */
     public String getId() {
         return _id;
+    }
+
+    /**
+     * @return a string that identifies the step uniquely among all steps defined by all providers.
+     */
+    public String getGlobalId() {
+        return _provider+":"+_id;
     }
     
     public IAlgo getAlgo() {

@@ -270,6 +270,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(10);
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(100);
       autoMLBuildSpec.build_control.keep_cross_validation_models = true;  // to inspect CV models below
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(42);
 
       AutoML aml = Scope.track_generic(AutoML.startAutoML(autoMLBuildSpec, true));
       aml.get();
@@ -278,7 +279,7 @@ public class AutoMLTest extends water.TestUtil {
       // even when user also provides max_runtime_secs: in this case, the latter only acts as a global limit
       // and cancels the last training step.
       StepResultState[] steps = aml._stepsResults;
-      assertTrue( "shouldn't have managed to train all max_models", steps.length < autoMLBuildSpec.build_control.stopping_criteria.max_models());
+      assertTrue("shouldn't have managed to train all max_models", steps.length < autoMLBuildSpec.build_control.stopping_criteria.max_models());
       StepResultState lastStep = steps[steps.length - 1];
       assertTrue("last model training should have been cancelled", 
               lastStep.is(StepResultState.ResultStatus.cancelled)      // if timeout during model training
