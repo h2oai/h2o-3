@@ -141,7 +141,7 @@ Examples
 		rfit.train(training_frame=train, x=x, y=y)
 
 		# Retrieve the rule importance:
-		print(rfit._model_json['output']['rule_importance'])
+		print(rfit.rule_importance())
 
 		# Predict on the test data:
 		rfit.predict(test)
