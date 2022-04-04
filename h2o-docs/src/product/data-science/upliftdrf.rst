@@ -10,8 +10,9 @@ Uplift DRF can be applied in fields where we operate with two groups of subjects
 
 The current version of Uplift DRF is based on the implementation of DRF because the principle of training is similar to DRF. When given a set of data, Uplift DRF generates a forest of classification uplift trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. Classification take the average prediction over all of their trees to make a final prediction. (Note: For a categorical response column, Uplift DRF maps factors  (e.g. 'dog', 'cat', 'mouse) in lexicographic order to a name lookup array with integer indices (e.g. 'cat -> 0, 'dog' -> 1, 'mouse' -> 2.)
 
+
 Uplift DRF demo
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 Here is a `Jupyter notebook <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/uplift_random_forest_compare_causalml.ipynb>`__ where H2O Uplift DRF is compared to implementation Uplift RF from CausalML library.
 
 
@@ -34,6 +35,40 @@ where:
 In a tree node the result value for a split is sum :math:`metric(P, Q) + metric(1-P, 1-Q)`. For the split gain value, the result within the node is normalized using a gini coefficient (Eclidean or ChiSquared) or entropy (KL) for each distribution before and after the split.
 
 You can read more information about ``uplift_metric`` on parameter specification page: `uplift_metric <algo-params/uplift_metric.html>`__.
+
+Uplift tree and prediction
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tree-based algorithm means in every tree, it takes information about treatment/control group assignment and information about response directly into a decision about splitting a node. So there is only one tree for every class and both groups - no separate trees for treatment groups data and control groups data. 
+
+The uplift score is the criterion to make a decision similar to the Gini coefficient in the standard decision tree. Every leaf in a tree holds two predictions, which are calculated based on a distribution of response between treatment and control group observations:
+
+- :math:`TP_cl = (TY_cl + 1) / (T_cl + 2)`
+- :math:`CP_cl = (CY_cl + 1) / (C_cl + 2)`
+
+where:
+
+- :math:`cl` leaf `l` of a tree for class `c`
+- :math:`T_cl` how many observations in a leaf are from the treatment group (how many data rows in a leaf have ``treatment_column`` label == 1) 
+- :math:`C_cl` how many observations in a leaf are from the control group (how many data rows in the leaf have ``treatment_column`` label == 0)
+- :math:`TY1_cl` how many observations in a leaf are from the treatment group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 1 and ``response_column`` label == 1)
+- :math:`CY1_cl` how many observations in a leaf are from the control group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 0 and ``response_column`` label == 1)
+- :math:`TP_cl` treatment prediction of a leaf
+- :math:`CP_cl` control prediction of a leaf
+
+The uplift score for the leaf is calculated as difference between treatment prediction and control prediction:
+
+:math:`uplift_score_cl = TP_cl - CP_cl`
+
+Higher uplift score means more observations from treatment group respond to the offer than from control group. Which means offered treatment has positive effect. The uplift score can be negative, if more observations from control group respond to the offer without treatment.
+
+Final prediction is calculated in the same way as in DRF algorithm. Predictions for each observation is collect from all trees from an ensemble and mean prediction is returned. 
+
+When the ``predict`` method is called on test data the result frame has these columns:
+
+- ``uplift_predict``: result uplift prediction score, which is calculated as :math:`p_y1_ct1 - p_y1_ct0`
+- ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
+- ``p_y1_ct0``: probability the response is 1 if the row is from the control group
 
 Extremely Randomized Trees
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,6 +94,24 @@ Defining a Uplift DRF Model
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be only categorical (only binomial classification is currently supported).
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+
+-  `treatment_column <algo-params/treatment_column.html>`__: Specify the column which contains information about group dividing. The data must be categorical and have two categories: ``0`` means the observation is in control group and ``1`` means the observation is in treatment group.
+
+-  `uplift_metric <algo-params/uplift_metric.html>`__: The type of divergence distribution to select best split. Specify one of the following metrics:
+
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Uplift DRF, the algorithm will automatically perform ``KL`` metric.
+  - ``kl`` or ``KL``: Uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values).
+  - ``euclidean`` or ``Euclidean``: Symmetric and stable distribution (does not tend to infinity values).
+  - ``chi_squared`` or ``ChiSquared``: Euclidean divergence normalized by control group distribution. Asymmetric and also tends to infinity values (if control group distribution contains zero values).
+
+-  `auuc_type <algo-params/auuc_type.html>`__: The type of metric to calculate incremental uplift and then Area Under Uplift Curve (AUUC). Specify one of the following AUUC types:
+
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Uplift DRF, the algorithm will automatically perform ``qini`` type.
+  - ``qini`` or ``Qini`` 
+  - ``lift`` or ``Lift`` 
+  - ``gain`` or ``Gain``
+  
+-  `auuc_nbins <algo-params/auuc_nbins.html>`__: Specify number of bins in a histogram to calculate Area Under Uplift Curve (AUUC). This option defaults to -1 which means 1000.
 
 -  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Enable this option to score
    during each iteration of the model training. This option is defaults to false (not enabled).
@@ -157,24 +210,6 @@ Defining a Uplift DRF Model
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
 -  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. This option is defaults to false (not enabled).
-
--  `treatment_column <algo-params/treatment_column.html>`__: Specify the column which contains information about group dividing. The data must be categorical and have two categories: ``0`` means the observation is in control group and ``1`` means the observation is in treatment group.
-
--  `uplift_metric <algo-params/uplift_metric.html>`__: The type of divergence distribution to select best split. Specify one of the following metrics:
-
-  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Uplift DRF, the algorithm will automatically perform ``KL`` metric.
-  - ``kl`` or ``KL``: Uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values).
-  - ``euclidean`` or ``Euclidean``: Symmetric and stable distribution (does not tend to infinity values).
-  - ``chi_squared`` or ``ChiSquared``: Euclidean divergence normalized by control group distribution. Asymmetric and also tends to infinity values (if control group distribution contains zero values).
-
-- `auuc_type <algo-params/auuc_type.html>`__: The type of metric to calculate incremental uplift and then Area Under Uplift Curve (AUUC). Specify one of the following AUUC types:
-
-  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Uplift DRF, the algorithm will automatically perform ``qini`` type.
-  - ``qini`` or ``Qini`` 
-  - ``lift`` or ``Lift`` 
-  - ``gain`` or ``Gain``
-  
-- `auuc_nbins <algo-params/auuc_nbins.html>`__: Specify number of bins in a histogram to calculate Area Under Uplift Curve (AUUC). This option defaults to -1 which means 1000. 
 
 
 Leaf Node Assignment 
