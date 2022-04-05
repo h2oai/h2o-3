@@ -2357,9 +2357,9 @@ h2o.residual_analysis_plot <- function(model, newdata) {
     y <- model@allparameters$y
 
     predictions <- stats::predict(model, newdata)
-    newdata[["residuals"]] <- predictions[["predict"]] - newdata[[y]]
+    newdata[["residuals"]] <- newdata[[y]] - predictions[["predict"]]
     predictions <- as.data.frame(predictions[["predict"]])
-    predictions["residuals"] <- predictions[["predict"]] - as.data.frame(newdata[[y]])[[y]]
+    predictions["residuals"] <- as.data.frame(newdata[[y]])[[y]] - predictions[["predict"]]
     p <- ggplot2::ggplot(ggplot2::aes(.data$predict, .data$residuals), data = predictions) +
       ggplot2::geom_point(alpha = 0.2) +
       ggplot2::geom_smooth(method = "lm", formula = y ~ x) +
