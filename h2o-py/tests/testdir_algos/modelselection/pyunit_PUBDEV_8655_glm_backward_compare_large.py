@@ -9,7 +9,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 # test to find out why maxr is slow
 def test_glm_backward_compare():
-    tst_data = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/backwardBinomial200C50KRows.csv"))
+    tst_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/model_selection/backwardBinomial200C50KRows.csv")
     predictors = tst_data.columns[0:-1]
     response_col = 'response'
     weight = 'wt'
