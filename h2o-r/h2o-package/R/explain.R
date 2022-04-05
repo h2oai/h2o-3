@@ -2843,7 +2843,7 @@ h2o.ice_plot <- function(model,
                          nbins = 100,
                          ...) {
   kwargs <- list(...)
-  grouping_variable_value = kwargs$grouping_variable_value
+  grouping_variable_value <- kwargs[['grouping_variable_value']]
   return(pd_ice_common(model, newdata, column, target, NULL, max_levels, show_pdp, binary_response_scale, centered, TRUE, grouping_column, output_graphing_data, grouping_variable_value, nbins))
 }
 

@@ -1129,7 +1129,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
     plt.tight_layout(rect=[0, 0, 0.85, 1])
     fig = plt.gcf()
-    return [fig, data]
+    return fig, data
 
 
 def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index,
@@ -1184,7 +1184,7 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
     plt.tight_layout()
     fig = plt.gcf()
-    return [fig, data if output_graphing_data else None]
+    return fig, data if output_graphing_data else None
 
 def pd_ice_common(
         model,  # type: h2o.model.model_base.ModelBase
@@ -1230,6 +1230,10 @@ def pd_ice_common(
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     """
+    for kwarg in kwargs:
+        if kwarg not in ['grouping_variable_value', 'group_label']:
+            raise TypeError('Unknown keyword argument:', kwarg)
+
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
 
     if frame.type(column) == "string":
@@ -1552,7 +1556,8 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
                 grouping_column=None,
                 output_graphing_data=output_graphing_data,
                 nbins=nbins,
-                **{'group_label':group_label, 'grouping_variable_value':curr_category}
+                group_label=group_label,
+                grouping_variable_value=curr_category
             )
         else:
             plot = pd_plot(
@@ -1569,7 +1574,8 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
                 grouping_column=None,
                 output_graphing_data=output_graphing_data,
                 nbins=nbins,
-                **{'group_label':group_label, 'grouping_variable_value':curr_category}
+                group_label=group_label,
+                grouping_variable_value=curr_category
             )
         result.append(plot)
         h2o.remove(curr_frame.key, False)
@@ -1592,9 +1598,7 @@ def _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model, fra
         msg = "Original observation of \"{}\" {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col,
                                                                                                             percentile_string,
                                                                                                             orig_null_value,
-                                                                                                            tmp[
-                                                                                                                "mean_response"][
-                                                                                                                idx])
+                                                                                                            tmp["mean_response"][idx])
         warnings.warn(msg)
         res_data = h2o.two_dim_table.H2OTwoDimTable(cell_values=[list(pd_data.cell_values[idx])],
                                                     col_header=pd_data.col_header, col_types=pd_data.col_types)
