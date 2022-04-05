@@ -1,5 +1,6 @@
 package water.persist;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -15,6 +16,7 @@ import water.util.FileUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Properties;
 
 import static junit.framework.TestCase.*;
 
@@ -88,6 +90,19 @@ public class PersistHdfsTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+  
+  @Test
+  public void testConfigureFromProperties() {
+    Configuration conf = new Configuration();
+    Properties props = new Properties();
+    props.setProperty("boolean_property", "true");
+    props.setProperty("integer_property", "11");
+
+    PersistHdfs.configureFromProperties(conf, props);
+
+    assertTrue(conf.getBoolean("boolean_property", false));
+    assertEquals(11, conf.getInt("integer_property", 42));
   }
   
 }
