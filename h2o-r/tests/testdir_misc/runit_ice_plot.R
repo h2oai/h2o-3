@@ -23,8 +23,13 @@ test_original_values <- function() {
   cols_to_test <- names(col_types[!duplicated(col_types)])
 
   for (col in cols_to_test) {
-    if (col != "name")
+    if (col != "name") {
       expect_ggplot(h2o.ice_plot(gbm1, train, col))
+     output_data_result <- h2o.ice_plot(gbm1, train, col, output_graphing_data = TRUE)
+      expect_ggplot(output_data_result$figure)
+      expect_true("data.frame" %in% class(output_data_result$graphing_data))
+  }
+
   }
   # for (col in cols_to_test) {
   #   if (col != "name") # name is string colum -> not supported
@@ -49,6 +54,9 @@ test_original_values <- function() {
 
   for (col in cols_to_test) {
     expect_ggplot(h2o.ice_plot(gbm2, train, col))
+    output_data_result <- h2o.ice_plot(gbm2, train, col, output_graphing_data = TRUE)
+    expect_ggplot(output_data_result$figure)
+    expect_true("data.frame" %in% class(output_data_result$graphing_data))
   }
   # for (col in cols_to_test) {
   #   p = h2o.ice_plot(gbm2, train, col)#, show_logodds=TRUE)
@@ -72,6 +80,9 @@ test_original_values <- function() {
 
   for (col in cols_to_test) {
      expect_ggplot(h2o.ice_plot(gbm3, train, col, target = "setosa"))
+     output_data_result <- h2o.ice_plot(gbm3, train, col, target = "setosa" ,output_graphing_data = TRUE)
+     expect_ggplot(output_data_result$figure)
+     expect_true("data.frame" %in% class(output_data_result$graphing_data))
   }
   # for (col in cols_to_test) {
   #   p = h2o.ice_plot(gbm3, train, col, target = "setosa")

@@ -9,6 +9,10 @@ test.relevel_by_freq <- function() {
   iris_releveled_hf <- h2o.relevel_by_frequency(x = iris_hf)
   expect_equal(c("virginica", "versicolor", "setosa"), h2o.levels(iris_releveled_hf["Species"]))
 
+  # move only the most frequent level
+  iris_top1_hf <- h2o.relevel_by_frequency(x = iris_hf, top_n = 1)
+  expect_equal(c("virginica", "setosa", "versicolor"), h2o.levels(iris_top1_hf["Species"]))
+
   # weighted reorder
   iris_releveled_hf <- h2o.relevel_by_frequency(x = iris_hf, weights_column="Sepal.Width")
   expect_equal(c("setosa", "virginica", "versicolor"), h2o.levels(iris_releveled_hf["Species"]))

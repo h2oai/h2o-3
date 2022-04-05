@@ -386,7 +386,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       return new Word2VecModelInfo(params, wordCounts);
     }
 
-    private static <T extends Keyed> Key<T> publish(Keyed<T> keyed) {
+    private static <T extends Keyed<T>> Key<T> publish(T keyed) {
       Scope.track_generic(keyed);
       DKV.put(keyed);
       return keyed._key;
