@@ -135,15 +135,19 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             level = API.Level.secondary)
     public long seed;
 
-    @API(help = "Maximum number of models to build (optional).",
+    @API(help = "Maximum number of models to build (optional)." +
+            " Always set this parameter to ensure AutoML reproducibility: all models are then trained until convergence and none is constrained by a time budget.",
             level = API.Level.secondary)
     public int max_models;
 
-    @API(help = "This argument specifies the maximum time that the AutoML process will run for. If neither max_runtime_secs nor max_models are specified by the user, then max_runtime_secs defaults to 3600 seconds (1 hour).",
+    @API(help = "This argument specifies the maximum time that the AutoML process will run for." +
+            " If both max_runtime_secs and max_models are specified, then the AutoML run will stop as soon as it hits either of these limits." +
+            " If neither max_runtime_secs nor max_models are specified, then max_runtime_secs defaults to 3600 seconds (1 hour).",
             level = API.Level.secondary)
     public double max_runtime_secs;
 
-    @API(help = "Maximum time to spend on each individual model (optional).",
+    @API(help = "Maximum time to spend on each individual model (optional)." +
+            " Note that models constrained by a time budget are not guaranteed reproducible.",
             level = API.Level.secondary)
     public double max_runtime_secs_per_model;
 

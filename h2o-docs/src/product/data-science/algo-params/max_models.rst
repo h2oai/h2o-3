@@ -8,12 +8,14 @@ Description
 ~~~~~~~~~~~
 
 Use this option to specify the maximum number of models to build in the AutoML run, excluding the Stacked Ensemble models. This option defaults to Null/None.
+This option should systematically be set if AutoML reproducibility is needed: all models are then trained until convergence and none is constrained by a time budget.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `max_runtime_secs <max_runtime_secs.html>`__
 - `max_runtime_secs_per_model <max_runtime_secs_per_model.html>`__
+- `seed <seed.html>`__
 
 Example
 ~~~~~~~

@@ -130,13 +130,27 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         _aml = autoML;
         _description = provider+" "+id;
     }
-    
+
+    /**
+     * Each provider (usually one class) defining a collection of steps must have a unique name.
+     * @return the name of the provider (usually simply the name of an algo) defining this step. 
+     */
     public String getProvider() {
         return _provider;
     }
-    
+
+    /**
+     * @return the step identifier: should be unique inside its provider.
+     */
     public String getId() {
         return _id;
+    }
+
+    /**
+     * @return a string that identifies the step uniquely among all steps defined by all providers.
+     */
+    public String getGlobalId() {
+        return _provider+":"+_id;
     }
     
     public IAlgo getAlgo() {
@@ -157,6 +171,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     
     public boolean ignores(AutoML.Constraint constraint) {
         return ArrayUtils.contains(_ignoredConstraints, constraint);
+    }
+    
+    public boolean limitModelTrainingTime() {
+      // if max_models is used, then the global time limit should have no impact on model training budget due to reproducibility concerns.
+      return !ignores(AutoML.Constraint.TIMEOUT) && aml().getBuildSpec().build_control.stopping_criteria.max_models() == 0;
     }
 
     /**
@@ -479,17 +498,16 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setCustomParams(parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
-            if (ignores(AutoML.Constraint.TIMEOUT)) {
-                parms._max_runtime_secs = 0;
-            } else {
+            if (limitModelTrainingTime()) {
                 Work work = getAllocatedWork();
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() / 1e3; // legacy
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, isDefaultModel) / 1e3; //PUBDEV-7595
                 double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3; // Models from a priority group + SEs
-                parms._max_runtime_secs = parms._max_runtime_secs == 0
-                        ? maxAssignedTimeSecs
+                parms._max_runtime_secs = parms._max_runtime_secs == 0 ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
+            } else {
+              parms._max_runtime_secs = 0;
             }
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
             aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
@@ -588,9 +606,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
             Work work = getAllocatedWork();
             // for time limit, this is allocated in proportion of the entire work budget.
-            double maxAssignedTimeSecs = ignores(AutoML.Constraint.TIMEOUT)
-                    ? 0
-                    : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3;
+            double maxAssignedTimeSecs = limitModelTrainingTime() 
+                    ? aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3
+                    : 0;
             // SE predicate can be removed if/when we decide to include SEs in the max_models limit
             // for models limit, this is not assigned in the same proportion as for time,
             // as the exploitation phase is not supposed to "add" models but just to replace some by better ones,
@@ -676,9 +694,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Job<Models> job = new Job<>(key, Models.class.getName(), _description);
             Work work = getAllocatedWork();
 
-            double maxAssignedTimeSecs = ignores(AutoML.Constraint.TIMEOUT)
-                    ? 0
-                    : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
+            double maxAssignedTimeSecs = limitModelTrainingTime()
+                    ? aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3
+                    : 0;
 
             aml().eventLog().debug(Stage.ModelTraining, maxAssignedTimeSecs == 0
                     ? "No time limitation for "+key
