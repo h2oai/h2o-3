@@ -13,6 +13,7 @@ def test_modelselection_backward_gaussian():
     eliminated_p_values = [0.6702, 0.6663, 0.0157, 0.0026, 0.0002]
     d = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/model_selection/backwardBinomial200C50KRowsWeighted.csv"))
     my_y = "response"
+    d[my_y] = d[my_y].asfactor()
     my_x = d.names
     my_x.remove(my_y)
     my_x.remove("weight")

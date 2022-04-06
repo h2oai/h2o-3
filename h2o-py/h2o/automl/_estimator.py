@@ -170,16 +170,19 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Requires ``balance_classes``.
             Defaults to ``5.0``.
         :param int max_runtime_secs: Specify the maximum time that the AutoML process will run for.
-            If neither ``max_runtime_secs`` nor ``max_models`` are specified by the user, then ``max_runtime_secs`` dynamically
+            If both ``max_runtime_secs`` and ``max_models`` are specified, then the AutoML run will stop as soon as it hits either of these limits.
+            If neither ``max_runtime_secs`` nor ``max_models`` are specified, then ``max_runtime_secs`` dynamically
             defaults to 3600 seconds (1 hour). Otherwise, defaults to ``0`` (no limit).
         :param int max_runtime_secs_per_model: Controls the max time the AutoML run will dedicate to each individual model.
             Defaults to ``0`` (disabled: no time limit).
+            Note that models constrained by a time budget are not guaranteed reproducible.
         :param int max_models: Specify the maximum number of models to build in an AutoML run, excluding the Stacked Ensemble models.
             Defaults to ``None`` (disabled: no limitation).
+            Always set this parameter to ensure AutoML reproducibility: all models are then trained until convergence and none is constrained by a time budget.
         :param Union[str, dict] distribution: Distribution function used by algorithms that support it; other algorithms
             use their defaults.  Possible values: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
             "tweedie", "laplace", "quantile", "huber", "custom", and for parameterized distributions dictionary form is
-            used to specify the parameter, e.g., ``dict(distribution="tweedie", tweedie_power=1.5)``.
+            used to specify the parameter, e.g., ``dict(type="tweedie", tweedie_power=1.5)``.
             Defaults to ``AUTO``.
         :param str stopping_metric: Specifies the metric to use for early stopping. 
             The available options are:

@@ -27,6 +27,11 @@ public class ModelMetricsSupervised extends ModelMetrics {
   abstract public static class MetricBuilderSupervised<T extends MetricBuilderSupervised<T>> extends MetricBuilder<T> {
     protected final String[] _domain;
     protected final int _nclasses;
+    
+    public MetricBuilderSupervised() {
+      _domain = null;
+      _nclasses = -1;
+    }
 
     public MetricBuilderSupervised(int nclasses, String[] domain) {
       _nclasses = nclasses;

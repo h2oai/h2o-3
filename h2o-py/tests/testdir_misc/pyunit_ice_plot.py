@@ -13,6 +13,7 @@ from tests import pyunit_utils
 from h2o.estimators import *
 from h2o.explanation._explain import *
 from h2o.explanation._explain import _handle_orig_values, _factor_mapper
+from h2o.two_dim_table import H2OTwoDimTable
 
 
 def test_original_values():
@@ -69,8 +70,7 @@ def test_handle_orig_values():
                     target = [targets[test_id]]
                 else:
                     target = None
-                tmp = NumpyFrame(
-                    gbm.partial_plot(
+                pp_data = gbm.partial_plot(
                         frame,
                         cols=[column],
                         plot=False,
@@ -79,10 +79,11 @@ def test_handle_orig_values():
                         nbins=100 if not is_factor else 1 + frame[column].nlevels()[0],
                         include_na=True
                     )[0]
-                )
-                encoded_col = tmp.columns[0]
-                orig_value_prediction = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, gbm,
-                                                            frame, index, column, colors[i], percentile_string)
+                encoded_col = pp_data.col_header[0]
+                factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column)) if is_factor else None
+                orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
+                orig_value_prediction = NumpyFrame(_handle_orig_values(is_factor, pp_data, encoded_col, plt, target, gbm,
+                                                            frame, index, column, colors[i], percentile_string, factor_map, orig_value))
 
                 if (is_factor and math.isnan(factor_map([frame[index, column]])[0])) or (not is_factor and math.isnan(frame[index, column])):
                     orig_test_value = orig_value_prediction["mean_response"][orig_value_prediction.nrow - 1]
@@ -114,37 +115,12 @@ def _get_cols_to_test(train, y):
 def _assert_pyplot_was_produced(cols_to_test, model, train, target=None):
     for col in cols_to_test:
         if target is None:
-            assert isinstance(model.ice_plot(train, col).figure(), matplotlib.pyplot.Figure)
+            ice_plot_result = model.ice_plot(train, col, output_graphing_data=True)
         else:
-            assert isinstance(model.ice_plot(train, col, target=target).figure(), matplotlib.pyplot.Figure)
+            ice_plot_result = model.ice_plot(train, col, target=target, output_graphing_data=True)
+        assert isinstance(ice_plot_result.figure(), matplotlib.pyplot.Figure)
+        assert isinstance(ice_plot_result, H2OTwoDimTable)
     matplotlib.pyplot.close("all")
-
-
-def test_display_mode():
-    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
-    y = "fare"
-
-    # get at most one column from each type
-    cols_to_test = []
-    for col, typ in train.types.items():
-        for ctt in cols_to_test:
-            if typ == train.types[ctt] or col == y:
-                break
-        else:
-            cols_to_test.append(col)
-
-    gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model")
-    gbm.train(y=y, training_frame=train)
-
-    assert isinstance(gbm.ice_plot(train, 'title').figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'title', show_pdp=True).figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'title', show_pdp=False).figure(), matplotlib.pyplot.Figure)
-
-    assert isinstance(gbm.ice_plot(train, 'age').figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'age', show_pdp=True).figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'age', show_pdp=False).figure(), matplotlib.pyplot.Figure)
-    matplotlib.pyplot.close("all")
-
 
 
 def test_display_mode():
@@ -153,6 +129,10 @@ def test_display_mode():
 
     gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model")
     gbm.train(y=y, training_frame=train)
+
+    ice_plot_result = gbm.ice_plot(train, 'body', output_graphing_data=True)
+    assert isinstance(ice_plot_result.figure(), matplotlib.pyplot.Figure)
+    assert isinstance(ice_plot_result, H2OTwoDimTable)
 
     assert isinstance(gbm.ice_plot(train, 'title').figure(), matplotlib.pyplot.Figure)
     assert isinstance(gbm.ice_plot(train, 'title', show_pdp=True).figure(), matplotlib.pyplot.Figure)
@@ -199,11 +179,12 @@ def _get_cols_to_test(train, y):
 def _assert_list_of_plots_was_produced(cols_to_test, model, train, target, grouping_variable):
     for col in cols_to_test:
         if target is None:
-            ice_plot_result = model.ice_plot(train, col, grouping_column=grouping_variable)
+            ice_plot_result = model.ice_plot(train, col, grouping_column=grouping_variable, output_graphing_data=True)
         else:
-            ice_plot_result = model.ice_plot(train, col, target="setosa", grouping_column=grouping_variable)
+            ice_plot_result = model.ice_plot(train, col, target="setosa", grouping_column=grouping_variable, output_graphing_data=True)
         assert isinstance(ice_plot_result, list)
         assert isinstance(ice_plot_result[0].figure(), matplotlib.pyplot.Figure)
+        assert isinstance(ice_plot_result[0], H2OTwoDimTable)
 
     matplotlib.pyplot.close("all")
 
@@ -223,7 +204,9 @@ def test_binary_response_scale():
     gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model")
     gbm.train(y=y, training_frame=train)
 
-    assert isinstance(gbm.ice_plot(train, 'title', binary_response_scale="logodds").figure(), matplotlib.pyplot.Figure)
+    ice_plot_result = gbm.ice_plot(train, 'title', binary_response_scale="logodds", output_graphing_data=True)
+    assert isinstance(ice_plot_result.figure(), matplotlib.pyplot.Figure)
+    assert isinstance(ice_plot_result, H2OTwoDimTable)
     assert isinstance(gbm.ice_plot(train, 'age').figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
@@ -275,6 +258,5 @@ pyunit_utils.run_tests([
     test_display_mode,
     test_binary_response_scale,
     test_show_pdd,
-    test_display_mode,
     test_grouping_column
 ])

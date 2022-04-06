@@ -192,7 +192,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             for (int k = 0; k < _nclass; k++) {
                 if (_model._output._distribution[k] != 0) { // Ignore missing classes
                     ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
-                    new DTree.UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), null, false), null); // The "root" node
+                    new DTree.UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), null, false, null), null, null); // The "root" node
                 }
             }
 
@@ -215,8 +215,6 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             ktrees[1] = new DTree(ktrees[0]); // make a deep copy of the tree to assign control prediction to the leaves
             DTree treeCt = ktrees[1]; 
             int leaf = leafs[0] = treeTr.len();
-            int[] nids = new int[leaf];
-            int j = 0;
             for (int nid = 0; nid < leaf; nid++) {
                 if (treeTr.node(nid) instanceof DTree.DecidedNode) { // Should be the same for treatment and control tree
                     DTree.DecidedNode dnTr = treeTr.decided(nid); // Treatment tree node
@@ -242,14 +240,13 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
                             DTree.LeafNode lnCt = new DTree.LeafNode(treeCt, nid);
                             lnCt._pred = (float) dnCt.predControl(i);  // Set prediction into the control leaf
                             dnCt._nids[i] = lnCt.nid(); // Mark a leaf here for control
-                            nids[j++] = lnTr.nid();
                         }
                     }
                 } 
             }
         }
 
-        // Collect and write predictions into leafs.
+        // Collect and write predictions into leaves.
         private class UpliftCollectPreds extends MRTask<UpliftCollectPreds> {
             /* @IN  */ final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
             /* @OUT */ double allRows;    // number of all OOB rows (sampled by this tree)
@@ -265,39 +262,42 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
                     final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chk_nids(chks,0).at8(row));
                     //final boolean wasOOBRow = false;
                     // For all tree (i.e., k-classes)
-                    final Chunk nids = chk_nids(chks, 0); // Node-ids  for this tree/class
-                        if (weight!=0) {
-                            final DTree treeT = _trees[0];
-                            final DTree treeC = _trees[1];
-                            if (treeT == null) continue; // Empty class is ignored
-                            int nid = (int) nids.at8(row);         // Get Node to decide from
-                            // Update only out-of-bag rows
-                            // This is out-of-bag row - but we would like to track on-the-fly prediction for the row
-                            if (wasOOBRow) {
-                                final Chunk ct = chk_tree(chks, 0); // k-tree working column holding votes for given row
-                                nid = ScoreBuildHistogram.oob2Nid(nid);
-                                if (treeT.node(nid) instanceof DTree.UndecidedNode) // If we bottomed out the tree
-                                    nid = treeT.node(nid).pid();                 // Then take parent's decision
-                                int leafnid;
-                                if (treeT.root() instanceof DTree.LeafNode) {
-                                    leafnid = 0;
-                                } else {
-                                    DTree.DecidedNode dn = treeT.decided(nid);           // Must have a decision point
-                                    if (dn._split == null)     // Unable to decide?
-                                        dn = treeT.decided(treeT.node(nid).pid());    // Then take parent's decision
-                                    leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
-                                }
-                                // Setup Tree(i) - on the fly prediction of i-tree for row-th row
-                                //   - for uplift: cumulative sum of prediction of each tree - has to be normalized by number of trees
-                                double prediction = ((DTree.LeafNode) treeT.node(leafnid)).pred() - ((DTree.LeafNode) treeC.node(leafnid)).pred(); // Prediction for this k-class and this row
-                                ct.set(row, (float) (ct.atd(row) + prediction));
+                    final Chunk nids = chk_nids(chks, 0); // Node-ids  for treatment group class
+                    final Chunk nids1 = chk_nids(chks, 1); // Node-ids  for control group class
+                    if (weight!=0) {
+                        final DTree treeT = _trees[0];
+                        final DTree treeC = _trees[1];
+                        if (treeT == null) continue; // Empty class is ignored
+                        int nid = (int) nids.at8(row);         // Get Node to decide from
+                        // Update only out-of-bag rows
+                        // This is out-of-bag row - but we would like to track on-the-fly prediction for the row
+                        if (wasOOBRow) {
+                            nid = ScoreBuildHistogram.oob2Nid(nid);
+                            if (treeT.node(nid) instanceof DTree.UndecidedNode) // If we bottomed out the tree
+                                nid = treeT.node(nid).pid();                 // Then take parent's decision
+                            int leafnid;
+                            if (treeT.root() instanceof DTree.LeafNode) {
+                                leafnid = 0;
+                            } else {
+                                DTree.DecidedNode dn = treeT.decided(nid);           // Must have a decision point
+                                if (dn._split == null)     // Unable to decide?
+                                    dn = treeT.decided(treeT.node(nid).pid());    // Then take parent's decision
+                                leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
                             }
+                            // Setup Tree(i) - on the fly prediction of i-tree for row-th row
+                            //   - for uplift: cumulative sum of prediction of each tree - has to be normalized by number of trees
+                            final Chunk ct1 = chk_tree(chks, 0); // treatment tree working column holding votes for given row
+                            ct1.set(row, (float) (ct1.atd(row) + ((DTree.LeafNode) treeT.node(leafnid)).pred()));
+                            final Chunk ct0 = chk_tree(chks, 1); // control group tree working column holding votes for given row
+                            ct0.set(row, (float) (ct0.atd(row) + ((DTree.LeafNode) treeC.node(leafnid)).pred()));
                         }
-                        // reset help column for this row and this k-class
-                        nids.set(row, 0);
+                    }
+                    // reset help column for this row and this k-class
+                    nids.set(row, 0);
+                    nids1.set(row, 0);
                     // For this tree this row is out-of-bag - i.e., a tree voted for this row
                     if (wasOOBRow) oobt.set(row, oobt.atd(row) + weight); // track number of trees
-                    if (weight!=0) {
+                    if (weight != 0) {
                         if (wasOOBRow && !y.isNA(row)) {
                             allRows+=weight;
                         }

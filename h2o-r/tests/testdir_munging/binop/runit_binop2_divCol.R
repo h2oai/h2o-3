@@ -55,7 +55,7 @@ test.slice.div <- function() {
   print(B)
   cat("\n\n\n")
 
-  if (dim(A)[1] == 0 || dim(B) == 0) {
+  if (dim(A)[1] == 0 || dim(B)[1] == 0) {
     # all NAs in the datasets...
     expect_true(dim(A)[1] == dim(B)[1])
     expect_true(dim(A)[2] == dim(B)[2])

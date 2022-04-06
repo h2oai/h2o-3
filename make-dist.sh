@@ -163,8 +163,9 @@ cp h2o-py/build/client/dist/*whl target/Python
 mkdir -p target/bindings/java
 cp -p h2o-bindings/build/libs/*.jar target/bindings/java
 
-# Add Minimal assembly Jar to target.
+# Add Minimal and Steam assembly Jars to target.
 cp h2o-assemblies/minimal/build/libs/minimal.jar target/h2o-minimal-${PROJECT_VERSION}.jar
+cp h2o-assemblies/steam/build/libs/steam.jar target/h2o-steam-${PROJECT_VERSION}.jar
 
 # Add Maven repo to target.
 mkdir target/maven

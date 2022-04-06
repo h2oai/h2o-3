@@ -171,6 +171,16 @@ public class ArrayUtilsTest {
                 Assert.assertTrue(Math.abs(values[indices[index - 1]]) + " should be >= " + Math.abs(values[indices[index]]),
                         Math.abs(values[indices[index - 1]]) >= Math.abs(values[indices[index]]));
         }
+
+        @Test
+        public void testSubAndMul() {
+            double[] row = new double[]{2.0, 5.0, 6.0};
+            double[] p = new double[]{1.0, 4.0, -1.0};
+            double[] n = new double[]{-0.25, 0, 0.25};
+            double res = ArrayUtils.subAndMul(row, p, n);
+
+            assertEquals("Result is not correct", 1.5, res, 1e-3);
+        }
     }
 
     @RunWith(Parameterized.class)

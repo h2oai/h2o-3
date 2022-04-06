@@ -2,7 +2,6 @@ package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import ai.h2o.automl.ModelingStep.DynamicStep;
-import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.grid.Grid;

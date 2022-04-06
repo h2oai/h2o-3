@@ -5,6 +5,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,6 +27,30 @@ public class TreeUtils {
       } else if (v.get_type() != Vec.T_NUM) {
         mb.error("_monotone_constraints", "Invalid constraint - column '" + constraint.getKey() +
                 "' has type " + v.get_type_str() + ". Only numeric columns can have monotonic constraints.");
+      }
+    }
+  }
+
+  public static void checkInteractionConstraints(ModelBuilder<?, ?, ?> mb, Frame train, String[][] constraints) {
+    for (String[] constraintsSet : constraints) {
+      for (String constraint : constraintsSet) {
+        if(mb._parms._ignored_columns != null && ArrayUtils.find(mb._parms._ignored_columns, constraint) != -1) {
+          mb.error("_interaction_constraints", "Column with the name '" + constraint + "' is set in ignored columns and cannot be used in interaction.");
+        } else {
+          Vec v = train.vec(constraint);
+          if (v == null) {
+            mb.error("_interaction_constraints", "Invalid interaction constraint - there is no column '" + constraint + "' in the training frame.");
+          }
+        }
+        if(constraint.equals(mb._parms._response_column)){
+          mb.error("'_interaction_constraints'", "Column with the name '" + constraint + "' is used as response column and cannot be used in interaction.");
+        }
+        if(constraint.equals(mb._parms._weights_column)){
+          mb.error("'_interaction_constraints'","Column with the name '" + constraint + "' is used as weights column and cannot be used in interaction.");
+        }
+        if(constraint.equals(mb._parms._fold_column)){
+          mb.error("_interaction_constraints", "Column with the name '" + constraint + "' is used as fold column and cannot be used in interaction.");
+        }
       }
     }
   }

@@ -242,6 +242,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   public boolean havePojo() {
+    if (_parms._preprocessors != null) return false; // TE processor not included to current POJO (see PUBDEV-8508 for potential fix)
     final String algoName = _parms.algoName();
     return ModelBuilder.getRegisteredBuilder(algoName)
             .map(ModelBuilder::havePojo)
@@ -253,6 +254,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public boolean haveMojo() {
+    if (_parms._preprocessors != null) return false; // until PUBDEV-7799, disable model MOJO if it was trained with embedded TE.
     final String algoName = _parms.algoName();
     return ModelBuilder.getRegisteredBuilder(algoName)
             .map(ModelBuilder::haveMojo)
@@ -2014,21 +2016,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String [] names = new String[ncols];
     if(output.hasTreatment()){
       names[0] = "uplift_predict";
+      names[1] = "p_y1_ct1";
+      names[2] = "p_y1_ct0";
     } else {
       names[0] = "predict";
-    }
-    for(int i = 1; i < names.length; ++i) {
-      names[i] = output.classNames()[i - 1];
-      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
-      try {
-        Integer.valueOf(names[i]);
-        if(output.hasTreatment()){
-          names[i] = i == 1? "p_y1_ct1" : "p_y1_ct0";
-        } else {
+      for (int i = 1; i < names.length; ++i) {
+        names[i] = output.classNames()[i - 1];
+        // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
+        try {
+          Integer.valueOf(names[i]);
           names[i] = "p" + names[i];
+        } catch (Throwable t) {
+          // do nothing, non-integer names are fine already
         }
-      } catch (Throwable t) {
-        // do nothing, non-integer names are fine already
       }
     }
     return names;

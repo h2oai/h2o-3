@@ -309,7 +309,7 @@ public class DTree extends Iced {
      * @param parms user-given parameters (will use nbins, min_rows, etc.)
      * @return Array of histograms to be used for the next level of split finding
      */
-    public DHistogram[] nextLevelHistos(DHistogram[] currentHistos, int way, double splat, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
+    public DHistogram[] nextLevelHistos(DHistogram[] currentHistos, int way, double splat, SharedTreeModel.SharedTreeParameters parms, Constraints cs, BranchInteractionConstraints bcs) {
       double n = way==0 ? _n0 : _n1;
       if( n < parms._min_rows ) {
         if (LOG.isTraceEnabled()) LOG.trace("Not splitting: too few observations left: " + n);
@@ -323,8 +323,14 @@ public class DTree extends Iced {
 
       // Build a next-gen split point from the splitting bin
       int cnt=0;                  // Count of possible splits
-      DHistogram[] nhists = new DHistogram[currentHistos.length]; // A new histogram set
-      for(int j = 0; j< currentHistos.length; j++ ) { // For every column in the new split
+      DHistogram nhists[] = new DHistogram[currentHistos.length]; // A new histogram set
+      boolean checkBranchInteractions = bcs != null;
+      for(int j = 0; j < currentHistos.length; j++ ) { // For every column in the new split
+        // Check branch interaction constraint if it is not null 
+        if (checkBranchInteractions && !bcs.isAllowedIndex(j)) {
+          // Column is denied by branch interaction constraints -> the histogram is set to null
+          continue;
+        }
         DHistogram h = currentHistos[j];            // old histogram of column
         if( h == null )
           continue;        // Column was not being tracked?
@@ -432,12 +438,14 @@ public class DTree extends Iced {
   public static class UndecidedNode extends Node {
     public transient DHistogram[] _hs; //(up to) one histogram per column
     public transient Constraints _cs;
+    public transient BranchInteractionConstraints _bics;
     public final int _scoreCols[];      // A list of columns to score; could be null for all
-    public UndecidedNode( DTree tree, int pid, DHistogram[] hs, Constraints cs ) {
+    public UndecidedNode( DTree tree, int pid, DHistogram[] hs, Constraints cs, BranchInteractionConstraints bics) {
       super(tree,pid);
       assert hs.length==tree._ncols;
       _hs = hs; //these histograms have no bins yet (just constructed)
       _cs = cs;
+      _bics = bics;
       _scoreCols = scoreCols();
     }
 
@@ -445,6 +453,7 @@ public class DTree extends Iced {
       super(tree, node._pid, node._nid, true);
       _hs = node._hs; //these histograms have no bins yet (just constructed)
       _cs = node._cs;
+      _bics = node._bics;
       _scoreCols = node._scoreCols;
     }
 
@@ -599,8 +608,8 @@ public class DTree extends Iced {
     }
 
     // Make a correctly flavored Undecided
-    public UndecidedNode makeUndecidedNode(DHistogram hs[], Constraints cs) {
-      return new UndecidedNode(_tree, _nid, hs, cs);
+    public UndecidedNode makeUndecidedNode(DHistogram hs[], Constraints cs, BranchInteractionConstraints bics) {
+      return new UndecidedNode(_tree, _nid, hs, cs, bics);
     }
 
     // Pick the best column from the given histograms
@@ -691,7 +700,7 @@ public class DTree extends Iced {
       }
     }
 
-    public DecidedNode(UndecidedNode n, DHistogram hs[], Constraints cs) {
+    public DecidedNode(UndecidedNode n, DHistogram hs[], Constraints cs, GlobalInteractionConstraints ics) {
       super(n._tree,n._pid,n._nid); // Replace Undecided with this DecidedNode
       _nids = new int[2];           // Split into 2 subsets
       _split = bestCol(n,hs,cs);  // Best split-point for this tree
@@ -705,12 +714,14 @@ public class DTree extends Iced {
       }
       _splat = _split.splat(hs);
       for(int way = 0; way <2; way++ ) { // left / right
-        // Create children histograms, not yet populated, but the ranges are set
+        // Prepare the next level of constraints if monotone or interaction constraints are set
         Constraints ncs = cs != null ? _split.nextLevelConstraints(cs, way, _splat, _tree._parms) : null;
-        DHistogram nhists[] = _split.nextLevelHistos(hs, way,_splat, _tree._parms, ncs); //maintains the full range for NAvsREST
+        BranchInteractionConstraints nbics = n._bics != null ? n._bics.nextLevelInteractionConstraints(ics, _split._col) : null;
+        // Create children histograms, not yet populated, but the ranges are set
+        DHistogram nhists[] = _split.nextLevelHistos(hs, way,_splat, _tree._parms, ncs, nbics); //maintains the full range for NAvsREST
         assert nhists==null || nhists.length==_tree._ncols;
         // Assign a new (yet undecided) node to each child, and connect this (the parent) decided node and the newly made histograms to it
-        _nids[way] = nhists == null ? ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID : makeUndecidedNode(nhists,ncs)._nid;
+        _nids[way] = nhists == null ? ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID : makeUndecidedNode(nhists,ncs, nbics)._nid;
       }
     }
 

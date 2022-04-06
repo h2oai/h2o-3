@@ -43,6 +43,8 @@ import water.util.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.ComputationState.extractSubRange;
@@ -141,6 +143,131 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     super.computeCrossValidation();
   }
 
+
+  /* This method aligns the submodels across CV folds. It will keep only those alpha values that were the best at least in
+   * one CV fold.
+   *
+   * In the following depiction each submodel is represented by a tuple (alpha_value, lambda_value). Ideally each CV fold
+   * should have the same submodels but there can be differences due to max_iteration and max_runtime_secs constraint.
+   * Iterations are reset when alpha value change which can cause missing model in the middle and max_runtime_secs constraint
+   * can cause missing submodels at the end of the submodel array.
+   *
+   *  CV1:                                                                                              Best submodel
+   *   +------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+-V------+
+   *   | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 | 1, 0.6 | 1, 0.5 | 1, 0.4 |
+   *   +------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *  CV2:                                          Best submodel
+   *   +------+--------+--------+--------+--------+-V------+------+--------+--------+--------+--------+----------+
+   *   | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 0, 0.5 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 | 0.8, 1 | 0.8, 0.9 |
+   *   +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+----------+
+   *
+   *    ||
+   *    ||
+   *   \  /
+   *    \/
+   *
+   *  Aligned Submodels:
+   *
+   *  CV1:
+   *  +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *  | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 |  NULL  | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 | 1, 0.6 | 1, 0.5 | 1, 0.4 |
+   *  +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *
+   *  CV2:
+   *  +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *  | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 0, 0.5 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 |  NULL  |  NULL  |  NULL  |
+   *  +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *
+   */
+  private double[] alignSubModelsAcrossCVModels(ModelBuilder[] cvModelBuilders) {
+    // Get only the best alphas
+    double[] alphas = Arrays.stream(cvModelBuilders)
+            .mapToDouble(cv -> {
+              GLM g = (GLM)cv;
+              return g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value;
+            })
+            .distinct()
+            .toArray();
+
+    // Get corresponding indices for the best alphas and sort them in the same order as in _parms.alpha
+    int[] alphaIndices = new int[alphas.length];
+    int k = 0;
+    for (int i = 0; i < _parms._alpha.length; i++) {
+      for (int j = 0; j < alphas.length; j++) {
+        if (alphas[j] == _parms._alpha[i]) {
+          alphaIndices[k] = i;
+          if (k < j) {
+            // swap to keep the same order as in _parms.alpha
+            final double tmpAlpha = alphas[k];
+            alphas[k] = alphas[j];
+            alphas[j] = tmpAlpha;
+          }
+          k++;
+        }
+      }
+    }
+
+    // maximum index of alpha change across all the folds
+    int[] alphaChangePoints = new int[alphas.length + 1];
+    int[] alphaSubmodels = new int[_parms._alpha.length];
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      Map<Double, List<Submodel>> submodels = Arrays.stream(g._model._output._submodels)
+              .collect(Collectors.groupingBy(sm -> sm.alpha_value));
+      for (int j = 0; j < _parms._alpha.length; j++) {
+        alphaSubmodels[j] = Math.max(alphaSubmodels[j],
+                submodels.containsKey(_parms._alpha[j]) ? submodels.get(_parms._alpha[j]).size() : 0);
+      }
+    }
+
+    for (int i = 0; i < alphas.length; i++) {
+      alphaChangePoints[i + 1] = alphaChangePoints[i] + alphaSubmodels[alphaIndices[i]];
+    }
+
+    double[] alphasAndLambdas = new double[alphaChangePoints[alphas.length]*2];
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      Submodel[] alignedSubmodels = new Submodel[alphaChangePoints[alphas.length]];
+
+      double lastAlpha = -1;
+      int alphaIdx = -1;
+      k = 0;
+      int nNullsUntilSelectedSubModel = 0;
+      for (int j = 0; j < g._model._output._submodels.length; j++) {
+        if (lastAlpha != g._model._output._submodels[j].alpha_value) {
+          lastAlpha = g._model._output._submodels[j].alpha_value;
+
+          if (alphaIdx + 1 < alphas.length && lastAlpha == alphas[alphaIdx+1]) {
+            k = 0;
+            alphaIdx++;
+
+          if (g._model._output._selected_submodel_idx >= j)
+            nNullsUntilSelectedSubModel = alphaChangePoints[alphaIdx] - j;
+          }
+        }
+        if (alphaIdx < 0 || g._model._output._submodels[j].alpha_value != alphas[alphaIdx])
+          continue;
+        alignedSubmodels[alphaChangePoints[alphaIdx] + k] = g._model._output._submodels[j];
+        assert alphasAndLambdas[alphaChangePoints[alphaIdx] + k] == 0 || (
+                alphasAndLambdas[alphaChangePoints[alphaIdx] + k] == g._model._output._submodels[j].alpha_value &&
+                        alphasAndLambdas[alphaChangePoints[alphas.length] + alphaChangePoints[alphaIdx] + k] == g._model._output._submodels[j].lambda_value
+        );
+        alphasAndLambdas[alphaChangePoints[alphaIdx] + k] = g._model._output._submodels[j].alpha_value;
+        alphasAndLambdas[alphaChangePoints[alphas.length] + alphaChangePoints[alphaIdx] + k] = g._model._output._submodels[j].lambda_value;
+        k++;
+      }
+      assert g._model._output._selected_submodel_idx == g._model._output._best_submodel_idx;
+      assert g._model._output._selected_submodel_idx == g._model._output._best_lambda_idx;
+      assert (g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value ==
+              alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].alpha_value) &&
+              (g._model._output._submodels[g._model._output._selected_submodel_idx].lambda_value ==
+                      alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].lambda_value);
+      g._model._output._submodels = alignedSubmodels;
+      g._model._output.setSubmodelIdx(g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel, g._parms);
+    }
+    return alphasAndLambdas;
+  }
+
   /**
    * If run with lambda search, we need to take extra action performed after cross-val models are built.
    * Each of the folds have been computed with ots own private validation dataset and it performed early stopping based on it.
@@ -153,15 +280,30 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   @Override
   public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
-    if(_parms._max_runtime_secs != 0) _parms._max_runtime_secs = 0;
-      _xval_deviances = new double[_parms._lambda.length * _parms._alpha.length];
-      _xval_sd = new double[_parms._lambda.length * _parms._alpha.length];
+      if(_parms._max_runtime_secs != 0) _parms._max_runtime_secs = 0;
       double bestTestDev = Double.POSITIVE_INFINITY;
+      double[] alphasAndLambdas = alignSubModelsAcrossCVModels(cvModelBuilders);
+      int numOfSubmodels = alphasAndLambdas.length / 2;
       int lmin_max = 0;
-      for (int i = 0; i < cvModelBuilders.length; ++i) {  // find the highest best_submodel_idx we need to go through
-        GLM g = (GLM) cvModelBuilders[i];
-        lmin_max = Math.max(lmin_max, g._model._output._selected_submodel_idx);
+      boolean lambdasSorted = _parms._lambda.length >= 1;
+      for (int i = 1; i < _parms._lambda.length; i++) {
+        if (_parms._lambda[i] >= _parms._lambda[i - 1]) {
+          lambdasSorted = false;
+          break;
+        }
       }
+      if (lambdasSorted) {
+        for (int i = 0; i < cvModelBuilders.length; ++i) {  // find the highest best_submodel_idx we need to go through
+          GLM g = (GLM) cvModelBuilders[i];
+          lmin_max = Math.max(lmin_max, g._model._output._selected_submodel_idx + 1); // lmin_max is exclusive upper bound
+        }
+      } else {
+        lmin_max = numOfSubmodels; // Number of submodels
+      }
+
+      _xval_deviances = new double[lmin_max];
+      _xval_sd = new double[lmin_max];
+
       int lidx = 0; // index into submodel
       int bestId = 0;   // submodel indedx with best Deviance from xval
       int cnt = 0;
@@ -170,14 +312,22 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double testDevSq = 0;
         for (int i = 0; i < cvModelBuilders.length; ++i) {  // run cv for each lambda value
           GLM g = (GLM) cvModelBuilders[i];
-          if (g._model._output._submodels[lidx] != null) {
-            double lambda = g._model._output._submodels[lidx].lambda_value;
-            g._insideCVCheck = true;
-            g._driver.computeSubmodel(lidx, lambda, Double.NaN, Double.NaN);
-            g._insideCVCheck = false;
-            testDev += g._model._output._submodels[lidx].devianceValid;
-            testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
+          if (g._model._output._submodels[lidx] == null) {
+            double alpha = g._state.alpha();
+            try {
+              g._insideCVCheck = true;
+              g._state.setAlpha(alphasAndLambdas[lidx]); // recompute the submodel using the proper alpha value
+              g._driver.computeSubmodel(lidx, alphasAndLambdas[lidx + numOfSubmodels], Double.NaN, Double.NaN);
+            } finally {
+              g._insideCVCheck = false;
+              g._state.setAlpha(alpha);
+            }
           }
+          assert alphasAndLambdas[lidx] == g._model._output._submodels[lidx].alpha_value &&
+                  alphasAndLambdas[lidx + numOfSubmodels] == g._model._output._submodels[lidx].lambda_value;
+
+          testDev += g._model._output._submodels[lidx].devianceValid;
+          testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
         }
         double testDevAvg = testDev / cvModelBuilders.length; // average testDevAvg for fixed submodel index
         double testDevSE = testDevSq - testDevAvg * testDev;
@@ -188,7 +338,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           bestId = lidx;
         }
         // early stopping - no reason to move further if we're overfitting
-        if (testDevAvg > bestTestDev && ++cnt == 3) {
+        // cannot be used if we have multiple alphas
+        if ((_parms._alpha == null || _parms._alpha.length <= 1) &&
+                lambdasSorted &&
+                testDevAvg > bestTestDev &&
+                ++cnt == 3) {
           lmin_max = lidx;
           break;
         }
@@ -199,22 +353,55 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (Key k : g._toRemove)
             Keyed.remove(k);
       }
-      _parms._lambda = Arrays.copyOf(_parms._lambda, lmin_max + 1);
-      _xval_deviances = Arrays.copyOf(_xval_deviances, lmin_max + 1);
-      _xval_sd = Arrays.copyOf(_xval_sd, lmin_max + 1);
+
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
-        g._model._output.setSubmodelIdx(bestId);
+        g._model._output.setSubmodelIdx(bestId, g._parms);
       }
+
       double bestDev = _xval_deviances[bestId];
       double bestDev1se = bestDev + _xval_sd[bestId];
-      int bestId1se = bestId;
-      while (bestId1se > 0 && _xval_deviances[bestId1se - 1] <= bestDev1se)
-        --bestId1se;
-      _lambdaCVEstimate = ((GLM) cvModelBuilders[0])._model._output._submodels[bestId].lambda_value;
-      _bestCVSubmodel = bestId;
-      _model._output._lambda_1se = bestId1se; // submodel ide with bestDev+one sigma
-      _model._output._selected_submodel_idx = bestId; // set best submodel id here
+      int finalBestId = bestId;
+      Integer[] orderedLambdaIndices = IntStream
+                .range(0, lmin_max)
+                .filter(i -> alphasAndLambdas[i] == alphasAndLambdas[finalBestId]) // get just the lambdas corresponding to the selected alpha
+                .boxed()
+                .sorted((a,b) -> (int) Math.signum(alphasAndLambdas[b+numOfSubmodels] - alphasAndLambdas[a+numOfSubmodels]))
+                .toArray(Integer[]::new);
+      int bestId1se = IntStream
+                .range(0, orderedLambdaIndices.length)
+                .filter(i -> orderedLambdaIndices[i] == finalBestId)
+                .findFirst()
+                .orElse(orderedLambdaIndices.length - 1);
+
+      while (bestId1se > 0 && _xval_deviances[orderedLambdaIndices[bestId1se - 1]] <= bestDev1se)
+          --bestId1se;
+      // get the index into _parms.lambda/_xval_deviances etc
+      _lambdaCVEstimate = alphasAndLambdas[numOfSubmodels + bestId];
+      bestId1se = orderedLambdaIndices[bestId1se];
+      _model._output._lambda_1se = alphasAndLambdas[numOfSubmodels + bestId1se]; // submodel ide with bestDev+one sigma
+
+      // set the final selected alpha and lambda
+      _parms._alpha = new double[]{alphasAndLambdas[bestId]};
+      if (_parms._lambda_search) {
+        int newLminMax = 0;
+        int newBestId = 0;
+        for (int i = 0; i < lmin_max; i++) {
+          if (alphasAndLambdas[i] == _parms._alpha[0]) {
+            newLminMax++;
+            if (i < bestId) newBestId++;
+          }
+        }
+        _parms._lambda = Arrays.copyOf(_parms._lambda, newLminMax+1);
+        _model._output._selected_submodel_idx = newBestId;
+        _bestCVSubmodel = newBestId;
+        _xval_deviances = Arrays.copyOfRange(_xval_deviances, bestId-newBestId, lmin_max + 1);
+        _xval_sd = Arrays.copyOfRange(_xval_sd, bestId-newBestId, lmin_max + 1);
+      } else {
+        _parms._lambda = new double[]{alphasAndLambdas[numOfSubmodels + bestId]};
+        _model._output._selected_submodel_idx = 0; // set best submodel id here
+        _bestCVSubmodel = 0;
+      }
 
     if (_parms._generate_scoring_history)
       generateCVScoringHistory(cvModelBuilders);
@@ -2488,7 +2675,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (continueFromPreviousSubmodel)
           sm = _model._output._submodels[i];
         else
-          _model.addSubmodel(sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain, 
+          _model.addSubmodel(i, sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain,
                   nullDevValid, _totalBetaLen));
       } else {  // this is also the path for HGLM model
         if (continueFromPreviousSubmodel) {
@@ -2497,7 +2684,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1, _totalBetaLen);// restart from last run
           if (_parms._HGLM) // add random coefficients for random effects/columns
             sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
-          _model.addSubmodel(sm);
+          _model.addSubmodel(i, sm);
         }
         if (_insideCVCheck && _parms._generate_scoring_history && !Solver.L_BFGS.equals(_parms._solver) && 
                 (multinomial.equals(_parms._family) || ordinal.equals(_parms._family))) {
@@ -2536,7 +2723,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, nullDevTrain, nullDevValid,
                   _totalBetaLen);
           sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
-          _model.updateSubmodel(sm);
+          _model.updateSubmodel(i, sm);
         } else {
           double trainDev = _state.deviance() / _nobs;
           double validDev = Double.NaN;  // calculated from validation dataset below if present
@@ -2554,7 +2741,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (_parms._lambda_search)
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), 
                     _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
-          _model.updateSubmodel(sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
+          _model.updateSubmodel(i, sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
                   trainDev, validDev, _totalBetaLen));
         }
       }
@@ -2700,7 +2887,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if ((_parms._lambda_search || _parms._generate_scoring_history) && (_parms._score_each_iteration || 
                   timeSinceLastScoring() > _scoringInterval || ((_parms._score_iteration_interval > 0) &&
                   ((_state._iter % _parms._score_iteration_interval) == 0)))) {
-            _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount); // quick and easy way to set submodel parameters
+            _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount, _parms); // quick and easy way to set submodel parameters
             scoreAndUpdateModel(); // update partial results
           }
           _job.update(_workPerIteration, "iter=" + _state._iter + " lmb=" +
@@ -2725,10 +2912,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
-      if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate))
-        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel);  // reset best_submodel_idx to what xval has found
+      if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate) && _bestCVSubmodel < _model._output._submodels.length)
+        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel, _model._parms);  // reset best_submodel_idx to what xval has found
       else
-        _model._output.pickBestModel();
+        _model._output.pickBestModel(_model._parms);
       if (_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
         _model.setVcov(_vcov);
         _model.update(_job._key);

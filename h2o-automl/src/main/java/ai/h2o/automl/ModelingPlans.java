@@ -132,9 +132,7 @@ final class ModelingPlans {
                     ).toArray(Step[]::new),
                     {
                             new Step("monotonic", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
-                            new Step("best_of_family_xgboost", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
                             new Step("best_of_family_gbm", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
-                            new Step("all_xgboost", 7, DEFAULT_MODEL_TRAINING_WEIGHT),
                             new Step("all_gbm", 7, DEFAULT_MODEL_TRAINING_WEIGHT),
                             new Step("best_of_family_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
                             new Step("all_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
@@ -143,6 +141,47 @@ final class ModelingPlans {
                     }
             }).flatMap(Stream::of).toArray(Step[]::new)),
     };
+    
+    final static StepDefinition[] REPRODUCIBLE = {
+            // order of step definitions and steps defines the order of steps in the same priority group.
+            new StepDefinition(Algo.XGBoost.name(),
+                    new Step("def_2", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("def_1", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("def_3", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("grid_1", 4, 3*DEFAULT_GRID_TRAINING_WEIGHT),
+                    new Step("lr_search", 7, DEFAULT_GRID_TRAINING_WEIGHT)
+            ),
+            new StepDefinition(Algo.GLM.name(),
+                    new Step("def_1", 1, DEFAULT_MODEL_TRAINING_WEIGHT)
+            ),
+            new StepDefinition(Algo.DRF.name(),
+                    new Step("def_1", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("XRT", 3, DEFAULT_MODEL_TRAINING_WEIGHT)
+            ),
+            new StepDefinition(Algo.GBM.name(),
+                    new Step("def_5", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("def_2", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("def_3", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("def_4", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("def_1", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("grid_1", 4, 2*DEFAULT_GRID_TRAINING_WEIGHT),
+                    new Step("lr_annealing", 7, DEFAULT_MODEL_TRAINING_WEIGHT)
+            ),
+            new StepDefinition(Algo.DeepLearning.name(),
+                    new Step("def_1", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("grid_1", 4, DEFAULT_GRID_TRAINING_WEIGHT),
+                    new Step("grid_2", 5, DEFAULT_GRID_TRAINING_WEIGHT),
+                    new Step("grid_3", 5, DEFAULT_GRID_TRAINING_WEIGHT)
+            ),
+            new StepDefinition("completion",
+                    new Step("resume_best_grids", 6, 2*DEFAULT_GRID_TRAINING_WEIGHT)
+            ),
+            new StepDefinition(Algo.StackedEnsemble.name(),
+                    new Step("monotonic", 9, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("best_of_family_xglm", 10, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("all_xglm", 10, DEFAULT_MODEL_TRAINING_WEIGHT)
+            )
+  };
 
     public static StepDefinition[] defaultPlan() {
         return TEN_LAYERED;

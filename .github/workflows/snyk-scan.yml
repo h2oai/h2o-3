@@ -43,8 +43,8 @@ jobs:
 
       - uses: actions/setup-python@v1
         with:
-          python-version: "3.5"
-      - name: Snyk scan for Python 3.5 dependencies
+          python-version: "3.6"
+      - name: Snyk scan for Python 3.6 dependencies
         if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan2
         continue-on-error: true
@@ -54,27 +54,13 @@ jobs:
           sudo apt-get install -y libkrb5-dev
           pip install -r h2o-py/requirements.txt            
           snyk test -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved   
-  
-      - uses: actions/setup-python@v1
-        with:
-          python-version: "2.7"
-      - name: Snyk scan for Python 2.7 dependencies
-        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
-        id: scan3
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          pip install --upgrade setuptools
-          pip install -r h2o-py/test-requirements.txt
-          snyk test --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved
 
       - uses: actions/setup-node@v1
         with:
           node-version: '12.x'
       - name: Snyk scan for Node dependencies
         if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
-        id: scan4
+        id: scan3
         continue-on-error: true
         run: |
           snyk test --file=h2o-web/package.json -d --fail-on=all 
@@ -87,9 +73,8 @@ jobs:
         run: |
           echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
                 Snyk scan for Java dependencies - ${{ steps.scan1.outcome }}
-                Snyk scan for Python 3.5 dependencies - ${{ steps.scan2.outputs.result }}
-                Snyk scan for Python 2.7 dependencies - ${{ steps.scan3.outcome }}
-                Snyk scan for Node dependencies - ${{ steps.scan4.outputs.result }}"
+                Snyk scan for Python 3.5 dependencies - ${{ steps.scan2.outcome }}
+                Snyk scan for Node dependencies - ${{ steps.scan3.outcome }}"
           exit 1
           
   snyk_scan_monitor:
@@ -111,25 +96,14 @@ jobs:
           
       - uses: actions/setup-python@v1
         with:
-          python-version: "3.5"
-      - name: Snyk scan for Python 3.5 dependencies
+          python-version: "3.6"
+      - name: Snyk scan for Python 3.6 dependencies
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           sudo apt-get install -y libkrb5-dev
           pip install -r h2o-py/requirements.txt                  
           snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/requirements.txt      
-
-      - uses: actions/setup-python@v1
-        with:
-          python-version: "2.7"
-      - name: Snyk scan for Python 2.7 dependencies
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          pip install --upgrade setuptools
-          pip install -r h2o-py/test-requirements.txt
-          snyk monitor --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/test-requirements.txt         
 
       - uses: actions/setup-node@v1
         with:

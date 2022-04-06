@@ -69,11 +69,19 @@ lookup-demos-tests: init-lookup
 	find h2o-r/tests/testdir_demos -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests/testdir_demos -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
+lookup-steam-assembly-tests: init-lookup
+	find h2o-py/tests -name '*parquet*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+	find h2o-py/tests -name '*s3*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+	cat tests/pyunitSmokeTestList >>h2o-py/tests/.lookup.txt
+
 test-py-smoke:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
 
 test-py-smoke-minimal:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g --h2ojar ../../h2o-assemblies/minimal/build/libs/minimal.jar 
+
+test-py-smoke-steam: lookup-steam-assembly-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 6 --jvm.xmx 3g --h2ojar ../../h2o-assemblies/steam/build/libs/steam.jar 
 
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
@@ -242,6 +250,11 @@ test-package-gradle:
 test-package-minimal:
 	zip -q -r test-package-minimal \
 	    h2o-assemblies/minimal/build/libs/minimal.jar \
+		tests/leakCheckKeywords
+
+test-package-steam:
+	zip -q -r test-package-steam \
+	    h2o-assemblies/steam/build/libs/steam.jar \
 		tests/leakCheckKeywords
 
 test-package-java:
@@ -572,26 +585,20 @@ check-leaks:
 		exit 1; \
 	fi
 
-h2o-k8s-docker-build:
-	 cp LICENSE build/LICENSE
-	 docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release build/
-	 rm build/LICENSE
+h2o-k8s-docker-copy-resources:
+	mkdir -p h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
+	cp h2o-assemblies/$(H2O_ASSEMBLY)/build/libs/$(H2O_ASSEMBLY).jar h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/h2o.jar
+	cp LICENSE h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
+
+h2o-k8s-docker-build: h2o-k8s-docker-copy-resources
+	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
+
+h2o-k8s-docker-build-latest: h2o-k8s-docker-copy-resources
+	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release h2o-assemblies/$(H2O_ASSEMBLY)/build/tmp_docker/
 
 h2o-k8s-docker-push:
 	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
-	
-h2o-k8s-docker-push-redhat:
-	echo ${H2O_RED_HAT_REGISTRY_KEY} | docker login -u unused scan.connect.redhat.com --password-stdin
-	docker tag $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)
-	docker push scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)
-	$(eval DIGEST := $(shell docker images --no-trunc --quiet scan.connect.redhat.com/$(H2O_RED_HAT_PID)/h2oai/h2o:$(DOCKER_IMAGE_TAG)))
-	python scripts/jenkins/red_hat/red_hat_docker_certification.py --api_key $(H2O_RED_HAT_APIKEY) --pid $(H2O_RED_HAT_PID) --tag $(DOCKER_IMAGE_TAG) $(DIGEST)
-	
-h2o-k8s-docker-build-latest:
-	cp LICENSE build/LICENSE
-	docker build --build-arg H2O_VERSION=$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release build/
-	rm build/LICENSE
 
 h2o-k8s-docker-push-latest: h2o-k8s-docker-push
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG)

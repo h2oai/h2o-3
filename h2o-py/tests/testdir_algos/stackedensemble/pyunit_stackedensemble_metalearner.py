@@ -162,8 +162,32 @@ def metalearner_parameters_test():
     assert '{"booster": ["dart"]}' == se_xgb.actual_params["metalearner_params"]
 
 
+def stackensemble_delegates_to_metalearner_some_attributes_test():
+    train = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
+    x = train.columns
+    y = "CAPSULE"
+    x.remove(y)
+
+    nfolds = 2
+    gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
+                                       fold_assignment="Modulo",
+                                       keep_cross_validation_predictions=True)
+    gbm.train(x=x, y=y, training_frame=train)
+    rf = H2ORandomForestEstimator(nfolds=nfolds,
+                                  fold_assignment="Modulo",
+                                  keep_cross_validation_predictions=True)
+    rf.train(x=x, y=y, training_frame=train)
+    se = H2OStackedEnsembleEstimator(training_frame=train,
+                                     validation_frame=train,
+                                     base_models=[gbm.model_id, rf.model_id],
+                                     metalearner_nfolds=nfolds)
+    se.train(x=x, y=y, training_frame=train)
+    assert (se.cross_validation_metrics_summary()._cell_values == se.metalearner().cross_validation_metrics_summary()._cell_values)
+
+
 pyunit_utils.run_tests([
     stackedensemble_metalearner_test,
     metalearner_property_test,
-    metalearner_parameters_test
+    metalearner_parameters_test,
+    stackensemble_delegates_to_metalearner_some_attributes_test,
 ])

@@ -3081,6 +3081,19 @@ class H2OFrame(Keyed):
         return H2OFrame._expr(expr=ExprNode("relevel", self, quote(y)))
 
 
+    def relevel_by_frequency(self, weights_column=None, top_n=-1):
+        """
+        Reorder levels of all frame's factor columns according to their frequencies. The resulting frame
+        will have the most frequent categorical level used as the first in its corresponding column.
+        Supports weights.
+
+        :param str weights_column: The weight column
+        :param int top_n: Only re-level top_n levels (eg.: for top_n=1 only move the most frequent level to the top)
+        :returns: A new Frame with the same shape and data, with levels re-ordered  
+        """
+        return H2OFrame._expr(expr=ExprNode("relevel.by.freq", self, weights_column, top_n))
+
+
     def insert_missing_values(self, fraction=0.1, seed=None):
         """
         Insert missing values into the current frame, modifying it in-place.

@@ -1,6 +1,9 @@
 package water.webserver.jetty9;
 
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
@@ -11,6 +14,7 @@ import org.mockito.junit.MockitoRule;
 import water.webserver.config.ConnectionConfiguration;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
+import water.webserver.iface.LoginType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,4 +94,20 @@ public class Jetty9HelperTest {
     assertFalse(customCfg.isRelativeRedirectAllowed());
   }
 
+  @Test
+  public void testAuthWrapper() {
+    H2OHttpConfig cfg = new H2OHttpConfig();
+    cfg.loginType = LoginType.HASH;
+
+    when(_hhView.getConfig()).thenReturn(cfg);
+
+    final Server server = new Server();
+    final Jetty9Helper helper = new Jetty9Helper(_hhView);
+    final HandlerWrapper auth = helper.authWrapper(server);
+
+    assertTrue(auth instanceof ConstraintSecurityHandler);
+    ConstraintSecurityHandler securityHandler = (ConstraintSecurityHandler) auth; 
+    assertEquals("BASIC", securityHandler.getAuthMethod());
+    assertTrue(securityHandler.getLoginService() instanceof HashLoginService);
+  }
 }
