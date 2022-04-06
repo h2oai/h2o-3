@@ -114,6 +114,7 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
+
                     return params;
                 }
             },
@@ -132,6 +133,7 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
+
                     return params;
                 }
             },
@@ -150,6 +152,7 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
+
                     return params;
                 }
             },

@@ -4,7 +4,6 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLMModel;
 import hex.grid.Grid;
 import jsr166y.CountedCompleter;
 import water.DKV;
@@ -22,7 +21,6 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static hex.genmodel.utils.DistributionFamily.*;
-import static hex.util.DistributionUtils.familyToDistribution;
 
 
 /**
