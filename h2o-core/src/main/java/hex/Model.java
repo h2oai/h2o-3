@@ -2008,21 +2008,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String [] names = new String[ncols];
     if(output.hasTreatment()){
       names[0] = "uplift_predict";
+      names[1] = "p_y1_ct1";
+      names[2] = "p_y1_ct0";
     } else {
       names[0] = "predict";
-    }
-    for(int i = 1; i < names.length; ++i) {
-      names[i] = output.classNames()[i - 1];
-      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
-      try {
-        Integer.valueOf(names[i]);
-        if(output.hasTreatment()){
-          names[i] = i == 1? "p_y1_ct1" : "p_y1_ct0";
-        } else {
+      for (int i = 1; i < names.length; ++i) {
+        names[i] = output.classNames()[i - 1];
+        // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
+        try {
+          Integer.valueOf(names[i]);
           names[i] = "p" + names[i];
+        } catch (Throwable t) {
+          // do nothing, non-integer names are fine already
         }
-      } catch (Throwable t) {
-        // do nothing, non-integer names are fine already
       }
     }
     return names;
