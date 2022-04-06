@@ -27,13 +27,13 @@ def test_automl_distributions():
         dict(response="gaussian", distribution="gamma",
              algos=['DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], nrows=400),
         dict(response="gaussian", distribution="laplace", algos=['DeepLearning', 'GBM']),
-        dict(response="gaussian", distribution=dict(distribution="quantile", quantile_alpha=0.25), algos=['DeepLearning', 'GBM']),
-        dict(response="gaussian", distribution=dict(distribution="huber", huber_alpha=.3),
+        dict(response="gaussian", distribution=dict(type="quantile", quantile_alpha=0.25), algos=['DeepLearning', 'GBM']),
+        dict(response="gaussian", distribution=dict(type="huber", huber_alpha=.3),
              algos=['DeepLearning', 'GBM'], max_models=12),
-        dict(response="gaussian", distribution=dict(distribution="tweedie", tweedie_power=1.5),
+        dict(response="gaussian", distribution=dict(type="tweedie", tweedie_power=1.5),
              algos=['DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost']),
         dict(response="ordinal_factors", distribution="ordinal", algos=[], fail=True),
-        dict(response="gaussian", distribution=dict(distribution="custom", custom_distribution_func="FILLED_LATER_IN_THE_TEST"), algos=["GBM"]),
+        dict(response="gaussian", distribution=dict(type="custom", custom_distribution_func="FILLED_LATER_IN_THE_TEST"), algos=["GBM"]),
     ]
     seed = 9803190
 
@@ -65,7 +65,7 @@ def test_automl_distributions():
         def _(scenario):
             distribution_name = scenario["distribution"]
             if isinstance(distribution_name, dict):
-                distribution_name = distribution_name["distribution"]
+                distribution_name = distribution_name["type"]
             def test_scenario():
                 expected_dist = distribution_name
                 df = make_data(scenario.get("nrows", 264))
@@ -113,12 +113,10 @@ def test_automl_distributions():
 
 def test_python_api():
     def test_parameterized_distribution_without_param():
-        try:
-            aml = H2OAutoML(distribution=dict(distribution="huber"))
-            aml = H2OAutoML(distribution="tweedie")
-            aml = H2OAutoML(distribution="quantile")
-        except AssertionError:
-            assert False, "should not have failed"
+        aml = H2OAutoML(distribution=dict(type="huber"))
+        aml = H2OAutoML(distribution="tweedie")
+        aml = H2OAutoML(distribution="quantile")
+
 
     def test_parameterized_distribution_without_param2():
         try:
@@ -127,7 +125,7 @@ def test_python_api():
         except ValueError:
             pass
         try:
-            aml = H2OAutoML(distribution=dict(distribution="custom"))
+            aml = H2OAutoML(distribution=dict(type="custom"))
             assert False, "should have failed"
         except ValueError:
             pass

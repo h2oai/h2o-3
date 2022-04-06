@@ -234,7 +234,7 @@ a corresponding family. Algos that don't support the specified distribution will
         # AutoML with tweedie distribution with a specified value of tweedie_power=1.75
         aml_tweedie2 <- h2o.automl(x = predictors, y = response, training_frame = train,
                                    validation_frame = valid,
-                                   distribution = list(distribution = "tweedie", tweedie_power = 1.75),
+                                   distribution = list(type = "tweedie", tweedie_power = 1.75),
                                    max_models = 10,
                                    seed = 1234)
         print(aml_tweedie2@leaderboard)
@@ -269,7 +269,7 @@ a corresponding family. Algos that don't support the specified distribution will
         print(aml_tweedie.leaderboard)
 
         # AutoML with tweedie distribution with a specified value of tweedie_power=1.75
-        aml_tweedie2 = H2OAutoML(distribution=dict(distribution="tweedie", tweedie_power=1.75), seed=1234, max_models=10)
+        aml_tweedie2 = H2OAutoML(distribution=dict(type="tweedie", tweedie_power=1.75), seed=1234, max_models=10)
         aml_tweedie2.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
         print(aml_tweedie2.leaderboard)
 

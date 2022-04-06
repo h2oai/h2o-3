@@ -152,25 +152,6 @@ public class StackedEnsembleStepsProvider
                 params.initMetalearnerParams(_metalearnerAlgo);
                 params._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 params._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
-                setDistributionParameters(params._metalearner_parameters);
-            }
-
-            @Override
-            public boolean supportsDistribution(DistributionFamily distributionFamily) {
-                StackedEnsembleParameters params = prepareModelParameters();
-                setMetalearnerParameters(params);
-                try {
-                    params.setDistributionFamily(distributionFamily);
-                } catch (H2OIllegalArgumentException e) {
-                    return false;
-                }
-                // Just to get the correct response
-                setCommonModelBuilderParams(params);
-                ModelBuilder mb = ModelBuilder.make(params);
-                mb.init(false);
-                return Arrays.stream(new String[]{"_distribution", "_family"})
-                        .allMatch((field) ->
-                                mb.getMessagesByFieldAndSeverity(field, Log.ERRR).length == 0);
             }
 
             Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] baseModels, boolean isLast) {

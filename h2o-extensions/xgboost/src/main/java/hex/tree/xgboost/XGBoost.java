@@ -185,7 +185,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             DistributionFamily.gamma,
             DistributionFamily.tweedie,
     };
-    if (!(Arrays.stream(allowed_distributions).anyMatch(_parms._distribution::equals)))
+    if (!ArrayUtils.contains(allowed_distributions, _parms._distribution))
       error("_distribution", _parms._distribution.name() + " is not supported for XGBoost in current H2O.");
 
     if (_parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Enum) {

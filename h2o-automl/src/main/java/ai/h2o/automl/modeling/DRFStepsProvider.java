@@ -24,7 +24,6 @@ public class DRFStepsProvider
             public DRFParameters prepareModelParameters() {
                 DRFParameters params = new DRFParameters();
                 params._score_tree_interval = 5;
-                setDistributionParameters(params);
                 return params;
             }
         }

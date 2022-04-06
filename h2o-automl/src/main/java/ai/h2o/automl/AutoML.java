@@ -23,7 +23,10 @@ import water.fvec.Vec;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
 import water.nbhm.NonBlockingHashMap;
-import water.util.*;
+import water.util.Countdown;
+import water.util.MRUtils;
+import water.util.PrettyPrint;
+import water.util.StringUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -73,7 +76,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                 new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
 //                new ModelSize(model._key)
                 new AlgoName(model),
-                new Distribution(model),
                 new ModelProvider(model, step),
                 new ModelStep(model, step),
                 new ModelGroup(model, step),
@@ -319,9 +321,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               + " Please note that the models will still be validated using cross-validation only,"
               + " the validation frame will be used to provide purely informative validation metrics on the trained models.");
     }
-    if (buildSpec.build_control.distribution.equals(DistributionFamily.fractionalbinomial) ||
-            buildSpec.build_control.distribution.equals(DistributionFamily.quasibinomial) ||
-            buildSpec.build_control.distribution.equals(DistributionFamily.ordinal)) {
+    if (Arrays.asList(
+            DistributionFamily.fractionalbinomial,
+            DistributionFamily.quasibinomial,
+            DistributionFamily.ordinal
+            ).contains(buildSpec.build_control.distribution)) {
       throw new H2OIllegalArgumentException("Distribution \"" + buildSpec.build_control.distribution.name() + "\" is not supported in AutoML!");
     }
   }
@@ -622,35 +626,45 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       if (numOfDomains > 2)
         return DistributionFamily.multinomial;
 
-      throw new RuntimeException("Number of domains is equal to 1.");
+      throw new RuntimeException("Number of classes is equal to 1.");
     } else {
       DistributionFamily distribution = _buildSpec.build_control.distribution;
       if (numOfDomains > 2) {
-        if (! (distribution.equals(DistributionFamily.multinomial) ||
-                distribution.equals(DistributionFamily.ordinal) ||
-                distribution.equals(DistributionFamily.custom))) {
-          throw new H2OAutoMLException("Wrong distribution specified! Number of domains of response is greater than 2." +
+        if (!Arrays.asList(
+                DistributionFamily.multinomial,
+                DistributionFamily.ordinal,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of classes of response is greater than 2." +
                   " Possible distribution values: \"multinomial\"," +
                   /*" \"ordinal\"," + */ // Currently unsupported in AutoML
                   " \"custom\".");
         }
       } else if (numOfDomains == 2) {
-        if (! (distribution.equals(DistributionFamily.bernoulli) ||
-                distribution.equals(DistributionFamily.quasibinomial) ||
-                distribution.equals(DistributionFamily.fractionalbinomial) ||
-                distribution.equals(DistributionFamily.custom))) {
-          throw new H2OAutoMLException("Wrong distribution specified! Number of domains of response is 2." +
+        if (!Arrays.asList(
+                DistributionFamily.bernoulli,
+                DistributionFamily.quasibinomial,
+                DistributionFamily.fractionalbinomial,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of classes of response is 2." +
                   " Possible distribution values: \"bernoulli\"," +
                   /*" \"quasibinomial\", \"fractionalbinomial\"," + */ // Currently unsupported in AutoML
                   " \"custom\".");
         }
       } else {
-        if (distribution.equals(DistributionFamily.multinomial) ||
-               distribution.equals(DistributionFamily.ordinal) ||
-               distribution.equals(DistributionFamily.bernoulli) ||
-               distribution.equals(DistributionFamily.quasibinomial) ||
-               distribution.equals(DistributionFamily.fractionalbinomial)) {
-          throw new H2OAutoMLException("Wrong distribution specified! Number of domains of response is greater than 2." +
+        if (!Arrays.asList(
+                DistributionFamily.gaussian,
+                DistributionFamily.poisson,
+                DistributionFamily.negativebinomial,
+                DistributionFamily.gamma,
+                DistributionFamily.laplace,
+                DistributionFamily.quantile,
+                DistributionFamily.huber,
+                DistributionFamily.tweedie,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Response type suggests a regression task." +
                   " Possible distribution values: \"gaussian\", \"poisson\", \"negativebinomial\", \"gamma\", " +
                   "\"laplace\", \"quantile\", \"huber\", \"tweedie\", \"custom\".");
         }
@@ -729,10 +743,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     for (ModelingStep step : getExecutionPlan()) {
       if (!exceededSearchLimits(step)) {
-        if (!step.supportsDistribution(_distributionFamily)) {
-          _eventLog.warn(Stage.ModelTraining,"Step " + step._algo.name() + "." + step._id +
-                  " doesn't support " + _distributionFamily.name() + " distribution. Using AUTO distribution instead.");
-        }
         StepResultState state = _modelingStepsExecutor.submit(step, job());
         log.info("AutoML step returned with state: "+state.toString());
         if (state.is(ResultStatus.success)) {

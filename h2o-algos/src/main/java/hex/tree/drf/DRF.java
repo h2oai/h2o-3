@@ -16,6 +16,7 @@ import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -70,7 +71,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
             DistributionFamily.multinomial,
             DistributionFamily.gaussian,
     };
-    if (!(Arrays.stream(allowed_distributions).anyMatch(_parms._distribution::equals)))
+    if (!ArrayUtils.contains(allowed_distributions, _parms._distribution))
       error("_distribution", _parms._distribution.name() + " distribution is not supported for DRF in current H2O.");
     if (_parms._distribution == DistributionFamily.AUTO) {
       if (_nclass == 1) _parms._distribution = DistributionFamily.gaussian;

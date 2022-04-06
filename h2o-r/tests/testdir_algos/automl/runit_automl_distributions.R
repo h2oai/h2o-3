@@ -48,10 +48,10 @@ automl.distributions.tests <- function() {
     list(response = "gaussian", distribution = "gamma",
          algos = c('DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'), nrows = 400),
     list(response = "gaussian", distribution = "laplace", algos = c('DeepLearning', 'GBM')),
-    list(response = "gaussian", distribution = list(distribution = "quantile", quantile_alpha = 0.25), algos = c('DeepLearning', 'GBM')),
-    list(response = "gaussian", distribution = list(distribution = "huber", huber_alpha = .3),
+    list(response = "gaussian", distribution = list(type = "quantile", quantile_alpha = 0.25), algos = c('DeepLearning', 'GBM')),
+    list(response = "gaussian", distribution = list(type = "huber", huber_alpha = .3),
          algos = c('DeepLearning', 'GBM'), max_models = 12),
-    list(response = "gaussian", distribution = list(distribution = "tweedie", tweedie_power = 1.5),
+    list(response = "gaussian", distribution = list(type = "tweedie", tweedie_power = 1.5),
          algos = c('DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost')),
     list(response = "ordinal_factors", distribution = "ordinal", algos = c(), fail = TRUE)
     # list(response = "gaussian", distribution = "custom", algos = c("GBM")),
@@ -62,7 +62,7 @@ automl.distributions.tests <- function() {
 
   lapply(scenarios, function(scenario) {
     distribution <- scenario$distribution
-    if (is.list(distribution)) distribution <- distribution$distribution
+    if (is.list(distribution)) distribution <- distribution$type
     assign(paste0("test_", distribution), function() {
 
       cat("\n", distribution, "\n", rep_len("=", nchar(distribution)), "\n", sep = "")
@@ -117,7 +117,7 @@ test.unspecified.param <- function() {
   df <- as.h2o(iris)
   aml <- h2o.automl(y = "Sepal.Length", training_frame = df, distribution = "huber", max_runtime_secs = 2)
   expect_is(aml, "H2OAutoML")
-  aml <- h2o.automl(y = "Sepal.Length", training_frame = df, distribution = list(distribution = "tweedie"), max_runtime_secs = 2)
+  aml <- h2o.automl(y = "Sepal.Length", training_frame = df, distribution = list(type = "tweedie"), max_runtime_secs = 2)
   expect_is(aml, "H2OAutoML")
   aml <- h2o.automl(y = "Sepal.Length", training_frame = df, distribution = "quantile", max_runtime_secs = 2)
   expect_is(aml, "H2OAutoML")
@@ -125,7 +125,7 @@ test.unspecified.param <- function() {
 
 test.unspecified.param2 <- function() {
   df <- as.h2o(iris)
-  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = list(distribution = "custom"), max_runtime_secs = 2))
+  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = list(type = "custom"), max_runtime_secs = 2))
   expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "custom", max_runtime_secs = 2))
 }
 

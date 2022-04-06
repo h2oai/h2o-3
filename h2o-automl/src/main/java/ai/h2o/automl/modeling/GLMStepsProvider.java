@@ -31,7 +31,6 @@ public class GLMStepsProvider
             public GLMParameters prepareModelParameters() {
                 GLMParameters params = new GLMParameters();
                 params._lambda_search = true;
-                setDistributionParameters(params);
                 return params;
             }
             

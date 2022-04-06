@@ -99,17 +99,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   @Override
   public int nclasses() {
-    DistributionFamily distribution;
     if (_parms._metalearner_parameters != null) {
-      if (_parms._metalearner_parameters instanceof GLMModel.GLMParameters)
-        distribution = familyToDistribution(((GLMModel.GLMParameters) _parms._metalearner_parameters)._family);
-      else
-        distribution = _parms._metalearner_parameters._distribution;
-
-      if (multinomial.equals(distribution) || ordinal.equals(distribution) || AUTO.equals(distribution))
+      DistributionFamily distribution = _parms._metalearner_parameters.getDistributionFamily();
+      if (Arrays.asList(multinomial, ordinal, AUTO).contains(distribution))
         return _nclass;
-      if (bernoulli.equals(distribution) || quasibinomial.equals(distribution)
-              || fractionalbinomial.equals(distribution))
+      if (Arrays.asList(bernoulli, quasibinomial, fractionalbinomial).contains(distribution))
         return 2;
       return 1;
     }

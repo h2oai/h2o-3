@@ -106,12 +106,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         return builder.trainModelOnH2ONode();
     }
 
-
-    public boolean supportsDistribution(DistributionFamily distributionFamily) {
-        throw new UnsupportedOperationException();
-    }
-
-    public boolean validParameters(Model.Parameters parms, String[] fields) {
+    private boolean validParameters(Model.Parameters parms, String[] fields) {
         try {
             Model.Parameters params = parms.clone();
             // some algos check if distribution has proper _nclass(es) so we need to set training frame and response etc
@@ -127,14 +122,20 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     }
 
     protected void setDistributionParameters(Model.Parameters parms) {
-        if (aml().getDistributionFamily().equals(DistributionFamily.custom))
-            parms._custom_distribution_func = aml().getBuildSpec().build_control.custom_distribution_func;
-        if (aml().getDistributionFamily().equals(DistributionFamily.huber))
-            parms._huber_alpha = aml().getBuildSpec().build_control.huber_alpha;
-        if (aml().getDistributionFamily().equals(DistributionFamily.tweedie))
-            parms._tweedie_power = aml().getBuildSpec().build_control.tweedie_power;
-        if (aml().getDistributionFamily().equals(DistributionFamily.quantile))
-            parms._quantile_alpha = aml().getBuildSpec().build_control.quantile_alpha;
+        switch (aml().getDistributionFamily()) {
+            case custom:
+                parms._custom_distribution_func = aml().getBuildSpec().build_control.custom_distribution_func;
+                break;
+            case huber:
+                parms._huber_alpha = aml().getBuildSpec().build_control.huber_alpha;
+                break;
+            case tweedie:
+                parms._tweedie_power = aml().getBuildSpec().build_control.tweedie_power;
+                break;
+            case quantile:
+                parms._quantile_alpha = aml().getBuildSpec().build_control.quantile_alpha;
+                break;
+        }
 
         try {
             parms.setDistributionFamily(aml().getDistributionFamily());
@@ -143,6 +144,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
         if (!validParameters(parms, new String[]{"_distribution", "_family"}))
             parms.setDistributionFamily(DistributionFamily.AUTO);
+
+        if (!aml().getDistributionFamily().equals(parms.getDistributionFamily())) {
+            aml().eventLog().info(Stage.ModelTraining,"Algo " + parms.algoName() +
+                    " doesn't support " + _aml.getDistributionFamily().name() + " distribution. Using AUTO distribution instead.");
+        }
     }
 
     private transient AutoML _aml;
@@ -517,6 +523,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setSeed(parms, defaults, SeedPolicy.Incremental);
             setStoppingCriteria(parms, defaults);
             setCustomParams(parms);
+            setDistributionParameters(parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
             if (ignores(AutoML.Constraint.TIMEOUT)) {
@@ -536,18 +543,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     ? "No time limitation for "+key
                     : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
             return startModel(key, parms);
-        }
-
-
-        @Override
-        public boolean supportsDistribution(DistributionFamily distributionFamily) {
-            Model.Parameters parms = prepareModelParameters();
-            try {
-                parms.setDistributionFamily(distributionFamily);
-                return validParameters(parms, new String[]{"_distribution", "_family"});
-            } catch (H2OIllegalArgumentException e) {
-                return false;
-            }
         }
     }
 
@@ -617,6 +612,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             // grid seed is provided later through the searchCriteria
             setStoppingCriteria(baseParms, defaults);
             setCustomParams(baseParms);
+            setDistributionParameters(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
@@ -660,16 +656,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             searchCriteria.set_stopping_rounds(baseParms._stopping_rounds * GRID_STOPPING_ROUND_FACTOR);
         }
 
-        @Override
-        public boolean supportsDistribution(DistributionFamily distributionFamily) {
-            Model.Parameters parms = prepareModelParameters();
-            try {
-                parms.setDistributionFamily(distributionFamily);
-                return validParameters(parms, new String[]{"_distribution", "_family"});
-            } catch (H2OIllegalArgumentException e) {
-                return false;
-            }
-        }
     }
 
     /**
@@ -846,11 +832,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 }
             }, job._work, job._max_runtime_msecs);
         }
-
-        @Override
-        public boolean supportsDistribution(DistributionFamily distributionFamily) {
-            return true;
-        }
     }
 
 
@@ -928,11 +909,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         protected abstract Collection<ModelingStep> prepareModelingSteps();
-
-        @Override
-        public boolean supportsDistribution(DistributionFamily distributionFamily) {
-            return true;
-        }
     }
 
 }

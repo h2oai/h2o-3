@@ -417,26 +417,26 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             if distribution == "custom":
                 raise H2OValueError('Distribution "custom" has to be specified as a '
                                     'dictionary with their respective parameters, e.g., '
-                                    '`dict(distribution = \"custom\", custom_distribution_func = \"...\"))`.')
+                                    '`dict(type = \"custom\", custom_distribution_func = \"...\"))`.')
             return distribution
         if is_type(distribution, dict):
-            dist = distribution["distribution"].lower()
-            ALLOWED_DISTRIBUTION_PARAMETERS = dict(
+            dist = distribution["type"].lower()
+            allowed_distribution_parameters = dict(
                 custom='custom_distribution_func',
                 huber='huber_alpha',
                 quantile='quantile_alpha',
                 tweedie='tweedie_power'
             )
-            assert distribution.get(ALLOWED_DISTRIBUTION_PARAMETERS.get(dist)) is not None or len(distribution) == 1, (
+            assert distribution.get(allowed_distribution_parameters.get(dist)) is not None or len(distribution) == 1, (
                     "Distribution dictionary should contain distribution and a distribution "
-                    "parameter. For example `dict(distribution=\"{}\", {}=...)`."
-            ).format(dist, ALLOWED_DISTRIBUTION_PARAMETERS[dist])
-            if distribution["distribution"] == "custom" and "custom_distribution_func" not in distribution.keys():
+                    "parameter. For example `dict(type=\"{}\", {}=...)`."
+            ).format(dist, allowed_distribution_parameters[dist])
+            if distribution["type"] == "custom" and "custom_distribution_func" not in distribution.keys():
                 raise H2OValueError('Distribution "custom" has to be specified as a '
                             'dictionary with their respective parameters, e.g., '
-                            '`dict(distribution = \"custom\", custom_distribution_func = \"...\"))`.')
-            if ALLOWED_DISTRIBUTION_PARAMETERS.get(dist) in distribution.keys():
-                setattr(self, ALLOWED_DISTRIBUTION_PARAMETERS[dist], distribution[ALLOWED_DISTRIBUTION_PARAMETERS[dist]])
+                            '`dict(type = \"custom\", custom_distribution_func = \"...\"))`.')
+            if allowed_distribution_parameters.get(dist) in distribution.keys():
+                setattr(self, "_"+allowed_distribution_parameters[dist], distribution[allowed_distribution_parameters[dist]])
             return dist
 
 
@@ -446,10 +446,10 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     nfolds = _aml_property('build_control.nfolds', types=(int,), freezable=True,
                            validate_fn=__validate_nfolds)
     distribution = _aml_property('build_control.distribution', types=(str, dict), freezable=True, validate_fn=__validate_distribution)
-    custom_distribution_func = _aml_property('build_control.custom_distribution_func', types=(str,), freezable=True)
-    huber_alpha = _aml_property('build_control.huber_alpha', types=(numeric,), freezable=True)
-    tweedie_power = _aml_property('build_control.tweedie_power', types=(numeric,), freezable=True)
-    quantile_alpha = _aml_property('build_control.quantile_alpha', types=(numeric,), freezable=True)
+    _custom_distribution_func = _aml_property('build_control.custom_distribution_func', types=(str,), freezable=True)
+    _huber_alpha = _aml_property('build_control.huber_alpha', types=(numeric,), freezable=True)
+    _tweedie_power = _aml_property('build_control.tweedie_power', types=(numeric,), freezable=True)
+    _quantile_alpha = _aml_property('build_control.quantile_alpha', types=(numeric,), freezable=True)
     balance_classes = _aml_property('build_control.balance_classes', types=(bool,), freezable=True)
     class_sampling_factors = _aml_property('build_control.class_sampling_factors', types=(None, [numeric]), freezable=True)
     max_after_balance_size = _aml_property('build_control.max_after_balance_size', types=(None, numeric), freezable=True)

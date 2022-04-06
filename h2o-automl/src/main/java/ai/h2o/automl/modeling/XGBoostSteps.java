@@ -50,7 +50,6 @@ public class XGBoostSteps extends ModelingSteps {
                 double[] dist = aml().getClassDistribution();
                 params._scale_pos_weight =  (float) (dist[0] / dist[1]);
             }
-            setDistributionParameters(params);
             return params;
         }
     }
@@ -64,9 +63,7 @@ public class XGBoostSteps extends ModelingSteps {
         }
 
         public XGBoostParameters prepareModelParameters() {
-            XGBoostParameters params = XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
-            setDistributionParameters(params);
-            return params;
+            return XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
         }
     }
 
@@ -117,7 +114,6 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
-                    setDistributionParameters(params);
                     return params;
                 }
             },
@@ -136,7 +132,6 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
-                    setDistributionParameters(params);
                     return params;
                 }
             },
@@ -155,7 +150,6 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
-                    setDistributionParameters(params);
                     return params;
                 }
             },

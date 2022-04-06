@@ -7,7 +7,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import static hex.genmodel.utils.DistributionFamily.bernoulli;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 
-
 public class DistributionUtils {
     public static DistributionFamily familyToDistribution(GLMModel.GLMParameters.Family aFamily) {
         if (aFamily == GLMModel.GLMParameters.Family.binomial) {

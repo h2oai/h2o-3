@@ -11,11 +11,11 @@ import hex.schemas.*;
 import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
-import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Entry point class to load and access the supported metalearners.
@@ -135,7 +135,8 @@ public class Metalearners {
             // Check if distribution family is supported and if not pick a basic one
             ModelBuilder mb = ModelBuilder.make(parms);
             mb.init(false);
-            if (mb.error_count() > 0) {
+            if (!Stream.of("_distribution", "_family")
+                    .allMatch((field) -> mb.getMessagesByFieldAndSeverity(field, Log.ERRR).length == 0)) {
                 DistributionFamily distribution;
                 if (_model._output.nclasses() == 1) {
                     distribution = DistributionFamily.gaussian;

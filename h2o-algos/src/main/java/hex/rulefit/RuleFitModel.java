@@ -1,7 +1,6 @@
 package hex.rulefit;
 
 import hex.*;
-import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;

@@ -31,7 +31,7 @@
 #' @param max_runtime_secs This argument specifies the maximum time that the AutoML process will run for. If neither `max_runtime_secs` nor `max_models` are specified by the user, then `max_runtime_secs` defaults to 3600 seconds (1 hour).
 #' @param max_runtime_secs_per_model Maximum runtime in seconds dedicated to each individual model training process. Use 0 to disable. Defaults to 0.
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL (no strict limit).
-#' @param distribution Distribution function used by algorithms that support it; other algorithms use their defaults. Possible values: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom", and for parameterized distributions list form is used to specify the parameter, e.g., `list(distribution = "tweedie", tweedie_power = 1.5)`. Defaults to "AUTO".
+#' @param distribution Distribution function used by algorithms that support it; other algorithms use their defaults. Possible values: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom", and for parameterized distributions list form is used to specify the parameter, e.g., `list(type = "tweedie", tweedie_power = 1.5)`. Defaults to "AUTO".
 #' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).
 #'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to "AUTO".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the
@@ -226,23 +226,23 @@ h2o.automl <- function(x, y, training_frame,
                                                             match.arg(stopping_metric))
   if (!is.null(distribution) && !missing(distribution)) {
     if (is.list(distribution)) {
-      build_control$distribution <- distribution$distribution
+      build_control$distribution <- distribution$type
       ALLOWED_DISTRIBUTION_PARAMETERS <- list(
         custom = 'custom_distribution_func',
         huber = 'huber_alpha',
         quantile = 'quantile_alpha',
         tweedie = 'tweedie_power'
       )
-      param <- ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]]
-      if (!any(param == ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]]) && length(distribution) != 1)
-        stop(sprintf("Distribution \"%s\" requires \"%s\" parameter, e.g., `list(distribution = \"%s\", %s = ...)`.",
-                     distribution$distribution, ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]],
-                     distribution$distribution, ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]]
+      param <- ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$type]]
+      if (!any(param == ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$type]]) && length(distribution) != 1)
+        stop(sprintf("Distribution \"%s\" requires \"%s\" parameter, e.g., `list(type = \"%s\", %s = ...)`.",
+                     distribution$type, ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$type]],
+                     distribution$type, ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$type]]
         ))
-      if (tolower(distribution$distribution) == "custom") {
+      if (tolower(distribution$type) == "custom") {
         stop(paste0('Distribution "custom" has to be specified as a ',
                     'dictionary with their respective parameters, e.g., ',
-                    '`list(distribution = \"custom\", custom_distribution_func = \"...\"))`.'))
+                    '`list(type = \"custom\", custom_distribution_func = \"...\"))`.'))
       }
       if (param %in% names(distribution))
         build_control[[param]] <- distribution[[param]]
@@ -251,7 +251,7 @@ h2o.automl <- function(x, y, training_frame,
       if (tolower(distribution) == "custom") {
         stop(paste0('Distribution "custom" has to be specified as a ',
                     'dictionary with their respective parameters, e.g., ',
-                    '`list(distribution = \"custom\", custom_distribution_func = \"...\"))`.'))
+                    '`list(type = \"custom\", custom_distribution_func = \"...\"))`.'))
       }
       build_control$distribution <- distribution
     }
