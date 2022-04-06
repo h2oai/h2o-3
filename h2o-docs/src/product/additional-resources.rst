@@ -116,10 +116,6 @@ Java
 - `H2O Core Javadoc <https://docs.h2o.ai/h2o/latest-stable/h2o-core/javadoc/index.html>`__
 - `H2O Algorithms Javadoc <https://docs.h2o.ai/h2o/latest-stable/h2o-algos/javadoc/index.html>`__
 
-Scala
-'''''
-
-???
 
 API Reference
 -------------
