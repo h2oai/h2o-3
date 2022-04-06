@@ -1408,9 +1408,8 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
                                    },
                                    data = pdp, color = "black"
     )
-    pdp_dashed <- ggplot2::scale_linetype_manual(values = c("Partial Dependence" = "dashed"))
 
-    q <- q + pdp_part + pdp_dashed
+    q <- q + pdp_part
   }
   q <- q + shape_legend_manual + shape_legend_manual2
   
