@@ -1853,7 +1853,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model.auuc()
         """
         if metric is None:
-            return self._metric_json['AUUC_normalized']
+            return self._metric_json['auuc_normalized']
         else:
             assert metric in ['AUTO', 'qini', 'lift', 'gain'], \
                 "AUUC metric "+metric+" should be 'AUTO', 'qini','lift' or 'gain'."

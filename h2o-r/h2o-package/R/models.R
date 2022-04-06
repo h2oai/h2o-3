@@ -1306,7 +1306,7 @@ h2o.auuc_normalized <- function(object, train=FALSE, valid=FALSE, metric=NULL) {
         stop("metric must be NULL, 'qini', 'lift' or 'gain'")
     if( is(object, "H2OModelMetrics") ) {
         if(is.null(metric)) {
-            return( object@metrics$AUUC_normalized )
+            return( object@metrics$auuc_normalized )
         } else {
             return( eval(parse(text=paste("object@metrics$auuc_table$", metric,"[2]", sep=""))))
         }

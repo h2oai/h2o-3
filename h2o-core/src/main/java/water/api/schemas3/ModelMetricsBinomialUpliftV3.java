@@ -17,7 +17,7 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
     public double AUUC;
 
     @API(help="The default normalized AUUC for this scoring run.", direction=API.Direction.OUTPUT)
-    public double AUUC_normalized;
+    public double auuc_normalized;
 
     @API(help="The Qini value for this scoring run.", direction=API.Direction.OUTPUT)
     public double qini;
@@ -41,7 +41,7 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
         AUUC auuc = modelMetrics._auuc;
         if (null != auuc) {
             AUUC  = auuc.auuc();
-            AUUC_normalized = auuc.auucNormalized();
+            auuc_normalized = auuc.auucNormalized();
             qini = auuc.qini();
             // Fill TwoDimTable
             String[] thresholds = new String[auuc._nBins];

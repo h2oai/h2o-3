@@ -438,11 +438,15 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             table.set(row, col++, i);
             ScoreKeeper st = _scored_train[i];
             table.set(row, col++, st._AUUC);
+            table.set(row, col++, st._auuc_normalized);
+            table.set(row, col++, st._qini);
             if (hasCustomMetric) table.set(row, col++, st._custom_metric);
 
             if (_output._validation_metrics != null) {
                 st = _scored_valid[i];
                 table.set(row, col++, st._AUUC);
+                table.set(row, col++, st._auuc_normalized);
+                table.set(row, col++, st._qini);
                 if (hasCustomMetric) table.set(row, col++, st._custom_metric);
             }
             row++;
