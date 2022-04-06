@@ -19,6 +19,7 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -497,6 +498,15 @@ public abstract class SharedTree<
         if (stop_requested()) throw new Job.JobCancelledException();
         if (tid == _ntrees - 1 && _coordinator != null) {
           _coordinator.updateParameters();
+        }
+        if (_parms._in_training_checkpoints_dir != null) {
+          try {
+            String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + tid;
+            _model.setInputParms(_parms);
+            _model.exportBinaryModel(modelFile, true);
+          } catch (IOException e) {
+            throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
+          }
         }
       }
       // Final scoring (skip if job was cancelled)

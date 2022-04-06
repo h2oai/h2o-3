@@ -5178,4 +5178,131 @@ public class GBMTest extends TestUtil {
     printNode(n.getRightChild(), depth + 1, sb);
   }
   
+  @Test
+  public void testPartialCheckpointGivesDifferentResultAsTheFinalModel() throws IOException {
+    Scope.enter();
+    try {
+      // prepare training data
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      Scope.track(train);
+      train.toCategoricalCol(response);
+
+      // Common model parameters
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._seed = 0xDEDA;
+      parms._train = train._key;
+      parms._response_column = response;
+
+      // Train referential model
+      parms._ntrees = 3;
+      GBMModel modelReference = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Scope.track_generic(modelReference);
+      Frame scoreReference = modelReference.score(train);
+      Scope.track(scoreReference);
+
+      // Train another model and do in-training checkpoints
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder("gbm_checkpoints").getAbsolutePath();
+      parms._ntrees = 6;
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      Scope.track_generic(gbm);
+
+      // Load in-training checkpoint with the same trees as reference has
+      Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.3");
+      DKV.put(checkpoint);
+      Scope.track_generic(checkpoint);
+      Frame scoreCheckpoint = checkpoint.score(train);
+      Scope.track(scoreCheckpoint);
+
+      System.out.println("modelReference = " + modelReference);
+      System.out.println("checkpointFourTrees = " + checkpoint);
+
+      // Given output should be the same
+      assertFrameEquals(scoreReference, scoreCheckpoint, 1e-3);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testPartialCheckpointAreProperlyExported() throws IOException {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      Scope.track(train);
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._seed = 0xDEDA;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._ntrees = 4;
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+
+      File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
+      assertTrue(checkpointsDirectory.exists());
+      assertTrue(checkpointsDirectory.isDirectory());
+
+      for (int tid = 0; tid < parms._ntrees; tid++) {
+        File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+        assertTrue(checkpointFile.exists());
+        assertTrue(checkpointFile.isFile());
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUsageOfPartialCheckpointGivesTheSameModelPrediction() throws IOException {
+    Scope.enter();
+    try {
+      // prepare training data
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      Scope.track(train);
+      train.toCategoricalCol(response);
+
+      // Common model parameters
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._seed = 0xDEDA;
+      parms._train = train._key;
+      parms._response_column = response;
+
+      // Train referential model
+      parms._ntrees = 6;
+      GBMModel modelReference = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Scope.track_generic(modelReference);
+      Frame scoreReference = modelReference.score(train);
+      Scope.track(scoreReference);
+
+      // Train another model and do in-training checkpoints
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder("gbm_checkpoints").getAbsolutePath();
+      parms._ntrees = 4;
+      GBMModel gbmWithCheckpoints = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      Scope.track_generic(gbmWithCheckpoints);
+
+      // Load in-training checkpoint with 2. trees and use it as checkpoint for another training
+      Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.2");
+      DKV.put(checkpoint);
+      Scope.track_generic(checkpoint);
+
+      // Train another model and do in-training checkpoints
+      parms._ntrees = 6;
+      parms._checkpoint = checkpoint._key;
+      parms._in_training_checkpoints_dir = null;
+      GBMModel gbmFinal = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      Scope.track_generic(gbmFinal);
+      Frame scoreFinal = gbmFinal.score(train);
+      Scope.track(scoreFinal);
+
+      // Given output must be the same
+      assertFrameEquals(scoreReference, scoreFinal, 1e-3);
+    } finally {
+      Scope.exit();
+    }
+  }
 }
