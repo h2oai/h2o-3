@@ -516,6 +516,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     
     public ToEigenVec getToEigenVec() { return null; }
+    
+    public CategoricalEncoder _categoricalEncoder; // not always available, used only to store specific stateful encoders (e.g. TargetEncoder)
+    public CategoricalEncoder getCategoricalEncoder() {
+      return _categoricalEncoder;
+    }
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {

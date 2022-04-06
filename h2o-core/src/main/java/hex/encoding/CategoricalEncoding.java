@@ -3,6 +3,8 @@ package hex.encoding;
 import hex.Model;
 import hex.genmodel.ICategoricalEncoding;
 import water.H2O;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OIllegalValueException;
 import water.nbhm.NonBlockingHashMap;
 
 import java.util.ServiceLoader;
@@ -71,7 +73,7 @@ public final class CategoricalEncoding {
         else
           return _ceClass.getConstructor().newInstance();
       } catch (Exception eParams) {
-        throw new IllegalStateException("");
+        throw new IllegalStateException(eParams.getMessage());
       }
     }
   }
@@ -99,10 +101,10 @@ public final class CategoricalEncoding {
     }
   }
 
-  public static CategoricalEncoder getEncoder(Scheme scheme, Model.AdaptFrameParameters params) {
+  public static CategoricalEncoder getEncoder(Scheme scheme, CategoricalEncodingSupport params) {
     CategoricalEncoderProvider provider = providersByName.get(scheme.name());
     if (provider == null)
-      throw H2O.unimpl();
+      throw new H2OIllegalArgumentException("Categorical encoder `"+scheme+"` is not available.");
     return provider.getEncoder(params);
   }
   

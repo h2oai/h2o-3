@@ -392,7 +392,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
         // - unseen values/interactions are however represented as NAs in the new column, which is acceptable as TE encodes them in the same way anyway.
         int colIdx = addFeatureInteraction(workingFrame, colGroup, columnsToEncode.toDomain());
         if (colIdx < 0) {
-          LOG.warn("Column "+Arrays.toString(colGroup)+" is missing in frame "+data._key);
+          LOG.warn("Columns group "+Arrays.toString(colGroup)+" is missing in frame "+data._key);
           continue;
         }
         assert workingFrame.name(colIdx).equals(columnToEncode);

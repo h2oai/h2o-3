@@ -7,5 +7,6 @@ public interface CategoricalEncodingSupport {
   CategoricalEncoding.Scheme getCategoricalEncoding();
   int getMaxCategoricalLevels();
   ToEigenVec getToEigenVec();
-//  Frame getTrainingFrame();
+  default CategoricalEncoder getCategoricalEncoder() { return null; }
+//  String[] getNonPredictors();
 }

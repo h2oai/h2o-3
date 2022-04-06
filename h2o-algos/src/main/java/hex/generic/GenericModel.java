@@ -1,6 +1,7 @@
 package hex.generic;
 
 import hex.*;
+import hex.encoding.CategoricalEncoder;
 import hex.genmodel.*;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.genmodel.descriptor.ModelDescriptor;
