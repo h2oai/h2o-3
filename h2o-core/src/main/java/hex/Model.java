@@ -425,10 +425,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public double _max_runtime_secs = 0;
 
     /** Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
-     * In general, we should use 0 or > 1 to be reasonably certain that the main model will have time to converge.
-     * if _main_model_time_budget_factor < 0 use max(1, -_main_model_time_budget_factor * remaining time) as max runtime secs
-     * if _main_model_time_budget_factor == 0 do not restrict time for the main model
-     * if _main_model_time_budget_factor > 0 use max(remaining time, _main_model_time_budget_factor * time for a single cv model) as max runtime secs
+     *  Value 0 means do not use time constraint for the main model.
+     *  More details in {@link ModelBuilder#setMaxRuntimeSecsForMainModel()}.
      */
     public double _main_model_time_budget_factor = 0;
 

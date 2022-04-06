@@ -1001,9 +1001,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Set max_runtime_secs for the main model.
    * Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
    * In general, we should use 0 or > 1 to be reasonably certain that the main model will have time to converge.
-   * if _main_model_time_budget_factor < 0 use max(1, -_main_model_time_budget_factor * remaining time) as max runtime secs
-   * if _main_model_time_budget_factor == 0 do not restrict time for the main model
-   * if _main_model_time_budget_factor > 0 use max(remaining time, _main_model_time_budget_factor * time for a single cv model) as max runtime secs
+   * if _main_model_time_budget_factor < 0, main_model_time_budget_factor is applied on remaining time to get max runtime secs.
+   * if _main_model_time_budget_factor == 0, do not restrict time for the main model.
+   * if _main_model_time_budget_factor > 0, use max_runtime_secs estimate using nfolds (doesn't depend on the remaining time).
    */
   protected void setMaxRuntimeSecsForMainModel() {
     if (_parms._max_runtime_secs == 0) return;
@@ -1011,9 +1011,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // strict version that uses the actual remaining time or 1 sec in case we ran out of time
       _parms._max_runtime_secs = Math.max(1, -_parms._main_model_time_budget_factor * remainingTimeSecs());
     } else {
+      int nFolds = nFoldWork();
       // looser version that uses max of remaining time and estimated remaining time based on number of folds
       _parms._max_runtime_secs = Math.max(remainingTimeSecs(),
-              _parms._main_model_time_budget_factor * maxRuntimeSecsPerModel(nFoldWork(), nModelsInParallel(nFoldWork())) * nFoldWork()/((double) nFoldWork() - 1));
+              _parms._main_model_time_budget_factor * maxRuntimeSecsPerModel(nFolds, nModelsInParallel(nFolds)) * nFolds /((double) nFolds - 1));
     }
   }
 

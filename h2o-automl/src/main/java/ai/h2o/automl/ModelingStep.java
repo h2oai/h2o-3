@@ -320,10 +320,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
 
-        // Give main model main_model_time_budget_factor-times the time to finish than a cv model has; more precisely
-        // main_model_time_budget_factor * cv_max_runtime * nfold/(nfold-1) since the main model uses data from all folds to train.
-        // Main intention is to prevent GLM/DeepLearning non-converging main model to spend
-        // way more time than it should while giving well-behaved models enough time to converge.
+        /** Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
+         *  Value 0 means do not use time constraint for the main model.
+         *  More details in {@link ModelBuilder#setMaxRuntimeSecsForMainModel()}.
+         */
         params._main_model_time_budget_factor = 2;
     }
     
