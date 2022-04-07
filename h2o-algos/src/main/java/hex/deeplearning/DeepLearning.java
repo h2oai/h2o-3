@@ -15,6 +15,7 @@ import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.init.Linpack;
 import water.init.NetworkTest;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;
@@ -70,6 +71,20 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     super.init(expensive);
     _parms.validate(this, expensive);
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
+    DistributionFamily[] allowed_distributions = new DistributionFamily[] {
+            DistributionFamily.AUTO,
+            DistributionFamily.bernoulli,
+            DistributionFamily.multinomial,
+            DistributionFamily.gaussian,
+            DistributionFamily.poisson,
+            DistributionFamily.gamma,
+            DistributionFamily.laplace,
+            DistributionFamily.quantile,
+            DistributionFamily.huber,
+            DistributionFamily.tweedie,
+    };
+    if (!(ArrayUtils.contains(allowed_distributions, _parms._distribution)))
+      error("_distribution", _parms._distribution.name() + " is not supported for DeepLearning in current H2O.");
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 

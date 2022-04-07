@@ -176,9 +176,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         for (Map.Entry<String, Object> incompat : incompats.entrySet())
           error("_backend", "GPU backend is not available for parameter setting '" + incompat.getKey() + " = " + incompat.getValue() + "'. Use CPU backend instead.");
     }
-
-    if (_parms._distribution == DistributionFamily.quasibinomial)
-      error("_distribution", "Quasibinomial is not supported for XGBoost in current H2O.");
+    DistributionFamily[] allowed_distributions = new DistributionFamily[] {
+            DistributionFamily.AUTO,
+            DistributionFamily.bernoulli,
+            DistributionFamily.multinomial,
+            DistributionFamily.gaussian,
+            DistributionFamily.poisson,
+            DistributionFamily.gamma,
+            DistributionFamily.tweedie,
+    };
+    if (!ArrayUtils.contains(allowed_distributions, _parms._distribution))
+      error("_distribution", _parms._distribution.name() + " is not supported for XGBoost in current H2O.");
 
     if (unsupportedCategoricalEncoding()) {
       error("_categorical_encoding", _parms._categorical_encoding + " encoding is not supported for XGBoost in current H2O.");

@@ -17,6 +17,7 @@ import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
+import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -103,6 +104,51 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             }
         }
         return builder.trainModelOnH2ONode();
+    }
+
+    private boolean validParameters(Model.Parameters parms, String[] fields) {
+        try {
+            Model.Parameters params = parms.clone();
+            // some algos check if distribution has proper _nclass(es) so we need to set training frame and response etc
+            setCommonModelBuilderParams(params);
+            ModelBuilder mb = ModelBuilder.make(params);
+            mb.init(false);
+            return Arrays.stream(fields)
+                    .allMatch((field) ->
+                            mb.getMessagesByFieldAndSeverity(field, Log.ERRR).length == 0);
+        } catch (H2OIllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    protected void setDistributionParameters(Model.Parameters parms) {
+        switch (aml().getDistributionFamily()) {
+            case custom:
+                parms._custom_distribution_func = aml().getBuildSpec().build_control.custom_distribution_func;
+                break;
+            case huber:
+                parms._huber_alpha = aml().getBuildSpec().build_control.huber_alpha;
+                break;
+            case tweedie:
+                parms._tweedie_power = aml().getBuildSpec().build_control.tweedie_power;
+                break;
+            case quantile:
+                parms._quantile_alpha = aml().getBuildSpec().build_control.quantile_alpha;
+                break;
+        }
+
+        try {
+            parms.setDistributionFamily(aml().getDistributionFamily());
+        } catch (H2OIllegalArgumentException e) {
+            parms.setDistributionFamily(DistributionFamily.AUTO);
+        }
+        if (!validParameters(parms, new String[]{"_distribution", "_family"}))
+            parms.setDistributionFamily(DistributionFamily.AUTO);
+
+        if (!aml().getDistributionFamily().equals(parms.getDistributionFamily())) {
+            aml().eventLog().info(Stage.ModelTraining,"Algo " + parms.algoName() +
+                    " doesn't support " + _aml.getDistributionFamily().name() + " distribution. Using AUTO distribution instead.");
+        }
     }
 
     private transient AutoML _aml;
@@ -493,6 +539,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setSeed(parms, defaults, SeedPolicy.Incremental);
             setStoppingCriteria(parms, defaults);
             setCustomParams(parms);
+            setDistributionParameters(parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
             if (limitModelTrainingTime()) {
@@ -580,18 +627,19 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             // grid seed is provided later through the searchCriteria
             setStoppingCriteria(baseParms, defaults);
             setCustomParams(baseParms);
+            setDistributionParameters(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-            RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
+            RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
             setSearchCriteria(searchCriteria, baseParms);
 
             if (null == key) key = makeKey(_provider, true);
             aml().trackKeys(key);
 
-            Log.debug("Hyperparameter search: "+_provider+", time remaining (ms): "+aml().timeRemainingMs());
+            Log.debug("Hyperparameter search: " + _provider + ", time remaining (ms): " + aml().timeRemainingMs());
             aml().eventLog().debug(Stage.ModelTraining, searchCriteria.max_runtime_secs() == 0
-                    ? "No time limitation for "+key
-                    : "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
+                    ? "No time limitation for " + key
+                    : "Time assigned for " + key + ": " + searchCriteria.max_runtime_secs() + "s");
             return startSearch(
                     key,
                     baseParms,
@@ -622,6 +670,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             searchCriteria.set_stopping_rounds(baseParms._stopping_rounds * GRID_STOPPING_ROUND_FACTOR);
         }
+
     }
 
     /**

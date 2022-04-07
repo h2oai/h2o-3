@@ -9,7 +9,7 @@ In order to understand the behavior and limitations of a H2O distributed cluster
 This implies that H2O nodes must be treated as stateful by Kubernetes. In Kubernetes, a set of pods sharing a common state is handled by a `StatefulSet <https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/>`__. Kubernetes tooling for stateless applications in not applicable to H2O. The proper way to deploy H2O is to set ``kind: StatefulSet``. A StatefulSet ensures:
 
 - H2O Nodes are treated as a single unit, being brought up and down gracefully and together.
-- No attemps will be made by K8S healthcheck (if defined) to restart individual H2O nodes in case of an error.
+- No attempts will be made by K8S healthcheck (if defined) to restart individual H2O nodes in case of an error.
 - Persistent storages and volumes associated with the StatefulSet of H2O Nodes will not be deleted once the cluster is brought down.
 
 
