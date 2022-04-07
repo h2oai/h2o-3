@@ -327,6 +327,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               + " Please note that the models will still be validated using cross-validation only,"
               + " the validation frame will be used to provide purely informative validation metrics on the trained models.");
     }
+    if (Arrays.asList(
+            DistributionFamily.fractionalbinomial,
+            DistributionFamily.quasibinomial,
+            DistributionFamily.ordinal
+            ).contains(buildSpec.build_control.distribution)) {
+      throw new H2OIllegalArgumentException("Distribution \"" + buildSpec.build_control.distribution.name() + "\" is not supported in AutoML!");
+    }
   }
 
   private void validateModelBuilding(AutoMLBuildModels modelBuilding) {
@@ -623,14 +630,59 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private DistributionFamily inferDistribution(Vec response) {
     int numOfDomains = response.domain() == null ? 0 : response.domain().length;
-    if (numOfDomains == 0)
-      return DistributionFamily.gaussian;
-    if (numOfDomains == 2)
-      return DistributionFamily.bernoulli;
-    if (numOfDomains > 2)
-      return DistributionFamily.multinomial;
+    if (_buildSpec.build_control.distribution == DistributionFamily.AUTO) {
+      if (numOfDomains == 0)
+        return DistributionFamily.gaussian;
+      if (numOfDomains == 2)
+        return DistributionFamily.bernoulli;
+      if (numOfDomains > 2)
+        return DistributionFamily.multinomial;
 
-    throw new RuntimeException("Number of domains is equal to 1.");
+      throw new RuntimeException("Number of classes is equal to 1.");
+    } else {
+      DistributionFamily distribution = _buildSpec.build_control.distribution;
+      if (numOfDomains > 2) {
+        if (!Arrays.asList(
+                DistributionFamily.multinomial,
+                DistributionFamily.ordinal,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of classes of response is greater than 2." +
+                  " Possible distribution values: \"multinomial\"," +
+                  /*" \"ordinal\"," + */ // Currently unsupported in AutoML
+                  " \"custom\".");
+        }
+      } else if (numOfDomains == 2) {
+        if (!Arrays.asList(
+                DistributionFamily.bernoulli,
+                DistributionFamily.quasibinomial,
+                DistributionFamily.fractionalbinomial,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of classes of response is 2." +
+                  " Possible distribution values: \"bernoulli\"," +
+                  /*" \"quasibinomial\", \"fractionalbinomial\"," + */ // Currently unsupported in AutoML
+                  " \"custom\".");
+        }
+      } else {
+        if (!Arrays.asList(
+                DistributionFamily.gaussian,
+                DistributionFamily.poisson,
+                DistributionFamily.negativebinomial,
+                DistributionFamily.gamma,
+                DistributionFamily.laplace,
+                DistributionFamily.quantile,
+                DistributionFamily.huber,
+                DistributionFamily.tweedie,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Response type suggests a regression task." +
+                  " Possible distribution values: \"gaussian\", \"poisson\", \"negativebinomial\", \"gamma\", " +
+                  "\"laplace\", \"quantile\", \"huber\", \"tweedie\", \"custom\".");
+        }
+      }
+    return distribution;
+    }
   }
 
   private void prepareData() {

@@ -19,7 +19,7 @@ public class DistributionUtils {
             throw new H2OIllegalArgumentException("DistributionFamily not supported for Family: " + aFamily);
         }
     }
-    
+
     public static GLMModel.GLMParameters.Family distributionToFamily(DistributionFamily distribution) {
         if (bernoulli.equals(distribution))
             return binomial;

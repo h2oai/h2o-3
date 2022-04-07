@@ -1,5 +1,6 @@
 package hex.tree.drf;
 
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
 import water.Key;
@@ -13,7 +14,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     public String fullName() { return "Distributed Random Forest"; }
     public String javaName() { return DRFModel.class.getName(); }
     public boolean _binomial_double_trees = false;
-    public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
+    public int _mtries = -1; //number of columns to use per split. default depends on the algorithm and problem (classification/regression)
 
     public DRFParameters() {
       super();

@@ -20,6 +20,9 @@ import water.util.Log;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static hex.genmodel.utils.DistributionFamily.*;
+
+
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
  */
@@ -90,6 +93,19 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   @Override
   public boolean haveMojo() {
     return true;
+  }
+
+  @Override
+  public int nclasses() {
+    if (_parms._metalearner_parameters != null) {
+      DistributionFamily distribution = _parms._metalearner_parameters.getDistributionFamily();
+      if (Arrays.asList(multinomial, ordinal, AUTO).contains(distribution))
+        return _nclass;
+      if (Arrays.asList(bernoulli, quasibinomial, fractionalbinomial).contains(distribution))
+        return 2;
+      return 1;
+    }
+    return super.nclasses();
   }
 
   @Override

@@ -334,12 +334,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Special values:
      *  -1 == AUTO; use precision=8 for classification, precision=unlimited for everything else
      *  0; disabled
-     *  
+     *
      *  for classification problems consider eg.:
      *     4 to keep only first 4 decimal places (consumes 75% less memory)
      *  or 8 to keep 8 decimal places (consumes 50% less memory)
      */
-    public int _keep_cross_validation_predictions_precision = -1; 
+    public int _keep_cross_validation_predictions_precision = -1;
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public boolean _auto_rebalance = true;
@@ -376,9 +376,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }
-    
+
     public Key<ModelPreprocessor>[] _preprocessors;
-    
+
     public long _seed = -1;
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
@@ -405,7 +405,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _offset_column;
     public String _fold_column;
     public String _treatment_column;
-    
+
     // Check for constant response
     public boolean _check_constant_response = true;
 
@@ -500,7 +500,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Bins for Gains/Lift table, if applicable. Ignored if G/L are not calculated.
      */
     public int _gainslift_bins = -1;
-    
+
     public MultinomialAucType _auc_type = MultinomialAucType.AUTO;
 
     /**
@@ -642,7 +642,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       xs ^= (train() == null ? 43 : train().checksum()) * (valid() == null ? 17 : valid().checksum());
       return xs;
     }
-    
+
     private void addToUsedIfColumn(Set<String> usedColumns, Set<String> allColumns, String value) {
       if (value == null) return;
       if (allColumns.contains(value)) {
@@ -654,7 +654,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Looks for all String parameters with the word 'column' in the parameter name, if
      * the parameter value is present in supplied array of strings, it will be added to the
      * returned set of used columns.
-     * 
+     *
      * @param trainNames names of columns in the training frame
      * @return set of names of columns present in the params as well as the training frame names
      */
@@ -748,6 +748,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override
     public final int getMaxCategoricalLevels() {
       return _max_categorical_levels;
+    }
+
+    public void setDistributionFamily(DistributionFamily distributionFamily){
+      _distribution = distributionFamily;
+    }
+
+    public DistributionFamily getDistributionFamily() {
+      return _distribution;
     }
   }
 
