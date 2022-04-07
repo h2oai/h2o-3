@@ -1793,6 +1793,61 @@ class ModelBase(h2o_meta(Keyed)):
             fig.savefig(fname=save_plot_path)    
         return decorate_plot_result(res=importance, figure=fig)
 
+    def predicted_vs_actual_by_variable(self, frame, predicted, variable, use_pandas=False):
+        """
+        Calculates per-level mean of predicted value vs actual value for a given variable.
+
+        In the basic setting, this function is equivalent to doing group-by on variable and calculating
+        mean on predicted and actual. In addition to that it also handles NAs in response and weights
+        automatically.
+
+        :param frame: input frame (can be training/test/.. frame)
+        :param predicted: frame of predictions for the given input frame
+        :param variable: variable to inspect
+        :param use_pandas: set true to return pandas data frame.
+
+        :return: H2OTwoDimTable or Pandas data frame
+        """
+        from h2o.two_dim_table import H2OTwoDimTable
+        from h2o.frame import H2OFrame
+        from h2o.expr import ExprNode
+        from h2o.exceptions import H2OValueError
+        from h2o.utils.shared_utils import can_use_pandas
+
+        if type(frame) is not H2OFrame:
+            raise H2OValueError("Frame is not H2OFrame")
+
+        if type(predicted) is not H2OFrame:
+            raise H2OValueError("Frame is not H2OFrame")
+
+        assert_is_type(variable, str)
+
+        m_frame = H2OFrame._expr(ExprNode(
+            "predicted.vs.actual.by.var",
+            self,
+            frame,
+            variable,
+            predicted
+        ))
+        if use_pandas and can_use_pandas():
+            import pandas
+            pd = h2o.as_list(m_frame)
+            return pandas.DataFrame(pd, columns=pd.columns).set_index(variable)
+        else:
+            def _replace_empty_str(row):
+                return [
+                    float("nan") if "" == elem else elem
+                    for elem in row
+                ]
+
+            varimp = H2OTwoDimTable(
+                table_header="Predicted vs Actual by Variable '%s'" % variable,
+                col_header=m_frame.columns,
+                col_types=["string"] + ["double"] * (len(m_frame.columns) - 1),
+                raw_cell_values=list(
+                    map(_replace_empty_str, zip(*m_frame.as_data_frame(use_pandas=False, header=False))))  # transpose
+            )
+            return varimp
 
 def _get_mplot3d_pyplot(function_name):
     try:

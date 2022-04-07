@@ -5888,3 +5888,37 @@ h2o.reset_threshold <- function(object, threshold) {
     return(NULL)
   }
 }
+
+#' Calculates per-level mean of predicted value vs actual value for a given variable.
+#'
+#' In the basic setting, this function is equivalent to doing group-by on variable and calculating
+#' mean on predicted and actual. In addition to that it also handles NAs in response and weights
+#' automatically.
+#'
+#' @param object    A trained supervised H2O model.
+#' @param newdata   Input frame (can be training/test/.. frame).
+#' @param predicted Frame of predictions for the given input frame.
+#' @param variable  Name of variable to inspect.
+#' @return          H2OTable
+#' @export
+h2o.predicted_vs_actual_by_variable <- function(object,
+                                                newdata,
+                                                predicted,
+                                                variable
+) {
+  if (missing(object)) stop("Parameter 'object' needs to be specified.")
+  if (!is(object, "H2OModel")) stop("Parameter 'object' has to be an H2O model.")
+  .validate.H2OFrame(newdata, required = TRUE)
+
+  vi <- as.data.frame(.newExpr("predicted.vs.actual.by.var",
+                               object@model_id,
+                               newdata,
+                               paste0("'", variable, "'"),
+                               predicted
+  ), check.names = FALSE)
+  oldClass(vi) <- c("H2OTable", "data.frame")
+  attr(vi, "header") <- "Predicted vs Actual by Variable"
+  attr(vi, "description") <- ""
+  attr(vi, "formats") <- c("%s", rep_len("%5f", ncol(vi) - 1))
+  vi
+}
