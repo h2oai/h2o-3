@@ -1348,12 +1348,12 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     } else {
       sprintf(" with Target = \"%s\"", target)
     },
-    model@model_id,
-    caption = sprintf(" *Note that response values out of [ \"%s\",  \"%s\"] are not displayed.",
-                      min(y_range),
-                      max(y_range)
-    )
-  ))
+    model@model_id),
+                             caption = sprintf(" *Note that response values out of [ \"%s\",  \"%s\"] are not displayed.",
+                                               min(y_range),
+                                               max(y_range)
+                             )
+  )
   # make the histogram closer to the axis. (0.05 is the default value)
   histogram_alignment <- ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
   theme_part <- ggplot2::theme_bw()
@@ -1408,9 +1408,8 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
                                    },
                                    data = pdp, color = "black"
     )
-    pdp_dashed <- ggplot2::scale_linetype_manual(values = c("Partial Dependence" = "dashed"))
 
-    q <- q + pdp_part + pdp_dashed
+    q <- q + pdp_part
   }
   q <- q + shape_legend_manual + shape_legend_manual2
   
