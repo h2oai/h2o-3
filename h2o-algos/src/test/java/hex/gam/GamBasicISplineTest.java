@@ -295,7 +295,8 @@ public class GamBasicISplineTest extends TestUtil {
             resultArray = new ArrayUtils.FrameToArray(0, resultFrame.numCols()-1, resultFrame.numRows(),
                     resultArray).doAll(resultFrame).getArray();
             double[][] inputArray = MemoryManager.malloc8d((int) resultFrame.numRows(), 1); // first row is header
-            Frame inputFrame = parseAndTrackTestFile(inputFile);
+            NFSFileVec nfs2 = TestUtil.makeNfsFileVec(inputFile);
+            final Frame inputFrame = Scope.track(ParseDataset.parse(Key.make(), nfs2._key));
             inputArray = new ArrayUtils.FrameToArray(0,0,resultFrame.numRows(),
                     inputArray).doAll(inputFrame).getArray(); // first row is data
 
