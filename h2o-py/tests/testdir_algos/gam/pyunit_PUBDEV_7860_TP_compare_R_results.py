@@ -24,7 +24,7 @@ def test_compare_R():
     trainB = frames[0]
     testB = frames[1]
     gamB = H2OGeneralizedAdditiveEstimator(family='binomial', gam_columns = gamCols, bs = bsT, scale = scaleP, 
-                                           num_knots = numKnots, lambda_search=True, seed=0)
+                                           num_knots = numKnots, lambda_search=True, seed=1)
     gamB.train(x = myX, y = myY, training_frame = trainB, validation_frame = testB)
     gamPred = gamB.predict(testB)
     temp = gamPred['predict'] == testB['response']
