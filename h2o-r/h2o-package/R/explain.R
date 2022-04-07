@@ -257,7 +257,7 @@ with_no_h2o_progress <- function(expr) {
     stop("newdata must be specified!")
 
   newdata_name <- deparse(substitute(newdata, environment()))
-  if (!"H2OFrame" %in% class(newdata) && require_newdata) {
+  if (!inherits(newdata, "H2OFrame") && require_newdata) {
     stop(paste(newdata_name, "must be an H2OFrame!"))
   }
 
@@ -279,7 +279,7 @@ with_no_h2o_progress <- function(expr) {
     }
   }
 
-  if ("models_info" %in% class(object)) {
+  if (inherits(object, "models_info")) {
     object <- object$copy(shallow = TRUE)
     if (best_of_family) {
       object$model_ids <- .get_first_of_family(object$model_ids)
@@ -299,9 +299,10 @@ with_no_h2o_progress <- function(expr) {
   }
 
 
-  if ("H2OAutoML" %in% class(object) || (("H2OFrame" %in% class(object) ||
-      "data.frame" %in% class(object)) && "model_id" %in% names(object))) {
-    leaderboard <- if ("H2OAutoML" %in% class(object)) object@leaderboard else object
+  if (inherits(object, "H2OAutoML") || 
+      ((inherits(object, "H2OFrame") || inherits(object, "data.frame")) && 
+      "model_id" %in% names(object))) {
+    leaderboard <- if (inherits(object, "H2OAutoML")) object@leaderboard else object
     if (require_single_model && nrow(leaderboard) > 1) {
       stop("Only one model is allowed!")
     }
@@ -324,7 +325,7 @@ with_no_h2o_progress <- function(expr) {
     return(make_models_info(
       newdata = newdata,
       is_automl = TRUE,
-      leaderboard = as.data.frame(if ("H2OAutoML" %in% class(object)) h2o.get_leaderboard(object, extra_columns = "ALL")
+      leaderboard = as.data.frame(if (inherits(object, "H2OAutoML")) h2o.get_leaderboard(object, extra_columns = "ALL")
                                   else leaderboard),
       model_ids = head(model_ids, top_n_from_AutoML)
     ))
@@ -333,7 +334,7 @@ with_no_h2o_progress <- function(expr) {
       if (require_multiple_models) {
         stop("More than one model is needed!")
       }
-      if (class(object) == "list") {
+      if (inherits(object, "list")) {
         object <- object[[1]]
       }
       if (!is.character(object)) {
@@ -720,10 +721,10 @@ with_no_h2o_progress <- function(expr) {
 }
 
 .render <- function(object, render) {
-  if (all(class(object) == "H2OExplanation" | class(object) == "list")) {
+  if (all(inherits(object, "H2OExplanation") | inherits(object, "list"))) {
     return(lapply(object, .render, render = render))
   } else {
-    if (render == "interactive" && any(class(object) == "gg")) {
+    if (render == "interactive" && any(inherits(object, "gg"))) {
       on.exit({
         input <- readline("Hit <Return> to continue, to quit press \"q\": ")
         if (tolower(input) == "q") stop("Aborted by user.")
@@ -2347,7 +2348,7 @@ h2o.residual_analysis_plot <- function(model, newdata) {
   .data <- NULL
   if (is.character(model))
     model <- h2o.getModel(model)
-  if ("H2OAutoML" %in% class(model) || is.list(model))
+  if (inherits(model, "H2OAutoML") || is.list(model))
     stop("Residual analysis works only on a single model!")
   if (h2o.isfactor(newdata[[model@allparameters$y]]))
     stop("Residual analysis is not implemented for classification.")
@@ -2765,7 +2766,7 @@ is_binomial_from_model <- function(model) {
 }
 
 is_binomial <- function(model) {
-  if ("H2OAutoML" %in% class(model)) {
+  if (inherits(model, "H2OAutoML")) {
     if (model@leader@algorithm == "stackedensemble")
       return(is_binomial_from_model(model@leader@model$metalearner_model))
   } else if (model@algorithm == "stackedensemble"){
