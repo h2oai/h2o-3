@@ -39,9 +39,9 @@ You can read more information about ``uplift_metric`` on parameter specification
 Uplift tree and prediction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Tree-based algorithm means in every tree, it takes information about treatment/control group assignment and information about response directly into a decision about splitting a node. So there is only one tree for every class and both groups - no separate trees for treatment groups data and control groups data. 
+With tree-based algorithms, every tree takes information about treatment/control group assignment and information about response directly into the decision about splitting a node. This means there is only one tree for every class and both groups instead of separate trees for both the treatment group's data and the control group's data.
 
-The uplift score is the criterion to make a decision similar to the Gini coefficient in the standard decision tree. Every leaf in a tree holds two predictions, which are calculated based on a distribution of response between treatment and control group observations:
+The uplift score is the criterion to make this decision similar to the Gini coefficient in the standard decision tree. Every leaf in a tree holds two predictions which are calculated based on a distribution of response between treatment and control group observations:
 
 - :math:`TP_cl = (TY_cl + 1) / (T_cl + 2)`
 - :math:`CP_cl = (CY_cl + 1) / (C_cl + 2)`
@@ -56,15 +56,17 @@ where:
 - :math:`TP_cl` treatment prediction of a leaf
 - :math:`CP_cl` control prediction of a leaf
 
-The uplift score for the leaf is calculated as difference between treatment prediction and control prediction:
+The uplift score for the leaf is calculated as the difference between the treatment prediction and the control prediction:
 
-:math:`uplift_score_cl = TP_cl - CP_cl`
+.. math::
 
-Higher uplift score means more observations from treatment group respond to the offer than from control group. Which means offered treatment has positive effect. The uplift score can be negative, if more observations from control group respond to the offer without treatment.
+   uplift_score_cl = TP_cl - CP_cl
 
-Final prediction is calculated in the same way as in DRF algorithm. Predictions for each observation is collect from all trees from an ensemble and mean prediction is returned. 
+A higher uplift score means more observations from the treatment group responded to the offer than from control group. This means the offered treatment has a positive effect. The uplift score can also be negative if more observations from the control group respond to the offer without treatment.
 
-When the ``predict`` method is called on test data the result frame has these columns:
+The final prediction is calculated in the same way as the DRF algorithm. Predictions for each observation are collected from all trees from an ensemble and the mean prediction is returned. 
+
+When the ``predict`` method is called on the test data, the result frame has these columns:
 
 - ``uplift_predict``: result uplift prediction score, which is calculated as :math:`p_y1_ct1 - p_y1_ct0`
 - ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
@@ -97,7 +99,7 @@ Defining a Uplift DRF Model
 
 -  `treatment_column <algo-params/treatment_column.html>`__: Specify the column which contains information about group dividing. The data must be categorical and have two categories: ``0`` means the observation is in control group and ``1`` means the observation is in treatment group.
 
--  `uplift_metric <algo-params/uplift_metric.html>`__: The type of divergence distribution to select best split. Specify one of the following metrics:
+-  `uplift_metric <algo-params/uplift_metric.html>`__: The type of divergence distribution to select the best split. Specify one of the following metrics:
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Uplift DRF, the algorithm will automatically perform ``KL`` metric.
   - ``kl`` or ``KL``: Uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values).
