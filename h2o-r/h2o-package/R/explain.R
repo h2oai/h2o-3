@@ -1184,7 +1184,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
       models_info$get_model(models_info$model),
       newdata,
       column,
-      row_index = as.integer(idx),
+      row_index = as.integer(idx - 1),
       plot = FALSE,
       targets = target,
       nbins = if (is_factor) {
@@ -1374,18 +1374,18 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     theme_part2
 
   ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
-                                 if (is.factor(newdata[[col_name]])) {
+                                 if (is.factor(newdata[[column]])) {
                                    ggplot2::aes(shape = "ICE", group = .data$name)
                                  } else {
                                    ggplot2::aes(linetype = "ICE", group = .data$name)
-                                 })
+                                 }, data = results)
   y_val = if (show_logodds) orig_values[['logodds']] else orig_values[['mean_response']]
   original_observations_part <- ggplot2::geom_point(data = as.data.frame(orig_values),
                                                     size = 4.5,
                                                     alpha = 0.5,
                                                     ggplot2::aes(shape = "Original observations",
                                                                  group = "Original observations"),
-                                                    x = orig_values[[column]],
+                                                    x = orig_values[[col_name]],
                                                     y = y_val,
                                                     show.legend = ifelse(is.numeric(newdata[[column]]), NA, FALSE)
   )
@@ -1524,7 +1524,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
           ""
         }
       ),
-      x = column,
+      x = col_name,
       y = y_label
     ) +
     ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
@@ -2600,7 +2600,7 @@ h2o.pd_multi_plot <- function(object,
               ""
             }
           ),
-          x = column,
+          x = col_name,
           y = "Mean Response"
         ) +
         ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
