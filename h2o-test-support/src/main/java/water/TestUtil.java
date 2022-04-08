@@ -1971,7 +1971,7 @@ public class TestUtil extends Iced {
   }
 
   public static boolean isCI() {
-    return true || System.getProperty("user.name").equals("jenkins");
+    return System.getProperty("user.name").equals("jenkins");
   }
 
   public static <T extends Keyed<T>> void assertInDKV(Key<T> key, T object) {
