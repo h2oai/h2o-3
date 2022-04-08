@@ -401,6 +401,17 @@ For documentation on thin plate regression splines, refer here:
 
     thin_plate_gam
 
+Monotone Splines
+''''''''''''''''
+
+GAM Monotone splines have been implemented. To build monotone spline functions, I-splines are used while restricting the gamified column coefficients to be :math:`\leq 0` [3]. The implementation of our I-splines are defined as the summation of N-splines:
+
+.. math::
+   
+   I_{(i,k)}(t) = \sum^{(i+r)}_{(l=i)} N_{l,k+1}(t), t \leq t_{i+r+1}
+
+Multinomials and ordinal families are not supported. Since there is no beta constraint applied to the coefficients of these families, we cannot guarantee the coefficients to be non-negative for these families for I-spline.
+
 
 .. _scenario6:
 
