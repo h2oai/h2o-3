@@ -2264,7 +2264,7 @@ def residual_analysis_plot(
         predicted = NumpyFrame(model.predict(frame)["predict"])
     actual = NumpyFrame(frame[y])
 
-    residuals = predicted["predict"] - actual[y]
+    residuals = actual[y] - predicted["predict"]
 
     plt.figure(figsize=figsize)
     plt.axhline(y=0, c="k")
