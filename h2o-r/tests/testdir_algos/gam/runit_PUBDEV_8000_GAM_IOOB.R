@@ -16,6 +16,8 @@ test.model.gam.IOOB <- function() {
                          alpha = .5,
                          lambda_search = TRUE,
                          model_id = "GAM_Model")
+    print("Length of model coefficients")
+    print(length(att_model@model$coefficients))
     expect_true(length(att_model@model$coefficients) == 37)
 }
 

@@ -73,6 +73,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "max_runtime_secs",
             "custom_metric_func",
             "num_knots",  // array: number of knots for each predictor
+            "spline_orders",  // order of I-splines
             "knot_ids", // string array storing frame keys that contains knot location
             "gam_columns",  // array: predictor column names array
             "standardize_tp_gam_cols", // standardize TP gam columns before transformation
@@ -230,6 +231,9 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help = "Number of knots for gam predictors", level = Level.critical, gridable = true)
     public int[] num_knots;
 
+    @API(help = "Order of I-splines used for gam predictors", level = Level.critical, gridable = true)
+    public int[] spline_orders;
+
     @API(help = "Arrays of predictor column names for gam for smoothers using single or multiple predictors like " +
             "{{'c1'},{'c2','c3'},{'c4'},...}", required = true, level = Level.critical, gridable = true)
     public String[][] gam_columns;
@@ -242,7 +246,6 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             " thin plate regression with SVD.  If specified, must be the same size as gam_columns",
             level = Level.critical, gridable = true)
     public int[] bs;
-    //public BSType bs;
 
     @API(help="Save keys of model matrix", level = Level.secondary, direction = Direction.INPUT)
     public boolean keep_gam_cols; // if true will save keys storing GAM columns
@@ -253,7 +256,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help="Scale penalty matrix for tp (thin plate) smoothers as in R", level = Level.secondary, direction = Direction.INPUT)
     public boolean scale_tp_penalty_mat; // if true, will apply scaling to the penalty matrix CS
     
-    @API(help="String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns", 
+    @API(help="Array storing frame keys of knots.  One for each gam column set specified in gam_columns", 
             level = Level.secondary, direction = Direction.INPUT)
     public String[] knot_ids;
   }

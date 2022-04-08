@@ -812,6 +812,66 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Test
+  public void testBetaConstraintsCV() {
+    Scope.enter();
+    Frame fr = parseTestFile("smalldata/logreg/prostate.csv");
+    Scope.track(fr);
+    try {
+      Key betaConsKey = Key.make("beta_constraints");
+      
+      FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
+      Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
+      Scope.track(betaConstraints);
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._beta_constraints = betaConstraints._key;
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._nfolds = 2;
+      GLM glm = new GLM( params);
+      GLMModel model = glm.trainModel().get();
+      Scope.track_generic(model);
+      assertTrue(model._output._cross_validation_metrics != null);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testBetaConstraintsCVwithEnum() {
+    Scope.enter();
+    Frame fr = parseTestFile("smalldata/logreg/prostate.csv");
+    fr.replace(3, fr.vec(3).toCategoricalVec()).remove();
+    DKV.put(fr);
+    Scope.track(fr);
+    try {
+      Key betaConsKey = Key.make("beta_constraints");
+
+      FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
+      Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
+      Scope.track(betaConstraints);
+      // H2O differs on intercept and race, same residual deviance though
+      GLMParameters params = new GLMParameters();
+      params._standardize = true;
+      params._family = Family.binomial;
+      params._beta_constraints = betaConstraints._key;
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._nfolds = 3;
+      GLM glm = new GLM( params);
+      GLMModel model = glm.trainModel().get();
+      Scope.track_generic(model);
+      assertTrue(model._output._cross_validation_metrics != null);
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Ignore // remove when PUBDEV-7693 is fixed
   @Test
   public void testInteractionPairs_airlines() {

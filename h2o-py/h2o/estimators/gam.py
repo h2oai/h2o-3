@@ -94,6 +94,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  max_runtime_secs=0.0,  # type: float
                  custom_metric_func=None,  # type: Optional[str]
                  num_knots=None,  # type: Optional[List[int]]
+                 spline_orders=None,  # type: Optional[List[int]]
                  knot_ids=None,  # type: Optional[List[str]]
                  gam_columns=None,  # type: Optional[List[List[str]]]
                  standardize_tp_gam_cols=False,  # type: bool
@@ -324,8 +325,10 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param num_knots: Number of knots for gam predictors
                Defaults to ``None``.
         :type num_knots: List[int], optional
-        :param knot_ids: String arrays storing frame keys of knots.  One for each gam column set specified in
-               gam_columns
+        :param spline_orders: Order of I-splines used for gam predictors
+               Defaults to ``None``.
+        :type spline_orders: List[int], optional
+        :param knot_ids: Array storing frame keys of knots.  One for each gam column set specified in gam_columns
                Defaults to ``None``.
         :type knot_ids: List[str], optional
         :param gam_columns: Arrays of predictor column names for gam for smoothers using single or multiple predictors
@@ -412,6 +415,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self.max_runtime_secs = max_runtime_secs
         self.custom_metric_func = custom_metric_func
         self.num_knots = num_knots
+        self.spline_orders = spline_orders
         self.knot_ids = knot_ids
         self.gam_columns = gam_columns
         self.standardize_tp_gam_cols = standardize_tp_gam_cols
@@ -1252,9 +1256,23 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self._parms["num_knots"] = num_knots
 
     @property
+    def spline_orders(self):
+        """
+        Order of I-splines used for gam predictors
+
+        Type: ``List[int]``.
+        """
+        return self._parms.get("spline_orders")
+
+    @spline_orders.setter
+    def spline_orders(self, spline_orders):
+        assert_is_type(spline_orders, None, [int])
+        self._parms["spline_orders"] = spline_orders
+
+    @property
     def knot_ids(self):
         """
-        String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns
+        Array storing frame keys of knots.  One for each gam column set specified in gam_columns
 
         Type: ``List[str]``.
         """

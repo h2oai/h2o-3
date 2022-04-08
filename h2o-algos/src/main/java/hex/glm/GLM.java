@@ -54,6 +54,8 @@ import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 import static hex.glm.GLMUtils.*;
+import static water.fvec.Vec.T_NUM;
+import static water.fvec.Vec.T_STR;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -127,6 +129,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_historty=True
   private int[] _xval_iters_generate_SH; // store cv iterations combined from the various cv models
   private boolean _insideCVCheck = false; // detect if we are running inside cv_computeAndSetOptimalParameters
+  private boolean _enumInCS = false;  // true if there are enum columns in beta constraints
+  private Frame _betaConstraints = null;
+  private boolean _cvRuns = false;
+
   /**
    * GLM implementation of N-fold cross-validation.
    * We need to compute the sequence of lambdas for the main model so the folds share the same lambdas.
@@ -138,6 +144,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public void computeCrossValidation() {
     // init computes global list of lambdas
     init(true);
+    _cvRuns = true;
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
     super.computeCrossValidation();
@@ -413,7 +420,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       gm.update(_job);
       gm.unlock(_job);
     }
-    _doInit = false;
+    if (_betaConstraints != null) {
+      DKV.remove(_betaConstraints._key);
+      _betaConstraints.delete();
+      _betaConstraints = null;
+    }
+    _doInit = false;  // disable init for CV main model
   }
 
   /***
@@ -824,7 +836,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return multinomial.equals(_parms._family) || ordinal.equals(_parms._family) ||  
             (AUTO.equals(_parms._family) && nclasses() > 2);
   }
-
+  
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
@@ -1049,6 +1061,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _betaConstraintsOn = (betaContsOn && (Solver.AUTO.equals(_parms._solver) ||
               Solver.COORDINATE_DESCENT.equals(_parms._solver) || Solver.IRLSM.equals(_parms._solver )||
               Solver.L_BFGS.equals(_parms._solver)));
+      if (_parms._beta_constraints != null && !_enumInCS) { // will happen here if there is no CV
+        if (findEnumInBetaCS(_parms._beta_constraints.get(), _parms)) {
+          if (_betaConstraints == null) {
+            _betaConstraints = expandedCatCS(_parms._beta_constraints.get(), _parms);
+            DKV.put(_betaConstraints);
+          }
+          _enumInCS = true; // make sure we only do this once
+        }
+      }
       BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get()) 
               : new BetaConstraint();
       if (betaContsOn && !_betaConstraintsOn) {
@@ -1604,7 +1625,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       DataInfo qTinfo = new DataInfo(qTransposed, null, true, DataInfo.TransformType.NONE,
               true, false, false);
       DKV.put(qTinfo._key, qTinfo);
-      Frame qTAugZW = (new BMulTask(_job._key, qTinfo, augZWTransposed).doAll(augZWTransposed.length, Vec.T_NUM,
+      Frame qTAugZW = (new BMulTask(_job._key, qTinfo, augZWTransposed).doAll(augZWTransposed.length, T_NUM,
               qTinfo._adaptedFrame)).outputFrame(Key.make("Q*Augz*W"), null, null);
       double[] qtaugzw = new FrameUtils.Vec2ArryTsk((int) qTAugZW.numRows()).doAll(qTAugZW.vec(0)).res;
       // backward solve to get new coefficients for fixed and random columns
@@ -2753,6 +2774,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       try {
         doCompute();
       } finally {
+        if ((!_doInit || !_cvRuns) && _betaConstraints != null) {
+          DKV.remove(_betaConstraints._key);
+          _betaConstraints.delete();
+        }
         if (_model != null) _model.unlock(_job);
       }
     }
@@ -3693,8 +3718,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     return etaOffset;
   }
-
-
+  
   public final class BetaConstraint extends Iced {
     double[] _betaStart;
     double[] _betaGiven;
@@ -3738,10 +3762,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Frame transformedFrame = FrameUtils.encodeBetaConstraints(null, coefNames, coefOriginalNames, beta_constraints);
       return transformedFrame;
     }
-
+    
     public BetaConstraint(Frame beta_constraints) {
-      beta_constraints = encodeCategoricalsIfPresent(beta_constraints);
-      Vec v = beta_constraints.vec("names");
+     // beta_constraints = encodeCategoricalsIfPresent(beta_constraints); // null key
+      if (_enumInCS) {
+        if (_betaConstraints == null) {
+          beta_constraints = expandedCatCS(_parms._beta_constraints.get(), _parms);
+          DKV.put(beta_constraints);
+          _betaConstraints = beta_constraints;
+        } else {
+          beta_constraints = _betaConstraints;
+        }
+    }
+      Vec v = beta_constraints.vec("names");  // add v to scope.track does not work
       String[] dom;
       int[] map;
       if (v.isString()) {
