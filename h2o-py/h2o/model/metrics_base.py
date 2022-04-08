@@ -1470,8 +1470,8 @@ class H2OBinomialModelMetrics(MetricsBase):
             if plt is None:
                 return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
             fig = plt.figure()
-            plt.xlabel('Recall (TP/(TP+FP))')
-            plt.ylabel('Precision (TPR)')
+            plt.xlabel('Recall (TP/(TP+TN))')
+            plt.ylabel('Precision (TP/(TP+FP))')
             plt.title('Precision Recall Curve')
             plt.text(0.75, 0.95, r'auc_pr={0:.4f}'.format(self._metric_json["pr_auc"]))
             plt.plot(recalls, precisions, 'b--')
