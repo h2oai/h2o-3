@@ -58,7 +58,7 @@ StatefulSet
   kind: StatefulSet
   metadata:
     name: h2o-stateful-set
-    namespace: <namespace-name>
+    namespace: ds-h2o
   spec:
     serviceName: h2o-service
     podManagementPolicy: "Parallel"
@@ -72,30 +72,31 @@ StatefulSet
           app: h2o-k8s
       spec:
         containers:
-          - name: h2o-k8s
-            image: 'h2oai/h2o-open-source-k8s:<tagname>'
-            resources:
-              requests:
-                memory:"4Gi"
-            ports:
-              - containerPort: 54321
-                protocol: TCP
-            readinessProbe:
-              httpGet:
-                path: /kubernetes/isLeaderNode
-                port: 8081
-              initialDelaySeconds: 5
-              periodSeconds: 5
-              failureThreshold: 1
-            env:
-            - name: H2O_KUBERNETES_SERVICE_DNS
-              value: h2o-service.<namespace-name>.svc.cluster.local
-            - name: H2O_NODE_LOOKUP_TIMEOUT
-              value: '180'
-            - name: H2O_NODE_EXPECTED_COUNT
-              value: '3'
-            - name: H2O_KUBERNETES_API_PORT
-              value: '8081'
+        - name: h2o-k8s
+          image: h2oai/h2o-open-source-k8s:latest
+          resources:
+            requests:
+              memory: "4Gi"
+          ports:
+            - containerPort: 54321
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /kubernetes/isLeaderNode
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1
+          env:
+          - name: H2O_KUBERNETES_SERVICE_DNS
+            value: h2o-service.<namespace-name>.svc.cluster.local
+          - name: H2O_NODE_LOOKUP_TIMEOUT
+            value: '180'
+          - name: H2O_NODE_EXPECTED_COUNT
+            value: '3'
+          - name: H2O_KUBERNETES_API_PORT
+            value: '8081'
+
 
 Besides the standardized Kubernetes settings (e.g. replicas: 3 defining the number of pods with H2O instantiated), there are several settings to pay attention to:
 
