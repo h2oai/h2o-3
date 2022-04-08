@@ -19,7 +19,9 @@ Here is a `Jupyter notebook <https://github.com/h2oai/h2o-3/blob/master/h2o-py/d
 Uplift metric
 ~~~~~~~~~~~~~~
 
-Uplift DRF differentiates itself from DRF because it finds the best split using ``treatment_column``. The goal is to split the training customers into a group which gets an offer (i.e. treatment group) and a group which does not (i.e. control group). This information (``treatment_column``) with features and ``response_column`` are used for training. The ``uplift_metric`` is calculated to decide which point from the histogram is selected to split the data in the tree node (instead of calculation squared error like in other tree algorithms).
+In Uplift Tree-based algorithms, every tree takes information about treatment/control group assignment and information about response directly into the decision about splitting a node. This means there is only one tree for both groups instead of separate trees for the treatment group's data and the control group's data.
+
+Uplift DRF differentiates itself from DRF because it finds the best split using both ``response_column`` and ``treatment_column``. The goal is to split the training observations into a group which gets an offer (i.e. treatment group) and a group which does not (i.e. control group). This information (``treatment_column``) with features and ``response_column`` are used for training. The ``uplift_metric`` is calculated to decide which point from the histogram is selected to split the data in the tree node (instead of calculation squared error or Qini coefficient like in other tree algorithms).
 
 The goal is to maximize the differences between the class distributions in the treatment and control sets, so the splitting criteria are based on distribution divergences. The distribution divergence is calculated based on the ``uplift_metric`` parameter. In H2O-3, three ``uplift_metric`` types are supported:
 
@@ -39,16 +41,14 @@ You can read more information about ``uplift_metric`` on parameter specification
 Uplift tree and prediction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With tree-based algorithms, every tree takes information about treatment/control group assignment and information about response directly into the decision about splitting a node. This means there is only one tree for every class and both groups instead of separate trees for both the treatment group's data and the control group's data.
+The uplift score is used as prediction of the leaf. Every leaf in a tree holds two predictions that are calculated based on a distribution of response between treatment and control group observations:
 
-The uplift score is the criterion to make this decision similar to the Gini coefficient in the standard decision tree. Every leaf in a tree holds two predictions which are calculated based on a distribution of response between treatment and control group observations:
-
-- :math:`TP_cl = (TY1_cl + 1) / (T_cl + 2)`
-- :math:`CP_cl = (CY1_cl + 1) / (C_cl + 2)`
+- :math:`TP_l = (TY1_l + 1) / (T_l + 2)`
+- :math:`CP_l = (CY1_l + 1) / (C_l + 2)`
 
 where:
 
-- :math:`cl` leaf `l` of a tree for class `c`
+- :math:`l` leaf of a tree
 - :math:`T_cl` how many observations in a leaf are from the treatment group (how many data rows in a leaf have ``treatment_column`` label == 1) 
 - :math:`C_cl` how many observations in a leaf are from the control group (how many data rows in the leaf have ``treatment_column`` label == 0)
 - :math:`TY1_cl` how many observations in a leaf are from the treatment group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 1 and ``response_column`` label == 1)
@@ -62,7 +62,7 @@ The uplift score for the leaf is calculated as the difference between the treatm
 
    uplift_score_cl = TP_cl - CP_cl
 
-A higher uplift score means more observations from the treatment group responded to the offer than from control group. This means the offered treatment has a positive effect. The uplift score can also be negative if more observations from the control group respond to the offer without treatment.
+A higher uplift score means more observations from the treatment group responded to the offer than from the control group. This means the offered treatment has a positive effect. The uplift score can also be negative if more observations from the control group respond to the offer without treatment.
 
 The final prediction is calculated in the same way as the DRF algorithm. Predictions for each observation are collected from all trees from an ensemble and the mean prediction is returned. 
 
