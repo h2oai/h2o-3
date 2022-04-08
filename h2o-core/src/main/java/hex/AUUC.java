@@ -52,18 +52,23 @@ public class AUUC extends Iced {
     public long frequency( int idx ) { return _frequency[idx]; }
     public double uplift( int idx) { return _uplift[_auucTypeIndx][idx]; }
     
+    private int getIndexByAUUCType(AUUCType type){
+        return ArrayUtils.find(AUUC.AUUCType.VALUES, type);
+    }
+    
+    
     public double[] upliftByType(AUUCType type){
-        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        int idx = getIndexByAUUCType(type);
         return _uplift[idx];
     }
 
     public double[] upliftNormalizedByType(AUUCType type){
-        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        int idx = getIndexByAUUCType(type);
         return _upliftNormalized[idx];
     }
     
     public double[] upliftRandomByType(AUUCType type){
-        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        int idx = getIndexByAUUCType(type);
         return _upliftRandom[idx];
     }
     
@@ -81,7 +86,7 @@ public class AUUC extends Iced {
 
     private AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
         _auucType = auucType;
-        _auucTypeIndx = Arrays.asList(AUUCType.values()).indexOf(_auucType);
+        _auucTypeIndx = getIndexByAUUCType(_auucType);
         _nBins = bldr._nBins;
         assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
         assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
@@ -151,7 +156,7 @@ public class AUUC extends Iced {
     public void setUpliftNormalized(){
         for(int i=0; i<AUUCType.VALUES.length; i++) {
             int maxIndex = _nBins - 1;
-            int liftIndex = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(AUUCType.lift);
+            int liftIndex = getIndexByAUUCType(AUUCType.lift);
             double a = i == liftIndex || _uplift[i][maxIndex] == 0 ? 1 : Math.abs(_uplift[i][maxIndex]);
             for (int j = 0; j < _nBins; j++) {
                 _upliftNormalized[i][j] = _uplift[i][j] / a;
@@ -167,7 +172,7 @@ public class AUUC extends Iced {
         _auucs = new double[AUUCType.VALUES.length];
         _maxIdx = -1;
         _auucType = AUUCType.AUTO;
-        _auucTypeIndx = Arrays.asList(AUUCType.values()).indexOf(_auucType);
+        _auucTypeIndx = getIndexByAUUCType(_auucType);
         _uplift = new double[AUUCType.values().length][];
     }
     
@@ -237,22 +242,22 @@ public class AUUC extends Iced {
     }
     
     public double auucByType(AUUCType type){
-        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        int idx = getIndexByAUUCType(type);
         return auuc(idx);
     }
     
     public double auucRandomByType(AUUCType type){
-        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        int idx = getIndexByAUUCType(type);
         return auucRandom(idx);
     }
     
     public double aecuByType(AUUCType type){
-        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        int idx = getIndexByAUUCType(type);
         return aecu(idx);
     }
 
     public double auucNormalizedByType(AUUCType type){
-        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        int idx = getIndexByAUUCType(type);
         return auucNormalized(idx);
     }
 
