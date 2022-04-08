@@ -26,6 +26,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -618,11 +619,19 @@ public class TestUtil extends Iced {
 
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
-      if (runWithoutLocalFiles()) {
-        downloadTestFileFromS3(fname);
+      File file = FileUtils.locateFile(fname);
+      if ((file == null) && (isCI() || runWithoutLocalFiles())) {
+        long lastModified = downloadTestFileFromS3(fname);
+        if (lastModified != 0 && isCI()) { // in CI fail if the file is missing for more than 30 days
+          if (System.currentTimeMillis() - lastModified > 30 * 24 * 60 * 60 * 1000L) {
+            throw new IllegalStateException(
+                    "File '" + fname + "' is still not locally synchronized (more than 30 days). Talk to #devops-requests");
+          }
+        }
       }
       return NFSFileVec.make(fname);
     } catch (IOException ioe) {
+      Log.err(ioe);
       fail(ioe.getMessage());
       return null;
     }
@@ -632,7 +641,7 @@ public class TestUtil extends Iced {
     return Boolean.parseBoolean(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
 
-  protected static void downloadTestFileFromS3(String fname) throws IOException {
+  protected static long downloadTestFileFromS3(String fname) throws IOException {
     if (fname.startsWith("./"))
       fname = fname.substring(2);
     File f = new File(fname);
@@ -644,13 +653,21 @@ public class TestUtil extends Iced {
         }
       }
       File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
-      org.apache.commons.io.FileUtils.copyURLToFile(
-              new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
-              tmpFile, 1000, 2000);
-      if (!tmpFile.renameTo(f)) {
+      final URL source = new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname);
+      final URLConnection connection = source.openConnection();
+      connection.setConnectTimeout(1000);
+      connection.setReadTimeout(2000);
+      final long lastModified = connection.getLastModified();
+      try (final InputStream stream = connection.getInputStream()) {
+        org.apache.commons.io.FileUtils.copyInputStreamToFile(stream, tmpFile);
+      }
+      if (tmpFile.renameTo(f)) {
+        return lastModified;
+      } else {
         Log.warn("Couldn't download " + fname + " from S3.");
       }
     }
+    return 0;
   }
 
   /**
@@ -1954,7 +1971,7 @@ public class TestUtil extends Iced {
   }
 
   public static boolean isCI() {
-    return System.getProperty("user.name").equals("jenkins");
+    return true || System.getProperty("user.name").equals("jenkins");
   }
 
   public static <T extends Keyed<T>> void assertInDKV(Key<T> key, T object) {
