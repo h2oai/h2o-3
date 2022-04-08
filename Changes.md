@@ -8,6 +8,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 
 #### Bug
 
+- [[PUBDEV-8653]](https://h2oai.atlassian.net/browse/PUBDEV-8653) - Fixed Residual Analysis plot flipping the residual calculation.
+- [[PUBDEV-8643]](https://h2oai.atlassian.net/browse/PUBDEV-8643) - Added more detailed exception when disconnected due to error caused by `Rcurl`. 
 - [[PUBDEV-8633]](https://h2oai.atlassian.net/browse/PUBDEV-8633) - Made R client attempt to connect to `curl` package  instead of `Rcurl` package first.
 - [[PUBDEV-8622]](https://h2oai.atlassian.net/browse/PUBDEV-8622) - Ensures GLM models fail instead of throwing warnings when `beta_contraints` and `non_negative are used with multinomial or ordinal families.
 - [[PUBDEV-8620]](https://h2oai.atlassian.net/browse/PUBDEV-8620) - Fixed how `cv_computeAndSetOptimalParameters` deals with multiple `alpha` and `lambda` values across different folds.
@@ -21,6 +23,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 - [[PUBDEV-8617]](https://h2oai.atlassian.net/browse/PUBDEV-8617) - Sped-up AutoML by avoiding sleep-waiting.
 - [[PUBDEV-8614]](https://h2oai.atlassian.net/browse/PUBDEV-8614) - Removed Stacked Ensembles with XGB metalearner to increase speed.
 - [[PUBDEV-8613]](https://h2oai.atlassian.net/browse/PUBDEV-8613) - Ensures AutoML reproducibility when `max_models` is used.
+- [[PUBDEV-8528]](https://h2oai.atlassian.net/browse/PUBDEV-8528) - Updated AutoML default leaderboard regression sorting to `RMSE`.
 
 #### New Feature
 
@@ -30,9 +33,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 - [[PUBDEV-8592]](https://h2oai.atlassian.net/browse/PUBDEV-8592) - Bundled KrbStandalone extension in h2odriver.jar. 
 - [[PUBDEV-8580]](https://h2oai.atlassian.net/browse/PUBDEV-8580) - Implemented new method for defining histogram split-points in GBM/DRF designed to address outlier issues with default `UniformAdaptive` method.
 - [[PUBDEV-8573]](https://h2oai.atlassian.net/browse/PUBDEV-8573) - Added ability to reorder frame levels based on their frequencies and to relieve only topN levels for GLM.
+- [[PUBDEV-8571]](https://h2oai.atlassian.net/browse/PUBDEV-8571) - Added a function to calculate predicted versus actual response in GLM.
 - [[PUBDEV-8401]](https://h2oai.atlassian.net/browse/PUBDEV-8401) - Implemented MOJO for Extended Isolation Forest.
+- [[PUBDEV-8398]](https://h2oai.atlassian.net/browse/PUBDEV-8398) - Added monotone splines to GAM. 
 - [[PUBDEV-8373]](https://h2oai.atlassian.net/browse/PUBDEV-8373) - Added ability to acquire metric builder updates for Sparkling Water calculation without H2O runtime.
 - [[PUBDEV-7980]](https://h2oai.atlassian.net/browse/PUBDEV-7980) - Added support for `interaction_constraints` to GBM.
+- [[PUBDEV-7858]](https://h2oai.atlassian.net/browse/PUBDEV-7858) - Exposed distribution parameter in AutoML
 
 #### Task
 
