@@ -41,9 +41,9 @@ Headless Service
     clusterIP: None
     selector:
       app: h2o-k8s
-  ports:
-  - protocol: TCP
-    port: 54321
+    ports:
+    - protocol: TCP
+      port: 54321
 
 The ``clusterIP: None`` defines the service as headless, and ``port: 54321`` is the default H2O port. Users and client libraries use this port to talk to the H2O cluster.
 
