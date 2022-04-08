@@ -37,9 +37,8 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -77,9 +76,8 @@ class H2OBinomialUpliftModel(ModelBase):
             >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
             ...                                               max_depth=5,
             ...                                               treatment_column=treatment_column,
-            ...                                               uplift_metric="qini",
+            ...                                               uplift_metric="kl",
             ...                                               distribution="bernoulli",
-            ...                                               gainslift_bins=10,
             ...                                               min_rows=10,
             ...                                               auuc_type="gain")
             >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -116,9 +114,8 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -155,9 +152,8 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -193,9 +189,8 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -230,9 +225,8 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -267,9 +261,8 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
@@ -304,9 +297,8 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
         ...                                               max_depth=5,
         ...                                               treatment_column=treatment_column,
-        ...                                               uplift_metric="qini",
+        ...                                               uplift_metric="kl",
         ...                                               distribution="bernoulli",
-        ...                                               gainslift_bins=10,
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
