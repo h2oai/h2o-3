@@ -139,7 +139,7 @@ In order to expose H2O and make it available from the outside of the Kubernetes 
   kind: Ingress
   metadata:
     name: h2o-ingress
-    namespace: default
+    namespace: <namespace-name>
   spec:
     rules:
     - http:
