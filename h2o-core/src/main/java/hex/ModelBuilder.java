@@ -998,6 +998,26 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return "prediction_"+_result.toString();
   }
 
+  /** Set max_runtime_secs for the main model.
+   * Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
+   * In general, we should use 0 or > 1 to be reasonably certain that the main model will have time to converge.
+   * if _main_model_time_budget_factor < 0, main_model_time_budget_factor is applied on remaining time to get max runtime secs.
+   * if _main_model_time_budget_factor == 0, do not restrict time for the main model.
+   * if _main_model_time_budget_factor > 0, use max_runtime_secs estimate using nfolds (doesn't depend on the remaining time).
+   */
+  protected void setMaxRuntimeSecsForMainModel() {
+    if (_parms._max_runtime_secs == 0) return;
+    if (_parms._main_model_time_budget_factor < 0) {
+      // strict version that uses the actual remaining time or 1 sec in case we ran out of time
+      _parms._max_runtime_secs = Math.max(1, -_parms._main_model_time_budget_factor * remainingTimeSecs());
+    } else {
+      int nFolds = nFoldWork();
+      // looser version that uses max of remaining time and estimated remaining time based on number of folds
+      _parms._max_runtime_secs = Math.max(remainingTimeSecs(),
+              _parms._main_model_time_budget_factor * maxRuntimeSecsPerModel(nFolds, nModelsInParallel(nFolds)) * nFolds /((double) nFolds - 1));
+    }
+  }
+
   /** Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
    *  Also allow the cv models to be modified after all of them have been built.
    *  For example, the model might need to be told to not do early stopping. CV models might have their lambda value modified, etc.

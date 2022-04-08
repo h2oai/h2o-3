@@ -287,7 +287,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   @Override
   public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
-      if(_parms._max_runtime_secs != 0) _parms._max_runtime_secs = 0;
+      setMaxRuntimeSecsForMainModel();
       double bestTestDev = Double.POSITIVE_INFINITY;
       double[] alphasAndLambdas = alignSubModelsAcrossCVModels(cvModelBuilders);
       int numOfSubmodels = alphasAndLambdas.length / 2;
