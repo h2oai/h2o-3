@@ -257,7 +257,7 @@ with_no_h2o_progress <- function(expr) {
     stop("newdata must be specified!")
 
   newdata_name <- deparse(substitute(newdata, environment()))
-  if (!"H2OFrame" %in% class(newdata) && require_newdata) {
+  if (!inherits(newdata, "H2OFrame") && require_newdata) {
     stop(paste(newdata_name, "must be an H2OFrame!"))
   }
 
@@ -279,7 +279,7 @@ with_no_h2o_progress <- function(expr) {
     }
   }
 
-  if ("models_info" %in% class(object)) {
+  if (inherits(object, "models_info")) {
     object <- object$copy(shallow = TRUE)
     if (best_of_family) {
       object$model_ids <- .get_first_of_family(object$model_ids)
@@ -299,9 +299,10 @@ with_no_h2o_progress <- function(expr) {
   }
 
 
-  if ("H2OAutoML" %in% class(object) || (("H2OFrame" %in% class(object) ||
-      "data.frame" %in% class(object)) && "model_id" %in% names(object))) {
-    leaderboard <- if ("H2OAutoML" %in% class(object)) object@leaderboard else object
+  if (inherits(object, "H2OAutoML") || 
+      ((inherits(object, "H2OFrame") || inherits(object, "data.frame")) && 
+      "model_id" %in% names(object))) {
+    leaderboard <- if (inherits(object, "H2OAutoML")) object@leaderboard else object
     if (require_single_model && nrow(leaderboard) > 1) {
       stop("Only one model is allowed!")
     }
@@ -324,7 +325,7 @@ with_no_h2o_progress <- function(expr) {
     return(make_models_info(
       newdata = newdata,
       is_automl = TRUE,
-      leaderboard = as.data.frame(if ("H2OAutoML" %in% class(object)) h2o.get_leaderboard(object, extra_columns = "ALL")
+      leaderboard = as.data.frame(if (inherits(object, "H2OAutoML")) h2o.get_leaderboard(object, extra_columns = "ALL")
                                   else leaderboard),
       model_ids = head(model_ids, top_n_from_AutoML)
     ))
@@ -333,7 +334,7 @@ with_no_h2o_progress <- function(expr) {
       if (require_multiple_models) {
         stop("More than one model is needed!")
       }
-      if (class(object) == "list") {
+      if (inherits(object, "list")) {
         object <- object[[1]]
       }
       if (!is.character(object)) {
@@ -720,10 +721,10 @@ with_no_h2o_progress <- function(expr) {
 }
 
 .render <- function(object, render) {
-  if (all(class(object) == "H2OExplanation" | class(object) == "list")) {
+  if (all(inherits(object, "H2OExplanation") | inherits(object, "list"))) {
     return(lapply(object, .render, render = render))
   } else {
-    if (render == "interactive" && any(class(object) == "gg")) {
+    if (render == "interactive" && any(inherits(object, "gg"))) {
       on.exit({
         input <- readline("Hit <Return> to continue, to quit press \"q\": ")
         if (tolower(input) == "q") stop("Aborted by user.")
@@ -1183,7 +1184,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
       models_info$get_model(models_info$model),
       newdata,
       column,
-      row_index = as.integer(idx),
+      row_index = as.integer(idx - 1),
       plot = FALSE,
       targets = target,
       nbins = if (is_factor) {
@@ -1373,18 +1374,18 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     theme_part2
 
   ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
-                                 if (is.factor(newdata[[col_name]])) {
+                                 if (is.factor(newdata[[column]])) {
                                    ggplot2::aes(shape = "ICE", group = .data$name)
                                  } else {
                                    ggplot2::aes(linetype = "ICE", group = .data$name)
-                                 })
+                                 }, data = results)
   y_val = if (show_logodds) orig_values[['logodds']] else orig_values[['mean_response']]
   original_observations_part <- ggplot2::geom_point(data = as.data.frame(orig_values),
                                                     size = 4.5,
                                                     alpha = 0.5,
                                                     ggplot2::aes(shape = "Original observations",
                                                                  group = "Original observations"),
-                                                    x = orig_values[[column]],
+                                                    x = orig_values[[col_name]],
                                                     y = y_val,
                                                     show.legend = ifelse(is.numeric(newdata[[column]]), NA, FALSE)
   )
@@ -1523,7 +1524,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
           ""
         }
       ),
-      x = column,
+      x = col_name,
       y = y_label
     ) +
     ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
@@ -2022,7 +2023,7 @@ h2o.shap_explain_row_plot <-
     }
   }
 
-.varimp_matrix <- function(object, top_n = 20){
+.varimp_matrix <- function(object, top_n = Inf, num_of_features=NULL){
   models_info <- .process_models_or_automl(object, NULL,
                                            require_multiple_models = TRUE,
                                            top_n_from_AutoML = top_n, only_with_varimp = TRUE,
@@ -2033,6 +2034,13 @@ h2o.shap_explain_row_plot <-
 
   res <- do.call(rbind, varimps)
   results <- as.data.frame(res)
+
+  if (!is.null(num_of_features)) {
+    feature_rank <- order(apply(results, 2, max))
+    feature_mask <- (max(feature_rank) - feature_rank) < num_of_features
+    results <- results[, feature_mask]
+  }
+
   return(results)
 }
 
@@ -2050,6 +2058,9 @@ h2o.shap_explain_row_plot <-
 #' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param top_n Integer specifying the number models shown in the heatmap
 #'              (based on leaderboard ranking). Defaults to 20.
+#' @param num_of_features Integer specifying the number of features shown in the heatmap
+#'                        based on the maximum variable importance across the models.
+#'                        Use NULL for unlimited. Defaults to 20.
 #' @return A ggplot2 object.
 #' @examples
 #'\dontrun{
@@ -2079,11 +2090,13 @@ h2o.shap_explain_row_plot <-
 #' print(varimp_heatmap)
 #' }
 #' @export
-h2o.varimp_heatmap <- function(object, top_n = 20) {
+h2o.varimp_heatmap <- function(object,
+                               top_n = 20,
+                               num_of_features = 20) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  results <- .varimp_matrix(object, top_n = top_n)
+  results <- .varimp_matrix(object, top_n = top_n, num_of_features = num_of_features)
   ordered <- row.names(results)
   y_ordered <- make.names(names(results))
   if (length(ordered) > 2) {
@@ -2347,7 +2360,7 @@ h2o.residual_analysis_plot <- function(model, newdata) {
   .data <- NULL
   if (is.character(model))
     model <- h2o.getModel(model)
-  if ("H2OAutoML" %in% class(model) || is.list(model))
+  if (inherits(model, "H2OAutoML") || is.list(model))
     stop("Residual analysis works only on a single model!")
   if (h2o.isfactor(newdata[[model@allparameters$y]]))
     stop("Residual analysis is not implemented for classification.")
@@ -2356,9 +2369,9 @@ h2o.residual_analysis_plot <- function(model, newdata) {
     y <- model@allparameters$y
 
     predictions <- stats::predict(model, newdata)
-    newdata[["residuals"]] <- predictions[["predict"]] - newdata[[y]]
+    newdata[["residuals"]] <- newdata[[y]] - predictions[["predict"]]
     predictions <- as.data.frame(predictions[["predict"]])
-    predictions["residuals"] <- predictions[["predict"]] - as.data.frame(newdata[[y]])[[y]]
+    predictions["residuals"] <- as.data.frame(newdata[[y]])[[y]] - predictions[["predict"]]
     p <- ggplot2::ggplot(ggplot2::aes(.data$predict, .data$residuals), data = predictions) +
       ggplot2::geom_point(alpha = 0.2) +
       ggplot2::geom_smooth(method = "lm", formula = y ~ x) +
@@ -2587,7 +2600,7 @@ h2o.pd_multi_plot <- function(object,
               ""
             }
           ),
-          x = column,
+          x = col_name,
           y = "Mean Response"
         ) +
         ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
@@ -2765,7 +2778,7 @@ is_binomial_from_model <- function(model) {
 }
 
 is_binomial <- function(model) {
-  if ("H2OAutoML" %in% class(model)) {
+  if (inherits(model, "H2OAutoML")) {
     if (model@leader@algorithm == "stackedensemble")
       return(is_binomial_from_model(model@leader@model$metalearner_model))
   } else if (model@algorithm == "stackedensemble"){

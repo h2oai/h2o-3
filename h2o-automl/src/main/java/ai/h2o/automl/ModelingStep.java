@@ -365,6 +365,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
+
+        /** Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
+         *  Value 0 means do not use time constraint for the main model.
+         *  More details in {@link ModelBuilder#setMaxRuntimeSecsForMainModel()}.
+         */
+        params._main_model_time_budget_factor = 2;
     }
     
     protected void setCrossValidationParams(Model.Parameters params) {

@@ -424,6 +424,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public double _max_runtime_secs = 0;
 
+    /** Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
+     *  Value 0 means do not use time constraint for the main model.
+     *  More details in {@link ModelBuilder#setMaxRuntimeSecsForMainModel()}.
+     */
+    public double _main_model_time_budget_factor = 0;
+
     /**
      * Early stopping based on convergence of stopping_metric.
      * Stop if simple moving average of the stopping_metric does not improve by stopping_tolerance for

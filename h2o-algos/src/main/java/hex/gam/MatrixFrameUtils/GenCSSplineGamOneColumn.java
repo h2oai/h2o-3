@@ -15,19 +15,18 @@ import water.util.ArrayUtils;
 
 import static hex.genmodel.algos.gam.GamUtilsCubicRegression.locateBin;
 
-public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColumn> {
+public class GenCSSplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
   int _splineType;
   public int _numKnots;      // number of knots
   public double[][] _bInvD;  // store inv(B)*D
   public int _initChunks;
-  double[] _u; // store transpose(X)*1, sum across rows per column
   public double[][] _ZTransp;  // store Z matrix transpose
   public double[][] _penaltyMat;  // store penalty matrix
   public double[] _knots;
   double[] _maxAbsRowSum; // store maximum row sum
   public double _s_scale;
 
-  public GenerateGamMatrixOneColumn(int splineType, int numKnots, double[] knots, Frame gamx) {
+  public GenCSSplineGamOneColumn(int splineType, int numKnots, double[] knots, Frame gamx) {
     _splineType = splineType;
     _numKnots = numKnots;
      CubicRegressionSplines crSplines = new CubicRegressionSplines(numKnots, knots);
@@ -75,7 +74,7 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   }
 
   @Override
-  public void reduce(GenerateGamMatrixOneColumn other) {
+  public void reduce(GenCSSplineGamOneColumn other) {
     ArrayUtils.add(_maxAbsRowSum, other._maxAbsRowSum);
   }
 
@@ -106,17 +105,21 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   
   public Frame centralizeFrame(Frame fr, String colNameStart, GAMParameters parms) {
     _ZTransp = generateZTransp(fr, _numKnots);
+    return centralizeFrame(fr, colNameStart, parms, _ZTransp);
+  }
+
+  public static Frame centralizeFrame(Frame fr, String colNameStart, GAMParameters parms, double[][] zTransp) {
     int numCols = fr.numCols();
     int ncolExp = numCols-1;
-    DataInfo frInfo = new DataInfo(fr, null, 0, false,  DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
-            MissingValuesHandling.Skip == parms._missing_values_handling,
+    DataInfo frInfo = new DataInfo(fr, null, 0, false,  DataInfo.TransformType.NONE
+            , DataInfo.TransformType.NONE, MissingValuesHandling.Skip == parms._missing_values_handling,
             (parms._missing_values_handling == MissingValuesHandling.MeanImputation) ||
                     (parms._missing_values_handling == MissingValuesHandling.PlugValues), parms.makeImputer(),
             false, false, false, false, null);
     for (int index=0; index < ncolExp; index++) {
       fr.add(colNameStart+"_"+index, fr.anyVec().makeZero()); // add numCols-1 columns to fr
     }
-    new BMulInPlaceTask(frInfo, _ZTransp, numCols, false).doAll(fr);
+    new BMulInPlaceTask(frInfo,  zTransp, numCols, false).doAll(fr);
     for (int index=0; index < numCols; index++) { // remove the original gam columns
       Vec temp = fr.remove(0);
       temp.remove();

@@ -1955,6 +1955,7 @@ def _calculate_clustering_indices(matrix):
 def varimp_heatmap(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
         top_n=None,  # type: Option[int]
+        num_of_features=20,  # type: Optional[int]
         figsize=(16, 9),  # type: Tuple[float]
         cluster=True,  # type: bool
         colormap="RdYlBu_r",  # type: str
@@ -1974,6 +1975,8 @@ def varimp_heatmap(
 
     :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param top_n: DEPRECATED. use just top n models (applies only when used with H2OAutoML)
+    :param num_of_features: limit the number of features to plot based on the maximum variable
+                            importance across the models. Use None for unlimited.
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
@@ -2027,6 +2030,7 @@ def varimp_heatmap(
 
 def varimp(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
+        num_of_features=20,  # type: Optional[int]
         cluster=True,  # type: bool
         use_pandas=True  # type: bool
 ):
@@ -2049,6 +2053,13 @@ def varimp(
     varimps = [_consolidate_varimps(model) for model in models]
     x, y = _get_xy(models[0])
     varimps = np.array([[varimp[col] for col in x] for varimp in varimps])
+
+    if num_of_features is not None:
+        feature_ranks = np.amax(varimps, axis=0).argsort()
+        feature_mask = (feature_ranks.max() - feature_ranks) < num_of_features
+        varimps = varimps[:, feature_mask]
+        x = [col for i, col in enumerate(x) if feature_mask[i]]
+
     if cluster and len(models) > 2:
         order = _calculate_clustering_indices(varimps)
         x = [x[i] for i in order]
@@ -2264,7 +2275,7 @@ def residual_analysis_plot(
         predicted = NumpyFrame(model.predict(frame)["predict"])
     actual = NumpyFrame(frame[y])
 
-    residuals = predicted["predict"] - actual[y]
+    residuals = actual[y] - predicted["predict"]
 
     plt.figure(figsize=figsize)
     plt.axhline(y=0, c="k")

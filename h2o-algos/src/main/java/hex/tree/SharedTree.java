@@ -1167,7 +1167,8 @@ public abstract class SharedTree<
 
     warn("_ntrees", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
     warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
-    warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
+    if (_parms._main_model_time_budget_factor == 0)
+      warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
   }
 
   private int computeOptimalNTrees(ModelBuilder<M, P, O>[] cvModelBuilders) {
@@ -1193,7 +1194,7 @@ public abstract class SharedTree<
       return false;
 
     _parms._stopping_rounds = 0;
-    _parms._max_runtime_secs = 0;
+    setMaxRuntimeSecsForMainModel();
 
     _ntrees = 1;
     _parms._ntrees = _ntrees;

@@ -16,7 +16,6 @@ Additional Resources:
 - See how are customers are using H2O at https://www.h2o.ai/customers/.
 - Keep up to date with the latest H2O blogs at https://www.h2o.ai/blog/.
 - Review projects, applications, research papers, tutorials, courses, and books that use H2O at https://github.com/h2oai/awesome-h2o.
-- `Change Log <https://github.com/h2oai/h2o-3/blob/master/Changes.md>`__
 
 .. toctree::
    :maxdepth: 2
@@ -158,4 +157,15 @@ Additional Resources:
    :maxdepth: 2
 
    api-reference
+
+.. toctree::
+   :maxdepth: 2
+
+   additional-resources
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Change log
+
+   Recent Changes <https://github.com/h2oai/h2o-3/blob/master/Changes.md>
 

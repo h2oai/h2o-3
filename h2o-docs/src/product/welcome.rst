@@ -566,6 +566,13 @@ Hadoop Launch Parameters
  -  ``-XX:+PrintGCDetails``: Include a short message after each garbage collection. Deprecated in Java 9, removed in Java 10.
  -  ``-Xlog:gc=info``: Prints garbage collection information into the logs. Introduced in Java 9. Usage enforced since Java 10. A replacement for ``-verbose:gc`` and ``-XX:+PrintGCDetails`` tags which are deprecated in Java 9 and removed in Java 10.
 
+Configuring HDFS
+~~~~~~~~~~~~~~~~
+
+When running H2O-3 on Hadoop, you do not need to worry about configuring HDFS. The ``-hdfs_config`` flag is used to configure access to HDFS from a standalone cluster. However, it is also used for anything that requries Hadoop (such as Hive).
+
+If you are accessing HDFS/Hive without Kerberos, then you will need to pass ``-hdfs_config`` and path to the ``core-site.xml`` that you got from your Hadoop edge node. If you are accessing Kerberized Hadoop, you will also need to pass ``hdfs-site.xml``.
+
 Accessing S3 Data from Hadoop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
