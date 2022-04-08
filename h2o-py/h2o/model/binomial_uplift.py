@@ -233,7 +233,7 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model.thresholds()  # <- Default: return training metric value
         >>> uplift_model.thresholds(train=True)
         """
-        return self._delegate_to_metrics(method='thresholds', train=train, valid=valid, xval=False)
+        return self._delegate_to_metrics(method='thresholds', train=train, valid=valid)
 
     def thresholds_and_metric_scores(self, train=False, valid=False):
         """
@@ -269,7 +269,7 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model.thresholds_and_metric_scores()  # <- Default: return training metric value
         >>> uplift_model.thresholds_and_metric_scores(train=True)
         """
-        return self._delegate_to_metrics(method='thresholds_and_metric_scores', train=train, valid=valid, xval=False)
+        return self._delegate_to_metrics(method='thresholds_and_metric_scores', train=train, valid=valid)
 
     def auuc_table(self, train=False, valid=False):
         """
@@ -308,7 +308,7 @@ class H2OBinomialUpliftModel(ModelBase):
         return self._delegate_to_metrics(method='auuc_table', train=train, valid=valid)
 
     def _delegate_to_metrics(self, method, train=False, valid=False, **kwargs):
-        tm = ModelBase._get_metrics(self, train, valid, xval=None, )
+        tm = ModelBase._get_metrics(self, train, valid, xval=None)
         m = {}
         for k, v in viewitems(tm):
             if v is None:
