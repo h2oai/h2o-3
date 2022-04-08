@@ -22,7 +22,7 @@ Uplift DRF differentiates itself from DRF because it finds the best split using 
 
 The goal is to maximize the differences between the class distributions in the treatment and control sets, so the splitting criteria are based on distribution divergences. The distribution divergence is calculated based on the ``uplift_metric`` parameter. In H2O-3, three ``uplift_metric`` types are supported:
 
-- **Kullback-Leibler divergence** (``uplift_metric="KL"``) - uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values). :math:`KL(P, Q) = \sum_{{i=0}^{N} p_i \log{\frac{p_i}{q_i}} }`
+- **Kullback-Leibler divergence** (``uplift_metric="KL"``) - uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values). :math:`KL(P, Q) = \sum_{i=0}^{N} p_i \log{\frac{p_i}{q_i}}`
 - **Squared Euclidean distance** (``uplift_metric="euclidean"``) - symmetric and stable distribution, does not tend to infinity values. :math:`E(P, Q) = \sum_{i=0}^{N} \sqrt{p_i-q_i}`
 - **Chi-squared divergence** (``uplift_metric="chi_squared"``) - Euclidean divergence normalized by control group distribution. Asymmetric and also tends to infinity values (if control group distribution contains zero values). :math:`\sqrt{X}(P, Q) = \sum_{i=0}^{N} \frac{\sqrt{p_i-q_i}}{q_i}`
 
@@ -201,7 +201,8 @@ By default, the following output displays:
    checksum name, description, model category, duration in ms, scoring
    time, predictions, AUUC, all AUUC types table, Thresholds and metric scores table)
 -  **Default AUUC metric** calculated based on ``auuc_type`` parameter
--  **AUUC table** which contains all computed AUUC types (qini, lift, gain)
+-  **Default normalized AUUC metric** calculated based on ``auuc_type`` parameter
+-  **AUUC table** which contains all computed AUUC types and normalized AUUC (qini, lift, gain)
 -  **Qini value** Average excess cumulative uplift (AECU) for qini metric type
 -  **AECU table** which contains all computed AECU values types (qini, lift, gain)
 -  **Thresholds and metric scores table** which contains thresholds of predictions, cumulative number of observations for each bin and cumulative uplift values for all metrics (qini, lift, gain).
@@ -230,7 +231,9 @@ You can set the AUUC type to be computed:
 
 In ``auuc`` the default AUUC is stored, however you can see also AUUC values for other AUUC types in ``auuc_table``.
 
-The resulting AUUC value is not normalized, so the result could be a positive number, but also a negative number. A higher number means better model.
+The resulting AUUC value is not normalized, so the result could be a positive number, but also a negative number. A higher number means better model. 
+
+To get normalized AUUC, you have to call ``auuc_normalized`` method. The normalized AUUC is calculated from uplift values which are normalized by uplift value from maximal treated number of observations. So if you have for example uplift values [10, 20, 30] the normalized uplift is [1/3, 2/3, 1]. It the maximal value is negative, the normalization factor is absolute value from this number. The result normalized AUUC can be again negative and positive and can be outside of (0, 1) interval. 
 
 From the ``threshold_and_metric_scores`` table you can select the highest uplift to decide the optimal threshold for the final prediction. The number of bins in the table depends on ``auuc_nbins`` parameter, but should be less (it depends on distribution of predictions). The thresholds are created based on quantiles of predictions and are sorted from highest value to lowest. 
 
@@ -304,12 +307,18 @@ Below is a simple example showing how to build an Uplift Random Forest model and
 
     # Plot Uplift Curve
     plot(perf, metric="gain")
+
+    # Plot Normalized Uplift Curve
+    plot(perf, metric="gain", normalize=TRUE)
     
     # Get default AUUC value
     print(h2o.auuc(perf))
     
     # Get AUUC value by AUUC type (metric)
     print(h2o.auuc(perf, metric="lift"))
+
+    # Get normalized AUUC value by AUUC type (metric)
+    print(h2o.auuc_normalized(perf, metric="lift"))
     
     # Get all AUUC types in a table
     print(h2o.auuc_table(perf))
@@ -367,14 +376,20 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     # Generate predictions on a validation set (if necessary)
     pred = uplift_model.predict(valid)
 
-    # Plot AUUC plot from performance
+    # Plot Uplift curve from performance
     perf.plot_uplift(metric="gain", plot=True)    
+
+    # Plot Normalized Uplift Curve from performance
+    perf.plot_uplift(metric="gain", plot=True, normalize=True)   
     
     # Get default AUUC (in this case Qini AUUC because auuc_type=qini)
     print(perf.auuc())
     
     # Get AUUC value by AUUC type (metric)
     print(perf.auuc(metric="lift"))
+
+    # Get normalized AUUC value by AUUC type (metric)
+    print(perf.auuc_normalized(metric="lift"))
     
     # Get all AUUC values in a table
     print(perf.auuc_table())

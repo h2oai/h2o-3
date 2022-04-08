@@ -161,8 +161,8 @@ class H2OBinomialUpliftModel(ModelBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.uplift() # <- Default: return training metric value
-        >>> uplift_model.uplift(train=True, metric="gain")
+        >>> uplift_model.uplift_normalized() # <- Default: return training metric value
+        >>> uplift_model.uplift_normalized(train=True, metric="gain")
         """
         assert metric in ['qini', 'lift', 'gain'], "Uplift metric "+metric+" should be 'qini','lift' or 'gain'."
         return self._delegate_to_metrics(metric, method='uplift_normalized', train=train, valid=valid)

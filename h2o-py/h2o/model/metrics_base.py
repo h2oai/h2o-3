@@ -1850,7 +1850,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.auuc()
+        >>> uplift_model.auuc_normalized()
         """
         if metric is None:
             return self._metric_json['auuc_normalized']

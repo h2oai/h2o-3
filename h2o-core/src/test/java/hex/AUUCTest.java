@@ -8,6 +8,21 @@ import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
+/**
+ * To reproduce causalm data run this code in Python with specific data:
+ * from causalml.metrics import auuc_score
+ * import pandas as pd
+ *
+ * treatment_column = "treatment"
+ * response_column = "outcome"
+ *
+ * results = pd.DataFrame({'outcome': [0, 0, 0, 1, 1, 0, 0, 0, 1, 1],
+ *                         'treatment': [0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+ *                         'uplift': [0.1, -0.1, 0.2, 0.5, 0.55, 0.13, -0.2, 0.11, 0.3, 0.9]})
+ *
+ * auuc = auuc_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=False)
+ * auuc_normalized = auuc_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=True)
+ */
 public class AUUCTest extends TestUtil {
 
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -74,8 +89,9 @@ public class AUUCTest extends TestUtil {
 
     private static AUUC doAUUC(int nbins, double[] probs, double[] y, double[] treatment, AUUC.AUUCType type) {
         double[][] rows = new double[probs.length][];
-        for( int i=0; i<probs.length; i++ )
+        for (int i=0; i < probs.length; i++) {
             rows[i] = new double[]{probs[i], y[i], treatment[i]};
+        }
         Frame fr = ArrayUtils.frame(new String[]{"probs", "y", "treatment"}, rows);
         fr.vec("treatment").setDomain(new String[]{"0", "1"});
         AUUC auuc = new AUUC(nbins, fr.vec("probs"),fr.vec("y"), fr.vec("treatment"), type);

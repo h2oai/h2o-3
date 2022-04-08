@@ -405,12 +405,16 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
         colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
         colHeaders.add("Training AUUC"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Training AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Training Qini coefficient"); colTypes.add("double"); colFormat.add("%.5f");
         if (hasCustomMetric) {
             colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
         }
 
         if (_output._validation_metrics != null) {
             colHeaders.add("Validation AUUC"); colTypes.add("double"); colFormat.add("%.5f");
+            colHeaders.add("Validation AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
+            colHeaders.add("Validation Qini coefficient"); colTypes.add("double"); colFormat.add("%.5f");
             if (hasCustomMetric) {
                 colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
             }
