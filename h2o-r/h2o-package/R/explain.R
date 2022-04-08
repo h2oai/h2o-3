@@ -2023,7 +2023,7 @@ h2o.shap_explain_row_plot <-
     }
   }
 
-.varimp_matrix <- function(object, top_n = 20){
+.varimp_matrix <- function(object, top_n = Inf, num_of_features=NULL){
   models_info <- .process_models_or_automl(object, NULL,
                                            require_multiple_models = TRUE,
                                            top_n_from_AutoML = top_n, only_with_varimp = TRUE,
@@ -2034,6 +2034,13 @@ h2o.shap_explain_row_plot <-
 
   res <- do.call(rbind, varimps)
   results <- as.data.frame(res)
+
+  if (!is.null(num_of_features)) {
+    feature_rank <- order(apply(results, 2, max))
+    feature_mask <- (max(feature_rank) - feature_rank) < num_of_features
+    results <- results[, feature_mask]
+  }
+
   return(results)
 }
 
@@ -2051,6 +2058,9 @@ h2o.shap_explain_row_plot <-
 #' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param top_n Integer specifying the number models shown in the heatmap
 #'              (based on leaderboard ranking). Defaults to 20.
+#' @param num_of_features Integer specifying the number of features shown in the heatmap
+#'                        based on the maximum variable importance across the models.
+#'                        Use NULL for unlimited. Defaults to 20.
 #' @return A ggplot2 object.
 #' @examples
 #'\dontrun{
@@ -2080,11 +2090,13 @@ h2o.shap_explain_row_plot <-
 #' print(varimp_heatmap)
 #' }
 #' @export
-h2o.varimp_heatmap <- function(object, top_n = 20) {
+h2o.varimp_heatmap <- function(object,
+                               top_n = 20,
+                               num_of_features = 20) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  results <- .varimp_matrix(object, top_n = top_n)
+  results <- .varimp_matrix(object, top_n = top_n, num_of_features = num_of_features)
   ordered <- row.names(results)
   y_ordered <- make.names(names(results))
   if (length(ordered) > 2) {

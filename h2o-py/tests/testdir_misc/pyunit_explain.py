@@ -36,6 +36,38 @@ def test_get_xy():
     assert y == estimated_y
 
 
+def test_varimp():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
+    y = "quality"
+    # get at most one column from each type
+    cols_to_test = []
+    for col, typ in train.types.items():
+        for ctt in cols_to_test:
+            if typ == train.types[ctt] or col == y:
+                break
+        else:
+            cols_to_test.append(col)
+
+    aml = H2OAutoML(seed=1234, max_models=5)
+    aml.train(y=y, training_frame=train)
+
+    assert aml.varimp(use_pandas=True).shape == (12, 5)
+    assert h2o.explanation.varimp(aml.leaderboard[aml.leaderboard["model_id"].grep("Stacked", invert=True, output_logical=True), :].head(3), num_of_features=3, use_pandas=True).shape == (3, 3)
+
+    varimp_1 = aml.varimp(use_pandas=False)
+    assert varimp_1[0].shape == (12, 5)
+    assert len(varimp_1[1]) == 5
+    assert len(varimp_1[2]) == 12
+
+    varimp_2 = h2o.explanation.varimp(aml.leaderboard[aml.leaderboard["model_id"].grep("Stacked", invert=True, output_logical=True), :].head(4), num_of_features=3, use_pandas=False)
+    assert varimp_2[0].shape == (3, 4)
+    assert len(varimp_2[1]) == 4
+    assert len(varimp_2[2]) == 3
+
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(aml.leaderboard[aml.leaderboard["model_id"].grep("Stacked", invert=True, output_logical=True), :].head(3), num_of_features=3).figure(), matplotlib.pyplot.Figure)
+
+
 def test_explanation_single_model_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
     y = "fare"
@@ -621,6 +653,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
 
 pyunit_utils.run_tests([
     test_get_xy,
+    test_varimp,
     test_explanation_single_model_regression,
     test_explanation_automl_regression,
     test_explanation_list_of_models_regression,
