@@ -23,7 +23,7 @@ Uplift DRF differentiates itself from DRF because it finds the best split using 
 
 The goal is to maximize the differences between the class distributions in the treatment and control sets, so the splitting criteria are based on distribution divergences. The distribution divergence is calculated based on the ``uplift_metric`` parameter. In H2O-3, three ``uplift_metric`` types are supported:
 
-- **Kullback-Leibler divergence** (``uplift_metric="KL"``) - uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values). :math:`KL(P, Q) = \sum_{{i=0}^{N} p_i \log{\frac{p_i}{q_i}} }`
+- **Kullback-Leibler divergence** (``uplift_metric="KL"``) - uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values). :math:`KL(P, Q) = \sum_{i=0}^{N} p_i \log{\frac{p_i}{q_i}}`
 - **Squared Euclidean distance** (``uplift_metric="euclidean"``) - symmetric and stable distribution, does not tend to infinity values. :math:`E(P, Q) = \sum_{i=0}^{N} \sqrt{p_i-q_i}`
 - **Chi-squared divergence** (``uplift_metric="chi_squared"``) - Euclidean divergence normalized by control group distribution. Asymmetric and also tends to infinity values (if control group distribution contains zero values). :math:`\sqrt{X}(P, Q) = \sum_{i=0}^{N} \frac{\sqrt{p_i-q_i}}{q_i}`
 
@@ -43,8 +43,8 @@ With tree-based algorithms, every tree takes information about treatment/control
 
 The uplift score is the criterion to make this decision similar to the Gini coefficient in the standard decision tree. Every leaf in a tree holds two predictions which are calculated based on a distribution of response between treatment and control group observations:
 
-- :math:`TP_cl = (TY_cl + 1) / (T_cl + 2)`
-- :math:`CP_cl = (CY_cl + 1) / (C_cl + 2)`
+- :math:`TP_cl = (TY1_cl + 1) / (T_cl + 2)`
+- :math:`CP_cl = (CY1_cl + 1) / (C_cl + 2)`
 
 where:
 
