@@ -2,7 +2,7 @@ Additional Resources
 ====================
 
 - `H2O README <https://github.com/h2oai/h2o-3/blob/master/README.md>`__
-- `H2O Book <https://shop.oreilly.com/product/0636920053170.do>`__ (O'Reilly)
+- `H2O Book <https://shop.oreilly.com/product/0636920053170.do>`__ (O'Reilly) 
 
 Videos
 ------
