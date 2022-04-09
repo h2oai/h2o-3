@@ -25,7 +25,7 @@ def test_leaderboard_for_regression():
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "mean_residual_deviance")
+    check_leaderboard(aml, exclude_algos, ["rmse", "mse", "mae", "rmsle", "mean_residual_deviance"], "rmse")
 
 
 def test_leaderboard_for_regression_with_custom_sorting():
@@ -42,7 +42,7 @@ def test_leaderboard_for_regression_with_custom_sorting():
                     sort_metric="RMSE")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["rmse", "mean_residual_deviance", "mse", "mae", "rmsle"], "rmse")
+    check_leaderboard(aml, exclude_algos, ["rmse", "mse", "mae", "rmsle", "mean_residual_deviance"], "rmse")
 
 
 def test_leaderboard_for_regression_with_custom_sorting_deviance():
@@ -75,7 +75,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "mean_residual_deviance")
+    check_leaderboard(aml, exclude_algos, ["rmse", "mse", "mae", "rmsle", "mean_residual_deviance"], "rmse")
     base = get_partitioned_model_names(aml.leaderboard).base
     first = [m for m in base if 'XGBoost_1' in m]
     others = [m for m in base if m not in first]
@@ -97,9 +97,9 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric_regression():
                     sort_metric="rmse")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["rmse", "mean_residual_deviance", "mse", "mae", "rmsle"], "rmse")
+    check_leaderboard(aml, exclude_algos, ["rmse", "mse", "mae", "rmsle", "mean_residual_deviance"], "rmse")
     base = get_partitioned_model_names(aml.leaderboard).base
-    check_model_property(base, 'stopping_metric', True, "RMSE")
+    check_model_property(base, 'stopping_metric', True, "deviance")
 
 
 pu.run_tests([

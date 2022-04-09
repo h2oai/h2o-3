@@ -10,7 +10,7 @@ public class TriDiagonalMatrix {
   public int _size;  // number of diagonal elements.  Matrix size is _size by _size+2
 
   public TriDiagonalMatrix(int size) {
-    assert size>2:"Size of BiDiagonalMatrix must exceed 2 but is "+size;
+    assert size>0:"Size of BiDiagonalMatrix must be > 0 but is "+size;
     _size = size;
     _first_diag = MemoryManager.malloc8d(size);
     _second_diag = MemoryManager.malloc8d(size);

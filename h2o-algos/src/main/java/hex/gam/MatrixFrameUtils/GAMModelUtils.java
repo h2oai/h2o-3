@@ -59,7 +59,7 @@ public class GAMModelUtils {
     int numGam = parms._gam_columns.length;
     int gamifiedColCount = 0;
     for (int index = 0; index < numGam; index++) {
-      if (parms._bs_sorted[index]==0) { // cubic spline
+      if (parms._bs_sorted[index]==0 || parms._bs_sorted[index]==2) { // cubic spline
         gamifiedColCount++;
       } else {
         gamifiedColCount += (1+parms._M[tpCount++]);

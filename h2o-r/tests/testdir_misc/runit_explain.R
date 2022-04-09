@@ -9,6 +9,25 @@ expect_ggplot <- function(gg) {
   tryCatch({ggplot2::ggsave(file, plot = p)}, finally = unlink(file))
 }
 
+varimp_test <- function () {
+  train <- h2o.uploadFile(locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
+  y <- "quality"
+
+  col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
+  col_types <- col_types[names(col_types) != y]
+  cols_to_test <- names(col_types[!duplicated(col_types)])
+
+  aml <- h2o.automl(y = y,
+                    max_models = 5,
+                    training_frame = train,
+                    seed = 1234)
+  expect_equal(dim(h2o.varimp(aml)), c(5, 12))
+  expect_equal(dim(h2o.varimp(aml, top_n = 3, num_of_features = 4)), c(3, 4))
+
+  expect_ggplot(h2o.varimp_heatmap(aml))
+  expect_ggplot(h2o.varimp_heatmap(aml, top_n = 3, num_of_features = 4))
+}
+
 explanation_test_single_model_regression <- function() {
   train <- h2o.uploadFile(locate("smalldata/titanic/titanic_expanded.csv"))
   y <- "fare"
@@ -579,7 +598,8 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
 }
 
 doSuite("Explanation Tests", makeSuite(
-  explanation_test_single_model_regression
+  varimp_test
+  , explanation_test_single_model_regression
   , explanation_test_automl_regression
   , explanation_test_list_of_models_regression
   , explanation_test_single_model_binomial_classification

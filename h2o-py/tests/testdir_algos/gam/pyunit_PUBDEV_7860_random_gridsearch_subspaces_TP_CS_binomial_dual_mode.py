@@ -29,7 +29,7 @@ def test_randomdiscrete_gridsearch():
                                                    [["c_1"], ["c_2", "c_3"], ["c_4", "c_5", "c_6"]]]}]}
     hyper_parameters2 = {'lambda': [1, 2],
                         'subspaces': [{'scale': [[0.001], [0.0002]], 'num_knots': [[5], [10]], 'bs':[[1], [0]],
-                                       'gam_columns': [[["c_0"]], [["c_1"]]]},
+                                       'gam_columns': [["c_0"], ["c_1"]]},
                                       {'scale': [[0.001, 0.001, 0.001], [0.0002, 0.0002, 0.0002]],
                                        'bs':[[1, 1, 1], [0, 1, 1]],
                                        'num_knots': [[5, 10, 12], [6, 11, 13]],

@@ -4158,7 +4158,7 @@ as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
 #' @details 
 #' Method \code{as.h2o.data.frame} will use \code{\link[data.table]{fwrite}} if data.table package is installed in required version.
 #' @seealso \code{\link{use.package}}
-#' @references \url{https://www.h2o.ai/blog/fast-csv-writing-for-r/}
+#' @references \url{https://h2o.ai/blog/fast-csv-writing-for-r/}
 #' @export
 as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) {
   if( destination_frame=="" ) {
@@ -4951,7 +4951,8 @@ h2o.relevel <- function(x,y) {
 #'
 #' @param x H2O frame with some factor columns
 #' @param weights_column optional name of weights column
-#' @return new reordered frame
+#' @param top_n optional number of most frequent levels to move to the top (eg.: for top_n=1 move only the most frequent level)
+ #' @return new reordered frame
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -4969,8 +4970,8 @@ h2o.relevel <- function(x,y) {
 #' # "virginica"  "versicolor" "setosa"
 #' }
 #' @export
-h2o.relevel_by_frequency <- function(x, weights_column=NULL) {
-  .newExpr("relevel.by.freq", x, ifelse(is.null(weights_column), NA, .quote(weights_column)))
+h2o.relevel_by_frequency <- function(x, weights_column=NULL, top_n=-1) {
+  .newExpr("relevel.by.freq", x, ifelse(is.null(weights_column), NA, .quote(weights_column)), top_n)
 }
 
 #' Group and Apply by Column

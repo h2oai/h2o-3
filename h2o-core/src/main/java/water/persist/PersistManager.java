@@ -69,6 +69,7 @@ public class PersistManager {
 
   private Persist[] I;
   private PersistHex HEX = new PersistHex(); // not part of I because it cannot be a backend for DKV
+  private PersistH2O persistH2O = new PersistH2O();
   private PersistStatsEntry[] stats;
   public PersistStatsEntry[] getStats() { return stats; }
 
@@ -289,6 +290,8 @@ public class PersistManager {
       else {
         return new ArrayList<>();
       }
+    } else if(s.startsWith(PersistH2O.PREFIX)) {
+      return persistH2O.calcTypeaheadMatches(filter, limit);
     } else if(s.startsWith("s3://")) {
       return I[Value.S3].calcTypeaheadMatches(filter, limit);
     } else if(s.startsWith("gs://")) {
@@ -400,6 +403,8 @@ public class PersistManager {
       I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("http".equals(scheme) || "https".equals(scheme)) {
       I[Value.HTTP].importFiles(path, pattern, files, keys, fails, dels);
+    } else if (PersistH2O.SCHEME.equals(scheme)) {
+      persistH2O.importFiles(path, pattern, files, keys, fails, dels);
     } else if ("s3".equals(scheme)) {
       if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
       I[Value.S3].importFiles(path, pattern, files, keys, fails, dels);

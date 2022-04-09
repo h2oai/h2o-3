@@ -17,6 +17,7 @@ import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
+import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -105,6 +106,51 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         return builder.trainModelOnH2ONode();
     }
 
+    private boolean validParameters(Model.Parameters parms, String[] fields) {
+        try {
+            Model.Parameters params = parms.clone();
+            // some algos check if distribution has proper _nclass(es) so we need to set training frame and response etc
+            setCommonModelBuilderParams(params);
+            ModelBuilder mb = ModelBuilder.make(params);
+            mb.init(false);
+            return Arrays.stream(fields)
+                    .allMatch((field) ->
+                            mb.getMessagesByFieldAndSeverity(field, Log.ERRR).length == 0);
+        } catch (H2OIllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    protected void setDistributionParameters(Model.Parameters parms) {
+        switch (aml().getDistributionFamily()) {
+            case custom:
+                parms._custom_distribution_func = aml().getBuildSpec().build_control.custom_distribution_func;
+                break;
+            case huber:
+                parms._huber_alpha = aml().getBuildSpec().build_control.huber_alpha;
+                break;
+            case tweedie:
+                parms._tweedie_power = aml().getBuildSpec().build_control.tweedie_power;
+                break;
+            case quantile:
+                parms._quantile_alpha = aml().getBuildSpec().build_control.quantile_alpha;
+                break;
+        }
+
+        try {
+            parms.setDistributionFamily(aml().getDistributionFamily());
+        } catch (H2OIllegalArgumentException e) {
+            parms.setDistributionFamily(DistributionFamily.AUTO);
+        }
+        if (!validParameters(parms, new String[]{"_distribution", "_family"}))
+            parms.setDistributionFamily(DistributionFamily.AUTO);
+
+        if (!aml().getDistributionFamily().equals(parms.getDistributionFamily())) {
+            aml().eventLog().info(Stage.ModelTraining,"Algo " + parms.algoName() +
+                    " doesn't support " + _aml.getDistributionFamily().name() + " distribution. Using AUTO distribution instead.");
+        }
+    }
+
     private transient AutoML _aml;
 
     protected final IAlgo _algo;
@@ -130,13 +176,27 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         _aml = autoML;
         _description = provider+" "+id;
     }
-    
+
+    /**
+     * Each provider (usually one class) defining a collection of steps must have a unique name.
+     * @return the name of the provider (usually simply the name of an algo) defining this step. 
+     */
     public String getProvider() {
         return _provider;
     }
-    
+
+    /**
+     * @return the step identifier: should be unique inside its provider.
+     */
     public String getId() {
         return _id;
+    }
+
+    /**
+     * @return a string that identifies the step uniquely among all steps defined by all providers.
+     */
+    public String getGlobalId() {
+        return _provider+":"+_id;
     }
     
     public IAlgo getAlgo() {
@@ -157,6 +217,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     
     public boolean ignores(AutoML.Constraint constraint) {
         return ArrayUtils.contains(_ignoredConstraints, constraint);
+    }
+    
+    public boolean limitModelTrainingTime() {
+      // if max_models is used, then the global time limit should have no impact on model training budget due to reproducibility concerns.
+      return !ignores(AutoML.Constraint.TIMEOUT) && aml().getBuildSpec().build_control.stopping_criteria.max_models() == 0;
     }
 
     /**
@@ -300,6 +365,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
+
+        /** Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
+         *  Value 0 means do not use time constraint for the main model.
+         *  More details in {@link ModelBuilder#setMaxRuntimeSecsForMainModel()}.
+         */
+        params._main_model_time_budget_factor = 2;
     }
     
     protected void setCrossValidationParams(Model.Parameters params) {
@@ -368,10 +439,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
 
         if (parms._stopping_metric == StoppingMetric.AUTO) {
-            String sort_metric = getSortMetric();
-            parms._stopping_metric = sort_metric == null ? StoppingMetric.AUTO
-                    : sort_metric.equals("auc") ? StoppingMetric.logloss
-                    : metricValueOf(sort_metric);
+            parms._stopping_metric = aml().getResponseColumn().cardinality() == -1 ? StoppingMetric.deviance : StoppingMetric.logloss;
         }
 
         if (parms._stopping_rounds == defaults._stopping_rounds)
@@ -477,19 +545,19 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setSeed(parms, defaults, SeedPolicy.Incremental);
             setStoppingCriteria(parms, defaults);
             setCustomParams(parms);
+            setDistributionParameters(parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
-            if (ignores(AutoML.Constraint.TIMEOUT)) {
-                parms._max_runtime_secs = 0;
-            } else {
+            if (limitModelTrainingTime()) {
                 Work work = getAllocatedWork();
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() / 1e3; // legacy
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, isDefaultModel) / 1e3; //PUBDEV-7595
                 double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3; // Models from a priority group + SEs
-                parms._max_runtime_secs = parms._max_runtime_secs == 0
-                        ? maxAssignedTimeSecs
+                parms._max_runtime_secs = parms._max_runtime_secs == 0 ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
+            } else {
+              parms._max_runtime_secs = 0;
             }
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
             aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
@@ -565,18 +633,19 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             // grid seed is provided later through the searchCriteria
             setStoppingCriteria(baseParms, defaults);
             setCustomParams(baseParms);
+            setDistributionParameters(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-            RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
+            RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
             setSearchCriteria(searchCriteria, baseParms);
 
             if (null == key) key = makeKey(_provider, true);
             aml().trackKeys(key);
 
-            Log.debug("Hyperparameter search: "+_provider+", time remaining (ms): "+aml().timeRemainingMs());
+            Log.debug("Hyperparameter search: " + _provider + ", time remaining (ms): " + aml().timeRemainingMs());
             aml().eventLog().debug(Stage.ModelTraining, searchCriteria.max_runtime_secs() == 0
-                    ? "No time limitation for "+key
-                    : "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
+                    ? "No time limitation for " + key
+                    : "Time assigned for " + key + ": " + searchCriteria.max_runtime_secs() + "s");
             return startSearch(
                     key,
                     baseParms,
@@ -588,9 +657,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
             Work work = getAllocatedWork();
             // for time limit, this is allocated in proportion of the entire work budget.
-            double maxAssignedTimeSecs = ignores(AutoML.Constraint.TIMEOUT)
-                    ? 0
-                    : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3;
+            double maxAssignedTimeSecs = limitModelTrainingTime() 
+                    ? aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3
+                    : 0;
             // SE predicate can be removed if/when we decide to include SEs in the max_models limit
             // for models limit, this is not assigned in the same proportion as for time,
             // as the exploitation phase is not supposed to "add" models but just to replace some by better ones,
@@ -607,6 +676,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             searchCriteria.set_stopping_rounds(baseParms._stopping_rounds * GRID_STOPPING_ROUND_FACTOR);
         }
+
     }
 
     /**
@@ -676,9 +746,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Job<Models> job = new Job<>(key, Models.class.getName(), _description);
             Work work = getAllocatedWork();
 
-            double maxAssignedTimeSecs = ignores(AutoML.Constraint.TIMEOUT)
-                    ? 0
-                    : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
+            double maxAssignedTimeSecs = limitModelTrainingTime()
+                    ? aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3
+                    : 0;
 
             aml().eventLog().debug(Stage.ModelTraining, maxAssignedTimeSecs == 0
                     ? "No time limitation for "+key

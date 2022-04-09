@@ -1174,6 +1174,8 @@ setMethod("h2o.varimp", signature("H2OModel"), function(object) {
 #'
 #' @param object An \linkS4class{H2OAutoML} object.
 #' @param top_n Show at most top_n models
+#' @param num_of_features Integer specifying the number of features returned based on the maximum
+#'                        importance across the models. Use NULL for unlimited. Defaults to NULL.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -1187,14 +1189,16 @@ setMethod("h2o.varimp", signature("H2OModel"), function(object) {
 #' h2o.varimp(aml)
 #' }
 #' @export
-setMethod("h2o.varimp", signature("H2OAutoML"), function(object, top_n = 20) {
-  .varimp_matrix(object, top_n = top_n)
+setMethod("h2o.varimp", signature("H2OAutoML"), function(object, top_n = 20, num_of_features = NULL) {
+  .varimp_matrix(object, top_n = top_n, num_of_features = num_of_features)
 })
 
 #'
 #' Retrieve the variable importance.
 #'
 #' @param object A leaderboard frame.
+#' @param num_of_features Integer specifying the number of features returned based on the maximum
+#'                        importance across the models. Use NULL for unlimited. Defaults to NULL.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -1208,9 +1212,9 @@ setMethod("h2o.varimp", signature("H2OAutoML"), function(object, top_n = 20) {
 #' h2o.varimp(aml@leaderboard[1:5,])
 #' }
 #' @export
-setMethod("h2o.varimp", signature("H2OFrame"), function(object) {
+setMethod("h2o.varimp", signature("H2OFrame"), function(object, num_of_features = NULL) {
   if (! "model_id" %in% names(object)){
     stop("This is not a leaderboard frame. Only frames containing `model_id` column are supported.")
   }
-  .varimp_matrix(object)
+  .varimp_matrix(object, num_of_features = num_of_features)
 })

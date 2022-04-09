@@ -1,0 +1,33 @@
+from __future__ import division
+from __future__ import print_function
+import sys
+sys.path.insert(1,"../../../")
+import h2o
+from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
+import pandas as pd
+import numpy as np
+import tempfile
+from tests import pyunit_utils
+
+# In this test, we check and make sure an exception is thrown when the GAM order for IS-spline is less than 1.
+def test_bad_spline_orders():
+    train_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/gamBinomial1Col.csv"))
+    x = []
+    y = "response"
+    train_data['response']=train_data['response'].asfactor()
+    frames = train_data.split_frame(ratios=[0.9], seed=12345)
+    
+    try:
+        h2o_model = H2OGeneralizedAdditiveEstimator(family='binomial', gam_columns=["C1"], bs=[2], spline_orders=[0])
+        h2o_model.train(x=x, y=y, training_frame=frames[0], validation_frame=frames[1])
+        assert False, "Should have thrown exception for illegal spline order"
+    except Exception as ex:
+        print(ex)
+        temp = str(ex)
+        assert "GAM I-spline spline_orders must be >= 1" in temp, "Wrong exception was received."
+        print("bad spline_orders check test passed!")
+            
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(test_bad_spline_orders)
+else:
+    test_bad_spline_orders()

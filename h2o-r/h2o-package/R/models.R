@@ -152,7 +152,7 @@ NULL
 .h2o.processResponseWarnings <- function(res) {
   if(length(res$messages) != 0L){
     warn <- lapply(res$messages, function(y) {
-      if(class(y) == "list" && y$message_type == "WARN" )
+      if(is.list(y) && y$message_type == "WARN" )
         paste0(y$message, ".\n")
       else ""
     })
@@ -3847,6 +3847,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @seealso \code{\link{predict}} for generating prediction frames,
 #'          \code{\link{h2o.performance}} for creating
 #'          \linkS4class{H2OModelMetrics}.
+#' @alias h2o.gains_lift
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -3869,18 +3870,22 @@ setGeneric("h2o.gainsLift", function(object, ...) {})
 
 #' @rdname h2o.gainsLift
 #' @export
+h2o.gains_lift <- function(object, ...) h2o.gainsLift(object, ...)
+
+#' @rdname h2o.gainsLift
+#' @export
 setMethod("h2o.gainsLift", "H2OModel", function(object, newdata, valid=FALSE, xval=FALSE,...) {
   model.parts <- .model.parts(object)
   if( missing(newdata) ) {
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-      else                          return( h2o.gainsLift(model.parts$vm) )
+      else                          return( h2o.gainsLift(model.parts$vm, ...) )
     }
     if ( xval ) {
       if( is.null(model.parts$xm) ) return( invisible(.warn.no.cross.validation()))
-      else                          return( h2o.gainsLift(model.parts$xm) )
+      else                          return( h2o.gainsLift(model.parts$xm, ...) )
     }
-    return( h2o.gainsLift(model.parts$tm) )
+    return( h2o.gainsLift(model.parts$tm, ...) )
   } else {
     if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
     if( xval )  stop("Cannot have both `newdata` and `xval=TRUE`", call.=FALSE)
@@ -4440,10 +4445,94 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 
 }
 
+#' Plot Gains/Lift curves
+#' @param object Either an H2OModel or H2OModelMetrics
+#' @param type What curve to plot. One of "both", "gains", "lift".
+#' @param ... Optional arguments
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' data <- h2o.importFile(
+#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+#' model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = data, ntrees = 1)
+#' h2o.gains_lift_plot(model)
+#' }
+#' @export
+setGeneric("h2o.gains_lift_plot", function(object, type = c("both", "gains", "lift"), ...) {})
+
+.gains_lift_plot <- function(gain_table, type) {
+  labels <- character()
+  colors <- character()
+
+  if (type == "both") {
+    ylim <- c(0, max(gain_table$cumulative_capture_rate, gain_table$cumulative_lift))
+    ylab <- "cumulative capture rate, cumulative lift"
+    title <- "Gains / Lift"
+  } else if (type == "gains") {
+    ylim <- c(0, max(gain_table$cumulative_capture_rate))
+    ylab <- "cumulative capture rate"
+    title <- "Gains"
+  } else if (type == "lift") {
+    ylim <- c(0, max(gain_table$cumulative_lift))
+    ylab <- "cumulative lift"
+    title <- "Lift"
+  }
+  if (type %in% c("both", "gains")) {
+    graphics::plot(gain_table$cumulative_data_fraction,
+                   gain_table$cumulative_capture_rate,
+                   type='l',
+                   ylim = ylim,
+                   col = "blue",
+                   xlab = "cumulative data fraction",
+                   ylab = ylab,
+                   main = title,
+                   panel.first = grid())
+    labels <- c("cummulative capture rate")
+    colors <- c("blue")
+  }
+  if (type %in% c("both", "lift")) {
+    opar <- par(new = type == "both")  # if new == T => don't clean the plot
+    on.exit(par(opar))
+    graphics::plot(gain_table$cumulative_data_fraction,
+                   gain_table$cumulative_lift,
+                   type = "l",
+                   ylim = ylim,
+                   col = "orange",
+                   xlab = "cumulative data fraction",
+                   ylab = ylab,
+                   main = title,
+                   panel.first = grid())
+    labels <- c(labels, "cummulative lift")
+    colors <- c(colors, "orange")
+  }
+  legend("topright", labels, lty = 1, col = colors)
+}
+
+#' Plot Gains/Lift curves
+#' @param object H2OModelMetrics object
+#' @param type What curve to plot. One of "both", "gains", "lift".
+#' @export
+setMethod("h2o.gains_lift_plot", "H2OModelMetrics", function(object, type = c("both", "gains", "lift")) {
+  gain_table <- h2o.gainsLift(object)
+  .gains_lift_plot(gain_table, type = match.arg(type))
+})
+
+#' Plot Gains/Lift curves
+#' @param object H2OModel object
+#' @param type What curve to plot. One of "both", "gains", "lift".
+#' @param xval if TRUE, use cross-validation metrics
+#' @export
+setMethod("h2o.gains_lift_plot", "H2OModel", function(object, type = c("both", "gains", "lift"), xval = FALSE) {
+  gain_table <- h2o.gainsLift(object, xval = xval)
+  .gains_lift_plot(gain_table, type = match.arg(type))
+})
+
 #' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
-  if(!type %in% c("roc", "pr")) stop("type must be 'roc' or 'pr'")
+  if(!type %in% c("roc", "pr", "gains_lift")) stop("type must be 'roc', 'pr', or 'gains_lift'")
   if(type == "roc") {
     xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
     if(missing(main)) {
@@ -4471,6 +4560,8 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
     xdata <- rev(x@metrics$thresholds_and_metric_scores$recall)
     ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
     graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
+  } else if (type == "gains_lift") {
+    h2o.gains_lift_plot(x, ...)
   }
 }
 
@@ -5495,7 +5586,7 @@ setMethod('show', 'H2ONode',
 
 print.H2ONode <- function(node){
   cat("Node ID", node@id, "\n\n")
-  if(class(node) == "H2OLeafNode"){
+  if (inherits(node, "H2OLeafNode")){
     cat("Terminal node. Prediction is", node@prediction)
     return()
   }
@@ -5976,4 +6067,38 @@ h2o.reset_threshold <- function(object, threshold) {
     warning( paste0("Threshold cannot be reset for class ", class(o)) )
     return(NULL)
   }
+}
+
+#' Calculates per-level mean of predicted value vs actual value for a given variable.
+#'
+#' In the basic setting, this function is equivalent to doing group-by on variable and calculating
+#' mean on predicted and actual. In addition to that it also handles NAs in response and weights
+#' automatically.
+#'
+#' @param object    A trained supervised H2O model.
+#' @param newdata   Input frame (can be training/test/.. frame).
+#' @param predicted Frame of predictions for the given input frame.
+#' @param variable  Name of variable to inspect.
+#' @return          H2OTable
+#' @export
+h2o.predicted_vs_actual_by_variable <- function(object,
+                                                newdata,
+                                                predicted,
+                                                variable
+) {
+  if (missing(object)) stop("Parameter 'object' needs to be specified.")
+  if (!is(object, "H2OModel")) stop("Parameter 'object' has to be an H2O model.")
+  .validate.H2OFrame(newdata, required = TRUE)
+
+  vi <- as.data.frame(.newExpr("predicted.vs.actual.by.var",
+                               object@model_id,
+                               newdata,
+                               paste0("'", variable, "'"),
+                               predicted
+  ), check.names = FALSE)
+  oldClass(vi) <- c("H2OTable", "data.frame")
+  attr(vi, "header") <- "Predicted vs Actual by Variable"
+  attr(vi, "description") <- ""
+  attr(vi, "formats") <- c("%s", rep_len("%5f", ncol(vi) - 1))
+  vi
 }

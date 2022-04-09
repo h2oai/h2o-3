@@ -431,6 +431,11 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       _wY += mb._wY;
       _wYY += mb._wYY;
     }
+
+    // For Sparkling Water - Scala has troubles with Java generics at this place.
+    public void reduce(Object mb) {
+      reduce((T)mb);
+    }
     
     public void reduceForCV(T mb){
       this.reduce(mb);
@@ -468,6 +473,5 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public void cachePrediction(double[] cdist, Chunk[] chks, int row, int cacheChunkIdx, Model m) {
       throw new UnsupportedOperationException("Should be overridden in implementation (together with makePredictionCache(..)).");
     }
-
   }
 }

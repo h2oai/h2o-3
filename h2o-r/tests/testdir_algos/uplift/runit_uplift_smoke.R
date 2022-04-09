@@ -26,13 +26,13 @@ test.uplift <- function() {
   testh2o$y <- as.factor(test$y)
   testh2o <- as.h2o(testh2o)
   
-  expected_values_auuc_qini <- c(66.10928, 85.58292, 60.71382)
-  expected_values_auuc_gain <- c(128.6424, 162.0204, 121.7822) 
-  expected_values_auuc_lift <- c(0.2125203, 0.2605544, 0.2046642)
-  
-  expected_values_aecu_qini <- c(82.12111, 101.5937, 76.73942)
-  expected_values_aecu_gain <- c(160.6661, 194.0419, 153.8334)
-  expected_values_aecu_lift <- c(0.2285321, 0.2765652, 0.2206898)
+  expected_values_auuc_qini <- c(66.108996, 85.583648, 60.837472)
+  expected_values_auuc_lift <- c(0.212531, 0.260563, 0.204788)
+  expected_values_auuc_gain <- c(128.642298, 162.020112, 122.031586) 
+
+  expected_values_aecu_qini <- c(82.12082, 101.594370, 76.857630)
+  expected_values_aecu_lift <- c(0.2285426, 0.276573, 0.220808)
+  expected_values_aecu_gain <- c(160.666, 194.041557, 154.071902)
     
   expected_values_auuc_norm_qini <- c(2.065915, 2.674466, 1.897307)
   expected_values_auuc_norm_gain <- c(2.010038, 2.531569, 1.902846)

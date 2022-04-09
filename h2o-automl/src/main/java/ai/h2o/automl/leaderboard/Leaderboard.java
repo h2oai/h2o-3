@@ -279,6 +279,15 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     return _sort_metric == null ? null : _metric_values.get(_sort_metric);
   }
 
+  /**
+   * 
+   * @param metricName
+   * @return the metric values for the models in the same order as {@link #getModels()}
+   */
+  public double[] getMetricValues(String metricName) {
+    return _metric_values.get(metricName);
+  }
+
   private EventLog eventLog() { return _eventlog_key.get(); }
 
   private void setDefaultMetrics(Model m) {
@@ -300,7 +309,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     unlock();
   }
 
-  private ModelMetrics getOrCreateModelMetrics(Key<Model> modelKey) {
+  public ModelMetrics getOrCreateModelMetrics(Key<Model> modelKey) {
     return getOrCreateModelMetrics(modelKey, getExtensionsAsMap());
   }
 
@@ -483,7 +492,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     _extensions_cells = ArrayUtils.append(_extensions_cells, toAdd);
   }
 
-  private Map<Key<Model>, LeaderboardCell[]> getExtensionsAsMap() {
+  public Map<Key<Model>, LeaderboardCell[]> getExtensionsAsMap() {
     return Arrays.stream(_extensions_cells).collect(Collectors.toMap(
             c -> c.getModelId(),
             c -> new LeaderboardCell[]{c},
@@ -596,7 +605,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     } else if (m._output.isMultinomialClassifier()) { // multinomial
       return new String[] {"mean_per_class_error", "logloss", "rmse", "mse"};
     } else if (m._output.isSupervised()) { // regression
-      return new String[] {"mean_residual_deviance", "rmse", "mse", "mae", "rmsle"};
+      return new String[] {"rmse", "mse", "mae", "rmsle", "mean_residual_deviance"};
     }
     return new String[0];
   }

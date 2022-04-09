@@ -26,6 +26,7 @@ import static hex.genmodel.utils.ArrayUtils.difference;
 import static hex.genmodel.utils.ArrayUtils.signum;
 import static hex.rulefit.RuleFitUtils.sortRules;
 import static hex.rulefit.RuleFitUtils.deduplicateRules;
+import static hex.util.DistributionUtils.distributionToFamily;
 
 
 /**
@@ -122,40 +123,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
             }
         } else {
-            switch (_parms._distribution) {
-                case bernoulli:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
-                    break;
-                case quasibinomial:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.quasibinomial);
-                    break;
-                case multinomial:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
-                    break;
-                case ordinal:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal);
-                    break;
-                case gaussian:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
-                    break;
-                case poisson:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.poisson);
-                    break;
-                case gamma:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gamma);
-                    break;
-                case tweedie:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.tweedie);
-                    break;
-                case fractionalbinomial:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.fractionalbinomial);
-                    break;
-                case negativebinomial:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.negativebinomial);
-                    break;
-                default:
-                    error("_distribution", "Distribution not supported.");
-            }
+            glmParameters = new GLMModel.GLMParameters(distributionToFamily(_parms._distribution));
         }
         if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) && _parms._ignored_columns != null) {
             glmParameters._ignored_columns = _parms._ignored_columns;
