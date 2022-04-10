@@ -18,7 +18,7 @@ def test_default_automl_with_regression_task():
     aml.train(y=ds.target, training_frame=ds.train, validation_frame=ds.valid, leaderboard_frame=ds.test)
     print(aml.leader)
     print(aml.leaderboard)
-    assert aml.leaderboard.columns == ["model_id", "mean_residual_deviance", "rmse", "mse", "mae", "rmsle"]
+    assert aml.leaderboard.columns == ["model_id", "rmse", "mse", "mae", "rmsle", "mean_residual_deviance"]
 
 
 def test_workaround_for_distribution():

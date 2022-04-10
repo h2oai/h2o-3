@@ -122,6 +122,8 @@ reference:
       - h2o.floor
       - h2o.flow
       - h2o.gainsLift
+      - h2o.gains_lift
+      - h2o.gains_lift_plot
       - h2o.gbm
       - h2o.generic
       - h2o.genericModel

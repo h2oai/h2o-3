@@ -5,6 +5,7 @@ import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.dummy.DummyStepsProvider;
 import ai.h2o.automl.dummy.DummyStepsProvider.DummyModelStep;
 import hex.Model;
+import hex.ScoreKeeper;
 import hex.grid.Grid;
 import hex.grid.HyperSpaceSearchCriteria;
 import org.junit.After;
@@ -78,7 +79,7 @@ public class ModelingStepTest {
         assertEquals(aml.getBuildSpec().input_spec.response_column, model._parms._response_column);
         assertEquals(aml.getBuildSpec().build_control.nfolds, model._parms._nfolds);
         assertTrue(model._parms._max_runtime_secs > 0);
-        assertEquals(aml.getBuildSpec().build_control.stopping_criteria.stopping_metric(), model._parms._stopping_metric);
+        assertEquals(ScoreKeeper.StoppingMetric.logloss, model._parms._stopping_metric); // Classification
     }
 
     @Test(expected = H2OIllegalArgumentException.class)
@@ -96,7 +97,7 @@ public class ModelingStepTest {
             assertEquals(aml.getBuildSpec().input_spec.response_column, model._parms._response_column);
             assertEquals(aml.getBuildSpec().build_control.nfolds, model._parms._nfolds);
             assertTrue(model._parms._max_runtime_secs > 0);
-            assertEquals(aml.getBuildSpec().build_control.stopping_criteria.stopping_metric(), model._parms._stopping_metric);
+            assertEquals(ScoreKeeper.StoppingMetric.logloss, model._parms._stopping_metric); // Classification
         }
     }
 
@@ -149,7 +150,7 @@ public class ModelingStepTest {
             assertEquals(aml.getBuildSpec().input_spec.response_column, model._parms._response_column);
             assertEquals(aml.getBuildSpec().build_control.nfolds, model._parms._nfolds);
             assertTrue(model._parms._max_runtime_secs > 0);
-            assertEquals(aml.getBuildSpec().build_control.stopping_criteria.stopping_metric(), model._parms._stopping_metric);
+            assertEquals(ScoreKeeper.StoppingMetric.logloss, model._parms._stopping_metric); // Classification
         }
     }
     
@@ -169,7 +170,7 @@ public class ModelingStepTest {
             assertEquals(aml.getBuildSpec().input_spec.response_column, model._parms._response_column);
             assertEquals(aml.getBuildSpec().build_control.nfolds, model._parms._nfolds);
             assertTrue(model._parms._max_runtime_secs > 0);
-            assertEquals(aml.getBuildSpec().build_control.stopping_criteria.stopping_metric(), model._parms._stopping_metric);
+            assertEquals(ScoreKeeper.StoppingMetric.logloss, model._parms._stopping_metric); // Classification
         }
     }
 

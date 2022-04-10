@@ -13,7 +13,6 @@ import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
-import hex.ensemble.StackedEnsembleModel;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -93,6 +92,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     aml.submit();
     return aml;
   }
+  
+  static AutoML startAutoML(AutoMLBuildSpec buildSpec, boolean testMode) {
+    AutoML aml = new AutoML(buildSpec);
+    aml._testMode = testMode;
+    aml.submit();
+    return aml;
+  }
 
   @Override
   public Class<AutoMLV99.AutoMLKeyV3> makeSchema() {
@@ -160,8 +166,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
+  transient StepResultState[] _stepsResults;
 
   private boolean _useAutoBlending;
+  private boolean _testMode;  // when on, internal states are kept for inspection
   /**
    * DO NOT USE explicitly: for schema/reflection only.
    */
@@ -319,6 +327,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               + " Please note that the models will still be validated using cross-validation only,"
               + " the validation frame will be used to provide purely informative validation metrics on the trained models.");
     }
+    if (Arrays.asList(
+            DistributionFamily.fractionalbinomial,
+            DistributionFamily.quasibinomial,
+            DistributionFamily.ordinal
+            ).contains(buildSpec.build_control.distribution)) {
+      throw new H2OIllegalArgumentException("Distribution \"" + buildSpec.build_control.distribution.name() + "\" is not supported in AutoML!");
+    }
   }
 
   private void validateModelBuilding(AutoMLBuildModels modelBuilding) {
@@ -328,11 +343,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (modelBuilding.exploitation_ratio > 1) {
       throw new H2OIllegalArgumentException("`exploitation_ratio` must be between 0 and 1.");
     }
-    if (modelBuilding.modeling_plan == null) {
-      modelBuilding.modeling_plan = ModelingPlans.defaultPlan();
-    }
   }
-
+  
   private void validateEarlyStopping(AutoMLStoppingCriteria stoppingCriteria, AutoMLInput input) {
     if (stoppingCriteria.max_models() <= 0 && stoppingCriteria.max_runtime_secs() <= 0) {
       stoppingCriteria.set_max_runtime_secs(3600);
@@ -380,13 +392,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   ModelingStep[] getExecutionPlan() {
-    return _executionPlan == null ? (_executionPlan = session().getModelingStepsRegistry().getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
+    if (_executionPlan == null) {
+      _executionPlan = session().getModelingStepsRegistry().getOrderedSteps(selectModelingPlan(null), this);
+    }
+    return _executionPlan;
   }
-  
-  void setModelingPlan(StepDefinition[] modelingPlan) {
-    _buildSpec.build_models.modeling_plan = modelingPlan;
+
+  StepDefinition[] selectModelingPlan(StepDefinition[] plan) {
+    if (_buildSpec.build_models.modeling_plan == null) {
+      // as soon as user specifies max_models, consider that user expects reproducibility.
+      _buildSpec.build_models.modeling_plan = plan != null ? plan
+              : _buildSpec.build_control.stopping_criteria.max_models() > 0 ? ModelingPlans.REPRODUCIBLE
+              : ModelingPlans.defaultPlan();
+    }
+    return _buildSpec.build_models.modeling_plan;
   }
-  
+
   void planWork() {
     Set<IAlgo> skippedAlgos = new HashSet<>();
     if (_buildSpec.build_models.exclude_algos != null) {
@@ -609,14 +630,59 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private DistributionFamily inferDistribution(Vec response) {
     int numOfDomains = response.domain() == null ? 0 : response.domain().length;
-    if (numOfDomains == 0)
-      return DistributionFamily.gaussian;
-    if (numOfDomains == 2)
-      return DistributionFamily.bernoulli;
-    if (numOfDomains > 2)
-      return DistributionFamily.multinomial;
+    if (_buildSpec.build_control.distribution == DistributionFamily.AUTO) {
+      if (numOfDomains == 0)
+        return DistributionFamily.gaussian;
+      if (numOfDomains == 2)
+        return DistributionFamily.bernoulli;
+      if (numOfDomains > 2)
+        return DistributionFamily.multinomial;
 
-    throw new RuntimeException("Number of domains is equal to 1.");
+      throw new RuntimeException("Number of classes is equal to 1.");
+    } else {
+      DistributionFamily distribution = _buildSpec.build_control.distribution;
+      if (numOfDomains > 2) {
+        if (!Arrays.asList(
+                DistributionFamily.multinomial,
+                DistributionFamily.ordinal,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of classes of response is greater than 2." +
+                  " Possible distribution values: \"multinomial\"," +
+                  /*" \"ordinal\"," + */ // Currently unsupported in AutoML
+                  " \"custom\".");
+        }
+      } else if (numOfDomains == 2) {
+        if (!Arrays.asList(
+                DistributionFamily.bernoulli,
+                DistributionFamily.quasibinomial,
+                DistributionFamily.fractionalbinomial,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of classes of response is 2." +
+                  " Possible distribution values: \"bernoulli\"," +
+                  /*" \"quasibinomial\", \"fractionalbinomial\"," + */ // Currently unsupported in AutoML
+                  " \"custom\".");
+        }
+      } else {
+        if (!Arrays.asList(
+                DistributionFamily.gaussian,
+                DistributionFamily.poisson,
+                DistributionFamily.negativebinomial,
+                DistributionFamily.gamma,
+                DistributionFamily.laplace,
+                DistributionFamily.quantile,
+                DistributionFamily.huber,
+                DistributionFamily.tweedie,
+                DistributionFamily.custom
+        ).contains(distribution)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Response type suggests a regression task." +
+                  " Possible distribution values: \"gaussian\", \"poisson\", \"negativebinomial\", \"gamma\", " +
+                  "\"laplace\", \"quantile\", \"huber\", \"tweedie\", \"custom\".");
+        }
+      }
+    return distribution;
+    }
   }
 
   private void prepareData() {
@@ -691,6 +757,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       if (!exceededSearchLimits(step)) {
         StepResultState state = _modelingStepsExecutor.submit(step, job());
         log.info("AutoML step returned with state: "+state.toString());
+        if (_testMode) _stepsResults = ArrayUtils.append(_stepsResults, state);
         if (state.is(ResultStatus.success)) {
           _consecutiveModelFailures.set(0);
           completed.add(step);

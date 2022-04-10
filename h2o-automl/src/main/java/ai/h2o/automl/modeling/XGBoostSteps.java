@@ -28,11 +28,6 @@ public class XGBoostSteps extends ModelingSteps {
             params._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
         }
 
-        // setDistribution: no way to identify gaussian, poisson, laplace? using descriptive statistics?
-        params._distribution = aml.getResponseColumn().isBinary() && !(aml.getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
-                : aml.getResponseColumn().isCategorical() ? DistributionFamily.multinomial
-                : DistributionFamily.AUTO;
-
         params._score_tree_interval = 5;
         params._ntrees = 10000;
 //        params._min_split_improvement = 0.01f;

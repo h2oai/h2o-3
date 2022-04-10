@@ -50,6 +50,32 @@ public class GamMojoModelTest {
       Scope.exit();
     }
   }
+
+  // test and make sure that quasibinomial mojo with I-spline works
+  @Test
+  public void testISQuasibinomial() {
+    Scope.enter();
+    try {
+      final Frame fr = Scope.track(parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv"));
+      DKV.put(fr);
+      final GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._response_column = "CAPSULE";
+      params._family = quasibinomial;
+      params._ignored_columns = new String[]{"ID"};
+      params._gam_columns = new String[][]{{"PSA"}};
+      params._num_knots = new int[]{5};
+      params._train = fr._key;
+      params._bs = new int[]{2};
+      params._spline_orders = new int[]{3};
+      params._link = GLMModel.GLMParameters.Link.logit;
+      final GAMModel model = new GAM(params).trainModel().get();
+      Frame predictFrame = Scope.track(model.score(fr));
+      Scope.track_generic(model);
+      assertTrue(model.testJavaScoring(fr, predictFrame, _tol));
+    } finally {
+      Scope.exit();
+    }
+  }
   
   // test and make sure the h2opredict, mojo predict agrees with binomial dataset that includes
   // both enum and numerical datasets for the binomial family
@@ -155,10 +181,11 @@ public class GamMojoModelTest {
       Scope.exit();
     }
   }
+  
 
-  // test TP/CS Smoothers for binomial family
+  // test for TP, I-splines
   @Test
-  public void testMojoCSTPBinomial() {
+  public void testMojoISTPBinomial() {
     Scope.enter();
     try {
       Frame train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
@@ -173,6 +200,68 @@ public class GamMojoModelTest {
       params._ignored_columns = ignoredCols;
       params._gam_columns = gamCols;
       params._bs = new int[]{1,1,1,0};
+      params._train = train._key;
+      GAMModel gam = new GAM(params).trainModel().get();
+      Frame predictMult = Scope.track(gam.score(train));
+      assertTrue(gam.testJavaScoring(train, predictMult, _tol)); // compare scoring result with mojo      
+      Scope.track_generic(gam);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /***
+   * overkill here to test a combination of all bs types.
+   */
+  @Test
+  public void testMojoISCSTPBinomial2() {
+    Scope.enter();
+    try {
+      Frame train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+      train.replace((20), train.vec(20).toCategoricalVec()).remove();
+      DKV.put(train);
+      Scope.track(train);
+      String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12",
+              "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20"};
+      String[][] gamCols = new String[][]{{"C12"}, {"C13", "C14"}, {"C15"}, {"C16"}, {"C17"}, {"C15", "C16", "C17"},
+              {"C18"}, {"C18"}};
+      GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._response_column = "C21";
+      params._ignored_columns = ignoredCols;
+      params._gam_columns = gamCols;
+      params._bs = new int[]{2,1,0,2,0,1,1,2};
+      params._spline_orders = new int[]{4,-1,-1,5,-1,-1,-1,6};
+      params._num_knots = new int[]{5,0,0,10,0,0,0,8};
+      params._train = train._key;
+      GAMModel gam = new GAM(params).trainModel().get();
+      Frame predictMult = Scope.track(gam.score(train));
+      assertTrue(gam.testJavaScoring(train, predictMult, _tol)); // compare scoring result with mojo      
+      Scope.track_generic(gam);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /***
+   * test a combination of all bs types.
+   */
+  @Test
+  public void testMojoISCSTPBinomial() {
+    Scope.enter();
+    try {
+      Frame train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+      train.replace((20), train.vec(20).toCategoricalVec()).remove();
+      DKV.put(train);
+      Scope.track(train);
+      String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12",
+              "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20"};
+      String[][] gamCols = new String[][]{{"C15", "C16", "C17"}, {"C18"}, {"C12"}, {"C13", "C14"}};
+      GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._response_column = "C21";
+      params._ignored_columns = ignoredCols;
+      params._gam_columns = gamCols;
+      params._bs = new int[]{1,2,0,1};
+      params._spline_orders = new int[]{-1,4,-1,-1};
       params._train = train._key;
       GAMModel gam = new GAM(params).trainModel().get();
       Frame predictMult = Scope.track(gam.score(train));

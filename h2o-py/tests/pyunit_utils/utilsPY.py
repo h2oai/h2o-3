@@ -3616,7 +3616,7 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     :return:
     '''
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  They are " \
-                                                      "different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
+                                                      "of different sizes.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
     typeDict = f1.types
     frameNames = f1.names
 

@@ -4,7 +4,6 @@ import hex.Model;
 import hex.gam.GAM;
 import hex.gam.GAMModel;
 import hex.gam.GAMModel.GAMParameters;
-import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
@@ -41,9 +40,28 @@ public class GamUtils {
 
   public static double[][][] allocate3DArray(int num2DArrays, GAMParameters parms, AllocateType fileMode) {
     double[][][] array3D = new double[num2DArrays][][];
-    for (int frameIdx = 0; frameIdx < num2DArrays; frameIdx++)
+
+    for (int frameIdx = 0; frameIdx < num2DArrays; frameIdx++) {
+      if (parms._bs_sorted[frameIdx] != 2) { // cs spline
         array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]);
+      } else { // I-splines
+        int totBasis = parms._num_knots_sorted[frameIdx] + parms._spline_orders_sorted[frameIdx] - 2; // I-spline order=NBSplineTypeII order
+        array3D[frameIdx] = allocate2DArray(fileMode, totBasis);
+      }
+    }
     return array3D;
+  }
+
+  /***
+   * This function is used to remove the dimension change due to centering for I-splines
+   */
+  public static void removeCenteringIS(double[][][] penaltyMatCenter, GAMParameters parms) {
+    int numGamCol = parms._bs_sorted.length;
+    for (int index=0; index<numGamCol; index++)
+      if (parms._bs_sorted[index]==2) {
+        int numBasis = parms._num_knots_sorted[index]+parms._spline_orders_sorted[index]-2;
+        penaltyMatCenter[index] = allocate2DArray(AllocateType.sameOrig, numBasis);
+      }
   }
 
   // allocate 3D array to store various information;
@@ -191,6 +209,7 @@ public class GamUtils {
       int maxIterations = gamParams._max_iterations;
       gamParams._max_iterations = 1;
       // instantiate GAMModels
+      
       GAMModel gamModel = new GAM(gamParams).trainModel().get();
       gamParams._max_iterations = maxIterations;
       // extract GLM CV model run results to GAMModels
@@ -260,7 +279,7 @@ public class GamUtils {
     parms._M = MemoryManager.malloc4(thinPlateNum);
     int countThinPlate = 0;
     for (int index = 0; index < numGamCols; index++) {
-      if (parms._bs[index] == 1) { // todo: add in bs==2 when it is supported
+      if (parms._bs[index] == 1) {
         int d = parms._gam_columns[index].length;
         parms._m[countThinPlate] = calculatem(d);
         parms._M[countThinPlate] = calculateM(d, parms._m[countThinPlate]);
@@ -309,7 +328,7 @@ public class GamUtils {
     return knots;
   }
 
-  // grad all predictors to build a smoother
+  // grab all predictors to build a smoother
   public static Frame prepareGamVec(int gam_column_index, GAMParameters parms, Frame fr) {
     final Vec weights_column = (parms._weights_column == null) ? Scope.track(Vec.makeOne(fr.numRows()))
             : fr.vec(parms._weights_column);
@@ -322,15 +341,26 @@ public class GamUtils {
     return predictVec;
   }
 
-  public static String[] generateGamColNames(int gam_col_index, GAMParameters parms) {
-    String[] newColNames = new String[parms._num_knots_sorted[gam_col_index]];
-    StringBuffer nameStub = new StringBuffer();
-    int numPredictors = parms._gam_columns_sorted[gam_col_index].length;
+  public static String[] generateGamColNames(int gamColIndex, GAMParameters parms) {
+    String[] newColNames = null;
+    if (parms._bs_sorted[gamColIndex] == 0)
+      newColNames = new String[parms._num_knots_sorted[gamColIndex]];
+    else
+      newColNames = new String[parms._num_knots_sorted[gamColIndex]+parms._spline_orders_sorted[gamColIndex]-2];
+
+/*    StringBuffer nameStub = new StringBuffer();
+    int numPredictors = parms._gam_columns_sorted[gamColIndex].length;
     for (int predInd = 0; predInd < numPredictors; predInd++) {
-      nameStub.append(parms._gam_columns_sorted[gam_col_index][predInd]+"_");
-    }
-    String stubName = nameStub.toString();
-    for (int knotIndex = 0; knotIndex < parms._num_knots_sorted[gam_col_index]; knotIndex++) {
+      nameStub.append(parms._gam_columns_sorted[gamColIndex][predInd]+"_");
+    }*/
+    String stubName = parms._gam_columns_sorted[gamColIndex][0]+"_";
+    if (parms._bs_sorted[gamColIndex]==0)
+      stubName += "cr_";
+    else if (parms._bs_sorted[gamColIndex]==2)
+      stubName += "is_";
+    else
+      stubName += "tp_";
+    for (int knotIndex = 0; knotIndex < newColNames.length; knotIndex++) {
       newColNames[knotIndex] = stubName+knotIndex;
     }
     return newColNames;
@@ -366,13 +396,16 @@ public class GamUtils {
 
   public static Frame buildGamFrame(GAMParameters parms, Frame train, Key<Frame>[] gamFrameKeysCenter) {
     Vec responseVec = train.remove(parms._response_column);
+    
+    List<String> ignored_cols = parms._ignored_columns == null?new ArrayList<>():Arrays.asList(parms._ignored_columns);
     Vec weightsVec = null;
     if (parms._weights_column != null) // move weight vector to be the last vector before response variable
       weightsVec = train.remove(parms._weights_column);
     for (int colIdx = 0; colIdx < parms._gam_columns_sorted.length; colIdx++) {  // append the augmented columns to _train
       Frame gamFrame = Scope.track(gamFrameKeysCenter[colIdx].get());
       train.add(gamFrame.names(), gamFrame.removeAll());
-      train.remove(parms._gam_columns_sorted[colIdx]);
+      if (ignored_cols.contains(parms._gam_columns_sorted[colIdx]))
+        train.remove(parms._gam_columns_sorted[colIdx]);
     }
     if (weightsVec != null)
       train.add(parms._weights_column, weightsVec);
@@ -390,32 +423,40 @@ public class GamUtils {
     return gamVecs;
   }
   
-  // move CS spline smoothers to the front and TP spline smoothers to the back for arrays:
-  // gam_columns, bs, scale, num_knots
-  public static void sortGAMParameters(GAMParameters parms, int csNum, int tpNum) {
-    int gamColNum = parms._gam_columns.length;
+  /**
+   * move CS spline smoothers to the front and TP spline smoothers to the back for arrays:
+   * gam_columns, bs, scale, num_knots.
+   * The array knots have already been moved with CS spline/I-spline in the front and TP splines in the back
+   */
+  public static void sortGAMParameters(GAMParameters parms, int csGamCol, int isGamCol) {
+    int gamColNum = parms._gam_columns.length;  // all gam cols regardless of types
     int csIndex = 0;
-    int tpIndex = csNum;
+    int isIndex = csGamCol;
+    int tpIndex = csGamCol+isGamCol;
     parms._gam_columns_sorted = new String[gamColNum][];
     parms._num_knots_sorted = MemoryManager.malloc4(gamColNum);
     parms._scale_sorted = MemoryManager.malloc8d(gamColNum);
     parms._bs_sorted = MemoryManager.malloc4(gamColNum);
     parms._gamPredSize = MemoryManager.malloc4(gamColNum);
+    parms._spline_orders_sorted = MemoryManager.malloc4(gamColNum);
     for (int index = 0; index < gamColNum; index++) {
-      if (parms._bs[index] == 0) { // cubic spline
-        parms._gam_columns_sorted[csIndex] = parms._gam_columns[index].clone();
-        parms._num_knots_sorted[csIndex] = parms._num_knots[index];
-        parms._scale_sorted[csIndex] = parms._scale[index];
-        parms._gamPredSize[csIndex] = parms._gam_columns_sorted[csIndex].length;
-        parms._bs_sorted[csIndex++] = parms._bs[index];
-      } else {  // thin plate
-        parms._gam_columns_sorted[tpIndex] = parms._gam_columns[index].clone();
-        parms._num_knots_sorted[tpIndex] = parms._num_knots[index];
-        parms._scale_sorted[tpIndex] = parms._scale[index];
-        parms._gamPredSize[tpIndex] = parms._gam_columns_sorted[tpIndex].length;
-        parms._bs_sorted[tpIndex++] = parms._bs[index];
+      if (parms._bs[index] == 0) { // CS spline
+        setGamParameters(parms, index, csIndex++);
+      } else if (parms._bs[index] == 2) {
+        setGamParameters(parms, index, isIndex);
+        parms._spline_orders_sorted[isIndex++] = parms._spline_orders[index];
+      } else { // thin plate spline
+        setGamParameters(parms, index, tpIndex++);
       }
     }
+  }
+  
+  public static void setGamParameters(GAMParameters parms, int gamIndex, int splineIndex) {
+    parms._gam_columns_sorted[splineIndex] = parms._gam_columns[gamIndex].clone();
+    parms._num_knots_sorted[splineIndex] = parms._num_knots[gamIndex];
+    parms._scale_sorted[splineIndex] = parms._scale[gamIndex];
+    parms._gamPredSize[splineIndex] = parms._gam_columns_sorted[splineIndex].length;
+    parms._bs_sorted[splineIndex] = parms._bs[gamIndex];
   }
 
   // default value of scale is 1.0

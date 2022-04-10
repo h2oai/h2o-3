@@ -511,8 +511,21 @@
                    parms = parms, method = method, fileUploadInfo = fileUploadInfo, parms_as_payload=parms_as_payload, ...)
 
   if (rv$curlError) {
-
-    stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
+    errorMessage <- rv$curlErrorMessage
+    if (!use.package("curl", version = "4.3.0", use = !getOption("prefer_RCurl", FALSE))){
+      curlVersion <- as.numeric(strsplit(RCurl::curlVersion()$version, ".", fixed = TRUE)[[1]])
+      # curl 7.68.0 introduces socketpair, RCurl does not always release the sockets which leads to errors
+      if (curlVersion[[1]] >= 7 && curlVersion[[2]] >= 68) {
+        errorMessage <- paste(
+          errorMessage,
+          "\nThis can be caused by issues with some versions of curl library together with RCurl package.",
+          "Installing R package `curl` version 4.3.0 and above could help.",
+          "Otherwise, using curl system library versions below 7.68.0 or compiled with --disable-socketpair could help,",
+          "in case you cannot use curl R package."
+        )
+      }
+    }
+    stop(sprintf("Unexpected CURL error: %s", errorMessage))
   } else if (rv$httpStatusCode != 200) {
     cat("\n")
     cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
@@ -993,7 +1006,7 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
   i <- 0
   while (i < 30) {
     rawResponse <- try(.h2o.doSafeGET(urlSuffix = myJobUrlSuffix, doValidation=!jobPollSuccess))
-    if(class(rawResponse) == "try-error" && jobPollSuccess){
+    if (inherits(rawResponse, "try-error") && jobPollSuccess){
       error_type <- attr(rawResponse,"condition")
       if (jobIsRecoverable) {
         print(sprintf("Job request failed %s, waiting for cluster to restart.", error_type$message))
@@ -1014,7 +1027,7 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
   }
 
   # If request is still errored, stop with last error
-  if(class(rawResponse) == "try-error") {
+  if(inherits(rawResponse, "try-error")) {
     stop(rawResponse)
   }
 

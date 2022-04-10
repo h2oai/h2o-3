@@ -31,11 +31,11 @@ def buildModelMetricsCheck(train_data, family):
         train_data[y] = train_data[y].asfactor()
     frames = train_data.split_frame(ratios=[0.9], seed=12345)
     
-    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=["C1"])
+    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=["C1"], seed=12345)
     h2o_model.train(x=x, y=y, training_frame=frames[0], validation_frame=frames[1])
 
-    h2o_model2 = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=["C1"])
-    h2o_model2.train(y=y, training_frame=frames[0], validation_frame=frames[1])
+    h2o_model2 = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=["C1"], seed=12345)
+    h2o_model2.train(x=x, y=y, training_frame=frames[0], validation_frame=frames[1])
 
     # check and make sure coefficient does not contain predictor column
     coeffNames = h2o_model.coef().keys()

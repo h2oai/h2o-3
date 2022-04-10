@@ -60,14 +60,21 @@ public class FrameUtils {
   }
 
   public static Key eagerLoadFromHTTP(String path) throws IOException {
-    java.net.URL url = new URL(path);
-    Key destination_key = Key.make(path);
-    java.io.InputStream is = url.openStream();
+    return eagerLoadFromURL(path, new URL(path));
+  }
+
+  public static Key<?> eagerLoadFromURL(String sourceId, URL url) throws IOException {
+    try (InputStream is = url.openStream()) {
+      return eagerLoadFromInputStream(sourceId, is);
+    }
+  }
+
+  private static Key<?> eagerLoadFromInputStream(String sourceId, InputStream is) throws IOException {
+    Key<?> destination_key = Key.make(sourceId);
     UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
     UploadFileVec.readPut(destination_key, is, stats);
     return destination_key;
   }
-
 
   public static Frame parseFrame(Key okey, ParseSetup parseSetup, URI ...uris) throws IOException {
     if (uris == null || uris.length == 0) {
@@ -1226,8 +1233,48 @@ public class FrameUtils {
       nc[k].addNum(betaConstraints.vec(k).at(id));
     }
   }
-  
-  public static Frame encodeBetaConstraints(Key key, String[] coefNames, String[] coefOriginalNames, Frame betaConstraints) {
+
+  public static class ExpandCatBetaConstraints extends MRTask<ExpandCatBetaConstraints> {
+    public final Frame _trainFrame;
+    public final Frame _betaCS;
+
+    public ExpandCatBetaConstraints(Frame betaCs, Frame train) {
+      _trainFrame = train;
+      _betaCS = betaCs;
+    }
+
+    @Override
+    public void map(Chunk[] chunks, NewChunk[] newChunks) {
+      int chkLen = chunks[0]._len;
+      int chkCol = chunks.length;
+      BufferedString tempStr = new BufferedString();
+      List<String> trainColNames = Arrays.asList(_trainFrame.names());
+      String[] colTypes = _trainFrame.typesStr();
+      for (int rowIndex=0; rowIndex<chkLen; rowIndex++) {
+        String cName = chunks[0].atStr(tempStr, rowIndex).toString();
+        int trainColNumber = trainColNames.indexOf(cName);
+        String csTypes = colTypes[trainColNumber];
+        if ("Enum".equals(csTypes)) {
+          String[] domains = _trainFrame.vec(trainColNumber).domain();
+          int domainLen = domains.length;
+          for (int repIndex = 0; repIndex < domainLen; repIndex++) {
+            String newCSName = cName+'.'+domains[repIndex];
+            newChunks[0].addStr(newCSName);
+            for (int colIndex = 1; colIndex < chkCol; colIndex++) {
+              newChunks[colIndex].addNum(chunks[colIndex].atd(rowIndex));
+            }
+          }
+        } else {  // copy over non-enum beta constraints
+          newChunks[0].addStr(chunks[0].atStr(tempStr, rowIndex).toString());
+          for (int colIndex = 1; colIndex < chkCol; colIndex++) {
+            newChunks[colIndex].addNum(chunks[colIndex].atd(rowIndex));
+          }
+        }
+      }
+    }
+  }
+
+    public static Frame encodeBetaConstraints(Key key, String[] coefNames, String[] coefOriginalNames, Frame betaConstraints) {
     int ncols = betaConstraints.numCols();
     AppendableVec[] appendableVecs = new AppendableVec[ncols];
     NewChunk ncs[] = new NewChunk[ncols];

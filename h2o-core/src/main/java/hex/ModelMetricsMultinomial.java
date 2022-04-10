@@ -240,6 +240,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     AUC2.AUCBuilder[/*nclasses*/] _ovrAucs;
     MultinomialAucType _aucType;
 
+    public MetricBuilderMultinomial() {}
+
     public MetricBuilderMultinomial( int nclasses, String[] domain, MultinomialAucType aucType) {
       super(nclasses,domain);
       int domainLength = domain.length;

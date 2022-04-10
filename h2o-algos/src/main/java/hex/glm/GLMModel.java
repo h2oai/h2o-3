@@ -4,6 +4,7 @@ import hex.*;
 import hex.DataInfo.TransformType;
 import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.util.EffectiveParametersUtils;
@@ -27,6 +28,8 @@ import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
 import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
 import static hex.schemas.GLMModelV3.calculateVarimpBase;
+import static hex.util.DistributionUtils.distributionToFamily;
+import static hex.util.DistributionUtils.familyToDistribution;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -212,15 +215,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   }
 
-  public GLMModel addSubmodel(Submodel sm) { // copy from checkpoint model
-    _output._submodels = ArrayUtils.append(_output._submodels,sm);
-    _output.setSubmodelIdx(_output._submodels.length-1);
+  public GLMModel addSubmodel(int idx, Submodel sm) { // copy from checkpoint model
+    if (_output._submodels != null && _output._submodels.length > idx) {
+      _output._submodels[idx] = sm;
+    } else {
+      assert _output._submodels == null || idx == _output._submodels.length;
+      _output._submodels = ArrayUtils.append(_output._submodels, sm);
+    }
+    _output.setSubmodelIdx(idx, _parms);
     return this;
   }
 
-  public GLMModel updateSubmodel(Submodel sm) {
-    assert sm.lambda_value == _output._submodels[_output._submodels.length-1].lambda_value;
-    _output._submodels[_output._submodels.length-1] = sm;
+  public GLMModel updateSubmodel(int idx, Submodel sm) {
+    assert sm.lambda_value == _output._submodels[idx].lambda_value && sm.alpha_value == _output._submodels[idx].alpha_value;
+    _output._submodels[idx] = sm;
     return this;
   }
 
@@ -228,7 +236,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     int id = _output._submodels.length-1;
     _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,_output._submodels[id].alpha_value,beta,
             iter,devianceTrain,devianceTest, _totalBetaLength);
-    _output.setSubmodelIdx(id);
+    _output.setSubmodelIdx(id, _parms);
   }
 
   public void update(double [] beta, double[] ubeta, double devianceTrain, double devianceTest,int iter){
@@ -237,7 +245,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             devianceTrain,devianceTest, _totalBetaLength);
     sm.ubeta = Arrays.copyOf(ubeta, ubeta.length);
     _output._submodels[id] = sm;
-    _output.setSubmodelIdx(id);
+    _output.setSubmodelIdx(id, _parms);
   }
 
   protected GLMModel deepClone(Key<GLMModel> result) {
@@ -732,7 +740,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         return new DataInfo.MeanImputer();
       }
     }
-    
+
+    @Override
+    public void setDistributionFamily(DistributionFamily distributionFamily) {
+        _family = distributionToFamily(distributionFamily);
+        _link = Link.family_default;
+    }
+
+    @Override
+    public DistributionFamily getDistributionFamily() {
+      return familyToDistribution(_family);
+    }
   } // GLMParameters
 
   public static class GLMWeights {
@@ -1169,7 +1187,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public TwoDimTable _variable_importances;
     public VarImp _varimp;  // should contain the same content as standardized coefficients
     int _lambda_array_size; // store number of lambdas to iterate over
-    public int _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
+    public double _lambda_1se = -1; // lambda_best+sd(lambda) submodel index; applicable if running lambda search with cv
     public double _lambda_min = -1; // starting lambda value when lambda search is enabled
     public double _lambda_max = -1; // minimum lambda value calculated when lambda search is enabled
     public int _selected_lambda_idx; // lambda index with best deviance
@@ -1180,8 +1198,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double lambda_best(){return _submodels.length == 0 ? -1 : _submodels[_best_submodel_idx].lambda_value;}
     public double dispersion(){ return _dispersion;}
     public double alpha_best() { return _submodels.length == 0 ? -1 : _submodels[_selected_submodel_idx].alpha_value;}
-    public double lambda_1se(){return (_lambda_1se==-1 || _submodels.length==0 || _lambda_1se>=_submodels.length) ?
-            -1 : _submodels[_lambda_1se].lambda_value;}
+    public double lambda_1se(){
+      return _lambda_1se; // (_lambda_1se==-1 || _submodels.length==0 || _lambda_1se>=_submodels.length) ? -1 : _submodels[_lambda_1se].lambda_value;
+    }
     public int bestSubmodelIndex() { return _selected_submodel_idx; }
     public double lambda_selected(){
       return _submodels[_selected_submodel_idx].lambda_value;
@@ -1381,7 +1400,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return res;
     }
 
-    public Submodel pickBestModel() {
+    public Submodel pickBestModel(GLMParameters parms) {
       int bestId = 0;
       Submodel best = _submodels[0];
       for(int i = 1; i < _submodels.length; ++i) {
@@ -1391,7 +1410,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           best = sm;
         }
       }
-      setSubmodelIdx(_best_submodel_idx = bestId);
+      setSubmodelIdx(_best_submodel_idx = bestId, parms);
       return best;
     }
 
@@ -1450,12 +1469,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public double[][] get_global_beta_multinomial(){return _global_beta_multinomial;}
 
+    private int indexOf(double needle, double[] haystack) {
+      for (int i = 0; i < haystack.length; i++) {
+        if (needle == haystack[i]) return i;
+      }
+      return -1;
+    }
+
     // set model coefficients to that of submodel index l
-    public void setSubmodelIdx(int l){
+    public void setSubmodelIdx(int l, GLMParameters parms){
       _selected_submodel_idx = l;
       _best_lambda_idx = l; // kept to ensure backward compatibility
-      _selected_alpha_idx = l / _lambda_array_size ;
-      _selected_lambda_idx = l % _lambda_array_size;
+      _selected_alpha_idx = indexOf(_submodels[l].alpha_value, parms._alpha);
+      _selected_lambda_idx = indexOf(_submodels[l].lambda_value, parms._lambda);
+
       if (_random_coefficient_names != null) 
         _ubeta = Arrays.copyOf(_submodels[l].ubeta, _submodels[l].ubeta.length);
       if(_multinomial || _ordinal) {
@@ -1580,13 +1607,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _output._model_summary.set(0, 1, _parms._link.toString());
       String regularization = "None";
       if (_parms._lambda != null && !(_parms._lambda.length == 1 && _parms._lambda[0] == 0)) { // have regularization
-        if (_parms._alpha[_output._selected_alpha_idx] == 0)
+        if (_output.bestSubmodel().alpha_value == 0)
           regularization = "Ridge ( lambda = ";
-        else if (_parms._alpha[_output._selected_alpha_idx] == 1)
+        else if (_output.bestSubmodel().alpha_value == 1)
           regularization = "Lasso (lambda = ";
         else
-          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_parms._alpha[_output._selected_alpha_idx], 4) + ", lambda = ";
-        regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._selected_lambda_idx], 4) + " )";
+          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_output.bestSubmodel().alpha_value, 4) + ", lambda = ";
+        regularization = regularization + MathUtils.roundToNDigits(_output.bestSubmodel().lambda_value, 4) + " )";
       }
       _output._model_summary.set(0, 2, regularization);
       int lambdaSearch = 0;
