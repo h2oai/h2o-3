@@ -936,6 +936,27 @@ class ModelBase(h2o_meta(Keyed)):
             m[k] = None if v is None else v.auuc()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def auuc_normalized(self, train=False, valid=False):
+        """
+        Get the normalized AUUC (Area Under Uplift Curve).
+    
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+         "valid".
+    
+        :param bool train: If train is True, then return the AUUC value for the training data.
+        :param bool valid: If valid is True, then return the AUUC value for the validation data.
+    
+        :returns: The normalized AUUC.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, False)
+        m = {}
+        for k, v in viewitems(tm):
+            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
+                raise H2OValueError("auuc() is only available for Uplift Binomial classifiers.")
+            m[k] = None if v is None else v.auuc()
+        return list(m.values())[0] if len(m) == 1 else m
+
     def auuc_table(self, train=False, valid=False):
         """
         Get the AUUC table (Area Under Uplift Curve values of oll types).

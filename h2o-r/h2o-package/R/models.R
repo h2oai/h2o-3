@@ -1194,7 +1194,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
-#' Retrieve the default AUUC
+#' Retrieve AUUC
 #'
 #' Retrieves the AUUC value from an \linkS4class{H2OBinomialUpliftMetrics}. If the metric parameter is "AUTO", 
 #' the type of AUUC depends on auuc_type which was set before training. If you need specific AUUC, set metric parameter.
@@ -1270,6 +1270,86 @@ h2o.auuc <- function(object, train=FALSE, valid=FALSE, metric=NULL) {
         }
     }
     warning(paste0("No AUUC for ", class(object)))
+    invisible(NULL)
+}
+
+#' Retrieve normalized AUUC
+#'
+#' Retrieves the AUUC value from an \linkS4class{H2OBinomialUpliftMetrics}. If the metric parameter is "AUTO", 
+#' the type of AUUC depends on auuc_type which was set before training. If you need specific normalized AUUC, 
+#' set metric parameter. If "train" and "valid" parameters are FALSE (default), then the training normalized AUUC 
+#' value is returned. If more than one parameter is set to TRUE, then a named vector of normalized AUUCs are returned, 
+#' where the names are "train", "valid".
+#'
+#' @param object An \linkS4class{H2OBinomialUpliftMetrics}
+#' @param train Retrieve the training AUUC
+#' @param valid Retrieve the validation AUUC
+#' @param metric Specify the AUUC metric to get specific AUUC. Possibilities are NULL, "qini", "lift", "gain".
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv"
+#' train <- h2o.importFile(f)
+#' train$treatment <- as.factor(train$treatment)
+#' train$conversion <- as.factor(train$conversion)
+#' 
+#' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
+#'                                 ntrees=10, max_depth=5, treatment_column="treatment", 
+#'                                 auuc_type="AUTO")
+#' perf <- h2o.performance(model, train=TRUE) 
+#' h2o.auuc_normalized(perf)
+#' }
+#' @export
+h2o.auuc_normalized <- function(object, train=FALSE, valid=FALSE, metric=NULL) {
+    if(!is.null(metric) && !metric %in% c("qini", "lift", "gain"))
+        stop("metric must be NULL, 'qini', 'lift' or 'gain'")
+    if( is(object, "H2OModelMetrics") ) {
+        if(is.null(metric)) {
+            return( object@metrics$auuc_normalized )
+        } else {
+            return( eval(parse(text=paste("object@metrics$auuc_table$", metric,"[2]", sep=""))))
+        }
+    }
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid ) {
+            if (is.null(metric)) {
+                mm <- model.parts$tm@metrics$AUUC
+            } else {
+                mm <- eval(parse(text=paste("model.parts$tm@metrics$auuc_table$", metric,"[2]", sep="")))
+            }
+            if ( !is.null(mm) ) return(mm)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            if (is.null(metric)) {
+                mm <- model.parts$tm@metrics$AUUC
+            } else {
+                mm <- eval(parse(text=paste("model.parts$tm@metrics$auuc_table$", metric,"[2]", sep="")))
+            }
+            v <- c(v, mm)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                if (is.null(metric)) {
+                    mm <- model.parts$vm@metrics$AUUC
+                } else {
+                    mm <- eval(parse(text=paste("model.parts$vm@metrics$auuc_table$", metric,"[2]", sep="")))
+                }
+                v <- c(v, mm)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("No AUUC normalized for ", class(object)))
     invisible(NULL)
 }
 
@@ -4486,32 +4566,41 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
 }
 
 #' @export
-plot.H2OBinomialUpliftMetrics <- function(x, metric="AUTO", main, ...) {
+plot.H2OBinomialUpliftMetrics <- function(x, metric="AUTO", normalize=FALSE, main, ...) {
     if(!metric %in% c("AUTO", "qini", "lift", "gain")) stop("metric must be 'AUTO', 'qini' or 'lift' or 'gain'")
     if (metric == "AUTO") metric = "qini"
     xaxis <- "Number Targeted"; yaxis = paste("Cumulative", metric)
     if(missing(main)) {
-        main <- paste("Cumulative Uplift Curve - ", metric)
+        if(normalize){
+          main <- paste("Cumulative Uplift Curve normalized - ", metric)
+        } else {
+          main <- paste("Cumulative Uplift Curve - ", metric)
+        }
         if(x@on_train) {
             main <- paste(main, "(on train)")
         } else if (x@on_valid) {
             main <- paste(main, "(on valid)")
         }
     }
-    metric.auuc <- h2o.auuc(x, metric)
-    main <- paste(main, "\nAUUC=", metric.auuc)
+    if(normalize){
+      metric.auuc <- h2o.auuc_normalized(x, metric)
+      ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, "_normalized", sep="")))
+      main <- paste(main, "\nAUUC normalized =", metric.auuc)  
+    } else {
+      metric.auuc <- h2o.auuc(x, metric)
+      ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, sep="")))
+      main <- paste(main, "\nAUUC=", metric.auuc)
+    }
     xdata <- x@metrics$thresholds_and_metric_scores$n
-    ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, sep="")))
     a <- ydata[length(ydata)-1] / xdata[length(xdata)-1]
     yrnd <- xdata * a
     graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(ydata, 0),max(ydata)), xlim=c(min(xdata),max(xdata)), type='l', lty=1, col='blue', lwd=2, panel.first = grid())
     graphics::lines(xdata, yrnd, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(yrnd, 0),max(yrnd)), xlim=c(min(xdata),max(xdata)), type='l', lty=2, col='black', lwd=2, panel.first = grid())        
-    if(metric == 'lift'){
+    if(metric == 'lift') {
         legend("topright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)  
     } else {
         legend("bottomright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)  
     }
-    
 }
 
 #' @export
