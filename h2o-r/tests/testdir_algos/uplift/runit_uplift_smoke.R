@@ -34,9 +34,9 @@ test.uplift <- function() {
   expected_values_aecu_lift <- c(0.2285426, 0.276573, 0.220808)
   expected_values_aecu_gain <- c(160.666, 194.041557, 154.071902)
     
-  expected_values_auuc_norm_qini <- c(2.065915, 2.674466, 1.897307)
-  expected_values_auuc_norm_gain <- c(2.010038, 2.531569, 1.902846)
-  expected_values_auuc_norm_lift <- c(0.2125203, 0.2605544, 0.2046642)
+  expected_values_auuc_norm_qini <- c(2.065906, 2.674489, 1.901171)
+  expected_values_auuc_norm_gain <- c(2.010036, 2.531564, 1.906744)
+  expected_values_auuc_norm_lift <- c(0.212531, 0.260563, 0.204788)
     
   for (i in 1:length(uplift_metrics)) {
     print(paste("Train h2o uplift model", uplift_metrics[i]))
