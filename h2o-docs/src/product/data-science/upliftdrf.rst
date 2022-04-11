@@ -284,8 +284,8 @@ For some observation groups the results should be NaN. In this case, the results
 You can see in the scoring history table the number of bins as well as the result AUUC. There is also Qini coefficient parameter, which reflects the number of bins and then is a better pointer of the model improvement. In the picture below you can see the algorithm stabilized after building 6 trees. But it depends on data and model settings on how many trees are necessary.
 
 .. image:: /images/uplift_scoring_history.png
-   :width: 1408px
-   :height: 599px
+   :width: 1343px
+   :height: 586px
 
 Qini value calculation
 ~~~~~~~~~~~~~~~~~~~~~~
