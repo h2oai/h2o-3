@@ -17,6 +17,7 @@ import numpy as np
 from h2o.exceptions import H2OValueError
 from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, is_decorated_plot_result
 
+PDP_RESULT_FACTOR_NAN_MARKER = '.missing(NA)'
 
 def _display(object):
     """
@@ -1030,13 +1031,41 @@ def _extract_graphing_data_values(data, frame_id, grouping_variable_value, origi
         res_data.append(new_row)
     return res_data
 
+def _handle_nas(is_factor, x_val_for_NA, encoded_col, tmp, color, plt, response):
+  # todo: cases when - orig value is NA, NA is present in data, NA is not present in data
+    if is_factor:
+        na_idx = np.where(tmp[encoded_col] == tmp.from_factor_to_num(encoded_col)[PDP_RESULT_FACTOR_NAN_MARKER])[0][0]
+        if x_val_for_NA is None:
+            x_val_for_NA = min(tmp.from_factor_to_num(encoded_col).values()) - 1
+    else:
+        na_idx = np.where(np.isnan(tmp[encoded_col]))[0][0]
+        # NA_offset will make NA values "not sticked" to the valid values
+        if x_val_for_NA is None:
+            ticks = plt.gca().get_xticks()
+            NA_offset = ticks[1] - ticks[0]
+            x_val_for_NA = min(tmp[encoded_col]) - NA_offset
+
+        #if show_NAs==True# or (_isnan(orig_value) or orig_value == ''): # try this when nan is original value
+    plt.scatter(x_val_for_NA, tmp["mean_response"][na_idx],
+                color=color, marker="*", s=150, alpha=0.5)
+
+    dotted_line_x = [min(tmp[encoded_col]), x_val_for_NA]
+    dotted_line_x = np.array(dotted_line_x)
+    y = np.array(response)
+    dotted_line_y = y[np.array([0, na_idx])]
+    plt.plot(dotted_line_x, dotted_line_y, linestyle="dotted", color=color)
+    return x_val_for_NA
+
+
 
 def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp,
-                output_graphing_data, nbins, **kwargs):
+                output_graphing_data, nbins, invalid_codes, show_NAs, **kwargs):
     frame = frame.sort(model.actual_params["response_column"])
     deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
     colors = plt.get_cmap(colormap, 11)(list(range(11)))
     data = None
+    x_val_for_NA = None
+    x_vals_for_invalid_codes = None # todo: going to be used in _handle_invalid_codes()
     for i, index in enumerate(deciles):
         percentile_string = "{}th Percentile".format(i * 10)
         pd_data = model.partial_plot(
@@ -1083,6 +1112,38 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
                      color=colors[i],
                      label=percentile_string)
 
+        # handle NAs:
+        # todo: invalid codes: if the "leftest" value (the one I am connecting the NA's with) I need to connect NA's to the second "leftest"
+        if invalid_codes is not None:
+            invalid_vals = _handle_invalid_codes(is_factor, tmp, encoded_col, plt, target, model,
+                                             frame, index, column, colors[i], percentile_string, factor_map, invalid_codes)
+        if show_NAs:
+            x_val_for_NA = _handle_nas(is_factor, x_val_for_NA, encoded_col, tmp, colors[i], plt, response)
+
+
+
+       # plt.plot()
+        # curr_tick_labels = plt.axes().get_xticklabels()
+        # curr_tick_labels[0] = PDP_RESULT_FACTOR_NAN_MARKER
+        # plt.axes().set_xticklabels(curr_tick_labels)
+        # nf = NumpyFrame(frame[column])
+        # def mapping(x):
+        #     return x
+        #
+        # lvls_plus_NA_on_the_left = nf.levels(column)
+        #
+        # if nf.isfactor(column):
+        #     range_list = range(-1, len(lvls_plus_NA_on_the_left))
+        #     lvls_plus_NA_on_the_left.insert(0, PDP_RESULT_FACTOR_NAN_MARKER)
+        #     plt.xticks(mapping(range_list), lvls_plus_NA_on_the_left)
+        # else:
+        #     lvls_plus_NA_on_the_left.insert(0, PDP_RESULT_FACTOR_NAN_MARKER)
+        #     #   int_offset = int(NA_offset)
+        #     #   range_list = range(-1 * NA_offset, len(lvls_plus_NA_on_the_left) * NA_offset, NA_offset)
+        #     range_list = range(-1 * NA_offset, len(lvls_plus_NA_on_the_left) * NA_offset, NA_offset)
+        #     #  lvls_plus_NA_on_the_left.insert(0, PDP_RESULT_FACTOR_NAN_MARKER)
+        #     plt.xticks(mapping(range_list), lvls_plus_NA_on_the_left)
+
     if show_pdp:
         tmp = NumpyFrame(
             model.partial_plot(
@@ -1105,6 +1166,35 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
                      label="Partial Dependence")
 
     _add_histogram(frame, column)
+
+    nf = NumpyFrame(frame[column])
+    def mapping(x):
+        return x
+
+    lvls_plus_NA_on_the_left = nf.levels(column)
+
+     # -1 for NA, - more for invalid codes
+   # range_list.insert(0,-1)
+
+
+    if nf.isfactor(column):
+        range_list = range(-1, len(lvls_plus_NA_on_the_left))
+        lvls_plus_NA_on_the_left.insert(0, PDP_RESULT_FACTOR_NAN_MARKER)
+        plt.xticks(mapping(range_list), lvls_plus_NA_on_the_left)
+#    else:
+     #    lvls_plus_NA_on_the_left.insert(0, PDP_RESULT_FACTOR_NAN_MARKER)
+     # #   int_offset = int(NA_offset)
+     # #   range_list = range(-1 * NA_offset, len(lvls_plus_NA_on_the_left) * NA_offset, NA_offset)
+     #    range_list = range(-1 * NA_offset, len(lvls_plus_NA_on_the_left) * NA_offset, NA_offset)
+     #  #  lvls_plus_NA_on_the_left.insert(0, PDP_RESULT_FACTOR_NAN_MARKER)
+     #    plt.xticks([-1], lvls_plus_NA_on_the_left)
+
+    # NAs ticks:
+    # ar0 = plt.xticks()[0]
+    # ar0.insert(0, min(ar0) - 1)
+    # ar1 = plt.xticks()[1]
+    # ar1.insert(0, )
+    plt.xticks()
     plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}{}".format(
         model.model_id,
         column,
@@ -1121,6 +1211,12 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
     handles, labels = ax.get_legend_handles_labels()
     patch = plt.plot([],[], marker="o", alpha=0.5, ms=10, ls="", mec=None, color='grey',
                      label="Original observations")[0]
+    handles.append(patch)
+    patch = plt.plot([],[], marker="*", alpha=0.5, ms=10, ls="", mec=None, color='grey',
+                     label="NAs")[0]
+    handles.append(patch)
+    patch = plt.plot([],[], marker="x", alpha=0.5, ms=10, ls="", mec=None, color='grey',
+                     label="invalid codes")[0]
     handles.append(patch)
     plt.legend(handles=handles, loc='center left', bbox_to_anchor=(1, 0.5))
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -1195,14 +1291,16 @@ def pd_ice_common(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
-        save_plot_path=None, # type: Optional[str]
+        save_plot_path=None,  # type: Optional[str]
         show_pdp=True,  # type: bool
-        binary_response_scale="response", # type: Literal["response", "logodds"]
-        centered=False, # type: bool
-        is_ice=False, # type: bool
+        binary_response_scale="response",  # type: Literal["response", "logodds"]
+        centered=False,  # type: bool
+        is_ice=False,  # type: bool
         grouping_column=None,  # type: Optional[str]
-        output_graphing_data=False, # type: bool
-        nbins=100, # type: int
+        output_graphing_data=False,  # type: bool
+        nbins=100,  # type: int
+        invalid_codes=None,  # type: Optional[List]
+        show_NAs=False,  # type: bool
         **kwargs
 ):
     """
@@ -1227,6 +1325,8 @@ def pd_ice_common(
                            by grouping feature values
     :param output_graphing_data: a bool whether to output final graphing data to a frame
     :param nbins: Number of bins used.
+    :param invalid_codes: A list of invalid codes. If included, shown on the left side of the x-axis.
+    :param show_NAs: A bool whether to show NAs.
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     """
@@ -1266,6 +1366,11 @@ def pd_ice_common(
             frame[column] = frame[column].ascharacter().asfactor()
         factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
 
+# toto nefunguje lebo to kresli dalsi stlpec -> ee
+    # nf = NumpyFrame(frame[column])
+        # nf._factors[column] = np.append(nf._factors[column],'.missing(NA)' )
+        # factor_map = _factor_mapper(nf.from_factor_to_num(column))
+
     is_binomial = _is_binomial(model)
     if (not is_binomial) and (binary_response_scale == "logodds"):
         raise ValueError("binary_response_scale cannot be set to 'logodds' value for non-binomial models!")
@@ -1280,7 +1385,7 @@ def pd_ice_common(
         if is_ice:
             res = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered,
                               factor_map,
-                              show_pdp, output_graphing_data, nbins, **kwargs)
+                              show_pdp, output_graphing_data, nbins, invalid_codes, show_NAs, **kwargs)
         else:
             res = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map,
                               row_index, output_graphing_data, nbins, **kwargs)
@@ -1302,7 +1407,8 @@ def pd_plot(
         binary_response_scale="response", # type: Literal["response", "logodds"]
         grouping_column=None,  # type: Optional[str]
         output_graphing_data=False,  # type: bool
-        nbins = 100,  # type: int
+        nbins=100,  # type: int
+        invalid_codes=None,  # type: Optional[List]
         **kwargs
 ):
     """
@@ -1329,6 +1435,7 @@ def pd_plot(
                            by grouping feature values
     :param output_graphing_data: a bool whether to output final graphing data to a frame
     :param nbins: Number of bins used.
+    :param invalid_codes: A list of invalid codes. If included, shown on the left side of the x-axis.
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1582,16 +1689,41 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
     return result
 
 
+def _handle_invalid_codes(is_factor, tmp, encoded_col, plt, target, model, frame,
+                          index, column, color, percentile_string, factor_map, invalid_codes):
+    user_splits = dict()
+    user_splits[column] = invalid_codes
+    pp_table = model.partial_plot(
+        frame,
+        cols=[column],
+        plot=False,
+        row_index=index,
+        targets=target,
+        user_splits=user_splits,
+    )[0]
+    invalid_tmp = NumpyFrame(pp_table)
+    #if is_factor:
+        # preserve the same factor-to-num mapping
+        # orig_tmp._data[0,0] = factor_map([orig_value])[0] todo: how ??? to do this
+    # todo move the values to the left, but keep the original value on the label
+    plt.scatter(invalid_tmp[encoded_col], invalid_tmp["mean_response"],
+                color=[color], marker='x', s=150, alpha=0.5)
+    return [invalid_tmp, pp_table]
+
+
 def _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model, frame,
                         index, column, color, percentile_string, factor_map, orig_value):
-    PDP_RESULT_FACTOR_NAN_MARKER = '.missing(NA)'
     tmp = NumpyFrame(pd_data)
     user_splits = dict()
     if _isnan(orig_value) or orig_value == "":
         if is_factor:
             idx = np.where(tmp[encoded_col] == tmp.from_factor_to_num(encoded_col)[PDP_RESULT_FACTOR_NAN_MARKER])[0][0]
+            x_val_for_NA = min(tmp.from_factor_to_num(encoded_col).values()) - 1
+            plt.scatter(x_val_for_NA, tmp["mean_response"][idx],
+                    color=color, marker='o', s=150, alpha=0.5)
         else:
             idx = np.where(np.isnan(tmp[encoded_col]))[0][0]
+            # todo: we wont need the warning anymore but make sure for this case nas are available in handle_nas
         # orig_null_value = tmp.from_num_to_factor(encoded_col)[tmp[encoded_col][idx]] if is_factor else tmp[encoded_col][idx]
         orig_null_value = PDP_RESULT_FACTOR_NAN_MARKER if is_factor else np.nan
         percentile_string = "for " + percentile_string if percentile_string is not None else ""
@@ -1616,7 +1748,7 @@ def _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model, fra
         orig_tmp = NumpyFrame(pp_table)
         if is_factor:
             # preserve the same factor-to-num mapping
-            orig_tmp._data[0,0] = factor_map([orig_value])[0]
+            orig_tmp._data[0, 0] = factor_map([orig_value])[0]
         plt.scatter(orig_tmp[encoded_col], orig_tmp["mean_response"],
                     color=[color], marker='o', s=150, alpha=0.5)
         return pp_table
@@ -1635,8 +1767,10 @@ def ice_plot(
         binary_response_scale="response",  # type: Literal["response", "logodds"]
         centered=False,  # type: bool
         grouping_column=None,  # type: Optional[str]
-        output_graphing_data=False, #type: bool
+        output_graphing_data=False,  #type: bool
         nbins=100,  # type: int
+        invalid_codes=None,  # type: Optional[List]
+        show_NAs=False,  # type: bool
         **kwargs
 ):  # type: (...) -> plt.Figure
     """
@@ -1667,6 +1801,8 @@ def ice_plot(
     grouping feature values
     :param output_graphing_data: a bool whether to output final graphing data to a frame
     :param nbins: Number of bins used.
+    :param invalid_codes: A list of invalid codes. If included, shown on the left side of the x-axis.
+    :param show_NAs: A bool whether to show NAs
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1694,7 +1830,7 @@ def ice_plot(
     >>> gbm.ice_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap,
-                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, output_graphing_data, nbins, **kwargs)
+                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, output_graphing_data, nbins, invalid_codes, show_NAs, **kwargs)
 
 
 def _is_binomial(model):

@@ -16,6 +16,23 @@ from h2o.explanation._explain import _handle_orig_values, _factor_mapper
 from h2o.two_dim_table import H2OTwoDimTable
 
 
+def tmp_test_sibsp():
+    path = "smalldata/titanic/titanic_expanded.csv"
+    y = "fare"
+
+    train = h2o.upload_file(pyunit_utils.locate(path))
+    gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model_py")
+    gbm.train(y=y, training_frame=train)
+
+    col = "sibsp"
+    ice_plot_result = gbm.ice_plot(train, col, output_graphing_data=True)#, save_plot_path="sibsp_output_.png")
+
+    col = "pclass"
+    ice_plot_result = gbm.ice_plot(train, col, output_graphing_data=True)#, save_plot_path="pclass_output_.png")
+
+
+
+
 def test_original_values():
     paths = ["smalldata/titanic/titanic_expanded.csv", "smalldata/logreg/prostate.csv", "smalldata/iris/iris2.csv"]
     ys = ["fare", "CAPSULE", "response"]
@@ -115,7 +132,8 @@ def _get_cols_to_test(train, y):
 def _assert_pyplot_was_produced(cols_to_test, model, train, target=None):
     for col in cols_to_test:
         if target is None:
-            ice_plot_result = model.ice_plot(train, col, output_graphing_data=True)
+            invalid_codes = np.append(train[col].as_data_frame().values[0], train[col].as_data_frame().values[len(train[col]) - 5])
+            ice_plot_result = model.ice_plot(train, col, output_graphing_data=True, show_NAs=True, invalid_codes = invalid_codes)#, save_plot_path="output_"+col+".png",)
         else:
             ice_plot_result = model.ice_plot(train, col, target=target, output_graphing_data=True)
         assert isinstance(ice_plot_result.figure(), matplotlib.pyplot.Figure)
@@ -253,6 +271,7 @@ def test_show_pdd():
 
 
 pyunit_utils.run_tests([
+ #   tmp_test_sibsp,
     test_original_values,
     test_handle_orig_values,
     test_display_mode,
