@@ -10,20 +10,21 @@ from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 # In this test, we check and make sure GAM supports cross-validation.  In particular, GAM should generate the same
 # model if we chose fold_assignment = modulo, build the model with and without validation dataset
 def test_gam_model_predict():
-    train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/lending-club/lending_train_final.csv"))
-    valid = h2o.import_file(pyunit_utils.locate("bigdata/laptop/lending-club/lending_test_final.csv"))
+    train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/backwardBinomial200C50KRows.csv"))
+    valid = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/backwardBinomial200C50KRows.csv"))
 
-    #Prepare predictors and response columns
-    x = ["loan_amnt","installment","annual_inc"]    #last column is Cover_Type, our desired response variable 
-    y = "int_rate"
+    x = ["C1","C2","C3"]   
+    y = "response"
+    train[y] = train[y].asfactor()
+    valid[y] = valid[y].asfactor()
     # build model with cross validation and with validation dataset
-    gam_model_valid = H2OGeneralizedAdditiveEstimator(family='gaussian', solver='IRLSM', gam_columns=["annual_inc"],
+    gam_model_valid = H2OGeneralizedAdditiveEstimator(family='binomial', solver='IRLSM', gam_columns=["C4"],
                                                       scale = [0.0001], num_knots=[5], standardize=True, nfolds=2,
                                                       fold_assignment = 'modulo', alpha=[0.9,0.5,0.1], lambda_search=True,
                                                       nlambdas=5, max_iterations=3, bs=[2])
     gam_model_valid.train(x, y, training_frame=train, validation_frame=valid)
     # build model with cross validation and no validation dataset
-    gam_model = H2OGeneralizedAdditiveEstimator(family='gaussian', solver='IRLSM', gam_columns=["annual_inc"],
+    gam_model = H2OGeneralizedAdditiveEstimator(family='binomial', solver='IRLSM', gam_columns=["C4"],
                                                 scale = [0.0001], num_knots=[5], standardize=True, nfolds=2,
                                                 fold_assignment = 'modulo', alpha=[0.9,0.5,0.1], lambda_search=True,
                                                 nlambdas=5, max_iterations=3, bs=[2])
