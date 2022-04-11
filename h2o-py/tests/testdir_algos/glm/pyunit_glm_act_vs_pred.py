@@ -23,10 +23,14 @@ def test_predicted_vs_actual_by_variable():
     fr["predict"] = predicted["predict"]
     fr["CAPSULE"] = training_data["CAPSULE"]
     manual = fr.group_by("DPROS").mean().get_frame()
-    manual.set_names(["DPROS"] + list(pva_pd.columns))
-    manual_pd = manual.as_data_frame().set_index("DPROS")
+    print(manual)
 
-    assert_frame_equal(manual_pd, pva_pd)
+    expected = manual["DPROS"]
+    expected["predict"] = manual["mean_predict"]
+    expected["actual"] = manual["mean_CAPSULE"]
+    expected_pd = expected.as_data_frame().set_index("DPROS")
+
+    assert_frame_equal(expected_pd, pva_pd)
 
 
 if __name__ == "__main__":
