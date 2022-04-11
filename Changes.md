@@ -16,10 +16,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 - [[PUBDEV-8619]](https://h2oai.atlassian.net/browse/PUBDEV-8619) - Increased MaxR running speed.
 - [[PUBDEV-8602]](https://h2oai.atlassian.net/browse/PUBDEV-8602) - Fixed `getGLMRegularizationPath` erroring out when `standardize = False`.
 - [[PUBDEV-8468]](https://h2oai.atlassian.net/browse/PUBDEV-8468) - Fixed Keystore not generating on Java 16+.
+- [[PUBDEV-8014]](https://h2oai.atlassian.net/browse/PUBDEV-8014) - Added a `num_of_features` argument to `h2o.varimp_heatmap` to limit the number of displayed variables. 
 - [[PUBDEV-5258]](https://h2oai.atlassian.net/browse/PUBDEV-5258) - Fixed `cross_validation_metrics_summary` not being accessible for Stacked Ensemble.
 
 #### Improvement
 
+- [[PUBDEV-8649]](https://h2oai.atlassian.net/browse/PUBDEV-8649) - Replaced `class()` with `inherits()` in R package. 
+- [[PUBDEV-8644]](https://h2oai.atlassian.net/browse/PUBDEV-8644) - Fixed invalid URLs in R Package.
+- [[PUBDEV-8629]](https://h2oai.atlassian.net/browse/PUBDEV-8629) - Added normalized `AUUC` to Uplift DRF. 
 - [[PUBDEV-8617]](https://h2oai.atlassian.net/browse/PUBDEV-8617) - Sped-up AutoML by avoiding sleep-waiting.
 - [[PUBDEV-8614]](https://h2oai.atlassian.net/browse/PUBDEV-8614) - Removed Stacked Ensembles with XGB metalearner to increase speed.
 - [[PUBDEV-8613]](https://h2oai.atlassian.net/browse/PUBDEV-8613) - Ensures AutoML reproducibility when `max_models` is used.
@@ -35,7 +39,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 - [[PUBDEV-8573]](https://h2oai.atlassian.net/browse/PUBDEV-8573) - Added ability to reorder frame levels based on their frequencies and to relieve only topN levels for GLM.
 - [[PUBDEV-8571]](https://h2oai.atlassian.net/browse/PUBDEV-8571) - Added a function to calculate predicted versus actual response in GLM.
 - [[PUBDEV-8401]](https://h2oai.atlassian.net/browse/PUBDEV-8401) - Implemented MOJO for Extended Isolation Forest.
-- [[PUBDEV-8398]](https://h2oai.atlassian.net/browse/PUBDEV-8398) - Added monotone splines to GAM. 
+- [[PUBDEV-8398]](https://h2oai.atlassian.net/browse/PUBDEV-8398) - Added monotone splines to GAM.
+- [[PUBDEV-8388]](https://h2oai.atlassian.net/browse/PUBDEV-8388) - Added a plot function for gains/lift to R and Python.  
 - [[PUBDEV-8373]](https://h2oai.atlassian.net/browse/PUBDEV-8373) - Added ability to acquire metric builder updates for Sparkling Water calculation without H2O runtime.
 - [[PUBDEV-7980]](https://h2oai.atlassian.net/browse/PUBDEV-7980) - Added support for `interaction_constraints` to GBM.
 - [[PUBDEV-7858]](https://h2oai.atlassian.net/browse/PUBDEV-7858) - Exposed distribution parameter in AutoML
@@ -43,6 +48,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 #### Task
 
 - [[PUBDEV-8587]](https://h2oai.atlassian.net/browse/PUBDEV-8587) - Decoupled Infogram and XGBoost removing Infograms reliance on XGBoost to work.
+- [[PUBDEV-8576]](https://h2oai.atlassian.net/browse/PUBDEV-8576) - Added private ModelBuilder parameter to AutoML to enforce the time budget on the final model after cross-validation.
 
 #### Sub-Task
 
@@ -56,8 +62,15 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 
 #### Docs
 
+- [[PUBDEV-8658]](https://h2oai.atlassian.net/browse/PUBDEV-8658) - Updated the examples for the Residual Analysis Plot.
 - [[PUBDEV-8650]](https://h2oai.atlassian.net/browse/PUBDEV-8650) - Updated the K8s deployment tutorial.
+- [[PUBDEV-8639]](https://h2oai.atlassian.net/browse/PUBDEV-8639) - Improved Uplift DRF User Guide documentation. 
+- [[PUBDEV-8631]](https://h2oai.atlassian.net/browse/PUBDEV-8631) - Shifted the links from the H2O-3 docs page to the User Guide “Additional Resources” page. 
 - [[PUBDEV-8604]](https://h2oai.atlassian.net/browse/PUBDEV-8604) - Fixed MOJO importable/exportable table in User Guide.
+- [[PUBDEV-8603]](https://h2oai.atlassian.net/browse/PUBDEV-8603) - Added a note that MOJOs won’t build if `interactions` are specified. 
+- [[PUBDEV-8595]](https://h2oai.atlassian.net/browse/PUBDEV-8595) - Added information on how H2O handles date columns. 
+- [[PUBDEV-8590]](https://h2oai.atlassian.net/browse/PUBDEV-8590) - Fixed code typos on Admissible ML page in User Guide.
+- [[PUBDEV-8591]](https://h2oai.atlassian.net/browse/PUBDEV-8591) - Added information on the `-hdfs_config` tag.
 
 
 ### Zorn (3.36.0.4) - 3/30/2022
