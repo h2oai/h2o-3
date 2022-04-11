@@ -404,13 +404,86 @@ For documentation on thin plate regression splines, refer here:
 Monotone Splines
 ''''''''''''''''
 
-GAM Monotone splines have been implemented. To build monotone spline functions, I-splines are used while restricting the gamified column coefficients to be :math:`\leq 0` [3]. The implementation of our I-splines are defined as the summation of N-splines:
+We have implemented I-splines which are used as monotone splines. Monotone splines do not support multinomial or ordinal families.
+
+**B-splines:** :math:`Q_{i,k}(t)`
+
+This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-spline of order :math:`k` at knot :math:`i` where it is non-zero over the duration :math:`t_0 \leq t < t_k`. The recursive formula [:ref:`4<ref4>`] used to generate a B-spline of a higher order from a B-spline of a lower order is:
 
 .. math::
    
-   I_{(i,k)}(t) = \sum^{(i+r)}_{(l=i)} N_{l,k+1}(t), t \leq t_{i+r+1}
+   Q_{i,k}(t) = {\frac{(t-t_{i})}{(t_{i+k}-t_{i})}} Q_{i,k-1}(t) + {\frac{(t_{i+k}-t)}{(t_{i+k}-t_{i})}} Q_{i+1,k-1}(t) 
 
-Multinomials and ordinal families are not supported. Since there is no beta constraint applied to the coefficients of these families, we cannot guarantee the coefficients to be non-negative for these families for I-spline.
+**M-splines:** :math:`M_{i,k}(t)`
+
+If you normalize the basic B-spline function to have an integration of 1 over the interest range where it is non-zero, you can denote it as :math:`M_{i,k}(t)`. This is the normalized B-spline Type I, and it is defined as:
+
+.. math::
+   
+   M_{i,k}(t) = {\frac{k}{k-1}}\bigg( {\frac{t-t_i)}{t_{i+k}-t_i)}}M_{i,k-1}(t)-{\frac{(t_{i+k}-t)}{(t_{i+k}-t_i)}}M_{i+1,k-1}(t)\bigg)
+
+Note that :math:`M_{i,k}(t)` is defined over the same knot sequence as the original B-spline, and the number of :math:`M_{i,k}(t)` splines is the same as the number of B-splines over the same known sequence.
+
+**N-splines:** :math:`N_{i,k}(t)`
+
+The N-splines are normalized to have a summation of 1 when :math:`t_0 \leq t < t_N` as :math:`\sum_{i=0}^{N+k-1}N_{i,k}(t) = 1`. :math:`N_{i,k}(t)` is the normalized B-spline Type II in this implementation. The N-splines share the same knot sequence with the original M-spline and B-spline. This is the recursive formula where higher order N-splines can be derived from two lower order N-splines using:
+
+.. math::
+   
+   N_{i,k}(t) = {\frac{t-t_i}{t_{i+k-1}-t_i}}N_{i,k-1}(t)+{\frac{t_{i+k}-t}{t_{i+k}-t_{i+1}}}N_{i+1,k-1}(t) 
+
+**I-splines:** :math:`I_{i,k}(t)`
+
+I-splines are used to build the monotone spline functions by restricting the gamified column coefficients to be :math:`\geq` 0 [:ref:`5<ref5>`]. We have implemented I-splines using the following method:
+
+.. math::
+   
+   I_{i,k}(t) = \sum_{l=1}^{i+r}N_{l,k+1}(t), t \leq t_{i+r+1}
+
+**Penalty Matrix for I-splines**
+
+The objective function used to derive the coefficients for is regression is:
+
+.. math::
+   
+   \sum_{i=0}^n \Bigg(y_i- \bigg(\sum_{j=0}^{numBasis-1}I_{j,k}(t_i)\beta_j + \beta_0 \bigg)\Bigg)^2 + \lambda\beta^T penaltyMat\beta
+
+The second derivative of all basis functions is defined as:
+
+.. math::
+   
+   I_k^{2ndDeriv} = \begin{bmatrix} {\frac{d^2(I_{0,k}(t))}{d^2t}} \\
+   {\frac{d^2(I_{1,k}(t))}{d^2t}} \\ \vdots \\
+   {\frac{d^2(I_{numBasis-2,k}(t))}{d^2t}} \\
+   {\frac{d^2(I_{numBasis-1,k}(t))}{d^2t}} \\\end{bmatrix}
+
+where the penalty matrix (:math:`penaltyMat`) for I-spline :math:`I_{j,k}(t)` is defined as:
+
+.. math::
+   
+   penaltyMat = \int_{t_0}^{t_N}I_k^{2ndDeriv} \times \text{ transpose of }(I_k^{2ndDeriv})dt
+
+Element at row :math:`m` and column :math:`n` of :math:`penaltyMat` is
+
+.. math::
+   
+   penaltyMat_{m,n} = \int_{t_0}^{t_N}{\frac{d^2(I_{m,k}(t))}{d^2t}}{\frac{d^2(I_{n,k}(t))}{d^2t}}dt
+
+**Coefficient Constraints and Identifiability**
+
+Consider a GAM with multiple predictor smooth functions such as:
+
+.. math::
+   
+   y_i = \alpha+f_1(x_i)+f_2(v_i)+\epsilon_i
+
+The multiple functions introduce an identifiability problem: :math:`f_1` and :math:`f_2` are each only estimable within an addative constant. This is because:
+
+.. math::
+   
+   f_1(x_i)+f_2(v_i) = f_1(x_i)+C+f_2(v_i)-C
+
+This problem is avoided using a transformation, but with monotone splines, the coefficients on the I-splines need to be resticted to non-negative values before applying any transformation.
 
 
 .. _scenario6:
@@ -590,3 +663,15 @@ References
 .. _ref2:
 
 2. T.J. Hastie, R.J. Tibshirani, Generalized Additive Models, Chapman and Hall, First Edition, 1990.
+
+.. _ref3:
+
+3. Lecture 7 Divided Difference Interpolation Polynomial by Professor R.Usha, Department of Mathematics, IITM, https://www.youtube.com/watch?v=4m5AKnseSyI .
+
+.. _ref4:
+
+4. Carl De Boor et. al., ON CALCULATING WITH B-SPLINES II. INTEGRATION, ResearchGate Article, January 1976.
+
+.. _ref5:
+
+5. J. O. Ramsay, “Monotone Regression Splines in Action”, Statistical Science, 1988, Vol. 3, No. 4, 425-461.
