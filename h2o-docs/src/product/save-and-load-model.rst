@@ -167,6 +167,8 @@ Saving and Importing MOJOs
 
 Importing a MOJO can be done from Python, R, and Flow. H2O imports the model and embraces it for the purpose of scoring. Information output about the model may be limited.
 
+**Note**: Your model will not produce MOJOs if you build it using `interactions <data-science/algo-params/interactions.html>`__. 
+
 Saving and Importing in R or Python
 '''''''''''''''''''''''''''''''''''
 

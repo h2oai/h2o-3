@@ -2120,15 +2120,7 @@ Example:
                          gainslift_bins = 20)
 
         # Plot the Gains/Lift chart:
-        gain_table <- model@model$training_metrics@metrics$gains_lift_table
-        plot(gain_table$cumulative_data_fraction,
-             gain_table$cumulative_capture_rate,'l', 
-             ylim = c(0,1.5), col = "dodgerblue3",
-             xlab = "cumulative data fraction",
-             ylab = "cumulative capture rate, cumulative lift",
-             main = "Gains/Lift")
-        lines(gain_table$cumulative_data_fraction,
-              gain_table$cumulative_lift, col = "orange")
+        h2o.gains_lift_plot(model)
 
     .. code-tab:: python
 
@@ -2146,24 +2138,7 @@ Example:
                     training_frame=airlines)
 
         # Plot the Gains/Lift chart:
-        gl = model.gains_lift()
-        X = gl['cumulative_data_fraction']
-        Y = gl['cumulative_capture_rate']
-        YC = gl['cumulative_lift']
-
-        plt = get_matplotlib_pyplot(server=False, raise_if_not_available=True)
-        plt.figure(figsize=(10,10))
-        plt.grid(True)
-        plt.plot(X, Y, zorder=10, label='cumulative capture rate')
-        plt.plot(X, YC, zorder=10, label='cumulative lift')
-        plt.legend(loc=4, fancybox=True, framealpha=0.5)
-        plt.xlim(0, 1)
-        plt.ylim(0, 1.5)
-        plt.xlabel('cumulative data fraction')
-        plt.ylabel('cumulative capture rate, cumulative lift')
-        plt.title('Gains/Lift')
-        fig = plt.gcf()
-        plt.show()
+        model.gains_lift_plot()
 
 .. figure:: images/gainslift_plot.png
     :alt: Gains/Lift Plot

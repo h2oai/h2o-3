@@ -207,6 +207,7 @@ class MetricsBase(h2o_meta()):
         
         if metric_type in types_w_uplift:
             print("AUUC: " + str(self.auuc()))
+            print("AUUC normalized: "+ str(self.auuc_normalized()))
             if self._metric_json["auuc_table"] is not None:
                 self._metric_json["auuc_table"].show()
             print("Qini value: " + str(self.qini()))
@@ -1404,11 +1405,11 @@ class H2OBinomialModelMetrics(MetricsBase):
         return metrics
 
     @deprecated_params({'save_to_file': 'save_plot_path'})
-    def plot(self, type="roc", server=False, save_plot_path=None, plot=True, **kwargs):
+    def plot(self, type="roc", server=False, save_plot_path=None, plot=True):
         """
         Produce the desired metric plot.
 
-        :param type: the type of metric plot (currently, only ROC curve ('roc') and Precision Recall curve ('pr') are supported).
+        :param type: the type of metric plot (currently, only ROC curve ('roc'), Precision Recall curve ('pr') and Gains Lift curve ('gainslift') are supported).
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
         :param save_plot_path: filename to save the plot to
         :param plot: True to plot curve, False to get a tuple of values at axis x and y of the plot 
@@ -1433,11 +1434,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         >>> cars_gbm.plot(type="pr")
         
         """
-
+        assert type in ["roc", "pr", "gains_lift"]
         if type == "roc":
             return self._plot_roc(server, save_plot_path, plot)
         elif type == "pr":
             return self._plot_pr(server, save_plot_path, plot)
+        elif type == "gains_lift":
+            return self.gains_lift_plot(server=server, save_plot_path=save_plot_path, plot=plot)
     
     def _plot_roc(self, server=False, save_to_file=None, plot=True):
         if plot:
@@ -1771,6 +1774,55 @@ class H2OBinomialModelMetrics(MetricsBase):
             return self._metric_json['gains_lift_table']
         return None
 
+    @deprecated_params({'save_to_file': 'save_plot_path'})
+    def gains_lift_plot(self, type="both", server=False, save_plot_path=None, plot=True):
+        """
+        Plot Gains/Lift curves.
+
+        :param type: one of "both", "gains", "lift". Defaults to "both".
+        :param server: if True, generate plot inline using matplotlib's "Agg" backend.
+        :param save_plot_path: filename to save the plot to
+        :param plot: True to plot curve, False to get a gains lift table
+
+        :returns: Gains lift table + the resulting plot (can be accessed using result.figure())
+        """
+        type = type.lower()
+        assert type in ["both", "gains", "lift"]
+        gl = self.gains_lift()
+        if plot:
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
+            title = []
+            ylab = []
+            x = gl['cumulative_data_fraction']
+            yccr = gl['cumulative_capture_rate']
+            ycl = gl['cumulative_lift']
+            plt = get_matplotlib_pyplot(server=False, raise_if_not_available=True)
+            fig = plt.figure(figsize=(10, 10))
+            plt.grid(True)
+            if type in ["both", "gains"]:
+                plt.plot(x, yccr, zorder=10, label='cumulative capture rate')
+                title.append("Gains")
+                ylab.append('cumulative capture rate')
+            if type in ["both", "lift"]:
+                plt.plot(x, ycl, zorder=10, label='cumulative lift')
+                title.append("Lift")
+                ylab.append('cumulative lift')
+            plt.legend(loc=4, fancybox=True, framealpha=0.5)
+            plt.xlim(0, None)
+            plt.ylim(0, None)
+            plt.xlabel('cumulative data fraction')
+            plt.ylabel(", ".join(ylab))
+            plt.title(" / ".join(title))
+            if not server:
+                plt.show()
+            if save_plot_path is not None:  # only save when a figure is actually plotted
+                fig.savefig(fname=save_plot_path)
+            return decorate_plot_result(res=gl, figure=fig)
+        else:
+            return decorate_plot_result(res=gl)
+
 
 class H2OBinomialUpliftModelMetrics(MetricsBase):
     """
@@ -1822,6 +1874,42 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
                 "AUUC metric "+metric+" should be 'AUTO', 'qini','lift' or 'gain'."
             if metric == "AUTO": metric = 'qini'
             return self._metric_json['auuc_table'][metric][0]
+
+    def auuc_normalized(self, metric=None):
+        """
+        Retrieve normalized area under cumulative uplift curve (AUUC) value.
+        
+        :param metric AUUC metric type (None, "AUTO", "qini", "lift", "gain",
+            default is None which means it takes default metric from model parameters, "AUTO" means "qini") 
+        :returns: normalized AUUC value.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="kl",
+        ...                                               distribution="bernoulli",
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.auuc_normalized()
+        """
+        if metric is None:
+            return self._metric_json['auuc_normalized']
+        else:
+            assert metric in ['AUTO', 'qini', 'lift', 'gain'], \
+                "AUUC metric "+metric+" should be 'AUTO', 'qini','lift' or 'gain'."
+            if metric == "AUTO": metric = 'qini'
+            return self._metric_json['auuc_table'][metric][1]
 
     def qini(self):
         """
@@ -1914,16 +2002,51 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> perf.uplift()
         """
         assert metric in ['AUTO', 'qini', 'lift', 'gain']
-        if metric == "AUTO": metric = 'qini'
+        if metric == "AUTO": 
+            metric = 'qini'
         return self._metric_json["thresholds_and_metric_scores"][metric]
-
-    def uplift_random(self, metric="AUTO"):
+    
+    def uplift_normalized(self, metric="AUTO"):
         """
-        Retrieve uplift values for each bin. 
+        Retrieve normalized uplift values for each bin. 
         
         :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
         
-        :returns: a list of uplift values.
+        :returns: a list of normalized uplift values.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="kl",
+        ...                                               distribution="bernoulli",
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> perf = uplift_model.model_performance()
+        >>> perf.uplift_normalized()
+        """
+        assert metric in ['AUTO', 'qini', 'lift', 'gain']
+        if metric == "AUTO": 
+            metric = 'qini'
+        return self._metric_json["thresholds_and_metric_scores"][metric+"_normalized"]
+
+    def uplift_random(self, metric="AUTO"):
+        """
+        Retrieve random uplift values for each bin. 
+        
+        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
+        
+        :returns: a list of random uplift values.
 
         :examples:
         
@@ -1947,7 +2070,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> perf.uplift_random()
         """
         assert metric in ['AUTO', 'qini', 'lift', 'gain']
-        if metric == "AUTO": metric = 'qini'
+        if metric == "AUTO": 
+            metric = 'qini'
         return self._metric_json["thresholds_and_metric_scores"][metric+"_random"]    
 
     def n(self):
@@ -2095,7 +2219,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         return self._metric_json["aecu_table"]
 
-    def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="AUTO"):
+    def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="AUTO", normalize=False):
         """
         Plot Uplift Curve. 
         
@@ -2104,6 +2228,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
             (number of observations and uplift values)
         :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
+        :param normalize If True, normalized values are ploted
 
         :examples:
         
@@ -2135,11 +2260,18 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
                 return
             plt.ylabel('Cumulative '+metric)
             plt.xlabel('Number Targeted')
-            plt.title('Cumulate Uplift Curve - '+metric+"\n"+r'AUUC={0:.4f}'.format(self.auuc(metric)))
-            uplift = self.uplift(metric)
+            rnd = self.uplift_random(metric)
+            if normalize:
+                plt.title('Cumulate Uplift Curve - '+metric+"\n"+r'Normalized AUUC={0:.4f}'.format(self.auuc_normalized(metric)))
+                uplift = self.uplift_normalized(metric)
+                if metric != "lift":
+                    max = abs(rnd[len(rnd)-1])
+                    rnd = [x / max for x in rnd]
+            else:
+                plt.title('Cumulate Uplift Curve - '+metric+"\n"+r'AUUC={0:.4f}'.format(self.auuc(metric)))
+                uplift = self.uplift(metric)
             n = self.n()
             plt.plot(n, uplift, 'b-', label='uplift')
-            rnd = self.uplift_random(metric)
             plt.plot(n, rnd, 'k--', label='random')
             if metric == "lift":
                 plt.legend(loc='upper right')

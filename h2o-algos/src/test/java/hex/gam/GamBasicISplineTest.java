@@ -283,20 +283,17 @@ public class GamBasicISplineTest extends TestUtil {
     }
     
     public static void compareRSplines2Results(int order, String resultFile, String inputFile) {
-        Scope.enter();
         try {
+            Scope.enter();
             double[] knots = new double[]{0,0.3,0.5,0.6,1};
             ISplines ispline = new ISplines(order, knots);
-            TestUtil.downloadTestFileFromS3(resultFile);
-            NFSFileVec nfs = TestUtil.makeNfsFileVec(resultFile);
-            final Frame resultFrame = Scope.track(ParseDataset.parse(Key.make(), nfs._key));
+            final Frame resultFrame = parseAndTrackTestFile(resultFile);
             int numRows = (int) resultFrame.numRows()-1;
             double[][] resultArray = MemoryManager.malloc8d((int) resultFrame.numRows(), resultFrame.numCols());
             resultArray = new ArrayUtils.FrameToArray(0, resultFrame.numCols()-1, resultFrame.numRows(),
                     resultArray).doAll(resultFrame).getArray();
             double[][] inputArray = MemoryManager.malloc8d((int) resultFrame.numRows(), 1); // first row is header
-            NFSFileVec nfs2 = TestUtil.makeNfsFileVec(inputFile);
-            final Frame inputFrame = Scope.track(ParseDataset.parse(Key.make(), nfs2._key));
+            final Frame inputFrame = parseAndTrackTestFile(inputFile);
             inputArray = new ArrayUtils.FrameToArray(0,0,resultFrame.numRows(),
                     inputArray).doAll(inputFrame).getArray(); // first row is data
 
@@ -306,8 +303,6 @@ public class GamBasicISplineTest extends TestUtil {
                 ispline.gamifyVal(iGamifiedValues, inputArray[dataIndex][0]);
                 assertArrayEquals(resultArray[dataIndex+1], iGamifiedValues, EPS);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         } finally {
             Scope.exit();
         }
