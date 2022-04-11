@@ -21,13 +21,13 @@ def test_gam_model_predict():
     gam_model_valid = H2OGeneralizedAdditiveEstimator(family='binomial', solver='IRLSM', gam_columns=["C4"],
                                                       scale = [0.0001], num_knots=[5], standardize=True, nfolds=2,
                                                       fold_assignment = 'modulo', alpha=[0.9,0.5,0.1], lambda_search=True,
-                                                      nlambdas=5, max_iterations=3, bs=[2])
+                                                      nlambdas=5, max_iterations=3, bs=[2], seed=12345)
     gam_model_valid.train(x, y, training_frame=train, validation_frame=valid)
     # build model with cross validation and no validation dataset
     gam_model = H2OGeneralizedAdditiveEstimator(family='binomial', solver='IRLSM', gam_columns=["C4"],
                                                 scale = [0.0001], num_knots=[5], standardize=True, nfolds=2,
                                                 fold_assignment = 'modulo', alpha=[0.9,0.5,0.1], lambda_search=True,
-                                                nlambdas=5, max_iterations=3, bs=[2])
+                                                nlambdas=5, max_iterations=3, bs=[2], seed=12345)
     gam_model.train(x, y, training_frame=train)
     # model should yield the same coefficients in both case
     gam_model_coef = gam_model.coef()
