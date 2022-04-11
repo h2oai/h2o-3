@@ -64,9 +64,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  intercept=False,  # type: bool
                  non_negative=False,  # type: bool
                  max_iterations=0,  # type: int
-                 objective_epsilon=0.0,  # type: float
-                 beta_epsilon=0.0,  # type: float
-                 gradient_epsilon=0.0,  # type: float
+                 objective_epsilon=-1.0,  # type: float
+                 beta_epsilon=0.0001,  # type: float
+                 gradient_epsilon=-1.0,  # type: float
                  startval=None,  # type: Optional[List[float]]
                  prior=0.0,  # type: float
                  cold_start=False,  # type: bool
@@ -214,17 +214,17 @@ class H2OModelSelectionEstimator(H2OEstimator):
                lambda_search is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set
                to False and lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other
                value of lambda the default value of objective_epsilon is set to .0001.
-               Defaults to ``0.0``.
+               Defaults to ``-1.0``.
         :type objective_epsilon: float
         :param beta_epsilon: Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to
                IRLSM solver
-               Defaults to ``0.0``.
+               Defaults to ``0.0001``.
         :type beta_epsilon: float
         :param gradient_epsilon: Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to
                L-BFGS solver. Default indicates: If lambda_search is set to False and lambda is equal to zero, the
                default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If
                lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.
-               Defaults to ``0.0``.
+               Defaults to ``-1.0``.
         :type gradient_epsilon: float
         :param startval: double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
                Defaults to ``None``.
@@ -841,7 +841,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
         objective_epsilon is set to .0001.
 
-        Type: ``float``, defaults to ``0.0``.
+        Type: ``float``, defaults to ``-1.0``.
         """
         return self._parms.get("objective_epsilon")
 
@@ -855,7 +855,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         """
         Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
 
-        Type: ``float``, defaults to ``0.0``.
+        Type: ``float``, defaults to ``0.0001``.
         """
         return self._parms.get("beta_epsilon")
 
@@ -872,7 +872,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
         values above are 1E-8 and 1E-6 respectively.
 
-        Type: ``float``, defaults to ``0.0``.
+        Type: ``float``, defaults to ``-1.0``.
         """
         return self._parms.get("gradient_epsilon")
 
