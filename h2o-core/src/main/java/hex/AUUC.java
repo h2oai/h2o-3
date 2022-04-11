@@ -170,10 +170,19 @@ public class AUUC extends Iced {
         _ths = new double[0];
         _treatment = _control = _yTreatment = _yControl = _frequency = _frequencyCumsum = new long[0];
         _auucs = new double[AUUCType.VALUES.length];
+        Arrays.fill(_auucs, Double.NaN);
+        _auucsNormalized = new double[AUUCType.VALUES.length];
+        Arrays.fill(_auucsNormalized, Double.NaN);
+        _auucsRandom = new double[AUUCType.VALUES.length];
+        Arrays.fill(_auucsRandom, Double.NaN);
+        _aecu = new double[AUUCType.VALUES.length];
+        Arrays.fill(_aecu, Double.NaN);
         _maxIdx = -1;
         _auucType = AUUCType.AUTO;
         _auucTypeIndx = getIndexByAUUCType(_auucType);
         _uplift = new double[AUUCType.values().length][];
+        _upliftNormalized = new double[AUUCType.values().length][];
+        _upliftRandom = new double[AUUCType.values().length][];
     }
     
     public static double[] calculateQuantileThresholds(int groups, Vec preds) {
