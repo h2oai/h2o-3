@@ -1364,7 +1364,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
                                     color = .data$name,
                                     text = .data$text),
                        data = results)
-  histogram <- stat_count_or_bin(!is.numeric(newdata[[column]]),
+  histogram <- stat_count_or_bin(!.is_continuous(newdata[[column]]),
                                  ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                                  position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
                                  inherit.aes = FALSE, data = as.data.frame(newdata[[column]]))
@@ -1403,7 +1403,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     theme_part +
     theme_part2
 
-  ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
+  ice_part <- geom_point_or_line(!.is_continuous(newdata[[column]]),
                                  if (is.factor(newdata[[column]])) {
                                    ggplot2::aes(shape = "ICE", group = .data$name)
                                  } else {
@@ -1417,7 +1417,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
                                                                  group = "Original observations"),
                                                     x = orig_values[[col_name]],
                                                     y = y_val,
-                                                    show.legend = ifelse(is.numeric(newdata[[column]]), NA, FALSE)
+                                                    show.legend = ifelse(.is_continuous(newdata[[column]]), NA, FALSE)
   )
   shape_legend_manual <- ggplot2::scale_shape_manual(
     values = c("Original observations" = 19, "ICE" = 20, "Partial Dependence" = 18))
@@ -1431,7 +1431,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     color_spec
 
   if (show_pdp == TRUE) {
-    pdp_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
+    pdp_part <- geom_point_or_line(!.is_continuous(newdata[[column]]),
                                    if (is.factor(pdp[[col_name]])) {
                                      ggplot2::aes(shape = "Partial Dependence", group = "Partial Dependence")
                                    } else {
@@ -1528,12 +1528,12 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
     y = y_[["y_vals"]],
     color = .data$target, fill = .data$target, text = .data$text
   ), data = pdp) +
-    stat_count_or_bin(!is.numeric(newdata[[column]]),
+    stat_count_or_bin(!.is_continuous(newdata[[column]]),
                       ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_[["y_range"]]) / 1.61),
                       position = ggplot2::position_nudge(y = y_[["y_range"]][[1]] - 0.05 * diff(y_[["y_range"]])), alpha = 0.2,
                       inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-    geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$target)) +
-    geom_pointrange_or_ribbon(!is.numeric(newdata[[column]]), ggplot2::aes(
+    geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
+    geom_pointrange_or_ribbon(!.is_continuous(newdata[[column]]), ggplot2::aes(
       ymin = y_[["y_min"]],
       ymax = y_[["y_max"]],
       group = .data$target
@@ -1543,7 +1543,10 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
                       data = rug_data
     )
   if (row_index > -1) {
-    p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+    row_val <- newdata[row_index, column]
+    if (.is_datetime(newdata[[column]]))
+      row_val <- as.numeric(.to_datetime(row_val))
+    p <- p + ggplot2::geom_vline(xintercept = row_val, linetype = "dashed")
   }
   p <- p +
     ggplot2::labs(

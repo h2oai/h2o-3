@@ -199,7 +199,7 @@ class NumpyFrame:
                     levels = set(row[col] for row in df)
                     self._factors[self._columns[col]] = list(levels)
 
-            self._data = np.empty((len(df), len(self._columns)))
+            self._data = np.empty((len(df), len(self._columns)), dtype=np.float64)
             df = [self._columns] + df
         elif isinstance(h2o_frame, h2o.H2OFrame):
             _is_factor = np.array(h2o_frame.isfactor(), dtype=np.bool) | np.array(
@@ -220,17 +220,22 @@ class NumpyFrame:
                 self._data[:, idx] = np.array(
                     [float(convertor.get(
                         row[idx] if not (len(row) == 0 or row[idx] == "") else "nan", "nan"))
-                        for row in df[1:]], dtype=np.float32)
+                        for row in df[1:]], dtype=np.float64)
             elif _is_numeric[idx]:
                 self._data[:, idx] = np.array(
                     [float(row[idx] if not (len(row) == 0 or row[idx] == "") else "nan") for row in
                      df[1:]],
-                    dtype=np.float32)
+                    dtype=np.float64)
             else:
                 try:
-                    self._data[:, idx] = np.array([row[idx] if not (len(row) == 0 or row[idx] == "")
-                                                   else "nan" for row in df[1:]],
-                                                  dtype=np.datetime64)
+                    self._data[:, idx] = np.array([row[idx]
+                                                   if not (
+                            len(row) == 0 or
+                            row[idx] == "" or
+                            row[idx].lower() == "nan"
+                    ) else "nan" for row in df[1:]], dtype=np.float64)
+                    if h2o_frame.type(self._columns[idx]) == "time":
+                        self._data[:, idx] = _timestamp_to_mpl_datetime(self._data[:, idx])
                 except Exception:
                     raise RuntimeError("Unexpected type of column {}!".format(col))
 
@@ -321,6 +326,20 @@ class NumpyFrame:
                 return np.asarray(self._data[row, self.columns.index(column)] == factor,
                                   dtype=np.float32)
         return self._data[row, self.columns.index(column)]
+
+    def __setitem__(self, key, value):
+        # type: ("NumpyFrame", str, np.ndarray) -> None
+        """
+        Rudimentary implementation of setitem. Setting a factor column is not supported.
+        Use with caution.
+        :param key: column name
+        :param value: ndarray representing one whole column
+        """
+        if key not in self.columns:
+            raise KeyError("Column {} is not present amongst {}".format(key, self.columns))
+        if self.isfactor(key):
+            raise NotImplementedError("Setting a factor column is not supported!")
+        self._data[:, self.columns.index(key)] = value
 
     def get(self, column, as_factor=True):
         # type: ("NumpyFrame", str, bool) -> np.ndarray
@@ -435,6 +454,28 @@ class NumpyFrame:
         """
         for col in self.columns:
             yield col, self.get(col, with_categorical_names)
+
+
+def _mpl_datetime_to_str(mpl_datetime):
+    # type: (float) -> str
+    """
+    Convert matplotlib-compatible date time which in which the unit is a day to a human-readable string.
+
+    :params mpl_datetime: number of days since the beginning of the unix epoch
+    :returns: string containing date time
+    """
+    from datetime import datetime
+    # convert to seconds and then to datetime
+    return datetime.utcfromtimestamp(mpl_datetime * 3600 * 24).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _timestamp_to_mpl_datetime(timestamp):
+    """
+   Convert timestamp to matplotlib compatible timestamp.
+   :params timestamp: number of ms since the beginning of the unix epoch
+   :returns: number of days since the beginning of the unix epoch
+    """
+    return timestamp / (1000 * 3600 * 24)
 
 
 def _get_domain_mapping(model):
@@ -794,7 +835,11 @@ def shap_explain_row_plot(
             contribution_subset_note = ""
         contributions = dict(
             feature=np.array(
-                ["{}={}".format(pair[0], str(row.get(pair[0])[0])) for pair in picked_features]),
+                ["{}={}".format(pair[0],
+                                (_mpl_datetime_to_str(row.get(pair[0])[0])
+                                 if pair[0] in frame.columns and frame.type(pair[0]) == "time"
+                                 else str(row.get(pair[0])[0])))
+                 for pair in picked_features]),
             value=np.array([pair[1][0] for pair in picked_features])
         )
         plt.figure(figsize=figsize)
@@ -1061,6 +1106,9 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
         orig_vals = _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model,
                                        frame, index, column, colors[i], percentile_string, factor_map, orig_value)
         orig_row = NumpyFrame(orig_vals)
+        if frame.type(column) == "time":
+            tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
+            orig_row[encoded_col] = _timestamp_to_mpl_datetime(orig_row[encoded_col])
         if output_graphing_data:
             data = _append_graphing_data(data, pd_data, frame[index, column], frame.frame_id,
                                          not is_factor and centered, show_logodds, index, **kwargs)
@@ -1094,6 +1142,8 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
             )[0]
         )
         encoded_col = tmp.columns[0]
+        if frame.type(column) == "time":
+            tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
         response = _get_response(tmp["mean_response"], show_logodds)
         if not is_factor and centered:
             _center(tmp["mean_response"])
@@ -1140,6 +1190,8 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
                               nbins=nbins if not is_factor else (1 + frame[column].nlevels()[0]))[0]
     tmp = NumpyFrame(data)
     encoded_col = tmp.columns[0]
+    if frame.type(column) == "time":
+        tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
     response = _get_response(tmp["mean_response"], show_logodds)
     stddev_response = _get_stddev_response(tmp["stddev_response"], tmp["mean_response"], show_logodds)
 
@@ -1166,8 +1218,10 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
             plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
                         label="Instance value")
         else:
-            plt.axvline(frame[row_index, column], c="k", linestyle="dotted",
-                        label="Instance value")
+            row_val = frame[row_index, column]
+            if frame.type(column) == "time":
+                row_val = _timestamp_to_mpl_datetime(row_val)
+            plt.axvline(row_val, c="k", linestyle="dotted", label="Instance value")
         plt.title("Individual Conditional Expectation for column \"{}\" and row {}{}{}".format(
             column,
             row_index,
@@ -1465,6 +1519,8 @@ def pd_multi_plot(
                                    row_index=row_index, targets=target,
                                    nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
             encoded_col = tmp.columns[0]
+            if frame.type(column) == "time":
+                tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
                             color=[colors[i]], label=model_ids[i],
