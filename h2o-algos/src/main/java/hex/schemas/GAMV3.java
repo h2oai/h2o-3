@@ -231,7 +231,8 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help = "Number of knots for gam predictors", level = Level.critical, gridable = true)
     public int[] num_knots;
 
-    @API(help = "Order of I-splines used for gam predictors", level = Level.critical, gridable = true)
+    @API(help = "Order of I-splines used for gam predictors. If specified, must be the same size as gam_columns." +
+            "Values for bs=0 or 1 will be ignored.", level = Level.critical, gridable = true)
     public int[] spline_orders;
 
     @API(help = "Arrays of predictor column names for gam for smoothers using single or multiple predictors like " +
@@ -243,7 +244,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     public double[] scale;
 
     @API(help = "Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for" +
-            " thin plate regression with SVD.  If specified, must be the same size as gam_columns",
+            " monotone splines.  If specified, must be the same size as gam_columns",
             level = Level.critical, gridable = true)
     public int[] bs;
 
