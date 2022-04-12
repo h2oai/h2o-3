@@ -408,13 +408,13 @@ We have implemented I-splines which are used as monotone splines. Monotone splin
 
 **B-splines:** :math:`Q_{i,k}(t)`
 
-This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-spline of order :math:`k` at knot :math:`i` where it is non-zero over the duration :math:`t_0 \leq t < t_k`. The recursive formula [:ref:`4<ref4>`] used to generate a B-spline of a higher order from a B-spline of a lower order is:
+This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-spline of order :math:`k` at knot :math:`i` where it is non-zero over the duration :math:`t_i \leq t < t_{i+k}`. The recursive formula [:ref:`4<ref4>`] used to generate a B-spline of a higher order from a B-spline of a lower order is:
 
 .. math::
    
    Q_{i,k}(t) = {\frac{(t-t_{i})}{(t_{i+k}-t_{i})}} Q_{i,k-1}(t) + {\frac{(t_{i+k}-t)}{(t_{i+k}-t_{i})}} Q_{i+1,k-1}(t) 
 
-Using knotes :math:`t_0,t_1,\dots ,t_N` over the range of inputs of interest from :math:`t_0` to :math:`t_N`, and order 1 B-spline is defined as [:ref:`4<ref4>`]:
+Using knotes :math:`t_0,t_1,\dots ,t_N` over the range of inputs of interest from :math:`t_0` to :math:`t_N`, an order 1 B-spline is defined as [:ref:`4<ref4>`]:
 
 .. math::
    
@@ -461,7 +461,7 @@ Note that :math:`M_{i,k}(t)` is defined over the same knot sequence as the origi
 
 **N-splines:** :math:`N_{i,k}(t)`
 
-The N-splines are normalized to have a summation of 1 when :math:`t_0 \leq t < t_N` as :math:`\sum_{i=0}^{N+k-1}N_{i,k}(t) = 1`. :math:`N_{i,k}(t)` is the normalized B-spline Type II in this implementation. The N-splines share the same knot sequence with the original M-spline and B-spline. The N-spline cane be derived from the M-spline or the B-spline using:
+The N-splines are normalized to have a summation of 1 when :math:`t_0 \leq t < t_N` as :math:`\sum_{i=0}^{N+k-1}N_{i,k}(t) = 1`. :math:`N_{i,k}(t)` is the normalized B-spline Type II in this implementation. The N-splines share the same knot sequence with the original M-spline and B-spline. The N-spline can be derived from the M-spline or the B-spline using:
 
 .. math::
    
@@ -539,6 +539,8 @@ The model now contains more than one function introduces an identifiability prob
   \sum_{i=1}^n f_p(x_i) = 0 = 1^Tf_p
 
 where 1 is a column vector of 1, and :math:`f_p` is the column vector containing :math:`f_p(x_1), \ldots ,f_p(x_n)`. To apply the sum-to-zero constraints, a Householder transform is used. Refer to [:ref:`1<ref1>`] for details. This transform is applied to each basis function of any predictor column we choose on its own.
+
+**Note**: this does not apply to monotone splines because the coefficients for these splines must be :math:`\geq 0`. 
 
 Sum-to-zero Constraints Implementation
 ''''''''''''''''''''''''''''''''''''''
