@@ -21,6 +21,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 
 #### Improvement
 
+- [[PUBDEV-8661]](https://h2oai.atlassian.net/browse/PUBDEV-8661) - Improved AUUC result information in Uplift DRF by adding information on number of bins.
 - [[PUBDEV-8649]](https://h2oai.atlassian.net/browse/PUBDEV-8649) - Replaced `class()` with `inherits()` in R package. 
 - [[PUBDEV-8644]](https://h2oai.atlassian.net/browse/PUBDEV-8644) - Fixed invalid URLs in R Package.
 - [[PUBDEV-8629]](https://h2oai.atlassian.net/browse/PUBDEV-8629) - Added normalized `AUUC` to Uplift DRF. 
@@ -48,6 +49,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 #### Task
 
 - [[PUBDEV-8587]](https://h2oai.atlassian.net/browse/PUBDEV-8587) - Decoupled Infogram and XGBoost removing Infograms reliance on XGBoost to work.
+- [[PUBDEV-8585]](https://h2oai.atlassian.net/browse/PUBDEV-8585) - Verified GLM binomial IRLSM implementation and `p-value` calculation. 
 - [[PUBDEV-8576]](https://h2oai.atlassian.net/browse/PUBDEV-8576) - Added private ModelBuilder parameter to AutoML to enforce the time budget on the final model after cross-validation.
 
 #### Sub-Task
