@@ -407,7 +407,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         colHeaders.add("Training AUUC nbins"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Training AUUC"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Training AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
-        colHeaders.add("Training Qini coefficient"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Training Qini value"); colTypes.add("double"); colFormat.add("%.5f");
         if (hasCustomMetric) {
             colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
         }
@@ -416,7 +416,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             colHeaders.add("Validation AUUC nbins"); colTypes.add("int"); colFormat.add("%d");
             colHeaders.add("Validation AUUC"); colTypes.add("double"); colFormat.add("%.5f");
             colHeaders.add("Validation AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
-            colHeaders.add("Validation Qini coefficient"); colTypes.add("double"); colFormat.add("%.5f");
+            colHeaders.add("Validation Qini value"); colTypes.add("double"); colFormat.add("%.5f");
             if (hasCustomMetric) {
                 colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
             }
