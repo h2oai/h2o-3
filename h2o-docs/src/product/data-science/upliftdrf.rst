@@ -270,7 +270,7 @@ In ``auuc`` the default AUUC is stored, however you can see also AUUC values for
 
 The resulting AUUC value is not normalized, so the result could be a positive number, but also a negative number. A higher number means better model. 
 
-To get normalized AUUC, you have to call ``auuc_normalized`` method. The normalized AUUC is calculated from uplift values which are normalized by uplift value from maximal treated number of observations. So if you have for example uplift values [10, 20, 30] the normalized uplift is [1/3, 2/3, 1]. If the maximal value is negative, the normalization factor is the absolute value from this number. The normalized AUUC can be again negative and positive and can be outside of (0, 1) interval. 
+To get normalized AUUC, you have to call ``auuc_normalized`` method. The normalized AUUC is calculated from uplift values which are normalized by uplift value from maximal treated number of observations. So if you have for example uplift values [10, 20, 30] the normalized uplift is [1/3, 2/3, 1]. If the maximal value is negative, the normalization factor is the absolute value from this number. The normalized AUUC can be again negative and positive and can be outside of (0, 1) interval. The normalized AUUC for ``auuc_metric="lift"`` is not defined, so the normalized AUUC = AUUC for this case. Also the ``plot_uplift`` with ``metric="lift"`` is the same for ``normalize=False`` and ``normalize=True``.
 
 From the ``threshold_and_metric_scores`` table you can select the highest uplift to decide the optimal threshold for the final prediction. The number of bins in the table depends on ``auuc_nbins`` parameter, but should be less (it depends on distribution of predictions). The thresholds are created based on quantiles of predictions and are sorted from highest value to lowest. 
 
@@ -280,6 +280,12 @@ For some observation groups the results should be NaN. In this case, the results
    :width: 640px
    :height: 480px
 
+**Note**: To speed up the calculation of AUUC, the predictions are binned into quantile histograms. To calculate precision AUUC the more bins the better. The more trees usually produce more various predictions and then the algorithm creates histograms with more bins. So the algorithm needs more iterations to get meaningful AUUC results. 
+You can see in the scoring history table the number of bins as well as the result AUUC. There is also Qini coefficient parameter, which reflects the number of bins and then is a better pointer of the model improvement. In the picture below you can see the algorithm stabilized after building 6 trees. But it depends on data and model settings on how many trees are necessary.
+
+.. image:: /images/uplift_scoring_history.png
+   :width: 1343px
+   :height: 586px
 
 Qini value calculation
 ~~~~~~~~~~~~~~~~~~~~~~
