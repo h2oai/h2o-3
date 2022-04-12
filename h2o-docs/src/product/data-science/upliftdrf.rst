@@ -21,7 +21,7 @@ Uplift metric
 
 In Uplift Tree-based algorithms, every tree takes information about treatment/control group assignment and information about response directly into the decision about splitting a node. This means there is only one tree for both groups instead of separate trees for the treatment group's data and the control group's data.
 
-Uplift DRF differentiates itself from DRF because it finds the best split using both ``response_column`` and ``treatment_column``. The goal is to split the training observations into a group which gets an offer (i.e. treatment group) and a group which does not (i.e. control group). This information (``treatment_column``) with features and ``response_column`` are used for training. The ``uplift_metric`` is calculated to decide which point from the histogram is selected to split the data in the tree node (instead of calculation squared error or Qini coefficient like in other tree algorithms).
+Uplift DRF differentiates itself from DRF because it finds the best split using both ``response_column`` and ``treatment_column``. The goal is to split the training observations into a group which gets an offer (i.e. treatment group) and a group which does not (i.e. control group). This information (``treatment_column``) with features and ``response_column`` are used for training. The ``uplift_metric`` is calculated to decide which point from the histogram is selected to split the data in the tree node (instead of calculation squared error or Qini value like in other tree algorithms).
 
 The goal is to maximize the differences between the class distributions in the treatment and control sets, so the splitting criteria are based on distribution divergences. The distribution divergence is calculated based on the ``uplift_metric`` parameter. In H2O-3, three ``uplift_metric`` types are supported:
 
@@ -34,7 +34,7 @@ where:
 - :math:`P` is treatment group distribution
 - :math:`Q` is control group distribution
 
-In a tree node the result value for a split is sum :math:`metric(P, Q) + metric(1-P, 1-Q)`. For the split gain value, the result within the node is normalized using a gini coefficient (Eclidean or ChiSquared) or entropy (KL) for each distribution before and after the split.
+In a tree node the result value for a split is sum :math:`metric(P, Q) + metric(1-P, 1-Q)`. For the split gain value, the result within the node is normalized using the qini coefficient (Euclidean or ChiSquared) or entropy (KL) for each distribution before and after the split.
 
 You can read more information about ``uplift_metric`` on parameter specification page: `uplift_metric <algo-params/uplift_metric.html>`__.
 
@@ -281,7 +281,7 @@ For some observation groups the results should be NaN. In this case, the results
    :height: 480px
 
 **Note**: To speed up the calculation of AUUC, the predictions are binned into quantile histograms. To calculate precision AUUC the more bins the better. The more trees usually produce more various predictions and then the algorithm creates histograms with more bins. So the algorithm needs more iterations to get meaningful AUUC results. 
-You can see in the scoring history table the number of bins as well as the result AUUC. There is also Qini coefficient parameter, which reflects the number of bins and then is a better pointer of the model improvement. In the picture below you can see the algorithm stabilized after building 6 trees. But it depends on data and model settings on how many trees are necessary.
+You can see in the scoring history table the number of bins as well as the result AUUC. There is also Qini value parameter, which reflects the number of bins and then is a better pointer of the model improvement. In the picture below you can see the algorithm stabilized after building 6 trees. But it depends on data and model settings on how many trees are necessary.
 
 .. image:: /images/uplift_scoring_history.png
    :width: 1343px
