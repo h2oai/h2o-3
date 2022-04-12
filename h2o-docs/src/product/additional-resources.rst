@@ -174,3 +174,9 @@ Contribute to H2O-3
 -------------------
 `Contributing <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`__
 
+Have any questions? 
+-------------------
+
+Reach out to the team on `Stack Overflow <https://stackoverflow.com/>`__ or `Gitter <https://gitter.im/h2oai/h2o-3>`__!  Be sure to tag your Stack Overflow questions with ``h2o``.
+
+We recommend posting your question to Stack Overflow first. If you have a non-technical question that can't be answered on SO, then try reaching out to Gitter with your question. 
