@@ -18,6 +18,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import static hex.glm.GLMModel.GLMParameters.Family.AUTO;
+import static hex.glm.GLMModel.GLMParameters.GLMType.glm;
 import static hex.modelselection.ModelSelectionUtils.*;
 
 public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelectionModel.ModelSelectionParameters,
@@ -75,11 +76,13 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public double _p_values_threshold = 0;
         public double _tweedie_variance_power;
         public double _tweedie_link_power;
+        public GLMModel.GLMParameters.GLMType _glmType = glm;
         public Mode _mode = Mode.maxr;  // mode chosen to perform model selection
         public double _beta_epsilon = 1e-4;
         public double _objective_epsilon = -1;  // -1 to use default setting
         public double _gradient_epsilon = -1;   // -1 to use default setting
-
+        public double _obj_reg = -1.0;
+        
         public enum Mode {
             allsubsets, // use combinatorial, exponential runtime
             maxr, // use sequential replacement
