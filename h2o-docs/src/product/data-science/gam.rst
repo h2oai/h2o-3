@@ -404,7 +404,7 @@ For documentation on thin plate regression splines, refer here:
 Monotone Splines
 ''''''''''''''''
 
-We have implemented I-splines which are used as monotone splines. Monotone splines do not support multinomial or ordinal families.
+We have implemented I-splines which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. In order to specify the monotone spline, you need to both set ``bs=2`` and specify the ``spline_orders`` parameter.
 
 **B-splines:** :math:`Q_{i,k}(t)`
 
