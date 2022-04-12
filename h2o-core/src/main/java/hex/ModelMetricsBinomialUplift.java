@@ -48,6 +48,8 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public double qini(){return _auuc.qini();}
     
     public double auucNormalized(){return _auuc.auucNormalized();}
+    
+    public int nbins(){return _auuc._nBins;}
 
     @Override
     protected StringBuilder appendToStringMetrics(StringBuilder sb) {
@@ -229,9 +231,13 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
 
         private ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc) {
             double sigma = Double.NaN;
-            if(auuc == null) {
-                sigma = weightedSigma();
-                auuc = new AUUC(_auuc, m._parms._auuc_type);
+            if(_wcount > 0) {
+                if (auuc == null) {
+                    sigma = weightedSigma();
+                    auuc = new AUUC(_auuc, m._parms._auuc_type);
+                }
+            } else {
+                auuc = new AUUC();
             }
             ModelMetricsBinomialUplift mm = new ModelMetricsBinomialUplift(m, f, _count, _domain, sigma, auuc, _customMetric);
             if (m!=null) m.addModelMetrics(mm);

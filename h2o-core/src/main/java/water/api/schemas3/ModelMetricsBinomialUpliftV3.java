@@ -103,7 +103,7 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
                 types[i] = "double";
                 formats[i] = "%f";
             }
-            TwoDimTable auucs = new TwoDimTable("AUUC table", "All types of AUUC value", rowHeaders, colHeaders, types, formats, "Uplift type" );
+            TwoDimTable auucs = new TwoDimTable("AUUC table (number of bins: "+auuc._nBins+ ")", "All types of AUUC value", rowHeaders, colHeaders, types, formats, "Uplift type" );
             for (i = 0; i < metricsLength; i++) {
                 auucs.set(0, i, auuc.auucByType(metrics[i]));
                 auucs.set(1, i, auuc.auucNormalizedByType(metrics[i]));

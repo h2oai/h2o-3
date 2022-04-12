@@ -11,16 +11,18 @@ from h2o.estimators.model_selection import H2OModelSelectionEstimator as modelSe
 def test_modelselection_backward_gaussian():
     predictor_elimination_order = ["C15", "C33", "C164", "C144", "C27"]
     eliminated_p_values = [0.6702, 0.6663, 0.0157, 0.0026, 0.0002]
-    d = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/model_selection/backwardBinomial200C50KRowsWeighted.csv"))
-    my_y = "response"
-    d[my_y] = d[my_y].asfactor()
-    my_x = d.names
-    my_x.remove(my_y)
-    my_x.remove("weight")
+    tst_data = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/backwardBinomial200C50KRows.csv"))
+    predictors = tst_data.columns[0:-1]
+    response_col = 'response'
+    weight = 'wt'
+    tst_data['wt']=1
+    tst_data[tst_data['response']==1,'wt'] = 100
+    tst_data['response']=tst_data['response'].asfactor()
+    
     min_predictor_num = 200-len(predictor_elimination_order)
-    model_backward = modelSelection(seed=12345, min_predictor_number=min_predictor_num, mode="backward", family='binomial',
-                                link='logit', weights_column='weight')
-    model_backward.train(training_frame=d, x=my_x, y=my_y)
+    model_backward = modelSelection(family = 'binomial', weights_column = weight, mode='backward', 
+                                    min_predictor_number=min_predictor_num)
+    model_backward.train(training_frame=tst_data, x=predictors, y=response_col)
     # check predictor deletion order same as in predictor_elimination_order
     predictor_orders = model_backward._model_json['output']['best_model_predictors']
     num_models = len(predictor_orders)

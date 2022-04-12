@@ -67,16 +67,16 @@
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to FALSE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations Defaults to 0.
-#' @param objective_epsilon Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
-#'        value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to zero,
-#'        the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
+#' @param objective_epsilon Converge if  objective value changes less than this. Default (of -1.0) indicates: If lambda_search is set to
+#'        True the value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal
+#'        to zero, the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
 #'        objective_epsilon is set to .0001. Defaults to -1.
 #' @param beta_epsilon Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
 #'        Defaults to 0.0001.
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
-#'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
-#'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
-#'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
+#'        (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the default value of
+#'        gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True,
+#'        the conditional values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to 0.
@@ -91,7 +91,7 @@
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
 #'        max_active_predictors is set to 5000 otherwise it is set to 100000000. Defaults to -1.
-#' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to 0.
+#' @param obj_reg Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs Defaults to -1.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
@@ -172,7 +172,7 @@ h2o.modelSelection <- function(x,
                                lambda_min_ratio = 0,
                                beta_constraints = NULL,
                                max_active_predictors = -1,
-                               obj_reg = 0,
+                               obj_reg = -1,
                                stopping_rounds = 0,
                                stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                stopping_tolerance = 0.001,
@@ -360,7 +360,7 @@ h2o.modelSelection <- function(x,
                                                lambda_min_ratio = 0,
                                                beta_constraints = NULL,
                                                max_active_predictors = -1,
-                                               obj_reg = 0,
+                                               obj_reg = -1,
                                                stopping_rounds = 0,
                                                stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                                stopping_tolerance = 0.001,

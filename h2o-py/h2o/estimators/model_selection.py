@@ -73,7 +73,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  lambda_min_ratio=0.0,  # type: float
                  beta_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
                  max_active_predictors=-1,  # type: int
-                 obj_reg=0.0,  # type: float
+                 obj_reg=-1.0,  # type: float
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
@@ -210,7 +210,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         :param max_iterations: Maximum number of iterations
                Defaults to ``0``.
         :type max_iterations: int
-        :param objective_epsilon: Converge if  objective value changes less than this. Default indicates: If
+        :param objective_epsilon: Converge if  objective value changes less than this. Default (of -1.0) indicates: If
                lambda_search is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set
                to False and lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other
                value of lambda the default value of objective_epsilon is set to .0001.
@@ -221,8 +221,8 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``0.0001``.
         :type beta_epsilon: float
         :param gradient_epsilon: Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to
-               L-BFGS solver. Default indicates: If lambda_search is set to False and lambda is equal to zero, the
-               default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If
+               L-BFGS solver. Default (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero,
+               the default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If
                lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.
                Defaults to ``-1.0``.
         :type gradient_epsilon: float
@@ -252,8 +252,8 @@ class H2OModelSelectionEstimator(H2OEstimator):
                solver is used, the value of max_active_predictors is set to 5000 otherwise it is set to 100000000.
                Defaults to ``-1``.
         :type max_active_predictors: int
-        :param obj_reg: Likelihood divider in objective value computation, default is 1/nobs
-               Defaults to ``0.0``.
+        :param obj_reg: Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs
+               Defaults to ``-1.0``.
         :type obj_reg: float
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
                length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
@@ -836,9 +836,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
     @property
     def objective_epsilon(self):
         """
-        Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
-        value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to zero,
-        the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
+        Converge if  objective value changes less than this. Default (of -1.0) indicates: If lambda_search is set to
+        True the value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to
+        zero, the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
         objective_epsilon is set to .0001.
 
         Type: ``float``, defaults to ``-1.0``.
@@ -868,9 +868,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
     def gradient_epsilon(self):
         """
         Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
-        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
-        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
-        values above are 1E-8 and 1E-6 respectively.
+        (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the default value of
+        gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the
+        conditional values above are 1E-8 and 1E-6 respectively.
 
         Type: ``float``, defaults to ``-1.0``.
         """
@@ -974,9 +974,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
     @property
     def obj_reg(self):
         """
-        Likelihood divider in objective value computation, default is 1/nobs
+        Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs
 
-        Type: ``float``, defaults to ``0.0``.
+        Type: ``float``, defaults to ``-1.0``.
         """
         return self._parms.get("obj_reg")
 

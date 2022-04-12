@@ -404,17 +404,19 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
         colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
         colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+        colHeaders.add("Training AUUC nbins"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Training AUUC"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Training AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
-        colHeaders.add("Training Qini coefficient"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Training Qini value"); colTypes.add("double"); colFormat.add("%.5f");
         if (hasCustomMetric) {
             colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
         }
 
         if (_output._validation_metrics != null) {
+            colHeaders.add("Validation AUUC nbins"); colTypes.add("int"); colFormat.add("%d");
             colHeaders.add("Validation AUUC"); colTypes.add("double"); colFormat.add("%.5f");
             colHeaders.add("Validation AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
-            colHeaders.add("Validation Qini coefficient"); colTypes.add("double"); colFormat.add("%.5f");
+            colHeaders.add("Validation Qini value"); colTypes.add("double"); colFormat.add("%.5f");
             if (hasCustomMetric) {
                 colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
             }
@@ -422,7 +424,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
         int rows = 0;
         for( int i = 0; i<_scored_train.length; i++ ) {
-            if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
+            if (i != 0 && Double.isNaN(_scored_train[i]._AUUC) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._AUUC))) continue;
             rows++;
         }
         TwoDimTable table = new TwoDimTable(
@@ -434,13 +436,14 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
                 "");
         int row = 0;
         for( int i = 0; i<_scored_train.length; i++ ) {
-            if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
+            if (i != 0 && Double.isNaN(_scored_train[i]._AUUC) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._AUUC))) continue;
             int col = 0;
             DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
             table.set(row, col++, fmt.print(_training_time_ms[i]));
             table.set(row, col++, PrettyPrint.msecs(_training_time_ms[i] - job.start_time(), true));
             table.set(row, col++, i);
             ScoreKeeper st = _scored_train[i];
+            table.set(row, col++, st._auuc_nbins);
             table.set(row, col++, st._AUUC);
             table.set(row, col++, st._auuc_normalized);
             table.set(row, col++, st._qini);
@@ -448,6 +451,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
             if (_output._validation_metrics != null) {
                 st = _scored_valid[i];
+                table.set(row, col++, st._auuc_nbins);
                 table.set(row, col++, st._AUUC);
                 table.set(row, col++, st._auuc_normalized);
                 table.set(row, col++, st._qini);
