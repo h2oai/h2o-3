@@ -414,19 +414,60 @@ This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-
    
    Q_{i,k}(t) = {\frac{(t-t_{i})}{(t_{i+k}-t_{i})}} Q_{i,k-1}(t) + {\frac{(t_{i+k}-t)}{(t_{i+k}-t_{i})}} Q_{i+1,k-1}(t) 
 
+Using knotes :math:`t_0,t_1,\dots ,t_N` over the range of inputs of interest from :math:`t_0` to :math:`t_N`, and order 1 B-spline is defined as [:ref:`4<ref4>`]:
+
+.. math::
+   
+   Q_{i,1}(t) = \begin{cases}{\frac{1}{(t_{i+1}-t_i)}},t_i \leq t < t_{i+1} \\ 0,t<t_i \text{ or } t \geq t_{i+1} \\\end{cases}
+
+*Extending the number of knots*
+
+To generate higher order splines, you have to extend the original knots :math:`t_0,t_1,\dots ,t_N` over the range of inputs of interest. You do this by adding :math:`k-1` knots of value :math:`t_0` to the front of the knots and :math:`k-1` knots of value :math:`t_N` to the end of the knots. The new duplication will look like:
+
+.. math::
+   
+   t_0,t_0,\dots ,t_0,t_1,t_2,\dots ,t_{N-1},t_N,t_N,\dots ,t_N
+
+where:
+
+- :math:`t_0,t_0,\dots ,t_0` and :math:`t_N,t_N,\dots ,t_N` are the :math:`k` duplicates.
+
+The formula we used to calculate the number of basis functions over the original knots :math:`t_0,t_1,\dots ,t_N` is:
+
+.. math::
+   
+   N+1+k-2
+
+where:
+
+- :math:`N+1` is the number of knots over the input range without duplication
+- :math:`k` is the order of the spline
+
 **M-splines:** :math:`M_{i,k}(t)`
 
 If you normalize the basic B-spline function to have an integration of 1 over the interest range where it is non-zero, you can denote it as :math:`M_{i,k}(t)`. This is the normalized B-spline Type I, and it is defined as:
 
 .. math::
    
-   M_{i,k}(t) = {\frac{k}{k-1}}\bigg( {\frac{t-t_i)}{t_{i+k}-t_i)}}M_{i,k-1}(t)-{\frac{(t_{i+k}-t)}{(t_{i+k}-t_i)}}M_{i+1,k-1}(t)\bigg)
+   M_{i,k}(t) = k \times Q_{i,k}(t)
+
+You can also derive :math:`M_{i,k}(t)` using the following recursive formula:
+
+.. math::
+   
+   M_{i,k}(t) = {\frac{k}{k-1}}\bigg( {\frac{(t-t_i)}{(t_{i+k}-t_i)}}M_{i,k-1}(t)-{\frac{(t_{i+k}-t)}{(t_{i+k}-t_i)}}M_{i+1,k-1}(t)\bigg)
 
 Note that :math:`M_{i,k}(t)` is defined over the same knot sequence as the original B-spline, and the number of :math:`M_{i,k}(t)` splines is the same as the number of B-splines over the same known sequence.
 
 **N-splines:** :math:`N_{i,k}(t)`
 
-The N-splines are normalized to have a summation of 1 when :math:`t_0 \leq t < t_N` as :math:`\sum_{i=0}^{N+k-1}N_{i,k}(t) = 1`. :math:`N_{i,k}(t)` is the normalized B-spline Type II in this implementation. The N-splines share the same knot sequence with the original M-spline and B-spline. This is the recursive formula where higher order N-splines can be derived from two lower order N-splines using:
+The N-splines are normalized to have a summation of 1 when :math:`t_0 \leq t < t_N` as :math:`\sum_{i=0}^{N+k-1}N_{i,k}(t) = 1`. :math:`N_{i,k}(t)` is the normalized B-spline Type II in this implementation. The N-splines share the same knot sequence with the original M-spline and B-spline. The N-spline cane be derived from the M-spline or the B-spline using:
+
+.. math::
+   
+   N_{i,k}(t) = {\frac{(t_{i+k}-t_i)}{k}}M_{i,k}(t) = (t_{i+k}-t_i)Q_{i,k}(t)
+
+Or, you can use the recursive formula where higher order N-splines can be derived from two lower order N-splines:
 
 .. math::
    
@@ -442,7 +483,7 @@ I-splines are used to build the monotone spline functions by restricting the gam
 
 **Penalty Matrix for I-splines**
 
-The objective function used to derive the coefficients for is regression is:
+The objective function used to derive the coefficients for regression is:
 
 .. math::
    
@@ -468,23 +509,6 @@ Element at row :math:`m` and column :math:`n` of :math:`penaltyMat` is
 .. math::
    
    penaltyMat_{m,n} = \int_{t_0}^{t_N}{\frac{d^2(I_{m,k}(t))}{d^2t}}{\frac{d^2(I_{n,k}(t))}{d^2t}}dt
-
-**Coefficient Constraints and Identifiability**
-
-Consider a GAM with multiple predictor smooth functions such as:
-
-.. math::
-   
-   y_i = \alpha+f_1(x_i)+f_2(v_i)+\epsilon_i
-
-The multiple functions introduce an identifiability problem: :math:`f_1` and :math:`f_2` are each only estimable within an addative constant. This is because:
-
-.. math::
-   
-   f_1(x_i)+f_2(v_i) = f_1(x_i)+C+f_2(v_i)-C
-
-This problem is avoided using a transformation, but with monotone splines, the coefficients on the I-splines need to be resticted to non-negative values before applying any transformation.
-
 
 .. _scenario6:
 
