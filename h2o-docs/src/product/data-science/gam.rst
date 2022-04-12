@@ -690,17 +690,17 @@ GAM using Monotone Splines
    .. code-tab:: r R
 
       # Import the GLM test data:
-      glm_test = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+      gam_test = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
 
       # Split into train and validation sets:
-      splits <- h2o.splitFrame(data = glm_test, ratios = 0.8)
+      splits <- h2o.splitFrame(data = gam_test, ratios = 0.8)
       train <- splits[[1]]
       test <- splits[[2]]
 
       # Set the factors, predictors, and response:
-      glm_test["C1"] <- as.factor(glm_test["C1"])
-      glm_test["C2"] <- as.factor(glm_test["C2"])
-      glm_test["C21"] <- as.factor(glm_test["C21"])
+      gam_test["C1"] <- as.factor(gam_test["C1"])
+      gam_test["C2"] <- as.factor(gam_test["C2"])
+      gam_test["C21"] <- as.factor(gam_test["C21"])
       predictors <- c("C1","C2")
       response <- "C21"
 
@@ -710,7 +710,7 @@ GAM using Monotone Splines
                                 family = 'binomial', 
                                 gam_columns = c("C11", "C12", "C13"), 
                                 scale = c(0.001, 0.001, 0.001), 
-                                bs = c(2, 2, 2), 
+                                bs = c(0, 2, 2), 
                                 num_knots = c(3, 4, 5),
                                 spline_orders = c(2, 3, 4))
 
@@ -721,15 +721,15 @@ GAM using Monotone Splines
    .. code-tab:: python
 
       # Import the GLM test data:
-      glm_test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+      gam_test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
 
       # Split into train and validation sets:
-      train, test = glm_test.split_frame(ratios = [.8])
+      train, test = gam_test.split_frame(ratios = [.8])
 
       # Set the factors, predictors, and response:
-      glm_test["C1"] = glm_test["C1"].asfactor()
-      glm_test["C2"] = glm_test["C2"].asfactor()
-      glm_test["C21"] = glm_test["C21"].asfactor()
+      gam_test["C1"] = gam_test["C1"].asfactor()
+      gam_test["C2"] = gam_test["C2"].asfactor()
+      gam_test["C21"] = gam_test["C21"].asfactor()
       predictors = ["C1","C2"]
       response = "C21"
 
@@ -737,7 +737,7 @@ GAM using Monotone Splines
       monotone_model = H2OGeneralizedAdditiveEstimator(family="binomial", 
                                                        gam_columns=["C11", "C12", "C13"], 
                                                        scale=[0.001, 0.001, 0.001], 
-                                                       bs=[2,2,2], 
+                                                       bs=[0,2,2], 
                                                        spline_orders=[2,3,4], 
                                                        num_knots=[3,4,5])
       monotone_model.train(x=predictors, y=response, training_frame=train)
