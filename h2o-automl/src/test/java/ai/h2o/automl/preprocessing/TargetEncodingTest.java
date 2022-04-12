@@ -3,9 +3,9 @@ package ai.h2o.automl.preprocessing;
 import ai.h2o.automl.*;
 import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.preprocessing.PreprocessingStepDefinition.Type;
+import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
-import ai.h2o.targetencoding.TargetEncoderTransformer;
 import hex.Model;
 import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
@@ -75,9 +75,7 @@ public class TargetEncodingTest {
             Scope.enter();
             te.prepare();
             assertNotNull(te.getTEModel());
-            assertNotNull(te.getTEPreprocessor());
             Scope.track_generic(te.getTEModel());
-            Scope.track_generic(te.getTEPreprocessor());
             
             TargetEncoderParameters teParams = te.getTEModel()._parms;
             assertNull(teParams._fold_column);
@@ -97,14 +95,11 @@ public class TargetEncodingTest {
         TargetEncoding te = new TargetEncoding(aml);
         te.setEncodeAllColumns(true);
         assertNull(te.getTEModel());
-        assertNull(te.getTEPreprocessor());
         try {
             Scope.enter();
             te.prepare();
             assertNotNull(te.getTEModel());
-            assertNotNull(te.getTEPreprocessor());
             Scope.track_generic(te.getTEModel());
-            Scope.track_generic(te.getTEPreprocessor());
             assertNull(te.getTEModel()._parms._fold_column);
             assertEquals(DataLeakageHandlingStrategy.None, te.getTEModel()._parms._data_leakage_handling);
 
@@ -134,9 +129,7 @@ public class TargetEncodingTest {
             Scope.enter();
             te.prepare();
             assertNotNull(te.getTEModel());
-            assertNotNull(te.getTEPreprocessor());
             Scope.track_generic(te.getTEModel());
-            Scope.track_generic(te.getTEPreprocessor());
             assertNotNull(te.getTEModel()._parms._fold_column);
             assertTrue(te.getTEModel()._parms._fold_column.endsWith(TargetEncoding.TE_FOLD_COLUMN_SUFFIX));
             assertEquals(DataLeakageHandlingStrategy.KFold, te.getTEModel()._parms._data_leakage_handling);
@@ -171,9 +164,7 @@ public class TargetEncodingTest {
             Scope.enter();
             te.prepare();
             assertNotNull(te.getTEModel());
-            assertNotNull(te.getTEPreprocessor());
             Scope.track_generic(te.getTEModel());
-            Scope.track_generic(te.getTEPreprocessor());
             assertNotNull(te.getTEModel()._parms._fold_column);
             assertEquals("foldc", te.getTEModel()._parms._fold_column);
             assertEquals(DataLeakageHandlingStrategy.KFold, te.getTEModel()._parms._data_leakage_handling);
@@ -236,7 +227,7 @@ public class TargetEncodingTest {
                 } else {
                     assertNotNull(m._parms._dataTransformers);
                     assertEquals(1, m._parms._dataTransformers.length);
-                    assertTrue(m._parms._dataTransformers[0].get() instanceof TargetEncoderTransformer);
+                    assertTrue(m._parms._dataTransformers[0].get() instanceof TargetEncoderModel);
                     assertFalse(m.haveMojo());
                     assertFalse(m.havePojo());
                 }

@@ -2,7 +2,7 @@ package water.api.schemas3;
 
 import hex.AUUC;
 import hex.encoding.CategoricalEncoding;
-import hex.Model.Parameters.FoldAssignmentScheme;
+import hex.CVSupport.FoldAssignmentScheme;
 import hex.MultinomialAucType;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;

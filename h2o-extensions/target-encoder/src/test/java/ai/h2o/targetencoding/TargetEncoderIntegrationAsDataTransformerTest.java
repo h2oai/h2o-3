@@ -41,7 +41,7 @@ import static water.TestUtil.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class TargetEncoderTransformerTest {
+public class TargetEncoderIntegrationAsDataTransformerTest {
     
     private static String[] TO_ENCODE = {"cat1", "cat2"};
     private static String[] ENCODED = {
@@ -67,10 +67,8 @@ public class TargetEncoderTransformerTest {
             
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
             
-            Model model = buildModel(train, null, teTrans, Scheme.AUTO);
+            Model model = buildModel(train, null, teModel, Scheme.AUTO);
             Scope.track_generic(model);
             
             int expectedCVModels = 3;  //3 folds -> 3 cv models
@@ -96,10 +94,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, valid, teTrans, CategoricalEncoding.Scheme.AUTO);
+            Model model = buildModel(train, valid, teModel, CategoricalEncoding.Scheme.AUTO);
             Scope.track_generic(model);
 
             for (String col: ENCODED) assertTrue(ArrayUtils.contains(model._output._names, col));
@@ -120,10 +116,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.AUTO);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.AUTO);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -154,10 +148,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, true, false);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, valid, teTrans, CategoricalEncoding.Scheme.AUTO);
+            Model model = buildModel(train, valid, teModel, CategoricalEncoding.Scheme.AUTO);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -194,10 +186,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.Enum);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -233,10 +223,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.OneHotExplicit);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -272,10 +260,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, true);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.Enum);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -311,10 +297,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.KFold, false, true);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.OneHotExplicit);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -350,10 +334,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.Enum);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -389,10 +371,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, false);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.OneHotExplicit);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -428,10 +408,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, true);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.Enum);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.Enum);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -467,10 +445,8 @@ public class TargetEncoderTransformerTest {
 
             TargetEncoderModel teModel = trainTE(train, DataLeakageHandlingStrategy.None, false, true);
             Scope.track_generic(teModel);
-            TargetEncoderTransformer teTrans = new TargetEncoderTransformer(teModel);
-            Scope.track_generic(teTrans);
 
-            Model model = buildModel(train, null, teTrans, CategoricalEncoding.Scheme.OneHotExplicit);
+            Model model = buildModel(train, null, teModel, CategoricalEncoding.Scheme.OneHotExplicit);
             Scope.track_generic(model);
 
             File mojoFile = folder.newFile(model._key+".zip");
@@ -564,7 +540,7 @@ public class TargetEncoderTransformerTest {
         return te.trainModel().get();
     }
 
-    private Model buildModel(Frame train, Frame valid, TargetEncoderTransformer preprocessor, CategoricalEncoding.Scheme categoricalEncoding) {
+    private Model buildModel(Frame train, Frame valid, TargetEncoderModel preprocessor, CategoricalEncoding.Scheme categoricalEncoding) {
         GBMModel.GBMParameters params = new GBMModel.GBMParameters();
         params._seed = 987;
         params._train = train._key;

@@ -1,30 +1,25 @@
 package hex;
 
-import water.Key;
-import water.Keyed;
 import water.fvec.Frame;
 
-/**
- * Abstraction 
- * @param <T>
- */
-public abstract class DataTransformer<T extends DataTransformer> extends Keyed<T> {
-
-  public enum Stage {
+public interface DataTransformer {
+  
+  enum Stage {
     Training,
     Validation,
     Scoring
   }
-  
-  public DataTransformer() {
-    super();
-  }
 
-  public DataTransformer(Key<T> key) {
-    super(key);
-  }
-
-  public abstract Frame transform(Frame fr, Model.Parameters params, Stage stage);
+  /**
+   * Applies a transformation on the given frame
+   * @param fr
+   * @param stage
+   * @param params
+   * @return
+   */
+  Frame transform(Frame fr, Stage stage, DataTransformSupport params);
   
-  public abstract Model asModel();
+  default Frame transform(Frame fr) {
+    return transform(fr, Stage.Scoring, null);
+  }
 }

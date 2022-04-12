@@ -610,7 +610,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void computeCrossValidation() {
     assert _job.isRunning();    // main Job is still running
     _job.setReadyForView(false); //wait until the main job starts to let the user inspect the main job
-    final int N = nFoldWork();
+    final int N = _parms._cv_total_folds = nFoldWork();
     init(false);
     ModelBuilder<M, P, O>[] cvModelBuilders = null;
     try {
@@ -780,11 +780,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
       cv_mb._parms._is_cv_model = true;
-      cv_mb._parms._cv_fold = i;
+      cv_mb._parms._cv_holdout_fold = i;
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
       cv_mb._parms.setTrain(cvTrain._key);       // All submodels have a weight column, which the main model does not
       cv_mb._parms._valid = cvValid._key;
-      cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+      cv_mb._parms._fold_assignment = CVSupport.FoldAssignmentScheme.AUTO;
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
       cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
       cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
@@ -1431,7 +1431,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       } else {
         hide("_nfolds", "nfolds is ignored when a fold column is specified.");
       }
-      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null && _parms != null) {
+      if (_parms._fold_assignment != CVSupport.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null && _parms != null) {
         error("_fold_assignment", "Fold assignment is not allowed in conjunction with a fold column.");
       }
     }
@@ -1444,7 +1444,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_keep_cross_validation_fold_assignment", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
-      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null) {
+      if (_parms._fold_assignment != CVSupport.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null) {
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
     }
@@ -1603,8 +1603,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if (expensive) {
       boolean scopeTrack = !_parms._is_cv_model;
-      Frame newtrain = applyTransformers(_train, true, scopeTrack);
-      newtrain = encodeFrameCategoricals(newtrain, scopeTrack); //we could turn this into a data transformer later
+      Frame newtrain = applyTransformers(_train, DataTransformer.Stage.Training, scopeTrack);
+      newtrain = encodeFrameCategoricals(newtrain, DataTransformer.Stage.Training, scopeTrack); //we could turn this into a data transformer later
       if (newtrain != _train) {
         _origTrain = _train;
         _origNames = _train.names();
@@ -1615,8 +1615,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _origTrain = null;
       }
       if (_valid != null) {
-        Frame newvalid = applyTransformers(_valid, false, scopeTrack);
-        newvalid = encodeFrameCategoricals(newvalid, scopeTrack /* for CV, need to score one more time in outer loop */);
+        Frame newvalid = applyTransformers(_valid, DataTransformer.Stage.Validation, scopeTrack);
+        newvalid = encodeFrameCategoricals(newvalid, DataTransformer.Stage.Validation, scopeTrack /* for CV, need to score one more time in outer loop */);
 //        newvalid = adaptFrameToTrain(newvalid, "Validation Frame", "_validation_frame", expensive, true);
         setValid(newvalid);
       }
@@ -1719,7 +1719,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
     Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive, false);
     if (expensive)
-      adapted = encodeFrameCategoricals(adapted, true);
+      adapted = encodeFrameCategoricals(adapted, DataTransformer.Stage.Scoring, true);
     return adapted;
   }
 
@@ -1755,17 +1755,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return adapted;
   }
 
-  private Frame applyTransformers(Frame fr, boolean isTraining, boolean scopeTrack) {
+  private Frame applyTransformers(Frame fr, DataTransformer.Stage stage, boolean scopeTrack) {
     if (_parms._dataTransformers == null) return fr;
 
-    for (Key<DataTransformer> key : _parms._dataTransformers) {
+    for (Key<DataTransformerModel> key : _parms._dataTransformers) {
       DKV.prefetch(key);
     }
     Frame result = fr;
     Frame encoded;
-    for (Key<DataTransformer> key : _parms._dataTransformers) {
-      DataTransformer dt = key.get();
-      encoded = dt.transform(result, _parms, isTraining ? DataTransformer.Stage.Training : DataTransformer.Stage.Validation);
+    for (Key<DataTransformerModel> key : _parms._dataTransformers) {
+      DataTransformerModel dt = key.get();
+      encoded = dt.transform(result, stage, _parms);
       if (encoded != result) trackEncoded(encoded, scopeTrack);
       result = encoded;
     }
@@ -1773,10 +1773,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return result;
   }
   
-  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
+  private Frame encodeFrameCategoricals(Frame fr, DataTransformer.Stage stage, boolean scopeTrack) {
     Frame encoded = CategoricalEncoding
             .getEncoder(_parms._categorical_encoding, _parms)
-            .encode(fr, _parms.getNonPredictors());
+            .encode(fr, _parms.getNonPredictors(), stage, _parms);
     if (encoded != fr) trackEncoded(encoded, scopeTrack);
     return encoded;
   }

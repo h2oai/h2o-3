@@ -311,7 +311,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
-  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters {
+  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, DataTransformSupport {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
 
@@ -354,11 +354,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       this._train = train;
     }
 
-    public enum FoldAssignmentScheme {
-      AUTO, Random, Modulo, Stratified
-    }
-
-    public Key<DataTransformer>[] _dataTransformers;
+    public Key<DataTransformerModel>[] _dataTransformers;
     
     public long _seed = -1;
     public long getOrMakeRealSeed(){
@@ -391,7 +387,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _check_constant_response = true;
 
     public boolean _is_cv_model; //internal helper
-    public int _cv_fold = -1; //internal use
+    public int _cv_total_folds = -1; //internal use
+    public int _cv_holdout_fold = -1; //internal use
 
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
@@ -509,6 +506,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
 
+    @Override
     public String[] getNonPredictors() {
         return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column, _treatment_column})
                 .filter(Objects::nonNull)
@@ -517,9 +515,39 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     
     public ToEigenVec getToEigenVec() { return null; }
     
-    public CategoricalEncoder _categoricalEncoder; // not always available, used only to store specific stateful encoders (e.g. TargetEncoder)
+    public Key<? extends CategoricalEncoder> _categoricalEncoderKey; // not always available, used only to store specific stateful encoders (e.g. TargetEncoder)
     public CategoricalEncoder getCategoricalEncoder() {
-      return _categoricalEncoder;
+      return _categoricalEncoderKey == null ? null : _categoricalEncoderKey.get();
+    }
+
+    @Override
+    public boolean isCVModel() {
+      return _is_cv_model;
+    }
+    
+    @Override
+    public int getNFolds() {
+      return _nfolds;
+    }
+    
+    @Override
+    public String getFoldColumnName() {
+      return _fold_column;
+    }
+
+    @Override
+    public FoldAssignmentScheme getFoldAssignment() {
+      return _fold_assignment;
+    }
+
+    @Override
+    public int getHoldoutFold() {
+      return _cv_holdout_fold;
+    }
+
+    @Override
+    public int getTotalFolds() {
+      return _cv_total_folds;
     }
 
     /** Read-Lock both training and validation User frames. */
@@ -1926,13 +1954,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   private void applyTransformers(Frame fr, List<Frame> tmpFrames) {
     if (_parms._dataTransformers == null) return;
     
-    for (Key<DataTransformer> key : _parms._dataTransformers) {
+    for (Key<DataTransformerModel> key : _parms._dataTransformers) {
       DKV.prefetch(key);
     }
     Frame result = fr;
-    for (Key<DataTransformer> key : _parms._dataTransformers) {
-      DataTransformer transformer = key.get();
-      result = transformer.transform(result, this._parms, DataTransformer.Stage.Scoring);
+    for (Key<DataTransformerModel> key : _parms._dataTransformers) {
+      DataTransformerModel transformer = key.get();
+      result = transformer.transform(result, DataTransformer.Stage.Scoring, this._parms);
       tmpFrames.add(result);
     }
     fr.restructure(result.names(), result.vecs()); //inplace

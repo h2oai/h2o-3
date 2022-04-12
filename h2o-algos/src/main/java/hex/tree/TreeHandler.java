@@ -6,6 +6,7 @@ import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.schemas.TreeV3;
+import water.IKeyed;
 import water.Keyed;
 import water.MemoryManager;
 import water.api.Handler;
@@ -28,7 +29,7 @@ public class TreeHandler extends Handler {
             throw new IllegalArgumentException("Invalid tree number: " + args.tree_number + ". Tree number must be >= 0.");
         }
 
-        final Keyed possibleModel = args.model.key().get();
+        final IKeyed possibleModel = args.model.key().get();
         if (possibleModel == null) throw new IllegalArgumentException("Given model does not exist: " + args.model.key().toString());
 
         else if (!(possibleModel instanceof SharedTreeModel) && !(possibleModel instanceof SharedTreeGraphConverter)) {

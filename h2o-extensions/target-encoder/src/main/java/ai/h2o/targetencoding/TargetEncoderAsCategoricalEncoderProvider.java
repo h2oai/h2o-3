@@ -2,19 +2,22 @@ package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
+import hex.DataTransformSupport;
 import hex.Model;
+import water.DKV;
+import water.IKeyed;
 import water.Key;
+import water.Keyed;
 import water.fvec.Frame;
 import hex.encoding.CategoricalEncoder;
 import hex.encoding.CategoricalEncoderProvider;
 import hex.encoding.CategoricalEncoding;
 import hex.encoding.CategoricalEncodingSupport;
-import water.fvec.Vec;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class TargetEncoderCategoricalEncoderProvider implements CategoricalEncoderProvider {
+public class TargetEncoderAsCategoricalEncoderProvider implements CategoricalEncoderProvider {
   @Override
   public String getScheme() {
     return CategoricalEncoding.Scheme.TargetEncoding.name();
@@ -27,17 +30,18 @@ public class TargetEncoderCategoricalEncoderProvider implements CategoricalEncod
     
     assert params instanceof Model.Parameters: "TargetEncoder can be instantiated as a CategoricalEncoder only at model initialization with a complete Model.Parameters instance";
     Model.Parameters modelParams = (Model.Parameters)params;
-    encoder = new TargetEncoderAsCategoricalEncoder(modelParams);
+    TargetEncoderAsCategoricalEncoder teEncoder = new TargetEncoderAsCategoricalEncoder(modelParams);
     // store the instance in params as we don't want to have to retrain TE each time we need to encode a frame.
-    modelParams._categoricalEncoder = encoder;
-    return encoder;
+    modelParams._categoricalEncoderKey = teEncoder.getKey();
+    return teEncoder;
   }
   
-  static class TargetEncoderAsCategoricalEncoder implements CategoricalEncoder {
+  static class TargetEncoderAsCategoricalEncoder extends Keyed<TargetEncoderAsCategoricalEncoder> implements CategoricalEncoder{
     
     private Key<TargetEncoderModel> _teKey;
 
     public TargetEncoderAsCategoricalEncoder(Model.Parameters params) {
+      super(Key.make());
       TargetEncoderParameters teParams = new TargetEncoderParameters();
       teParams._train = params._train;
       teParams._response_column = params._response_column;
@@ -69,29 +73,26 @@ public class TargetEncoderCategoricalEncoderProvider implements CategoricalEncod
               .toArray(String[][]::new);
       
       TargetEncoder te = new TargetEncoder(teParams);
-      _teKey = te.trainModel().get()._key;
+      TargetEncoderModel teModel = te.trainModel().get();
+      DKV.put(teModel);
+      _teKey = teModel.getKey();
+      DKV.put(this);
     }
 
     @Override
-    public Frame encode(Frame fr, String[] skipCols) {
+    public Frame encode(Frame fr, String[] skippedCols, Stage stage, DataTransformSupport params) {
       TargetEncoderModel teModel = getTargetEncoderModel();
       assert teModel != null;
-      Set<String> encodedByDefault = Arrays.stream(teModel._output._parms._columns_to_encode)
-              .flatMap(Arrays::stream)
-              .collect(Collectors.toSet());
-      String[] toSkip = Arrays.stream(skipCols)
-              .filter(encodedByDefault::contains)
-              .toArray(String[]::new);
-      Map<String, Vec> removed = new LinkedHashMap<>();
-      Frame toTransform = new Frame(fr);
-      for (String col : toSkip) {
-        Vec rem = toTransform.remove(col);
-        if (rem != null) removed.put(col, rem);
+      if (skippedCols != null && skippedCols.length > 0) {
+        // technically we could remove the skippedCols and restore them on the transformed frame
+        // but in all internal use-cases, skippedCols are non-predictor columns,
+        // and they shouldn't have been included during the training of the TE model.
+        Set<String> toEncode = Arrays.stream(teModel._output._parms._columns_to_encode)
+                .flatMap(Arrays::stream)
+                .collect(Collectors.toSet());
+        assert Arrays.stream(skippedCols).noneMatch(toEncode::contains);
       }
-      Frame encoded = teModel.transform(toTransform);
-      encoded.add(removed.keySet().toArray(new String[0]), 
-                  removed.values().toArray(new Vec[0]));
-      return encoded;
+      return teModel.transform(fr, stage, params);
     }
     
     private TargetEncoderModel getTargetEncoderModel() {

@@ -1,7 +1,6 @@
 package hex.gam;
 
-import hex.Model;
-import hex.ModelMetrics;
+import hex.CVSupport;
 import hex.SplitFrame;
 import hex.glm.GLMModel;
 import org.junit.Test;
@@ -83,7 +82,7 @@ public class GamMetricsTest extends TestUtil {
             params._gam_columns = new String[][]{{"petal_wid"}};
             params._train = train._key;
             params._solver = GLMModel.GLMParameters.Solver.IRLSM;
-            params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Random;
+            params._fold_assignment = CVSupport.FoldAssignmentScheme.Random;
             params._nfolds = 3;
             GAMModel gam = new GAM(params).trainModel().get();
             Scope.track_generic(gam);

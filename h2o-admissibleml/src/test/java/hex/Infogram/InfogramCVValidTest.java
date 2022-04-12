@@ -4,9 +4,7 @@ import hex.SplitFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
@@ -17,7 +15,7 @@ import java.util.Arrays;
 
 import static hex.Infogram.InfogramUtils.strVec2array;
 import static hex.Infogram.InfogramUtils.vec2array;
-import static hex.Model.Parameters.FoldAssignmentScheme.Modulo;
+import static hex.CVSupport.FoldAssignmentScheme.Modulo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 import static water.util.ArrayUtils.sum;

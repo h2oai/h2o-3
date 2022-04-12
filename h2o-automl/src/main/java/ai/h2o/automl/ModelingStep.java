@@ -12,8 +12,8 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
+import hex.CVSupport;
 import hex.Model;
-import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
@@ -382,7 +382,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             params._nfolds = buildSpec.build_control.nfolds;
             if (buildSpec.build_control.nfolds > 1) {
                 // TODO: below allow the user to specify this (vs Modulo)
-                params._fold_assignment = FoldAssignmentScheme.Modulo;
+                params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             }
         }
     }

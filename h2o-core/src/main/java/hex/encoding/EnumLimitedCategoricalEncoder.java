@@ -25,8 +25,8 @@ public class EnumLimitedCategoricalEncoder extends BaseCategoricalEncoder {
   }
 
   @Override
-  H2O.H2OCountedCompleter newDriver(Frame fr, Key<Frame> destKey, String[] skipCols) {
-    return new CategoricalEnumLimitedDriver(fr, destKey, skipCols);
+  H2O.H2OCountedCompleter newDriver(Frame fr, Key<Frame> destKey, String[] skippedCols) {
+    return new CategoricalEnumLimitedDriver(fr, destKey, skippedCols);
   }
 
   /**

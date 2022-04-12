@@ -93,6 +93,9 @@ public final class CategoricalEncoding {
             new DefaultCategoricalEncoderProvider(Scheme.Eigen, EigenCategoricalEncoder.class, true),
             new DefaultCategoricalEncoderProvider(Scheme.LabelEncoder, LabelCategoricalEncoder.class, false),
     };
+    for (CategoricalEncoderProvider provider : defaultProviders) {
+      providersByName.put(provider.getScheme(), provider);
+    }
 
     // add dynamically loaded encoders
     ServiceLoader<CategoricalEncoderProvider> categoricalEncoderProviders = ServiceLoader.load(CategoricalEncoderProvider.class);

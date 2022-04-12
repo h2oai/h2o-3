@@ -1,6 +1,6 @@
 package hex.gam;
 
-import hex.Model;
+import hex.CVSupport;
 import hex.SplitFrame;
 import hex.glm.GLMModel;
 import org.junit.Ignore;
@@ -64,7 +64,7 @@ public class GamCVTest extends TestUtil {
       params._gam_columns = new String[][]{{"C11"}};
       params._train = train._key;
       params._solver = GLMModel.GLMParameters.Solver.IRLSM;
-      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Random;
+      params._fold_assignment = CVSupport.FoldAssignmentScheme.Random;
       params._keep_cross_validation_fold_assignment = true;
       params._keep_cross_validation_models = true;
       params._keep_cross_validation_predictions = true;
@@ -243,7 +243,7 @@ public class GamCVTest extends TestUtil {
       params._gam_columns = new String[][]{{"petal_wid"}};
       params._train = train._key;
       params._solver = GLMModel.GLMParameters.Solver.IRLSM;
-      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Random;
+      params._fold_assignment = CVSupport.FoldAssignmentScheme.Random;
       params._nfolds = 3;
       params._keep_cross_validation_fold_assignment = true;
       params._keep_cross_validation_models = true;
@@ -298,7 +298,7 @@ public class GamCVTest extends TestUtil {
       params._gam_columns = new String[][]{{"petal_wid"}};
       params._train = train._key;
       params._solver = GLMModel.GLMParameters.Solver.IRLSM;
-      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Random;
+      params._fold_assignment = CVSupport.FoldAssignmentScheme.Random;
       params._nfolds = 3;
       params._keep_cross_validation_fold_assignment = true;
       params._keep_cross_validation_models = true;

@@ -1,1 +1,1 @@
-ai.h2o.targetencoding.TargetEncoderCategoricalEncoderProvider
+ai.h2o.targetencoding.TargetEncoderAsCategoricalEncoderProvider

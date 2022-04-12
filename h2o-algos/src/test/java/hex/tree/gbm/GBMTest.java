@@ -1618,7 +1618,7 @@ public class GBMTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._nfolds = (int) tfr.numRows();
-      parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      parms._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
       parms._ntrees = 3;
       parms._seed = 12345;
       parms._learn_rate = 1e-3f;

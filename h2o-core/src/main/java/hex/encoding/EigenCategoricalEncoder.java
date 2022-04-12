@@ -24,8 +24,8 @@ public class EigenCategoricalEncoder extends BaseCategoricalEncoder {
   }
 
   @Override
-  H2O.H2OCountedCompleter newDriver(Frame fr, Key<Frame> destKey, String[] skipCols) {
-    return new CategoricalEigenEncoderDriver(fr, destKey, skipCols);
+  H2O.H2OCountedCompleter newDriver(Frame fr, Key<Frame> destKey, String[] skippedCols) {
+    return new CategoricalEigenEncoderDriver(fr, destKey, skippedCols);
   }
 
   /**

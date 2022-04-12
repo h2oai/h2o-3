@@ -186,18 +186,18 @@ public class Recovery<T extends Keyed> {
     }
 
     private void persistObj(
-        final Keyed<?> o,
+        final IKeyed<?> o,
         Map<String, String> referenceKeyTypeMap
     ) {
         if (o instanceof Frame) {
-            referenceKeyTypeMap.put(o._key.toString(), ReferenceType.FRAME.toString());
+            referenceKeyTypeMap.put(o.getKey().toString(), ReferenceType.FRAME.toString());
             String[] writtenFrameFiles = new FramePersist((Frame) o).saveToAndWait(storagePath, true);
             writtenFiles.addAll(Arrays.asList(writtenFrameFiles));
         } else if (o != null) {
-            referenceKeyTypeMap.put(o._key.toString(), ReferenceType.KEYED.toString());
-            String destFile = storagePath + "/" + o._key;
+            referenceKeyTypeMap.put(o.getKey().toString(), ReferenceType.KEYED.toString());
+            String destFile = storagePath + "/" + o.getKey();
             URI dest = FileUtils.getURI(destFile);
-            PersistUtils.write(dest, ab -> ab.putKey(o._key));
+            PersistUtils.write(dest, ab -> ab.putKey(o.getKey()));
             writtenFiles.add(destFile);
         }
     }

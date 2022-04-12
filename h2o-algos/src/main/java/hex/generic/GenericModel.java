@@ -292,7 +292,31 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             }
             @Override
             public ToEigenVec getToEigenVec() {
+                return null;
+            }
+            @Override
+            public boolean isCVModel() {
+              return false;
+            }
+            @Override
+            public int getNFolds() {
+              return 0;
+            }
+            @Override
+            public FoldAssignmentScheme getFoldAssignment() {
+              return FoldAssignmentScheme.AUTO;
+            }
+            @Override
+            public String getFoldColumnName() {
               return null;
+            }
+            @Override
+            public int getHoldoutFold() {
+              return -1;
+            }
+            @Override
+            public int getTotalFolds() {
+              return 0;
             }
         };
     }

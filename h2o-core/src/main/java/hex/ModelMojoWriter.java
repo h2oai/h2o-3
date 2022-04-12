@@ -103,9 +103,9 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   protected void writeDataTransformers() throws IOException {
     if (model._parms._dataTransformers == null) return;
     for (int i = 0; i < model._parms._dataTransformers.length; i++) {
-      Key<DataTransformer> key = model._parms._dataTransformers[i];
-      DataTransformer mp = key.get();
-      writemodel("transformers/transformer_"+i+"/", mp.asModel().getMojo());
+      Key<DataTransformerModel> key = model._parms._dataTransformers[i];
+      DataTransformerModel mp = key.get();
+      writemodel("transformers/transformer_"+i+"/", mp.getModel().getMojo());
     }
   }
 

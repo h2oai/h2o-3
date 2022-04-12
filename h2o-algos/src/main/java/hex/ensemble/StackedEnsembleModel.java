@@ -22,8 +22,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
-import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
-import static hex.Model.Parameters.FoldAssignmentScheme.Random;
+import static hex.CVSupport.FoldAssignmentScheme.AUTO;
+import static hex.CVSupport.FoldAssignmentScheme.Random;
 import static hex.util.DistributionUtils.familyToDistribution;
 
 /**

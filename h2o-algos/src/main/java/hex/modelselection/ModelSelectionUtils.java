@@ -13,8 +13,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static hex.genmodel.utils.MathUtils.combinatorial;
-
 public class ModelSelectionUtils {
     public static Frame[] generateTrainingFrames(ModelSelectionModel.ModelSelectionParameters parms, int predNum, String[] predNames,
                                                  int numModels, String foldColumn) {

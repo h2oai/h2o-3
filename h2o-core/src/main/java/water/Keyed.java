@@ -5,12 +5,13 @@ import water.fvec.*;
 import water.util.Log;
 
 /** Iced, with a Key.  Support for DKV removal. */
-public abstract class Keyed<T extends Keyed> extends Iced<T> {
+public abstract class Keyed<T extends Keyed> extends Iced<T> implements IKeyed<T> {
   /** Key mapping a Value which holds this object; may be null  */
   public Key<T> _key;
   public Keyed() { _key = null; } // NOTE: every Keyed that can come out of the REST API has to have a no-arg constructor.
   public Keyed( Key<T> key ) { _key = key; }
 
+  @Override
   public Key<T> getKey() {
     return _key;
   }

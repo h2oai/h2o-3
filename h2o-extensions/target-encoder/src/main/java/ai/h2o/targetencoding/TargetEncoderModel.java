@@ -1,8 +1,6 @@
 package ai.h2o.targetencoding;
 
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
@@ -18,9 +16,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static ai.h2o.targetencoding.TargetEncoderHelper.*;
+import static ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy.KFold;
 import static ai.h2o.targetencoding.interaction.InteractionSupport.addFeatureInteraction;
 
-public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> {
+public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.TargetEncoderOutput> 
+        implements DataTransformerModel<TargetEncoderModel> {
 
   public static final String ALGO_NAME = "TargetEncoder";
   public static final int NO_FOLD = -1;
@@ -194,11 +194,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     return transformTraining(fr, NO_FOLD);
   }
   
-  public Frame transformTraining(Frame fr, int outOfFold) {
-    assert outOfFold == NO_FOLD || _parms._data_leakage_handling == DataLeakageHandlingStrategy.KFold;
-    return transform(fr, true, outOfFold, _parms.getBlendingParameters(), _parms._noise);
+  public Frame transformTraining(Frame fr, int holdoutFold) {
+    assert holdoutFold == NO_FOLD || _parms._data_leakage_handling == DataLeakageHandlingStrategy.KFold;
+    return transform(fr, true, holdoutFold, _parms.getBlendingParameters(), _parms._noise);
   }
   
+  @Override
   public Frame transform(Frame fr) {
     return transform(fr, _parms.getBlendingParameters(), _parms._noise);
   }
@@ -216,7 +217,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * 
    * @param fr Data to transform
    * @param asTraining true iff transforming training data.
-   * @param outOfFold if provided (if not = {@value NO_FOLD}), if asTraining=true, and if the model was trained with Kfold strategy,
+   * @param holdoutFold if provided (if not = {@value NO_FOLD}), if asTraining=true, and if the model was trained with Kfold strategy,
    *                    then the frame will be encoded by aggregating encodings from all folds except this one.
    *                    This is mainly used during cross-validation.
    * @param blendingParams Parameters for blending. If null, blending parameters from models parameters are loaded. 
@@ -224,7 +225,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @param noiseLevel Level of noise applied (use -1 for default noise level, 0 to disable noise).
    * @return An instance of {@link Frame} with transformed fr, registered in DKV.
    */
-  public Frame transform(Frame fr, boolean asTraining, int outOfFold, BlendingParams blendingParams, double noiseLevel) {
+  public Frame transform(Frame fr, boolean asTraining, int holdoutFold, BlendingParams blendingParams, double noiseLevel) {
     if (!canApplyTargetEncoding(fr)) return fr;
     Frame adaptFr = null;
     try {
@@ -232,7 +233,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       return applyTargetEncoding(
               adaptFr,
               asTraining,
-              outOfFold, 
+              holdoutFold, 
               blendingParams,
               noiseLevel,
               null
@@ -312,6 +313,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    *
    * @param data dataset that will be used as a base for creation of encodings .
    * @param asTraining is true, the original dataLeakageStrategy is applied, otherwise this is forced to {@link DataLeakageHandlingStrategy#None}.
+   * @param holdoutFold 
    * @param blendingParams this provides parameters allowing to mitigate the effect 
    *                       caused by small observations of some categories when computing their encoded value.
    *                       Use null to disable blending.
@@ -323,7 +325,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    */
   Frame applyTargetEncoding(Frame data,
                             boolean asTraining,
-                            int outOfFold, 
+                            int holdoutFold, 
                             BlendingParams blendingParams,
                             double noise,
                             Key<Frame> resultKey) {
@@ -332,7 +334,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     final DataLeakageHandlingStrategy dataLeakageHandlingStrategy = asTraining ? _parms._data_leakage_handling : DataLeakageHandlingStrategy.None;
     final long seed = _parms._seed;
 
-    assert outOfFold == NO_FOLD || dataLeakageHandlingStrategy == DataLeakageHandlingStrategy.KFold;
+    assert holdoutFold == NO_FOLD || dataLeakageHandlingStrategy == DataLeakageHandlingStrategy.KFold : "holdoutFold is supported only with KFold strategy";
     
     // early check on frame requirements
     switch (dataLeakageHandlingStrategy) {
@@ -362,7 +364,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     EncodingStrategy strategy;
     switch (dataLeakageHandlingStrategy) {
       case KFold:
-        strategy = new KFoldEncodingStrategy(foldColumn, outOfFold, blendingParams, noise, seed);
+        strategy = new KFoldEncodingStrategy(foldColumn, holdoutFold, blendingParams, noise, seed);
         break;
       case LeaveOneOut:
         strategy = new LeaveOneOutEncodingStrategy(targetColumn, blendingParams, noise, seed);
@@ -623,13 +625,13 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   private static class KFoldEncodingStrategy extends EncodingStrategy {
 
     String _foldColumn;
-    int _outOfFold;
+    int _holdoutFold;
     
-    public KFoldEncodingStrategy(String foldColumn, int outOfFold,
+    public KFoldEncodingStrategy(String foldColumn, int holdoutFold,
                                  BlendingParams blendingParams, double noise, long seed) {
       super(blendingParams, noise, seed);
       _foldColumn = foldColumn;
-      _outOfFold = outOfFold;
+      _holdoutFold = holdoutFold;
     }
 
     @Override
@@ -637,11 +639,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       Frame workingFrame = fr;
       int teColumnIdx = fr.find(columnToEncode);
       int foldColIdx;
-      if (_outOfFold== NO_FOLD) {
+      if (_holdoutFold == NO_FOLD) {
         foldColIdx = fr.find(_foldColumn);
       } else {
         workingFrame = new Frame(fr);
-        Vec tmpFoldCol = workingFrame.anyVec().makeCon(_outOfFold);
+        Vec tmpFoldCol = workingFrame.anyVec().makeCon(_holdoutFold);
         Scope.track(tmpFoldCol);
         workingFrame.add(new String[] {_foldColumn+TMP_COLUMN_POSTFIX}, new Vec[]{tmpFoldCol});
         foldColIdx = workingFrame.numCols()-1;
@@ -650,7 +652,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       int encodingsTEColIdx = encodings.find(columnToEncode);
       long[] foldValues = getUniqueColumnValues(encodings, encodingsFoldColIdx);
       int maxFoldValue = (int) ArrayUtils.maxValue(foldValues);
-      double priorMean = computePriorMean(encodings); //FIXME: we want prior for the outOfFold encodings 
+      double priorMean = computePriorMean(encodings); //FIXME: we want prior for the holdoutFold encodings 
 
       Frame joinedFrame = mergeEncodings(
               workingFrame, encodings,
@@ -659,7 +661,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
               maxFoldValue
       );
       Scope.track(joinedFrame);
-      if (_outOfFold!= NO_FOLD) {
+      if (_holdoutFold != NO_FOLD) {
         joinedFrame.remove(foldColIdx);
       }
 
@@ -741,5 +743,37 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       return joinedFrame;
     }
   }
+  
+  //// DataTransformerModel ////
 
+
+  @Override
+  public Frame transform(Frame fr, Stage stage, DataTransformSupport params) {
+    switch (stage) {
+      case Training:
+        if (useFoldTransform(params)) {
+          return transformTraining(fr, params.getHoldoutFold());
+        } else {
+          return transformTraining(fr);
+        }
+      case Validation:
+        if (useFoldTransform(params)) {
+          return transformTraining(fr);
+        } else {
+          return transform(fr);
+        }
+      case Scoring:
+      default:
+        return transform(fr);
+    }
+  }
+
+  private boolean useFoldTransform(DataTransformSupport params) {
+    return params != null && params.isCVModel() && _parms._data_leakage_handling == KFold;
+  }
+
+  @Override
+  public Model getModel() {
+    return this;
+  }
 }

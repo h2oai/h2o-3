@@ -21,7 +21,7 @@ import org.junit.runners.Suite;
         TargetEncoderBroadcastJoinTest.class,
         TargetEncodingImmutabilityTest.class,
         TargetEncoderMojoIntegrationTest.class,
-        TargetEncoderTransformerTest.class,
+        TargetEncoderIntegrationAsDataTransformerTest.class,
         TargetEncoderTest.class,
         TargetEncoderMojoWriterTest.class,
         TargetEncoderRGSTest.class

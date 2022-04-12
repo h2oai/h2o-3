@@ -1,5 +1,6 @@
 package hex.ensemble;
 
+import hex.CVSupport;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
@@ -124,7 +125,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
       parms._nfolds = _model._parms._metalearner_nfolds;
       if (_model._parms._metalearner_nfolds > 1) {
         if (_model._parms._metalearner_fold_assignment == null) {
-          parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+          parms._fold_assignment = CVSupport.FoldAssignmentScheme.AUTO;
         } else {
           parms._fold_assignment = _model._parms._metalearner_fold_assignment;
         }

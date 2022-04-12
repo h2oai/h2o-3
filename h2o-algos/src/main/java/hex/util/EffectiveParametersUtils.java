@@ -1,5 +1,6 @@
 package hex.util;
 
+import hex.CVSupport;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
@@ -12,9 +13,9 @@ public class EffectiveParametersUtils {
     public static void initFoldAssignment(
         Model.Parameters params
     ) {
-        if (params._fold_assignment == Model.Parameters.FoldAssignmentScheme.AUTO) {
+        if (params._fold_assignment == CVSupport.FoldAssignmentScheme.AUTO) {
             if (params._nfolds > 0 && params._fold_column == null) {
-                params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Random;
+                params._fold_assignment = CVSupport.FoldAssignmentScheme.Random;
             } else {
                 params._fold_assignment = null;
             }

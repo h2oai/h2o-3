@@ -1,7 +1,6 @@
 package hex.kmeans;
 
 import hex.*;
-import hex.util.LinearAlgebraUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -102,7 +101,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         error("_cluster_size_constraints", "\"The number of cluster size constraints is not equal to k = \" + _parms._k");
       }
     }
-    if(_parms._fold_assignment == Model.Parameters.FoldAssignmentScheme.Stratified){
+    if(_parms._fold_assignment == CVSupport.FoldAssignmentScheme.Stratified){
       error("fold_assignment", "K-means is an unsupervised algorithm; the stratified fold assignment cannot be used because of the missing response column.");
     }
     if (expensive && error_count() == 0) checkMemoryFootPrint();

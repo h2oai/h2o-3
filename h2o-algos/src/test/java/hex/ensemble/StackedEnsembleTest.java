@@ -1,9 +1,6 @@
 package hex.ensemble;
 
-import hex.GLMHelper;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.SplitFrame;
+import hex.*;
 import hex.ensemble.Metalearner.Algorithm;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.genmodel.utils.DistributionFamily;
@@ -17,7 +14,6 @@ import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -514,7 +510,7 @@ public class StackedEnsembleTest extends TestUtil {
         params._seed = seed;
         params._keep_cross_validation_models = false;
         params._keep_cross_validation_predictions = true;
-        params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
         params._nfolds = 5;
 
         Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
@@ -531,7 +527,7 @@ public class StackedEnsembleTest extends TestUtil {
         glm_params._seed = seed;
         glm_params._keep_cross_validation_models = false;
         glm_params._keep_cross_validation_predictions = true;
-        glm_params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        glm_params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
         glm_params._nfolds = 5;
         glm_params._alpha = new double[]{0.1, 0.2, 0.4};
         glm_params._lambda_search = true;
@@ -592,7 +588,7 @@ public class StackedEnsembleTest extends TestUtil {
                 params._nfolds = 3;
                 params._keep_cross_validation_models = false;
                 params._keep_cross_validation_predictions = true;
-                params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+                params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             }
 
             Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
@@ -704,7 +700,7 @@ public class StackedEnsembleTest extends TestUtil {
             gbmParameters._nbins = 50;
             gbmParameters._learn_rate = .2f;
             gbmParameters._score_each_iteration = true;
-            gbmParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            gbmParameters._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             gbmParameters._keep_cross_validation_predictions = true;
             gbmParameters._nfolds = 5;
             gbmParameters._seed = seed;
@@ -733,7 +729,7 @@ public class StackedEnsembleTest extends TestUtil {
             drfParameters._score_each_iteration = true;
             drfParameters._seed = seed;
             if (!blending_mode) {
-                drfParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+                drfParameters._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
                 drfParameters._keep_cross_validation_predictions = true;
                 drfParameters._nfolds = 5;
             }
@@ -853,7 +849,7 @@ public class StackedEnsembleTest extends TestUtil {
             params._seed = seed;
             params._keep_cross_validation_models = false;
             params._keep_cross_validation_predictions = true;
-            params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             params._nfolds = 5;
 
             Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
@@ -871,7 +867,7 @@ public class StackedEnsembleTest extends TestUtil {
             glm_params._seed = seed;
             glm_params._keep_cross_validation_models = false;
             glm_params._keep_cross_validation_predictions = true;
-            glm_params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            glm_params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             glm_params._nfolds = 5;
             glm_params._alpha = new double[]{0.1, 0.2, 0.4};
             glm_params._lambda_search = true;
@@ -1133,7 +1129,7 @@ public class StackedEnsembleTest extends TestUtil {
       params._seed = seed;
       params._keep_cross_validation_models = false;
       params._keep_cross_validation_predictions = true;
-      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
       params._nfolds = 3;
       params._distribution = DistributionFamily.bernoulli;
 
@@ -1212,7 +1208,7 @@ public class StackedEnsembleTest extends TestUtil {
       params._seed = seed;
       params._keep_cross_validation_models = false;
       params._keep_cross_validation_predictions = true;
-      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
       params._nfolds = 3;
       params._distribution = DistributionFamily.tweedie;
 
@@ -1268,7 +1264,7 @@ public class StackedEnsembleTest extends TestUtil {
       params._seed = seed;
       params._keep_cross_validation_models = false;
       params._keep_cross_validation_predictions = true;
-      params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
       params._nfolds = 3;
       params._family = family;
       params._link = link;
@@ -1290,7 +1286,7 @@ public class StackedEnsembleTest extends TestUtil {
         paramsGBM._seed = seed;
         paramsGBM._keep_cross_validation_models = false;
         paramsGBM._keep_cross_validation_predictions = true;
-        paramsGBM._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+        paramsGBM._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
         paramsGBM._nfolds = 3;
         paramsGBM._distribution = distribution;
         Job<Grid> gridSearchGBM = GridSearch.startGridSearch(null, paramsGBM, new HashMap<String, Object[]>() {{
@@ -1400,7 +1396,7 @@ public class StackedEnsembleTest extends TestUtil {
             GBMModel.GBMParameters params = new GBMModel.GBMParameters();
             params._train = trainingFrame._key;
             params._nfolds = 2;
-            params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            params._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             params._response_column = "RainTomorrow";
             params._keep_cross_validation_predictions = true;
             params._seed = 0;
@@ -1490,7 +1486,7 @@ public class StackedEnsembleTest extends TestUtil {
             gbmParameters._nbins = 50;
             gbmParameters._learn_rate = .2f;
             gbmParameters._score_each_iteration = true;
-            gbmParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            gbmParameters._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             gbmParameters._keep_cross_validation_predictions = true;
             gbmParameters._nfolds = 5;
             gbmParameters._seed = seed;
@@ -1512,7 +1508,7 @@ public class StackedEnsembleTest extends TestUtil {
             drfParameters._min_rows = 1;
             drfParameters._nbins = 50;
             drfParameters._score_each_iteration = true;
-            drfParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            drfParameters._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             drfParameters._keep_cross_validation_predictions = true;
             drfParameters._nfolds = 5;
             drfParameters._seed = seed;
@@ -1611,7 +1607,7 @@ public class StackedEnsembleTest extends TestUtil {
             ignoreConstParms._seed = 42;
             ignoreConstParms._keep_cross_validation_models = false;
             ignoreConstParms._keep_cross_validation_predictions = true;
-            ignoreConstParms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            ignoreConstParms._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
             ignoreConstParms._nfolds = 3;
             ignoreConstParms._distribution = DistributionFamily.gaussian;
 

@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.encoding.CategoricalEncoding;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
@@ -194,7 +195,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
     
     if ((_train != null) && (_parms._interaction_constraints != null)) {
-      if(_parms._categorical_encoding != Model.Parameters.CategoricalEncodingScheme.AUTO && _parms._categorical_encoding != Model.Parameters.CategoricalEncodingScheme.OneHotInternal){
+      if(_parms._categorical_encoding != CategoricalEncoding.Scheme.AUTO && _parms._categorical_encoding != CategoricalEncoding.Scheme.OneHotInternal){
         error("_categorical_encoding", "Interaction constraints can be used when the categorical encoding is set to ``AUTO`` (``one_hot_internal`` or ``OneHotInternal``) only.");
       }
       TreeUtils.checkInteractionConstraints(this, _train, _parms._interaction_constraints);

@@ -1,10 +1,7 @@
 package hex.tree.drf;
 
 
-import hex.Model;
-import hex.ModelMetricsBinomial;
-import hex.ModelMetricsRegression;
-import hex.SplitFrame;
+import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
@@ -1208,7 +1205,7 @@ public class DRFTest extends TestUtil {
       parms._seed = 9999;
       parms._min_rows = 2;
       parms._nfolds = (int) tfr.numRows();
-      parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+      parms._fold_assignment = CVSupport.FoldAssignmentScheme.Modulo;
       parms._max_depth = 5;
       parms._ntrees = 5;
 

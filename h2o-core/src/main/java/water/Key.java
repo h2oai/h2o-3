@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @author <a href="mailto:cliffc@h2o.ai"></a>
  * @version 1.0
  */
-final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparable {
+final public class Key<T extends IKeyed> extends Iced<Key<T>> implements Comparable {
   // The Key!!!
   public final byte[] _kb;      // Key bytes, wire-line protocol
   transient final int _hash;    // Hash on key alone (and not value)

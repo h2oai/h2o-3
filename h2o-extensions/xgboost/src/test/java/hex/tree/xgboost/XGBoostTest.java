@@ -59,7 +59,6 @@ import static org.junit.Assert.assertEquals;
 import static water.util.FileUtils.getFile;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
@@ -964,7 +963,7 @@ public class XGBoostTest extends TestUtil {
       DKV.put(trainingFrameSubset);
       parms._weights_column = null;
       parms._train = trainingFrameSubset._key;
-      parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
+      parms._fold_assignment = CVSupport.FoldAssignmentScheme.AUTO;
 
       noWeightsModel = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
 

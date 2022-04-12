@@ -22,8 +22,8 @@ import water.util.MathUtils;
 public class BinaryCategoricalEncoder extends BaseCategoricalEncoder {
 
   @Override
-  H2O.H2OCountedCompleter newDriver(Frame fr, Key<Frame> destKey, String[] skipCols) {
-    return new CategoricalBinaryEncoderDriver(fr, destKey, skipCols);
+  H2O.H2OCountedCompleter newDriver(Frame fr, Key<Frame> destKey, String[] skippedCols) {
+    return new CategoricalBinaryEncoderDriver(fr, destKey, skippedCols);
   }
 
   /**

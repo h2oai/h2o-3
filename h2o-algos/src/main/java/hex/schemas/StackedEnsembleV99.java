@@ -5,11 +5,6 @@ import hex.ensemble.Metalearner.Algorithm;
 import hex.ensemble.Metalearners;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleModel;
-import hex.naivebayes.NaiveBayesModel;
-import hex.tree.gbm.GBMModel;
-import hex.tree.drf.DRFModel;
-import hex.deeplearning.DeepLearningModel;
-import hex.glm.GLMModel;
 import hex.Model;
 
 import water.DKV;
@@ -25,7 +20,6 @@ import water.api.schemas3.FrameV3;
 import com.google.gson.Gson;
 import water.fvec.Frame;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
