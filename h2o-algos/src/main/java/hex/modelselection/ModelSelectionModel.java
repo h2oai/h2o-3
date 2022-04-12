@@ -76,6 +76,9 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public double _tweedie_variance_power;
         public double _tweedie_link_power;
         public Mode _mode = Mode.maxr;  // mode chosen to perform model selection
+        public double _beta_epsilon = 1e-4;
+        public double _objective_epsilon = -1;  // -1 to use default setting
+        public double _gradient_epsilon = -1;   // -1 to use default setting
 
         public enum Mode {
             allsubsets, // use combinatorial, exponential runtime

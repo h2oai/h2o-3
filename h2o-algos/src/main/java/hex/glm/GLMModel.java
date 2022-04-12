@@ -297,8 +297,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _objective_epsilon = -1;
-    public double _gradient_epsilon = -1;
+    public double _objective_epsilon = -1;  // -1 to set to default
+    public double _gradient_epsilon = -1;   // -1 to set to default
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
