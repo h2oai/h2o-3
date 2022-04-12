@@ -5070,7 +5070,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       aList <- user_splits[[ind]]
       csname = aList[1]
       if (csname %in% column_names) {
-        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname])) {
+        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname]) || h2o.getTypes(data)[[which(names(data) == csname)]] == "time") {
           nVal <- length(aList)-1
           if (h2o.isfactor(data[csname])) {
             domains <- h2o.levels(data[csname]) # enum values
