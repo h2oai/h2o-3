@@ -2,6 +2,81 @@
 
 ## H2O
 
+### Zumbo (3.36.1.1) - 4/13/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8653]](https://h2oai.atlassian.net/browse/PUBDEV-8653) - Fixed Residual Analysis plot flipping the residual calculation.
+- [[PUBDEV-8643]](https://h2oai.atlassian.net/browse/PUBDEV-8643) - Added more detailed exception when disconnected due to error caused by `Rcurl`. 
+- [[PUBDEV-8633]](https://h2oai.atlassian.net/browse/PUBDEV-8633) - Made R client attempt to connect to `curl` package  instead of `Rcurl` package first.
+- [[PUBDEV-8622]](https://h2oai.atlassian.net/browse/PUBDEV-8622) - Ensures GLM models fail instead of throwing warnings when `beta_contraints` and `non_negative are used with multinomial or ordinal families.
+- [[PUBDEV-8620]](https://h2oai.atlassian.net/browse/PUBDEV-8620) - Fixed how `cv_computeAndSetOptimalParameters` deals with multiple `alpha` and `lambda` values across different folds.
+- [[PUBDEV-8619]](https://h2oai.atlassian.net/browse/PUBDEV-8619) - Increased MaxR running speed.
+- [[PUBDEV-8602]](https://h2oai.atlassian.net/browse/PUBDEV-8602) - Fixed `getGLMRegularizationPath` erroring out when `standardize = False`.
+- [[PUBDEV-8468]](https://h2oai.atlassian.net/browse/PUBDEV-8468) - Fixed Keystore not generating on Java 16+.
+- [[PUBDEV-8014]](https://h2oai.atlassian.net/browse/PUBDEV-8014) - Added a `num_of_features` argument to `h2o.varimp_heatmap` to limit the number of displayed variables. 
+- [[PUBDEV-5258]](https://h2oai.atlassian.net/browse/PUBDEV-5258) - Fixed `cross_validation_metrics_summary` not being accessible for Stacked Ensemble.
+
+#### Improvement
+
+- [[PUBDEV-8661]](https://h2oai.atlassian.net/browse/PUBDEV-8661) - Improved AUUC result information in Uplift DRF by adding information on number of bins.
+- [[PUBDEV-8649]](https://h2oai.atlassian.net/browse/PUBDEV-8649) - Replaced `class()` with `inherits()` in R package. 
+- [[PUBDEV-8644]](https://h2oai.atlassian.net/browse/PUBDEV-8644) - Fixed invalid URLs in R Package.
+- [[PUBDEV-8629]](https://h2oai.atlassian.net/browse/PUBDEV-8629) - Added normalized `AUUC` to Uplift DRF. 
+- [[PUBDEV-8617]](https://h2oai.atlassian.net/browse/PUBDEV-8617) - Sped-up AutoML by avoiding sleep-waiting.
+- [[PUBDEV-8614]](https://h2oai.atlassian.net/browse/PUBDEV-8614) - Removed Stacked Ensembles with XGB metalearner to increase speed.
+- [[PUBDEV-8613]](https://h2oai.atlassian.net/browse/PUBDEV-8613) - Ensures AutoML reproducibility when `max_models` is used.
+- [[PUBDEV-8528]](https://h2oai.atlassian.net/browse/PUBDEV-8528) - Updated AutoML default leaderboard regression sorting to `RMSE`.
+
+#### New Feature
+
+- [[PUBDEV-8652]](https://h2oai.atlassian.net/browse/PUBDEV-8652) - Bundled several basic datasets with H2O for use in examples.
+- [[PUBDEV-8630]](https://h2oai.atlassian.net/browse/PUBDEV-8630) - Added h2o.jar assembly for secure Steam deployments and excluded PAM authentication from minimal/Steam builds.
+- [[PUBDEV-8624]](https://h2oai.atlassian.net/browse/PUBDEV-8624) - Added ability to ingest data from secured Hive using h2odriver.jar in standalone.
+- [[PUBDEV-8592]](https://h2oai.atlassian.net/browse/PUBDEV-8592) - Bundled KrbStandalone extension in h2odriver.jar. 
+- [[PUBDEV-8580]](https://h2oai.atlassian.net/browse/PUBDEV-8580) - Implemented new method for defining histogram split-points in GBM/DRF designed to address outlier issues with default `UniformAdaptive` method.
+- [[PUBDEV-8573]](https://h2oai.atlassian.net/browse/PUBDEV-8573) - Added ability to reorder frame levels based on their frequencies and to relieve only topN levels for GLM.
+- [[PUBDEV-8571]](https://h2oai.atlassian.net/browse/PUBDEV-8571) - Added a function to calculate predicted versus actual response in GLM.
+- [[PUBDEV-8401]](https://h2oai.atlassian.net/browse/PUBDEV-8401) - Implemented MOJO for Extended Isolation Forest.
+- [[PUBDEV-8398]](https://h2oai.atlassian.net/browse/PUBDEV-8398) - Added monotone splines to GAM.
+- [[PUBDEV-8388]](https://h2oai.atlassian.net/browse/PUBDEV-8388) - Added a plot function for gains/lift to R and Python.  
+- [[PUBDEV-8373]](https://h2oai.atlassian.net/browse/PUBDEV-8373) - Added ability to acquire metric builder updates for Sparkling Water calculation without H2O runtime.
+- [[PUBDEV-7980]](https://h2oai.atlassian.net/browse/PUBDEV-7980) - Added support for `interaction_constraints` to GBM.
+- [[PUBDEV-7858]](https://h2oai.atlassian.net/browse/PUBDEV-7858) - Exposed distribution parameter in AutoML
+
+#### Task
+
+- [[PUBDEV-8587]](https://h2oai.atlassian.net/browse/PUBDEV-8587) - Decoupled Infogram and XGBoost removing Infograms reliance on XGBoost to work.
+- [[PUBDEV-8585]](https://h2oai.atlassian.net/browse/PUBDEV-8585) - Verified GLM binomial IRLSM implementation and `p-value` calculation. 
+- [[PUBDEV-8576]](https://h2oai.atlassian.net/browse/PUBDEV-8576) - Added private ModelBuilder parameter to AutoML to enforce the time budget on the final model after cross-validation.
+
+#### Sub-Task
+
+- [[PUBDEV-8601]](https://h2oai.atlassian.net/browse/PUBDEV-8601) - Made Ice plot functionalities also available on `pd_plot`.
+- [[PUBDEV-8502]](https://h2oai.atlassian.net/browse/PUBDEV-8502) - Added option to normalize y-axis values. 
+- [[PUBDEV-8499]](https://h2oai.atlassian.net/browse/PUBDEV-8499) - Added option to display logodds for binary models for Ice plots.
+- [[PUBDEV-8498]](https://h2oai.atlassian.net/browse/PUBDEV-8498) - Added ability to save final graphing data to a frame for Ice plots.
+- [[PUBDEV-8497]](https://h2oai.atlassian.net/browse/PUBDEV-8497) - Added option to specify a grouping variable for Ice plots.
+- [[PUBDEV-8496]](https://h2oai.atlassian.net/browse/PUBDEV-8496) - Shows original observation values as points on the line for Ice plots.
+- [[PUBDEV-8495]](https://h2oai.atlassian.net/browse/PUBDEV-8495) - Added option to toggle PDP vs Ice lines on or off.
+
+#### Docs
+
+- [[PUBDEV-8654]](https://h2oai.atlassian.net/browse/PUBDEV-8654) - Added documentation on the monotone spline for GAM.
+- [[PUBDEV-8665]](https://h2oai.atlassian.net/browse/PUBDEV-8665) - Added links to the Additional Resources page to the sites where users can ask questions.
+- [[PUBDEV-8658]](https://h2oai.atlassian.net/browse/PUBDEV-8658) - Updated the examples for the Residual Analysis Plot.
+- [[PUBDEV-8650]](https://h2oai.atlassian.net/browse/PUBDEV-8650) - Updated the K8s deployment tutorial.
+- [[PUBDEV-8639]](https://h2oai.atlassian.net/browse/PUBDEV-8639) - Improved Uplift DRF User Guide documentation. 
+- [[PUBDEV-8631]](https://h2oai.atlassian.net/browse/PUBDEV-8631) - Shifted the links from the H2O-3 docs page to the User Guide “Additional Resources” page. 
+- [[PUBDEV-8604]](https://h2oai.atlassian.net/browse/PUBDEV-8604) - Fixed MOJO importable/exportable table in User Guide.
+- [[PUBDEV-8603]](https://h2oai.atlassian.net/browse/PUBDEV-8603) - Added a note that MOJOs won’t build if `interactions` are specified. 
+- [[PUBDEV-8595]](https://h2oai.atlassian.net/browse/PUBDEV-8595) - Added information on how H2O handles date columns. 
+- [[PUBDEV-8590]](https://h2oai.atlassian.net/browse/PUBDEV-8590) - Fixed code typos on Admissible ML page in User Guide.
+- [[PUBDEV-8591]](https://h2oai.atlassian.net/browse/PUBDEV-8591) - Added information on the `-hdfs_config` tag.
+
+
 ### Zorn (3.36.0.4) - 3/30/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/4/index.html</a>
