@@ -325,7 +325,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param num_knots: Number of knots for gam predictors
                Defaults to ``None``.
         :type num_knots: List[int], optional
-        :param spline_orders: Order of I-splines used for gam predictors
+        :param spline_orders: Order of I-splines used for gam predictors. If specified, must be the same size as
+               gam_columns.Values for bs=0 or 1 will be ignored.
                Defaults to ``None``.
         :type spline_orders: List[int], optional
         :param knot_ids: Array storing frame keys of knots.  One for each gam column set specified in gam_columns
@@ -342,7 +343,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                Defaults to ``False``.
         :type scale_tp_penalty_mat: bool
         :param bs: Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for
-               thin plate regression with SVD.  If specified, must be the same size as gam_columns
+               monotone splines.  If specified, must be the same size as gam_columns
                Defaults to ``None``.
         :type bs: List[int], optional
         :param scale: Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
@@ -1258,7 +1259,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def spline_orders(self):
         """
-        Order of I-splines used for gam predictors
+        Order of I-splines used for gam predictors. If specified, must be the same size as gam_columns.Values for bs=0
+        or 1 will be ignored.
 
         Type: ``List[int]``.
         """
@@ -1331,8 +1333,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def bs(self):
         """
-        Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for thin plate
-        regression with SVD.  If specified, must be the same size as gam_columns
+        Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for monotone
+        splines.  If specified, must be the same size as gam_columns
 
         Type: ``List[int]``.
         """
