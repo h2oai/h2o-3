@@ -408,7 +408,7 @@ We have implemented I-splines which are used as monotone splines. Monotone splin
 
 **B-splines:** :math:`Q_{i,k}(t)`
 
-This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-spline of order :math:`k` at knot :math:`i` where it is non-zero over the duration :math:`t_i \leq t < t_{i+k}`. The recursive formula [:ref:`4<ref4>`] used to generate a B-spline of a higher order from a B-spline of a lower order is:
+This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-spline of order :math:`k` at knot :math:`i` where it is non-zero over the duration :math:`t_i \leq t < t_{i+k}`. The recursive formula [:ref:`4<ref4>`] used to generate a B-spline of a higher order from two B-splines of a lower order is:
 
 .. math::
    
