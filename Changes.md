@@ -64,6 +64,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.
 
 #### Docs
 
+- [[PUBDEV-8654]](https://h2oai.atlassian.net/browse/PUBDEV-8654) - Added documentation on the monotone spline for GAM.
 - [[PUBDEV-8665]](https://h2oai.atlassian.net/browse/PUBDEV-8665) - Added links to the Additional Resources page to the sites where users can ask questions.
 - [[PUBDEV-8658]](https://h2oai.atlassian.net/browse/PUBDEV-8658) - Updated the examples for the Residual Analysis Plot.
 - [[PUBDEV-8650]](https://h2oai.atlassian.net/browse/PUBDEV-8650) - Updated the K8s deployment tutorial.
