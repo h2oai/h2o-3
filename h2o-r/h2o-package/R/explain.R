@@ -1894,7 +1894,7 @@ h2o.shap_explain_row_plot <-
     if (plot_type == "barplot") {
       contributions <- contributions[, names(contributions) != "BiasTerm"]
 
-      ordered_features <- contributions[order(contributions)]
+      ordered_features <- contributions[order(contributions[, 1])]
       features <- character()
       if (is.null(columns)) {
         if ("positive" %in% contribution_type) {
@@ -1976,7 +1976,7 @@ h2o.shap_explain_row_plot <-
                        plot.title = ggplot2::element_text(hjust = 0.5))
       return(p)
     } else if (plot_type == "breakdown") {
-      contributions <- contributions[, names(contributions)[order(abs(t(contributions)))]]
+      contributions <- contributions[, names(contributions)[order(abs(t(contributions))[, 1])]]
       bias_term <- contributions$BiasTerm
       contributions <- contributions[, names(contributions) != "BiasTerm"]
       if (is.null(columns)) {

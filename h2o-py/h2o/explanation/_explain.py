@@ -202,8 +202,8 @@ class NumpyFrame:
             self._data = np.empty((len(df), len(self._columns)), dtype=np.float64)
             df = [self._columns] + df
         elif isinstance(h2o_frame, h2o.H2OFrame):
-            _is_factor = np.array(h2o_frame.isfactor(), dtype=np.bool) | np.array(
-                h2o_frame.ischaracter(), dtype=np.bool)
+            _is_factor = np.array(h2o_frame.isfactor(), dtype=bool) | np.array(
+                h2o_frame.ischaracter(), dtype=bool)
             _is_numeric = h2o_frame.isnumeric()
             self._columns = h2o_frame.columns
             self._factors = {col: h2o_frame[col].asfactor().levels()[0] for col in
