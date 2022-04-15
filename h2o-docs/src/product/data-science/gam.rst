@@ -401,6 +401,114 @@ For documentation on thin plate regression splines, refer here:
 
     thin_plate_gam
 
+Monotone Splines
+''''''''''''''''
+
+We have implemented I-splines which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. In order to specify the monotone spline, you need to both set ``bs=2`` and specify the ``spline_orders`` parameter.
+
+**B-splines:** :math:`Q_{i,k}(t)`
+
+This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-spline of order :math:`k` at knot :math:`i` where it is non-zero over the duration :math:`t_i \leq t < t_{i+k}`. The recursive formula [:ref:`4<ref4>`] used to generate a B-spline of a higher order from two B-splines of a lower order is:
+
+.. math::
+   
+   Q_{i,k}(t) = {\frac{(t-t_{i})}{(t_{i+k}-t_{i})}} Q_{i,k-1}(t) + {\frac{(t_{i+k}-t)}{(t_{i+k}-t_{i})}} Q_{i+1,k-1}(t) 
+
+Using knotes :math:`t_0,t_1,\dots ,t_N` over the range of inputs of interest from :math:`t_0` to :math:`t_N`, an order 1 B-spline is defined as [:ref:`4<ref4>`]:
+
+.. math::
+   
+   Q_{i,1}(t) = \begin{cases}{\frac{1}{(t_{i+1}-t_i)}},t_i \leq t < t_{i+1} \\ 0,t<t_i \text{ or } t \geq t_{i+1} \\\end{cases}
+
+*Extending the number of knots*
+
+To generate higher order splines, you have to extend the original knots :math:`t_0,t_1,\dots ,t_N` over the range of inputs of interest. You do this by adding :math:`k-1` knots of value :math:`t_0` to the front of the knots and :math:`k-1` knots of value :math:`t_N` to the end of the knots. The new duplication will look like:
+
+.. math::
+   
+   t_0,t_0,\dots ,t_0,t_1,t_2,\dots ,t_{N-1},t_N,t_N,\dots ,t_N
+
+where:
+
+- :math:`t_0,t_0,\dots ,t_0` and :math:`t_N,t_N,\dots ,t_N` are the :math:`k` duplicates.
+
+The formula we used to calculate the number of basis functions over the original knots :math:`t_0,t_1,\dots ,t_N` is:
+
+.. math::
+   
+   N+1+k-2
+
+where:
+
+- :math:`N+1` is the number of knots over the input range without duplication
+- :math:`k` is the order of the spline
+
+**M-splines:** :math:`M_{i,k}(t)`
+
+If you normalize the basic B-spline function to have an integration of 1 over the interest range where it is non-zero, you can denote it as :math:`M_{i,k}(t)`. This is the normalized B-spline Type I, and it is defined as:
+
+.. math::
+   
+   M_{i,k}(t) = k \times Q_{i,k}(t)
+
+You can also derive :math:`M_{i,k}(t)` using the following recursive formula:
+
+.. math::
+   
+   M_{i,k}(t) = {\frac{k}{k-1}}\bigg( {\frac{(t-t_i)}{(t_{i+k}-t_i)}}M_{i,k-1}(t)-{\frac{(t_{i+k}-t)}{(t_{i+k}-t_i)}}M_{i+1,k-1}(t)\bigg)
+
+Note that :math:`M_{i,k}(t)` is defined over the same knot sequence as the original B-spline, and the number of :math:`M_{i,k}(t)` splines is the same as the number of B-splines over the same known sequence.
+
+**N-splines:** :math:`N_{i,k}(t)`
+
+The N-splines are normalized to have a summation of 1 when :math:`t_0 \leq t < t_N` as :math:`\sum_{i=0}^{N+k-1}N_{i,k}(t) = 1`. :math:`N_{i,k}(t)` is the normalized B-spline Type II in this implementation. The N-splines share the same knot sequence with the original M-spline and B-spline. The N-spline can be derived from the M-spline or the B-spline using:
+
+.. math::
+   
+   N_{i,k}(t) = {\frac{(t_{i+k}-t_i)}{k}}M_{i,k}(t) = (t_{i+k}-t_i)Q_{i,k}(t)
+
+Or, you can use the recursive formula where higher order N-splines can be derived from two lower order N-splines:
+
+.. math::
+   
+   N_{i,k}(t) = {\frac{t-t_i}{t_{i+k-1}-t_i}}N_{i,k-1}(t)+{\frac{t_{i+k}-t}{t_{i+k}-t_{i+1}}}N_{i+1,k-1}(t) 
+
+**I-splines:** :math:`I_{i,k}(t)`
+
+I-splines are used to build the monotone spline functions by restricting the gamified column coefficients to be :math:`\geq` 0 [:ref:`5<ref5>`]. We have implemented I-splines using the following method:
+
+.. math::
+   
+   I_{i,k}(t) = \sum_{l=1}^{i+r}N_{l,k+1}(t), t \leq t_{i+r+1}
+
+**Penalty Matrix for I-splines**
+
+The objective function used to derive the coefficients for regression is:
+
+.. math::
+   
+   \sum_{i=0}^n \Bigg(y_i- \bigg(\sum_{j=0}^{numBasis-1}I_{j,k}(t_i)\beta_j + \beta_0 \bigg)\Bigg)^2 + \lambda\beta^T penaltyMat\beta
+
+The second derivative of all basis functions is defined as:
+
+.. math::
+   
+   I_k^{2ndDeriv} = \begin{bmatrix} {\frac{d^2(I_{0,k}(t))}{d^2t}} \\
+   {\frac{d^2(I_{1,k}(t))}{d^2t}} \\ \vdots \\
+   {\frac{d^2(I_{numBasis-2,k}(t))}{d^2t}} \\
+   {\frac{d^2(I_{numBasis-1,k}(t))}{d^2t}} \\\end{bmatrix}
+
+where the penalty matrix (:math:`penaltyMat`) for I-spline :math:`I_{j,k}(t)` is defined as:
+
+.. math::
+   
+   penaltyMat = \int_{t_0}^{t_N}I_k^{2ndDeriv} \times \text{ transpose of }(I_k^{2ndDeriv})dt
+
+Element at row :math:`m` and column :math:`n` of :math:`penaltyMat` is
+
+.. math::
+   
+   penaltyMat_{m,n} = \int_{t_0}^{t_N}{\frac{d^2(I_{m,k}(t))}{d^2t}}{\frac{d^2(I_{n,k}(t))}{d^2t}}dt
 
 .. _scenario6:
 
@@ -431,6 +539,8 @@ The model now contains more than one function introduces an identifiability prob
   \sum_{i=1}^n f_p(x_i) = 0 = 1^Tf_p
 
 where 1 is a column vector of 1, and :math:`f_p` is the column vector containing :math:`f_p(x_1), \ldots ,f_p(x_n)`. To apply the sum-to-zero constraints, a Householder transform is used. Refer to [:ref:`1<ref1>`] for details. This transform is applied to each basis function of any predictor column we choose on its own.
+
+**Note**: this does not apply to monotone splines because the coefficients for these splines must be :math:`\geq 0`. 
 
 Sum-to-zero Constraints Implementation
 ''''''''''''''''''''''''''''''''''''''
@@ -472,6 +582,9 @@ Examples
 ~~~~~~~~
 
 Below are simple examples showing how to use GAM in R and Python.
+
+General GAM
+'''''''''''
 
 .. tabs::
    .. code-tab:: r R
@@ -569,6 +682,71 @@ Below are simple examples showing how to use GAM in R and Python.
     # generate predictions using the test data
     pred = h2o_model.predict(test)
 
+
+GAM using Monotone Splines
+''''''''''''''''''''''''''
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Import the GLM test data:
+      gam_test = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+
+      # Split into train and validation sets:
+      splits <- h2o.splitFrame(data = gam_test, ratios = 0.8)
+      train <- splits[[1]]
+      test <- splits[[2]]
+
+      # Set the factors, predictors, and response:
+      gam_test["C1"] <- as.factor(gam_test["C1"])
+      gam_test["C2"] <- as.factor(gam_test["C2"])
+      gam_test["C21"] <- as.factor(gam_test["C21"])
+      predictors <- c("C1","C2")
+      response <- "C21"
+
+      # Build and train the model using spline order:
+      monotone_model <- h2o.gam(x = predictors, y = response, 
+                                training_frame = train, 
+                                family = 'binomial', 
+                                gam_columns = c("C11", "C12", "C13"), 
+                                scale = c(0.001, 0.001, 0.001), 
+                                bs = c(0, 2, 2), 
+                                num_knots = c(3, 4, 5),
+                                spline_orders = c(2, 3, 4))
+
+      # Generate predictions using the test data:
+      pred <- h2o.predict(object = monotone_model, newdata = test)
+
+
+   .. code-tab:: python
+
+      # Import the GLM test data:
+      gam_test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+
+      # Split into train and validation sets:
+      train, test = gam_test.split_frame(ratios = [.8])
+
+      # Set the factors, predictors, and response:
+      gam_test["C1"] = gam_test["C1"].asfactor()
+      gam_test["C2"] = gam_test["C2"].asfactor()
+      gam_test["C21"] = gam_test["C21"].asfactor()
+      predictors = ["C1","C2"]
+      response = "C21"
+
+      # Build and train your model using spline order:
+      monotone_model = H2OGeneralizedAdditiveEstimator(family="binomial", 
+                                                       gam_columns=["C11", "C12", "C13"], 
+                                                       scale=[0.001, 0.001, 0.001], 
+                                                       bs=[0,2,2], 
+                                                       spline_orders=[2,3,4], 
+                                                       num_knots=[3,4,5])
+      monotone_model.train(x=predictors, y=response, training_frame=train)
+
+      # Generate predictions using the test data:
+      pred = monotone_model.predict(test)
+
+
+
 References
 ~~~~~~~~~~
 
@@ -579,3 +757,15 @@ References
 .. _ref2:
 
 2. T.J. Hastie, R.J. Tibshirani, Generalized Additive Models, Chapman and Hall, First Edition, 1990.
+
+.. _ref3:
+
+3. Lecture 7 Divided Difference Interpolation Polynomial by Professor R.Usha, Department of Mathematics, IITM, https://www.youtube.com/watch?v=4m5AKnseSyI .
+
+.. _ref4:
+
+4. Carl De Boor et. al., ON CALCULATING WITH B-SPLINES II. INTEGRATION, ResearchGate Article, January 1976.
+
+.. _ref5:
+
+5. J.O. Ramsay, “Monotone Regression Splines in Action”, Statistical Science, 1988, Vol. 3, No. 4, 425-461.
