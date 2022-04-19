@@ -2989,7 +2989,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double[] coeffs = _parms._standardize ? _model._output.getNormBeta() :_model._output.beta();
       if (bc._betaLB == null || bc._betaUB == null || coeffs == null)
         return;
-      int coeffsLen = bc._betaLB.length;
+      int coeffsLen = bc._betaLB.length-1;  // exclude intercept
       for (int index=0; index < coeffsLen; index++) {
         if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
           throw new H2OFailException("GLM model coefficients do not fall within beta constraint bounds.");
