@@ -6,6 +6,7 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMTask;
 import hex.gram.Gram;
+import org.jheaps.annotations.Beta;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -543,13 +544,15 @@ public class GamTestPiping extends TestUtil {
     glmParms._glmType = gam;
     double[] beta = fam.equals(gaussian)?model._output._model_beta 
             :TestUtil.changeDouble2SingleArray(model._output._model_beta_multinomial);
-    GLM.GLMGradientInfo ginfo = new GLM.GLMGradientSolver(null, glmParms, dinfo, 0, null,
+    int nBetas = fam.equals(gaussian) ? 1 : model._output._model_beta_multinomial.length;
+    GLM.BetaInfo betaInfo = new GLM.BetaInfo(nBetas, beta.length / nBetas);
+    GLM.GLMGradientInfo ginfo = new GLM.GLMGradientSolver(null, glmParms, dinfo, 0, null, betaInfo,
             penalty_mat, gamCoeffIndices).getGradient(beta);
     double[] gamGradient = ginfo._gradient;
     double objGam = ginfo._objVal;
     
     glmParms._glmType = glm;  // object glm gradient/objective and manually add gam penalty contributions
-    GLM.GLMGradientInfo ginfoGLM = new GLM.GLMGradientSolver(null, glmParms, dinfo, 0, null,
+    GLM.GLMGradientInfo ginfoGLM = new GLM.GLMGradientSolver(null, glmParms, dinfo, 0, null, betaInfo,
             null, null).getGradient(beta);
     double[] glmGradient = ginfoGLM._gradient; // add penalty part to this gradient manually
     double objGlm = ginfoGLM._objVal; // need to manually add gam penalty term
