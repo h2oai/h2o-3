@@ -38,7 +38,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
-  public static int _totalBetaLength;
 
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
@@ -235,14 +234,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public void update(double [] beta, double devianceTrain, double devianceTest,int iter){
     int id = _output._submodels.length-1;
     _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,_output._submodels[id].alpha_value,beta,
-            iter,devianceTrain,devianceTest, _totalBetaLength);
+            iter,devianceTrain,devianceTest, _output._totalBetaLength);
     _output.setSubmodelIdx(id, _parms);
   }
 
   public void update(double [] beta, double[] ubeta, double devianceTrain, double devianceTest,int iter){
     int id = _output._submodels.length-1;
     Submodel sm = new Submodel(_output._submodels[id].lambda_value,_output._submodels[id].alpha_value,beta,iter,
-            devianceTrain,devianceTest, _totalBetaLength);
+            devianceTrain,devianceTest, _output._totalBetaLength);
     sm.ubeta = Arrays.copyOf(ubeta, ubeta.length);
     _output._submodels[id] = sm;
     _output.setSubmodelIdx(id, _parms);
@@ -1205,6 +1204,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double lambda_selected(){
       return _submodels[_selected_submodel_idx].lambda_value;
     }
+    final int _totalBetaLength;
     double[] _global_beta;
     double[] _ubeta;  // HGLM:  random coefficients
     private double[] _zvalues;
@@ -1318,6 +1318,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _multinomial = multinomial;
       _ordinal = ordinal;
       _nclasses = _binomial?2:(_multinomial || _ordinal?beta.length/coefficient_names.length:1);
+      _totalBetaLength = beta.length;
       if(_binomial && domains[domains.length-1] != null) {
         assert domains[domains.length - 1].length == 2:"Unexpected domains " + Arrays.toString(domains);
         binomialClassNames = domains[domains.length - 1];
@@ -1330,7 +1331,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _submodels = new Submodel[]{new Submodel(0, 0,beta,-1,Double.NaN,Double.NaN, _totalBetaLength)};
     }
     
-    public GLMOutput() {_isSupervised = true; _nclasses = -1;}
+    public GLMOutput() {
+      _isSupervised = true; 
+      _nclasses = -1;
+      _totalBetaLength = -1;
+    }
 
     public GLMOutput(GLM glm) {
       super(glm);
@@ -1374,11 +1379,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _random_column_names = Arrays.copyOf(glm._randomColNames, glm._randomColNames.length);
       }
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
+      _nclasses = glm.nclasses();
+      _totalBetaLength = glm._betaInfo.totalBetaLength();
       _binomial = (glm._parms._family == Family.binomial || glm._parms._family == Family.quasibinomial ||
               Family.fractionalbinomial == glm._parms._family);
-      _nclasses = glm.nclasses();
       _multinomial = glm._parms._family == Family.multinomial;
-      _ordinal = (glm._parms._family == Family.ordinal);
+      _ordinal = glm._parms._family == Family.ordinal;
     }
 
     /**
