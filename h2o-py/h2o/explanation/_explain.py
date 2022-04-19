@@ -992,22 +992,39 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
                 bottom=ylims[0],
                 align="center" if nf.isfactor(column) else "edge",
                 width=width, color="gray", alpha=0.2)
+
     if nf.isfactor(column):
         plt.xticks(mapping(range(nf.nlevels(column))), nf.levels(column))
+    elif frame.type(column) == "time":
+        import matplotlib.dates as mdates
+        xmin = np.nanmin(nf[column])
+        xmax = np.nanmax(nf[column])
+        offset = (xmax - xmin) / 50
+        # hardcoding the limits to prevent calculating negative date
+        # happens sometimes when the matplotlib decides to show the origin in the plot
+        # and gives hard to decode errors
+        plt.xlim(max(0, xmin - offset), xmax + offset)
+        locator = mdates.AutoDateLocator()
+        formatter = mdates.AutoDateFormatter(locator)
+        plt.gca().xaxis.set_major_locator(locator)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        plt.gcf().autofmt_xdate()
     plt.ylim(ylims)
 
 
+def _append_graphing_data(graphing_data, data_to_append, original_observation_value, frame_id, centered, show_logoods,
+                          row_id, **kwargs):
     """
-    Returns a table (H2OTwoDimTable) in output form required when output_graphing_data = True. Contains provided graphing_data 
-    table content expanded by data extracted from data_to_append table and formed to fit into graphing_data form 
-    (columns, types). Input tables output_graphing_data and graphing_data stay unchanged, returned expanded table is a 
+    Returns a table (H2OTwoDimTable) in output form required when output_graphing_data = True. Contains provided graphing_data
+    table content expanded by data extracted from data_to_append table and formed to fit into graphing_data form
+    (columns, types). Input tables output_graphing_data and graphing_data stay unchanged, returned expanded table is a
     new H2OTwoDimTable instance.
-    
-    If graphing_data is None, only data_to_append table content is extracted and together with other input information 
+
+    If graphing_data is None, only data_to_append table content is extracted and together with other input information
     is formed into new output table of required form.
-    
+
     If data_to_append is None, there is notheng to extract and append so original graphing_data is returned.
-    
+
     :param graphing_data: H2OTwoDimTable, table to be returned when output_graphing_data = True
     :param data_to_append: H2OTwoDimTable, table that contains new data to be extracted and appended to graphing_data in
      the new resulting table
@@ -1019,8 +1036,6 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
 
     :returns: H2OTwoDimTable table
     """
-def _append_graphing_data(graphing_data, data_to_append, original_observation_value, frame_id, centered, show_logoods,
-                          row_id, **kwargs):
     grouping_variable_value = kwargs.get("grouping_variable_value")
     response_type = data_to_append.col_types[data_to_append.col_header.index("mean_response")]
     grouping_variable_type = "string" if type(grouping_variable_value) is str else "double" # todo test this
