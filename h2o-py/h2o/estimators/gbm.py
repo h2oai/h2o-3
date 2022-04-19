@@ -88,6 +88,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  custom_metric_func=None,  # type: Optional[str]
                  custom_distribution_func=None,  # type: Optional[str]
                  export_checkpoints_dir=None,  # type: Optional[str]
+                 in_training_checkpoints_dir=None,  # type: Optional[str]
                  monotone_constraints=None,  # type: Optional[dict]
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
@@ -290,6 +291,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param export_checkpoints_dir: Automatically export generated models to this directory.
                Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
+        :param in_training_checkpoints_dir: In-training checkpoints
+               Defaults to ``None``.
+        :type in_training_checkpoints_dir: str, optional
         :param monotone_constraints: A mapping representing monotonic constraints. Use +1 to enforce an increasing
                constraint and -1 to specify a decreasing constraint.
                Defaults to ``None``.
@@ -367,6 +371,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self.custom_metric_func = custom_metric_func
         self.custom_distribution_func = custom_distribution_func
         self.export_checkpoints_dir = export_checkpoints_dir
+        self.in_training_checkpoints_dir = in_training_checkpoints_dir
         self.monotone_constraints = monotone_constraints
         self.check_constant_response = check_constant_response
         self.gainslift_bins = gainslift_bins
@@ -2050,6 +2055,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+    @property
+    def in_training_checkpoints_dir(self):
+        """
+        In-training checkpoints
+
+        Type: ``str``.
+        """
+        return self._parms.get("in_training_checkpoints_dir")
+
+    @in_training_checkpoints_dir.setter
+    def in_training_checkpoints_dir(self, in_training_checkpoints_dir):
+        assert_is_type(in_training_checkpoints_dir, None, str)
+        self._parms["in_training_checkpoints_dir"] = in_training_checkpoints_dir
 
     @property
     def monotone_constraints(self):
