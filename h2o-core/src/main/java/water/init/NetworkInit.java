@@ -50,7 +50,7 @@ public class NetworkInit {
           Log.err(e.getCause());
         else
           Log.err(e.getMessage());
-        H2O.exit(-1);
+        H2O.clusterInitializationFailed();
       }
     }
     assert false; // should never be reached
