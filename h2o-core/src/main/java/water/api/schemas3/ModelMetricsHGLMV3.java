@@ -75,22 +75,29 @@ public class ModelMetricsHGLMV3<I extends ModelMetricsHGLM, S extends ModelMetri
     varfix = modelMetrics._varfix;
     varranef = modelMetrics._varranef;
     converge = modelMetrics._converge;
-    dfrefe = modelMetrics._dfrefe;    
-    sefe = new double[modelMetrics._sefe.length];
-    System.arraycopy(modelMetrics._sefe, 0, sefe, 0, sefe.length);
-    sere = new double[modelMetrics._sere.length];
-    System.arraycopy(modelMetrics._sere, 0, sere, 0, sere.length);
-    varranef = new double[modelMetrics._varranef.length];
-    System.arraycopy(modelMetrics._varranef, 0, varranef, 0, varranef.length);
-    summvc1 = new double[modelMetrics._summvc1.length];
-    System.arraycopy(modelMetrics._summvc1, 0, summvc1, 0, summvc1.length);
-    int numRandCol = randc.length;
-    summvc2 = new double[numRandCol][];
-    for (int index=0; index < numRandCol; index++) {
-      int l = modelMetrics._summvc2[index].length;
-      summvc2[index] = new double[l];
-      System.arraycopy(modelMetrics._summvc2[index], 0, summvc2[index], 0, l);
+    dfrefe = modelMetrics._dfrefe;
+    sefe = copyRandEff(modelMetrics._sefe);
+    sere = copyRandEff(modelMetrics._sere);
+    varranef = copyRandEff(modelMetrics._varranef);
+    summvc1 = copyRandEff(modelMetrics._summvc1);
+    if (randc != null) {
+      int numRandCol = randc.length;
+      summvc2 = new double[numRandCol][];
+      for (int index = 0; index < numRandCol; index++)
+        summvc2[index] = copyRandEff(modelMetrics._summvc2[index]);
     }
+    
     return (S) this;
+  }
+  
+  public static double[] copyRandEff(double[] source) {
+    if (source != null) {
+      int sourceLen = source.length;
+      double[] target = new double[sourceLen];
+      System.arraycopy(source, 0, target, 0, sourceLen);
+      return target;
+    } else {
+      return null;
+    }
   }
 }

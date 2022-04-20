@@ -193,15 +193,23 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       String [] colnames = new String[]{"Coefficients"};
 
       if(impl.hasPValues()){
-        colTypes = new String[]{"double","double","double","double"};
-        colFormats = new String[]{"%5f","%5f","%5f","%5f"};
-        colnames = new String[]{"Coefficients","Std. Error","z value","p value"};
+
+        if (impl.pValues() == null) {
+          colTypes = new String[]{"double","double","double"};
+          colFormats = new String[]{"%5f","%5f","%5f"};
+          colnames = new String[]{"Coefficients","Std. Error","z value"};
+        } else {
+          colTypes = new String[]{"double","double","double","double"};
+          colFormats = new String[]{"%5f","%5f","%5f","%5f"};
+          colnames = new String[]{"Coefficients","Std. Error","z value","p value"};
+        }
       }
       int stdOff = colnames.length;
       colTypes = ArrayUtils.append(colTypes,"double");
       colFormats = ArrayUtils.append(colFormats,"%5f");
       colnames = ArrayUtils.append(colnames,"Standardized Coefficients");
-      TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", ns, colnames, colTypes, colFormats, "names");
+      TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", ns, colnames,
+              colTypes, colFormats, "names");
       tdt.set(0, 0, beta[beta.length - 1]);
       for (int i = 0; i < beta.length - 1; ++i) {
         tdt.set(i + 1, 0, beta[i]);
@@ -219,11 +227,13 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         double [] pVals = impl.pValues();
         tdt.set(0, 1, stdErr[stdErr.length - 1]);
         tdt.set(0, 2, zVals[zVals.length - 1]);
-        tdt.set(0, 3, pVals[pVals.length - 1]);
+        if (pVals != null)
+          tdt.set(0, 3, pVals[pVals.length - 1]);
         for(int i = 0; i < stdErr.length - 1; ++i) {
           tdt.set(i + 1, 1, stdErr[i]);
           tdt.set(i + 1, 2, zVals[i]);
-          tdt.set(i + 1, 3, pVals[i]);
+          if (pVals != null)
+            tdt.set(i + 1, 3, pVals[i]);
         }
       }
       coefficients_table.fillFromImpl(tdt);

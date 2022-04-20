@@ -929,6 +929,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           error("HGLM random_columns", "Must contain categorical columns.");
         }
       }
+      if (_parms._rand_family == null) {
+        _parms._rand_family = new Family[_parms._random_columns.length];
+        Arrays.fill(_parms._rand_family, gaussian);
+      }
     }
     if (expensive) {
       if (_parms._max_iterations == 0)
@@ -2949,7 +2953,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.setVcov(_vcov);
         _model.update(_job._key);
       }
-      if (!_parms._HGLM)  // no need to do for HGLM
+ //     if (!_parms._HGLM)  // no need to do for HGLM
         scoreAndUpdateModel();
       TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
               (null != _parms._valid), false, _model._output.getModelCategory(), false);
