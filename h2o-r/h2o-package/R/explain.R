@@ -1894,7 +1894,7 @@ h2o.shap_explain_row_plot <-
     if (plot_type == "barplot") {
       contributions <- contributions[, names(contributions) != "BiasTerm"]
 
-      ordered_features <- contributions[order(contributions[, 1])]
+      ordered_features <- contributions[order(t(contributions))]
       features <- character()
       if (is.null(columns)) {
         if ("positive" %in% contribution_type) {
