@@ -299,8 +299,8 @@ with_no_h2o_progress <- function(expr) {
   }
 
 
-  if (inherits(object, "H2OAutoML") || 
-      ((inherits(object, "H2OFrame") || inherits(object, "data.frame")) && 
+  if (inherits(object, "H2OAutoML") ||
+      ((inherits(object, "H2OFrame") || inherits(object, "data.frame")) &&
       "model_id" %in% names(object))) {
     leaderboard <- if (inherits(object, "H2OAutoML")) object@leaderboard else object
     if (require_single_model && nrow(leaderboard) > 1) {
@@ -509,6 +509,7 @@ with_no_h2o_progress <- function(expr) {
                        leaderboard)
   leaderboard <- leaderboard[order(leaderboard[[2]]),]
   names(leaderboard) <- tolower(names(leaderboard))
+  row.names(leaderboard) <- seq_len(nrow(leaderboard))
   return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
 }
 
@@ -680,6 +681,28 @@ with_no_h2o_progress <- function(expr) {
   res <- stats::ecdf(col)(col)
   res[is.na(res)] <- 0
   return(res)
+}
+
+.is_datetime <- function(column) {
+  if (!is.null(ncol(column)) && ncol(column) > 1) {
+    stop("Only one column should be provided!")
+  }
+  return(inherits(column, "POSIXct") ||
+           (!is.null(attr(column, "types")) && attr(column, "types") == "time"))
+}
+
+.to_datetime <- function(col) {
+  stopifnot("Already a date" = !inherits(col, "POSIXct"))
+  col <- col / 1000
+  class(col) <- "POSIXct"
+  col
+}
+
+.is_continuous <- function(column) {
+  if (!is.null(ncol(column)) && ncol(column) > 1) {
+    stop("Only one column should be provided!")
+  }
+  return(is.numeric(column) || .is_datetime(column))
 }
 
 .render_df_to_html <- function(df) {
@@ -1142,7 +1165,7 @@ pd_ice_common <- function(model,
 
     new_part <- rbind(new_part, new_row)
   }
-  
+
   return(new_part)
 }
 
@@ -1153,7 +1176,7 @@ pd_ice_common <- function(model,
   }
   centering_value <- if (centered) data_to_append[['mean_response']][[1]] else NULL
   new_part <- .extract_graphing_data_values(data_to_append, frame_id, grouping_variable_value, original_observation_value, centering_value, show_logoods, row_id)
-  
+
   if (length(output_graphing_data) == 0 ||is.null(output_graphing_data)) {
     return(new_part)
   } else {
@@ -1163,6 +1186,7 @@ pd_ice_common <- function(model,
 
 handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value=NULL, nbins) {
   .data <- NULL
+  col_name <- make.names(column)
   margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
   is_factor <- is.factor(newdata[[column]])
   if (is_factor) {
@@ -1195,7 +1219,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
       include_na = TRUE
     ))
 
-    subdata <- as.data.frame(newdata[as.integer(idx),])[[gsub(" ", ".", column)]]
+    subdata <- newdata[as.integer(idx), column]
     if (output_graphing_data)
       graphing_data <- .append_graphing_data(graphing_data, tmp, subdata, h2o.getId(newdata), !is_factor && centered, show_logodds, as.integer(idx), grouping_variable_value)
     y_label <- "Response"
@@ -1214,20 +1238,16 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
       } else {
         orig_values <- rbind(orig_values, tmp[which(is.na(tmp[[column]])), c(column, "name", "mean_response")])
       }
-      interval <-
-        paste("[", orig_values[nrow(orig_values), c(column)], ", ", orig_values[nrow(orig_values), c("mean_response")], "]", sep =
-          "")
+      interval <- paste0("[", orig_values[nrow(orig_values), c(column)], ", ", orig_values[nrow(orig_values), c("mean_response")], "]")
       message <-
-        paste(
+        paste0(
           "Original observation of '",
           column,
           "' for ",
           percentile_str,
           " is ",
           interval,
-          ". Ploting of NAs is not yet supported.",
-          sep = ""
-        )
+          ". Ploting of NAs is not yet supported.")
       warning(message)
     } else {
       column_split = if (is.factor(subdata)) {
@@ -1270,20 +1290,24 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
   names(results) <- make.names(names(results))
   names(orig_values) <- make.names(names(orig_values))
 
-  col_name <- make.names(column)
-
   if (is.character(results[[col_name]])) {
     results[[col_name]] <- as.factor(results[[col_name]])
     orig_values[[col_name]] <- as.factor(orig_values[[col_name]])
   }
+
+  if (.is_datetime(newdata[[column]])) {
+    results[[col_name]] <- .to_datetime(results[[col_name]])
+    orig_values[[col_name]] <- .to_datetime(orig_values[[col_name]])
+  }
+
   results[["text"]] <- paste0(
     "Percentile: ", results[["name"]], "\n",
-    "Feature Value: ", results[[col_name]], "\n",
+    "Feature Value: ", format(results[[col_name]]), "\n",
     "Mean Response: ", results[["mean_response"]], "\n"
   )
   orig_values[["text"]] <- paste0(
     "Percentile: ", orig_values[["name"]], "\n",
-    "Feature Value: ", orig_values[[col_name]], "\n",
+    "Feature Value: ", format(orig_values[[col_name]]), "\n",
     "Mean Response: ", orig_values[["mean_response"]], "\n"
   )
   y_range <- range(results$mean_response)
@@ -1307,13 +1331,17 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     pdp[["name"]] <- "mean response"
     names(pdp) <- make.names(names(pdp))
 
-    col_name <- make.names(column)
     if (is.character(pdp[[col_name]])) {
       pdp[[col_name]] <- as.factor(pdp[[col_name]])
     }
+
+    if (.is_datetime(newdata[[column]])) {
+      pdp[[col_name]] <- .to_datetime(pdp[[col_name]])
+    }
+
     pdp[["text"]] <- paste0(
       "Partial Depencence \n",
-      "Feature Value: ", pdp[[col_name]], "\n",
+      "Feature Value: ", format(pdp[[col_name]]), "\n",
       "Mean Response: ", pdp[["mean_response"]], "\n"
     )
   }
@@ -1326,22 +1354,18 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
   }
 
   q <- ggplot2::ggplot(ggplot2::aes(x = .data[[col_name]],
-                                    if (show_logodds) {
-                                      y = .data$logodds
-                                    } else {
-                                      y = .data$mean_response
-                                    },
+                                    y = if (show_logodds) .data$logodds else .data$mean_response,
                                     color = .data$name,
                                     text = .data$text),
                        data = results)
-  histogram <- stat_count_or_bin(!is.numeric(newdata[[column]]),
+  column_value <- as.data.frame(newdata[[column]])
+  histogram <- stat_count_or_bin(!.is_continuous(newdata[[column]]),
                                  ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                                  position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                                 inherit.aes = FALSE, data = as.data.frame(newdata[[column]]))
+                                 inherit.aes = FALSE, data = column_value)
   rug_part <- ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, text = NULL),
                                 sides = "b", alpha = 0.1, color = "black",
-                                data = stats::setNames(as.data.frame(newdata[[column]]), col_name)
-  )
+                                data = column_value)
   plot_name <- ggplot2::labs(y = y_label, title = sprintf(
     "Individual Conditional Expectations on \"%s\"%s\nfor Model: \"%s\"", col_name,
     if (is.null(target)) {
@@ -1373,21 +1397,22 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     theme_part +
     theme_part2
 
-  ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
+  ice_part <- geom_point_or_line(!.is_continuous(newdata[[column]]),
                                  if (is.factor(newdata[[column]])) {
                                    ggplot2::aes(shape = "ICE", group = .data$name)
                                  } else {
                                    ggplot2::aes(linetype = "ICE", group = .data$name)
                                  }, data = results)
-  y_val = if (show_logodds) orig_values[['logodds']] else orig_values[['mean_response']]
-  original_observations_part <- ggplot2::geom_point(data = as.data.frame(orig_values),
+  original_observations_part <- ggplot2::geom_point(data = orig_values,
                                                     size = 4.5,
                                                     alpha = 0.5,
-                                                    ggplot2::aes(shape = "Original observations",
-                                                                 group = "Original observations"),
-                                                    x = orig_values[[col_name]],
-                                                    y = y_val,
-                                                    show.legend = ifelse(is.numeric(newdata[[column]]), NA, FALSE)
+                                                    ggplot2::aes(
+                                                      shape = "Original observations",
+                                                      group = "Original observations",
+                                                      x = .data[[col_name]],
+                                                      y = if (show_logodds) .data[['logodds']] else .data[['mean_response']]
+                                                    ),
+                                                    show.legend = ifelse(.is_continuous(newdata[[column]]), NA, FALSE),
   )
   shape_legend_manual <- ggplot2::scale_shape_manual(
     values = c("Original observations" = 19, "ICE" = 20, "Partial Dependence" = 18))
@@ -1401,7 +1426,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     color_spec
 
   if (show_pdp == TRUE) {
-    pdp_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
+    pdp_part <- geom_point_or_line(!.is_continuous(newdata[[column]]),
                                    if (is.factor(pdp[[col_name]])) {
                                      ggplot2::aes(shape = "Partial Dependence", group = "Partial Dependence")
                                    } else {
@@ -1413,7 +1438,10 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     q <- q + pdp_part
   }
   q <- q + shape_legend_manual + shape_legend_manual2
-  
+
+  if (.is_datetime(newdata[[column]]))
+    q <- q + ggplot2::scale_x_datetime()
+
   if (output_graphing_data) {
     list(figure=q, graphing_data=graphing_data)
   } else {
@@ -1431,6 +1459,7 @@ get_y_values <- function(mean, stddev) {
 
 handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_info, nbins) {
   .data <- NULL
+  col_name <- make.names(column)
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
   if (h2o.isfactor(newdata[[column]]))
     margin <- ggplot2::margin(5.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
@@ -1466,7 +1495,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
   names(pdp) <- make.names(names(pdp))
 
   pdp[["text"]] <- paste0(
-    "Feature Value: ", pdp[[make.names(column)]], "\n",
+    "Feature Value: ", format(pdp[[col_name]]), "\n",
     "Mean Response: ", pdp[["mean_response"]], "\n",
     "Target: ", pdp[["target"]]
   )
@@ -1482,21 +1511,24 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
     y_label <- "Mean Response"
   }
 
-  col_name <- make.names(column)
   rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
-  rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
+  rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
+
+  if (.is_datetime(newdata[[column]])) {
+    pdp[[col_name]] <- .to_datetime(pdp[[col_name]])
+  }
 
   p <- ggplot2::ggplot(ggplot2::aes(
-    x = .data[[make.names(column)]],
+    x = .data[[col_name]],
     y = y_[["y_vals"]],
     color = .data$target, fill = .data$target, text = .data$text
   ), data = pdp) +
-    stat_count_or_bin(!is.numeric(newdata[[column]]),
+    stat_count_or_bin(!.is_continuous(newdata[[column]]),
                       ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_[["y_range"]]) / 1.61),
                       position = ggplot2::position_nudge(y = y_[["y_range"]][[1]] - 0.05 * diff(y_[["y_range"]])), alpha = 0.2,
                       inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-    geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$target)) +
-    geom_pointrange_or_ribbon(!is.numeric(newdata[[column]]), ggplot2::aes(
+    geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
+    geom_pointrange_or_ribbon(!.is_continuous(newdata[[column]]), ggplot2::aes(
       ymin = y_[["y_min"]],
       ymax = y_[["y_max"]],
       group = .data$target
@@ -1506,7 +1538,10 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
                       data = rug_data
     )
   if (row_index > -1) {
-    p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+    row_val <- newdata[row_index, column]
+    if (.is_datetime(newdata[[column]]))
+      row_val <- as.numeric(.to_datetime(row_val))
+    p <- p + ggplot2::geom_vline(xintercept = row_val, linetype = "dashed")
   }
   p <- p +
     ggplot2::labs(
@@ -1538,6 +1573,8 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
       plot.margin = margin,
       plot.title = ggplot2::element_text(hjust = 0.5)
     )
+  if (.is_datetime(newdata[[column]]))
+    p <- p + ggplot2::scale_x_datetime()
   return(p)
 }
 
@@ -1663,7 +1700,7 @@ h2o.shap_summary_plot <-
       timevar = "feature"
     )
     values[["original_value"]] <- stats::reshape(
-      data.frame(apply(newdata_df, 2, as.character)),
+      data.frame(apply(newdata_df, 2, format)),
       direction = "long",
       varying = names(newdata_df),
       v.names = "original_value",
@@ -1690,7 +1727,7 @@ h2o.shap_summary_plot <-
 
     contr[["row"]] <- paste0(
       "Feature: ", contr[["feature"]], "\n",
-      "Feature Value: ", contr[["original_value"]], "\n",
+      "Feature Value: ", format(contr[["original_value"]]), "\n",
       "Row Index: ", contr[["row_index"]], "\n",
       "Contribution: ", contr[["contribution"]]
     )
@@ -1857,7 +1894,7 @@ h2o.shap_explain_row_plot <-
     if (plot_type == "barplot") {
       contributions <- contributions[, names(contributions) != "BiasTerm"]
 
-      ordered_features <- contributions[order(contributions)]
+      ordered_features <- contributions[order(t(contributions))]
       features <- character()
       if (is.null(columns)) {
         if ("positive" %in% contribution_type) {
@@ -1912,12 +1949,12 @@ h2o.shap_explain_row_plot <-
       contributions <- data.frame(contribution = t(contributions))
       contributions$feature <- paste0(
         row.names(contributions), "=",
-        sapply(newdata_df[, row.names(contributions)], as.character)
+        sapply(newdata_df[, row.names(contributions)], format)
       )
       contributions <- contributions[order(contributions$contribution),]
       contributions$text <- paste(
         "Feature:", row.names(contributions), "\n",
-        "Feature Value:", unlist(sapply(newdata_df[, row.names(contributions)], as.character)), "\n",
+        "Feature Value:", unlist(sapply(newdata_df[, row.names(contributions)], format)), "\n",
         "Contribution:", contributions$contribution
       )
 
@@ -1931,7 +1968,7 @@ h2o.shap_explain_row_plot <-
           y = "SHAP Contribution", x = "Feature",
           title = sprintf(
             "SHAP explanation\nfor \"%s\" on row %d\nprediction: %s",
-            model@model_id, row_index, as.character(prediction$predict)
+            model@model_id, row_index, format(prediction$predict)
           )
         ) +
         ggplot2::theme_bw() +
@@ -1939,7 +1976,7 @@ h2o.shap_explain_row_plot <-
                        plot.title = ggplot2::element_text(hjust = 0.5))
       return(p)
     } else if (plot_type == "breakdown") {
-      contributions <- contributions[, names(contributions)[order(abs(t(contributions)))]]
+      contributions <- contributions[, names(contributions)[order(abs(t(contributions))[, 1])]]
       bias_term <- contributions$BiasTerm
       contributions <- contributions[, names(contributions) != "BiasTerm"]
       if (is.null(columns)) {
@@ -1990,7 +2027,7 @@ h2o.shap_explain_row_plot <-
       )
 
       newdata_df[["rest_of_the_features"]] <- NA
-      contributions$feature_value <- paste("Feature Value:", as.character(t(newdata_df)[contributions$feature,]))
+      contributions$feature_value <- paste("Feature Value:", format(t(newdata_df)[contributions$feature,]))
       p <- ggplot2::ggplot(ggplot2::aes(
         x = .data$feature, fill = .data$color,
         xmin = .data$id - 0.4, xmax = .data$id + 0.4,
@@ -2508,14 +2545,32 @@ h2o.pd_multi_plot <- function(object,
   if (is.null(row_index))
     row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
+  if (length(models_info$model_ids) == 1)
+    return(h2o.pd_plot(
+      object = object,
+      newdata = newdata,
+      column = column,
+      target = target,
+      row_index = row_index,
+      max_levels = max_levels))
+
+  col_name <- make.names(column)
+  row_val <- if (row_index > -1) as.data.frame(newdata[row_index, column])[1, 1]
+
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
     factors_to_merge <- tail(names(factor_frequencies), n = -max_levels)
-    newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
-                                newdata[[column]])
-    message(length(factor_frequencies) - max_levels, " least common factor levels were omitted from \"",
+    if (!is.null(row_val) && row_val %in% factors_to_merge) {
+      # Keep the factor that is in the instance that we do ICE for
+      factors_to_merge <- factors_to_merge[factors_to_merge != row_val]
+    }
+    newdata <- newdata[!newdata[[column]] %in% factors_to_merge, ]
+
+    message(length(factors_to_merge), " least common factor levels were omitted from \"",
             column, "\" feature.")
   }
+  rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
+  rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
   if (h2o.isfactor(newdata[[column]]))
     margin <- ggplot2::margin(5.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
@@ -2567,12 +2622,12 @@ h2o.pd_multi_plot <- function(object,
         y = .data$mean_response,
         color = .data$target, fill = .data$target, text = .data$text
       ), data = pdp) +
-        stat_count_or_bin(!is.numeric(newdata[[column]]),
+        stat_count_or_bin(!.is_continuous(newdata[[column]]),
                           ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                           position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
                           inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-        geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$target)) +
-        geom_pointrange_or_ribbon(!is.numeric(newdata[[column]]), ggplot2::aes(
+        geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
+        geom_pointrange_or_ribbon(!.is_continuous(newdata[[column]]), ggplot2::aes(
           ymin = .data$mean_response - .data$stddev_response,
           ymax = .data$mean_response + .data$stddev_response,
           group = .data$target
@@ -2582,7 +2637,10 @@ h2o.pd_multi_plot <- function(object,
                           data = rug_data
         )
       if (row_index > -1) {
-        p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+        row_val <- newdata[row_index, column]
+        if (.is_datetime(newdata[[column]]))
+          row_val <- as.numeric(.to_datetime(row_val))
+        p <- p + ggplot2::geom_vline(xintercept = row_val, linetype = "dashed")
       }
       p <- p +
         ggplot2::labs(
@@ -2641,6 +2699,16 @@ h2o.pd_multi_plot <- function(object,
       results[[model]] <- pdp$mean_response
     }
 
+    if (is.factor(newdata[[column]])){
+      results[[col_name]] <- factor(results[[col_name]], levels = levels(rug_data[[col_name]]))
+      results <- results[results[[col_name]] %in% levels(rug_data[[col_name]]), ]
+    }
+
+    # Type information get's lost during the PD computation
+    if (.is_datetime(newdata[[column]])) {
+      results[[col_name]] <- .to_datetime(results[[col_name]])
+    }
+
     data <- stats::reshape(results,
                            direction = "long",
                            varying = names(results)[-1],
@@ -2649,11 +2717,9 @@ h2o.pd_multi_plot <- function(object,
                            timevar = "model_id"
     )
 
-    col_name <- make.names(column)
-
     data[["text"]] <- paste0(
       "Model Id: ", data[["model_id"]], "\n",
-      "Feature Value: ", data[[col_name]], "\n",
+      "Feature Value: ", format(data[[col_name]]), "\n",
       "Mean Response: ", data[["values"]], "\n"
     )
 
@@ -2668,17 +2734,20 @@ h2o.pd_multi_plot <- function(object,
       text = .data$text),
                          data = data
     ) +
-      stat_count_or_bin(!is.numeric(newdata[[column]]),
+      stat_count_or_bin(!.is_continuous(newdata[[column]]),
                         ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                         position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-      geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id))) +
+                        inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
+      geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id))) +
       ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL),
                         sides = "b", alpha = 0.1, color = "black",
                         data = rug_data
       )
     if (row_index > -1) {
-      p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+      row_val <- newdata[row_index, column]
+      if (.is_datetime(newdata[[column]]))
+        row_val <- as.numeric(.to_datetime(row_val))
+      p <- p + ggplot2::geom_vline(xintercept = row_val, linetype = "dashed")
     }
     p <- p +
       ggplot2::labs(y = "Mean Response", title = sprintf(
@@ -2697,8 +2766,13 @@ h2o.pd_multi_plot <- function(object,
       )) +
       ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
       # make the histogram closer to the axis. (0.05 is the default value)
-      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
-      ggplot2::theme_bw() +
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
+
+    if (.is_datetime(newdata[[column]])) {
+      p <- p + ggplot2::scale_x_datetime()
+    }
+
+    p <- p + ggplot2::theme_bw() +
       ggplot2::theme(
         axis.text.x = ggplot2::element_text(
           angle = if (h2o.isfactor(newdata[[column]])) 45 else 0,
@@ -3216,12 +3290,12 @@ h2o.learning_curve_plot <- function(model,
 ######################################## Explain ###################################################
 
 #' Generate Model Explanations
-#' 
-#' The H2O Explainability Interface is a convenient wrapper to a number of explainabilty 
-#' methods and visualizations in H2O.  The function can be applied to a single model or group 
-#' of models and returns a list of explanations, which are individual units of explanation 
-#' such as a partial dependence plot or a variable importance plot.  Most of the explanations 
-#' are visual (ggplot plots).  These plots can also be created by individual utility functions 
+#'
+#' The H2O Explainability Interface is a convenient wrapper to a number of explainabilty
+#' methods and visualizations in H2O.  The function can be applied to a single model or group
+#' of models and returns a list of explanations, which are individual units of explanation
+#' such as a partial dependence plot or a variable importance plot.  Most of the explanations
+#' are visual (ggplot plots).  These plots can also be created by individual utility functions
 #' as well.
 #'
 #' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
@@ -3233,7 +3307,7 @@ h2o.learning_curve_plot <- function(model,
 #' @param include_explanations If specified, return only the specified model explanations.
 #'   (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
-#' @param plot_overrides Overrides for individual model explanations, e.g. 
+#' @param plot_overrides Overrides for individual model explanations, e.g.
 #' \code{list(shap_summary_plot = list(columns = 50))}.
 #'
 #' @return List of outputs with class "H2OExplanation"
@@ -3616,13 +3690,13 @@ h2o.explain <- function(object,
 }
 
 #' Generate Model Explanations for a single row
-#' 
-#' Explain the behavior of a model or group of models with respect to a single row of data. 
-#' The function returns a list of explanations, which are individual units of explanation 
-#' such as a partial dependence plot or a variable importance plot.  Most of the explanations 
-#' are visual (ggplot plots).  These plots can also be created by individual utility functions 
+#'
+#' Explain the behavior of a model or group of models with respect to a single row of data.
+#' The function returns a list of explanations, which are individual units of explanation
+#' such as a partial dependence plot or a variable importance plot.  Most of the explanations
+#' are visual (ggplot plots).  These plots can also be created by individual utility functions
 #' as well.
-#' 
+#'
 #' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2OFrame.
 #' @param row_index A row index of the instance to explain.
@@ -3630,7 +3704,7 @@ h2o.explain <- function(object,
 #'                parameter top_n_features will be ignored.
 #' @param top_n_features An integer specifying the number of columns to use, ranked by variable importance
 #'                       (where applicable).
-#' @param include_explanations If specified, return only the specified model explanations. 
+#' @param include_explanations If specified, return only the specified model explanations.
 #'                             (Mutually exclusive with exclude_explanations)
 #' @param exclude_explanations Exclude specified model explanations.
 #' @param plot_overrides Overrides for individual model explanations, e.g.,
