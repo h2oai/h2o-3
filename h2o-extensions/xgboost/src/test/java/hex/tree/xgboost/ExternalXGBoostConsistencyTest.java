@@ -20,9 +20,9 @@ public class ExternalXGBoostConsistencyTest {
     private static final String EXTERNAL_XGB_PROP = "sys.ai.h2o.xgboost.external.address";
     
     private static void enableExternalXGBoost() {
-        System.setProperty(EXTERNAL_XGB_PROP, H2O.getIpPortString());
+        System.setProperty(EXTERNAL_XGB_PROP, H2O.CLOUD.leader().getIpPortString());
     }
-    
+
     private static void disableExternalXGBoost() {
         System.clearProperty(EXTERNAL_XGB_PROP);
     }
