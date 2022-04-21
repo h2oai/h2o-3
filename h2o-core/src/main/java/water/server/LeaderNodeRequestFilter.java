@@ -7,6 +7,7 @@ import water.webserver.iface.RequestAuthExtension;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -25,12 +26,12 @@ public class LeaderNodeRequestFilter implements RequestAuthExtension {
     private final Set<String> allowedContextPaths;
 
     public LeaderNodeRequestFilter() {
-        // Allowed paths are copied into a HashSet to guarantee constant search time and lowest possible memory
-        // overhead, as the LinkedKeySet inside the LinkedHashMap returned by getAlwaysEnabledServlets() method
-        // maintains order, which is not required for the needs of LeaderNodeRequestFilter.
-        allowedContextPaths = new HashSet<>(ServletService.INSTANCE.getAlwaysEnabledServlets()
-                .keySet());
-
+        Set<String> allowed = new HashSet<>();
+        // always enabled servlets (eg. XGBoost external endpoints)
+        allowed.addAll(ServletService.INSTANCE.getAlwaysEnabledServlets().keySet());
+        // websockets are always enabled - there almost no chance deployment would be configured to hit REST API correctly and only WS be misconfigured
+        allowed.addAll(ServletService.INSTANCE.getAllWebsockets().keySet());
+        allowedContextPaths = Collections.unmodifiableSet(allowed);
     }
 
     @Override

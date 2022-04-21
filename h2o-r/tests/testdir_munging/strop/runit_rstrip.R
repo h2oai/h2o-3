@@ -22,19 +22,19 @@ test.rstrip <- function() {
 
     # test string char strip
     df.hex$C1 <- h2o.rstrip(df.hex$C1)
-    expect_that(df.hex$C1[1,1], equals("   empty left"))
-    expect_that(df.hex$C1[2,1], equals("empty right"))
-    expect_that(df.hex$C1[3,1], equals("some string"))
-    expect_that(df.hex$C1[4,1], equals("mystring"))
-    expect_that(df.hex$C1[5,1], equals("cray tweet"))
+    expect_that(df.hex$C1[1,1], is_equivalent_to("   empty left"))
+    expect_that(df.hex$C1[2,1], is_equivalent_to("empty right"))
+    expect_that(df.hex$C1[3,1], is_equivalent_to("some string"))
+    expect_that(df.hex$C1[4,1], is_equivalent_to("mystring"))
+    expect_that(df.hex$C1[5,1], is_equivalent_to("cray tweet"))
 
     # test string char strip
     df.hex$C1 <- h2o.rstrip(df.hex$C1, "lefthgin")
-    expect_that(df.hex$C1[1,1], equals("   empty "))
-    expect_that(df.hex$C1[2,1], equals("empty r"))
-    expect_that(df.hex$C1[3,1], equals("some str"))
-    expect_that(df.hex$C1[4,1], equals("mystr"))
-    expect_that(df.hex$C1[5,1], equals("cray tw"))
+    expect_that(df.hex$C1[1,1], is_equivalent_to("   empty "))
+    expect_that(df.hex$C1[2,1], is_equivalent_to("empty r"))
+    expect_that(df.hex$C1[3,1], is_equivalent_to("some str"))
+    expect_that(df.hex$C1[4,1], is_equivalent_to("mystr"))
+    expect_that(df.hex$C1[5,1], is_equivalent_to("cray tw"))
 
     # FIXME: These tests work but are failing on Jenkins b/c workspace issues...
     # non ASCII

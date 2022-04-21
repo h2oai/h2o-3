@@ -651,6 +651,53 @@ def test_learning_curve_for_algos_not_present_in_automl():
     matplotlib.pyplot.close()
 
 
+def test_explanation_timeseries():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/timeSeries/CreditCard-ts_train.csv"))
+    x = ["MONTH", "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_STATUS", "PAY_AMT", "BILL_AMT"]
+    y = "DEFAULT_PAYMENT_NEXT_MONTH"
+
+    # Make sure it works with missing values as well
+    train[[5, 7, 11, 13, 17], "MONTH"] = float("nan")
+
+    cols_to_test = []
+    for col, typ in train.types.items():
+        for ctt in cols_to_test:
+            if typ == train.types[ctt] or col == y:
+                break
+        else:
+            cols_to_test.append(col)
+
+    gbm = H2OGradientBoostingEstimator()
+    gbm.train(x, y, training_frame=train)
+
+    # test shap summary
+    assert isinstance(gbm.shap_summary_plot(train).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    # test shap explain row
+    assert isinstance(gbm.shap_explain_row_plot(train, 1).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    # test residual analysis
+    assert isinstance(gbm.residual_analysis_plot(train).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    # test pd_plot
+    for col in cols_to_test:
+        assert isinstance(gbm.pd_plot(train, col).figure(), matplotlib.pyplot.Figure)
+
+    # test ICE plot
+    for col in cols_to_test:
+        assert isinstance(gbm.ice_plot(train, col).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
+    # test explain
+    assert isinstance(gbm.explain(train, render=False), H2OExplanation)
+
+    # test explain row
+    assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
+
+
 pyunit_utils.run_tests([
     test_get_xy,
     test_varimp,
@@ -664,4 +711,5 @@ pyunit_utils.run_tests([
     test_explanation_automl_multinomial_classification,
     test_explanation_list_of_models_multinomial_classification,
     test_learning_curve_for_algos_not_present_in_automl,
+    test_explanation_timeseries,
     ])

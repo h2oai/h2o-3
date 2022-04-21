@@ -1297,7 +1297,7 @@ class ModelBase(h2o_meta(Keyed)):
                         raise H2OValueError("Column names/indices used in user_splits are not valid.  They "
                                                 "should be chosen from the columns of your data set.")
 
-                    if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0]: # replace enum string with actual value
+                    if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0] or data.type(colKey) == "time": # replace enum string with actual value
                         nVal = len(val)
                         if data[colKey].isfactor()[0]:
                             domains = data[colKey].levels()[0]
