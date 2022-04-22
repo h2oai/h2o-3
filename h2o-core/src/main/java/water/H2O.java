@@ -495,6 +495,15 @@ final public class H2O {
     H2O.exitQuietly(1); // argument parsing failed -> we might have inconsistent ARGS and not be able to initialize logging 
   }
 
+  /**
+   * Use when given arguments are incompatible for cluster to run.
+   * Log is flushed into stdout to show important debugging information
+   */
+  public static void clusterInitializationFailed() {
+    Log.flushBufferedMessagesToStdout();
+    H2O.exitQuietly(1);
+  }
+
   public static class OptString {
     final String _s;
     String _lastMatchedFor;
