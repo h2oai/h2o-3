@@ -37,6 +37,11 @@ import h2o
 import helper_functions
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
+prefix = '/opt/ml/'
+config_prefix = 'input/config/'
+demo_prefix = '/opt/program/'
+input_prefix = 'input/data'
+checkpoints_dir = 'opt/ml/checkpoints'
 
 def _connect_to_cluster():
     print("Creating Connection to H2O-3")
@@ -61,8 +66,7 @@ def _connect_to_cluster():
     h2o.connect(url="http://127.0.0.1:54321")
 
 
-def _get_data(channel_name):
-    prefix = "/opt/ml/"
+def _get_data(prefix, channel_name):
     input_path = prefix + 'input/data'
     training_path = os.path.join(input_path, channel_name)
     data_files = [os.path.join(training_path, filename)
@@ -93,7 +97,6 @@ def _get_data(channel_name):
 def _train_model(hyperparameters={}, resource_params={}):
     training_params_str, gbm_params = helper_functions._parse_hyperparameters(hyperparameters)
     training_params = json.loads(training_params_str)
-    prefix = "/opt/ml/"
     output_path = os.path.join(prefix, 'output')
     model_path = os.path.join(prefix, 'model')
 
@@ -103,7 +106,7 @@ def _train_model(hyperparameters={}, resource_params={}):
     try:
         response_label = training_params.get('target')
         categorical_columns = training_params.get("categorical_columns", []).split(",")
-        train_data = _get_data('training')
+        train_data = _get_data(prefix, 'training')
 
         X = train_data.columns
         y = response_label
