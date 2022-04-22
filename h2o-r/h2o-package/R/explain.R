@@ -1,5 +1,29 @@
 ########################################### UTILS ##################################################
 
+#' Works like match.arg but ignores case
+#' @oaram arg
+#' @return matched arg
+case_insensitive_match_arg <- function(arg) {
+  var_name <- as.character(substitute(arg))
+  choices <- eval(formals(sys.function(-1))[[var_name]])
+  orig_choices <- choices
+
+  if (identical(arg, choices))
+    arg <- choices[[1]]
+
+  choices <- tolower(choices)
+
+  if (length(arg) != 1)
+    stop(sprintf("'%s' must be of length 1", var_name), call. = FALSE)
+
+  arg <- tolower(arg)
+
+  i <- pmatch(arg, choices, nomatch = 0L, duplicates.ok = FALSE)
+  if (all(i == 0L) || length(i) != 1)
+    stop(sprintf("'%s' should be one of %s", var_name, paste(dQuote(orig_choices), collapse = ", ")), call. = FALSE)
+  return(orig_choices[[i]])
+}
+
 #' Stop with a user friendly message if a user is missing the ggplot2 package or has an old version of it.
 #'
 #' @param version minimal required ggplot2 version
@@ -136,6 +160,7 @@
 #' @return character vector
 .shorten_model_ids <- function(model_ids) {
   shortened_model_ids <- gsub("(.*)_AutoML_[\\d_]+(_.*)?$", "\\1\\2", model_ids, perl=TRUE)
+  shortened_model_ids <- gsub("(Grid_[^_]*)_.*?(_model_\\d+)?$", "\\1\\2", shortened_model_ids, perl=TRUE)
   if (length(unique(shortened_model_ids)) == length(unique(model_ids))) {
     return(shortened_model_ids)
   }
@@ -313,6 +338,8 @@
       model_ids = head(model_ids, top_n_from_AutoML)
     ))
   } else {
+    if (inherits(object, "H2OGrid"))
+      object <- unlist(object@model_ids)
     if (length(object) == 1) {
       if (require_multiple_models) {
         stop("More than one model is needed!")
@@ -3016,8 +3043,7 @@ h2o.learning_curve_plot <- function(model,
   inverse_metric_mapping <- stats::setNames(names(metric_mapping), metric_mapping)
   inverse_metric_mapping[["custom"]] <- "custom, custom_increasing"
 
-  metric <- match.arg(arg = if (missing(metric) || tolower(metric) == "auto") "AUTO" else tolower(metric),
-                      choices = eval(formals()$metric))
+  metric <- case_insensitive_match_arg(metric)
 
   if (!model@algorithm %in% c("stackedensemble", "glm", "gam", "glrm", "modelselection", "deeplearning",
                               "drf", "gbm", "xgboost", "coxph", "isolationforest")) {
@@ -3290,6 +3316,141 @@ h2o.learning_curve_plot <- function(model,
     )
 
   return(p)
+}
+
+
+.calculate_pareto_front <- function(df, x, y, optimum = c("topleft", "topright", "bottomleft", "bottomright")) {
+  optimum <- match.arg(optimum)
+  cum_agg <- if (startsWith(optimum, "top")) {
+    cummax
+  } else {
+    cummin
+  }
+  decreasing <- if (endsWith(optimum, "left")) {
+    FALSE
+  } else {
+    TRUE
+  }
+  reordered_df <- df[order(df[[x]], df[[y]], decreasing = decreasing), ]
+  reordered_df <- reordered_df[which(!duplicated(cum_agg(reordered_df[[y]]))), ]
+  reordered_df[order(row.names(reordered_df)), ]  # Keep original order
+}
+
+
+setClass("H2OParetoFront", slots = c(
+  pareto_front = "data.frame",
+  leaderboard = "data.frame",
+  x = "character",
+  y = "character",
+  title = "character"
+  ))
+
+setMethod("plot", "H2OParetoFront", function(x, y) {
+  .check_for_ggplot2()
+  if (!missing(y)) stop("Argument y is not used!")
+  .data <- NULL
+  pretty_label <- function(lab) {
+    labels <- list(
+      auc = "Area Under ROC Curve",
+      aucpr = "Area Under Precision/Recall Curve",
+      logloss = "Logloss",
+      mae = "Mean Absolute Error",
+      mean_per_class_error = "Mean Per Class Error",
+      mean_residual_deviance = "Mean Residual Deviance",
+      mse = "Mean Square Error",
+      predict_time_per_row_ms = "Prediction Time [ms]",
+      rmse = "Root Mean Square Error",
+      rmsle = "Root Mean Square Log Error",
+      training_time_ms = "Training Time [ms]"
+    )
+    if (is.null(labels[[lab]]))
+      return(lab)
+    else
+      return(labels[[lab]])
+  }
+
+  xlab <- pretty_label(x@x)
+  ylab <- pretty_label(x@y)
+
+
+  p <- ggplot2::ggplot(data = x@pareto_front, ggplot2::aes(
+    x = .data[[x@x]],
+    y = .data[[x@y]],
+    color = .data[["algo"]]
+  )) +
+    ggplot2::geom_point(data = x@leaderboard, alpha = 0.5)
+
+  if (nrow(x@pareto_front) > 1)
+    p <- p + ggplot2::geom_line(group = 0, color = "black")
+
+  p +
+    ggplot2::geom_point(size = 3) +
+    ggplot2::labs(x = xlab, y = ylab, title = x@title) +
+    ggplot2::theme_bw()
+})
+
+
+setMethod("show", "H2OParetoFront", function(object) {
+  cat(object@title, "\n")
+  cat("with respect to ", object@x, " and ", object@y, ":\n")
+  print(object@pareto_front)
+})
+
+#' @export
+h2o.pareto_front <- function(object,
+                             x_criterium = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
+                                             "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
+                                             "RMSE", "RMSLE", "training_time_ms"),
+                             y_criterium = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
+                                             "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
+                                             "RMSE", "RMSLE", "training_time_ms"),
+                             title = NULL) {
+  models_info <- .process_models_or_automl(object, NULL, require_multiple_models = TRUE, require_newdata = FALSE)
+  leaderboard <- .create_leaderboard(models_info, NULL, top_n = Inf)
+  x_criterium <- case_insensitive_match_arg(x_criterium)
+  y_criterium <- case_insensitive_match_arg(y_criterium)
+  if (x_criterium == "AUTO") {
+    if ("predict_time_per_row_ms" %in% names(leaderboard))
+      x_criterium <- "predict_time_per_row_ms"
+    else
+      x_criterium <- names(leaderboard)[[3]]  # in case we were given a list of models not an aml object
+  }
+  if (y_criterium == "AUTO")
+    y_criterium <- names(leaderboard)[[2]]
+
+  x_criterium <- tolower(x_criterium)
+  y_criterium <- tolower(y_criterium)
+  if (!x_criterium %in% names(leaderboard))
+    stop(sprintf("'%s' not found in the leaderboard!", x_criterium), call. = FALSE)
+  if (!y_criterium %in% names(leaderboard))
+    stop(sprintf("'%s' not found in the leaderboard!", y_criterium), call. = FALSE)
+
+  if (is.null(title)) {
+    name <- NULL
+    if (inherits(object, "H2OAutoML"))
+      name <- object@project_name
+    if (inherits(object, "H2OGrid"))
+      name <- object@grid_id
+    if (is.null(name))
+      title <- "Pareto Front"
+    else
+      title <- paste("Pareto Front for", name)
+  }
+
+  higher_is_better <- c("auc", "aucpr")
+  optimum <- paste0(
+    if (y_criterium %in% higher_is_better) "top" else "bottom",
+    if (x_criterium %in% higher_is_better) "right" else "left"
+  )
+
+  pareto_front <- .calculate_pareto_front(leaderboard, x = x_criterium, y = y_criterium, optimum = optimum)
+  return(new("H2OParetoFront",
+             pareto_front = pareto_front,
+             leaderboard = leaderboard,
+             x = x_criterium,
+             y = y_criterium,
+             title = title
+  ))
 }
 
 ######################################## Explain ###################################################

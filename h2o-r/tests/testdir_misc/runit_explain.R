@@ -638,6 +638,38 @@ explanation_test_timeseries <- function() {
   expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
+explanation_test_automl_pareto_front <- function() {
+  train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  y <- "CAPSULE"
+  train[, y] <- as.factor(train[, y])
+
+
+  aml <- h2o.automl(y = y,
+                    max_models = 5,
+                    training_frame = train,
+                    seed = 1234)
+
+  expect_true(is.data.frame(h2o.pareto_front(aml)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(aml)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(aml, x_criterium = "training_time_ms", y_criterium = "rmse")))
+}
+
+explanation_test_grid_pareto_front <- function() {
+  train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  y <- "CAPSULE"
+  train[, y] <- as.factor(train[, y])
+
+  grid <- h2o.grid("gbm", y = y, training_frame = train,
+                   hyper_params = list(ntrees = 1:6),
+                   seed = 1234)
+
+  expect_true(is.data.frame(h2o.pareto_front(grid)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(grid)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(grid, x_criterium = "auc", y_criterium = "rmse")))
+}
+
 doSuite("Explanation Tests", makeSuite(
   varimp_test
   , explanation_test_single_model_regression
@@ -651,4 +683,6 @@ doSuite("Explanation Tests", makeSuite(
   , explanation_test_list_of_models_multinomial_classification
   , learning_curve_plot_test_of_models_not_included_in_automl
   , explanation_test_timeseries
+  , explanation_test_automl_pareto_front
+  , explanation_test_grid_pareto_front
 ))

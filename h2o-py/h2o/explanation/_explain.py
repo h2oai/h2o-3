@@ -2668,6 +2668,115 @@ def learning_curve_plot(
     return decorate_plot_result(figure=plt.gcf())
 
 
+def _calculate_pareto_front(x, y, top=True, left=True):
+    cumagg = np.maximum.accumulate if top else np.minimum.accumulate
+    if not left:
+        x = -x
+
+    order = np.argsort(y if left else -y)
+    order = order[np.argsort(x[order], kind="stable")]
+
+    return order[np.unique(cumagg(y[order]), return_index=True)[1]]
+
+
+def _pretty_metric_name(metric):
+    return dict(
+        auc="Area Under ROC Curve",
+        aucpr="Area Under Precision/Recall Curve",
+        logloss="Logloss",
+        mae="Mean Absolute Error",
+        mean_per_class_error="Mean Per Class Error",
+        mean_residual_deviance="Mean Residual Deviance",
+        mse="Mean Square Error",
+        predict_time_per_row_ms="Prediction Time [ms]",
+        rmse="Root Mean Square Error",
+        rmsle="Root Mean Square Log Error",
+        training_time_ms="Training Time [ms]"
+    ).get(metric, metric)
+
+
+def pareto_front(models,
+                 x_criterium=None, # type: Optional[str]
+                 y_criterium=None, # type: Optional[str]
+                 title=None, # type: Optional[str]
+                 figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
+                 colormap="Dark2"  # type: str
+                 ):
+    """
+
+    :param models:
+    :param x_criterium:
+    :param y_criterium:
+    :param figsize:
+    :param colormap:
+    :return:
+    """
+    plt = get_matplotlib_pyplot(False, True)
+    from matplotlib.lines import Line2D
+    name = None
+    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
+        leaderboard = _get_leaderboard(models, None, top_n=float("inf"))
+        name = models.project_name
+    if isinstance(models, h2o.grid.grid_search.H2OGridSearch):
+        leaderboard = _get_leaderboard(models.models, None, top_n=float("inf"))
+        name = models.grid_id
+
+    if x_criterium is None:
+        x_criterium = "predict_time_per_row_ms" if "predict_time_per_row_ms" in leaderboard.names else leaderboard.names[2]
+    if y_criterium is None:
+        y_criterium = leaderboard.names[1]
+
+    x_criterium = x_criterium.lower()
+    y_criterium = y_criterium.lower()
+
+    if x_criterium not in leaderboard.names:
+        raise ValueError("x_criterium {} is not in the leaderboard!".format(x_criterium))
+    if y_criterium not in leaderboard.names:
+        raise ValueError("y_criterium {} is not in the leaderboard!".format(y_criterium))
+
+    higher_is_better = ["auc", "aucpr"]
+
+    top = False
+    left = True
+
+    if x_criterium in higher_is_better:
+        left = False
+
+    if y_criterium in higher_is_better:
+        top = True
+
+    x = np.array(leaderboard[x_criterium].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
+    y = np.array(leaderboard[y_criterium].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
+
+    pf = _calculate_pareto_front(x, y, top=top, left=left)
+
+    algos = np.array(leaderboard["algo"].as_data_frame(use_pandas=False, header=False)).reshape(-1)
+    colors = plt.get_cmap(colormap, len(set(algos)))(list(range(len(set(algos)))))
+    algo_to_col = dict(zip(set(algos), colors))
+
+    fig = plt.figure(figsize=figsize)
+    plt.scatter(x, y, c=[algo_to_col[a] for a in algos], alpha=0.5)
+    plt.plot(x[pf], y[pf], c="k")
+    plt.scatter(x[pf], y[pf], c=[algo_to_col[a] for a in algos[pf]], s=100, zorder=100)
+    plt.xlabel(_pretty_metric_name(x_criterium))
+    plt.ylabel(_pretty_metric_name(y_criterium))
+    plt.grid(True)
+    plt.legend(handles=[Line2D([0], [0], marker='o', color="w", label=a, markerfacecolor=algo_to_col[a], markersize=10)
+                        for a in algo_to_col.keys()])
+
+    if title is not None:
+        plt.title(title)
+    else:
+        if name is None:
+            plt.title("Pareto Front")
+        else:
+            plt.title("Pareto Front for {}".format(name))
+
+    leaderboard_pareto_subset = leaderboard[sorted(list(pf)), :]
+
+    return decorate_plot_result(res=leaderboard_pareto_subset, figure=fig)
+
+
 def _preprocess_scoring_history(model, scoring_history, training_metric=None):
     empty_columns = [all(row[col_idx] == "" for row in scoring_history.cell_values)
                      for col_idx in range(len(scoring_history.col_header))]
@@ -2748,9 +2857,9 @@ def _get_tree_models(
 
 def _get_leaderboard(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
-        frame,  # type: h2o.H2OFrame
+        frame,  # type: Optional[h2o.H2OFrame]
         row_index=None,  # type: Optional[int]
-        top_n=20  # type: int
+        top_n=20  # type: Union[float, int]
 ):
     # type: (...) -> h2o.H2OFrame
     """

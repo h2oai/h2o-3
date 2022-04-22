@@ -3,6 +3,8 @@ from __future__ import print_function
 import os
 import sys
 
+from h2o.grid import H2OGridSearch
+
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import matplotlib
 matplotlib.use("Agg")  # remove warning from python2 (missing TKinter)
@@ -703,6 +705,40 @@ def test_explanation_timeseries():
     assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
 
 
+def test_explanation_automl_pareto_front():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    aml = H2OAutoML(seed=1234, max_models=5)
+    aml.train(y=y, training_frame=train)
+
+    assert isinstance(aml.pareto_front().figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(aml.pareto_front("mse", "rmse").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+def test_explanation_grid_pareto_front():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    gbm_params1 = {'learn_rate': [0.01, 0.1],
+                   'max_depth': [3, 5, 9]}
+
+    # Train and validate a cartesian grid of GBMs
+    grid = H2OGridSearch(model=H2OGradientBoostingEstimator,
+                         grid_id='gbm_grid1',
+                         hyper_params=gbm_params1)
+    grid.train(y=y, training_frame=train, seed=1)
+
+    assert isinstance(grid.pareto_front().figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(grid.pareto_front("mse", "rmse").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
 pyunit_utils.run_tests([
     test_get_xy,
     test_varimp,
@@ -717,4 +753,6 @@ pyunit_utils.run_tests([
     test_explanation_list_of_models_multinomial_classification,
     test_learning_curve_for_algos_not_present_in_automl,
     test_explanation_timeseries,
+    test_explanation_automl_pareto_front,
+    test_explanation_grid_pareto_front,
     ])
