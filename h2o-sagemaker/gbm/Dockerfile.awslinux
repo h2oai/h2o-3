@@ -1,0 +1,53 @@
+FROM amazonlinux
+
+RUN yum -y update && \
+    yum -y install \
+      wget \
+      curl \
+      unzip \
+      apt-utils \
+      software-properties-common \
+      net-tools \
+      nginx \
+      ca-certificates \
+      build-essential
+
+RUN amazon-linux-extras install nginx1.12
+
+RUN yum -y install java-1.8.0-openjdk-devel
+
+RUN yum -y install \
+      python3 \
+      python3-setuptools \
+      python3-pip
+
+RUN wget http://h2o-release.s3.amazonaws.com/h2o/latest_stable -O latest && \
+    wget --no-check-certificate -i latest -O /opt/h2o-latest.zip && \
+    unzip -d /opt /opt/h2o-latest.zip && \
+    rm /opt/h2o-latest.zip && \
+    cd /opt && \
+    mkdir program && \
+    cd `find . -name 'h2o.jar' | sed 's/.\///;s/\/h2o.jar//g'` && \
+    cp h2o.jar /opt/program && \
+    touch /opt/program/flatfile.txt
+
+RUN pip3 install --upgrade --force-reinstall pip==9.0.3 && \
+    pip3 install numpy scipy scikit-learn pandas flask gevent gunicorn requests tabulate colorama future matplotlib && \
+    pip3 install -f http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Py.html h2o --user
+
+RUN ln -fs /usr/bin/python3 /usr/bin/python
+
+# Set some environment variables. PYTHONUNBUFFERED keeps Python from buffering our standard
+# output stream, which means that logs can be delivered to the user quickly. PYTHONDONTWRITEBYTECODE
+# keeps Python from writing the .pyc files which are unnecessary in this case. We also update
+# PATH so that the train and serve programs are found when the container is invoked.
+
+ENV PYTHONUNBUFFERED=TRUE
+ENV PYTHONDONTWRITEBYTECODE=TRUE
+ENV PATH="/opt/program:${PATH}"
+
+# Set up the program in the image
+COPY gbm_scripts /opt/program
+RUN chmod +x /opt/program/startup_h2o_cluster.sh
+RUN chmod +x /opt/program/startup_h2o_cluster_serve.sh
+WORKDIR /opt/program
