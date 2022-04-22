@@ -7,6 +7,3 @@ build-sagemaker-image:
 
 #build-local-image:
 #	docker build -t h2o-gbm-local -f gbm/Dockerfile.localtest ../
-
-#test-image:
-#	./tests/train_local.sh "test/test_gbm_prostate" h2o-gbm-sagemaker
