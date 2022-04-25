@@ -739,6 +739,53 @@ def test_explanation_grid_pareto_front():
     matplotlib.pyplot.close()
 
 
+def test_explanation_list_of_models_pareto_front():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    gbm_params1 = {'learn_rate': [0.01, 0.1],
+                   'max_depth': [3, 5, 9]}
+
+    # Train and validate a cartesian grid of GBMs
+    grid = H2OGridSearch(model=H2OGradientBoostingEstimator,
+                         grid_id='gbm_grid1',
+                         hyper_params=gbm_params1)
+    grid.train(y=y, training_frame=train, seed=1)
+
+    assert isinstance(h2o.explanation.pareto_front(grid.model_ids).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(h2o.explanation.pareto_front(grid.model_ids, "mse", "rmse").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    models = [h2o.get_model(m) for m in grid.model_ids]
+    assert isinstance(h2o.explanation.pareto_front(models).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(h2o.explanation.pareto_front(models, "mse", "rmse").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+def test_explanation_some_dataframe_pareto_front():
+    import pandas as pd
+    df = pd.DataFrame({"A": [1, 2, 3, 4, 5], "b": [4, 1, 3, 5, 2], "c": [5, 4, 3, 2, 1]})
+    h2o_df = h2o.H2OFrame(df)
+
+    assert isinstance(h2o.explanation.pareto_front(df).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(h2o.explanation.pareto_front(df, "A", "c").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(h2o.explanation.pareto_front(h2o_df).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(h2o.explanation.pareto_front(h2o_df, "A", "c").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+
+
 pyunit_utils.run_tests([
     test_get_xy,
     test_varimp,
@@ -755,4 +802,6 @@ pyunit_utils.run_tests([
     test_explanation_timeseries,
     test_explanation_automl_pareto_front,
     test_explanation_grid_pareto_front,
+    test_explanation_list_of_models_pareto_front,
+    test_explanation_some_dataframe_pareto_front,
     ])

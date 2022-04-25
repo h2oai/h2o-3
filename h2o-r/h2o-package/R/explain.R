@@ -3376,7 +3376,7 @@ setMethod("plot", "H2OParetoFront", function(x, y) {
   p <- ggplot2::ggplot(data = x@pareto_front, ggplot2::aes(
     x = .data[[x@x]],
     y = .data[[x@y]],
-    color = .data[["algo"]]
+    color = if ("algo" %in% names(x@pareto_front)) .data[["algo"]] else NULL
   )) +
     ggplot2::geom_point(data = x@leaderboard, alpha = 0.5)
 
@@ -3386,7 +3386,8 @@ setMethod("plot", "H2OParetoFront", function(x, y) {
   p +
     ggplot2::geom_point(size = 3) +
     ggplot2::labs(x = xlab, y = ylab, title = x@title) +
-    ggplot2::theme_bw()
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.title = ggplot2::element_blank())
 })
 
 
@@ -3400,7 +3401,8 @@ setMethod("show", "H2OParetoFront", function(object) {
 #'
 #' Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
 #' Pareto front there isn't a model that would be better in both criteria. This can be useful for example in picking
-#' models that are fast to predict and at the same time have high accuracy.
+#' models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
+#' the task is assumed to be minimization for both metrics.
 #'
 #' @param object H2OAutoML or H2OGrid
 #' @param x_criterium one of the metrics present in the leaderboard
@@ -3446,21 +3448,28 @@ h2o.pareto_front <- function(object,
                                              "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
                                              "RMSE", "RMSLE", "training_time_ms"),
                              title = NULL) {
-  models_info <- .process_models_or_automl(object, NULL, require_multiple_models = TRUE, require_newdata = FALSE)
-  leaderboard <- .create_leaderboard(models_info, NULL, top_n = Inf)
-  x_criterium <- case_insensitive_match_arg(x_criterium)
-  y_criterium <- case_insensitive_match_arg(y_criterium)
-  if (x_criterium == "AUTO") {
-    if ("predict_time_per_row_ms" %in% names(leaderboard))
-      x_criterium <- "predict_time_per_row_ms"
-    else
-      x_criterium <- names(leaderboard)[[3]]  # in case we were given a list of models not an aml object
-  }
-  if (y_criterium == "AUTO")
-    y_criterium <- names(leaderboard)[[2]]
+  leaderboard <- NULL
+  if ((is.data.frame(object) || inherits(object, "H2OFrame")) && !"model_id" %in% names(object)) {
+    leaderboard <- as.data.frame(object)
+    if (missing(x_criterium)) x_criterium <- names(leaderboard)[[1]]
+    if (missing(y_criterium)) y_criterium <- names(leaderboard)[[2]]
+  } else {
+    models_info <- .process_models_or_automl(object, NULL, require_multiple_models = TRUE, require_newdata = FALSE)
+    leaderboard <- .create_leaderboard(models_info, NULL, top_n = Inf)
+    x_criterium <- case_insensitive_match_arg(x_criterium)
+    y_criterium <- case_insensitive_match_arg(y_criterium)
+    if (x_criterium == "AUTO") {
+      if ("predict_time_per_row_ms" %in% names(leaderboard))
+        x_criterium <- "predict_time_per_row_ms"
+      else
+        x_criterium <- names(leaderboard)[[3]]  # in case we were given a list of models not an aml object
+    }
+    if (y_criterium == "AUTO")
+      y_criterium <- names(leaderboard)[[2]]
 
-  x_criterium <- tolower(x_criterium)
-  y_criterium <- tolower(y_criterium)
+    x_criterium <- tolower(x_criterium)
+    y_criterium <- tolower(y_criterium)
+  }
   if (!x_criterium %in% names(leaderboard))
     stop(sprintf("'%s' not found in the leaderboard!", x_criterium), call. = FALSE)
   if (!y_criterium %in% names(leaderboard))

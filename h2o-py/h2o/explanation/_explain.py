@@ -5,7 +5,7 @@ import warnings
 from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
 
-from h2o.utils.typechecks import assert_is_type, Enum
+from h2o.utils.typechecks import is_type, Enum
 
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
@@ -2705,9 +2705,10 @@ def pareto_front(models,
     """
     Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
     Pareto front there isn't a model that would be better in both criteria. This can be useful for example in picking
-    models that are fast to predict and at the same time have high accuracy.
+    models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
+    the task is assumed to be minimization for both metrics.
 
-    :param models: H2OAutoML or H2OGrid
+    :param models: H2OAutoML, H2OGrid, list of models, or leaderboard frame
     :param x_criterium: metric present in the leaderboard
     :param y_criterium: metric present in the leaderboard
     :param title: title used for the plot
@@ -2749,14 +2750,28 @@ def pareto_front(models,
     elif isinstance(models, h2o.grid.grid_search.H2OGridSearch):
         leaderboard = _get_leaderboard(models.models, None, top_n=float("inf"))
         name = models.grid_id
+    elif isinstance(models, list):
+        models = [h2o.get_model(m) if is_type(m, str) else m for m in models]
+        leaderboard = _get_leaderboard(models, None, top_n=float("inf"))
+    elif isinstance(models, h2o.H2OFrame):
+        leaderboard = models
+    else:
+        try:
+            leaderboard = h2o.H2OFrame(models)
+        except Exception:
+            raise ValueError("`models` paraameter has to be either H2OAutoML, H2OGrid, list of models or coercible to H2OFrame!")
 
     if x_criterium is None:
-        x_criterium = "predict_time_per_row_ms" if "predict_time_per_row_ms" in leaderboard.names else leaderboard.names[2]
+        if "predict_time_per_row_ms" in leaderboard.names:
+            x_criterium = "predict_time_per_row_ms"
+        else:
+            x_criterium = leaderboard.names[2] if "model_id" in leaderboard.names else leaderboard.names[0]
     if y_criterium is None:
         y_criterium = leaderboard.names[1]
 
-    x_criterium = x_criterium.lower()
-    y_criterium = y_criterium.lower()
+    if "model_id" in leaderboard.names: # do not lowercase the metric if we have some arbitrary frame as leaderboard
+        x_criterium = x_criterium.lower()
+        y_criterium = y_criterium.lower()
 
     if x_criterium not in leaderboard.names:
         raise ValueError("x_criterium {} is not in the leaderboard!".format(x_criterium))
@@ -2779,19 +2794,21 @@ def pareto_front(models,
 
     pf = _calculate_pareto_front(x, y, top=top, left=left)
 
-    algos = np.array(leaderboard["algo"].as_data_frame(use_pandas=False, header=False)).reshape(-1)
-    colors = plt.get_cmap(colormap, len(set(algos)))(list(range(len(set(algos)))))
-    algo_to_col = dict(zip(set(algos), colors))
-
+    cols = None
     fig = plt.figure(figsize=figsize)
-    plt.scatter(x, y, c=[algo_to_col[a] for a in algos], alpha=0.5)
+    if "algo" in leaderboard.columns:
+        algos = np.array(leaderboard["algo"].as_data_frame(use_pandas=False, header=False)).reshape(-1)
+        colors = plt.get_cmap(colormap, len(set(algos)))(list(range(len(set(algos)))))
+        algo_to_col = dict(zip(set(algos), colors))
+        cols = np.array([algo_to_col[a] for a in algos])
+        plt.legend(handles=[Line2D([0], [0], marker='o', color="w", label=a, markerfacecolor=algo_to_col[a], markersize=10)
+                            for a in algo_to_col.keys()])
+    plt.scatter(x, y, c=cols, alpha=0.5)
     plt.plot(x[pf], y[pf], c="k")
-    plt.scatter(x[pf], y[pf], c=[algo_to_col[a] for a in algos[pf]], s=100, zorder=100)
+    plt.scatter(x[pf], y[pf], c=cols[pf] if cols is not None else None, s=100, zorder=100)
     plt.xlabel(_pretty_metric_name(x_criterium))
     plt.ylabel(_pretty_metric_name(y_criterium))
     plt.grid(True)
-    plt.legend(handles=[Line2D([0], [0], marker='o', color="w", label=a, markerfacecolor=algo_to_col[a], markersize=10)
-                        for a in algo_to_col.keys()])
 
     if title is not None:
         plt.title(title)

@@ -670,6 +670,35 @@ explanation_test_grid_pareto_front <- function() {
   expect_ggplot(plot(h2o.pareto_front(grid, x_criterium = "auc", y_criterium = "rmse")))
 }
 
+explanation_test_list_of_models_pareto_front <- function() {
+  train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  y <- "CAPSULE"
+  train[, y] <- as.factor(train[, y])
+
+  grid <- h2o.grid("gbm", y = y, training_frame = train,
+                   hyper_params = list(ntrees = 1:6),
+                   seed = 1234)
+
+  expect_true(is.data.frame(h2o.pareto_front(grid@model_ids)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(grid@model_ids)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(grid@model_ids, x_criterium = "auc", y_criterium = "rmse")))
+}
+
+explanation_test_some_dataframe_pareto_front <- function() {
+  expect_true(is.data.frame(h2o.pareto_front(iris)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(iris)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(iris, x_criterium = "Petal.Length", y_criterium = "Sepal.Width")))
+
+  iris_h2o <- as.h2o(iris)
+  expect_true(is.data.frame(h2o.pareto_front(iris_h2o)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(iris_h2o)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(iris_h2o, x_criterium = "Petal.Length", y_criterium = "Sepal.Width")))
+}
+
+
 doSuite("Explanation Tests", makeSuite(
   varimp_test
   , explanation_test_single_model_regression
@@ -685,4 +714,6 @@ doSuite("Explanation Tests", makeSuite(
   , explanation_test_timeseries
   , explanation_test_automl_pareto_front
   , explanation_test_grid_pareto_front
+  , explanation_test_list_of_models_pareto_front
+  , explanation_test_some_dataframe_pareto_front
 ))
