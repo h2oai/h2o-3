@@ -9,6 +9,8 @@ import java.sql.*;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SQLManager {
 
@@ -88,7 +90,7 @@ public class SQLManager {
     final String _username;
     final String _password;
     final String _columns;
-    final boolean _useTempTable;
+    boolean _useTempTable;
     final String _tempTableName;
     final SqlFetchMode _fetch_mode;
     final Integer _num_chunks_hint;
@@ -146,6 +148,7 @@ public class SQLManager {
       String source_table = _table;
       final String[] columnNames;
       final byte[] columnH2OTypes;
+      String selectQuery = _select_query;
       try {
         conn = getConnectionSafe(_connection_url, _username, _password);
         stmt = conn.createStatement();
@@ -156,13 +159,21 @@ public class SQLManager {
           if (!_select_query.toLowerCase().startsWith("select")) {
             throw new IllegalArgumentException("The select query must start with `SELECT`, but instead is: " + _select_query);
           }
+          if (_select_query.toLowerCase().contains("order by")) {
+            selectQuery = modifyOrderByQueryPriorExecuting(_select_query, _database_type);
+            if (_database_type.equals(SQL_SERVER_DB_TYPE) && _useTempTable) {
+              _useTempTable = false;
+              Log.warn("'use_temp_table = True' not supported for this case, switching to 'use_temp_table = False'");
+            }
+          }
           if (_useTempTable) {
             source_table = _tempTableName;
             //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
             _j.update(0L, "Creating a temporary table");
-            numRow = stmt.executeUpdate(createTempTableSql(_database_type, source_table, _select_query));
+            numRow = stmt.executeUpdate(createTempTableSql(_database_type, source_table, selectQuery));
           } else {
-            source_table = "(" + _select_query + ") sub_h2o_import";
+            source_table = _tempTableName;
+            numRow = stmt.executeUpdate(createTempViewSql(source_table, selectQuery));
           }
         } else if (source_table.equals(SQLManager.TEMP_TABLE_NAME)) {
           //tables with this name are assumed to be created here temporarily and are dropped
@@ -314,7 +325,10 @@ public class SQLManager {
       DKV.put(fr);
       ParseDataset.logParseResults(fr);
       if (source_table.equals(_tempTableName))
-        dropTempTable(_connection_url, _username, _password, source_table);
+        if (_useTempTable)
+          dropTempTable(_connection_url, _username, _password, source_table);
+        else
+          dropTempView(_connection_url, _username, _password, source_table);
       tryComplete();
     }
 
@@ -329,6 +343,10 @@ public class SQLManager {
         default:
           return "CREATE TABLE " + tableName + " AS " + selectQuery;
       }
+  }
+
+  static String createTempViewSql(String viewName, String selectQuery) {
+    return "CREATE VIEW " + viewName + " AS " + selectQuery;
   }
 
   /**
@@ -353,6 +371,34 @@ public class SQLManager {
 
       default:
         return "SELECT " + columns + " FROM " + table + " LIMIT 1";
+    }
+  }
+
+  /**
+   * Re-builds SQL SELECT containing ORDER BY clause based on type of database
+   *
+   * @param databaseType
+   * @param query
+   * @return String SQL SELECT statement
+   */
+  static String modifyOrderByQueryPriorExecuting(String query, String databaseType) {
+
+    switch(databaseType) {
+      case SQL_SERVER_DB_TYPE:
+        String catchOrderByRegexp = "order\\s+by\\s+\\w+(\\s+asc|\\s+desc)?([\\s,]*\\w+(\\s+asc|\\s+desc)?)*$";
+        String newQuery = query.toLowerCase();
+        Pattern p = Pattern.compile(catchOrderByRegexp);
+        Matcher m = p.matcher(newQuery);
+
+        String lastMatch;
+        while (m.find()) {
+          lastMatch = m.group();
+          newQuery = newQuery.replace(lastMatch, lastMatch + " offset 0 rows");
+        }
+        return newQuery;
+
+      default:
+        return query;
     }
   }
 
@@ -791,11 +837,19 @@ public class SQLManager {
     }
   }
 
+  private static void dropTempView(String connection_url, String username, String password, String tableName) {
+    dropTemp(connection_url, username, password, tableName, "VIEW");
+  }
+
   private static void dropTempTable(String connection_url, String username, String password, String tableName) {
+    dropTemp(connection_url, username, password, tableName, "TABLE");
+  }
+
+  private static void dropTemp(String connection_url, String username, String password, String tableName, String what) {
     Connection conn = null;
     Statement stmt = null;
 
-    String drop_table_query = "DROP TABLE " + tableName;
+    String drop_table_query = "DROP " + what + " " + tableName;
     try {
       conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
