@@ -42,9 +42,9 @@ test.model.gam.random.gridsearch.dual.modes <- function() {
     hyper_parameters2$subspaces <- list(subspace2)
     
     gam_grid1 = h2o.grid("gam", grid_id="GAMModel1", x=xL, y=yR, training_frame=trainGaussian, family='gaussian',
-                         hyper_params=hyper_parameters, search_criteria=search_criteria)
+                         hyper_params=hyper_parameters, search_criteria=search_criteria, seed = 1234)
     gam_grid2 = h2o.grid("gam", grid_id="GAMModel2", x=xL, y=yR, training_frame=trainGaussian, family='gaussian',
-                         hyper_params=hyper_parameters2, search_criteria=search_criteria)
+                         hyper_params=hyper_parameters2, search_criteria=search_criteria, seed = 1234)
     
     numModel <- length(gam_grid1@model_ids)
     for (index in c(1:numModel)) {

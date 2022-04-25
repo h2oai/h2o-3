@@ -15,9 +15,9 @@ test.model.gam.dual.modes <- function() {
     gam_col2 <- list(c("C11"), c("C12", "C13"), c("C14", "C15", "C16"), c("C17"), c("C18"))
     bsT <- c(1,1,1,0,0)
     gam_model <- h2o.gam(x = xL, y = yR, gam_columns = gam_col1, training_frame = train, validation_frame = test, 
-    family = "gaussian", lambda_search=TRUE)
+    family = "gaussian", lambda_search=TRUE, seed = 1234)
     gam_model2 <- h2o.gam(x = xL, y = yR, gam_columns = gam_col2, training_frame = train, validation_frame = test, 
-    family = "gaussian", lambda_search=TRUE)
+    family = "gaussian", lambda_search=TRUE, seed = 1234)
     coeff1 <- gam_model@model$coefficients
     coeff2 <- gam_model2@model$coefficients
     

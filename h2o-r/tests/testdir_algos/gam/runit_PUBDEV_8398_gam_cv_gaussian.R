@@ -18,9 +18,9 @@ test.model.gam.cross.validation <- function() {
     train = splits[[1]]
     valid = splits[[2]]
     gam_valid <- h2o.gam(y = "C21", x = c(1:20), gam_columns = c("C11","C12","C13"), bs=c(0,1,2), training_frame = train, validation_frame = valid,
-    family = "gaussian", nfolds = 5, fold_assignment="modulo")
+    family = "gaussian", nfolds = 5, fold_assignment="modulo", seed=1)
     gam_no_valid <- h2o.gam(y = "C21", x = c(1:20), gam_columns = c("C11","C12","C13"), bs=c(0,1,2),training_frame = train, family = "gaussian", 
-                            nfolds = 5, fold_assignment="modulo")
+                            nfolds = 5, fold_assignment="modulo", seed=1)
     # coefficients from both models should be the same
     compareResult <- gam_valid@model$coefficients==gam_no_valid@model$coefficients
     expect_equal(sum(compareResult), length(gam_valid@model$coefficients))

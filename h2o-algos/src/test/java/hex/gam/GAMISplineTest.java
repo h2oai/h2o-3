@@ -1,23 +1,20 @@
 package hex.gam;
 
 import hex.glm.GLMModel;
-import javassist.compiler.ast.StringL;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
-import water.fvec.FVecFactory;
 import water.fvec.Frame;
-import water.parser.ParseDataset;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static hex.gam.GAMModel.adaptValidFrame;
 import static hex.gam.GamBasicISplineTest.EPS;
@@ -233,6 +230,7 @@ public class GAMISplineTest extends TestUtil {
         params._num_knots = numKnots;
         params._max_iterations = 1;
         params._ignored_columns = ignoredColumns;
+        params._seed = 1;
         final GAMModel gam = new GAM(params).trainModel().get();
         Scope.track_generic(gam);
         Frame gamifiedColumns = DKV.getGet(gam._output._gamTransformedTrainCenter);
