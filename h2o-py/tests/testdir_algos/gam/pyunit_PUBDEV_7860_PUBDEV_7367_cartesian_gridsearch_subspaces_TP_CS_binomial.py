@@ -59,12 +59,14 @@ class test_random_gam_gridsearch_specific:
                                                                                               scale=scale,
                                                                                               num_knots=num_knots,
                                                                                               bs=bsVal,
-                                                                                              lambda_=lambda_
+                                                                                              lambda_=lambda_,
+                                                                                              seed=1234
                                                                                           ))
 
     def train_models(self):
         self.h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="binomial",
-                                                                       keep_gam_cols=True), hyper_params=self.hyper_parameters, search_criteria=self.search_criteria)
+                                                                       keep_gam_cols=True, seed=1234),
+                                       hyper_params=self.hyper_parameters, search_criteria=self.search_criteria)
         self.h2o_model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
         for model in self.manual_gam_models:
             model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)

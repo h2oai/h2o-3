@@ -1,6 +1,5 @@
 package hex.gam;
 
-import org.apache.commons.math3.stat.inference.TestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -13,7 +12,6 @@ import water.parser.ParseDataset;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import static hex.gam.GamThinPlateRegressionBasicTest.assertCorrectStarT;
 import static hex.glm.GLMModel.GLMParameters.Family.binomial;
 import static org.junit.Assert.assertTrue;
 
@@ -204,6 +202,7 @@ public class GamGeneralTest extends TestUtil {
         params._savePenaltyMat = true;
         params._standardize_tp_gam_cols = true;
         params._spline_orders = spline_order;
+        params._seed = 1;
         return new GAM(params).trainModel().get();
     }
 }
