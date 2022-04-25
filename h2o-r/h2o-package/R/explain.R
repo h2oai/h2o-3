@@ -3396,6 +3396,47 @@ setMethod("show", "H2OParetoFront", function(object) {
   print(object@pareto_front)
 })
 
+#' Plot Pareto front
+#'
+#' Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
+#' Pareto front there isn't a model that would be better in both criteria. This can be useful for example in picking
+#' models that are fast to predict and at the same time have high accuracy.
+#'
+#' @param object H2OAutoML or H2OGrid
+#' @param x_criterium one of the metrics present in the leaderboard
+#' @param y_criterium one of the metrics present in the leaderboard
+#' @param title Title used for plotting
+#'
+#' @return An H2OParetoFront S4 object with plot method and pareto_front slot
+#'
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' aml <- h2o.automl(y = response,
+#'                   training_frame = train,
+#'                   max_models = 10,
+#'                   seed = 1)
+#'
+#' # Create the Pareto front
+#' pf <- h2o.pareto_front(aml)
+#' plot(pf)
+#' pf@pareto_front # to retrieve the Pareto front subset of the leaderboard
+#' }
 #' @export
 h2o.pareto_front <- function(object,
                              x_criterium = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",

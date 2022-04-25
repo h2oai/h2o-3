@@ -2703,13 +2703,42 @@ def pareto_front(models,
                  colormap="Dark2"  # type: str
                  ):
     """
+    Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
+    Pareto front there isn't a model that would be better in both criteria. This can be useful for example in picking
+    models that are fast to predict and at the same time have high accuracy.
 
-    :param models:
-    :param x_criterium:
-    :param y_criterium:
-    :param figsize:
-    :param colormap:
-    :return:
+    :param models: H2OAutoML or H2OGrid
+    :param x_criterium: metric present in the leaderboard
+    :param y_criterium: metric present in the leaderboard
+    :param title: title used for the plot
+    :param figsize: figure size; passed directly to matplotlib
+    :param colormap: colormap to use
+    :return: object that contains the resulting figure (can be accessed using result.figure())
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
+    >>>
+    >>> # Set the response
+    >>> response = "quality"
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = df.split_frame([0.8])
+    >>>
+    >>> # Train an H2OAutoML
+    >>> aml = H2OAutoML(max_models=10)
+    >>> aml.train(y=response, training_frame=train)
+    >>>
+    >>> # Create the Pareto front
+    >>> pf = aml.pareto_front()
+    >>> pf.figure() # get the Pareto front plot
+    >>> pf # H2OFrame containing the Pareto front subset of the leaderboard
     """
     plt = get_matplotlib_pyplot(False, True)
     from matplotlib.lines import Line2D
@@ -2717,7 +2746,7 @@ def pareto_front(models,
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         leaderboard = _get_leaderboard(models, None, top_n=float("inf"))
         name = models.project_name
-    if isinstance(models, h2o.grid.grid_search.H2OGridSearch):
+    elif isinstance(models, h2o.grid.grid_search.H2OGridSearch):
         leaderboard = _get_leaderboard(models.models, None, top_n=float("inf"))
         name = models.grid_id
 
