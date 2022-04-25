@@ -1029,7 +1029,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     return Key.make("__binary_merge__Chunk_for_col" + col + "_batch" + batch
         // + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
         + "_leftSB._msb" + leftMSB + "_riteSB._msb" + rightMSB,
-      (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(rightMSB==-1 ? leftMSB : rightMSB)
+      Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(rightMSB==-1 ? leftMSB : rightMSB)
     ); //TODO home locally
   }
 
