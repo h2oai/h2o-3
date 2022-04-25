@@ -1,7 +1,7 @@
 ########################################### UTILS ##################################################
 
 #' Works like match.arg but ignores case
-#' @param arg
+#' @param arg argument to match that should be declared as a character vector containing possible values
 #' @return matched arg
 case_insensitive_match_arg <- function(arg) {
   var_name <- as.character(substitute(arg))
@@ -3345,7 +3345,14 @@ setClass("H2OParetoFront", slots = c(
   title = "character"
   ))
 
-setMethod("plot", "H2OParetoFront", function(x, y) {
+#' Plot Pareto front
+#' @param x \code{H2OParetoFront} object
+#' @param y missing
+#' @param ... unused
+#' @rdname plot-methods
+#' @importFrom graphics plot
+#' @exportMethod plot
+setMethod("plot", "H2OParetoFront", function(x, y, ...) {
   .check_for_ggplot2()
   if (!missing(y)) stop("Argument y is not used!")
   .data <- NULL
@@ -3391,11 +3398,15 @@ setMethod("plot", "H2OParetoFront", function(x, y) {
     ggplot2::theme(legend.title = ggplot2::element_blank())
 })
 
-
+#' Show H2OParetoFront
+#'
+#' @param object \code{H2OParetoFront} object
+#' @export
 setMethod("show", "H2OParetoFront", function(object) {
   cat(object@title, "\n")
   cat("with respect to ", object@x, " and ", object@y, ":\n")
   print(object@pareto_front)
+  invisible(object)
 })
 
 #' Plot Pareto front
