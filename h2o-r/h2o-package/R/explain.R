@@ -1,7 +1,7 @@
 ########################################### UTILS ##################################################
 
 #' Works like match.arg but ignores case
-#' @oaram arg
+#' @param arg
 #' @return matched arg
 case_insensitive_match_arg <- function(arg) {
   var_name <- as.character(substitute(arg))
