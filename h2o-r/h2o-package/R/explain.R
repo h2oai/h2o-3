@@ -3386,6 +3386,7 @@ setMethod("plot", "H2OParetoFront", function(x, y) {
   p +
     ggplot2::geom_point(size = 3) +
     ggplot2::labs(x = xlab, y = ylab, title = x@title) +
+    ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
     ggplot2::theme_bw() +
     ggplot2::theme(legend.title = ggplot2::element_blank())
 })
