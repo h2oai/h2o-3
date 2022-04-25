@@ -715,7 +715,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
   }
 
-  // Step 2: Make 2*N binary weight vectors
+  // Step 2: Make 2*N binary weight vectors:
+  // 2*f vectors contain weights for training frame of fold f
+  // 2*f+1 vectors contain weights for holdout frame of fold f
   Vec[] cv_makeWeights(final int N, FoldAssignment foldAssignment) {
     String origWeightsName = _parms._weights_column;
     Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
@@ -779,6 +781,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
+      cv_mb._parms._model_lifecyle_id = origDest;
       cv_mb._parms._is_cv_model = true;
       cv_mb._parms._cv_holdout_fold = i;
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
@@ -1602,6 +1605,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
+      if (_parms._model_lifecyle_id == null) _parms._model_lifecyle_id = _result.toString();
       boolean scopeTrack = !_parms._is_cv_model;
       Frame newtrain = applyTransformers(_train, DataTransformer.Stage.Training, scopeTrack);
       newtrain = encodeFrameCategoricals(newtrain, DataTransformer.Stage.Training, scopeTrack); //we could turn this into a data transformer later

@@ -16,7 +16,7 @@ public interface CVSupport {
 
   /**
    * @return the total amount of folds is using "arithmetic" folding, or -1 if no folding or for column-based folding.
-   * @see {@link #getFoldColumnName()}
+   * @see {@link #getFoldColumn()}
    */
   int getNFolds();
 
@@ -28,7 +28,7 @@ public interface CVSupport {
   /**
    * @return the name of the fold column if any, or null if none.
    */
-  String getFoldColumnName();
+  String getFoldColumn();
   
   /**
    * @return the current holdout fold (out of {@link #getTotalFolds()}), or -1 if none.

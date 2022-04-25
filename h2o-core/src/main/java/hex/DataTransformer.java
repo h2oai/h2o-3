@@ -22,4 +22,6 @@ public interface DataTransformer {
   default Frame transform(Frame fr) {
     return transform(fr, Stage.Scoring, null);
   }
+  
+  default void remove() {};
 }

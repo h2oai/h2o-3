@@ -142,6 +142,9 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         
       } else { // works for both binary and regression
         aggs = new AstGroup.AGG[2];
+        // note: we could probably support weight_column here by providing a different aggregation function
+        //  that would sum after multiplying the target value by the weight for the first aggregation
+        //  and count rows with the same weight factor for the second one.
         aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, targetIdx, NAHandling.ALL, -1);
         aggs[1] = new AstGroup.AGG(AstGroup.FCN.nrow, targetIdx, NAHandling.ALL, -1);
         result = new AstGroup().performGroupingWithAggregations(fr, groupBy, aggs).getFrame();
@@ -418,9 +421,9 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
           if (_targetClass == NO_TARGET_CLASS)  // regression
             num.set(i, num.atd(i) - target.atd(i));
           else if (_targetClass == ti)          // classification
-            num.set(i, num.atd(i) - 1);
+            num.set(i, num.atd(i) - 1);         // note: to support weights_column, we should subtract row weight here instead of 1
           
-          den.set(i, den.atd(i) - 1);
+          den.set(i, den.atd(i) - 1);           // same as above
         }
       }
     }

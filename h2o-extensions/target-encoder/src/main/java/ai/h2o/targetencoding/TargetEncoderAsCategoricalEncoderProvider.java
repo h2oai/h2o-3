@@ -5,7 +5,6 @@ import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.DataTransformSupport;
 import hex.Model;
 import water.DKV;
-import water.IKeyed;
 import water.Key;
 import water.Keyed;
 import water.fvec.Frame;
@@ -17,6 +16,13 @@ import hex.encoding.CategoricalEncodingSupport;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * TODO: 
+ * - document all new interfaces/public methods
+ * - double check how CV transform is applied in TE, especially regarding how weights are used to apply folds: shouldn't TE support weight_column?
+ * - try to apply default rules to decide if a column should be TE-encoded vs AUTO-encoded, e.g. column cardinality > X.
+ * - if TE not encoding all categorical columns then find a way to ensure that AUTO is applied on others (using getDefaultCategoricalEncoding).
+ */
 public class TargetEncoderAsCategoricalEncoderProvider implements CategoricalEncoderProvider {
   @Override
   public String getScheme() {
@@ -25,23 +31,29 @@ public class TargetEncoderAsCategoricalEncoderProvider implements CategoricalEnc
 
   @Override
   public CategoricalEncoder getEncoder(CategoricalEncodingSupport params) {
-    CategoricalEncoder encoder = params.getCategoricalEncoder();
-    if (encoder != null) return encoder;
+    Key<TargetEncoderModel> teKey = Key.make(params.getModelLifecycleId()+"_catencoder_TE");
+    TargetEncoderModel teModel =  teKey.get();
+    if (teModel != null) return new TargetEncoderAsCategoricalEncoder(teModel);
     
-    assert params instanceof Model.Parameters: "TargetEncoder can be instantiated as a CategoricalEncoder only at model initialization with a complete Model.Parameters instance";
+    assert params instanceof Model.Parameters: "TargetEncoder can be trained as a CategoricalEncoder only at model initialization with a complete Model.Parameters instance";
     Model.Parameters modelParams = (Model.Parameters)params;
-    TargetEncoderAsCategoricalEncoder teEncoder = new TargetEncoderAsCategoricalEncoder(modelParams);
-    // store the instance in params as we don't want to have to retrain TE each time we need to encode a frame.
-    modelParams._categoricalEncoderKey = teEncoder.getKey();
-    return teEncoder;
+    return new TargetEncoderAsCategoricalEncoder(modelParams, teKey);
   }
   
-  static class TargetEncoderAsCategoricalEncoder extends Keyed<TargetEncoderAsCategoricalEncoder> implements CategoricalEncoder{
+  static class TargetEncoderAsCategoricalEncoder implements CategoricalEncoder {
     
     private Key<TargetEncoderModel> _teKey;
 
-    public TargetEncoderAsCategoricalEncoder(Model.Parameters params) {
-      super(Key.make());
+    public TargetEncoderAsCategoricalEncoder(TargetEncoderModel teModel) {
+      _teKey = teModel.getKey();
+    }
+
+    public TargetEncoderAsCategoricalEncoder(Model.Parameters params, Key<TargetEncoderModel> teKey) { 
+      _teKey = teKey;
+      DKV.put(buildModel(params));
+    }
+    
+    private TargetEncoderModel buildModel(Model.Parameters params) {
       TargetEncoderParameters teParams = new TargetEncoderParameters();
       teParams._train = params._train;
       teParams._response_column = params._response_column;
@@ -71,12 +83,9 @@ public class TargetEncoderAsCategoricalEncoderProvider implements CategoricalEnc
       teParams._columns_to_encode = toEncode.stream()
               .map(col -> new String[] {col})
               .toArray(String[][]::new);
-      
-      TargetEncoder te = new TargetEncoder(teParams);
-      TargetEncoderModel teModel = te.trainModel().get();
-      DKV.put(teModel);
-      _teKey = teModel.getKey();
-      DKV.put(this);
+
+      TargetEncoder te = new TargetEncoder(teParams, _teKey);
+      return te.trainModel().get();
     }
 
     @Override
@@ -97,6 +106,11 @@ public class TargetEncoderAsCategoricalEncoderProvider implements CategoricalEnc
     
     private TargetEncoderModel getTargetEncoderModel() {
       return _teKey == null ? null : _teKey.get();
+    }
+
+    @Override
+    public void remove() {
+      Keyed.remove(_teKey);
     }
   }
 }

@@ -1,7 +1,7 @@
 package hex;
 
-import hex.encoding.CategoricalEncoder;
-import hex.encoding.NoopCategoricalEncoder;
+import hex.encoding.*;
+import hex.encoding.CategoricalEncoding;
 import hex.genmodel.*;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.tree.ContributionComposer;
@@ -24,14 +24,12 @@ import water.api.StreamingSchema;
 import water.api.schemas3.KeyV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
-import hex.encoding.CategoricalEncodingSupport;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.persist.Persist;
 import water.udf.CFuncRef;
 import water.util.*;
-import hex.encoding.CategoricalEncoding;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -515,9 +513,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     
     public ToEigenVec getToEigenVec() { return null; }
     
-    public Key<? extends CategoricalEncoder> _categoricalEncoderKey; // not always available, used only to store specific stateful encoders (e.g. TargetEncoder)
-    public CategoricalEncoder getCategoricalEncoder() {
-      return _categoricalEncoderKey == null ? null : _categoricalEncoderKey.get();
+    String _model_lifecyle_id;  // internal use only
+    @Override
+    public String getModelLifecycleId() {
+      return _model_lifecyle_id;
     }
 
     @Override
@@ -530,11 +529,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return _nfolds;
     }
     
-    @Override
-    public String getFoldColumnName() {
-      return _fold_column;
-    }
-
     @Override
     public FoldAssignmentScheme getFoldAssignment() {
       return _fold_assignment;
@@ -1611,7 +1605,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface AdaptFrameParameters extends CategoricalEncodingSupport {
     String getWeightsColumn();
     String getOffsetColumn();
-    String getFoldColumn();
     String getResponseColumn();
     String getTreatmentColumn();
     double missingColumnsType();
@@ -2358,6 +2351,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       deleteCrossValidationFoldAssignment();
       deleteCrossValidationPreds();
       deleteCrossValidationModels();
+      if (!_parms.isCVModel()) CategoricalEncoding.getEncoder(_parms._categorical_encoding, _parms).remove();
     }
     cleanUp(_toDelete);
     return super.remove_impl(fs, cascade);

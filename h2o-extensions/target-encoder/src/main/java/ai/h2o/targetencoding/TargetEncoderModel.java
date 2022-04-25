@@ -312,7 +312,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * Core method for applying pre-calculated encodings to the dataset. 
    *
    * @param data dataset that will be used as a base for creation of encodings .
-   * @param asTraining is true, the original dataLeakageStrategy is applied, otherwise this is forced to {@link DataLeakageHandlingStrategy#None}.
+   * @param asTraining if true, the original dataLeakageStrategy is applied, otherwise this is forced to {@link DataLeakageHandlingStrategy#None}.
    * @param holdoutFold 
    * @param blendingParams this provides parameters allowing to mitigate the effect 
    *                       caused by small observations of some categories when computing their encoded value.

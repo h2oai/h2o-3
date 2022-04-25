@@ -307,16 +307,16 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
               return FoldAssignmentScheme.AUTO;
             }
             @Override
-            public String getFoldColumnName() {
-              return null;
-            }
-            @Override
             public int getHoldoutFold() {
               return -1;
             }
             @Override
             public int getTotalFolds() {
               return 0;
+            }
+            @Override
+            public String getModelLifecycleId() {
+              return null;
             }
         };
     }

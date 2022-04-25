@@ -216,6 +216,7 @@ public class TargetEncoder extends ModelBuilder<TargetEncoderModel, TargetEncode
         Scope.enter();
         switch (leakageHandlingStrategy) {
           case KFold:
+            
             long[] foldValues = getUniqueColumnValues(encodings, encodings.find(foldColumn));
             for (long foldValue : foldValues) {
               Frame outOfFoldEncodings = getOutOfFoldEncodings(encodings, foldColumn, foldValue);
