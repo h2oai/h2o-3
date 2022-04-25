@@ -36,12 +36,13 @@ from collections import Counter
 import h2o
 import helper_functions
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+import datetime
 
 prefix = '/opt/ml/'
 config_prefix = 'input/config/'
 demo_prefix = '/opt/program/'
 input_prefix = 'input/data'
-checkpoints_dir = 'opt/ml/checkpoints'
+checkpoints_dir = prefix + 'checkpoints'
 
 def _connect_to_cluster():
     print("Creating Connection to H2O-3")
@@ -66,8 +67,26 @@ def _connect_to_cluster():
     h2o.connect(url="http://127.0.0.1:54321")
 
 
+def _load_last_checkpoint():
+    if not os.path.isdir(checkpoints_dir):
+        return None
+
+    checkpoint_files = [os.path.join(checkpoints_dir, filename)
+                        for filename in os.listdir(checkpoints_dir)]
+    if len(checkpoint_files) == 0:
+        return None
+
+    checkpoint_files.sort(key=lambda checkpoint_file: os.path.getctime(checkpoint_file))
+    last_checkpoint = checkpoint_files[-1]
+    last_checkpoint_time = datetime.datetime.fromtimestamp(os.path.getctime(checkpoint_files[-1]))
+
+    print("Loading last checkpoint:", last_checkpoint, "created at: ", last_checkpoint_time)
+
+    return h2o.upload_model(last_checkpoint)
+
+
 def _get_data(prefix, channel_name):
-    input_path = prefix + 'input/data'
+    input_path = prefix + input_prefix
     training_path = os.path.join(input_path, channel_name)
     data_files = [os.path.join(training_path, filename)
                   for filename in os.listdir(training_path)
@@ -129,6 +148,12 @@ def _train_model(hyperparameters={}, resource_params={}):
         for col in categorical_columns:
             train_data[col] = train_data[col].asfactor()
 
+        checkpoint = _load_last_checkpoint()
+        if checkpoint is not None:
+            gbm_params.update({'checkpoint': checkpoint.model_id})
+
+        print("Define algorithm with attributes:")
+        print(gbm_params)
         gbm_model = H2OGradientBoostingEstimator(**gbm_params)
         gbm_model.train(x=X, y=y, training_frame=train_data)
 

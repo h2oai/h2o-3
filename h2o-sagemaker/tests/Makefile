@@ -12,7 +12,7 @@ test-image-titanic:
 	./train_local.sh test_gbm_titanic h2o-gbm-sagemaker
 
 test-image-checkpoint:
-	./train_local.sh test_gbm_prostate_checkpoint h2o-gbm-sagemaker
+	./train_local.sh test_gbm_prostate_checkpoint h2o-gbm-local
 
 test-image-checkpoint-produced:
-	./train_local.sh test_gbm_prostate_checkpoints_correctly_produced h2o-gbm-sagemaker
+	./train_local.sh test_gbm_prostate_checkpoints_correctly_produced h2o-gbm-local

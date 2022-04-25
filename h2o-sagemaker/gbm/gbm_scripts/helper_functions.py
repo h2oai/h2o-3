@@ -38,7 +38,6 @@ def _create_h2o_cluster(resource_params={}):
 
 def _get_parameters():
     # Sagemaker expects things to go here
-    prefix = '/opt/ml/'
     param_path = os.path.join(prefix, config_prefix, 'hyperparameters.json')
     resource_path = os.path.join(prefix, config_prefix, 'resourceConfig.json')
     # Ingest parameters for training from file hyperparameters.json
@@ -52,22 +51,6 @@ def _get_parameters():
             print(param_path)
             print('All Parameters:')
             print(hyperparameters)
-
-    if hyperparameters == {}:
-        print("No hyperparameters were provided")
-        print("Falling back to demo hyperparameters path")
-        if os.path.isfile(demo_path):
-            with open(demo_path, 'r') as df:
-                hyperparameters = json.load(df)
-                print(demo_path)
-                print('All Parameters:')
-                print(hyperparameters)
-        else:
-            print("Demo file does not exist, falling back to defaults")
-            hyperparameters = {'training': {'distribution': 'AUTO',
-                                            'target': 'label',
-                                            'categorical_columns': ''},
-                               'learn_rate': 0.5}
 
     resource_params = {}
     if os.path.isfile(resource_path):
@@ -105,7 +88,7 @@ def _parse_hyperparameters(hyperparameters_dict):
                    "response_column", "sample_rate", "sample_rate_per_class",
                    "score_each_iteration", "score_tree_interval", "seed",
                    "stopping_metric", "stopping_rounds", "stopping_tolerance",
-                   "tweedie_power", "weights_column"]
+                   "tweedie_power", "weights_column", "in_training_checkpoints_dir"]
 
     list_kwargs = ["class_sampling_factors", "ignored_columns",
                    "sample_rate_per_class"]

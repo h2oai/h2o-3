@@ -1,5 +1,7 @@
 {
-  "training": "{'target': 'CAPSULE', 'distribution': 'AUTO', 'categorical_columns': 'RACE'}",
-  "learn_rate": 0.5
+  "training": "{'target': 'CAPSULE', 'distribution': 'AUTO', 'categorical_columns': 'RACE,CAPSULE'}",
+  "in_training_checkpoints_dir": "/opt/ml/checkpoints",
+  "learn_rate": 0.5,
+  "ntrees": 10,
+  "model_id": "gbm_checkpoits"
 }
-
