@@ -769,11 +769,11 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
   }
 
   public Key localModelInfoKey(H2ONode node) {
-    return Key.make(_model_id + ".node" + node.index(), (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, node);
+    return Key.make(_model_id + ".node" + node.index(), (byte) 31 /*hidden user-key*/, true, node);
   }
 
   public Key elasticAverageModelInfoKey() {
-    return Key.make(_model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
+    return Key.make(_model_id + ".elasticaverage", (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
   }
 
   static public class GradientCheck {

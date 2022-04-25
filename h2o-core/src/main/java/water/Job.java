@@ -103,7 +103,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   // Job Keys are pinned to this node (i.e., the node that invoked the
   // computation), because it should be almost always updated locally
-  private static Key<Job> defaultJobKey() { return Key.make((byte) 0, Key.JOB, false, H2O.SELF); }
+  private static Key<Job> defaultJobKey() { return Key.make(Key.JOB, false, H2O.SELF); }
 
 
   /** Job start_time and end_time using Sys.CTM */
@@ -226,7 +226,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   // --------------
   /** A system key for global list of Job keys. */
-  public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+  public static final Key<Job> LIST = Key.make(" JobList", Key.BUILT_IN_KEY, false);
 
   public String[] warns() {
     update_from_remote();

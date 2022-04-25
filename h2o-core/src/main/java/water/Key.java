@@ -89,16 +89,15 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // function - it does not DO any replication, nor does it dictate any policy
   // on how fast replication occurs. Returns -1 if the desired replica
   // is nonsense, e.g. asking for replica #3 in a 2-Node system.
-  int D( int repl ) {
+  int D() {
     int hsz = H2O.CLOUD.size();
 
     if (0 == hsz) return -1;    // Clients starting up find no cloud, be unable to home keys
 
     // See if this is a specifically homed Key
-    if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?
-      assert repl == 0 : "No replication is support now";
+    if( !user_allowed() && 0 < _kb[1] ) { // Asking for a replica# from the homed list?
       assert _kb[0] != Key.CHK;
-      H2ONode h2o = H2ONode.intern(_kb,2+repl*(H2ONode.H2Okey.SIZE /* serialized bytesize of H2OKey - depends on IP protocol */));
+      H2ONode h2o = H2ONode.intern(_kb,2);
       // Reverse the home to the index
       int idx = h2o.index();
       if( idx >= 0 ) return idx;
@@ -137,11 +136,11 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
       // 15+ -> remaining rounds in groups of 16:     nidx= (cidx-15*hsz)>>4
       int z = x==0 ? 0 : (x<=2 ? 1 : (x<=6 ? 2 : (x<=14 ? 3 : 4)));
       int nidx = (cidx-((1<<z)-1)*hsz)>>z;
-      return ((nidx+repl)&0x7FFFFFFF) % hsz;
+      return (nidx&0x7FFFFFFF) % hsz;
     }
 
     // Easy Cheesy Stupid:
-    return ((_hash+repl)&0x7FFFFFFF) % hsz;
+    return (_hash&0x7FFFFFFF) % hsz;
   }
 
 
@@ -165,26 +164,17 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // breaking ties on writes. 'char' because I want an unsigned 16bit thing,
   // limit of 65534 Cloud members. -1 is reserved for a bare-key
   private static int home ( long cache ) { return (int)(cache>>> 8)&0xFFFF; }
-  // Our replica #, or -1 if we're not one of the first 127 replicas. This
-  // value is found using the Cloud distribution function and changes for a
-  // changed Cloud.
-  private static int replica(long cache) { return (byte)(cache>>>24)&0x00FF; }
-  // Desired replication factor. Can be zero for temp keys. Not allowed to
-  // later, because it messes with e.g. meta-data on disk.
-  private static int desired(long cache) { return (int)(cache>>>32)&0x00FF; }
 
-  private static long build_cache( int cidx, int home, int replica, int desired ) {
+  private static long build_cache(int cidx, int home) {
     return // Build the new cache word
         ((long)(cidx &0xFF)<< 0) |
         ((long)(home &0xFFFF)<< 8) |
-        ((long)(replica&0xFF)<<24) |
-        ((long)(desired&0xFF)<<32) |
-        ((long)(0 )<<40);
+        ((long)(0)<<24) |
+        ((long)(0)<<32) |
+        ((long)(0)<<40);
   }
 
   int home ( H2O cloud ) { return home (cloud_info(cloud)); }
-  int replica( H2O cloud ) { return replica(cloud_info(cloud)); }
-  int desired( ) { return desired(_cache); }
 
   /** True if the {@link #home_node} is the current node.
    *  @return True if the {@link #home_node} is the current node */
@@ -220,25 +210,11 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     // Cache missed! Probably it just needs (atomic) updating.
     // But we might be holding the stale cloud...
     // Figure out home Node in this Cloud
-    char home = (char)D(0);
-    // Figure out what replica # I am, if any
-    int desired = desired(x);
-    int replica = -1;
-    for( int i=0; i<desired; i++ ) {
-      int idx = D(i);
-      if( idx >= 0 && cloud._memary[idx] == H2O.SELF ) {
-        replica = i;
-        break;
-      }
-    }
-    long cache = build_cache(cloud._idx,home,replica,desired);
+    char home = (char)D();
+    long cache = build_cache(cloud._idx,home);
     set_cache(cache); // Attempt to upgrade cache, but ignore failure
     return cache; // Return the magic word for this Cloud
   }
-
-  // Default desired replication factor. Unless specified otherwise, all new
-  // k-v pairs start with this replication factor.
-  static final byte DEFAULT_DESIRED_REPLICA_FACTOR = 1;
 
   // Construct a new Key.
   private Key(byte[] kb) {
@@ -257,8 +233,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   // Make new Keys.  Optimistically attempt interning, but no guarantee.
-  static <P extends Keyed> Key<P> make(byte[] kb, byte rf) {
-    if( rf == -1 ) throw new IllegalArgumentException();
+  public static <P extends Keyed> Key<P> make(byte[] kb) {
     Key key = new Key(kb);
     Key key2 = H2O.getk(key); // Get the interned version, if any
     if( key2 != null ) // There is one! Return it instead
@@ -266,7 +241,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
     // Set the cache with desired replication factor, and a fake cloud index
     H2O cloud = H2O.CLOUD; // Read once
-    key._cache = build_cache(cloud._idx-1,0,0,rf);
+    key._cache = build_cache(cloud._idx-1,0);
     key.cloud_info(cloud); // Now compute & cache the real data
     return key;
   }
@@ -280,10 +255,6 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     return "_"+Long.toHexString(l1)+Long.toHexString(l2);
   }
 
-  /** Factory making a Key from a byte[]
-   *  @return Desired Key */
-  public static <P extends Keyed> Key<P> make(byte[] kb) { return make(kb, DEFAULT_DESIRED_REPLICA_FACTOR); }
-
   /** Factory making a Key from a String
    *  @return Desired Key */
   public static <P extends Keyed> Key<P> make(String s) {
@@ -291,10 +262,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   public static <P extends Keyed> Key<P> makeSystem(String s) {
-    return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY, false);
+    return make(s,BUILT_IN_KEY, false);
   }
   public static <P extends Keyed> Key<P> makeUserHidden(String s) {
-    return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,HIDDEN_USER_KEY, false);
+    return make(s,HIDDEN_USER_KEY, false);
   }
 
   /**
@@ -303,11 +274,8 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    * @return the new key
    */
   public static <P extends Keyed> Key<P> make(H2ONode node) {
-    return make(decodeKeyName(rand()),DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY,false,node);
+    return make(decodeKeyName(rand()),BUILT_IN_KEY,false,node);
   }
-  static <P extends Keyed> Key<P> make(String s, byte rf) { return make(decodeKeyName(s), rf);}
-  /** Factory making a random Key
-   *  @return Desired Key */
   public static <P extends Keyed> Key<P> make() { return make(rand()); }
 
   /** Factory making a homed system Key.  Requires the initial system byte but
@@ -317,8 +285,8 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    *  substituted.  The rf parameter and passing more than 1 H2ONode are both
    *  depreciated.
    *  @return the desired Key   */
-  public static <P extends Keyed> Key<P> make(String s, byte rf, byte systemType, boolean hint, H2ONode... replicas) {
-    return make(decodeKeyName(s),rf,systemType,hint,replicas);
+  public static <P extends Keyed> Key<P> make(String s, byte systemType, boolean hint, H2ONode... replicas) {
+    return make(decodeKeyName(s),systemType,hint,replicas);
   }
   /** Factory making a homed system Key.  Requires the initial system byte and
    *  uses {@link #rand} for the remaining bytes.  Requires a list of exactly
@@ -327,13 +295,13 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    *  substituted.  The rf parameter and passing more than 1 H2ONode are both
    *  depreciated.
    *  @return the desired Key   */
-  public static <P extends Keyed> Key<P> make(byte rf, byte systemType, boolean hint, H2ONode... replicas) {
-    return make(rand(),rf,systemType,hint,replicas);
+  public static <P extends Keyed> Key<P> make(byte systemType, boolean hint, H2ONode... replicas) {
+    return make(rand(),systemType,hint,replicas);
   }
 
 
   // Make a Key which is homed to specific nodes.
-  public static <P extends Keyed> Key<P> make(byte[] kb, byte rf, byte systemType, boolean required, H2ONode... replicas) {
+  public static <P extends Keyed> Key<P> make(byte[] kb, byte systemType, boolean required, H2ONode... replicas) {
     // no more than 3 replicas allowed to be stored in the key
     assert 0 <=replicas.length && replicas.length<=3;
     assert systemType<32; // only system keys allowed
@@ -354,7 +322,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
       h2o.write(ab);
     ab.put4(-1);
     ab.putA1(kb,kb.length);
-    return make(Arrays.copyOf(ab.buf(),ab.position()),rf);
+    return make(Arrays.copyOf(ab.buf(),ab.position()));
   }
 
   /**
