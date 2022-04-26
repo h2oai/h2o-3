@@ -4202,6 +4202,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #'     plot(gbm, timestep = "number_of_trees", metric = "mae")
 #' }
 #' }
+#' @method plot H2OModel
 #' @export
 plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
   df <- as.data.frame(x@model$scoring_history)
@@ -4582,6 +4583,7 @@ setMethod("h2o.gains_lift_plot", "H2OModel", function(object, type = c("both", "
   .gains_lift_plot(gain_table, type = match.arg(type))
 })
 
+#' @method plot H2OBinomialMetrics
 #' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
@@ -4618,6 +4620,7 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   }
 }
 
+#' @method plot H2OBinomialUpliftMetrics
 #' @export
 plot.H2OBinomialUpliftMetrics <- function(x, metric="AUTO", normalize=FALSE, main, ...) {
     if(!metric %in% c("AUTO", "qini", "lift", "gain")) stop("metric must be 'AUTO', 'qini' or 'lift' or 'gain'")
@@ -4820,6 +4823,7 @@ h2o.tabulate <- function(data, x, y,
 #'              weights_column = NULL, nbins_x = 10, nbins_y = 10)
 #' plot(tab)
 #' }
+#' @method plot H2OTabulate
 #' @export
 plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 12, ...) {
 
