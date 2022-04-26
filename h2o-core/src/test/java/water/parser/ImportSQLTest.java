@@ -68,24 +68,4 @@ public class ImportSQLTest extends TestUtil{
     sql_f.delete();
   }
 
-
-  @Test
-  public void detectOrderBy() {
-   String query = "select * from citibike_new order by tripduration";
-
-    // todo: adapt so that catches all order bys not just at the end of string
-    String catchOrderByRegexp = "order\\s+by\\s+\\w+(\\s+asc|\\s+desc)?([\\s,]*\\w+(\\s+asc|\\s+desc)?)*$";
-    Pattern p = Pattern.compile(catchOrderByRegexp);
-    Matcher m = p.matcher(query);
-
-    String lastMatch;
-    String newQuery = query;
-    while (m.find()) {
-      lastMatch = m.group();
-      newQuery = newQuery.replace(lastMatch, lastMatch + " offset 0 rows");
-    }
-
-    assertTrue(newQuery.equals("SELECT * from t order by x, y  offset 0 rows union select * from p order by s, z offset 0 rows"));
-  }
-
 }

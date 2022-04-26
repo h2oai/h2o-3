@@ -14,6 +14,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import static org.junit.Assert.assertEquals;
+
 public class SQLManagerTest {
 
   private static final File BUILD_DIR = new File("build").getAbsoluteFile();
@@ -132,5 +134,20 @@ public class SQLManagerTest {
     // default: PostgreSQL, mySQL
     Assert.assertEquals("SELECT * FROM mytable LIMIT 1310 OFFSET 0",
             SQLManager.buildSelectChunkSql("", "mytable", 0, 1310, "*", null));
+  }
+
+  @Test
+  public void detectOrderBy() {
+    String query = "SELECT * FROM t ORDER BY x, y UNION SELECT * FROM p ORDER BY s, z";
+    assertEquals("SELECT * FROM t ORDER BY x, y OFFSET 0 ROWS UNION SELECT * FROM p ORDER BY s, z OFFSET 0 ROWS",
+            SQLManager.modifyOrderByQueryPriorExecuting(query, "sqlserver"));
+
+    query = "SELECT * FROM citibike_new ORDER BY tripduration";
+    assertEquals("SELECT * FROM citibike_new ORDER BY tripduration OFFSET 0 ROWS",
+            SQLManager.modifyOrderByQueryPriorExecuting(query, "sqlserver"));
+
+    query = "SELECT starttime, stoptime, tripduration, bikeid FROM citibike_new ORDER BY bikeid DESC";
+    assertEquals("SELECT starttime, stoptime, tripduration, bikeid FROM citibike_new ORDER BY bikeid DESC OFFSET 0 ROWS",
+            SQLManager.modifyOrderByQueryPriorExecuting(query, "sqlserver"));
   }
 }

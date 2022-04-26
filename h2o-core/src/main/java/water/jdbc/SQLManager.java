@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
+
 public class SQLManager {
 
   private static final String TEMP_TABLE_NAME = "table_for_h2o_import";
@@ -385,15 +387,15 @@ public class SQLManager {
 
     switch(databaseType) {
       case SQL_SERVER_DB_TYPE:
-        String catchOrderByRegexp = "order\\s+by\\s+\\w+(\\s+asc|\\s+desc)?([\\s,]*\\w+(\\s+asc|\\s+desc)?)*$";
-        String newQuery = query.toLowerCase();
-        Pattern p = Pattern.compile(catchOrderByRegexp);
+        String catchOrderByRegexp = "ORDER\\s+BY\\s+\\w+(\\s+ASC|\\s+DESC)?([\\s,]*\\w+(\\s+ASC|\\s+DESC)?)";
+        String newQuery = query;
+        Pattern p = Pattern.compile(catchOrderByRegexp, CASE_INSENSITIVE);
         Matcher m = p.matcher(newQuery);
 
         String lastMatch;
         while (m.find()) {
           lastMatch = m.group();
-          newQuery = newQuery.replace(lastMatch, lastMatch + " offset 0 rows");
+          newQuery = newQuery.replace(lastMatch, lastMatch + " OFFSET 0 ROWS");
         }
         return newQuery;
 
