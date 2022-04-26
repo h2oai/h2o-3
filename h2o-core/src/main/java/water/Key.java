@@ -83,20 +83,15 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     return val == null ? null : (T)val.get();
   }
 
-  // *Desired* distribution function on keys & replication factor. Replica #0
-  // is the master, replica #1, 2, 3, etc represent additional desired
-  // replication nodes. Note that this function is just the distribution
-  // function - it does not DO any replication, nor does it dictate any policy
-  // on how fast replication occurs. Returns -1 if the desired replica
-  // is nonsense, e.g. asking for replica #3 in a 2-Node system.
+  // *Desired* distribution function on keys
   int D() {
     int hsz = H2O.CLOUD.size();
 
     if (0 == hsz) return -1;    // Clients starting up find no cloud, be unable to home keys
 
     // See if this is a specifically homed Key
-    if( !user_allowed() && 0 < _kb[1] ) { // Asking for a replica# from the homed list?
-      assert _kb[0] != Key.CHK;
+    if (!user_allowed() && _kb[1] == 1) {
+      assert _kb[0] != Key.CHK; // Chunks cannot be custom-homed
       H2ONode h2o = H2ONode.intern(_kb,2);
       // Reverse the home to the index
       int idx = h2o.index();
@@ -159,19 +154,16 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // The Cloud index, a byte uniquely identifying the last 256 Clouds. It
   // changes atomically with the _cache word, so we can tell which Cloud this
   // data is a cache of.
-  private static int cloud( long cache ) { return (int)(cache>>> 0)&0x00FF; }
-  // Shortcut node index for Home replica#0. This replica is responsible for
-  // breaking ties on writes. 'char' because I want an unsigned 16bit thing,
-  // limit of 65534 Cloud members. -1 is reserved for a bare-key
-  private static int home ( long cache ) { return (int)(cache>>> 8)&0xFFFF; }
+  static int cloud( long cache ) { return (int)(cache>>> 0)&0x00FF; }
+  // Shortcut node index for Home.
+  // 'char' because I want an unsigned 16bit thing, limit of 65534 Cloud members.
+  // -1 is reserved for a bare-key
+  static int home ( long cache ) { return (int)(cache>>> 8)&0xFFFF; }
 
-  private static long build_cache(int cidx, int home) {
+  static long build_cache(int cidx, int home) {
     return // Build the new cache word
-        ((long)(cidx &0xFF)<< 0) |
-        ((long)(home &0xFFFF)<< 8) |
-        ((long)(0)<<24) |
-        ((long)(0)<<32) |
-        ((long)(0)<<40);
+        ((long) (cidx & 0xFF)) |
+        ((long) (home & 0xFFFF) << 8);
   }
 
   int home ( H2O cloud ) { return home (cloud_info(cloud)); }
@@ -238,11 +230,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     Key key2 = H2O.getk(key); // Get the interned version, if any
     if( key2 != null ) // There is one! Return it instead
       return key2;
-
-    // Set the cache with desired replication factor, and a fake cloud index
+    
     H2O cloud = H2O.CLOUD; // Read once
-    key._cache = build_cache(cloud._idx-1,0);
-    key.cloud_info(cloud); // Now compute & cache the real data
+    key._cache = build_cache(cloud._idx-1,0); // Build a dummy cache with a fake cloud index
+    key.cloud_info(cloud); // Now force compute & cache the real data
     return key;
   }
 
@@ -262,10 +253,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   public static <P extends Keyed> Key<P> makeSystem(String s) {
-    return make(s,BUILT_IN_KEY, false);
+    return make(s,BUILT_IN_KEY);
   }
   public static <P extends Keyed> Key<P> makeUserHidden(String s) {
-    return make(s,HIDDEN_USER_KEY, false);
+    return make(s,HIDDEN_USER_KEY);
   }
 
   /**
@@ -279,49 +270,53 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   public static <P extends Keyed> Key<P> make() { return make(rand()); }
 
   /** Factory making a homed system Key.  Requires the initial system byte but
-   *  then allows a String for the remaining bytes.  Requires a list of exactly
-   *  one H2ONode to home at.  The hint specifies if it is an error to name an
-   *  H2ONode that is NOT in the Cloud, or if some other H2ONode can be
-   *  substituted.  The rf parameter and passing more than 1 H2ONode are both
-   *  depreciated.
+   *  then allows a String for the remaining bytes. 
+   *
+   *  Requires specifying the home node of the key. The required specifies 
+   *  if it is an error to name an H2ONode that is NOT in the Cloud, or if 
+   *  some other H2ONode can be substituted.
    *  @return the desired Key   */
-  public static <P extends Keyed> Key<P> make(String s, byte systemType, boolean hint, H2ONode... replicas) {
-    return make(decodeKeyName(s),systemType,hint,replicas);
+  public static <P extends Keyed> Key<P> make(String s, byte systemType, boolean required, H2ONode home) {
+    return make(decodeKeyName(s),systemType,required,home);
+  }
+  /** Factory making a system Key.  Requires the initial system byte but
+   *  then allows a String for the remaining bytes.
+   *  @return the desired Key   */
+  public static <P extends Keyed> Key<P> make(String s, byte systemType) {
+    return make(decodeKeyName(s),systemType,false,null);
   }
   /** Factory making a homed system Key.  Requires the initial system byte and
-   *  uses {@link #rand} for the remaining bytes.  Requires a list of exactly
-   *  one H2ONode to home at.  The hint specifies if it is an error to name an
-   *  H2ONode that is NOT in the Cloud, or if some other H2ONode can be
-   *  substituted.  The rf parameter and passing more than 1 H2ONode are both
-   *  depreciated.
+   *  uses {@link #rand} for the remaining bytes.
+   *  
+   *  Requires specifying the home node of the key. The required specifies 
+   *  if it is an error to name an H2ONode that is NOT in the Cloud, or if 
+   *  some other H2ONode can be substituted.
    *  @return the desired Key   */
-  public static <P extends Keyed> Key<P> make(byte systemType, boolean hint, H2ONode... replicas) {
-    return make(rand(),systemType,hint,replicas);
+  public static <P extends Keyed> Key<P> make(byte systemType, boolean required, H2ONode home) {
+    return make(rand(),systemType,required,home);
   }
 
 
   // Make a Key which is homed to specific nodes.
-  public static <P extends Keyed> Key<P> make(byte[] kb, byte systemType, boolean required, H2ONode... replicas) {
-    // no more than 3 replicas allowed to be stored in the key
-    assert 0 <=replicas.length && replicas.length<=3;
-    assert systemType<32; // only system keys allowed
-    boolean inCloud=true;
-    for( H2ONode h2o : replicas ) if( !H2O.CLOUD.contains(h2o) ) inCloud = false;
-    if( required ) assert inCloud; // If required placement, error to find a client as the home
-    else if( !inCloud ) replicas = new H2ONode[0]; // If placement is a hint & cannot be placed, then ignore
+  private static <P extends Keyed> Key<P> make(byte[] kb, byte systemType, boolean required, H2ONode home) {
+    assert systemType < 32; // only system keys allowed
+    home = home != null && H2O.CLOUD.contains(home) ? home : null;
+    assert !required || home != null; // If homing is not required and home is not in cloud (or null), then ignore
 
     // Key byte layout is:
     // 0 - systemType, from 0-31
-    // 1 - replica-count, plus up to 3 bits for ip4 vs ip6
-    // 2-n - zero, one, two or 3 IP4 (4+2 bytes) or IP6 (16+2 bytes) addresses
+    // 1 - is homed to a specific node (0 or 1)
+    // 2-n - if homed then IP4 (4+2 bytes) or IP6 (16+2 bytes) address
     // 2-5- 4 bytes of chunk#, or -1 for masters
     // n+ - repeat of the original kb
     AutoBuffer ab = new AutoBuffer();
-    ab.put1(systemType).put1(replicas.length);
-    for( H2ONode h2o : replicas )
-      h2o.write(ab);
+    ab.put1(systemType);
+    ab.putZ(home != null);
+    if (home != null) {
+      home.write(ab);
+    }
     ab.put4(-1);
-    ab.putA1(kb,kb.length);
+    ab.putA1(kb, kb.length);
     return make(Arrays.copyOf(ab.buf(),ab.position()));
   }
 
