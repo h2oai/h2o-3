@@ -226,7 +226,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   // --------------
   /** A system key for global list of Job keys. */
-  public static final Key<Job> LIST = Key.make(" JobList", Key.BUILT_IN_KEY, false);
+  public static final Key<Job> LIST = Key.make(" JobList", Key.BUILT_IN_KEY);
 
   public String[] warns() {
     update_from_remote();
