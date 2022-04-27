@@ -41,25 +41,29 @@ def call(final pipelineContext) {
                   stageName: 'Java 8 JUnit A', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 8,
                   timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
                   additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-                  imageSpecifier: 'python-2.7-jdk-8'
+                  imageSpecifier: 'python-2.7-jdk-8',
+                  nodeLabel: "micro_21"
           ],
           [
                   stageName: 'Java 8 JUnit B', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 8,
                   timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
                   additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-                  imageSpecifier: 'python-2.7-jdk-8'
+                  imageSpecifier: 'python-2.7-jdk-8',
+                  nodeLabel: "micro_21"
           ],    
           [
                   stageName: 'Java 8 JUnit C', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 8,
                   timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
                   additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-                  imageSpecifier: 'python-2.7-jdk-8'
+                  imageSpecifier: 'python-2.7-jdk-8',
+                  nodeLabel: "micro_21"
           ],
           [
                   stageName: 'Java 8 JUnit D', target: 'test-junit-jenkins', pythonVersion: '2.7', javaVersion: 8,
                   timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
                   additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-                  imageSpecifier: 'python-2.7-jdk-8'
+                  imageSpecifier: 'python-2.7-jdk-8',
+                  nodeLabel: "micro_21"
           ]
   ]
 
