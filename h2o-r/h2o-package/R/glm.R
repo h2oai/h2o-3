@@ -70,6 +70,9 @@
 #'        training/validation frame, use with conjunction missing_values_handling = PlugValues)
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
+#' @param dispersion_factor_mode Method used to estimate the dispersion factor for Tweedie, Gamma and Negative Binomial only. Must be one of:
+#'        "Pearson", "ML".
+#' @param init_dispersion_factor Initial value of disperion factor to be estimated using either Pearson or ML.  Default to 1.0. Defaults to 1.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
@@ -208,6 +211,8 @@ h2o.glm <- function(x,
                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                     plug_values = NULL,
                     compute_p_values = FALSE,
+                    dispersion_factor_mode = c("Pearson", "ML"),
+                    init_dispersion_factor = 1,
                     remove_collinear_columns = FALSE,
                     intercept = TRUE,
                     non_negative = FALSE,
@@ -340,6 +345,10 @@ h2o.glm <- function(x,
     parms$plug_values <- plug_values
   if (!missing(compute_p_values))
     parms$compute_p_values <- compute_p_values
+  if (!missing(dispersion_factor_mode))
+    parms$dispersion_factor_mode <- dispersion_factor_mode
+  if (!missing(init_dispersion_factor))
+    parms$init_dispersion_factor <- init_dispersion_factor
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
   if (!missing(intercept))
@@ -458,6 +467,8 @@ h2o.glm <- function(x,
                                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                                     plug_values = NULL,
                                     compute_p_values = FALSE,
+                                    dispersion_factor_mode = c("Pearson", "ML"),
+                                    init_dispersion_factor = 1,
                                     remove_collinear_columns = FALSE,
                                     intercept = TRUE,
                                     non_negative = FALSE,
@@ -595,6 +606,10 @@ h2o.glm <- function(x,
     parms$plug_values <- plug_values
   if (!missing(compute_p_values))
     parms$compute_p_values <- compute_p_values
+  if (!missing(dispersion_factor_mode))
+    parms$dispersion_factor_mode <- dispersion_factor_mode
+  if (!missing(init_dispersion_factor))
+    parms$init_dispersion_factor <- init_dispersion_factor
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
   if (!missing(intercept))

@@ -312,6 +312,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final static NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     public GLMType _glmType = GLMType.glm;
     public boolean _generate_scoring_history = false; // if true, will generate scoring history but will slow algo down
+    public DispersionMode _dispersion_factor_mode;
+    public double _init_dispersion_factor=1.0;
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -694,6 +696,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       Family(Link link){defaultLink = link;}
     }
     
+    public enum DispersionMode {Pearson, ML} // methods used to estimate dispersion parameter, ML = maximum likelhood
     public static enum GLMType {glm, gam, hglm} // special functions are performed depending on GLMType.  Internal use
     public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit, ologlog}
 

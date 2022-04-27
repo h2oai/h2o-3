@@ -52,6 +52,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "missing_values_handling",
             "plug_values",
             "compute_p_values",
+            "dispersion_factor_mode",
+            "init_dispersion_factor",
             "remove_collinear_columns",
             "intercept",
             "non_negative",
@@ -176,6 +178,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "inverse", "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
     public GLMParameters.Link link;
     
+    @API(help="Method used to estimate the dispersion factor for Tweedie, Gamma and Negative Binomial only.",
+            level = Level.secondary, values={"Pearson", "ML"})
+    public GLMParameters.DispersionMode dispersion_factor_mode;
+    
     @API(help = "Link function array for random component in HGLM.", values = {"[identity]", "[family_default]"},level = Level.secondary, gridable=true)   
     public GLMParameters.Link[] rand_link; // link function for random components
 
@@ -196,6 +202,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
+
+    @API(help = "Initial value of disperion factor to be estimated using either Pearson or ML.  Default to 1.0.", level = Level.expert)
+    public double init_dispersion_factor;
 
     @API(help = "Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all coefficients to zero)." +
     " Default indicates: if the number of observations is greater than the number of variables, then lambda_min_ratio" +

@@ -23,6 +23,8 @@ import java.util.Arrays;
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
 import static hex.glm.GLMUtils.updateGradGam;
 import static hex.glm.GLMUtils.updateGradGamMultinomial;
+import static org.apache.commons.math3.special.Gamma.digamma;
+import static org.apache.commons.math3.special.Gamma.trigamma;
 
 /**
  * All GLM related distributed tasks:
@@ -3185,6 +3187,94 @@ public abstract class GLMTask  {
     }
     @Override
     public void reduce(ComputeSETsk c){_sumsqe += c._sumsqe; _wsum += c._wsum;}
+  }
+
+  /***
+   * This function will assist in the estimation of dispersion factors using maximum likelihood
+   */
+  public static class ComputeMLSETsk extends FrameTask2<ComputeMLSETsk> {
+    final double [] _betaNew;
+    double _sumlnyiOui;
+    double _sumyiOverui;
+    double _wsum;
+
+    public ComputeMLSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, double [] betaNew, GLMParameters parms) {
+      super(cmp, dinfo, jobKey);
+      _glmf = new GLMWeightsFun(parms);
+      _betaNew = betaNew;
+    }
+    
+    transient double _sparseOffsetNew = 0;
+    final GLMWeightsFun _glmf;
+    transient GLMWeights _glmw;
+    @Override public void chunkInit(){
+      if(_sparse) {
+        _sparseOffsetNew = GLM.sparseOffset(_betaNew, _dinfo);
+      }
+      _glmw = new GLMWeights();
+    }
+
+    @Override
+    protected void processRow(Row r) {
+      double z = r.response(0) - r.offset;  // response
+      double w = r.weight;
+      if (z > 0  & w > 0) {
+        double eta = _glmf._family.equals(Family.tweedie) ? r.innerProduct(_betaNew) + _sparseOffsetNew + r.offset
+                : r.innerProduct(_betaNew) + _sparseOffsetNew;
+        double xmu = _glmf.linkInv(eta); // ui
+        double temp = w * z / xmu;
+        _sumyiOverui += temp;
+        _sumlnyiOui += w*Math.log(temp);
+        _wsum += w;
+      }
+    }
+    @Override
+    public void reduce(ComputeMLSETsk c){
+      _sumlnyiOui += c._sumlnyiOui;
+      _sumyiOverui += c._sumyiOverui;
+      _wsum += c._wsum;}
+  }
+
+  /***
+   * This function will assist in the estimation of dispersion factors using maximum likelihood
+   */
+  public static class ComputeDiTriGammaTsk extends FrameTask2<ComputeDiTriGammaTsk> {
+    double _sumDigamma;
+    double _sumTrigamma;
+    double _alpha;
+    double[] _betaNew;
+
+    public ComputeDiTriGammaTsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, double[] betaNew, GLMParameters parms, double alpha) {
+      super(cmp, dinfo, jobKey);
+      _glmf = new GLMWeightsFun(parms);
+      _alpha = alpha;
+      _betaNew = betaNew;
+    }
+
+    transient double _sparseOffsetNew = 0;
+    final GLMWeightsFun _glmf;
+    transient GLMWeights _glmw;
+    @Override public void chunkInit(){
+      if(_sparse) {
+        _sparseOffsetNew = GLM.sparseOffset(_betaNew, _dinfo);
+      }
+      _glmw = new GLMWeights();
+    }
+
+    @Override
+    protected void processRow(Row r) {
+      double z = r.response(0) - r.offset;  // response
+      double w = r.weight;
+      if (z > 0  & w > 0) {
+        _sumDigamma += w*digamma(w*_alpha);
+        _sumTrigamma += w*w*trigamma(w*_alpha);
+      }
+    }
+    @Override
+    public void reduce(ComputeDiTriGammaTsk c){
+      _sumDigamma += c._sumDigamma;
+      _sumTrigamma += c._sumTrigamma;
+    }
   }
 
   static class GLMIncrementalGramTask extends MRTask<GLMIncrementalGramTask> {

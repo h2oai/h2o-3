@@ -72,6 +72,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip", "plug_values"]
                  plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  compute_p_values=False,  # type: bool
+                 dispersion_factor_mode=None,  # type: Optional[Literal["pearson", "ml"]]
+                 init_dispersion_factor=1.0,  # type: float
                  remove_collinear_columns=False,  # type: bool
                  intercept=True,  # type: bool
                  non_negative=False,  # type: bool
@@ -232,6 +234,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                regularization
                Defaults to ``False``.
         :type compute_p_values: bool
+        :param dispersion_factor_mode: Method used to estimate the dispersion factor for Tweedie, Gamma and Negative
+               Binomial only.
+               Defaults to ``None``.
+        :type dispersion_factor_mode: Literal["pearson", "ml"], optional
+        :param init_dispersion_factor: Initial value of disperion factor to be estimated using either Pearson or ML.
+               Default to 1.0.
+               Defaults to ``1.0``.
+        :type init_dispersion_factor: float
         :param remove_collinear_columns: In case of linearly dependent columns, remove some of the dependent columns
                Defaults to ``False``.
         :type remove_collinear_columns: bool
@@ -389,6 +399,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.missing_values_handling = missing_values_handling
         self.plug_values = plug_values
         self.compute_p_values = compute_p_values
+        self.dispersion_factor_mode = dispersion_factor_mode
+        self.init_dispersion_factor = init_dispersion_factor
         self.remove_collinear_columns = remove_collinear_columns
         self.intercept = intercept
         self.non_negative = non_negative
@@ -1361,6 +1373,34 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def compute_p_values(self, compute_p_values):
         assert_is_type(compute_p_values, None, bool)
         self._parms["compute_p_values"] = compute_p_values
+
+    @property
+    def dispersion_factor_mode(self):
+        """
+        Method used to estimate the dispersion factor for Tweedie, Gamma and Negative Binomial only.
+
+        Type: ``Literal["pearson", "ml"]``.
+        """
+        return self._parms.get("dispersion_factor_mode")
+
+    @dispersion_factor_mode.setter
+    def dispersion_factor_mode(self, dispersion_factor_mode):
+        assert_is_type(dispersion_factor_mode, None, Enum("pearson", "ml"))
+        self._parms["dispersion_factor_mode"] = dispersion_factor_mode
+
+    @property
+    def init_dispersion_factor(self):
+        """
+        Initial value of disperion factor to be estimated using either Pearson or ML.  Default to 1.0.
+
+        Type: ``float``, defaults to ``1.0``.
+        """
+        return self._parms.get("init_dispersion_factor")
+
+    @init_dispersion_factor.setter
+    def init_dispersion_factor(self, init_dispersion_factor):
+        assert_is_type(init_dispersion_factor, None, numeric)
+        self._parms["init_dispersion_factor"] = init_dispersion_factor
 
     @property
     def remove_collinear_columns(self):

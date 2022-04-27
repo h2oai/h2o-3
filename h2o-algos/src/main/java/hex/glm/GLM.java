@@ -51,6 +51,8 @@ import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
+import static hex.glm.GLMModel.GLMParameters.DispersionMode.ML;
+import static hex.glm.GLMModel.GLMParameters.DispersionMode.Pearson;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.*;
 import static hex.glm.GLMUtils.*;
@@ -990,6 +992,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error(_parms._non_negative ? "non_negative" : "beta_constraints",
                 " does not work with " + _parms._family + " family.");
       }
+      // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
+      if (ML.equals(_parms._dispersion_factor_mode) && !tweedie.equals(_parms._family) && !gamma.equals(_parms._family)
+              && !negativebinomial.equals(_parms._family))
+        error("dispersion_factor_mode", " ML can only be used for families tweedie, gamma or" +
+                " negativebinoimal.");
+      
+      if (_parms._compute_p_values && _parms._dispersion_factor_mode==null)
+        _parms._dispersion_factor_mode = Pearson;
+      
+      if (_parms._init_dispersion_factor <= 0)
+        error("init_dispersion_factor", " must exceed 0.0.");
 
       boolean standardizeQ = _parms._HGLM?false:_parms._standardize;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, standardizeQ ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
@@ -2301,17 +2314,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       if (_parms._compute_p_values) { // compute p-values
-        double se = 1;
+        double se = _parms._init_dispersion_factor;
         boolean seEst = false;
         double[] beta = _state.beta();
 
         if (_parms._family != binomial && _parms._family != Family.poisson) {
           seEst = true;
-          ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
-          if (_parms._useDispersion1)
-            se = 1.0;
-          else
-            se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate
+          if (Pearson.equals(_parms._dispersion_factor_mode)){
+            ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, 
+                    _parms).doAll(_state.activeData()._adaptedFrame);
+            se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate using pearson
+          } else if (ML.equals(_parms._dispersion_factor_mode)) {
+            seEst = true;
+            Log.info("estimating dispersion factor using maximum likelihood");
+            ComputeMLSETsk mlCT = new ComputeMLSETsk(null, _state.activeData(), _job._key, beta,
+                    _parms).doAll(_state.activeData()._adaptedFrame);
+            if (gamma.equals(_parms._family)) {
+              double oneOverSe = estimateMLSE(mlCT, 1.0 / se, _state, _job._key, beta, _parms);
+              se = 1.0 / oneOverSe;
+            }
+          }
         }
         double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
         Cholesky chol = _chol;
