@@ -1515,7 +1515,8 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
   }
 
   rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
-  rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
+  if (show_rug)
+    rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
 
   if (.is_datetime(newdata[[column]])) {
     pdp[[col_name]] <- .to_datetime(pdp[[col_name]])
@@ -2591,7 +2592,8 @@ h2o.pd_multi_plot <- function(object,
             column, "\" feature.")
   }
   rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
-  rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
+  if (show_rug)
+    rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
   if (h2o.isfactor(newdata[[column]]))
     margin <- ggplot2::margin(5.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
