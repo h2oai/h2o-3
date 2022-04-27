@@ -1092,7 +1092,8 @@ pd_ice_common <- function(model,
                           grouping_column = NULL,
                           output_graphing_data = FALSE,
                           grouping_variable_value = NULL,
-                          nbins = 100) {
+                          nbins = 100,
+                          show_rug = TRUE) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   if (missing(column))
@@ -1129,9 +1130,9 @@ pd_ice_common <- function(model,
 
   with_no_h2o_progress({
     if (is_ice) {
-      return(handle_ice(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value, nbins))
+      return(handle_ice(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value, nbins, show_rug))
     } else {
-      return(handle_pdp(newdata, column, target, show_logodds, row_index, models_info, nbins))
+      return(handle_pdp(newdata, column, target, show_logodds, row_index, models_info, nbins, show_rug))
     }
   })
 }
@@ -1184,7 +1185,7 @@ pd_ice_common <- function(model,
   }
 }
 
-handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value=NULL, nbins) {
+handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value=NULL, nbins, show_rug) {
   .data <- NULL
   col_name <- make.names(column)
   margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
@@ -1390,8 +1391,10 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
   )
 
   q <- q +
-    histogram +
-    rug_part +
+    histogram
+  if (show_rug)
+    q <- q + rug_part
+  q <- q +
     plot_name +
     histogram_alignment +
     theme_part +
@@ -1457,7 +1460,7 @@ get_y_values <- function(mean, stddev) {
   l <- list(y_range = y_range, y_min = y_min, y_max = y_max, y_vals = y_vals)
 }
 
-handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_info, nbins) {
+handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_info, nbins, show_rug) {
   .data <- NULL
   col_name <- make.names(column)
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
@@ -1526,17 +1529,18 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
     stat_count_or_bin(!.is_continuous(newdata[[column]]),
                       ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_[["y_range"]]) / 1.61),
                       position = ggplot2::position_nudge(y = y_[["y_range"]][[1]] - 0.05 * diff(y_[["y_range"]])), alpha = 0.2,
-                      inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
+                      inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
     geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
     geom_pointrange_or_ribbon(!.is_continuous(newdata[[column]]), ggplot2::aes(
       ymin = y_[["y_min"]],
       ymax = y_[["y_max"]],
       group = .data$target
-    )) +
-    ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, fill = NULL),
-                      sides = "b", alpha = 0.1, color = "black",
-                      data = rug_data
-    )
+    ))
+  if (show_rug)
+    p <- p +
+      ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, fill = NULL),
+                        sides = "b", alpha = 0.1, color = "black",
+                        data = rug_data)
   if (row_index > -1) {
     row_val <- newdata[row_index, column]
     if (.is_datetime(newdata[[column]]))
@@ -2439,6 +2443,7 @@ h2o.residual_analysis_plot <- function(model, newdata) {
 #' @param grouping_column A feature column name to group the data and provide separate sets of plots
 #'                          by grouping feature values
 #' @param nbins A number of bins used. Defaults to 100.
+#' @param show_rug  Show rug to visualize the density of the column. Defaults to TRUE.
 #'
 #' @return A ggplot2 object
 #' @examples
@@ -2475,8 +2480,23 @@ h2o.pd_plot <- function(object,
                         max_levels = 30,
                         binary_response_scale = c("response", "logodds"),
                         grouping_column = NULL,
-                        nbins = 100) {
-  return(pd_ice_common(object, newdata, column, target, row_index, max_levels, FALSE, binary_response_scale, FALSE, FALSE, grouping_column, FALSE, nbins))
+                        nbins = 100,
+                        show_rug = TRUE) {
+  return(pd_ice_common(
+    model = object,
+    newdata = newdata,
+    column = column,
+    target = target,
+    row_index = row_index,
+    max_levels = max_levels,
+    show_pdp = FALSE,
+    binary_response_scale = binary_response_scale,
+    centered = FALSE,
+    is_ice = FALSE,
+    grouping_column = grouping_column,
+    output_graphing_data = FALSE,
+    nbins = nbins,
+    show_rug = show_rug))
 }
 
 
@@ -2495,7 +2515,7 @@ h2o.pd_plot <- function(object,
 #' @param row_index Optional. Calculate Individual Conditional Expectation (ICE) for row, \code{row_index}.  Integer.
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
 #'                   Defaults to 30.
-#'
+#' @param show_rug  Show rug to visualize the density of the column. Defaults to TRUE.
 #' @return A ggplot2 object
 #' @examples
 #'\dontrun{
@@ -2531,7 +2551,8 @@ h2o.pd_multi_plot <- function(object,
                               best_of_family = TRUE,
                               target = NULL,
                               row_index = NULL,
-                              max_levels = 30) {
+                              max_levels = 30,
+                              show_rug = TRUE) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -2612,9 +2633,6 @@ h2o.pd_multi_plot <- function(object,
         "Target: ", pdp[["target"]]
       )
 
-      col_name <- make.names(column)
-      rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
-      rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
       y_range <- c(min(pdp$mean_response - pdp$stddev_response), max(pdp$mean_response + pdp$stddev_response))
 
       p <- ggplot2::ggplot(ggplot2::aes(
@@ -2625,17 +2643,18 @@ h2o.pd_multi_plot <- function(object,
         stat_count_or_bin(!.is_continuous(newdata[[column]]),
                           ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                           position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                          inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
+                          inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
         geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
         geom_pointrange_or_ribbon(!.is_continuous(newdata[[column]]), ggplot2::aes(
           ymin = .data$mean_response - .data$stddev_response,
           ymax = .data$mean_response + .data$stddev_response,
           group = .data$target
-        )) +
-        ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, fill = NULL),
-                          sides = "b", alpha = 0.1, color = "black",
-                          data = rug_data
-        )
+        ))
+      if (show_rug)
+        p <- p +
+          ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, fill = NULL),
+                            sides = "b", alpha = 0.1, color = "black",
+                            data = rug_data)
       if (row_index > -1) {
         row_val <- newdata[row_index, column]
         if (.is_datetime(newdata[[column]]))
@@ -2723,8 +2742,6 @@ h2o.pd_multi_plot <- function(object,
       "Mean Response: ", data[["values"]], "\n"
     )
 
-    rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
-    rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
     y_range <- range(data$values)
 
     p <- ggplot2::ggplot(ggplot2::aes(
@@ -2738,11 +2755,12 @@ h2o.pd_multi_plot <- function(object,
                         ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                         position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
                         inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
-      geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id))) +
-      ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL),
-                        sides = "b", alpha = 0.1, color = "black",
-                        data = rug_data
-      )
+      geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id)))
+    if (show_rug)
+      p <- p +
+        ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL),
+                          sides = "b", alpha = 0.1, color = "black",
+                          data = rug_data)
     if (row_index > -1) {
       row_val <- newdata[row_index, column]
       if (.is_datetime(newdata[[column]]))
@@ -2887,6 +2905,7 @@ is_binomial <- function(model) {
 #'                          by grouping feature values
 #' @param output_graphing_data A bool whether to output final graphing data to a frame. Defaults to FALSE.
 #' @param nbins A number of bins used. Defaults to 100.
+#' @param show_rug  Show rug to visualize the density of the column. Defaults to TRUE.
 #' @param ... Custom parameters.
 #'
 #' @return A ggplot2 object
@@ -2927,10 +2946,26 @@ h2o.ice_plot <- function(model,
                          grouping_column = NULL,
                          output_graphing_data = FALSE,
                          nbins = 100,
+                         show_rug = TRUE,
                          ...) {
   kwargs <- list(...)
   grouping_variable_value <- kwargs[['grouping_variable_value']]
-  return(pd_ice_common(model, newdata, column, target, NULL, max_levels, show_pdp, binary_response_scale, centered, TRUE, grouping_column, output_graphing_data, grouping_variable_value, nbins))
+  return(pd_ice_common(
+    model = model,
+    newdata = newdata,
+    column = column,
+    target = target,
+    row_index = NULL,
+    max_levels = max_levels,
+    show_pdp = show_pdp,
+    binary_response_scale = binary_response_scale,
+    centered = centered,
+    is_ice = TRUE,
+    grouping_column = grouping_column,
+    output_graphing_data = output_graphing_data,
+    grouping_variable_value = grouping_variable_value,
+    nbins = nbins,
+    show_rug = show_rug))
 }
 
 
