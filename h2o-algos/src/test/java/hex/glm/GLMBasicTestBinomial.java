@@ -1466,9 +1466,9 @@ public class GLMBasicTestBinomial extends TestUtil {
       Key[] splits = sf._destination_frames;
       Frame trainFrame = Scope.track((Frame) splits[0].get());
       Scope.track((Frame) splits[1].get());
-      double[] startVal = new double[]{0.7453275580005079, 0.64848157889351, 0.6002544346079828, 0.8681890882639597,
-              0.8383870319271398, 0.8867949974556715, 0.07576417746370567, 0.5373550607913393, 0.005879217569412454,
-              0.8942772492726005, 0.3461378283678047};
+      double[] startVal = new double[]{0.07453275580005079, 0.064848157889351, 0.06002544346079828, 0.08681890882639597,
+              0.08383870319271398, 0.08867949974556715, 0.007576417746370567, 0.05373550607913393, 0.0005879217569412454,
+              0.08942772492726005, 0.03461378283678047};
       GLMParameters parms = new GLMParameters();
       parms._family = binomial;
       parms._train = trainFrame._key;
@@ -1625,21 +1625,9 @@ public class GLMBasicTestBinomial extends TestUtil {
    */
   public static double[] formNewCoeff(double[][] tx, double[] z) {
     double[][] gram = formGram(tx);
-    System.out.println("gram matrix");
-    for (double[] oneRow : gram) {
-      for (double oneEle : oneRow)
-        System.out.print(oneEle+" ");
-      System.out.println();
-    }
     double[] b = ArrayUtils.mult(formY(tx, z), 0.005);
     Matrix gMat = new Matrix(ArrayUtils.mult(gram, 0.005));
     double[][] gramInv = gMat.inverse().getArray();
-    System.out.println("inverse of gram matrix");
-    for (double[] oneRow : gramInv) {
-      for (double oneEle : oneRow)
-        System.out.print(oneEle+" ");
-      System.out.println();
-    }
     return ArrayUtils.mmul(gramInv, b);
   }
 
