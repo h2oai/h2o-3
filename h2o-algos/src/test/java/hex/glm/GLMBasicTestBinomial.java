@@ -877,8 +877,8 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    -7.85142421  0.00000000  0.76094020  0.87641840  0.00000000  0.93030614
 //    DPROSc      DPROSd      DCAPSb         PSA         VOL     GLEASON
 //    1.31814009  0.82918839  0.63285077  0.02949062  0.00000000  0.83011321
-    String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",  "PSA",      "VOL", "GLEASON"};
-    double [] vals = new double [] {-7.85142421,   0.0,    0.93030614,   1.31814009,    0.82918839, 0.63285077, 0.02949062, 0.0,    0.83011321};
+//    String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",  "PSA",      "VOL", "GLEASON"};
+//    double [] vals = new double [] {-7.85142421,   0.0,    0.93030614,   1.31814009,    0.82918839, 0.63285077, 0.02949062, 0.0,    0.83011321};
     for(Solver s:new Solver[]{Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
       GLMParameters params = new GLMParameters(binomial);
       params._response_column = "CAPSULE";
