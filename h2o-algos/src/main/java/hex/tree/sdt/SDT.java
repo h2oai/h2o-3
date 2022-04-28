@@ -1,6 +1,5 @@
 package hex.tree.sdt;
 
-import hex.ModelBuilder;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
