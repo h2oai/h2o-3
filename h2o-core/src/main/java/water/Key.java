@@ -57,6 +57,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   public static final byte HIDDEN_USER_KEY = 31;
   public static final byte USER_KEY = 32;
 
+  // Indices into key header structure (key bytes)
+  private static final int KEY_HEADER_TYPE = 0;
+  private static final int KEY_HEADER_CUSTOM_HOMED = 1;
+  
   // For Fluid Vectors, we have a special Key layout.
   // 0 - key type byte, one of VEC, CHK or GRP
   // 1 - homing byte, always -1/0xFF as these keys use the hash to figure their home out
@@ -66,11 +70,11 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   /** True is this is a {@link Vec} Key.
    *  @return True is this is a {@link Vec} Key */
-  public final boolean isVec() { return _kb != null && _kb.length > 0 && _kb[0] == VEC; }
+  public final boolean isVec() { return _kb.length > 0 && _kb[KEY_HEADER_TYPE] == VEC; }
 
   /** True is this is a {@link Chunk} Key.
    *  @return True is this is a {@link Chunk} Key */
-  public final boolean isChunkKey() { return _kb != null && _kb.length > 0 && _kb[0] == CHK; }
+  public final boolean isChunkKey() { return _kb.length > 0 && _kb[KEY_HEADER_TYPE] == CHK; }
 
   /** Returns the {@link Vec} Key from a {@link Chunk} Key.
    *  @return Returns the {@link Vec} Key from a {@link Chunk} Key. */
@@ -90,8 +94,8 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     if (0 == hsz) return -1;    // Clients starting up find no cloud, be unable to home keys
 
     // See if this is a specifically homed Key
-    if (!user_allowed() && _kb[1] == 1) {
-      assert _kb[0] != Key.CHK; // Chunks cannot be custom-homed
+    if (!user_allowed() && custom_homed()) {
+      assert _kb[KEY_HEADER_TYPE] != Key.CHK; // Chunks cannot be custom-homed
       H2ONode h2o = H2ONode.intern(_kb,2);
       // Reverse the home to the index
       int idx = h2o.index();
@@ -110,9 +114,9 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     // hash.  Apart from that, we keep the previous mode of operation, so that
     // ByteVec would have first 64MB distributed around cloud randomly and then
     // go round-robin in 64MB chunks.
-    if( _kb[0] == CHK ) {
+    if( _kb[KEY_HEADER_TYPE] == CHK ) {
       // Homed Chunk?
-      if( _kb[1] != -1 ) throw H2O.fail();
+      if( _kb[KEY_HEADER_CUSTOM_HOMED] != -1 ) throw H2O.fail();
       // For round-robin on Chunks in the following pattern:
       // 1 Chunk-per-node, until all nodes have 1 chunk (max parallelism).
       // Then 2 chunks-per-node, once around, then 4, then 8, then 16.
@@ -305,7 +309,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
     // Key byte layout is:
     // 0 - systemType, from 0-31
-    // 1 - is homed to a specific node (0 or 1)
+    // 1 - is the key homed to a specific node? (0 or 1)
     // 2-n - if homed then IP4 (4+2 bytes) or IP6 (16+2 bytes) address
     // 2-5- 4 bytes of chunk#, or -1 for masters
     // n+ - repeat of the original kb
@@ -337,10 +341,14 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    * @return True if a {@link #USER_KEY} and not a system key */
   public boolean user_allowed() { return type()==USER_KEY; }
 
+  boolean custom_homed() {
+    return _kb[KEY_HEADER_CUSTOM_HOMED] == 1;
+  }
+
   /** System type/byte of a Key, or the constant {@link #USER_KEY}
    *  @return Key type */
   // Returns the type of the key.
-  public int type() { return ((_kb[0]&0xff)>=32) ? USER_KEY : (_kb[0]&0xff); }
+  public int type() { return ((_kb[KEY_HEADER_TYPE]&0xff)>=32) ? USER_KEY : (_kb[KEY_HEADER_TYPE]&0xff); }
 
   /** Return the classname for the Value that this Key points to, if any (e.g., "water.fvec.Frame"). */
   public String valueClass() {
