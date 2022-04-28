@@ -41,6 +41,7 @@ public class KeyTest {
     public void testHomedKeyConsistency() { // to show that refactored code behaves like the old one for the key-homing use case
         H2ONode other = H2O.CLOUD.members()[(H2O.SELF.index() + 1) % H2O.CLOUD.size()];
         Key<?> key = Key.make("homed key", Key.JOB, true, other);
+        Assert.assertTrue(key.custom_homed());
         byte[] bytes = key._kb;
         Assert.assertEquals(Key.JOB, bytes[0]);
         Assert.assertEquals(1, bytes[1]); // indicator that key is specifically homed
@@ -57,6 +58,7 @@ public class KeyTest {
                 leader._key.getApiPort() - 2
         );
         Key<?> key = Key.make("homed key", Key.JOB, false, invalid);
+        Assert.assertFalse(key.custom_homed());
         byte[] bytes = key._kb;
         Assert.assertEquals(Key.JOB, bytes[0]);
         Assert.assertEquals(0, bytes[1]); // indicator that key is NOT specifically homed
