@@ -5,9 +5,9 @@ import json
 
 prefix = '/opt/ml/'
 config_prefix = 'input/config/'
-demo_prefix = '/opt/program/'
 input_prefix = 'input/data'
 checkpoints_dir = 'opt/ml/checkpoints'
+
 
 def _dns_lookup(host):
     counter = 0
@@ -37,28 +37,26 @@ def _create_h2o_cluster(resource_params={}):
 
 
 def _get_parameters():
-    # Sagemaker expects things to go here
     param_path = os.path.join(prefix, config_prefix, 'hyperparameters.json')
-    resource_path = os.path.join(prefix, config_prefix, 'resourceConfig.json')
-    # Ingest parameters for training from file hyperparameters.json
-    # Initialize some default parameters so that things fail safely
-    # if no parameters are specified
+    resource_path = os.path.join(prefix, config_prefix, 'resourceconfig.json')
 
     hyperparameters = {}
     if os.path.isfile(param_path):
         with open(param_path, 'r') as pf:
             hyperparameters = json.load(pf)
-            print(param_path)
-            print('All Parameters:')
-            print(hyperparameters)
+
+    print(param_path)
+    print('All Parameters:')
+    print(hyperparameters)
 
     resource_params = {}
     if os.path.isfile(resource_path):
         with open(resource_path, 'r') as rf:
             resource_params = json.load(rf)
-            print(resource_path)
-            print('All Resources:')
-            print(resource_params)
+
+    print(resource_path)
+    print('All Resources:')
+    print(resource_params)
 
     return hyperparameters, resource_params
 

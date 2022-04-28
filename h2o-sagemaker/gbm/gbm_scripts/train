@@ -113,7 +113,7 @@ def _get_data(prefix, channel_name):
     return import_data
 
 
-def _train_model(hyperparameters={}, resource_params={}):
+def _train_model(hyperparameters={}):
     training_params_str, gbm_params = helper_functions._parse_hyperparameters(hyperparameters)
     training_params = json.loads(training_params_str)
     output_path = os.path.join(prefix, 'output')
@@ -181,7 +181,7 @@ def main():
     helper_functions._create_h2o_cluster(resource_params)
     if resource_params["current_host"] == resource_params["hosts"][0]:
         _connect_to_cluster()
-        _train_model(hyperparameters, resource_params)
+        _train_model(hyperparameters)
 
 
 if __name__ == '__main__':
