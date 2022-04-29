@@ -74,7 +74,7 @@ public class NpsBinServlet extends HttpServlet {
       String categoryName = params[0];
       String keyName = params[1];
 
-      InputStream is = ServletUtils.extractPartInputStream(request, response);
+      InputStream is = ServletUtils.extractInputStream(request, response);
       if (is == null) {
         return;
       }

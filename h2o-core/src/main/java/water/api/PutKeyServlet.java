@@ -33,7 +33,7 @@ public class PutKeyServlet extends HttpServlet {
         return;
       }
 
-      InputStream is = ServletUtils.extractPartInputStream(request, response);
+      InputStream is = ServletUtils.extractInputStream(request, response);
       if (is == null) {
         return;
       }
