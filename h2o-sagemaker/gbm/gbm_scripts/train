@@ -67,8 +67,12 @@ def _connect_to_cluster():
     h2o.connect(url="http://127.0.0.1:54321")
 
 
+def _checkpointing_enabled():
+    return os.path.isdir(checkpoints_dir)
+
+
 def _load_last_checkpoint():
-    if not os.path.isdir(checkpoints_dir):
+    if not _checkpointing_enabled():
         return None
 
     checkpoint_files = [os.path.join(checkpoints_dir, filename)
@@ -91,6 +95,7 @@ def _get_data(prefix, channel_name):
     data_files = [os.path.join(training_path, filename)
                   for filename in os.listdir(training_path)
                   if not filename.startswith(".")]
+
     if len(data_files) == 0:
         raise ValueError(('There are no files in {}.\n' +
                           'This usually indicates that the channel ({}) '
@@ -148,9 +153,12 @@ def _train_model(hyperparameters={}):
         for col in categorical_columns:
             train_data[col] = train_data[col].asfactor()
 
-        checkpoint = _load_last_checkpoint()
-        if checkpoint is not None:
-            gbm_params.update({'checkpoint': checkpoint.model_id})
+        if _checkpointing_enabled():
+            if "in_training_checkpoints_dir" not in gbm_params:
+                gbm_params.update({"in_training_checkpoints_dir": checkpoints_dir})
+            checkpoint = _load_last_checkpoint()
+            if checkpoint is not None:
+                gbm_params.update({"checkpoint": checkpoint.model_id})
 
         print("Define algorithm with attributes:")
         print(gbm_params)
