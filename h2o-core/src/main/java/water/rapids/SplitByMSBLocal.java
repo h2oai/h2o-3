@@ -199,12 +199,12 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
   static Key getNodeOXbatchKey(boolean isLeft, int MSBvalue, int node, int batch) {
     return Key.make("__radix_order__NodeOXbatch_MSB" + MSBvalue + "_node" + node + "_batch" + batch + (isLeft ? "_LEFT" : "_RIGHT"),
-            (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
+            Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
   static Key getSortedOXbatchKey(boolean isLeft, int MSBvalue, int batch) {
     return Key.make("__radix_order__SortedOXbatch_MSB" + MSBvalue + "_batch" + batch + (isLeft ? "_LEFT" : "_RIGHT"),
-            (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
+            Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
 
@@ -216,7 +216,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
   static Key getMSBNodeHeaderKey(boolean isLeft, int MSBvalue, int node) {
     return Key.make("__radix_order__OXNodeHeader_MSB" + MSBvalue + "_node" + node + (isLeft ? "_LEFT" : "_RIGHT"),
-            (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
+            Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
   static class MSBNodeHeader extends Iced {

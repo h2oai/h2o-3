@@ -28,7 +28,7 @@ public class MRTaskTest extends TestUtil {
       // (Some levels of the tree are used on launching the threads - hence it's (log2(numtasks) - log2(numcpus)*numcpus.
       int max_unreduced_elems = (depth - log + 1)*H2O.NUMCPUS;
       for (int i = 0; i < keys.length; ++i)
-        keys[i] = Key.make((byte) 1, Key.HIDDEN_USER_KEY, true, H2O.SELF);
+        keys[i] = Key.make(Key.HIDDEN_USER_KEY, true, H2O.SELF);
       final AtomicInteger cntr = new AtomicInteger();
       final AtomicInteger maxCntr = new AtomicInteger();
       new MRTask() {
