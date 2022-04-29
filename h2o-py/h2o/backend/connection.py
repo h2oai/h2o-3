@@ -449,12 +449,12 @@ class H2OConnection(h2o_meta()):
         elif json is not None:
             assert_is_type(json, dict)
 
-        data = self._prepare_data_payload(data)
-        files = self._prepare_file_payload(filename)
+        request_data = self._prepare_data_payload(data) if filename is None else self._prepare_file_payload(filename)
+
         params = None
         if (method == "GET" or method == "DELETE") and data:
-            params = data
-            data = None
+            params = request_data
+            request_data = None
 
         stream = False
         if save_to is not None:
@@ -467,9 +467,9 @@ class H2OConnection(h2o_meta()):
         # Make the request
         start_time = time.time()
         try:
-            self._log_start_transaction(endpoint, data, json, files, params)            
+            self._log_start_transaction(endpoint, request_data, json, filename, params)
             args = self._request_args()
-            resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
+            resp = requests.request(method=method, url=url, data=request_data, json=json, params=params,
                                     stream=stream, **args)
             if isinstance(save_to, types.FunctionType):
                 save_to = save_to(resp)
@@ -491,7 +491,7 @@ class H2OConnection(h2o_meta()):
             err = e.args[0]
             if isinstance(err, H2OErrorV3):
                 err.endpoint = endpoint
-                err.payload = (data, json, files, params)
+                err.payload = (request_data, json, filename, params)
             raise
 
     def _request_args(self):
@@ -726,9 +726,9 @@ class H2OConnection(h2o_meta()):
         absfilename = os.path.abspath(filename)
         if not os.path.exists(absfilename):
             raise H2OValueError("File %s does not exist" % filename, skip_frames=1)
-        return {os.path.basename(absfilename): open(absfilename, "rb")}
+        return open(absfilename, "rb")
 
-    def _log_start_transaction(self, endpoint, data, json, files, params):
+    def _log_start_transaction(self, endpoint, data, json, filename, params):
         """Log the beginning of an API request."""
         # TODO: add information about the caller, i.e. which module + line of code called the .request() method
         #       This can be done by fetching current traceback and then traversing it until we find the request function
@@ -737,11 +737,13 @@ class H2OConnection(h2o_meta()):
         msg = "\n---- %d --------------------------------------------------------\n" % self._requests_counter
         msg += "[%s] %s\n" % (time.strftime("%H:%M:%S"), endpoint)
         if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
-        if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
         if json is not None:
             import json as j
             msg += "     json: %s\n" % j.dumps(json)
-        if files is not None:  msg += "     file: %s\n" % ", ".join(f.name for f in viewvalues(files))
+        if filename is not None: 
+            msg += "     file: %s\n" % filename
+        elif data is not None:
+            msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
         self._log_message(msg + "\n")
 
     def _log_end_transaction(self, start_time, response):

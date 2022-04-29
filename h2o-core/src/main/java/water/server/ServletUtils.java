@@ -122,6 +122,16 @@ public class ServletUtils {
     response.sendError(sc, msg);
   }
 
+  public static InputStream extractInputStream(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    final InputStream is;
+    if (request.getContentType() == null) {
+      is = request.getInputStream();
+    } else {
+      is = extractPartInputStream(request, response);
+    }
+    return is;
+  }
+  
   public static InputStream extractPartInputStream (HttpServletRequest request, HttpServletResponse response) throws
       IOException {
     String ct = request.getContentType();
