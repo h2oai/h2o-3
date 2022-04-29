@@ -36,7 +36,7 @@ from collections import Counter
 import h2o
 import helper_functions
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
-import datetime
+import re
 
 prefix = '/opt/ml/'
 config_prefix = 'input/config/'
@@ -67,6 +67,11 @@ def _connect_to_cluster():
     h2o.connect(url="http://127.0.0.1:54321")
 
 
+def _extract_number(f):
+    s = re.findall("\d+$",f)
+    return int(s[0]) if s else -1, f
+
+
 def _checkpointing_enabled():
     return os.path.isdir(checkpoints_dir)
 
@@ -80,13 +85,10 @@ def _load_last_checkpoint():
     if len(checkpoint_files) == 0:
         return None
 
-    checkpoint_files.sort(key=lambda checkpoint_file: os.path.getctime(checkpoint_file))
-    last_checkpoint = checkpoint_files[-1]
-    last_checkpoint_time = datetime.datetime.fromtimestamp(os.path.getctime(checkpoint_files[-1]))
-
-    print("Loading last checkpoint:", last_checkpoint, "created at: ", last_checkpoint_time)
-
-    return h2o.upload_model(last_checkpoint)
+    print("Trying to find the latest checkpoint in: ", checkpoint_files)
+    latest_checkpoint = max(checkpoint_files, key=_extract_number)
+    print("Loading latest checkpoint:", latest_checkpoint)
+    return h2o.upload_model(latest_checkpoint)
 
 
 def _get_data(prefix, channel_name):
