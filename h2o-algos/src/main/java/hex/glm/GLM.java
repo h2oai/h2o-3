@@ -2992,7 +2992,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int coeffsLen = bc._betaLB.length;
       for (int index=0; index < coeffsLen; index++) {
         if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
-          throw new H2OFailException("GLM model coefficient" + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
+          throw new H2OFailException("GLM model coefficient " + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
                   +bc._betaLB[index]+", upper: "+bc._betaUB[index]);
       }
     }
