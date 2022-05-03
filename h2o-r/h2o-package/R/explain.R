@@ -249,7 +249,7 @@ case_insensitive_match_arg <- function(arg) {
 #' @param best_of_family If TRUE, return only the best of family models; if FALSE return all models in \code{object}
 #' @param require_newdata If TRUE, require newdata to be specified; otherwise allow NULL instead, this can be used when
 #'                        there is no need to know if the problem is (multinomial) classification.
-#'
+#' @param check_x_y_consistency If TRUE, make sure that when given a list of models all models have the same X and y. Defaults to TRUE.
 #' @return a list with the following names \code{leader}, \code{is_automl}, \code{models},
 #'   \code{is_classification}, \code{is_multinomial_classification}, \code{x}, \code{y}, \code{model}
 .process_models_or_automl <- function(object, newdata,
@@ -258,7 +258,8 @@ case_insensitive_match_arg <- function(arg) {
                                       top_n_from_AutoML = NA,
                                       only_with_varimp = FALSE,
                                       best_of_family = FALSE,
-                                      require_newdata = TRUE) {
+                                      require_newdata = TRUE,
+                                      check_x_y_consistency = TRUE) {
   if (missing(object))
     stop("object must be specified!")
   if (missing(newdata))
@@ -409,28 +410,28 @@ case_insensitive_match_arg <- function(arg) {
       )
       x <- mi$x
       y <- mi$y
-
-      for (model in object) {
-        model <- mi$get_model(model)
-        if (any(sort(model@allparameters$x) != sort(x))) {
-          stop(sprintf(
-            "Model \"%s\" has different x from model\"%s\"! (%s != %s)",
-            model@model_id,
-            object[[1]]@model_id,
-            paste(model@allparameters$x, collapse = ", "),
-            paste(x, collapse = ", ")
-          ))
-        }
-        if (any(sort(model@allparameters$y) != sort(y))) {
-          stop(sprintf(
-            "Model \"y\" has different x from model\"%s\"! (%s != %s)", model@model_id,
-            object[[1]]@model_id,
-            paste(model@allparameters$y, collapse = ", "),
-            paste(y, collapse = ", ")
-          ))
+      if (check_x_y_consistency) {
+        for (model in object) {
+          model <- mi$get_model(model)
+          if (any(sort(model@allparameters$x) != sort(x))) {
+            stop(sprintf(
+              "Model \"%s\" has different x from model\"%s\"! (%s != %s)",
+              model@model_id,
+              object[[1]]@model_id,
+              paste(model@allparameters$x, collapse = ", "),
+              paste(x, collapse = ", ")
+            ))
+          }
+          if (any(sort(model@allparameters$y) != sort(y))) {
+            stop(sprintf(
+              "Model \"y\" has different x from model\"%s\"! (%s != %s)", model@model_id,
+              object[[1]]@model_id,
+              paste(model@allparameters$y, collapse = ", "),
+              paste(y, collapse = ", ")
+            ))
+          }
         }
       }
-
       return(mi)
     }
   }
@@ -3365,7 +3366,7 @@ setMethod("plot", "H2OParetoFront", function(x, y, ...) {
       mean_per_class_error = "Mean Per Class Error",
       mean_residual_deviance = "Mean Residual Deviance",
       mse = "Mean Square Error",
-      predict_time_per_row_ms = "Prediction Time [ms]",
+      predict_time_per_row_ms = "Per-Row Prediction Time [ms]",
       rmse = "Root Mean Square Error",
       rmsle = "Root Mean Square Log Error",
       training_time_ms = "Training Time [ms]"
@@ -3466,7 +3467,8 @@ h2o.pareto_front <- function(object,
     if (missing(x_criterium)) x_criterium <- names(leaderboard)[[1]]
     if (missing(y_criterium)) y_criterium <- names(leaderboard)[[2]]
   } else {
-    models_info <- .process_models_or_automl(object, NULL, require_multiple_models = TRUE, require_newdata = FALSE)
+    models_info <- .process_models_or_automl(object, NULL, require_multiple_models = TRUE,
+                                             require_newdata = FALSE, check_x_y_consistency = FALSE)
     leaderboard <- .create_leaderboard(models_info, NULL, top_n = Inf)
     x_criterium <- case_insensitive_match_arg(x_criterium)
     y_criterium <- case_insensitive_match_arg(y_criterium)

@@ -2688,7 +2688,7 @@ def _pretty_metric_name(metric):
         mean_per_class_error="Mean Per Class Error",
         mean_residual_deviance="Mean Residual Deviance",
         mse="Mean Square Error",
-        predict_time_per_row_ms="Prediction Time [ms]",
+        predict_time_per_row_ms="Per-Row Prediction Time [ms]",
         rmse="Root Mean Square Error",
         rmsle="Root Mean Square Log Error",
         training_time_ms="Training Time [ms]"
