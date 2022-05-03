@@ -2699,6 +2699,7 @@ def pareto_front(models,
                  x_criterium=None, # type: Optional[str]
                  y_criterium=None, # type: Optional[str]
                  title=None, # type: Optional[str]
+                 color_col="algo",  # type: str
                  figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
                  colormap="Dark2"  # type: str
                  ):
@@ -2712,6 +2713,7 @@ def pareto_front(models,
     :param x_criterium: metric present in the leaderboard
     :param y_criterium: metric present in the leaderboard
     :param title: title used for the plot
+    :param color_col: Categorical column in the leaderboard that should be used for coloring the points
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
     :return: object that contains the resulting figure (can be accessed using result.figure())
@@ -2796,13 +2798,13 @@ def pareto_front(models,
 
     cols = None
     fig = plt.figure(figsize=figsize)
-    if "algo" in leaderboard.columns:
-        algos = np.array(leaderboard["algo"].as_data_frame(use_pandas=False, header=False)).reshape(-1)
-        colors = plt.get_cmap(colormap, len(set(algos)))(list(range(len(set(algos)))))
-        algo_to_col = dict(zip(set(algos), colors))
-        cols = np.array([algo_to_col[a] for a in algos])
-        plt.legend(handles=[Line2D([0], [0], marker='o', color="w", label=a, markerfacecolor=algo_to_col[a], markersize=10)
-                            for a in algo_to_col.keys()])
+    if color_col in leaderboard.columns:
+        color_col_vals = np.array(leaderboard[color_col].as_data_frame(use_pandas=False, header=False)).reshape(-1)
+        colors = plt.get_cmap(colormap, len(set(color_col_vals)))(list(range(len(set(color_col_vals)))))
+        color_col_to_color = dict(zip(set(color_col_vals), colors))
+        cols = np.array([color_col_to_color[a] for a in color_col_vals])
+        plt.legend(handles=[Line2D([0], [0], marker='o', color="w", label=a, markerfacecolor=color_col_to_color[a], markersize=10)
+                            for a in color_col_to_color.keys()])
     plt.scatter(x, y, c=cols, alpha=0.5)
     plt.plot(x[pf], y[pf], c="k")
     plt.scatter(x[pf], y[pf], c=cols[pf] if cols is not None else None, s=100, zorder=100)

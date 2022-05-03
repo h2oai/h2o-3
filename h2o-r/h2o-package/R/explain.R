@@ -3343,7 +3343,8 @@ setClass("H2OParetoFront", slots = c(
   leaderboard = "data.frame",
   x = "character",
   y = "character",
-  title = "character"
+  title = "character",
+  color_col = "character"
   ))
 
 #' Plot Pareto front
@@ -3384,7 +3385,7 @@ setMethod("plot", "H2OParetoFront", function(x, y, ...) {
   p <- ggplot2::ggplot(data = x@pareto_front, ggplot2::aes(
     x = .data[[x@x]],
     y = .data[[x@y]],
-    color = if ("algo" %in% names(x@pareto_front)) .data[["algo"]] else NULL
+    color = if (x@color_col %in% names(x@pareto_front)) .data[[x@color_col]] else NULL
   )) +
     ggplot2::geom_point(data = x@leaderboard, alpha = 0.5)
 
@@ -3421,6 +3422,7 @@ setMethod("show", "H2OParetoFront", function(object) {
 #' @param x_criterium one of the metrics present in the leaderboard
 #' @param y_criterium one of the metrics present in the leaderboard
 #' @param title Title used for plotting
+#' @param color_col Categorical column in the leaderboard that should be used for coloring the points
 #'
 #' @return An H2OParetoFront S4 object with plot method and pareto_front slot
 #'
@@ -3460,7 +3462,8 @@ h2o.pareto_front <- function(object,
                              y_criterium = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
                                              "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
                                              "RMSE", "RMSLE", "training_time_ms"),
-                             title = NULL) {
+                             title = NULL,
+                             color_col = "algo") {
   leaderboard <- NULL
   if ((is.data.frame(object) || inherits(object, "H2OFrame")) && !"model_id" %in% names(object)) {
     leaderboard <- as.data.frame(object)
@@ -3513,6 +3516,7 @@ h2o.pareto_front <- function(object,
              leaderboard = leaderboard,
              x = x_criterium,
              y = y_criterium,
+             color_col = color_col,
              title = title
   ))
 }
