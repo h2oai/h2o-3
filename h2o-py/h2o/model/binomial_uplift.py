@@ -123,7 +123,7 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model.uplift(train=True, metric="gain")
         """
         assert metric in ['qini', 'lift', 'gain'], "Uplift metric "+metric+" should be 'qini','lift' or 'gain'."
-        return self._delegate_to_metrics(metric, method='uplift', train=train, valid=valid)
+        return self._delegate_to_metrics(metric=metric, method='uplift', train=train, valid=valid)
 
     def uplift_normalized(self, train=False, valid=False, metric="qini"):
         """
@@ -161,7 +161,7 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model.uplift_normalized(train=True, metric="gain")
         """
         assert metric in ['qini', 'lift', 'gain'], "Uplift metric "+metric+" should be 'qini','lift' or 'gain'."
-        return self._delegate_to_metrics(metric, method='uplift_normalized', train=train, valid=valid)
+        return self._delegate_to_metrics(metric=metric, method='uplift_normalized', train=train, valid=valid)
 
     def n(self, train=False, valid=False):
         """
