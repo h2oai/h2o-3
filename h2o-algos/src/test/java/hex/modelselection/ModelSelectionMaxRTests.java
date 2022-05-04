@@ -310,7 +310,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
         List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList()); 
         validSubset.removeAll(currSubset);
         GLMModel bestR2Model = replacement(currSubset, coefNames, bestR2, parms, 0,
-                null, validSubset,null);
+                null, validSubset,null, new HashSet<BitSet>());
         if (bestR2Model == null && okToBeNull) {
             return;
         }

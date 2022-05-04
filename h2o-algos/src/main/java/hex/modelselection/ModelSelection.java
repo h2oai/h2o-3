@@ -224,13 +224,14 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             List<String> coefNames = new ArrayList<>(Arrays.asList(_predictorNames));
             List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
             for (int predNum = 1; predNum <= _parms._max_predictor_number; predNum++) { // perform for each subset size
+                Set<BitSet> usedCombos = new HashSet<>();
                 GLMModel bestR2Model = forwardStep(currSubsetIndices, coefNames, predNum - 1, validSubset,
-                        _parms, _foldColumn, _glmNFolds, _foldAssignment); // forward step
+                        _parms, _foldColumn, _glmNFolds, _foldAssignment, usedCombos); // forward step
                 validSubset.removeAll(currSubsetIndices);
                 _job.update(predNum, "Finished building all models with "+predNum+" predictors.");
                 if (predNum < _numPredictors && predNum > 1) {
                     GLMModel currBestR2Model = replacement(currSubsetIndices, coefNames, bestR2Model.r2(), _parms,
-                            _glmNFolds, _foldColumn, validSubset, _foldAssignment);
+                            _glmNFolds, _foldColumn, validSubset, _foldAssignment, usedCombos);
                     if (currBestR2Model != null) {
                         bestR2Model.delete();
                         bestR2Model = currBestR2Model;
@@ -360,18 +361,22 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         // generate training frames
         Frame[] trainingFrames = generateMaxRTrainingFrames(parms, predictorNames, foldColumn,
                 currSubsetIndices, predPos, validSubsets, usedCombo);
-        // find GLM model with best R2 value and return it
-        GLMModel bestModel = buildExtractBestR2Model(trainingFrames, parms, glmNFolds, foldColumn, foldAssignment);
-        List<String> coefUsed = extraModelColumnNames(coefNames, bestModel);
-        for (int predIndex = coefUsed.size()-1; predIndex >= 0; predIndex--) {
-            int index = coefNames.indexOf(coefUsed.get(predIndex));
-            if (!currSubsetIndices.contains(index)) {
-                currSubsetIndices.add(predPos, index);
-                break;
+        if (trainingFrames.length > 0) {
+            // find GLM model with best R2 value and return it
+            GLMModel bestModel = buildExtractBestR2Model(trainingFrames, parms, glmNFolds, foldColumn, foldAssignment);
+            List<String> coefUsed = extraModelColumnNames(coefNames, bestModel);
+            for (int predIndex = coefUsed.size() - 1; predIndex >= 0; predIndex--) {
+                int index = coefNames.indexOf(coefUsed.get(predIndex));
+                if (!currSubsetIndices.contains(index)) {
+                    currSubsetIndices.add(predPos, index);
+                    break;
+                }
             }
+            removeTrainingFrames(trainingFrames);
+            return bestModel;
+        } else {
+            return null;
         }
-        removeTrainingFrames(trainingFrames);
-        return bestModel;
     }
 
     public static GLMModel forwardStep(List<Integer> currSubsetIndices, List<String> coefNames, int predPos,
@@ -397,13 +402,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
     public static GLMModel replacement(List<Integer> currSubsetIndices, List<String> coefNames,
                                        double bestR2, ModelSelectionModel.ModelSelectionParameters parms,
                                        int glmNFolds, String foldColumn, List<Integer> validSubset,
-                                       Model.Parameters.FoldAssignmentScheme foldAssignment) {
+                                       Model.Parameters.FoldAssignmentScheme foldAssignment, Set<BitSet> usedCombos) {
         int currSubsetSize = currSubsetIndices.size();
-        
-        Integer[] sortedCurrSubset = currSubsetIndices.toArray(new Integer[0]);
-        Arrays.sort(sortedCurrSubset);
-        Set<BitSet> usedCombos = new HashSet<>();
-        usedCombos.add(setBitSet(currSubsetIndices.stream().mapToInt(i->i).toArray(), coefNames.size()));
         int lastBestR2PosIndex = -1;
         GLMModel bestR2Model = null;
         GLMModel[] bestR2Models = new GLMModel[currSubsetSize];
