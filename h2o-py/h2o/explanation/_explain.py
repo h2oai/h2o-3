@@ -949,7 +949,7 @@ def _factor_mapper(mapping):
     return _
 
 
-def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order=None):
+def _add_histogram(frame, column, add_rug, add_histogram=True, levels_order=None):
     # type: (H2OFrame, str, bool, bool) -> None
     """
     Helper function to add rug and/or histogram to a plot
@@ -1092,7 +1092,7 @@ def _extract_graphing_data_values(data, frame_id, grouping_variable_value, origi
 
 
 def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp,
-                output_graphing_data, nbins, **kwargs):
+                output_graphing_data, nbins, show_rug, **kwargs):
     frame = frame.sort(model.actual_params["response_column"])
     deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
     colors = plt.get_cmap(colormap, 11)(list(range(11)))
@@ -1169,7 +1169,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
             plt.plot(tmp[encoded_col], response, color="k", linestyle="dashed",
                      label="Partial Dependence")
 
-    _add_histogram(frame, column)
+    _add_histogram(frame, column, add_rug=show_rug)
     plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}{}".format(
         model.model_id,
         column,
@@ -1198,7 +1198,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
 
 
 def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index,
-                output_graphing_data, nbins, **kwargs):
+                output_graphing_data, nbins, show_rug, **kwargs):
     color = plt.get_cmap(colormap)(0)
     data = model.partial_plot(frame, cols=[column], plot=False,
                               row_index=row_index, targets=target,
@@ -1219,7 +1219,7 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.fill_between(tmp[encoded_col], response - stddev_response,
                          response + stddev_response, color=color, alpha=0.2)
 
-    _add_histogram(frame, column)
+    _add_histogram(frame, column, add_rug=show_rug)
 
     if row_index is None:
         plt.title("Partial Dependence plot for \"{}\"{}{}".format(
@@ -1272,6 +1272,7 @@ def pd_ice_common(
         grouping_column=None,  # type: Optional[str]
         output_graphing_data=False, # type: bool
         nbins=100, # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):
     """
@@ -1296,6 +1297,7 @@ def pd_ice_common(
                            by grouping feature values
     :param output_graphing_data: a bool whether to output final graphing data to a frame
     :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     """
@@ -1349,10 +1351,10 @@ def pd_ice_common(
         if is_ice:
             res = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered,
                               factor_map,
-                              show_pdp, output_graphing_data, nbins, **kwargs)
+                              show_pdp, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
         else:
             res = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map,
-                              row_index, output_graphing_data, nbins, **kwargs)
+                              row_index, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
 
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
@@ -1371,7 +1373,8 @@ def pd_plot(
         binary_response_scale="response", # type: Literal["response", "logodds"]
         grouping_column=None,  # type: Optional[str]
         output_graphing_data=False,  # type: bool
-        nbins = 100,  # type: int
+        nbins=100,  # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):
     """
@@ -1398,6 +1401,7 @@ def pd_plot(
                            by grouping feature values
     :param output_graphing_data: a bool whether to output final graphing data to a frame
     :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1425,7 +1429,8 @@ def pd_plot(
     >>> gbm.pd_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, row_index, target, max_levels, figsize, colormap, save_plot_path,
-                         True, binary_response_scale, None, False, grouping_column, output_graphing_data, nbins, **kwargs)
+                         True, binary_response_scale, None, False, grouping_column, output_graphing_data, nbins,
+                         show_rug=show_rug, **kwargs)
 
 
 
@@ -1440,7 +1445,8 @@ def pd_multi_plot(
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
         markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."],  # type: List[str]
-        save_plot_path=None # type: Optional[str]
+        save_plot_path=None,  # type: Optional[str]
+        show_rug=True  # type: bool
 ):  # type: (...) -> plt.Figure
     """
     Plot partial dependencies of a variable across multiple models.
@@ -1462,6 +1468,7 @@ def pd_multi_plot(
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
+    :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1544,7 +1551,7 @@ def pd_multi_plot(
                 plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i],
                          label=model_ids[i])
 
-        _add_histogram(frame, column)
+        _add_histogram(frame, column, add_rug=show_rug)
 
         if row_index is None:
             plt.title("Partial Dependence plot for \"{}\"{}".format(
@@ -1708,6 +1715,7 @@ def ice_plot(
         grouping_column=None,  # type: Optional[str]
         output_graphing_data=False, #type: bool
         nbins=100,  # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):  # type: (...) -> plt.Figure
     """
@@ -1738,6 +1746,7 @@ def ice_plot(
     grouping feature values
     :param output_graphing_data: a bool whether to output final graphing data to a frame
     :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1765,7 +1774,8 @@ def ice_plot(
     >>> gbm.ice_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap,
-                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, output_graphing_data, nbins, **kwargs)
+                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, output_graphing_data, nbins,
+                         show_rug=show_rug, **kwargs)
 
 
 def _is_binomial(model):

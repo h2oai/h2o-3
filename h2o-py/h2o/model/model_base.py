@@ -731,6 +731,16 @@ class ModelBase(h2o_meta(Keyed)):
                 return None
             return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
 
+    def coef_with_p_values(self):
+        if self.algo == 'glm':
+            if self.parms["compute_p_values"]["actual_value"]:
+                return self._model_json["output"]["coefficients_table"]
+            else:
+                raise ValueError("p-values, z-values and std_error are not found in model.  Make sure to set "
+                                 "compute_p_values=True.")
+        else:
+            raise ValueError("p-values, z-values and std_error are only found in GLM.")
+            
     def _fillMultinomialDict(self, standardize=False):
         if self.algo == 'gam':
             tbl = self._model_json["output"]["coefficients_table"]
