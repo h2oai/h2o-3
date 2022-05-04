@@ -210,6 +210,7 @@ class MetricsBase(h2o_meta()):
             print("AUUC normalized: "+ str(self.auuc_normalized()))
             if self._metric_json["auuc_table"] is not None:
                 self._metric_json["auuc_table"].show()
+            print()
             print("Qini value: " + str(self.qini()))
             if self._metric_json["aecu_table"] is not None:
                 self._metric_json["aecu_table"].show()
