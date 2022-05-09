@@ -263,6 +263,11 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
             :return:
             """
             _args = sig.bind(*args, **kwargs).arguments
+            for name, param in sig.parameters.items():
+                if param.kind == param.VAR_KEYWORD:
+                    kw_arg = _args.pop(name)
+                    _args = {**_args, **kw_arg}
+
             classifier = False
             self = {}
             frame_info = None
