@@ -285,32 +285,4 @@ public class GLMUtils {
     }
     return smoothval;
   }
-
-  /***
-   * Estimate dispersion factor using maximum likelihood.  I followed section IV of the doc in 
-   * https://h2oai.atlassian.net/browse/PUBDEV-8683 . 
-   */
-  public static double estimateMLSE(GLMTask.ComputeMLSETsk mlCT, double alpha, ComputationState state, Key jobKey, double[] beta, GLMModel.GLMParameters params) {
-    double constantValue = mlCT._wsum + mlCT._sumlnyiOui - mlCT._sumyiOverui;
-    DataInfo dinfo = state.activeData();
-    Frame adaptedF = dinfo._adaptedFrame;
-    while (true) {
-      GLMTask.ComputeDiTriGammaTsk ditrigammatsk = new GLMTask.ComputeDiTriGammaTsk(null, dinfo, jobKey, beta,
-              params, alpha).doAll(adaptedF);
-      double numerator = mlCT._wsum*Math.log(alpha)-ditrigammatsk._sumDigamma+constantValue; // equation 2 of doc
-      double denominator = mlCT._wsum/alpha - ditrigammatsk._sumTrigamma;  // equation 3 of doc
-      double change = numerator/denominator;
-      if (denominator == 0 || Double.isNaN(change))
-        return alpha;
-      if (Math.abs(change) < EPS)
-        return alpha-change;
-      else {
-        double se = alpha - change;
-        if (se < 0) // heuristc to prevent seInit <= 0
-          alpha *= 0.5;
-        else
-          alpha = se;
-      }
-    }
-  }
 }

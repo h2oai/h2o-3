@@ -71,8 +71,8 @@
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
 #' @param dispersion_factor_mode Method used to estimate the dispersion factor for Tweedie, Gamma and Negative Binomial only. Must be one of:
-#'        "Pearson", "ML".
-#' @param init_dispersion_factor Initial value of disperion factor to be estimated using either Pearson or ML.  Default to 1.0. Defaults to 1.
+#'        "pearson", "ml".
+#' @param init_dispersion_factor Initial value of disperion factor to be estimated using either pearson or ml.  Default to 1.0. Defaults to 1.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
@@ -211,7 +211,7 @@ h2o.glm <- function(x,
                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                     plug_values = NULL,
                     compute_p_values = FALSE,
-                    dispersion_factor_mode = c("Pearson", "ML"),
+                    dispersion_factor_mode = c("pearson", "ml"),
                     init_dispersion_factor = 1,
                     remove_collinear_columns = FALSE,
                     intercept = TRUE,
@@ -467,7 +467,7 @@ h2o.glm <- function(x,
                                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                                     plug_values = NULL,
                                     compute_p_values = FALSE,
-                                    dispersion_factor_mode = c("Pearson", "ML"),
+                                    dispersion_factor_mode = c("pearson", "ml"),
                                     init_dispersion_factor = 1,
                                     remove_collinear_columns = FALSE,
                                     intercept = TRUE,

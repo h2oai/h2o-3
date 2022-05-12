@@ -238,7 +238,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Binomial only.
                Defaults to ``None``.
         :type dispersion_factor_mode: Literal["pearson", "ml"], optional
-        :param init_dispersion_factor: Initial value of disperion factor to be estimated using either Pearson or ML.
+        :param init_dispersion_factor: Initial value of disperion factor to be estimated using either pearson or ml.
                Default to 1.0.
                Defaults to ``1.0``.
         :type init_dispersion_factor: float
@@ -1391,7 +1391,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def init_dispersion_factor(self):
         """
-        Initial value of disperion factor to be estimated using either Pearson or ML.  Default to 1.0.
+        Initial value of disperion factor to be estimated using either pearson or ml.  Default to 1.0.
 
         Type: ``float``, defaults to ``1.0``.
         """

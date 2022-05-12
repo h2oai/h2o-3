@@ -51,8 +51,8 @@ import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
-import static hex.glm.GLMModel.GLMParameters.DispersionMode.ML;
-import static hex.glm.GLMModel.GLMParameters.DispersionMode.Pearson;
+import static hex.glm.GLMModel.GLMParameters.DispersionMode.ml;
+import static hex.glm.GLMModel.GLMParameters.DispersionMode.pearson;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.*;
 import static hex.glm.GLMUtils.*;
@@ -993,13 +993,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 " does not work with " + _parms._family + " family.");
       }
       // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
-      if (ML.equals(_parms._dispersion_factor_mode) && !tweedie.equals(_parms._family) && !gamma.equals(_parms._family)
+      if (ml.equals(_parms._dispersion_factor_mode) && !tweedie.equals(_parms._family) && !gamma.equals(_parms._family)
               && !negativebinomial.equals(_parms._family))
-        error("dispersion_factor_mode", " ML can only be used for families tweedie, gamma or" +
+        error("dispersion_factor_mode", " ml can only be used for families tweedie, gamma or" +
                 " negativebinoimal.");
       
       if (_parms._compute_p_values && _parms._dispersion_factor_mode==null)
-        _parms._dispersion_factor_mode = Pearson;
+        _parms._dispersion_factor_mode = pearson;
       
       if (_parms._init_dispersion_factor <= 0)
         error("init_dispersion_factor", " must exceed 0.0.");
@@ -2320,17 +2320,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
         if (_parms._family != binomial && _parms._family != Family.poisson) {
           seEst = true;
-          if (Pearson.equals(_parms._dispersion_factor_mode)){
+          if (pearson.equals(_parms._dispersion_factor_mode)){
             ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, 
                     _parms).doAll(_state.activeData()._adaptedFrame);
             se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate using pearson
-          } else if (ML.equals(_parms._dispersion_factor_mode)) {
+          } else if (ml.equals(_parms._dispersion_factor_mode)) {
             seEst = true;
             Log.info("estimating dispersion factor using maximum likelihood");
             ComputeMLSETsk mlCT = new ComputeMLSETsk(null, _state.activeData(), _job._key, beta,
                     _parms).doAll(_state.activeData()._adaptedFrame);
             if (gamma.equals(_parms._family)) {
-              double oneOverSe = estimateMLSE(mlCT, 1.0 / se, _state, _job._key, beta, _parms);
+              double oneOverSe = estimateMLSE(mlCT, 1.0 / se, beta);
               se = 1.0 / oneOverSe;
             }
           }
@@ -2358,6 +2358,41 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < zvalues.length; ++i)
           zvalues[i] = beta[i] / Math.sqrt(inv[i][i]);
         _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
+      }
+    }
+
+    /***
+     * Estimate dispersion factor using maximum likelihood.  I followed section IV of the doc in 
+     * https://h2oai.atlassian.net/browse/PUBDEV-8683 . 
+     */
+    public double estimateMLSE(GLMTask.ComputeMLSETsk mlCT, double alpha, double[] beta) {
+      double constantValue = mlCT._wsum + mlCT._sumlnyiOui - mlCT._sumyiOverui;
+      DataInfo dinfo = _state.activeData();
+      Frame adaptedF = dinfo._adaptedFrame;
+      int count = 0;
+      long currTime = System.currentTimeMillis();
+      long modelBuiltTime = currTime - _model._output._start_time;
+      while (true) {
+        GLMTask.ComputeDiTriGammaTsk ditrigammatsk = new GLMTask.ComputeDiTriGammaTsk(null, dinfo, _job._key, beta,
+                _parms, alpha).doAll(adaptedF);
+        double numerator = mlCT._wsum*Math.log(alpha)-ditrigammatsk._sumDigamma+constantValue; // equation 2 of doc
+        double denominator = mlCT._wsum/alpha - ditrigammatsk._sumTrigamma;  // equation 3 of doc
+        double change = numerator/denominator;
+        if (denominator == 0 || Double.isNaN(change))
+          return alpha;
+        if (Math.abs(change) < EPS)
+          return alpha-change;
+        else {
+          count++;
+          double se = alpha - change;
+          if (se < 0) // heuristc to prevent seInit <= 0
+            alpha *= 0.5;
+          else
+            alpha = se;
+        }
+        // stop if timeout occurred or if time to find alpha exceeds model building time
+        if ((count % 100 == 0) && (stop_requested() || (System.currentTimeMillis()-currTime) > modelBuiltTime))
+          return alpha;
       }
     }
 
