@@ -652,7 +652,7 @@ explanation_test_automl_pareto_front <- function() {
   expect_true(is.data.frame(h2o.pareto_front(aml)@pareto_front))
   expect_ggplot(plot(h2o.pareto_front(aml)))
   # Non-default criteria
-  expect_ggplot(plot(h2o.pareto_front(aml, x_criterium = "training_time_ms", y_criterium = "rmse")))
+  expect_ggplot(plot(h2o.pareto_front(aml, x_metric = "training_time_ms", y_metric = "rmse")))
 }
 
 explanation_test_grid_pareto_front <- function() {
@@ -667,7 +667,7 @@ explanation_test_grid_pareto_front <- function() {
   expect_true(is.data.frame(h2o.pareto_front(grid)@pareto_front))
   expect_ggplot(plot(h2o.pareto_front(grid)))
   # Non-default criteria
-  expect_ggplot(plot(h2o.pareto_front(grid, x_criterium = "auc", y_criterium = "rmse")))
+  expect_ggplot(plot(h2o.pareto_front(grid, x_metric = "auc", y_metric = "rmse")))
 }
 
 explanation_test_list_of_models_pareto_front <- function() {
@@ -682,20 +682,20 @@ explanation_test_list_of_models_pareto_front <- function() {
   expect_true(is.data.frame(h2o.pareto_front(grid@model_ids)@pareto_front))
   expect_ggplot(plot(h2o.pareto_front(grid@model_ids)))
   # Non-default criteria
-  expect_ggplot(plot(h2o.pareto_front(grid@model_ids, x_criterium = "auc", y_criterium = "rmse")))
+  expect_ggplot(plot(h2o.pareto_front(grid@model_ids, x_metric = "auc", y_metric = "rmse")))
 }
 
 explanation_test_some_dataframe_pareto_front <- function() {
   expect_true(is.data.frame(h2o.pareto_front(iris)@pareto_front))
   expect_ggplot(plot(h2o.pareto_front(iris)))
   # Non-default criteria
-  expect_ggplot(plot(h2o.pareto_front(iris, x_criterium = "Petal.Length", y_criterium = "Sepal.Width")))
+  expect_ggplot(plot(h2o.pareto_front(iris, x_metric = "Petal.Length", y_metric = "Sepal.Width")))
 
   iris_h2o <- as.h2o(iris)
   expect_true(is.data.frame(h2o.pareto_front(iris_h2o)@pareto_front))
   expect_ggplot(plot(h2o.pareto_front(iris_h2o)))
   # Non-default criteria
-  expect_ggplot(plot(h2o.pareto_front(iris_h2o, x_criterium = "Petal.Length", y_criterium = "Sepal.Width")))
+  expect_ggplot(plot(h2o.pareto_front(iris_h2o, x_metric = "Petal.Length", y_metric = "Sepal.Width")))
 }
 
 

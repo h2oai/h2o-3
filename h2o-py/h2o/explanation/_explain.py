@@ -2696,9 +2696,9 @@ def _pretty_metric_name(metric):
 
 
 def pareto_front(models,
-                 x_criterium=None, # type: Optional[str]
-                 y_criterium=None, # type: Optional[str]
-                 title=None, # type: Optional[str]
+                 x_metric=None,  # type: Optional[str]
+                 y_metric=None,  # type: Optional[str]
+                 title=None,  # type: Optional[str]
                  color_col="algo",  # type: str
                  figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
                  colormap="Dark2"  # type: str
@@ -2710,8 +2710,8 @@ def pareto_front(models,
     the task is assumed to be minimization for both metrics.
 
     :param models: H2OAutoML, H2OGrid, list of models, or leaderboard frame
-    :param x_criterium: metric present in the leaderboard
-    :param y_criterium: metric present in the leaderboard
+    :param x_metric: metric present in the leaderboard
+    :param y_metric: metric present in the leaderboard
     :param title: title used for the plot
     :param color_col: Categorical column in the leaderboard that should be used for coloring the points
     :param figsize: figure size; passed directly to matplotlib
@@ -2763,36 +2763,36 @@ def pareto_front(models,
         except Exception:
             raise ValueError("`models` paraameter has to be either H2OAutoML, H2OGrid, list of models or coercible to H2OFrame!")
 
-    if x_criterium is None:
+    if x_metric is None:
         if "predict_time_per_row_ms" in leaderboard.names:
-            x_criterium = "predict_time_per_row_ms"
+            x_metric = "predict_time_per_row_ms"
         else:
-            x_criterium = leaderboard.names[2] if "model_id" in leaderboard.names else leaderboard.names[0]
-    if y_criterium is None:
-        y_criterium = leaderboard.names[1]
+            x_metric = leaderboard.names[2] if "model_id" in leaderboard.names else leaderboard.names[0]
+    if y_metric is None:
+        y_metric = leaderboard.names[1]
 
     if "model_id" in leaderboard.names: # do not lowercase the metric if we have some arbitrary frame as leaderboard
-        x_criterium = x_criterium.lower()
-        y_criterium = y_criterium.lower()
+        x_metric = x_metric.lower()
+        y_metric = y_metric.lower()
 
-    if x_criterium not in leaderboard.names:
-        raise ValueError("x_criterium {} is not in the leaderboard!".format(x_criterium))
-    if y_criterium not in leaderboard.names:
-        raise ValueError("y_criterium {} is not in the leaderboard!".format(y_criterium))
+    if x_metric not in leaderboard.names:
+        raise ValueError("x_metric {} is not in the leaderboard!".format(x_metric))
+    if y_metric not in leaderboard.names:
+        raise ValueError("y_metric {} is not in the leaderboard!".format(y_metric))
 
     higher_is_better = ["auc", "aucpr"]
 
     top = False
     left = True
 
-    if x_criterium in higher_is_better:
+    if x_metric in higher_is_better:
         left = False
 
-    if y_criterium in higher_is_better:
+    if y_metric in higher_is_better:
         top = True
 
-    x = np.array(leaderboard[x_criterium].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
-    y = np.array(leaderboard[y_criterium].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
+    x = np.array(leaderboard[x_metric].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
+    y = np.array(leaderboard[y_metric].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
 
     pf = _calculate_pareto_front(x, y, top=top, left=left)
 
@@ -2808,8 +2808,8 @@ def pareto_front(models,
     plt.scatter(x, y, c=cols, alpha=0.5)
     plt.plot(x[pf], y[pf], c="k")
     plt.scatter(x[pf], y[pf], c=cols[pf] if cols is not None else None, s=100, zorder=100)
-    plt.xlabel(_pretty_metric_name(x_criterium))
-    plt.ylabel(_pretty_metric_name(y_criterium))
+    plt.xlabel(_pretty_metric_name(x_metric))
+    plt.ylabel(_pretty_metric_name(y_metric))
     plt.grid(True)
 
     if title is not None:

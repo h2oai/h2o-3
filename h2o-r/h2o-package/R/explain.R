@@ -3419,8 +3419,8 @@ setMethod("show", "H2OParetoFront", function(object) {
 #' the task is assumed to be minimization for both metrics.
 #'
 #' @param object H2OAutoML or H2OGrid
-#' @param x_criterium one of the metrics present in the leaderboard
-#' @param y_criterium one of the metrics present in the leaderboard
+#' @param x_metric one of the metrics present in the leaderboard
+#' @param y_metric one of the metrics present in the leaderboard
 #' @param title Title used for plotting
 #' @param color_col Categorical column in the leaderboard that should be used for coloring the points
 #'
@@ -3456,41 +3456,41 @@ setMethod("show", "H2OParetoFront", function(object) {
 #' }
 #' @export
 h2o.pareto_front <- function(object,
-                             x_criterium = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
-                                             "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
-                                             "RMSE", "RMSLE", "training_time_ms"),
-                             y_criterium = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
-                                             "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
-                                             "RMSE", "RMSLE", "training_time_ms"),
+                             x_metric = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
+                                          "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
+                                          "RMSE", "RMSLE", "training_time_ms"),
+                             y_metric = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
+                                          "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
+                                          "RMSE", "RMSLE", "training_time_ms"),
                              title = NULL,
                              color_col = "algo") {
   leaderboard <- NULL
-  if ((is.data.frame(object) || inherits(object, "H2OFrame")) && !"model_id" %in% names(object)) {
+  if (is.data.frame(object) || inherits(object, "H2OFrame")) {
     leaderboard <- as.data.frame(object)
-    if (missing(x_criterium)) x_criterium <- names(leaderboard)[[1]]
-    if (missing(y_criterium)) y_criterium <- names(leaderboard)[[2]]
+    if (missing(x_metric)) x_metric <- names(leaderboard)[[1]]
+    if (missing(y_metric)) y_metric <- names(leaderboard)[[2]]
   } else {
     models_info <- .process_models_or_automl(object, NULL, require_multiple_models = TRUE,
                                              require_newdata = FALSE, check_x_y_consistency = FALSE)
     leaderboard <- .create_leaderboard(models_info, NULL, top_n = Inf)
-    x_criterium <- case_insensitive_match_arg(x_criterium)
-    y_criterium <- case_insensitive_match_arg(y_criterium)
-    if (x_criterium == "AUTO") {
+    x_metric <- case_insensitive_match_arg(x_metric)
+    y_metric <- case_insensitive_match_arg(y_metric)
+    if (x_metric == "AUTO") {
       if ("predict_time_per_row_ms" %in% names(leaderboard))
-        x_criterium <- "predict_time_per_row_ms"
+        x_metric <- "predict_time_per_row_ms"
       else
-        x_criterium <- names(leaderboard)[[3]]  # in case we were given a list of models not an aml object
+        x_metric <- names(leaderboard)[[3]]  # in case we were given a list of models not an aml object
     }
-    if (y_criterium == "AUTO")
-      y_criterium <- names(leaderboard)[[2]]
+    if (y_metric == "AUTO")
+      y_metric <- names(leaderboard)[[2]]
 
-    x_criterium <- tolower(x_criterium)
-    y_criterium <- tolower(y_criterium)
+    x_metric <- tolower(x_metric)
+    y_metric <- tolower(y_metric)
   }
-  if (!x_criterium %in% names(leaderboard))
-    stop(sprintf("'%s' not found in the leaderboard!", x_criterium), call. = FALSE)
-  if (!y_criterium %in% names(leaderboard))
-    stop(sprintf("'%s' not found in the leaderboard!", y_criterium), call. = FALSE)
+  if (!x_metric %in% names(leaderboard))
+    stop(sprintf("'%s' not found in the leaderboard!", x_metric), call. = FALSE)
+  if (!y_metric %in% names(leaderboard))
+    stop(sprintf("'%s' not found in the leaderboard!", y_metric), call. = FALSE)
 
   if (is.null(title)) {
     name <- NULL
@@ -3506,16 +3506,16 @@ h2o.pareto_front <- function(object,
 
   higher_is_better <- c("auc", "aucpr")
   optimum <- paste0(
-    if (y_criterium %in% higher_is_better) "top" else "bottom",
-    if (x_criterium %in% higher_is_better) "right" else "left"
+    if (y_metric %in% higher_is_better) "top" else "bottom",
+    if (x_metric %in% higher_is_better) "right" else "left"
   )
 
-  pareto_front <- .calculate_pareto_front(leaderboard, x = x_criterium, y = y_criterium, optimum = optimum)
+  pareto_front <- .calculate_pareto_front(leaderboard, x = x_metric, y = y_metric, optimum = optimum)
   return(new("H2OParetoFront",
              pareto_front = pareto_front,
              leaderboard = leaderboard,
-             x = x_criterium,
-             y = y_criterium,
+             x = x_metric,
+             y = y_metric,
              color_col = color_col,
              title = title
   ))
