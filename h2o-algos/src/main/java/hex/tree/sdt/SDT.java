@@ -40,6 +40,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         this.actualDepth = 0;
         this.nodesCount = 0;
         this.compressedTree = null;
+        init(false);
     }
 
     public double[][] compress() {
@@ -161,7 +162,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         public void computeImpl() {
             model = null;
             try {
-                init(true);
+                init(false);
                 if(error_count() > 0) {
                     throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SDT.this);
                 }
