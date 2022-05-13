@@ -755,6 +755,16 @@ class ModelBase(h2o_meta(Keyed)):
                 return None
             return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
 
+    def coef_with_p_values(self):
+        if self.algo == 'glm':
+            if self.parms["compute_p_values"]["actual_value"]:
+                return self._model_json["output"]["coefficients_table"]
+            else:
+                raise ValueError("p-values, z-values and std_error are not found in model.  Make sure to set "
+                                 "compute_p_values=True.")
+        else:
+            raise ValueError("p-values, z-values and std_error are only found in GLM.")
+            
     def _fillMultinomialDict(self, standardize=False):
         if self.algo == 'gam':
             tbl = self._model_json["output"]["coefficients_table"]
@@ -1320,7 +1330,7 @@ class ModelBase(h2o_meta(Keyed)):
                         raise H2OValueError("Column names/indices used in user_splits are not valid.  They "
                                                 "should be chosen from the columns of your data set.")
 
-                    if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0]: # replace enum string with actual value
+                    if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0] or data.type(colKey) == "time": # replace enum string with actual value
                         nVal = len(val)
                         if data[colKey].isfactor()[0]:
                             domains = data[colKey].levels()[0]

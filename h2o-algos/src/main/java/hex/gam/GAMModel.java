@@ -247,7 +247,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       return 1;
     }
 
-    public long _seed=-1;
 
     public InteractionSpec interactionSpec() {
       return InteractionSpec.create(_interactions, _interaction_pairs);

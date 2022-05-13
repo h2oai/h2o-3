@@ -34,7 +34,7 @@ where:
 - :math:`P` is treatment group distribution
 - :math:`Q` is control group distribution
 
-In a tree node the result value for a split is sum :math:`metric(P, Q) + metric(1-P, 1-Q)`. For the split gain value, the result within the node is normalized using the qini coefficient (Euclidean or ChiSquared) or entropy (KL) for each distribution before and after the split.
+In a tree node the result value for a split is sum :math:`metric(P, Q) + metric(1-P, 1-Q)`. For the split gain value, the result within the node is normalized using the Gini coefficient (Euclidean or ChiSquared) or entropy (KL) for each distribution before and after the split.
 
 You can read more information about ``uplift_metric`` on parameter specification page: `uplift_metric <algo-params/uplift_metric.html>`__.
 

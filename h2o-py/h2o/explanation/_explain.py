@@ -199,11 +199,11 @@ class NumpyFrame:
                     levels = set(row[col] for row in df)
                     self._factors[self._columns[col]] = list(levels)
 
-            self._data = np.empty((len(df), len(self._columns)))
+            self._data = np.empty((len(df), len(self._columns)), dtype=np.float64)
             df = [self._columns] + df
         elif isinstance(h2o_frame, h2o.H2OFrame):
-            _is_factor = np.array(h2o_frame.isfactor(), dtype=np.bool) | np.array(
-                h2o_frame.ischaracter(), dtype=np.bool)
+            _is_factor = np.array(h2o_frame.isfactor(), dtype=bool) | np.array(
+                h2o_frame.ischaracter(), dtype=bool)
             _is_numeric = h2o_frame.isnumeric()
             self._columns = h2o_frame.columns
             self._factors = {col: h2o_frame[col].asfactor().levels()[0] for col in
@@ -220,17 +220,22 @@ class NumpyFrame:
                 self._data[:, idx] = np.array(
                     [float(convertor.get(
                         row[idx] if not (len(row) == 0 or row[idx] == "") else "nan", "nan"))
-                        for row in df[1:]], dtype=np.float32)
+                        for row in df[1:]], dtype=np.float64)
             elif _is_numeric[idx]:
                 self._data[:, idx] = np.array(
                     [float(row[idx] if not (len(row) == 0 or row[idx] == "") else "nan") for row in
                      df[1:]],
-                    dtype=np.float32)
+                    dtype=np.float64)
             else:
                 try:
-                    self._data[:, idx] = np.array([row[idx] if not (len(row) == 0 or row[idx] == "")
-                                                   else "nan" for row in df[1:]],
-                                                  dtype=np.datetime64)
+                    self._data[:, idx] = np.array([row[idx]
+                                                   if not (
+                            len(row) == 0 or
+                            row[idx] == "" or
+                            row[idx].lower() == "nan"
+                    ) else "nan" for row in df[1:]], dtype=np.float64)
+                    if h2o_frame.type(self._columns[idx]) == "time":
+                        self._data[:, idx] = _timestamp_to_mpl_datetime(self._data[:, idx])
                 except Exception:
                     raise RuntimeError("Unexpected type of column {}!".format(col))
 
@@ -321,6 +326,20 @@ class NumpyFrame:
                 return np.asarray(self._data[row, self.columns.index(column)] == factor,
                                   dtype=np.float32)
         return self._data[row, self.columns.index(column)]
+
+    def __setitem__(self, key, value):
+        # type: ("NumpyFrame", str, np.ndarray) -> None
+        """
+        Rudimentary implementation of setitem. Setting a factor column is not supported.
+        Use with caution.
+        :param key: column name
+        :param value: ndarray representing one whole column
+        """
+        if key not in self.columns:
+            raise KeyError("Column {} is not present amongst {}".format(key, self.columns))
+        if self.isfactor(key):
+            raise NotImplementedError("Setting a factor column is not supported!")
+        self._data[:, self.columns.index(key)] = value
 
     def get(self, column, as_factor=True):
         # type: ("NumpyFrame", str, bool) -> np.ndarray
@@ -435,6 +454,28 @@ class NumpyFrame:
         """
         for col in self.columns:
             yield col, self.get(col, with_categorical_names)
+
+
+def _mpl_datetime_to_str(mpl_datetime):
+    # type: (float) -> str
+    """
+    Convert matplotlib-compatible date time which in which the unit is a day to a human-readable string.
+
+    :params mpl_datetime: number of days since the beginning of the unix epoch
+    :returns: string containing date time
+    """
+    from datetime import datetime
+    # convert to seconds and then to datetime
+    return datetime.utcfromtimestamp(mpl_datetime * 3600 * 24).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _timestamp_to_mpl_datetime(timestamp):
+    """
+   Convert timestamp to matplotlib compatible timestamp.
+   :params timestamp: number of ms since the beginning of the unix epoch
+   :returns: number of days since the beginning of the unix epoch
+    """
+    return timestamp / (1000 * 3600 * 24)
 
 
 def _get_domain_mapping(model):
@@ -799,7 +840,11 @@ def shap_explain_row_plot(
             contribution_subset_note = ""
         contributions = dict(
             feature=np.array(
-                ["{}={}".format(pair[0], str(row.get(pair[0])[0])) for pair in picked_features]),
+                ["{}={}".format(pair[0],
+                                (_mpl_datetime_to_str(row.get(pair[0])[0])
+                                 if pair[0] in frame.columns and frame.type(pair[0]) == "time"
+                                 else str(row.get(pair[0])[0])))
+                 for pair in picked_features]),
             value=np.array([pair[1][0] for pair in picked_features])
         )
         plt.figure(figsize=figsize)
@@ -909,7 +954,7 @@ def _factor_mapper(mapping):
     return _
 
 
-def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order=None):
+def _add_histogram(frame, column, add_rug, add_histogram=True, levels_order=None):
     # type: (H2OFrame, str, bool, bool) -> None
     """
     Helper function to add rug and/or histogram to a plot
@@ -952,22 +997,39 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
                 bottom=ylims[0],
                 align="center" if nf.isfactor(column) else "edge",
                 width=width, color="gray", alpha=0.2)
+
     if nf.isfactor(column):
         plt.xticks(mapping(range(nf.nlevels(column))), nf.levels(column))
+    elif frame.type(column) == "time":
+        import matplotlib.dates as mdates
+        xmin = np.nanmin(nf[column])
+        xmax = np.nanmax(nf[column])
+        offset = (xmax - xmin) / 50
+        # hardcoding the limits to prevent calculating negative date
+        # happens sometimes when the matplotlib decides to show the origin in the plot
+        # and gives hard to decode errors
+        plt.xlim(max(0, xmin - offset), xmax + offset)
+        locator = mdates.AutoDateLocator()
+        formatter = mdates.AutoDateFormatter(locator)
+        plt.gca().xaxis.set_major_locator(locator)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        plt.gcf().autofmt_xdate()
     plt.ylim(ylims)
 
 
+def _append_graphing_data(graphing_data, data_to_append, original_observation_value, frame_id, centered, show_logoods,
+                          row_id, **kwargs):
     """
-    Returns a table (H2OTwoDimTable) in output form required when output_graphing_data = True. Contains provided graphing_data 
-    table content expanded by data extracted from data_to_append table and formed to fit into graphing_data form 
-    (columns, types). Input tables output_graphing_data and graphing_data stay unchanged, returned expanded table is a 
+    Returns a table (H2OTwoDimTable) in output form required when output_graphing_data = True. Contains provided graphing_data
+    table content expanded by data extracted from data_to_append table and formed to fit into graphing_data form
+    (columns, types). Input tables output_graphing_data and graphing_data stay unchanged, returned expanded table is a
     new H2OTwoDimTable instance.
-    
-    If graphing_data is None, only data_to_append table content is extracted and together with other input information 
+
+    If graphing_data is None, only data_to_append table content is extracted and together with other input information
     is formed into new output table of required form.
-    
+
     If data_to_append is None, there is notheng to extract and append so original graphing_data is returned.
-    
+
     :param graphing_data: H2OTwoDimTable, table to be returned when output_graphing_data = True
     :param data_to_append: H2OTwoDimTable, table that contains new data to be extracted and appended to graphing_data in
      the new resulting table
@@ -979,8 +1041,6 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
 
     :returns: H2OTwoDimTable table
     """
-def _append_graphing_data(graphing_data, data_to_append, original_observation_value, frame_id, centered, show_logoods,
-                          row_id, **kwargs):
     grouping_variable_value = kwargs.get("grouping_variable_value")
     response_type = data_to_append.col_types[data_to_append.col_header.index("mean_response")]
     grouping_variable_type = "string" if type(grouping_variable_value) is str else "double" # todo test this
@@ -1037,7 +1097,7 @@ def _extract_graphing_data_values(data, frame_id, grouping_variable_value, origi
 
 
 def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp,
-                output_graphing_data, nbins, **kwargs):
+                output_graphing_data, nbins, show_rug, **kwargs):
     frame = frame.sort(model.actual_params["response_column"])
     deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
     colors = plt.get_cmap(colormap, 11)(list(range(11)))
@@ -1066,6 +1126,9 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
         orig_vals = _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model,
                                        frame, index, column, colors[i], percentile_string, factor_map, orig_value)
         orig_row = NumpyFrame(orig_vals)
+        if frame.type(column) == "time":
+            tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
+            orig_row[encoded_col] = _timestamp_to_mpl_datetime(orig_row[encoded_col])
         if output_graphing_data:
             data = _append_graphing_data(data, pd_data, frame[index, column], frame.frame_id,
                                          not is_factor and centered, show_logodds, index, **kwargs)
@@ -1099,6 +1162,8 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
             )[0]
         )
         encoded_col = tmp.columns[0]
+        if frame.type(column) == "time":
+            tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
         response = _get_response(tmp["mean_response"], show_logodds)
         if not is_factor and centered:
             _center(tmp["mean_response"])
@@ -1109,7 +1174,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
             plt.plot(tmp[encoded_col], response, color="k", linestyle="dashed",
                      label="Partial Dependence")
 
-    _add_histogram(frame, column)
+    _add_histogram(frame, column, add_rug=show_rug)
     plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}{}".format(
         model.model_id,
         column,
@@ -1138,13 +1203,15 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
 
 
 def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index,
-                output_graphing_data, nbins, **kwargs):
+                output_graphing_data, nbins, show_rug, **kwargs):
     color = plt.get_cmap(colormap)(0)
     data = model.partial_plot(frame, cols=[column], plot=False,
                               row_index=row_index, targets=target,
                               nbins=nbins if not is_factor else (1 + frame[column].nlevels()[0]))[0]
     tmp = NumpyFrame(data)
     encoded_col = tmp.columns[0]
+    if frame.type(column) == "time":
+        tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
     response = _get_response(tmp["mean_response"], show_logodds)
     stddev_response = _get_stddev_response(tmp["stddev_response"], tmp["mean_response"], show_logodds)
 
@@ -1157,7 +1224,7 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.fill_between(tmp[encoded_col], response - stddev_response,
                          response + stddev_response, color=color, alpha=0.2)
 
-    _add_histogram(frame, column)
+    _add_histogram(frame, column, add_rug=show_rug)
 
     if row_index is None:
         plt.title("Partial Dependence plot for \"{}\"{}{}".format(
@@ -1171,8 +1238,10 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
             plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
                         label="Instance value")
         else:
-            plt.axvline(frame[row_index, column], c="k", linestyle="dotted",
-                        label="Instance value")
+            row_val = frame[row_index, column]
+            if frame.type(column) == "time":
+                row_val = _timestamp_to_mpl_datetime(row_val)
+            plt.axvline(row_val, c="k", linestyle="dotted", label="Instance value")
         plt.title("Individual Conditional Expectation for column \"{}\" and row {}{}{}".format(
             column,
             row_index,
@@ -1208,6 +1277,7 @@ def pd_ice_common(
         grouping_column=None,  # type: Optional[str]
         output_graphing_data=False, # type: bool
         nbins=100, # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):
     """
@@ -1232,6 +1302,7 @@ def pd_ice_common(
                            by grouping feature values
     :param output_graphing_data: a bool whether to output final graphing data to a frame
     :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     """
@@ -1285,10 +1356,10 @@ def pd_ice_common(
         if is_ice:
             res = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered,
                               factor_map,
-                              show_pdp, output_graphing_data, nbins, **kwargs)
+                              show_pdp, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
         else:
             res = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map,
-                              row_index, output_graphing_data, nbins, **kwargs)
+                              row_index, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
 
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
@@ -1307,7 +1378,8 @@ def pd_plot(
         binary_response_scale="response", # type: Literal["response", "logodds"]
         grouping_column=None,  # type: Optional[str]
         output_graphing_data=False,  # type: bool
-        nbins = 100,  # type: int
+        nbins=100,  # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):
     """
@@ -1334,6 +1406,7 @@ def pd_plot(
                            by grouping feature values.
     :param output_graphing_data: a bool whether to output final graphing data to a frame.
     :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
@@ -1361,7 +1434,8 @@ def pd_plot(
     >>> gbm.pd_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, row_index, target, max_levels, figsize, colormap, save_plot_path,
-                         True, binary_response_scale, None, False, grouping_column, output_graphing_data, nbins, **kwargs)
+                         True, binary_response_scale, None, False, grouping_column, output_graphing_data, nbins,
+                         show_rug=show_rug, **kwargs)
 
 
 
@@ -1376,7 +1450,8 @@ def pd_multi_plot(
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
         markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."],  # type: List[str]
-        save_plot_path=None # type: Optional[str]
+        save_plot_path=None,  # type: Optional[str]
+        show_rug=True  # type: bool
 ):  # type: (...) -> plt.Figure
     """
     Plot partial dependencies of a variable across multiple models.
@@ -1398,7 +1473,8 @@ def pd_multi_plot(
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``)
+    :param show_rug: Show rug to visualize the density of the column
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -1470,6 +1546,8 @@ def pd_multi_plot(
                                    row_index=row_index, targets=target,
                                    nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
             encoded_col = tmp.columns[0]
+            if frame.type(column) == "time":
+                tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
                             color=[colors[i]], label=model_ids[i],
@@ -1478,7 +1556,7 @@ def pd_multi_plot(
                 plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i],
                          label=model_ids[i])
 
-        _add_histogram(frame, column)
+        _add_histogram(frame, column, add_rug=show_rug)
 
         if row_index is None:
             plt.title("Partial Dependence plot for \"{}\"{}".format(
@@ -1642,6 +1720,7 @@ def ice_plot(
         grouping_column=None,  # type: Optional[str]
         output_graphing_data=False, #type: bool
         nbins=100,  # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):  # type: (...) -> plt.Figure
     """
@@ -1672,6 +1751,7 @@ def ice_plot(
         grouping feature values.
     :param output_graphing_data: a bool whether to output final graphing data to a frame.
     :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
@@ -1699,7 +1779,8 @@ def ice_plot(
     >>> gbm.ice_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap,
-                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, output_graphing_data, nbins, **kwargs)
+                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, output_graphing_data, nbins,
+                         show_rug=show_rug, **kwargs)
 
 
 def _is_binomial(model):

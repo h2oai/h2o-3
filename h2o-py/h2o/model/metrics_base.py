@@ -210,6 +210,7 @@ class MetricsBase(h2o_meta()):
             print("AUUC normalized: "+ str(self.auuc_normalized()))
             if self._metric_json["auuc_table"] is not None:
                 self._metric_json["auuc_table"].show()
+            print()
             print("Qini value: " + str(self.qini()))
             if self._metric_json["aecu_table"] is not None:
                 self._metric_json["aecu_table"].show()
@@ -1882,7 +1883,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.auuc()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.auuc()
         """
         if metric is None:
             return self._metric_json['AUUC']
@@ -1924,7 +1926,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.auuc_normalized()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.auuc_normalized()
         """
         if metric is None:
             return self._metric_json['auuc_normalized']
@@ -1958,7 +1961,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.qini()
+        >>> perf = uplift_model.model_performance()
+        >>> perf.qini()
         """
         return self._metric_json['qini']
 

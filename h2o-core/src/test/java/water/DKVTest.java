@@ -85,7 +85,7 @@ public class DKVTest extends TestUtil {
         System.out.println("iteration " + r);
         try {
           for (int i = 0; i < keys.length; ++i) // byte rf, byte systemType, boolean hint, H2ONode... replicas
-            DKV.put(keys[i] = Key.make((byte) 1, Key.HIDDEN_USER_KEY, true, H2O.CLOUD._memary[i]), new IcedInt(0));
+            DKV.put(keys[i] = Key.make(Key.HIDDEN_USER_KEY, true, H2O.CLOUD._memary[i]), new IcedInt(0));
           new TestMM(keys).doAllNodes();
         } finally {
           for (Key k : keys)

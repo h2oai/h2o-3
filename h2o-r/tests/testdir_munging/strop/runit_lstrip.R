@@ -22,19 +22,19 @@ test.lstrip <- function() {
 
     # test string char strip
     df.hex$C1 <- h2o.lstrip(df.hex$C1)
-    expect_that(df.hex$C1[1,1], equals("empty left"))  # only this should change b/c left white space
-    expect_that(df.hex$C1[2,1], equals("empty right   "))
-    expect_that(df.hex$C1[3,1], equals("some string"))
-    expect_that(df.hex$C1[4,1], equals("mystring"))
-    expect_that(df.hex$C1[5,1], equals("cray tweet"))
+    expect_that(df.hex$C1[1,1], is_equivalent_to("empty left"))  # only this should change b/c left white space
+    expect_that(df.hex$C1[2,1], is_equivalent_to("empty right   "))
+    expect_that(df.hex$C1[3,1], is_equivalent_to("some string"))
+    expect_that(df.hex$C1[4,1], is_equivalent_to("mystring"))
+    expect_that(df.hex$C1[5,1], is_equivalent_to("cray tweet"))
 
     # test string char strip
     df.hex$C1 <- h2o.lstrip(df.hex$C1, "me")
-    expect_that(df.hex$C1[1,1], equals("pty left"))  # matches
-    expect_that(df.hex$C1[2,1], equals("pty right   ")) # matches
-    expect_that(df.hex$C1[3,1], equals("some string"))
-    expect_that(df.hex$C1[4,1], equals("ystring")) # matches
-    expect_that(df.hex$C1[5,1], equals("cray tweet"))
+    expect_that(df.hex$C1[1,1], is_equivalent_to("pty left"))  # matches
+    expect_that(df.hex$C1[2,1], is_equivalent_to("pty right   ")) # matches
+    expect_that(df.hex$C1[3,1], is_equivalent_to("some string"))
+    expect_that(df.hex$C1[4,1], is_equivalent_to("ystring")) # matches
+    expect_that(df.hex$C1[5,1], is_equivalent_to("cray tweet"))
 
     # FIXME: These tests work but are failing on Jenkins b/c workspace issues...
     # non ASCII

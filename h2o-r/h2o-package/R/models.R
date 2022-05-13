@@ -2187,6 +2187,44 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 }
 
 #'
+#' Return the coefficients table with coefficients, standardized coefficients, p-values, z-values and std-error for GLM models
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "cylinders"
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
+#' cars_glm <- h2o.glm(seed = 1234, 
+#'                     lambda=0.0,
+#'                     compute_p_values=TRUE,
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = train, 
+#'                     validation_frame = valid)
+#' h2o.coef_with_p_values(cars_glm)
+#' }
+#' @export
+h2o.coef_with_p_values <- function(object) {
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+    if (object@parameters$compute_p_values) {
+      object@model$coefficients_table
+    } else {
+      stop("p-values, z-values and std_error are not found in model.  Make sure to set compute_p_values=TRUE.")
+    }
+  } else {
+    stop("p-values, z-values and std_error are only found in GLM.")
+  }
+}
+
+#'
 #' Return the coefficients that can be applied to the non-standardized data.
 #'
 #' Note: standardize = True by default. If set to False, then coef() returns the coefficients that are fit directly.
@@ -5070,7 +5108,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       aList <- user_splits[[ind]]
       csname = aList[1]
       if (csname %in% column_names) {
-        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname])) {
+        if (h2o.isnumeric(data[csname]) || h2o.isfactor(data[csname]) || h2o.getTypes(data)[[which(names(data) == csname)]] == "time") {
           nVal <- length(aList)-1
           if (h2o.isfactor(data[csname])) {
             domains <- h2o.levels(data[csname]) # enum values
