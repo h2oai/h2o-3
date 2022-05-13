@@ -7,16 +7,14 @@ import water.fvec.Chunk;
 public class CountSplitValuesMRTask extends MRTask<CountSplitValuesMRTask> {
     int featureSplit;
     double threshold;
-    int classFeature;
     int countLeft;
     int countLeft0;
     int countRight;
     int countRight0;
 
-    public CountSplitValuesMRTask(int featureSplit, double threshold, int classFeature) {
+    public CountSplitValuesMRTask(int featureSplit, double threshold) {
         this.featureSplit = featureSplit;
         this.threshold = threshold;
-        this.classFeature = classFeature;
         this.countLeft = 0;
         this.countLeft0 = 0;
         this.countRight = 0;
@@ -25,16 +23,17 @@ public class CountSplitValuesMRTask extends MRTask<CountSplitValuesMRTask> {
 
     @Override
     public void map(Chunk[] cs) {
+        int classFeature = cs.length - 1;
         int numRows = cs[0]._len;
         for (int row = 0; row < numRows; row++) {
             if (cs[featureSplit].atd(row) <= threshold) {
                 countLeft++;
-                if (cs[classFeature].atd(row) == 0) {
+                if (Math.abs(cs[classFeature].atd(row)) <= 0.1) {
                     countLeft0++;
                 }
             } else {
                 countRight++;
-                if (cs[classFeature].atd(row) == 0) {
+                if (Math.abs(cs[classFeature].atd(row)) <= 0.1) {
                     countRight0++;
                 }
             }

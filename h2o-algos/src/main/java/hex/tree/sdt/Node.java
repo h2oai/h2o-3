@@ -8,7 +8,6 @@ public class Node {
     private Node left;
     private Node right;
     private Integer decisionValue;
-//    public List<Pair<Double, Double>> featuresLimits;
     
     public Node() {
         feature = null;

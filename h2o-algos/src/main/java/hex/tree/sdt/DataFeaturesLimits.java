@@ -2,7 +2,6 @@ package hex.tree.sdt;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public class DataFeaturesLimits {
@@ -31,8 +30,5 @@ public class DataFeaturesLimits {
     public Stream<Double> getFeatureRange(final int featureIndex) {
         return featuresLimits.get(featureIndex).getFeatureRange();
     }
-
-
-    // to move to child split do: actualFeaturesLimits.clone().updateMin() - for right child and .updateMax() for the left child
     
 }
