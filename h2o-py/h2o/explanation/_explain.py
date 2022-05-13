@@ -597,27 +597,27 @@ def shap_summary_plot(
         save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
-    SHAP summary plot
+    SHAP summary plot.
 
-    SHAP summary plot shows contribution of features for each instance. The sum
+    The SHAP summary plot shows the contribution of features for each instance. The sum
     of the feature contributions and the bias term is equal to the raw prediction
-    of the model, i.e., prediction before applying inverse link function.
+    of the model (i.e. prediction before applying inverse link function).
 
-    :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
-    :param frame: H2OFrame
+    :param model: h2o tree model (e.g. DRF, XRT, GBM, XGBoost).
+    :param frame: H2OFrame.
     :param columns: either a list of columns or column indices to show. If specified
-                    parameter top_n_features will be ignored.
+                    parameter ``top_n_features`` will be ignored.
     :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param samples: maximum number of observations to use; if lower than number of rows in the
-                    frame, take a random sample
-    :param colorize_factors: if True, use colors from the colormap to colorize the factors;
-                             otherwise all levels will have same color
-    :param alpha: transparency of the points
-    :param colormap: colormap to use instead of the default blue to red colormap
-    :param figsize: figure size; passed directly to matplotlib
-    :param jitter: amount of jitter used to show the point density
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+                    frame, take a random sample.
+    :param colorize_factors: if ``True``, use colors from the colormap to colorize the factors;
+                             otherwise all levels will have same color.
+    :param alpha: transparency of the points.
+    :param colormap: colormap to use instead of the default blue to red colormap.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param jitter: amount of jitter used to show the point density.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -734,27 +734,32 @@ def shap_explain_row_plot(
         save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
-    SHAP local explanation
+    SHAP local explanation.
 
-    SHAP explanation shows contribution of features for a given instance. The sum
+    SHAP explanation shows the contribution of features for a given instance. The sum
     of the feature contributions and the bias term is equal to the raw prediction
-    of the model, i.e., prediction before applying inverse link function. H2O implements
-    TreeSHAP which when the features are correlated, can increase contribution of a feature
+    of the model (i.e. the prediction before applying inverse link function). H2O implements
+    TreeSHAP which, when the features are correlated, can increase the contribution of a feature
     that had no influence on the prediction.
 
-    :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
-    :param frame: H2OFrame
-    :param row_index: row index of the instance to inspect
+    :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost.
+    :param frame: H2OFrame.
+    :param row_index: row index of the instance to inspect.
     :param columns: either a list of columns or column indices to show. If specified
-                    parameter top_n_features will be ignored.
+                    parameter ``top_n_features`` will be ignored.
     :param top_n_features: a number of columns to pick using variable importance (where applicable).
-                  When plot_type="barplot", then top_n_features will be chosen for each contribution_type.
-    :param figsize: figure size; passed directly to matplotlib
-    :param plot_type: either "barplot" or "breakdown"
-    :param contribution_type: One of "positive", "negative", or "both".
-                              Used only for plot_type="barplot".
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+                  When ``plot_type="barplot"``, then ``top_n_features`` will be chosen for each ``contribution_type``.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param plot_type: either "barplot" or "breakdown".
+    :param contribution_type: One of:
+
+        - "positive"
+        - "negative"
+        - "both"
+        
+        Used only for ``plot_type="barplot"``.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -1380,29 +1385,29 @@ def pd_plot(
     """
     Plot partial dependence plot.
 
-    Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
-    on the response. The effect of a variable is measured in change in the mean response.
+    The partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
+    on the response. The effect of a variable is measured by the change in the mean response.
     PDP assumes independence between the feature for which is the PDP computed and the rest.
 
-    :param model: H2O Model object
-    :param frame: H2OFrame
-    :param column: string containing column name
-    :param row_index: if None, do partial dependence, if integer, do individual
-                      conditional expectation for the row specified by this integer
-    :param target: (only for multinomial classification) for what target should the plot be done
-    :param max_levels: maximum number of factor levels to show
-    :param figsize: figure size; passed directly to matplotlib
+    :param model: H2O Model object.
+    :param frame: H2OFrame.
+    :param column: string containing column name.
+    :param row_index: if None, do partial dependence; if integer, do individual
+                      conditional expectation for the row specified by this integer.
+    :param target: (only for multinomial classification) for what target should the plot be done.
+    :param max_levels: maximum number of factor levels to show.
+    :param figsize: figure size; passed directly to matplotlib.
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
-                     pd_multi_plot
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
-    score. Can be one of: "response", "logodds". Defaults to "response".
-    :param grouping_column A feature column name to group the data and provide separate sets of plots
-                           by grouping feature values
-    :param output_graphing_data: a bool whether to output final graphing data to a frame
+                     ``pd_multi_plot``.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual score.
+        Can be one of: "response" (default), "logodds".
+    :param grouping_column: A feature column name to group the data and provide separate sets of plots
+                           by grouping feature values.
+    :param output_graphing_data: a bool whether to output final graphing data to a frame.
     :param nbins: Number of bins used.
     :param show_rug: Show rug to visualize the density of the column
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -1469,7 +1474,7 @@ def pd_multi_plot(
                     this list will get reused
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :param show_rug: Show rug to visualize the density of the column
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -1719,35 +1724,35 @@ def ice_plot(
         **kwargs
 ):  # type: (...) -> plt.Figure
     """
-    Plot Individual Conditional Expectations (ICE) for each decile
+    Plot Individual Conditional Expectations (ICE) for each decile.
 
-    Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal
-    effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP),
-    PDP shows the average effect of a feature while ICE plot shows the effect for a single
-    instance. The following plot shows the effect for each decile. In contrast to partial
-    dependence plot, ICE plot can provide more insight especially when there is stronger feature interaction.
-    Also, the plot shows the original observation values marked by semi-transparent circle on each ICE line. Please note, that
-    the score of the original observation value may differ from score value of underlying ICE line at original
-    observation point as ICE line is drawn as an interpolation of several points.
+    The individual conditional expectations (ICE) plot gives a graphical depiction of the marginal
+    effect of a variable on the response. The ICE plot is similar to a partial dependence plot (PDP) because
+    a PDP shows the average effect of a feature while ICE plot shows the effect for a single
+    instance. The following plot shows the effect for each decile. In contrast to a partial
+    dependence plot, the ICE plot can provide more insight especially when there is stronger feature interaction.
+    Also, the plot shows the original observation values marked by a semi-transparent circle on each ICE line. Note that
+    the score of the original observation value may differ from score value of the underlying ICE line at the original
+    observation point as the ICE line is drawn as an interpolation of several points.
 
-    :param model: H2OModel
-    :param frame: H2OFrame
-    :param column: string containing column name
-    :param target: (only for multinomial classification) for what target should the plot be done
-    :param max_levels: maximum number of factor levels to show
-    :param figsize: figure size; passed directly to matplotlib
-    :param colormap: colormap name
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :param show_pdp: option to turn on/off PDP line. Defaults to True.
+    :param model: H2OModel.
+    :param frame: H2OFrame.
+    :param column: string containing column name.
+    :param target: (only for multinomial classification) for what target should the plot be done.
+    :param max_levels: maximum number of factor levels to show.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param colormap: colormap name.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :param show_pdp: option to turn on/off PDP line. Defaults to ``True``.
     :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
-    score. Can be one of: "response", "logodds". Defaults to "response".
-    :param centered: a bool whether to center curves around 0 at the first valid x value or not
+        score. Can be one of: "response" (default) or "logodds".
+    :param centered: a bool whether to center curves around 0 at the first valid x value or not.
     :param grouping_column: a feature column name to group the data and provide separate sets of plots by
-    grouping feature values
-    :param output_graphing_data: a bool whether to output final graphing data to a frame
+        grouping feature values.
+    :param output_graphing_data: a bool whether to output final graphing data to a frame.
     :param nbins: Number of bins used.
     :param show_rug: Show rug to visualize the density of the column
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -1760,17 +1765,17 @@ def ice_plot(
     >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
     >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the response
+    >>> # Set the response:
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
     >>> train, test = df.split_frame([0.8])
     >>>
-    >>> # Train a GBM
+    >>> # Train a GBM:
     >>> gbm = H2OGradientBoostingEstimator()
     >>> gbm.train(y=response, training_frame=train)
     >>>
-    >>> # Create the individual conditional expectations plot
+    >>> # Create the individual conditional expectations plot:
     >>> gbm.ice_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap,
@@ -2062,7 +2067,7 @@ def varimp_heatmap(
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting figure (can be accessed using result.figure())
+    :returns: object that contains the resulting figure (can be accessed using ``result.figure()``)
 
     :examples:
     
@@ -2186,7 +2191,7 @@ def model_correlation_heatmap(
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting figure (can be accessed using result.figure())
+    :returns: object that contains the resulting figure (can be accessed using ``result.figure()``)
 
     :examples:
     
@@ -2310,20 +2315,20 @@ def residual_analysis_plot(
 ):
     # type: (...) -> plt.Figure
     """
-    Residual Analysis
+    Residual Analysis.
 
     Do Residual Analysis and plot the fitted values vs residuals on a test dataset.
     Ideally, residuals should be randomly distributed. Patterns in this plot can indicate
-    potential problems with the model selection, e.g., using simpler model than necessary,
-    not accounting for heteroscedasticity, autocorrelation, etc.  If you notice "striped"
+    potential problems with the model selection (e.g. using simpler model than necessary,
+    not accounting for heteroscedasticity, autocorrelation, etc.).  If you notice "striped"
     lines of residuals, that is just an indication that your response variable was integer
     valued instead of real valued.
 
-    :param model: H2OModel
-    :param frame: H2OFrame
-    :param figsize: figure size; passed directly to matplotlib
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+    :param model: H2OModel.
+    :param frame: H2OFrame.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -2401,22 +2406,22 @@ def learning_curve_plot(
 ):
     # type: (...) -> plt.Figure
     """
-    Learning curve
+    Learning curve plot.
 
-    Create learning curve plot for an H2O Model. Learning curves show error metric dependence on
-    learning progress, e.g., RMSE vs number of trees trained so far in GBM. There can be up to 4 curves
+    Create the learning curve plot for an H2O Model. Learning curves show the error metric dependence on
+    learning progress (e.g. RMSE vs number of trees trained so far in GBM). There can be up to 4 curves
     showing Training, Validation, Training on CV Models, and Cross-validation error.
 
-    :param model: an H2O model
-    :param metric: a stopping metric
-    :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean,
-                      if None, it will attempt to automatically determine if this is suitable visualisation
-    :param cv_lines: if True, plot scoring history for individual CV models, if None, it will attempt to
-                     automatically determine if this is suitable visualisation
-    :param figsize: figure size; passed directly to matplotlib
-    :param colormap: colormap to use
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :return: object that contains the resulting figure (can be accessed using result.figure())
+    :param model: an H2O model.
+    :param metric: a stopping metric.
+    :param cv_ribbon: if ``True``, plot the CV mean and CV standard deviation as a ribbon around the mean;
+                      if None, it will attempt to automatically determine if this is suitable visualization.
+    :param cv_lines: if ``True``, plot scoring history for individual CV models; if None, it will attempt to
+                     automatically determine if this is suitable visualization.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param colormap: colormap to use.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :return: object that contains the resulting figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -2933,18 +2938,18 @@ def explain(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
-    :param frame: H2OFrame
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
+    :param frame: H2OFrame.
     :param columns: either a list of columns or column indices to show. If specified
-                    parameter top_n_features will be ignored.
+                    parameter ``top_n_features`` will be ignored.
     :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param include_explanations: if specified, return only the specified model explanations
-                                 (Mutually exclusive with exclude_explanations)
-    :param exclude_explanations: exclude specified model explanations
-    :param plot_overrides: overrides for individual model explanations
-    :param figsize: figure size; passed directly to matplotlib
-    :param render: if True, render the model explanations; otherwise model explanations are just returned
-    :returns: H2OExplanation containing the model explanations including headers and descriptions
+                                 (mutually exclusive with ``exclude_explanations``).
+    :param exclude_explanations: exclude specified model explanations.
+    :param plot_overrides: overrides for individual model explanations.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
+    :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
     
@@ -3198,21 +3203,21 @@ def explain_row(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: H2OAutoML object, supervised H2O model, or list of supervised H2O models
-    :param frame: H2OFrame
-    :param row_index: row index of the instance to inspect
-    :param columns: either a list of columns or column indices to show. If specified
-                    parameter top_n_features will be ignored.
+    :param models: H2OAutoML object, supervised H2O model, or list of supervised H2O models.
+    :param frame: H2OFrame.
+    :param row_index: row index of the instance to inspect.
+    :param columns: either a list of columns or column indices to show. If specified,
+                    parameter ``top_n_features`` will be ignored.
     :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param include_explanations: if specified, return only the specified model explanations
-                                 (Mutually exclusive with exclude_explanations)
-    :param exclude_explanations: exclude specified model explanations
-    :param plot_overrides: overrides for individual model explanations
-    :param qualitative_colormap: a colormap name
-    :param figsize: figure size; passed directly to matplotlib
-    :param render: if True, render the model explanations; otherwise model explanations are just returned
+                                 (mutually exclusive with ``exclude_explanations``).
+    :param exclude_explanations: exclude specified model explanations.
+    :param plot_overrides: overrides for individual model explanations.
+    :param qualitative_colormap: a colormap name.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
 
-    :returns: H2OExplanation containing the model explanations including headers and descriptions
+    :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
     

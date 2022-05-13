@@ -14,13 +14,13 @@ Classes for communication with backend H2O servers.
     Handle to the remote H2O cluster -- used mainly to retrieve information about it.
 
 The :mod:`h2o` module has convenience functions for accessing these classes, and those are the ones that are
-recommended for everyday use. The following are the common use cases:
+recommended for everyday use. The following are the most common use cases:
 
 (1) Connect to an existing remote H2O server::
 
         h2o.connect(url="...")
 
-(2) Connect to a local server, or if there isn't one start it and then connect::
+(2) Connect to a local server, or if there isn't one, start it and then connect::
 
         h2o.init()
 
@@ -33,7 +33,7 @@ recommended for everyday use. The following are the common use cases:
 
 Functions :func:`h2o.connect` and :func:`h2o.init` take many parameters that allow you to fine-tune the connection
 settings. When used, they will create a new :class:`H2OConnection` object and store it in a global variable -- this
-connection will be used by all subsequent calls to ``h2o.`` functions. At this moment there is no effective way to
+connection will be used by all subsequent calls to ``h2o.`` functions. At this moment, there is no effective way to
 have multiple connections to separate H2O servers open at the same time. Such facility may be added in the future.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals

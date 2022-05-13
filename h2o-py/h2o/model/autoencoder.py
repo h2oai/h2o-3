@@ -10,7 +10,7 @@ class H2OAutoEncoderModel(ModelBase):
 
     def anomaly(self, test_data, per_feature=False):
         """
-        Obtain the reconstruction error for the input test_data.
+        Obtain the reconstruction error for the input ``test_data``.
 
         :param H2OFrame test_data: The dataset upon which the reconstruction error is computed.
         :param bool per_feature: Whether to return the square reconstruction error per feature.

@@ -631,7 +631,7 @@ class H2ORegressionModelMetrics(MetricsBase):
     """
     This class provides an API for inspecting the metrics returned by a regression model.
 
-    It is possible to retrieve the R^2 (1 - MSE/variance) and MSE.
+    It is possible to retrieve the :math:`R^2` (1 - MSE/variance) and MSE.
 
     :examples:
 
@@ -716,7 +716,7 @@ class H2OMultinomialModelMetrics(MetricsBase):
         super(H2OMultinomialModelMetrics, self).__init__(metric_json, on, algo)
 
     def confusion_matrix(self):
-        """Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
+        """Returns a confusion matrix based on H2O's default prediction threshold for a dataset.
 
         :examples:
 
@@ -872,7 +872,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     """
     This class is essentially an API for the AUC object.
     This class contains methods for inspecting the AUC for different criteria.
-    To input the different criteria, use the static variable `criteria`.
+    To input the different criteria, use the static variable ``criteria``.
     """
 
     def __init__(self, metric_json, on=None, algo=""):
@@ -906,7 +906,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def F1(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The F1 for the given set of thresholds.
 
@@ -930,7 +930,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def F2(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The F2 for this set of metrics and thresholds.
 
@@ -954,7 +954,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def F0point5(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The F0.5 for this set of metrics and thresholds.
 
@@ -978,7 +978,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def accuracy(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The accuracy for this set of metrics and thresholds.
 
@@ -1002,7 +1002,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def error(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold minimizing the error will be used.
         :returns: The error for this set of metrics and thresholds.
 
@@ -1026,7 +1026,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def precision(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The precision for this set of metrics and thresholds.
 
@@ -1050,7 +1050,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def tpr(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The True Postive Rate.
 
@@ -1074,7 +1074,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def tnr(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The True Negative Rate.
 
@@ -1098,7 +1098,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def fnr(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The False Negative Rate.
 
@@ -1122,7 +1122,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def fpr(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The False Positive Rate.
 
@@ -1146,7 +1146,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def recall(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: Recall for this set of metrics and thresholds.
 
@@ -1170,7 +1170,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def sensitivity(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: Sensitivity or True Positive Rate for this set of metrics and thresholds.
 
@@ -1194,7 +1194,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def fallout(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The fallout (same as False Positive Rate) for this set of metrics and thresholds.
 
@@ -1219,7 +1219,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def missrate(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The miss rate (same as False Negative Rate).
 
@@ -1243,7 +1243,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def specificity(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The specificity (same as True Negative Rate).
 
@@ -1267,7 +1267,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def mcc(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
         :returns: The absolute MCC (a value between 0 and 1, 0 being totally dissimilar, 1 being identical).
 
@@ -1291,7 +1291,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def max_per_class_error(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold minimizing the error will be used.
         :returns: Return 1 - min(per class accuracy).
 
@@ -1315,7 +1315,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def mean_per_class_error(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold minimizing the error will be used.
         :returns: mean per class error.
 
@@ -1350,7 +1350,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     def metric(self, metric, thresholds=None):
         """
         :param str metric: A metric among :const:`maximizing_metrics`.
-        :param thresholds: thresholds parameter must be a number or a list (i.e. [0.01, 0.5, 0.99]).
+        :param thresholds: thresholds parameter must be a number or a list (e.g. ``[0.01, 0.5, 0.99]``).
             If None, then the threshold maximizing the metric will be used.
             If 'all', then all stored thresholds are used and returned with the matching metric.
         :returns: The set of metrics for the list of thresholds.
@@ -1410,13 +1410,18 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         Produce the desired metric plot.
 
-        :param type: the type of metric plot (currently, only ROC curve ('roc'), Precision Recall curve ('pr') and Gains Lift curve ('gainslift') are supported).
+        :param type: the type of metric plot. One of (currently supported):
+
+            - ROC curve ('roc')
+            - Precision Recall curve ('pr')
+            - Gains Lift curve ('gainslift')
+            
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
-        :param save_plot_path: filename to save the plot to
-        :param plot: True to plot curve, False to get a tuple of values at axis x and y of the plot 
-                (tprs and fprs for AUC, recall and precision for PR)
+        :param save_plot_path: filename to save the plot to.
+        :param plot: ``True`` to plot curve; ``False`` to get a tuple of values at axis x and y of the plot 
+                (tprs and fprs for AUC, recall and precision for PR).
         
-        :returns: None or values of x and y axis of the plot + the resulting plot (can be accessed using result.figure())
+        :returns: None or values of x and y axis of the plot + the resulting plot (can be accessed using ``result.figure()``).
 
         :examples:
 
@@ -1545,6 +1550,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     def roc(self):
         """
         Return the coordinates of the ROC curve as a tuple containing the false positive rates as a list and true positive rates as a list.
+
         :returns: The ROC values.
 
         :examples:
@@ -1587,13 +1593,13 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def confusion_matrix(self, metrics=None, thresholds=None):
         """
-        Get the confusion matrix for the specified metric
+        Get the confusion matrix for the specified metric.
 
-        :param metrics: A string (or list of strings) among metrics listed in :const:`maximizing_metrics`. Defaults to 'f1'.
+        :param metrics: A string (or list of strings) among metrics listed in :const:`maximizing_metrics`. Defaults to ``'f1'``.
         :param thresholds: A value (or list of values) between 0 and 1.
             If None, then the thresholds maximizing each provided metric will be used.
         :returns: a list of ConfusionMatrix objects (if there are more than one to return), a single ConfusionMatrix
-            (if there is only one) or None if thresholds are metrics scores are missing.
+            (if there is only one), or None if thresholds are metrics scores are missing.
 
         :examples:
 
@@ -1712,7 +1718,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         Retrieve the index in this metric's threshold list at which the given threshold is located.
 
         :param threshold: Find the index of this input threshold.
-        :returns: the index
+        :returns: the index.
         :raises ValueError: if no such index can be found.
 
         :examples:
@@ -1780,12 +1786,17 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         Plot Gains/Lift curves.
 
-        :param type: one of "both", "gains", "lift". Defaults to "both".
-        :param server: if True, generate plot inline using matplotlib's "Agg" backend.
-        :param save_plot_path: filename to save the plot to
-        :param plot: True to plot curve, False to get a gains lift table
+        :param type: one of:
 
-        :returns: Gains lift table + the resulting plot (can be accessed using result.figure())
+            - "both" (default)
+            - "gains"
+            - "lift"
+            
+        :param server: if ``True``, generate plot inline using matplotlib's "Agg" backend.
+        :param save_plot_path: filename to save the plot to.
+        :param plot: ``True`` to plot curve; ``False`` to get a gains lift table.
+
+        :returns: Gains lift table + the resulting plot (can be accessed using ``result.figure()``).
         """
         type = type.lower()
         assert type in ["both", "gains", "lift"]
@@ -1827,8 +1838,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
 class H2OBinomialUpliftModelMetrics(MetricsBase):
     """
-    This class is available only for Uplift DRF model
-    This class is essentially an API for the AUUC object
+    This class is available only for Uplift DRF model.
+    This class is essentially an API for the AUUC object.
     """
     
     def __init__(self, metric_json, on=None, algo=""):
@@ -1844,8 +1855,14 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Retrieve area under cumulative uplift curve (AUUC) value.
         
-        :param metric AUUC metric type (None, "AUTO", "qini", "lift", "gain",
-            default is None which means it takes default metric from model parameters, "AUTO" means "qini") 
+        :param metric: AUUC metric type. One of:
+
+            - "None" (default; takes default metric from model parameters)
+            - "AUTO" (defaults to "qini")
+            - "qini"
+            - "lift"
+            - "gain"
+
         :returns: AUUC value.
 
         :examples:
@@ -1881,8 +1898,14 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Retrieve normalized area under cumulative uplift curve (AUUC) value.
         
-        :param metric AUUC metric type (None, "AUTO", "qini", "lift", "gain",
-            default is None which means it takes default metric from model parameters, "AUTO" means "qini") 
+        :param metric: AUUC metric type. One of:
+        
+            - "None" (default; takes default metric from model parameters)
+            - "AUTO" (defaults to "qini")
+            - "qini"
+            - "lift"
+            - "gain"
+
         :returns: normalized AUUC value.
 
         :examples:
@@ -1916,7 +1939,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
 
     def qini(self):
         """
-        Retrieve Qini value (area between Qini cumulative uplift curve and random curve)
+        Retrieve Qini value (area between Qini cumulative uplift curve and random curve).
         
         :returns: Qini value.
 
@@ -1947,7 +1970,14 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Retrieve AECU value (average excess cumulative uplift - area between Uplift curve and random curve).
         
-        :param metric AECU metric type (None, "qini", "lift", "gain", default is "AUTO" which means "qini") 
+        :param metric: AECU metric type One of:
+
+            - "None"
+            - "qini"
+            - "lift"
+            - "gain"
+            - "AUTO" (default; defaults to "qini")
+            
         :returns: AECU value.
 
         :examples:
@@ -1980,7 +2010,12 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Retrieve uplift values for each bin. 
         
-        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
+        :param metric: AUUC metric type. One of:
+
+            - "qini"
+            - "lift"
+            - "gain"
+            - "AUTO" (default; defaults to "qini") 
         
         :returns: a list of uplift values.
 
@@ -2014,7 +2049,12 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Retrieve normalized uplift values for each bin. 
         
-        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
+        :param metric: AUUC metric type. One of:
+
+            - "qini"
+            - "lift"
+            - "gain"
+            - "AUTO" (default; defaults to "qini") 
         
         :returns: a list of normalized uplift values.
 
@@ -2048,7 +2088,12 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Retrieve random uplift values for each bin. 
         
-        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
+        :param metric: AUUC metric type. One of:
+
+            - "qini"
+            - "lift"
+            - "gain"
+            - "AUTO" (default; defaults to "qini") 
         
         :returns: a list of random uplift values.
 
@@ -2227,12 +2272,18 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Plot Uplift Curve. 
         
-        :param server: if True, generate plot inline using matplotlib's "Agg" backend.
-        :param save_to_file filename to save the plot to
-        :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
+        :param server: if ``True``, generate plot inline using matplotlib's "Agg" backend.
+        :param save_to_file: filename to save the plot to.
+        :param plot: ``True`` to plot curve, ``False`` to get a tuple of values at axis x and y of the plot 
             (number of observations and uplift values)
-        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
-        :param normalize If True, normalized values are ploted
+        :param metric: AUUC metric type. One of:
+
+            - "qini"
+            - "lift"
+            - "gain"
+            - "AUTO" (default; defaults to "qini")
+            
+        :param normalize: If ``True``, normalized values are plotted.
 
         :examples:
         
