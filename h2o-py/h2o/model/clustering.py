@@ -6,23 +6,24 @@ from .model_base import ModelBase
 
 
 class H2OClusteringModel(ModelBase):
-    "For examples: from h2o.estimators.kmeans import H2OKMeansEstimator"
 
     def size(self, train=False, valid=False):
         """
         Get the sizes of each cluster.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where
         the keys are "train" and "valid". This metric is not available in cross-validation metrics.
 
-        :param bool train: If True, return the cluster sizes for the training data.
-        :param bool valid: If True, return the cluster sizes for the validation data.
+        :param bool train: If ``True``, return the cluster sizes for the training data.
+        :param bool valid: If ``True``, return the cluster sizes for the validation data.
 
         :returns: The cluster sizes for the specified key(s).
 
         :examples:
 
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
@@ -43,6 +44,8 @@ class H2OClusteringModel(ModelBase):
 
         :examples:
 
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
@@ -55,19 +58,21 @@ class H2OClusteringModel(ModelBase):
         """
         Get the between cluster sum of squares.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param bool train: If True, return the between cluster sum of squares value for the training data.
-        :param bool valid: If True, return the between cluster sum of squares value for the validation data.
-        :param bool xval: If True, return the between cluster sum of squares value for each of the
+        :param bool train: If ``True``, return the between cluster sum of squares value for the training data.
+        :param bool valid: If ``True``, return the between cluster sum of squares value for the validation data.
+        :param bool xval: If ``True``, return the between cluster sum of squares value for each of the
             cross-validated splits.
 
         :returns: The between cluster sum of squares values for the specified key(s).
 
         :examples:
 
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
@@ -88,18 +93,20 @@ class H2OClusteringModel(ModelBase):
         """
         Get the total sum of squares.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param bool train: If True, return the total sum of squares value for the training data.
-        :param bool valid: If True, return the total sum of squares value for the validation data.
-        :param bool xval: If True, return the total sum of squares value for each of the cross-validated splits.
+        :param bool train: If ``True``, return the total sum of squares value for the training data.
+        :param bool valid: If ``True``, return the total sum of squares value for the validation data.
+        :param bool xval: If ``True``, return the total sum of squares value for each of the cross-validated splits.
 
         :returns: The total sum of squares values for the specified key(s).
 
         :examples:
 
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
@@ -116,19 +123,21 @@ class H2OClusteringModel(ModelBase):
         """
         Get the total within cluster sum of squares.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param bool train: If True, return the total within cluster sum of squares value for the training data.
-        :param bool valid: If True, return the total within cluster sum of squares value for the validation data.
-        :param bool xval: If True, return the total within cluster sum of squares value for each of the
+        :param bool train: If ``True``, return the total within cluster sum of squares value for the training data.
+        :param bool valid: If ``True``, return the total within cluster sum of squares value for the validation data.
+        :param bool xval: If ``True``, return the total within cluster sum of squares value for each of the
             cross-validated splits.
 
         :returns: The total within cluster sum of squares values for the specified key(s).
 
         :examples:
 
+        >>> >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
@@ -149,17 +158,19 @@ class H2OClusteringModel(ModelBase):
         """
         Get the within cluster sum of squares for each cluster.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where
         the keys are "train" and "valid". This metric is not available in cross-validation metrics.
 
-        :param bool train: If True, return the total sum of squares value for the training data.
-        :param bool valid: If True, return the total sum of squares value for the validation data.
+        :param bool train: If ``True``, return the total sum of squares value for the training data.
+        :param bool valid: If ``True``, return the total sum of squares value for the validation data.
 
         :returns: The total sum of squares values for the specified key(s).
 
         :examples:
 
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
@@ -179,17 +190,19 @@ class H2OClusteringModel(ModelBase):
         """
         Get the centroid statistics for each cluster.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where
-        the keys are "train" and "valid". This metric is not available in cross-validation metircs.
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where
+        the keys are "train" and "valid". This metric is not available in cross-validation metrics.
 
-        :param bool train: If True, return the centroid statistic for the training data.
-        :param bool valid: If True, return the centroid statistic for the validation data.
+        :param bool train: If ``True``, return the centroid statistic for the training data.
+        :param bool valid: If ``True``, return the centroid statistic for the validation data.
 
         :returns: The centroid statistics for the specified key(s).
 
         :examples:
 
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
@@ -210,6 +223,8 @@ class H2OClusteringModel(ModelBase):
 
         :examples:
 
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
@@ -221,10 +236,12 @@ class H2OClusteringModel(ModelBase):
         return centers
 
     def centers_std(self):
-        """The standardized centers for the kmeans model.
+        """The standardized centers for the KMeans model.
 
         :examples:
 
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>>
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)

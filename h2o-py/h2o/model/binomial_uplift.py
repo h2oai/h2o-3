@@ -13,13 +13,18 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         Retrieve area under uplift curve (AUUC) value for the specified metrics in model params.
         
-        If all are False (default), then return the training metric AUUC value.
-        If more than one options is set to True, then return a dictionary of metrics where the 
+        If all are ``False`` (default), then return the training metric AUUC value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the 
         keys are "train" and "valid".
         
-        :param bool train: If True, return the AUUC value for the training data.
-        :param bool valid: If True, return the AUUC value for the validation data.
-        :param metric: AUUC metric type ("qini", "lift", "gain", default is None which means metric set in parameters) 
+        :param bool train: If ``True``, return the AUUC value for the training data.
+        :param bool valid: If ``True``, return the AUUC value for the validation data.
+        :param metric: AUUC metric type. One of:
+
+            - "qini"
+            - "lift"
+            - "gain"
+            - "None" (default; metric set in parameters) 
     
         
         :returns: AUUC value for the specified key(s).
@@ -52,13 +57,18 @@ class H2OBinomialUpliftModel(ModelBase):
         """
             Retrieve normalized area under uplift curve (AUUC) value for the specified metrics in model params.
             
-            If all are False (default), then return the training metric normalized AUUC value.
-            If more than one options is set to True, then return a dictionary of metrics where the 
+            If all are ``False`` (default), then return the training metric normalized AUUC value.
+            If more than one option is set to ``True``, then return a dictionary of metrics where the 
             keys are "train" and "valid".
             
-            :param bool train: If True, return the AUUC value for the training data.
-            :param bool valid: If True, return the AUUC value for the validation data.
-            :param metric: AUUC metric type ("qini", "lift", "gain", default is None which means metric set in parameters) 
+            :param bool train: If ``True``, return the AUUC value for the training data.
+            :param bool valid: If ``True``, return the AUUC value for the validation data.
+            :param metric: AUUC metric type. One of:
+
+                - "qini"
+                - "lift"
+                - "gain"
+                - "None" (default; metric set in parameters) 
         
             
             :returns: Normalized AUUC value for the specified key(s).
@@ -91,13 +101,17 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         Retrieve uplift values for the specified metrics. 
         
-        If all are False (default), then return the training metric uplift values.
-        If more than one options is set to True, then return a dictionary of metrics where the 
+        If all are ``False`` (default), then return the training metric uplift values.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the 
         keys are "train" and "valid".
         
-        :param bool train: If True, return the uplift values for the training data.
-        :param bool valid: If True, return the uplift values for the validation data.
-        :param metric: Uplift metric type ("qini", "lift", "gain", default is "qini") 
+        :param bool train: If ``True``, return the uplift values for the training data.
+        :param bool valid: If ``True``, return the uplift values for the validation data.
+        :param metric: Uplift metric type. One of:
+
+            - "qini" (default)
+            - "lift"
+            - "gain"
         
         :returns: a list of uplift values for the specified key(s).
 
@@ -129,13 +143,17 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         Retrieve normalized uplift values for the specified metrics. 
         
-        If all are False (default), then return the training metric normalized uplift values.
-        If more than one options is set to True, then return a dictionary of metrics where the 
+        If all are ``False`` (default), then return the training metric normalized uplift values.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the 
         keys are "train" and "valid".
         
-        :param bool train: If True, return the uplift values for the training data.
-        :param bool valid: If True, return the uplift values for the validation data.
-        :param metric: Uplift metric type ("qini", "lift", "gain", default is "qini") 
+        :param bool train: If ``True``, return the uplift values for the training data.
+        :param bool valid: If ``True``, return the uplift values for the validation data.
+        :param metric: Uplift metric type. One of:
+
+            - "qini" (default)
+            - "lift"
+            - "gain"
         
         :returns: a list of normalized uplift values for the specified key(s).
 
@@ -167,12 +185,12 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         Retrieve numbers of observations.
         
-        If all are False (default), then return the training metric number of observations.
-        If more than one options is set to True, then return a dictionary of metrics where the 
+        If all are ``False`` (default), then return the training metric number of observations.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the 
         keys are "train" and "valid".
         
-        :param bool train: If True, return the number of observations for the training data.
-        :param bool valid: If True, return the number of observations for the validation data.
+        :param bool train: If ``True``, return the number of observations for the training data.
+        :param bool valid: If ``True``, return the number of observations for the validation data.
         
         :returns: a list of numbers of observation for the specified key(s).
 
@@ -203,12 +221,12 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         Retrieve prediction thresholds for the specified metrics. 
         
-        If all are False (default), then return the training metric prediction thresholds.
-        If more than one options is set to True, then return a dictionary of metrics where the 
+        If all are ``False`` (default), then return the training metric prediction thresholds.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the 
         keys are "train" and "valid".
         
-        :param bool train: If True, return the prediction thresholds for the training data.
-        :param bool valid: If True, return the prediction thresholds for the validation data.
+        :param bool train: If ``True``, return the prediction thresholds for the training data.
+        :param bool valid: If ``True``, return the prediction thresholds for the validation data.
         
         :returns: a list of numbers of observation for the specified key(s).
         
@@ -239,12 +257,12 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         Retrieve thresholds and metric scores table for the specified metrics. 
         
-        If all are False (default), then return the training metric thresholds and metric scores table.
-        If more than one options is set to True, then return a dictionary of metrics where the 
+        If all are ``False`` (default), then return the training metric thresholds and metric scores table.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the 
         keys are "train" and "valid".
         
-        :param bool train: If True, return the thresholds and metric scores table for the training data.
-        :param bool valid: If True, return the thresholds and metric scores table for the validation data.
+        :param bool train: If ``True``, return the thresholds and metric scores table for the training data.
+        :param bool valid: If ``True``, return the thresholds and metric scores table for the validation data.
         
         :returns: the thresholds and metric scores table for the specified key(s).
         
@@ -275,12 +293,12 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         Retrieve all types of AUUC in a table.
         
-        If all are False (default), then return the training metric AUUC table.
-        If more than one options is set to True, then return a dictionary of metrics where the 
+        If all are ``False`` (default), then return the training metric AUUC table.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the 
         keys are "train" and "valid".
         
-        :param bool train: If True, return the AUUC table for the training data.
-        :param bool valid: If True, return the AUUC table for the validation data.
+        :param bool train: If ``True``, return the AUUC table for the training data.
+        :param bool valid: If ``True``, return the AUUC table for the validation data.
          
         :returns: the AUUC table for the specified key(s).
     
