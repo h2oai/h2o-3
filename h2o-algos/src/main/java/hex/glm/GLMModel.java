@@ -364,6 +364,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_family != Family.tweedie) {
         glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
         glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
+      } else {  // family is tweedie
+        if (DispersionMode.ml.equals(_dispersion_factor_mode) && _tweedie_variance_power <= 1)
+          glm.error("tweedie_variance_power", " must > 1 for dispersion parameter estimation using" +
+                  " ml (maximum likelihood)");
+        if (_tweedie_variance_power > 0 && _tweedie_variance_power < 1)
+          glm.error("tweedie_variance_power", " cannot be in the interval (0, 1)");
+        if (DispersionMode.ml.equals(_dispersion_factor_mode) && 
+                (_tweedie_variance_power == 1 ||_tweedie_variance_power == 2))
+          glm.error("dispersion_factor_mode", "ml is not available for tweedie_variance_power = 1" +
+                  " or 2.  Use default or choose pearson instead.");
       }
       if(_family != Family.negativebinomial) {
         glm.hide("_theta","Only applicable with Negative Binomial family");

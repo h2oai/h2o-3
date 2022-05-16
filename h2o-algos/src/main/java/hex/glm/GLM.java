@@ -999,7 +999,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 " negativebinoimal.");
       
       if (_parms._compute_p_values && _parms._dispersion_factor_mode==null)
-        _parms._dispersion_factor_mode = pearson;
+        _parms._dispersion_factor_mode = pearson; // default dispersion parameter estimation
       
       if (_parms._init_dispersion_factor <= 0)
         error("init_dispersion_factor", " must exceed 0.0.");
