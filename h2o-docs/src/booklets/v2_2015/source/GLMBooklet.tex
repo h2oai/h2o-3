@@ -501,8 +501,10 @@ constant. It is usually used with the log link $g(\mu_i)= \log(\mu_i)$, or the i
 
 The model is fitted by solving the following likelihood maximization:
 
-$$  \max_{\beta,\beta_0} \  - \frac{1}{N}  \sum_{i=1}^N  \ \frac{y_i}{x_i^{\top}\beta+\beta_0 } + \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right) $$
+$$  \max_{\beta,\beta_0} \  - \frac{1}{N} \left\{ \sum_{i=1}^N \ \frac{y_i}{u_i} + \log({u_i}) \right\}  - \lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right) $$
 %\[  \min\limits_{\beta,\beta_0} { {1 \over N}\sum\limits_{i=1}\limits^{N}{y_i \over (x_i^{T}\beta  + \beta_0)} - log({x_i^{T}\beta  + \beta_0})  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
+
+where $u_i = e^{{x^{\top}_i} \beta + \beta_0}$ or $u_i = \frac{1}{x^{\top}_i \beta + \beta_o}$.
 
 The corresponding deviance is equal to:
 
