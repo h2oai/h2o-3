@@ -79,7 +79,7 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
         
         @Override
         public String algoName() {
-            return "SingleDecisionTree";
+            return "SDT";
         }
 
         @Override

@@ -1,5 +1,6 @@
 package hex.tree.sdt;
 
+import hex.ConfusionMatrix;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,6 +11,9 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.test.util.ConfusionMatrixUtils;
+import water.util.FrameUtils;
+
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -88,7 +92,8 @@ public class SDTTest {
     public void testSmallData() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate_train.csv"));
+            Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate_test.csv"));
             System.out.println(Arrays.toString(train.names()));
 
             
@@ -96,7 +101,7 @@ public class SDTTest {
                     new SDTModel.SDTParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p.depth = 3;
+            p.depth = 10;
             p._response_column = "CAPSULE";
 //             [ID, CAPSULE, AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON]
 
@@ -106,10 +111,27 @@ public class SDTTest {
             Scope.track_generic(model);
             assertNotNull(model);
 
-            Frame out = model.score(train);
+            Frame out = model.score(test);
             Scope.track_generic(out);
             System.out.println(Arrays.toString(out.names()));
-            assertEquals(train.numRows(), out.numRows());
+            assertEquals(test.numRows(), out.numRows());
+
+            System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
+//            System.out.println(test.vec(p._response_column));
+            // todo - some evaluation 
+            System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0))));
+            System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p._response_column))));
+
+            ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(
+                    test.vec(p._response_column).toCategoricalVec(), 
+                    out.vec(0).toCategoricalVec());
+            System.out.println("Accuracy: " + cm.accuracy());
+            System.out.println("Precision: " + cm.precision());
+            System.out.println("Recall: " + cm.recall());
+            System.out.println("Specificity: " + cm.specificity());
+            System.out.println("F1: " + cm.f1());
+            System.out.println("F2: " + cm.f2());
+
 
 
             System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));

@@ -43,6 +43,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         init(false);
     }
 
+    public SDT(boolean startup_once) {
+        super(new SDTModel.SDTParameters(), startup_once);
+    }
+
     public double[][] compress() {
         //  if parent node is at index i in the array then the left child of that node is at index (2*i + 1) 
         //  and right child is at index (2*i + 2) in the array. 
@@ -287,3 +291,4 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 // train sklearn decision tree on the same data
 // debug dtree and see how the clustering is used
 // more general - n-class classification, regression, gini, different 
+// maybe evaluation by depth and hyperparams on validation set inside of training. Read about it
