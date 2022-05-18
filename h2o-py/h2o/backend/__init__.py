@@ -33,7 +33,7 @@ recommended for everyday use. The following are the most common use cases:
 
 Functions :func:`h2o.connect` and :func:`h2o.init` take many parameters that allow you to fine-tune the connection
 settings. When used, they will create a new :class:`H2OConnection` object and store it in a global variable -- this
-connection will be used by all subsequent calls to ``h2o.`` functions. At this moment, there is no effective way to
+connection will be used by all subsequent calls to ``h2o.`` functions. Currently, there is no effective way to
 have multiple connections to separate H2O servers open at the same time. Such facility may be added in the future.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals

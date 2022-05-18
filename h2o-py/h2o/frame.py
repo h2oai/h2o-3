@@ -798,9 +798,9 @@ class H2OFrame(Keyed):
 
     def logical_negation(self):
         """
-        Create a new H2OFrame equal to elementwise Logical NOT applied to the current frame.
+        Create a new H2OFrame equal to element-wise Logical NOT applied to the current frame.
 
-        :returns: New H2OFrame equal to elementwise Logical NOT applied to the current frame.
+        :returns: New H2OFrame equal to element-wise Logical NOT applied to the current frame.
 
         :examples:
 
@@ -1001,9 +1001,9 @@ class H2OFrame(Keyed):
 
     def cos(self):
         """
-        Create a new H2OFrame equal to elementwise cosine of the current frame.
+        Create a new H2OFrame equal to element-wise cosine of the current frame.
         
-        :returns: New H2OFrame equal to elementwise cosine of the current frame.
+        :returns: New H2OFrame equal to element-wise cosine of the current frame.
 
         :examples:
 
@@ -1016,9 +1016,9 @@ class H2OFrame(Keyed):
 
     def sin(self):
         """
-        Create a new H2OFrame equal to elementwise sine of the current frame.
+        Create a new H2OFrame equal to element-wise sine of the current frame.
         
-        :returns: New H2OFrame equal to elementwise sine of the current frame.
+        :returns: New H2OFrame equal to element-wise sine of the current frame.
 
         :examples:
 
@@ -1031,9 +1031,9 @@ class H2OFrame(Keyed):
 
     def tan(self):
         """
-        Create a new H2OFrame equal to elementwise tangent of the current frame.
+        Create a new H2OFrame equal to element-wise tangent of the current frame.
         
-        :returns: New H2OFrame equal to elementwise tangent of the current frame.
+        :returns: New H2OFrame equal to element-wise tangent of the current frame.
 
         :examples:
 
@@ -1046,9 +1046,9 @@ class H2OFrame(Keyed):
 
     def acos(self):
         """
-        Create a new H2OFrame equal to elementwise arc cosine of the current frame.
+        Create a new H2OFrame equal to element-wise arc cosine of the current frame.
         
-        :returns: New H2OFrame equal to elementwise arc cosine of the current frame.
+        :returns: New H2OFrame equal to element-wise arc cosine of the current frame.
 
         :examples:
 
@@ -1061,9 +1061,9 @@ class H2OFrame(Keyed):
 
     def asin(self):
         """
-        Create a new H2OFrame equal to elementwise arc sine of the current frame.
+        Create a new H2OFrame equal to element-wise arc sine of the current frame.
 
-        :returns: New H2OFrame equal to elementwise arc sine of the current frame.
+        :returns: New H2OFrame equal to element-wise arc sine of the current frame.
 
         :examples:
 
@@ -1076,9 +1076,9 @@ class H2OFrame(Keyed):
 
     def atan(self):
         """
-        Create a new H2OFrame equal to elementwise arc tangent of the current frame.
+        Create a new H2OFrame equal to element-wise arc tangent of the current frame.
         
-        :returns: New H2OFrame equal to elementwise arc tangent of the current frame.
+        :returns: New H2OFrame equal to element-wise arc tangent of the current frame.
 
         :examples:
 
@@ -1106,9 +1106,9 @@ class H2OFrame(Keyed):
 
     def sinh(self):
         """
-        Create a new H2OFrame equal to elementwise hyperbolic sine of the current frame.
+        Create a new H2OFrame equal to element-wise hyperbolic sine of the current frame.
 
-        :returns: New H2OFrame equal to elementwise hyperbolic sine of the current frame.
+        :returns: New H2OFrame equal to element-wise hyperbolic sine of the current frame.
 
         :examples:
 
@@ -1121,9 +1121,9 @@ class H2OFrame(Keyed):
 
     def tanh(self):
         """
-        Create a new H2OFrame equal to elementwise hyperbolic tangent of the current frame.
+        Create a new H2OFrame equal to element-wise hyperbolic tangent of the current frame.
         
-        :returns: New H2OFrame equal to elementwise hyperbolic tangent of the current frame.
+        :returns: New H2OFrame equal to element-wise hyperbolic tangent of the current frame.
 
         :examples:
 
@@ -1136,9 +1136,9 @@ class H2OFrame(Keyed):
 
     def acosh(self):
         """
-        Create a new H2OFrame equal to elementwise inverse hyperbolic cosine of the current frame
+        Create a new H2OFrame equal to element-wise inverse hyperbolic cosine of the current frame
 
-        :returns: New H2OFrame equal to elementwise inverse hyperbolic cosine of the current frame.
+        :returns: New H2OFrame equal to element-wise inverse hyperbolic cosine of the current frame.
 
         :examples:
 
@@ -1151,9 +1151,9 @@ class H2OFrame(Keyed):
 
     def asinh(self):
         """
-        Create a new H2OFrame equal to elementwise inverse hyperbolic sine of the current frame.
+        Create a new H2OFrame equal to element-wise inverse hyperbolic sine of the current frame.
         
-        :returns: New H2OFrame equal to elementwise inverse hyperbolic sine of the current frame.
+        :returns: New H2OFrame equal to element-wise inverse hyperbolic sine of the current frame.
 
         :examples:
 
@@ -1166,9 +1166,9 @@ class H2OFrame(Keyed):
 
     def atanh(self):
         """
-        Create a new H2OFrame equal to elementwise inverse hyperbolic tangent of the current frame.
+        Create a new H2OFrame equal to element-wise inverse hyperbolic tangent of the current frame.
         
-        :returns: New H2OFrame equal to elementwise inverse hyperbolic tangent of the current frame.
+        :returns: New H2OFrame equal to element-wise inverse hyperbolic tangent of the current frame.
 
         :examples:
 
@@ -1181,9 +1181,9 @@ class H2OFrame(Keyed):
 
     def cospi(self):
         """
-        Create a new H2OFrame equal to elementwise cosine of the current frame multiplied by Pi.
+        Create a new H2OFrame equal to element-wise cosine of the current frame multiplied by Pi.
         
-        :returns: New H2OFrame equal to elementwise cosine of the current frame multiplied by Pi.
+        :returns: New H2OFrame equal to element-wise cosine of the current frame multiplied by Pi.
 
         :examples:
 
@@ -1196,9 +1196,9 @@ class H2OFrame(Keyed):
 
     def sinpi(self):
         """
-        Create a new H2OFrame equal to elementwise sine of the current frame multiplied by Pi.
+        Create a new H2OFrame equal to element-wise sine of the current frame multiplied by Pi.
         
-        :returns: New H2OFrame equal to elementwise sine of the current frame multiplied by Pi.
+        :returns: New H2OFrame equal to element-wise sine of the current frame multiplied by Pi.
 
         :examples:
 
@@ -1211,9 +1211,9 @@ class H2OFrame(Keyed):
 
     def tanpi(self):
         """
-        Create a new H2OFrame equal to elementwise tangent of the current frame multiplied by Pi.
+        Create a new H2OFrame equal to element-wise tangent of the current frame multiplied by Pi.
         
-        :returns: New H2OFrame equal to elementwise tangent of the current frame multiplied by Pi.
+        :returns: New H2OFrame equal to element-wise tangent of the current frame multiplied by Pi.
 
         :examples:
 
@@ -1228,7 +1228,7 @@ class H2OFrame(Keyed):
         """
         Calculate the absolute value of the current frame.
         
-        :returns: new H2OFrame equal to elementwise absolute value of the current frame.
+        :returns: new H2OFrame equal to element-wise absolute value of the current frame.
 
         :examples:
 
@@ -1255,9 +1255,9 @@ class H2OFrame(Keyed):
 
     def sqrt(self):
         """
-        Create a new H2OFrame equal to elementwise square root of the current frame.
+        Create a new H2OFrame equal to element-wise square root of the current frame.
 
-        :returns: New H2OFrame equal to elementwise square root of the current frame.
+        :returns: New H2OFrame equal to element-wise square root of the current frame.
 
         :examples:
 
@@ -1334,9 +1334,9 @@ class H2OFrame(Keyed):
 
     def log(self):
         """
-        Create a new H2OFrame equal to elementwise natural logarithm of the current frame.
+        Create a new H2OFrame equal to element-wise natural logarithm of the current frame.
         
-        :returns: New H2OFrame equal to elementwise natural logarithm of the current frame.
+        :returns: New H2OFrame equal to element-wise natural logarithm of the current frame.
 
         :examples:
 
@@ -1349,9 +1349,9 @@ class H2OFrame(Keyed):
 
     def log10(self):
         """
-        Create new H2OFrame equal to elementwise decimal logarithm of the current frame.
+        Create new H2OFrame equal to element-wise decimal logarithm of the current frame.
         
-        :returns: New H2OFrame equal to elementwise decimal logarithm of the current frame.
+        :returns: New H2OFrame equal to element-wise decimal logarithm of the current frame.
 
         :examples:
 
@@ -1364,9 +1364,9 @@ class H2OFrame(Keyed):
 
     def log1p(self):
         """
-        Create a new H2Oframe equal to elementwise ``ln(1 + x)`` for each ``x`` in the current frame.
+        Create a new H2Oframe equal to element-wise ``ln(1 + x)`` for each ``x`` in the current frame.
         
-        :returns: New H2OFrame equals to elementwise ``ln(1 + x)`` for each ``x`` in the current frame.
+        :returns: New H2OFrame equals to element-wise ``ln(1 + x)`` for each ``x`` in the current frame.
 
         :examples:
 
@@ -1379,9 +1379,9 @@ class H2OFrame(Keyed):
 
     def log2(self):
         """
-        Create a new H2OFrame equal to elementwise binary logarithm of the current frame.
+        Create a new H2OFrame equal to element-wise binary logarithm of the current frame.
         
-        :returns: New H2OFrame equal to elementwise binary logarithm of the current frame.
+        :returns: New H2OFrame equal to element-wise binary logarithm of the current frame.
 
         :examples:
 
@@ -1394,9 +1394,9 @@ class H2OFrame(Keyed):
 
     def exp(self):
         """
-        Create a new H2OFrame equal to elementwise exponent (i.e. ``e^x``) of the current frame.
+        Create a new H2OFrame equal to element-wise exponent (i.e. ``e^x``) of the current frame.
 
-        :returns: New H2OFrame equals to elementwise exponent (i.e. ``e^x``) of the current frame.
+        :returns: New H2OFrame equals to element-wise exponent (i.e. ``e^x``) of the current frame.
 
         :examples:
 
@@ -1409,9 +1409,9 @@ class H2OFrame(Keyed):
 
     def expm1(self):
         """
-        Create a new H2OFrame equal to elementwise exponent minus 1 (i.e. ``e^x - 1``) of the current frame.
+        Create a new H2OFrame equal to element-wise exponent minus 1 (i.e. ``e^x - 1``) of the current frame.
 
-        :returns: New H2OFrame equal to elementwise exponent minus 1 (i.e. ``e^x - 1``) of the current frame.
+        :returns: New H2OFrame equal to element-wise exponent minus 1 (i.e. ``e^x - 1``) of the current frame.
 
         :examples:
 
@@ -1424,9 +1424,9 @@ class H2OFrame(Keyed):
 
     def gamma(self):
         """
-        Create a new H2OFrame equal to elementwise gamma function of the current frame.
+        Create a new H2OFrame equal to element-wise gamma function of the current frame.
         
-        :returns: new H2OFrame equals to elementwise gamma function of the current frame.
+        :returns: new H2OFrame equals to element-wise gamma function of the current frame.
 
         :examples:
 
@@ -1439,9 +1439,9 @@ class H2OFrame(Keyed):
 
     def lgamma(self):
         """
-        Create a new H2OFrame equal to elementwise logarithm of the gamma function of the current frame.
+        Create a new H2OFrame equal to element-wise logarithm of the gamma function of the current frame.
         
-        :returns: New H2OFrame equal to elementwise logarithm of the gamma function of the current frame.
+        :returns: New H2OFrame equal to element-wise logarithm of the gamma function of the current frame.
 
         :examples:
 
@@ -1454,9 +1454,9 @@ class H2OFrame(Keyed):
 
     def digamma(self):
         """
-        Create a new H2OFrame equal to elementwise digamma function of the current frame.
+        Create a new H2OFrame equal to element-wise digamma function of the current frame.
         
-        :returns: New H2OFrame equal to elementwise digamma function of the current frame.
+        :returns: New H2OFrame equal to element-wise digamma function of the current frame.
 
         :examples:
 
@@ -1469,9 +1469,9 @@ class H2OFrame(Keyed):
 
     def trigamma(self):
         """
-        Create a new H2OFrame equal to the elementwise trigamma function of the current frame.
+        Create a new H2OFrame equal to the element-wise trigamma function of the current frame.
         
-        :returns: new H2OFrame equal to elementwise trigamma function of the current frame.
+        :returns: new H2OFrame equal to element-wise trigamma function of the current frame.
 
         :examples:
 

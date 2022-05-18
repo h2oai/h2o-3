@@ -875,7 +875,7 @@ class H2OBinomialModel(ModelBase):
 
     def kolmogorov_smirnov(self):
         """
-        Retrieves the Kolmogorov-Smirnov metric for a given binomial model. The number returned is in range between 0 and 1.
+        Retrieves the Kolmogorov-Smirnov metric (K-S metric) for a given binomial model. The number returned is in range between 0 and 1.
         The K-S metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution
         functions. Detailed metrics per each group are to be found in the gains-lift table.
 

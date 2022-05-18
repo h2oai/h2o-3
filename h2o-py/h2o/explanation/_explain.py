@@ -1296,11 +1296,11 @@ def pd_ice_common(
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :param show_pdp: option to turn on/off PDP line. Defaults to True.
     :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
-    :param centered: a bool whether to center curves around 0 at the first valid x value or not
-    :param is_ice: a bool whether the caller of this method is ice_plot or pd_plot
+    :param centered: a bool that determines whether to center curves around 0 at the first valid x value or not
+    :param is_ice: a bool that determines whether the caller of this method is ice_plot or pd_plot
     :param grouping_column A feature column name to group the data and provide separate sets of plots
                            by grouping feature values
-    :param output_graphing_data: a bool whether to output final graphing data to a frame
+    :param output_graphing_data: a bool that determines whether to output final graphing data to a frame
     :param nbins: Number of bins used.
     :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
@@ -1385,9 +1385,9 @@ def pd_plot(
     """
     Plot partial dependence plot.
 
-    The partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
+    The partial dependence plot (PDP) provides a graph of the marginal effect of a variable
     on the response. The effect of a variable is measured by the change in the mean response.
-    PDP assumes independence between the feature for which is the PDP computed and the rest.
+    The PDP assumes independence between the feature for which is the PDP computed and the rest.
 
     :param model: H2O Model object.
     :param frame: H2OFrame.
@@ -1404,7 +1404,7 @@ def pd_plot(
         Can be one of: "response" (default), "logodds".
     :param grouping_column: A feature column name to group the data and provide separate sets of plots
                            by grouping feature values.
-    :param output_graphing_data: a bool whether to output final graphing data to a frame.
+    :param output_graphing_data: a bool that determines whether to output final graphing data to a frame.
     :param nbins: Number of bins used.
     :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
@@ -1456,9 +1456,9 @@ def pd_multi_plot(
     """
     Plot partial dependencies of a variable across multiple models.
 
-    Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
-    on the response. The effect of a variable is measured in change in the mean response.
-    PDP assumes independence between the feature for which is the PDP computed and the rest.
+    The partial dependence plot (PDP) provides a graph of the marginal effect of a variable
+    on the response. The effect of a variable is measured by the change in the mean response.
+    The PDP assumes independence between the feature for which is the PDP computed and the rest.
 
     :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
@@ -1746,10 +1746,10 @@ def ice_plot(
     :param show_pdp: option to turn on/off PDP line. Defaults to ``True``.
     :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
         score. Can be one of: "response" (default) or "logodds".
-    :param centered: a bool whether to center curves around 0 at the first valid x value or not.
+    :param centered: a bool that determines whether to center curves around 0 at the first valid x value or not.
     :param grouping_column: a feature column name to group the data and provide separate sets of plots by
         grouping feature values.
-    :param output_graphing_data: a bool whether to output final graphing data to a frame.
+    :param output_graphing_data: a bool that determmines whether to output final graphing data to a frame.
     :param nbins: Number of bins used.
     :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
@@ -2321,8 +2321,8 @@ def residual_analysis_plot(
     Ideally, residuals should be randomly distributed. Patterns in this plot can indicate
     potential problems with the model selection (e.g. using simpler model than necessary,
     not accounting for heteroscedasticity, autocorrelation, etc.).  If you notice "striped"
-    lines of residuals, that is just an indication that your response variable was integer
-    valued instead of real valued.
+    lines of residuals, that is just an indication that your response variable was integer-valued
+    instead of real-valued.
 
     :param model: H2OModel.
     :param frame: H2OFrame.

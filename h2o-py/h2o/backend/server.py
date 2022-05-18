@@ -46,7 +46,7 @@ class H2OLocalServer(object):
     Once started, the server will run until the script terminates, or until you call ``.shutdown()`` on it. Moreover,
     if the server terminates with an exception, then the server will not stop and will continue to run even after
     Python process exits. This runaway process may end up being in a bad shape (e.g. frozen), then the only way to
-    terminate it is to kill the java process from the terminal.
+    terminate it is to end the Java process from the terminal.
 
     Alternatively, it is possible to start the server as a context manager, in which case it will be automatically
     shut down even if an exception occurs in Python (but not if the Python process is killed)::

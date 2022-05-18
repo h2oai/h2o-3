@@ -516,7 +516,7 @@ class H2OConnection(h2o_meta()):
         """
         Close an existing connection; once closed it cannot be used again.
 
-        Strictly speaking it is not necessary to close all connections that you opened -- we have several mechanisms
+        Strictly speaking, it is not necessary to close all connections that you opened -- we have several mechanisms
         in place that will do so automatically (``__del__()``, ``__exit__()``, and ``atexit()`` handlers), however there is also
         no good reason to make this method private.
         """

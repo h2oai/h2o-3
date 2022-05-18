@@ -266,7 +266,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Deleting them will save memory in the H2O cluster. 
             Defaults to ``False``.
         :param sort_metric: Metric to sort the leaderboard by at the end of an AutoML run. 
-            For binomial classification choose between:
+            For binomial classification, select from the following options:
             
                 - ``"auc"``
                 - ``"aucpr"``
@@ -275,14 +275,14 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                 - ``"rmse"``
                 - ``"mse"``
                 
-            For multinomial classification choose between:
+            For multinomial classification, select from the following options:
             
                 - ``"mean_per_class_error"``
                 - ``"logloss"``
                 - ``"rmse"``
                 - ``"mse"``
                 
-            For regression choose between:
+            For regression, select from the following options:
 
                 - ``"deviance"``
                 - ``"rmse"``

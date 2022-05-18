@@ -1416,7 +1416,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             - Precision Recall curve ('pr')
             - Gains Lift curve ('gainslift')
             
-        :param server: if True, generate plot inline using matplotlib's "Agg" backend.
+        :param server: if True, generate plot inline using matplotlib's Anti-Grain Geometry (AGG) backend.
         :param save_plot_path: filename to save the plot to.
         :param plot: ``True`` to plot curve; ``False`` to get a tuple of values at axis x and y of the plot 
                 (tprs and fprs for AUC, recall and precision for PR).
@@ -1792,7 +1792,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             - "gains"
             - "lift"
             
-        :param server: if ``True``, generate plot inline using matplotlib's "Agg" backend.
+        :param server: if ``True``, generate plot inline using matplotlib's Anti-Grain Geometry (AGG) backend.
         :param save_plot_path: filename to save the plot to.
         :param plot: ``True`` to plot curve; ``False`` to get a gains lift table.
 
@@ -2272,7 +2272,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         Plot Uplift Curve. 
         
-        :param server: if ``True``, generate plot inline using matplotlib's "Agg" backend.
+        :param server: if ``True``, generate plot inline using matplotlib's Anti-Grain Geometry (AGG) backend.
         :param save_to_file: filename to save the plot to.
         :param plot: ``True`` to plot curve, ``False`` to get a tuple of values at axis x and y of the plot 
             (number of observations and uplift values)
