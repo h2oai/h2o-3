@@ -3128,7 +3128,10 @@ h2o.learning_curve_plot <- function(model,
   if (metric %in% c("objective", "convergence", "loglik", "mean_anomaly_score")) {
     training_metric <- metric
     validation_metric <- "UNDEFINED"
-  } else if ("deviance" == metric && model@algorithm %in% c("gam", "glm") && !hglm) {
+  } else if ("deviance" == metric &&
+    model@algorithm %in% c("gam", "glm") &&
+    !hglm &&
+    "deviance_train" %in% names(sh)) {
     training_metric <- "deviance_train"
     validation_metric <- "deviance_test"
   } else {
