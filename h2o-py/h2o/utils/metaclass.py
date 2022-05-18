@@ -186,6 +186,43 @@ class _DeprecatedFunction(object):
 deprecated_fn = _DeprecatedFunction
 
 
+def deprecated_params_order(old_sig, is_called_with_old_sig):
+    """
+    Creates a deprecated property order and provide a correct function call
+    :param old_sig: list of strings in old property order
+    :param is_called_with_old_sig: Function that return true if the function is called with different order
+    :return: function call with correct parameter order and deprecation warning or the same function call
+
+    :example::
+
+        def _is_called_with_old_sig(*args, **kwargs): return len(args) > 0 and isinstance(args[0], bool)
+
+        class Foo:
+
+            @deprecated_params_order(old_sig=["param2", "param1"], is_called_with_old_sig=_is_called_with_old_sig)
+            def method(self, param1, param2):
+                pass
+    """
+
+    def handle_deprecated_params_order(fn):
+
+        @wraps(fn)
+        def wrapper(self, *args, **kwargs):
+
+            if is_called_with_old_sig and is_called_with_old_sig(*args, **kwargs):
+                warnings.warn("please check and use the new signature of method "+fullname(fn), H2ODeprecationWarning, 2)
+                for i, arg in enumerate(args):
+                    kw = old_sig[i]
+                    kwargs[kw] = arg
+                return fn(self, **kwargs)
+            else:
+                return fn(self, *args, **kwargs)
+
+        return wrapper
+
+    return handle_deprecated_params_order
+
+
 class MetaFeature(object):
     """To be implemented by meta features exposed through the ``H2OMeta` metaclass"""
 
