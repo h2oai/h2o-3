@@ -264,7 +264,7 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
             """
             _args = sig.bind(*args, **kwargs).arguments
             for name, param in sig.parameters.items():
-                if param.kind == param.VAR_KEYWORD:
+                if param.kind == param.VAR_KEYWORD and name in _args:
                     kw_arg = _args.pop(name)
                     _args = {**_args, **kw_arg}
 
