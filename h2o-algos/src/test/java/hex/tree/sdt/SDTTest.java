@@ -1,8 +1,8 @@
 package hex.tree.sdt;
 
 import hex.ConfusionMatrix;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.runner.RunWith;
 import water.Scope;
 import water.*;
@@ -14,15 +14,25 @@ import water.runner.H2ORunner;
 import water.test.util.ConfusionMatrixUtils;
 import water.util.FrameUtils;
 
+import java.io.File;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.*;
 
-@CloudSize(1)
+@CloudSize(2)
 @RunWith(H2ORunner.class)
-public class SDTTest {
+public class 
+SDTTest {
 
+    @ClassRule
+    public static EnvironmentVariables environmentVariables = new EnvironmentVariables();
+    
+    @BeforeClass
+    public static void initTest() {
+        final File h2oHomeDir = new File(System.getProperty("user.dir")).getParentFile();
+        environmentVariables.set("H2O_FILES_SEARCH_PATH", h2oHomeDir.getAbsolutePath());
+    }
 
     @Test
     public void testBasicData() {
@@ -87,9 +97,11 @@ public class SDTTest {
             Scope.exit();
         }
     }
+    
+    
 
     @Test
-    public void testSmallData() {
+    public void testProstateSmallData() {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate_train.csv"));
@@ -118,7 +130,6 @@ public class SDTTest {
 
             System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
 //            System.out.println(test.vec(p._response_column));
-            // todo - some evaluation 
             System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0))));
             System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p._response_column))));
 
@@ -132,17 +143,69 @@ public class SDTTest {
             System.out.println("F1: " + cm.f1());
             System.out.println("F2: " + cm.f2());
 
-
-
-            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));
-
+//            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));
+            
 
         } finally {
             Scope.exit();
         }
     }
-    
-    
+
+    @Test
+    public void testAirlinesSmallData() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+            Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+            System.out.println(Arrays.toString(train.names()));
+            
+            
+
+
+            SDTModel.SDTParameters p =
+                    new SDTModel.SDTParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p.depth = 10;
+            p._response_column = "IsDepDelayed";
+//             IsDepDelayed,fYear,fMonth,fDayofMonth,fDayOfWeek,UniqueCarrier,Origin,Dest,Distance
+
+
+            SDT sdt = new SDT(p);
+            SDTModel model = sdt.trainModel().get();
+            assertNotNull(model);
+            Scope.track_generic(model);
+            
+            
+
+            Frame out = model.score(test);
+            Scope.track_generic(out);
+            System.out.println(Arrays.toString(out.names()));
+            assertEquals(test.numRows(), out.numRows());
+
+            System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
+//            System.out.println(test.vec(p._response_column));
+            System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0))));
+            System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p._response_column))));
+
+            ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(
+                    test.vec(p._response_column).toCategoricalVec(),
+                    out.vec(0).toCategoricalVec());
+            System.out.println("Accuracy: " + cm.accuracy());
+            System.out.println("Precision: " + cm.precision());
+            System.out.println("Recall: " + cm.recall());
+            System.out.println("Specificity: " + cm.specificity());
+            System.out.println("F1: " + cm.f1());
+            System.out.println("F2: " + cm.f2());
+
+            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
+
 //    @Test
 //    @Ignore("Old test without integration")
 //    public void testMapReduceWithOutput() {
