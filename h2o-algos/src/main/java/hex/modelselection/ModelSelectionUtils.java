@@ -125,18 +125,27 @@ public class ModelSelectionUtils {
         int[] predIndices = changedSubset.stream().mapToInt(Integer::intValue).toArray();
         int predNum = predictorNames.length;
         BitSet tempIndices =  new BitSet(predNum);
+        int predSizes = changedSubset.size();
+        boolean emptyUsedCombo = (usedCombo != null) && (usedCombo.size() == 0);
         for (int predIndex : validSubsets) {  // consider valid predictor indices only
             predIndices[newPredPos] = predIndex;
-            if (usedCombo != null) {   // only need to check for replacement step 
+            if (emptyUsedCombo && predSizes > 1) {   // add all indice set into usedCombo
                 tempIndices.clear();
                 setBitSet(tempIndices, predIndices);
-                if (!usedCombo.contains(tempIndices)) {
-                    usedCombo.add((BitSet) tempIndices.clone());
+                usedCombo.add((BitSet) tempIndices.clone());
+                Frame trainFrame = generateOneFrame(predIndices, parms, predictorNames, foldColumn);
+                DKV.put(trainFrame);
+                trainFramesList.add(trainFrame);
+                
+            } else if (usedCombo != null && predSizes > 1) {   // only need to check for forward and replacement step for maxR
+                tempIndices.clear();
+                setBitSet(tempIndices, predIndices);
+                if (usedCombo.add((BitSet) tempIndices.clone())) {  // returns true if not in keyset
                     Frame trainFrame = generateOneFrame(predIndices, parms, predictorNames, foldColumn);
                     DKV.put(trainFrame);
                     trainFramesList.add(trainFrame);
                 }
-            } else {
+            } else {     // just build without checking duplicates for other modes
                 Frame trainFrame = generateOneFrame(predIndices, parms, predictorNames, foldColumn);
                 DKV.put(trainFrame);
                 trainFramesList.add(trainFrame);
