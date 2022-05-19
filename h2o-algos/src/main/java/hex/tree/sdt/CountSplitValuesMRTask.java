@@ -33,8 +33,10 @@ public class CountSplitValuesMRTask extends MRTask<CountSplitValuesMRTask> {
                 }
             } else {
                 countRight++;
+//                System.out.println(cs[classFeature].atd(row));
                 if (Math.abs(cs[classFeature].atd(row)) <= 0.1) {
                     countRight0++;
+//                    System.out.println("yes, " + countRight0);
                 }
             }
         }
@@ -44,5 +46,7 @@ public class CountSplitValuesMRTask extends MRTask<CountSplitValuesMRTask> {
     public void reduce(CountSplitValuesMRTask mrt) {
         this.countLeft += mrt.countLeft;
         this.countRight += mrt.countRight;
+        this.countLeft0 += mrt.countLeft0;
+        this.countRight0 += mrt.countRight0;
     }
 }
