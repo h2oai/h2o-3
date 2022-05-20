@@ -2530,7 +2530,10 @@ def learning_curve_plot(
 
     timestep = allowed_timesteps[0]
 
-    if "deviance" == metric and model.algo in ["glm", "gam"] and not model.actual_params.get("HGLM", False):
+    if ("deviance" == metric
+            and model.algo in ["glm", "gam"]
+            and not model.actual_params.get("HGLM", False)
+            and "deviance_train" in scoring_history.col_header):
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
     elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
