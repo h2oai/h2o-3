@@ -21,13 +21,14 @@ import warnings
 
 import h2o
 from h2o.base import Keyed
-from h2o.display import H2ODisplay, H2OTableDisplay, display, in_ipy, in_zep, repr_def
+from h2o.display import H2ODisplay, H2ODisplayWrapper, H2OItemsDisplay, H2OTableDisplay, display, in_ipy, in_zep, repr_def
 from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
 from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.config import get_config_value
+from h2o.utils.metaclass import deprecated_fn
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized, 
@@ -4923,7 +4924,7 @@ class H2OFrame(Keyed, H2ODisplay):
         # no need to pollute debug string with cell values, headers should be enough
         return repr_def(self, attributes=['_ex'])
     
-    def _to_str(self, format_=None):
+    def _to_str(self, fmt=None):
         fr_str = self._str_edge_cases()
         if fr_str is not None:
             return fr_str
@@ -4933,21 +4934,14 @@ class H2OFrame(Keyed, H2ODisplay):
         use_pandas = thread_env('pandas', H2OTableDisplay.prefer_pandas())
         if use_pandas:
             df = self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True)
-            table = df.to_html() if format_ == 'html' else df.to_string()
+            table = df.to_html() if fmt == 'html' else df.to_string()
         else:
             tablefmt = dict(
                 pretty='simple',
                 html='html'
-            ).get(format_, 'plain')
+            ).get(fmt, 'plain')
             table = self._frame(fill_cache=True)._ex._cache._tabulate(tablefmt, rollups=False, rows=rows)
-            
-        nrows = "{nrow} row{s}".format(nrow=self.nrow, s="" if self.nrow == 1 else "s")
-        ncols = "{ncol} column{s}".format(ncol=self.ncol, s="" if self.ncol == 1 else "s")
-        template = dict(
-            pretty="{table}\n\n[{nrows} x {ncols}]",
-            html="{table}<br><pre>[{nrows} x {ncols}]</pre>"
-        ).get(format_, "{table}\n[{nrows} x {ncols}])")
-        return template.format(table=table, nrows=nrows, ncols=ncols)
+        return table+H2OTableDisplay.table_footer(self, fmt=fmt)
 
     def _str_(self):
         return self._to_str()
@@ -4962,13 +4956,123 @@ class H2OFrame(Keyed, H2ODisplay):
         return self._ex and (self._ex._children or self._ex._cache._id)
 
     def show(self, use_pandas=None, rows=10, cols=200):
+        """
+        Print a snippet of the data frame.
+        
+        :param use_pandas: 
+        :param rows:
+        :param cols:
+        
+        :examples:
+        >>> from random import randrange
+        >>> import numpy as np
+        >>> row_num = randrange(1,10)
+        >>> col_num = randrange(1,10)
+        >>> python_lists = np.random.randint(-5,5, (row_num,col_num))
+        >>> h20frame = h2o.H2OFrame(python_obj=python_lists)
+        >>> h2oframe.show()
+        >>> h2oframe.show(use_pandas=False)
+        """
+        
         # changing default behaviour, suggesting to use pandas by default as soon as it's available and preferred.
         if use_pandas is None:
             use_pandas = H2OTableDisplay.prefer_pandas()
         with thread_context(rows=rows, cols=cols, pandas=use_pandas):
             display(self)
 
-    def show_old(self, use_pandas=False, rows=10, cols=200):
+    def _str_summary(self, fmt=None):
+        fr_str = self._str_edge_cases()
+        if fr_str is not None:
+            return fr_str
+        
+        tablefmt = dict(
+            pretty='simple',
+            html='html'
+        ).get(fmt, 'plain')
+        table = self._ex._cache._tabulate(tablefmt, rollups=True)
+        return table+H2OTableDisplay.table_footer(self, fmt=fmt)
+
+    def get_summary(self):
+        """
+        Return summary information about the frame.
+        Summary includes min/mean/max/sigma and other rollup data.
+        
+        :return: the summary of information about the frame as a dict keyed by frame column names, 
+                with the summary statistics as values.
+                
+        :examples:
+        >>> frame = h2o.import_file("h2o://iris")
+        >>> frame.get_summary()
+        """
+        self._str_edge_cases()  # ensures everything's right
+        return self._ex._cache._data
+
+    def show_summary(self):
+        """
+        Renders the summary information about the frame.
+        Summary includes min/mean/max/sigma and other rollup data.
+        
+        :examples:
+        >>> frame = h2o.import_file("h2o://iris")
+        >>> frame.summarize()
+        """
+        display(H2ODisplayWrapper(self._str_summary))
+
+    @deprecated_fn("``summary()`` is deprecated, please use ``show_summary()`` or ``get_summary()`` instead")
+    def summary(self, return_data=False):
+        """
+        Deprecated: please use ``get_summary`` instead to obtain the summary statistics as a dictionary,
+         or ``show_summary`` to directly pretty-print those summary statistics.
+        """
+        if return_data:
+            return self.get_summary()
+        self.show_summary()
+
+    def describe(self, chunk_summary=False):
+        """
+        Generate an in-depth description of this H2OFrame.
+
+        This will print to the console the dimensions of the frame; names/types/summary statistics for each column;
+        and finally first ten rows of the frame.
+
+        :param bool chunk_summary: Retrieve the chunk summary along with the distribution summary
+        :returns: The dimensions of the frame; names/types/summary statistics for each column; first ten rows of the frame.
+
+        :examples:
+
+        >>> python_lists = [[1,2,3],[4,5,6],["a","b","c"],[1,0,1]]
+        >>> col_names=["num1","num2","str1","enum1"]
+        >>> dest_frame="newFrame"
+        >>> heads=-1
+        >>> sep=','
+        >>> col_types=['numeric','numeric','string','enum']
+        >>> na_str=['NA']
+        >>> h2oframe = h2o.H2OFrame(python_obj=python_lists,
+        ...                         destination_frame=dest_frame,
+        ...                         header=heads,
+        ...                         separator=sep,
+        ...                         column_names=col_names,
+        ...                         column_types=col_types,
+        ...                         na_strings=na_str)
+        >>> h2oframe.describe(chunk_summary=True)
+        """
+        if self._has_content():
+            items = [
+                "Rows:{}".format(self.nrow),
+                "Cols:{}".format(self.ncol),
+            ]
+            if chunk_summary:
+                # The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
+                fr_desc = self._ex._cache.fill(force=True)
+                items.extend([
+                    fr_desc["chunk_summary"],
+                    fr_desc["distribution_summary"],
+                ])
+            items.append("")
+            H2OItemsDisplay(items).show()
+        self.show_summary()
+
+    def _show_old(self, use_pandas=False, rows=10, cols=200):
         """
         DELETE ME!
         Print a snippet of the data frame.
@@ -5018,8 +5122,9 @@ class H2OFrame(Keyed, H2ODisplay):
                 except UnicodeEncodeError:
                     print(s.encode("ascii", "replace"))
 
-    def summary_old(self, return_data=False):
+    def _summary_old(self, return_data=False):
         """
+        DELETE ME!
         Display summary information about the frame.
 
         Summary includes min/mean/max/sigma and other rollup data.
@@ -5049,8 +5154,9 @@ class H2OFrame(Keyed, H2ODisplay):
         else:
             return self._ex._cache._data
 
-    def describe(self, chunk_summary=False):
+    def _describe_old(self, chunk_summary=False):
         """
+        DELETE ME!
         Generate an in-depth description of this H2OFrame.
 
         This will print to the console the dimensions of the frame; names/types/summary statistics for each column;

@@ -125,57 +125,57 @@ def toggle_user_tips(on=None):
         _user_tips_on_ = on
         
         
-def format_user_tips(tips, format=None):
+def format_user_tips(tips, fmt=None):
     tips = """
 [tips]
 {tips}
 --
 Use `h2o.display.toggle_user_tips()` to switch on/off this section.
 """.format(tips=tips) if _user_tips_on_ else ""
-    return '<pre style="font-size: smaller">{tips}</pre>'.format(tips=tips) if (tips and format == 'html') else tips
+    return '<pre style="font-size: smaller">{tips}</pre>'.format(tips=tips) if (tips and fmt == 'html') else tips
 
 
-def display(obj, format=None):
+def display(obj, fmt=None):
     """
     Render the given object using the provided format.
     :param obj: 
-    :param format: one of (None, 'auto', 'plain', 'pretty', 'html')
+    :param fmt: one of (None, 'auto', 'plain', 'pretty', 'html')
     """
-    if format == 'auto':
-        format = None
+    if fmt == 'auto':
+        fmt = None
     is_str = isinstance(obj, str)
-    if in_zep() and format in [None, 'html']:
+    if in_zep() and fmt in [None, 'html']:
         with repr_context('html'):
             try:
                 global z  # variable provided by Zeppelin, use of `global` just to get rid of error in IDE
                 z.show(obj)
             except NameError:
                 print2("%html {}".format(obj))
-    elif in_ipy() and format in [None, 'html']:
+    elif in_ipy() and fmt in [None, 'html']:
         from IPython.display import HTML, display as idisplay
-        if format == 'html' and is_str:
+        if fmt == 'html' and is_str:
             idisplay(HTML(obj))
         else:
             idisplay(obj) 
     else:
-        with repr_context(format):
+        with repr_context(fmt):
             try:
                 print2(obj)
             except UnicodeEncodeError:
                 print2(str(obj).encode("ascii", "replace"))
                 
 
-def to_str(obj, format=None):
-    with repr_context(format, force=True):
+def to_str(obj, fmt=None):
+    with repr_context(fmt, force=True):
         return str(obj)
     
     
 def to_pretty_str(obj):
-    return to_str(obj, format='pretty')
+    return to_str(obj, fmt='pretty')
 
 
 def to_html(obj):
-    return to_str(obj, format='html')
+    return to_str(obj, fmt='html')
 
 
 def _auto_html_element_wrapper(it, pre=None, nex=None):
@@ -308,15 +308,15 @@ class H2ODisplay(DisplayMixin):
     A convenient mixin for H2O classes, providing standard methods for formatting and rendering.
     """
 
-    def show(self, format=None):
+    def show(self, fmt=None):
         """
         Describe and renders the current object in the given format,
         by default guessing the best format for the current environment.
         
-        :param format: one of (None, 'auto', 'plain', 'pretty', 'html').
-                       Defaults to None/'auto'.
+        :param fmt: one of (None, 'auto', 'plain', 'pretty', 'html').
+                    Defaults to None/'auto'.
         """
-        display(self, format=format)
+        display(self, fmt=fmt)
         
     def to_html(self):
         """
@@ -330,13 +330,51 @@ class H2ODisplay(DisplayMixin):
         """
         return to_pretty_str(self)
     
-    def to_str(self, format=None):
+    def to_str(self, fmt=None):
         """
         :return: a string representation of the current object.
-        :param format: one of (None, 'plain', 'pretty', 'html').
-                       Defaults to None/'plain'.
+        :param fmt: one of (None, 'plain', 'pretty', 'html').
+                    Defaults to None/'plain'.
         """
-        return to_str(self, format=format)
+        return to_str(self, fmt=fmt)
+
+
+class H2ODisplayWrapper(H2ODisplay):
+    """
+    Wraps a function returning a string into a displayable object 
+    that will call the function with the requested format, depending on the environment.
+    """
+
+    def __init__(self, repr_fn):
+        """
+        :param repr_fn: the wrapped representation function with signature: (fmt: Optional[str]) -> str
+        See ``display`` function for the list supported formats. 
+        """
+        self._repr_fn = repr_fn
+
+    def _str_(self):
+        return self._repr_fn()
+
+    def _str_pretty_(self):
+        return self._repr_fn(fmt='pretty')
+
+    def _str_html_(self):
+        return self._repr_fn(fmt='html')
+
+
+class H2OItemsDisplay(H2ODisplay):
+
+    def __init__(self, items):
+        """
+        :param items: a list of items to be rendered 
+        """
+        self._items = items
+
+    def _str_(self):
+        return format_to_multiline(self._items)
+
+    def _str_html_(self):
+        return format_to_html(self._items)
 
 
 class H2OTableDisplay(H2ODisplay):
@@ -347,34 +385,80 @@ class H2OTableDisplay(H2ODisplay):
 
     @staticmethod
     def prefer_pandas():
-        return H2OTableDisplay._prefer_pandas and can_use_pandas() and in_ipy()
+        return H2OTableDisplay._prefer_pandas and can_use_pandas()
 
-    def __init__(self, table=None,
-                 caption=None,
-                 columns_labels=None, max_rows=None,
-                 is_pandas=False, **kwargs):
+    @staticmethod
+    def is_pandas(table):
+        if can_use_pandas():
+            import pandas as pd
+            return isinstance(table, pd.DataFrame)
+        return False
+    
+    @staticmethod
+    def _shape(table):
+        return (table.shape if H2OTableDisplay.is_pandas(table)
+                else (len(table), len(table[0])))
+
+    def __init__(self, table=None, caption=None,
+                 columns_labels=None, max_rows=-1,
+                 prefer_pandas=True,
+                 **kwargs):
         self._table = table
         self._caption = caption
         self._columns_labels = columns_labels
         self._max_rows = max_rows
-        self._is_pandas = is_pandas
         self._kwargs = kwargs
+        self._display_table = None
+        self._truncated = False
+        self._prepare(prefer_pandas=prefer_pandas)
         
-    def _table_sample(self):
-        return self._table if self._max_rows is None else self._table[:self._max_rows]    
+    @property
+    def shape(self):
+        return H2OTableDisplay._shape(self._table)
+    
+    @property
+    def shape_displayed(self):
+        return H2OTableDisplay._shape(self._display_table)
+    
+    @property
+    def truncated(self):
+        return self._truncated or self.shape_displayed < self.shape
+    
+    def show(self, fmt=None):
+        super().show()
+        if self.truncated:
+            print("(Use max_rows=-1 to render the whole table)")
+        
+    def _prepare(self, prefer_pandas=True):
+        if prefer_pandas and H2OTableDisplay.prefer_pandas():
+            import pandas as pd
+            df = self._table if H2OTableDisplay.is_pandas(self._table) else pd.DataFrame(self._table, columns=self._columns_labels)
+            self._display_table = df.head(self._max_rows) if self._max_rows > 0 else df
+        else:
+            # create a truncated view of the table, first/last rows
+            nr, nc = self.shape
+            if 0 < self._max_rows < nr:
+                first = last = self._max_rows//2
+                trunc_table = []
+                trunc_table += [v for v in self._table[:first]]
+                trunc_table.append(["---"] * nc)
+                trunc_table += [v for v in self._table[(nr - last):]]
+                self._display_table = trunc_table
+                self._truncated = True  # due to the --- row, we can't trust the display_table shape 
+            else:
+                self._display_table = self._table
 
     def _str_(self):
-        table = self._table_sample()
-        # used only for non-pandas tables
-        return (table.to_str() if self._is_pandas
+        table = self._display_table
+        return (table.to_string() if H2OTableDisplay.is_pandas(table)
                 else tabulate.tabulate(table,
                                        headers=self._columns_labels or (),
                                        **self._kwargs))
 
     def _str_html_(self):
-        table = self._table_sample()
-        if self._is_pandas:
-            return (table.style.set_caption(self._caption)
+        table = self._display_table
+        if H2OTableDisplay.is_pandas(table):
+            html = (table.style.set_caption(self._caption)
                                .set_table_styles([dict(selector="caption", 
                                                        props=[("font-size", "larger"),
                                                               ("text-align", "left"),
@@ -382,7 +466,9 @@ class H2OTableDisplay(H2ODisplay):
                                                  overwrite=False)
                                .to_html())
         
-        return H2OTableDisplay._html_table(table, caption=self._caption, column_labels=self._columns_labels)
+        else:
+            html = H2OTableDisplay._html_table(table, caption=self._caption, column_labels=self._columns_labels)
+        return html+H2OTableDisplay.table_footer(self, fmt='html') if self.truncated else html
         
     # some html table builder helper things
     @staticmethod
@@ -449,6 +535,16 @@ class H2OTableDisplay(H2ODisplay):
                            if len(str(c)) < 10 or not _is_number(str(c))
                            else cell.format("{0:.7f}".format(float(str(c)))) for c in row])
         return entry.format(cells)
+
+    @staticmethod
+    def table_footer(table, fmt=None):
+        nr, nc = table.shape
+        nrows = "{nrow} row{s}".format(nrow=nr, s="" if nr == 1 else "s")
+        ncols = "{ncol} column{s}".format(ncol=nc, s="" if nc == 1 else "s")
+        template = dict(
+            html="<pre>[{nrows} x {ncols}]</pre>"
+        ).get(fmt, "\n[{nrows} x {ncols}])")
+        return template.format(nrows=nrows, ncols=ncols)
 
 
 def print2(*msgs, **kwargs):

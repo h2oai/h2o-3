@@ -348,11 +348,13 @@ class H2OCache(object):
                 self.names_valid() and
                 self.types_valid())
 
-    def fill(self, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):
+    def fill(self, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False, force=False):
         assert self._id is not None
-        if self._data is not None:
-            if rows <= len(self):
-                return
+        if (not force 
+            and self._data is not None
+            and rows <= len(self)
+        ):
+            return
         req_params = {
             "row_count": rows,
             "row_offset": rows_offset,
@@ -371,6 +373,7 @@ class H2OCache(object):
         self._names = [c["label"] for c in res["columns"]]
         self._types = dict(zip(self._names, [c["type"] for c in res["columns"]]))
         self._fill_data(res)
+        return res
 
     def _fill_data(self, json):
         self._data = OrderedDict()

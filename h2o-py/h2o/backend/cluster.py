@@ -131,13 +131,13 @@ class H2OCluster(H2OSchema):
         keys = _cluster_status_info_keys
         values = self._get_cluster_status_info_values()
         table = [[k+":", values[i]] for i, k in enumerate(keys)]
-        H2OTableDisplay(table).show()
+        H2OTableDisplay(table, prefer_pandas=False).show()
 
         if detailed:
             keys = _cluster_status_detailed_info_keys
             columns = ["Nodes info:"] + ["Node %d" % (i + 1) for i in range(len(self.nodes))]
             table = [[k]+[node[k] for node in self.nodes] for k in keys]
-            H2OTableDisplay(table=table, columns_labels=columns).show()
+            H2OTableDisplay(table=table, columns_labels=columns, prefer_pandas=False).show()
 
     def get_status(self):
         """

@@ -142,51 +142,21 @@ class H2OTwoDimTable(H2ODisplay):
     # 2DimTable representation methods
     # --------------------------------
         
-    def _as_display(self, header=True):
-        (table, nr, is_pandas) = self._as_show_table()
-        return H2OTableDisplay(table,
+    def _as_display(self, header=True, max_rows=20, prefer_pandas=True):
+        return H2OTableDisplay(self._cell_values,
                                caption=((self._table_header if self._table_description is None 
                                          else "{}: {}".format(self._table_header, self._table_description)) if header else None),
                                columns_labels=self._col_header,
-                               max_rows=nr,
-                               is_pandas=is_pandas,
+                               max_rows=max_rows,
+                               prefer_pandas=prefer_pandas,
                                numalign="left", stralign="left")
 
     def _repr_(self):
         # no need to pollute debug string with cell values, headers should be enough
         return repr_def(self, attributes=['_table_header', '_col_header'])
 
-    def _str_(self):
-        return str(self._as_display()) 
+    def _str_(self, max_rows=20, prefer_pandas=True):
+        return str(self._as_display(max_rows=max_rows, prefer_pandas=prefer_pandas)) 
     
-    def show(self, header=True):
-        self._as_display(header).show()
-    
-    def show_old(self, header=True):
-        """
-        DELETE ME!
-        Print the contents of this table.
-        """
-        table_display = self._as_display(header)
-        table_display.show()
-        if table_display._max_rows > 20 and can_use_pandas():
-            print('\nSee the whole table with table.as_data_frame()')
-
-    def _as_show_table(self):
-        # FIXME: maybe this should be handled directly in H2OTableDisplay for simplicity 
-        if H2OTableDisplay.prefer_pandas():
-            df = self.as_data_frame()
-            return self.as_data_frame().head(20), len(df), True
-        else:
-            table = self._cell_values
-            nr = 0
-            if _is_list_of_lists(table):
-                nr = len(table)  # only set if we truly have multiple rows... not just one long row :)
-            if nr > 20:  # create a truncated view of the table, first/last 5 rows
-                trunc_table = []
-                trunc_table += [v for v in table[:5]]
-                trunc_table.append(["---"] * len(table[0]))
-                trunc_table += [v for v in table[(nr - 5):]]
-                table = trunc_table
-            return table, nr, False
-
+    def show(self, header=True, max_rows=20, prefer_pandas=True):
+        self._as_display(header, max_rows=max_rows, prefer_pandas=prefer_pandas).show()

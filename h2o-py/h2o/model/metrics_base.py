@@ -82,7 +82,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         m_is_uplift = "Uplift" in metric_type
 
         # fixme: can't we rather check if each value is available instead of doing this weird logic?
-        #   we could have mixin extensions for algos like (H)GLM instead taking everything from (not so) "base" class.
+        #  we could have mixin extensions for algos like (H)GLM instead taking everything from this (not so) "base" class.
         # specific metric cond
         m_supports_logloss = m_is_binomial or m_is_multinomial or m_is_ordinal
         m_supports_mpce = (m_is_binomial or m_is_multinomial) and not m_is_glm  # GLM excluded?
@@ -176,7 +176,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
     def show(self):
         return display(self)
 
-    def show_old(self):
+    def _show_old(self):
         """
         DELETE ME!
         Display a short summary of the metrics.
@@ -271,9 +271,9 @@ class MetricsBase(h2o_meta(H2ODisplay)):
             print("AUCPR: " + str(self.aucpr()))
             print("Gini: " + str(self.gini()))
             if self.confusion_matrix():
-                self.confusion_matrix().show()
+                self.confusion_matrix()._show_old()
             if self._metric_json["max_criteria_and_metric_scores"]:
-                self._metric_json["max_criteria_and_metric_scores"].show()
+                self._metric_json["max_criteria_and_metric_scores"]._show_old()
             if self.gains_lift():
                 print(self.gains_lift())
         if metric_type in types_w_mult:
@@ -281,26 +281,26 @@ class MetricsBase(h2o_meta(H2ODisplay)):
             print("AUCPR: " + str(self.aucpr()))
             # AUC and PR AUC table cannot be computed due domain size
             if self._metric_json["multinomial_auc_table"] is not None:
-                self._metric_json["multinomial_auc_table"].show()
+                self._metric_json["multinomial_auc_table"]._show_old()
             else:
                 print("Multinomial auc values: Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).")
             if self._metric_json["multinomial_aucpr_table"] is not None:
-                self._metric_json["multinomial_aucpr_table"].show()
+                self._metric_json["multinomial_aucpr_table"]._show_old()
             else:
                 print("Multinomial auc_pr values: Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).")
         if metric_type in types_w_anomaly:
             print("Anomaly Score: " + str(self.mean_score()))
             print("Normalized Anomaly Score: " + str(self.mean_normalized_score()))
         if (metric_type in types_w_mult) or (metric_type in types_w_ord):
-            self.confusion_matrix().show()
-            self.hit_ratio_table().show()
+            self.confusion_matrix()._show_old()
+            self.hit_ratio_table()._show_old()
             
         if metric_type in types_w_clustering:
             print("Total Within Cluster Sum of Square Error: " + str(self.tot_withinss()))
             print("Total Sum of Square Error to Grand Mean: " + str(self.totss()))
             print("Between Cluster Sum of Square Error: " + str(self.betweenss()))
             if self._metric_json['centroid_stats'] is not None:
-                self._metric_json['centroid_stats'].show()
+                self._metric_json['centroid_stats']._show_old()
             else:
                 print("Centroid stats are not available.")
 
@@ -317,11 +317,11 @@ class MetricsBase(h2o_meta(H2ODisplay)):
             print("AUUC: " + str(self.auuc()))
             print("AUUC normalized: "+ str(self.auuc_normalized()))
             if self._metric_json["auuc_table"] is not None:
-                self._metric_json["auuc_table"].show()
+                self._metric_json["auuc_table"]._show_old()
             print()
             print("Qini value: " + str(self.qini()))
             if self._metric_json["aecu_table"] is not None:
-                self._metric_json["aecu_table"].show()
+                self._metric_json["aecu_table"]._show_old()
         
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))

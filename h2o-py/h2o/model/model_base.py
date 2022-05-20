@@ -1788,11 +1788,6 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     # ModelBase representation methods
     # --------------------------------
     
-    # def __str__(self):
-    # with capture_output() as (out, err):
-    #     self.show()
-    # return out.getvalue()
-    
     def _str_items(self, verbose=False):
         # edge cases
         if self._future:
@@ -1836,11 +1831,11 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             
         return items
     
-    def _str_usage(self, format=None):
+    def _str_usage(self, fmt=None):
         return format_user_tips(format_to_multiline([
             "Use `model.show()` for more details.",
             "Use `model.explain(…)` to inspect the model.",
-        ] + self._str_usage_custom()), format=format) if self._model_json else ""
+        ] + self._str_usage_custom()), fmt=fmt) if self._model_json else ""
     
     def _str_usage_custom(self):
         """
@@ -1850,16 +1845,6 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         return []
 
     def _str_(self):
-        """this is what __str__ should be"""
-
-        # with capture_output() as (out, err):
-        #     return to_multiline([
-        #         "%s : %s" % (self.__class__.__name__, self._model_json["algo_full_name"]),
-        #         "Model Key: %s" % self.key,
-        #         "",
-        #         "{summary}{out}".format(summary=str(self.summary() or ""), out=out.getvalue()),
-        #         "",
-        #     ])
         items = self._str_items()
         if isinstance(items, list):
             return format_to_multiline(items)
@@ -1880,12 +1865,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             return model["model_summary"]
 
     def summary(self):
+        """Deprecated. Please use ``get_summary`` instead"""
+        return self.get_summary()
+    
+    def get_summary(self):
         """Return a detailed summary of the model."""
-        return self._summary() or "No model summary for this model"
-
+        return self._summary() or "No summary for this model"
+    
     def show_summary(self):
         """Print a detailed summary of the model."""
-        summary = self.summary()
+        summary = self.get_summary()
         if summary is not None:
             display(summary)
             
@@ -1893,7 +1882,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         with thread_context(verbose=True):
             return display(self)
 
-    def show_old(self):
+    def _show_old(self):
         """
         DELETE ME!
         Print innards of model, without regards to type.
@@ -1920,18 +1909,18 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         # training metrics
         tm = model["training_metrics"]
         if tm is not None: 
-            tm.show_old()
+            tm._show_old()
         vm = model["validation_metrics"]
-        if vm is not None: vm.show_old()
+        if vm is not None: vm._show_old()
         xm = model["cross_validation_metrics"]
-        if xm is not None: xm.show_old()
+        if xm is not None: xm._show_old()
         xms = model["cross_validation_metrics_summary"]
-        if xms is not None: xms.show()
+        if xms is not None: xms._show_old()
 
         if "scoring_history" in model and model["scoring_history"]:
-            model["scoring_history"].show()
+            model["scoring_history"]._show_old()
         if "variable_importances" in model and model["variable_importances"]:
-            model["variable_importances"].show()
+            model["variable_importances"]._show_old()
 
 
     # FIXME: find a way to get rid of this awful habit that consists in doing [if data is present return data else print("no data")]
