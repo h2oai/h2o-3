@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.utils.compatibility import *  # NOQA
 
 import h2o
-from .model_base import ModelBase
+from h2o.model import ModelBase
 
 
 class H2OAutoEncoderModel(ModelBase):

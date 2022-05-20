@@ -66,7 +66,8 @@ from future.utils import PY2, PY3, with_metaclass
 __all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",
            "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
            "apply", "cmp", "coerce", "execfile", "file", "long", "raw_input", "reduce", "reload", "unicode", "xrange",
-           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", "repr2", "PList")
+           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", 
+           "repr2", "PList", 'get_builtin', 'set_builtin')
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -127,9 +128,9 @@ xrange = _disabled_function("xrange")
 StandardError = _disabled_function("StandardError")
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Miscellaneous
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 if True:
     from future.builtins.misc import (chr, input, open, next, round, super)
 
@@ -165,6 +166,25 @@ def repr2(x):
 
 def _is_py2_unicode(s):
     return PY2 and type(s) is _native_unicode
+    
+
+def get_builtin(fn_name):
+    if PY2:
+        import future.builtins
+        import __builtin__
+        return getattr(future.builtins, fn_name, getattr(__builtin__, fn_name, None))
+    else:
+        import builtins
+        return getattr(builtins, fn_name, None)
+    
+
+def set_builtin(name, value):
+    if PY2:
+        import __builtin__
+        setattr(__builtin__, name, value)
+    else:
+        import builtins
+        setattr(builtins, name, value)
     
 
 class PList(list):

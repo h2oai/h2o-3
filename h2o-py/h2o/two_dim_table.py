@@ -7,28 +7,30 @@ from h2o.utils.compatibility import *  # NOQA
 
 import copy
 
-from h2o.display import H2ODisplay
+from h2o.display import H2ODisplay, H2OTableDisplay, capture_output, print2 as print, repr_def
 from h2o.exceptions import H2OValueError
 from h2o.utils.shared_utils import _is_list_of_lists, can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, is_type
 
 
-class H2OTwoDimTable(object):
+class H2OTwoDimTable(H2ODisplay):
     """A class representing an 2D table (for pretty printing output)."""
 
-    def __init__(self, table_header=None, table_description=None, col_header=None,
-                 cell_values=None, raw_cell_values=None, col_types=None, row_header=None, col_formats=None):
+    def __init__(self, table_header=None, table_description=None, 
+                 col_header=None, col_types=None, col_formats=None,
+                 row_header=None,
+                 cell_values=None, raw_cell_values=None):
         """
         Create new H2OTwoDimTable object.
 
         :param table_header: Header for the entire table.
         :param table_description: Longer description of the table.
         :param col_header: list of column names (used in conjunction with)
+        :param col_types:
+        :param col_formats: ignored.
+        :param row_header: ignored.
         :param cell_values: table values, as an array of individual rows
         :param raw_cell_values:
-        :param col_types:
-        :param row_header: ignored.
-        :param col_formats: ignored.
         """
         assert_is_type(table_header, None, str)
         assert_is_type(table_description, None, str)
@@ -79,52 +81,10 @@ class H2OTwoDimTable(object):
     def as_data_frame(self):
         """Convert to a python 'data frame'."""
         if can_use_pandas():
-            import pandas
-            pandas.options.display.max_colwidth = 70
+            import pandas 
             return pandas.DataFrame(self._cell_values, columns=self._col_header)
         return self
-
-    def show(self, header=True):
-        """Print the contents of this table."""
-        print()
-        if header and self._table_header:
-            table_header = self._table_header + ": "
-            if self._table_description:
-                table_header += self._table_description
-            print(table_header)
-
-        (table, nr, is_pandas) = self._as_show_table()
-
-        H2ODisplay(table, is_pandas=is_pandas, header=self._col_header, numalign="left", stralign="left")
-        if nr > 20 and can_use_pandas(): print('\nSee the whole table with table.as_data_frame()')
-
-    def _as_show_table(self):
-        if H2ODisplay.prefer_pandas() and can_use_pandas():
-            pd = self.as_data_frame()
-            return self.as_data_frame().head(20), pd.shape[0], True
-        else:
-            table = self._cell_values
-            nr = 0
-            if _is_list_of_lists(table): 
-                nr = len(table)  # only set if we truly have multiple rows... not just one long row :)
-            if nr > 20:  # create a truncated view of the table, first/last 5 rows
-                trunc_table = []
-                trunc_table += [v for v in table[:5]]
-                trunc_table.append(["---"] * len(table[0]))
-                trunc_table += [v for v in table[(nr - 5):]]
-                table = trunc_table
-            return table, nr, False
-
-    def __repr__(self):
-        return repr(vars(self))
     
-    def __str__(self):
-        self.show()
-        return ""
-    
-    def _repr_pretty_(self, p, cycle):  # used by IPython
-        self.show()
-
     def _parse_values(self, values, types):
         if self._col_header[0] is None:
             self._col_header = self._col_header[1:]
@@ -177,3 +137,62 @@ class H2OTwoDimTable(object):
         else:
             cols[self._col_header.index(key)] = value
         self._cell_values = [list(x) for x in zip(*cols)]
+
+    # --------------------------------
+    # 2DimTable representation methods
+    # --------------------------------
+        
+    def __str__capture(self):
+        # out = StringIO()
+        # with thread_storage(stdout=out):
+        #     self.show()
+        # return out.getvalue()
+        with capture_output() as (out, err):
+            self.show()
+        return out.getvalue()
+    
+    def _as_display(self, header=True):
+        (table, nr, is_pandas) = self._as_show_table()
+        return H2OTableDisplay(table,
+                               caption=((self._table_header if self._table_description is None 
+                                         else "{}: {}".format(self._table_header, self._table_description)) if header else None),
+                               columns_labels=self._col_header,
+                               max_rows=nr,
+                               is_pandas=is_pandas,
+                               numalign="left", stralign="left")
+
+    def _repr_(self):
+        # no need to pollute debug string with cell values, headers should be enough
+        return repr_def(self, attributes=['_table_header', '_col_header'])
+
+    def _str_(self):
+        return str(self._as_display()) 
+    
+    def show(self, header=True):
+        self._as_display(header).show()
+    
+    def show_old(self, header=True):
+        """Print the contents of this table."""
+        table_display = self._as_display(header)
+        table_display.show()
+        if table_display._max_rows > 20 and can_use_pandas():
+            print('\nSee the whole table with table.as_data_frame()')
+
+    def _as_show_table(self):
+        # FIXME: maybe this should be handled directly in H2OTableDisplay for simplicity 
+        if H2OTableDisplay.prefer_pandas():
+            df = self.as_data_frame()
+            return self.as_data_frame().head(20), len(df), True
+        else:
+            table = self._cell_values
+            nr = 0
+            if _is_list_of_lists(table):
+                nr = len(table)  # only set if we truly have multiple rows... not just one long row :)
+            if nr > 20:  # create a truncated view of the table, first/last 5 rows
+                trunc_table = []
+                trunc_table += [v for v in table[:5]]
+                trunc_table.append(["---"] * len(table[0]))
+                trunc_table += [v for v in table[(nr - 5):]]
+                table = trunc_table
+            return table, nr, False
+

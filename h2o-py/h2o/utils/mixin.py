@@ -30,28 +30,43 @@ def mixin(target, *mixins):
     return target
 
 
-def register_module(module_name):
+def register_module(module_name, module=None):
     """
     Creates and globally registers a module with given name.
 
     :param module_name: the name of the module to register.
+    :param module: the optional module to register to the given name, if not specified then a new empty module is created.
     :return: the module with given name.
     """
     if module_name not in sys.modules:
-        mod = types.ModuleType(module_name)
+        mod = module or types.ModuleType(module_name)
         sys.modules[module_name] = mod
     return sys.modules[module_name]
 
 
+def register_submodule(parent, name, module=None):
+    """
+    This registers and attaches a new submodule to the parent module.
+    :param parent: the parent module to which the submodule will be created and attached. 
+    :param name: the name of the submodule or None if no submodule is used.
+    :param module: the optional submodule to register, if not specified then a new empty module is created
+    :return: the module name for the (newly) registered submodule.
+    """
+    mod_name = '.'.join([parent.__name__, name])
+    mod = register_module(mod_name, module=module)
+    setattr(parent, name, mod)
+    return mod_name
+
+
 def register_class(cls):
     """
-    Register a class module, and adds it to it's module.
+    Register a class' module, and adds it to its module.
 
     :param cls: the class to register.
     """
     module = register_module(cls.__module__)
     setattr(module, cls.__name__, cls)
-    
+
 
 class Mixin:
     """

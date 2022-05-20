@@ -11,6 +11,7 @@ from h2o.utils.compatibility import *  # NOQA
 import warnings
 
 import h2o
+from h2o.display import format_user_tips, repr_def
 from h2o.expr import ExprNode
 from h2o.utils.typechecks import is_type
 
@@ -60,7 +61,6 @@ class GroupBy(object):
     Variance (var) and standard deviation (sd) are the sample (not population) statistics.
     """
 
-
     def __init__(self, fr, by):
         """
         Return a new ``GroupBy`` object using the H2OFrame specified in fr and the desired grouping columns
@@ -85,7 +85,6 @@ class GroupBy(object):
         else:
             self._by = [self._by]
 
-
     def min(self, col=None, na="all"):
         """
         Calculate the minimum of each column specified in col for each group of a GroupBy object.  If no col is
@@ -105,7 +104,6 @@ class GroupBy(object):
         >>> grouped.get_frame()
         """
         return self._add_agg("min", col, na)
-
 
     def max(self, col=None, na="all"):
         """
@@ -127,7 +125,6 @@ class GroupBy(object):
         """
         return self._add_agg("max", col, na)
 
-
     def mean(self, col=None, na="all"):
         """
         Calculate the mean of each column specified in col for each group of a GroupBy object.  If no col is
@@ -148,7 +145,6 @@ class GroupBy(object):
         """
         return self._add_agg("mean", col, na)
 
-
     def count(self, na="all"):
         """
         Count the number of rows in each group of a GroupBy object.
@@ -165,7 +161,6 @@ class GroupBy(object):
         >>> grouped.get_frame()
         """
         return self._add_agg("nrow", None, na)
-
 
     def sum(self, col=None, na="all"):
         """
@@ -187,7 +182,6 @@ class GroupBy(object):
         """
         return self._add_agg("sum", col, na)
 
-
     def sd(self, col=None, na="all"):
         """
         Calculate the standard deviation of each column specified in col for each group of a GroupBy object. If no
@@ -207,7 +201,6 @@ class GroupBy(object):
         >>> grouped.get_frame()
         """
         return self._add_agg("sdev", col, na)
-
 
     def var(self, col=None, na="all"):
         """
@@ -229,7 +222,6 @@ class GroupBy(object):
         """
         return self._add_agg("var", col, na)
 
-
     def ss(self, col=None, na="all"):
         """
         Calculate the sum of squares of each column specified in col for each group of a GroupBy object.  If no col
@@ -249,7 +241,6 @@ class GroupBy(object):
         >>> grouped.get_frame()
         """
         return self._add_agg("sumSquares", col, na)
-
 
     def mode(self, col=None, na="all"):
         """
@@ -271,7 +262,6 @@ class GroupBy(object):
         """
         return self._add_agg("mode", col, na)
 
-
     def median(self, col=None, na="all"):
         """
         Calculate the median of each column specified in col for each group of a GroupBy object.  If no col is given,
@@ -292,7 +282,6 @@ class GroupBy(object):
         """
         return self._add_agg("median", col, na)
 
-
     @property
     def frame(self):
         """
@@ -305,7 +294,6 @@ class GroupBy(object):
         >>> grouped.frame
         """
         return self.get_frame()
-
 
     def get_frame(self):
         """
@@ -347,7 +335,6 @@ class GroupBy(object):
 
         return self._res
 
-
     def _add_agg(self, op, col, na):
         if op == "nrow": col = 0
         if col is None:
@@ -373,8 +360,14 @@ class GroupBy(object):
             warnings.warn("Column {0} is a string column.  No groupby operation will be performed on it.".format(self._fr.names[colIndex]))
 
     def __repr__(self):
-        print("GroupBy: ")
-        print("  Frame: {}; by={}".format(self._fr.frame_id, str(self._by)))
-        print("  Aggregates: {}".format(str(self._aggs.keys())))
-        print("*** Use get_frame() to get groupby frame ***")
-        return ""
+        return repr_def(self, )
+
+    def __str__(self):
+        return """GroupBy:
+          Frame: {frame}; by={by}
+          Aggregates: {aggr}
+        """.format(
+            frame=self._fr.frame_id,
+            by=self._by,
+            aggr=self._aggs.keys(),
+        )+format_user_tips("Use get_frame() to get groupby frame")

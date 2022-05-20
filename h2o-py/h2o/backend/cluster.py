@@ -10,7 +10,7 @@ import time
 
 import h2o
 from h2o.exceptions import H2OConnectionError, H2OServerError
-from h2o.display import H2ODisplay
+from h2o.display import H2OTableDisplay
 from h2o.schemas import H2OSchema
 from h2o.utils.typechecks import assert_is_type
 from h2o.utils.shared_utils import get_human_readable_bytes, get_human_readable_time
@@ -131,13 +131,13 @@ class H2OCluster(H2OSchema):
         keys = _cluster_status_info_keys
         values = self._get_cluster_status_info_values()
         table = [[k+":", values[i]] for i, k in enumerate(keys)]
-        H2ODisplay(table)
+        H2OTableDisplay(table).show()
 
         if detailed:
             keys = _cluster_status_detailed_info_keys
-            header = ["Nodes info:"] + ["Node %d" % (i + 1) for i in range(len(self.nodes))]
+            columns = ["Nodes info:"] + ["Node %d" % (i + 1) for i in range(len(self.nodes))]
             table = [[k]+[node[k] for node in self.nodes] for k in keys]
-            H2ODisplay(table=table, header=header)
+            H2OTableDisplay(table=table, columns_labels=columns).show()
 
     def get_status(self):
         """

@@ -5,6 +5,9 @@ Model builder.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+
+# DELETE ME I'm useless !!!
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 # noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA

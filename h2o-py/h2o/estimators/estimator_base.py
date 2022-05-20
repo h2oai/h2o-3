@@ -18,24 +18,9 @@ from h2o.job import H2OJob
 from h2o.utils.mixin import assign, load_ext, mixin
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
-from ..model.autoencoder import H2OAutoEncoderModel
-from ..model.binomial import H2OBinomialModel
-from ..model.binomial_uplift import H2OBinomialUpliftModel
-from ..model.clustering import H2OClusteringModel
-from ..model.dim_reduction import H2ODimReductionModel, H2OTargetEncoderMetrics
-from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
-                                  H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
-                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
-                                  H2OModelMetricsRegressionCoxPH, H2OBinomialUpliftModelMetrics)
-from ..model.model_base import ModelBase
-from ..model.multinomial import H2OMultinomialModel
-from ..model.ordinal import H2OOrdinalModel
-from ..model.regression import H2ORegressionModel
-from ..model.word_embedding import H2OWordEmbeddingModel
-from ..model.anomaly_detection import H2OAnomalyDetectionModel
-from ..model.coxph import H2OCoxPHModel
-from ..model.coxph import H2OCoxPHMojoModel
-from ..model.segment_models import H2OSegmentModels
+from h2o.model import ModelBase, H2OSegmentModels
+from h2o.model.models import *
+from h2o.model.metrics import *
 
 
 class EstimatorAttributeError(AttributeError):
@@ -388,16 +373,14 @@ class H2OEstimator(ModelBase):
         if model_id is not None and model_json is not None and metrics_class is not None:
             # build Metric objects out of each metrics
             for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
-                if metric in model_json["output"]:
-                    if model_json["output"][metric] is not None:
-                        if metric == "cross_validation_metrics":
-                            m._is_xvalidated = True
-                        # for Isolation Forest, validation metrics might have a different metric class
-                        mc = metrics_class_valid if metric == "validation_metrics" else metrics_class  
-                        model_json["output"][metric] = \
-                            mc(model_json["output"][metric], metric, model_json["algo"])
-
-            #if m._is_xvalidated:
+                metrics = model_json["output"].get(metric, None)
+                if metrics is not None:
+                    if metric == "cross_validation_metrics":
+                        m._is_xvalidated = True
+                    mc = metrics_class_valid if metric == "validation_metrics" else metrics_class  
+                    # fixme: never ever ever modify the original payload!!! put the metric object somewhere else
+                    model_json["output"][metric] = mc(metrics, metric, model_json["algo"])
+            # if m._is_xvalidated:
             if m._is_xvalidated and model_json["output"]["cross_validation_models"] is not None:
                 m._xval_keys = [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
@@ -409,7 +392,7 @@ class H2OEstimator(ModelBase):
         mixin(self._model, model_class, *extensions)
         assign(self._model, m)
 
-    #------ Scikit-learn Interface Methods -------
+    # ----- Scikit-learn Interface Methods -------
 
     def fit(self, X, y=None, **params):
         """
@@ -495,23 +478,23 @@ class H2OEstimator(ModelBase):
             metrics_class = H2OOrdinalModelMetrics
             model_class = H2OOrdinalModel
         elif model_type == "AutoEncoder":
-            metrics_class = H2OAutoEncoderModelMetrics
+            metrics_class = H2ODefaultModelMetrics
             model_class = H2OAutoEncoderModel
         elif model_type == "DimReduction":
             metrics_class = H2ODimReductionModelMetrics
             model_class = H2ODimReductionModel
         elif model_type == "WordEmbedding":
-            metrics_class = H2OWordEmbeddingModelMetrics
+            metrics_class = H2ODefaultModelMetrics
             model_class = H2OWordEmbeddingModel
         elif model_type == "AnomalyDetection":
             metrics_class = H2OAnomalyDetectionModelMetrics
             valid_metrics_class = H2OBinomialModelMetrics
             model_class = H2OAnomalyDetectionModel
         elif model_type == "CoxPH":
-            metrics_class = H2OModelMetricsRegressionCoxPH
+            metrics_class = H2ORegressionCoxPHModelMetrics
             model_class = H2OCoxPHModel if model_json["algo"] != "generic" else H2OCoxPHMojoModel
         elif model_type == "TargetEncoder":
-            metrics_class = H2OTargetEncoderMetrics
+            metrics_class = H2ODefaultModelMetrics 
             model_class = None
         elif model_type == "Unknown":
             metrics_class = None

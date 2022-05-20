@@ -91,3 +91,14 @@ try:
 except ImportError:
     pass
 
+
+def _init_():
+    from .display import ReplHook
+    from .backend.connection import register_session_hook
+    _replhook_ = ReplHook()
+    register_session_hook('open', _replhook_.__enter__)
+    register_session_hook('close', _replhook_.__exit__)
+    
+    
+# _init_()
+

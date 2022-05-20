@@ -4,11 +4,12 @@ from h2o.utils.compatibility import *  # NOQA
 
 import copy
 
+from h2o.display import H2ODisplay
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.typechecks import assert_is_type
 
 
-class ConfusionMatrix(object):
+class ConfusionMatrix(H2ODisplay):
     ROUND = 4  # round count_errs / sum
 
     def __init__(self, cm, domains=None, table_header=None):
@@ -59,23 +60,14 @@ class ConfusionMatrix(object):
 
         self.table = H2OTwoDimTable(row_header=row_header, col_header=col_header,
                                     table_header=table_header, cell_values=cell_values)
-
-
-    def show(self):
-        """Print the confusion matrix into the console."""
-        self.table.show()
-
-
-    def __repr__(self):
-        self.show()
-        return ""
-
+        
+    def _str_(self):
+        return str(self.table)
 
     def to_list(self):
         """Convert this confusion matrix into a 2x2 plain list of values."""
         return [[int(self.table.cell_values[0][1]), int(self.table.cell_values[0][2])],
                 [int(self.table.cell_values[1][1]), int(self.table.cell_values[1][2])]]
-
 
     @staticmethod
     def read_cms(cms=None, domains=None):

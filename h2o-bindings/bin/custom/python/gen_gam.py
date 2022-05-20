@@ -20,12 +20,11 @@ def class_extensions():
         """
         return parms["gam_columns"]
 
-    def summary(self):
-        """Print a detailed summary of the model."""
+    def _summary(self):
+        """Return a detailed summary of the model."""
         model = self._model_json["output"]
         if "glm_model_summary" in model and model["glm_model_summary"] is not None:
             return model["glm_model_summary"]
-        print("No model summary for this model")
 
     def scoring_history(self):
         """

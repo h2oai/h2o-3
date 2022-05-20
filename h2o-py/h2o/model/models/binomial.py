@@ -3,10 +3,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.utils.compatibility import *  # NOQA
 
 from h2o.exceptions import H2OValueError
+from h2o.model import ModelBase
+from h2o.model.extensions import has_extension
+from h2o.utils.metaclass import deprecated_params
 from h2o.utils.typechecks import assert_is_type
-from .extensions import has_extension
-from .model_base import ModelBase
-from ..utils.metaclass import deprecated_params
 
 
 class H2OBinomialModel(ModelBase):

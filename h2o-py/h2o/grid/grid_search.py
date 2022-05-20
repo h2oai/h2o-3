@@ -14,7 +14,7 @@ from h2o.frame import H2OFrame
 from h2o.exceptions import H2OValueError, H2OJobCancelled
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
-from h2o.display import H2ODisplay
+from h2o.display import H2OTableDisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.mixin import assign, mixin
@@ -845,7 +845,9 @@ class H2OGridSearch(h2o_meta(Keyed)):
         if header:
             print('Grid Summary:')
         print()
-        H2ODisplay(table, header=['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
+        H2OTableDisplay(table,
+                        columns_labels=['Model Id'] + model_summary.col_header[1:],
+                        numalign="left", stralign="left").show()
 
     def show(self):
         """Print models sorted by metric.

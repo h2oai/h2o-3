@@ -5,7 +5,7 @@ sys.path.insert(1,"../../")
 
 import h2o
 from h2o.estimators import H2OCoxProportionalHazardsEstimator
-from h2o.model.metrics_base import H2OModelMetricsRegressionCoxPH
+from h2o.model.metrics.regression_coxph import H2OModelMetricsRegressionCoxPH
 from tests import pyunit_utils
 from tests.testdir_generic_model import compare_params
 
