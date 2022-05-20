@@ -4962,14 +4962,15 @@ class H2OFrame(Keyed, H2ODisplay):
         return self._ex and (self._ex._children or self._ex._cache._id)
 
     def show(self, use_pandas=None, rows=10, cols=200):
-        # changing default behaviour, suggesting to use pandas by default as soon as it's available.
+        # changing default behaviour, suggesting to use pandas by default as soon as it's available and preferred.
         if use_pandas is None:
-            use_pandas = can_use_pandas()
+            use_pandas = H2OTableDisplay.prefer_pandas()
         with thread_context(rows=rows, cols=cols, pandas=use_pandas):
             display(self)
 
     def show_old(self, use_pandas=False, rows=10, cols=200):
         """
+        DELETE ME!
         Print a snippet of the data frame.
         :examples:
 
@@ -5017,7 +5018,7 @@ class H2OFrame(Keyed, H2ODisplay):
                 except UnicodeEncodeError:
                     print(s.encode("ascii", "replace"))
 
-    def summary(self, return_data=False):
+    def summary_old(self, return_data=False):
         """
         Display summary information about the frame.
 

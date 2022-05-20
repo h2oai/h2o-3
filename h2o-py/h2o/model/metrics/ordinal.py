@@ -6,7 +6,7 @@ from h2o.model import MetricsBase
 
 class H2OOrdinalModelMetrics(MetricsBase):
 
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         return [
             self.confusion_matrix(),
             self.hit_ratio_table()

@@ -142,15 +142,6 @@ class H2OTwoDimTable(H2ODisplay):
     # 2DimTable representation methods
     # --------------------------------
         
-    def __str__capture(self):
-        # out = StringIO()
-        # with thread_storage(stdout=out):
-        #     self.show()
-        # return out.getvalue()
-        with capture_output() as (out, err):
-            self.show()
-        return out.getvalue()
-    
     def _as_display(self, header=True):
         (table, nr, is_pandas) = self._as_show_table()
         return H2OTableDisplay(table,
@@ -172,7 +163,10 @@ class H2OTwoDimTable(H2ODisplay):
         self._as_display(header).show()
     
     def show_old(self, header=True):
-        """Print the contents of this table."""
+        """
+        DELETE ME!
+        Print the contents of this table.
+        """
         table_display = self._as_display(header)
         table_display.show()
         if table_display._max_rows > 20 and can_use_pandas():

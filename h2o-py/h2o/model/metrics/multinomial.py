@@ -6,7 +6,7 @@ from h2o.model import MetricsBase
 
 class H2OMultinomialModelMetrics(MetricsBase):
 
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         return [
             self.multinomial_auc_table(),
             self.multinomial_aucpr_table(),

@@ -14,7 +14,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     This class contains methods for inspecting the AUC for different criteria.
     To input the different criteria, use the static variable ``criteria``.
     """
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         items = []
         cm = self.confusion_matrix()
         if cm: items.append(cm)

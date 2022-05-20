@@ -1844,7 +1844,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     
     def _str_usage_custom(self):
         """
-        specific models can override this function to add model-specific user tips
+        Specific models can override this function to add model-specific user tips
         :return: a list of strings, each describing a user tip for this model.
         """
         return []
@@ -1894,7 +1894,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             return display(self)
 
     def show_old(self):
-        """Print innards of model, without regards to type."""
+        """
+        DELETE ME!
+        Print innards of model, without regards to type.
+        """
         if self._future:
             self._job.poll_once()
             return

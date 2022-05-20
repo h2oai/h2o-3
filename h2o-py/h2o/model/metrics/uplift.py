@@ -11,7 +11,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
     This class is essentially an API for the AUUC object.
     """
     
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         items = [
             "AUUC: {}".format(self.auuc()),
             "AUUC normalized: {}".format(self.auuc_normalized()),

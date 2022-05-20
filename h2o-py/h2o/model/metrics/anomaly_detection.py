@@ -6,7 +6,7 @@ from h2o.model import MetricsBase
 
 class H2OAnomalyDetectionModelMetrics(MetricsBase):
     
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         return [
             "Anomaly Score: {}".format(self.mean_score()),
             "Normalized Anomaly Score: {}".format(self.mean_normalized_score()),

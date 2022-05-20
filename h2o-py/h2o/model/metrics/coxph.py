@@ -17,7 +17,7 @@ class H2ORegressionCoxPHModelMetrics(MetricsBase):
     >>> coxph
     """
     
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         return [
             "Concordance score: {}".format(self.concordance()),
             "Concordant count: {}".format(self.concordant()),

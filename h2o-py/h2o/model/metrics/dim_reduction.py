@@ -5,7 +5,7 @@ from h2o.model import MetricsBase
 
 class H2ODimReductionModelMetrics(MetricsBase):
 
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         return [
             "Sum of Squared Error (Numeric): {}".format(self.num_err()),
             "Misclassification Error (Categorical): {}".format(self.cat_err()),

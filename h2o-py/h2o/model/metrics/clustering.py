@@ -6,7 +6,7 @@ from h2o.model import MetricsBase
 
 class H2OClusteringModelMetrics(MetricsBase):
 
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         cs = self._metric_json['centroid_stats']
         return [
             "Total Within Cluster Sum of Square Error: {}".format(self.tot_withinss()),

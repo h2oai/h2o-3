@@ -152,10 +152,10 @@ class MetricsBase(h2o_meta(H2ODisplay)):
                     "Residual deviance: {}".format(self.residual_deviance()),
                 ])
                 if is_type(self.aic(), numeric): items.append("AIC: {}".format(self.aic()))
-        items.extend(self._str_custom_items())
+        items.extend(self._str_items_custom())
         return items
     
-    def _str_custom_items(self):
+    def _str_items_custom(self):
         return []
 
     def _repr_(self):
@@ -174,11 +174,12 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         return items
     
     def show(self):
-        # print(repr(self))
         return display(self)
 
     def show_old(self):
-        """Display a short summary of the metrics.
+        """
+        DELETE ME!
+        Display a short summary of the metrics.
 
         :examples:
 

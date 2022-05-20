@@ -224,9 +224,15 @@ def format_to_multiline(objs, separator='\n'):
 
 
 class DisplayMixin(object):
+    """
+    The core of the H2O framework for formatting and displaying objects in various environments.
+    H2O objects that need to be rendered correctly in all circumstances need to have this mixin in their class hierarchy.
+    """
 
     def __repr__(self):
         """
+        Standard Py method returning the formal/technical string representation of the current object.
+        
         In most cases, subclasses shouldn't need to extend this method.
         
         :return: the "official" representation of the current object.
@@ -237,6 +243,8 @@ class DisplayMixin(object):
 
     def __str__(self):
         """
+        Standard Py method returning the informal, end-user targeted, string representation of the current object.
+        
         In most cases, subclasses shouldn't need to extend this method but the more specific `_str_xxx` methods instead.
         This default implementation ensures that complex objects get printed correctly in all situations, 
         ensuring that nested objects are always represented according to the originally requested format.
@@ -249,18 +257,6 @@ class DisplayMixin(object):
             return self._str_html_()
         elif repr_type in ['pretty', 'repl']:
             return self._str_pretty_()
-        return self._str_()
-
-    def _str_(self):
-        """Override this method to return the informal string representation."""
-        return repr(self)
-
-    def _str_html_(self):
-        """Override this method to return a string description in html format."""
-        return self._str_()
-
-    def _str_pretty_(self):
-        """Override this method to return a pretty string description used by default as repl output."""
         return self._str_()
 
     def _repr_(self):
@@ -278,7 +274,7 @@ class DisplayMixin(object):
             else:
                 p.text(str(self))
 
-    def _repr_html_(self): # ipy in jupyter
+    def _repr_html_(self):  # ipy in jupyter
         """
         IPython hook called when printing the cell result in Jupyter.
         Please don't override this, override `_str_html_()` instead.
@@ -286,7 +282,7 @@ class DisplayMixin(object):
         with repr_context('html'):
             return str(self)
 
-    def _repr_repl_(self): # py repl
+    def _repr_repl_(self):  # py repl
         """
         H2O hook called when printing the result in Python REPL.
         Please don't override this, override `_str_repl_()` instead.
@@ -294,28 +290,57 @@ class DisplayMixin(object):
         with repr_context('repl'):
             return str(self)
 
+    def _str_(self):
+        """Override this method to return the informal string representation."""
+        return repr(self)
+
+    def _str_html_(self):
+        """Override this method to return a string description in html format."""
+        return self._str_()
+
+    def _str_pretty_(self):
+        """Override this method to return a pretty string description used by default as repl output."""
+        return self._str_()
+
 
 class H2ODisplay(DisplayMixin):
+    """
+    A convenient mixin for H2O classes, providing standard methods for formatting and rendering.
+    """
 
-    def show(self):
-        display(self)
+    def show(self, format=None):
+        """
+        Describe and renders the current object in the given format,
+        by default guessing the best format for the current environment.
+        
+        :param format: one of (None, 'auto', 'plain', 'pretty', 'html').
+                       Defaults to None/'auto'.
+        """
+        display(self, format=format)
         
     def to_html(self):
+        """
+        :return: a html representation of the current object.
+        """
         return to_html(self)
     
     def to_pretty_str(self):
+        """
+        :return: a pretty string representation of the current object.
+        """
         return to_pretty_str(self)
     
     def to_str(self, format=None):
+        """
+        :return: a string representation of the current object.
+        :param format: one of (None, 'plain', 'pretty', 'html').
+                       Defaults to None/'plain'.
+        """
         return to_str(self, format=format)
 
 
 class H2OTableDisplay(H2ODisplay):
-    """
-    Pretty printing for H2O tables.
-
-    Handles both IPython and vanilla console display
-    """
+    
     THOUSANDS = "{:,}"
     
     _prefer_pandas = True
