@@ -798,9 +798,9 @@ class H2OFrame(Keyed):
 
     def logical_negation(self):
         """
-        Create a new H2OFrame equal to elementwise Logical NOT applied to the current frame.
+        Create a new H2OFrame equal to element-wise Logical NOT applied to the current frame.
 
-        :returns: New H2OFrame equal to elementwise Logical NOT applied to the current frame.
+        :returns: New H2OFrame equal to element-wise Logical NOT applied to the current frame.
 
         :examples:
 
@@ -1001,9 +1001,9 @@ class H2OFrame(Keyed):
 
     def cos(self):
         """
-        Create a new H2OFrame equal to elementwise cosine of the current frame.
+        Create a new H2OFrame equal to element-wise cosine of the current frame.
         
-        :returns: New H2OFrame equal to elementwise cosine of the current frame.
+        :returns: New H2OFrame equal to element-wise cosine of the current frame.
 
         :examples:
 
@@ -1016,9 +1016,9 @@ class H2OFrame(Keyed):
 
     def sin(self):
         """
-        Create a new H2OFrame equal to elementwise sine of the current frame.
+        Create a new H2OFrame equal to element-wise sine of the current frame.
         
-        :returns: New H2OFrame equal to elementwise sine of the current frame.
+        :returns: New H2OFrame equal to element-wise sine of the current frame.
 
         :examples:
 
@@ -1031,9 +1031,9 @@ class H2OFrame(Keyed):
 
     def tan(self):
         """
-        Create a new H2OFrame equal to elementwise tangent of the current frame.
+        Create a new H2OFrame equal to element-wise tangent of the current frame.
         
-        :returns: New H2OFrame equal to elementwise tangent of the current frame.
+        :returns: New H2OFrame equal to element-wise tangent of the current frame.
 
         :examples:
 
@@ -1046,9 +1046,9 @@ class H2OFrame(Keyed):
 
     def acos(self):
         """
-        Create a new H2OFrame equal to elementwise arc cosine of the current frame.
+        Create a new H2OFrame equal to element-wise arc cosine of the current frame.
         
-        :returns: New H2OFrame equal to elementwise arc cosine of the current frame.
+        :returns: New H2OFrame equal to element-wise arc cosine of the current frame.
 
         :examples:
 
@@ -1061,9 +1061,9 @@ class H2OFrame(Keyed):
 
     def asin(self):
         """
-        Create a new H2OFrame equal to elementwise arc sine of the current frame.
+        Create a new H2OFrame equal to element-wise arc sine of the current frame.
 
-        :returns: New H2OFrame equal to elementwise arc sine of the current frame.
+        :returns: New H2OFrame equal to element-wise arc sine of the current frame.
 
         :examples:
 
@@ -1076,9 +1076,9 @@ class H2OFrame(Keyed):
 
     def atan(self):
         """
-        Create a new H2OFrame equal to elementwise arc tangent of the current frame.
+        Create a new H2OFrame equal to element-wise arc tangent of the current frame.
         
-        :returns: New H2OFrame equal to elementwise arc tangent of the current frame.
+        :returns: New H2OFrame equal to element-wise arc tangent of the current frame.
 
         :examples:
 
@@ -1106,9 +1106,9 @@ class H2OFrame(Keyed):
 
     def sinh(self):
         """
-        Create a new H2OFrame equal to elementwise hyperbolic sine of the current frame.
+        Create a new H2OFrame equal to element-wise hyperbolic sine of the current frame.
 
-        :returns: New H2OFrame equal to elementwise hyperbolic sine of the current frame.
+        :returns: New H2OFrame equal to element-wise hyperbolic sine of the current frame.
 
         :examples:
 
@@ -1121,9 +1121,9 @@ class H2OFrame(Keyed):
 
     def tanh(self):
         """
-        Create a new H2OFrame equal to elementwise hyperbolic tangent of the current frame.
+        Create a new H2OFrame equal to element-wise hyperbolic tangent of the current frame.
         
-        :returns: New H2OFrame equal to elementwise hyperbolic tangent of the current frame.
+        :returns: New H2OFrame equal to element-wise hyperbolic tangent of the current frame.
 
         :examples:
 
@@ -1136,9 +1136,9 @@ class H2OFrame(Keyed):
 
     def acosh(self):
         """
-        Create a new H2OFrame equal to elementwise inverse hyperbolic cosine of the current frame
+        Create a new H2OFrame equal to element-wise inverse hyperbolic cosine of the current frame
 
-        :returns: New H2OFrame equal to elementwise inverse hyperbolic cosine of the current frame.
+        :returns: New H2OFrame equal to element-wise inverse hyperbolic cosine of the current frame.
 
         :examples:
 
@@ -1151,9 +1151,9 @@ class H2OFrame(Keyed):
 
     def asinh(self):
         """
-        Create a new H2OFrame equal to elementwise inverse hyperbolic sine of the current frame.
+        Create a new H2OFrame equal to element-wise inverse hyperbolic sine of the current frame.
         
-        :returns: New H2OFrame equal to elementwise inverse hyperbolic sine of the current frame.
+        :returns: New H2OFrame equal to element-wise inverse hyperbolic sine of the current frame.
 
         :examples:
 
@@ -1166,9 +1166,9 @@ class H2OFrame(Keyed):
 
     def atanh(self):
         """
-        Create a new H2OFrame equal to elementwise inverse hyperbolic tangent of the current frame.
+        Create a new H2OFrame equal to element-wise inverse hyperbolic tangent of the current frame.
         
-        :returns: New H2OFrame equal to elementwise inverse hyperbolic tangent of the current frame.
+        :returns: New H2OFrame equal to element-wise inverse hyperbolic tangent of the current frame.
 
         :examples:
 
@@ -1181,9 +1181,9 @@ class H2OFrame(Keyed):
 
     def cospi(self):
         """
-        Create a new H2OFrame equal to elementwise cosine of the current frame multiplied by Pi.
+        Create a new H2OFrame equal to element-wise cosine of the current frame multiplied by Pi.
         
-        :returns: New H2OFrame equal to elementwise cosine of the current frame multiplied by Pi.
+        :returns: New H2OFrame equal to element-wise cosine of the current frame multiplied by Pi.
 
         :examples:
 
@@ -1196,9 +1196,9 @@ class H2OFrame(Keyed):
 
     def sinpi(self):
         """
-        Create a new H2OFrame equal to elementwise sine of the current frame multiplied by Pi.
+        Create a new H2OFrame equal to element-wise sine of the current frame multiplied by Pi.
         
-        :returns: New H2OFrame equal to elementwise sine of the current frame multiplied by Pi.
+        :returns: New H2OFrame equal to element-wise sine of the current frame multiplied by Pi.
 
         :examples:
 
@@ -1211,9 +1211,9 @@ class H2OFrame(Keyed):
 
     def tanpi(self):
         """
-        Create a new H2OFrame equal to elementwise tangent of the current frame multiplied by Pi.
+        Create a new H2OFrame equal to element-wise tangent of the current frame multiplied by Pi.
         
-        :returns: New H2OFrame equal to elementwise tangent of the current frame multiplied by Pi.
+        :returns: New H2OFrame equal to element-wise tangent of the current frame multiplied by Pi.
 
         :examples:
 
@@ -1228,7 +1228,7 @@ class H2OFrame(Keyed):
         """
         Calculate the absolute value of the current frame.
         
-        :returns: new H2OFrame equal to elementwise absolute value of the current frame.
+        :returns: new H2OFrame equal to element-wise absolute value of the current frame.
 
         :examples:
 
@@ -1255,9 +1255,9 @@ class H2OFrame(Keyed):
 
     def sqrt(self):
         """
-        Create a new H2OFrame equal to elementwise square root of the current frame.
+        Create a new H2OFrame equal to element-wise square root of the current frame.
 
-        :returns: New H2OFrame equal to elementwise square root of the current frame.
+        :returns: New H2OFrame equal to element-wise square root of the current frame.
 
         :examples:
 
@@ -1334,9 +1334,9 @@ class H2OFrame(Keyed):
 
     def log(self):
         """
-        Create a new H2OFrame equal to elementwise natural logarithm of the current frame.
+        Create a new H2OFrame equal to element-wise natural logarithm of the current frame.
         
-        :returns: New H2OFrame equal to elementwise natural logarithm of the current frame.
+        :returns: New H2OFrame equal to element-wise natural logarithm of the current frame.
 
         :examples:
 
@@ -1349,9 +1349,9 @@ class H2OFrame(Keyed):
 
     def log10(self):
         """
-        Create new H2OFrame equal to elementwise decimal logarithm of the current frame.
+        Create new H2OFrame equal to element-wise decimal logarithm of the current frame.
         
-        :returns: New H2OFrame equal to elementwise decimal logarithm of the current frame.
+        :returns: New H2OFrame equal to element-wise decimal logarithm of the current frame.
 
         :examples:
 
@@ -1364,9 +1364,9 @@ class H2OFrame(Keyed):
 
     def log1p(self):
         """
-        Create a new H2Oframe equal to elementwise ``ln(1 + x)`` for each ``x`` in the current frame.
+        Create a new H2Oframe equal to element-wise ``ln(1 + x)`` for each ``x`` in the current frame.
         
-        :returns: New H2OFrame equals to elementwise ``ln(1 + x)`` for each ``x`` in the current frame.
+        :returns: New H2OFrame equals to element-wise ``ln(1 + x)`` for each ``x`` in the current frame.
 
         :examples:
 
@@ -1379,9 +1379,9 @@ class H2OFrame(Keyed):
 
     def log2(self):
         """
-        Create a new H2OFrame equal to elementwise binary logarithm of the current frame.
+        Create a new H2OFrame equal to element-wise binary logarithm of the current frame.
         
-        :returns: New H2OFrame equal to elementwise binary logarithm of the current frame.
+        :returns: New H2OFrame equal to element-wise binary logarithm of the current frame.
 
         :examples:
 
@@ -1394,9 +1394,9 @@ class H2OFrame(Keyed):
 
     def exp(self):
         """
-        Create a new H2OFrame equal to elementwise exponent (i.e. ``e^x``) of the current frame.
+        Create a new H2OFrame equal to element-wise exponent (i.e. ``e^x``) of the current frame.
 
-        :returns: New H2OFrame equals to elementwise exponent (i.e. ``e^x``) of the current frame.
+        :returns: New H2OFrame equals to element-wise exponent (i.e. ``e^x``) of the current frame.
 
         :examples:
 
@@ -1409,9 +1409,9 @@ class H2OFrame(Keyed):
 
     def expm1(self):
         """
-        Create a new H2OFrame equal to elementwise exponent minus 1 (i.e. ``e^x - 1``) of the current frame.
+        Create a new H2OFrame equal to element-wise exponent minus 1 (i.e. ``e^x - 1``) of the current frame.
 
-        :returns: New H2OFrame equal to elementwise exponent minus 1 (i.e. ``e^x - 1``) of the current frame.
+        :returns: New H2OFrame equal to element-wise exponent minus 1 (i.e. ``e^x - 1``) of the current frame.
 
         :examples:
 
@@ -1424,9 +1424,9 @@ class H2OFrame(Keyed):
 
     def gamma(self):
         """
-        Create a new H2OFrame equal to elementwise gamma function of the current frame.
+        Create a new H2OFrame equal to element-wise gamma function of the current frame.
         
-        :returns: new H2OFrame equals to elementwise gamma function of the current frame.
+        :returns: new H2OFrame equals to element-wise gamma function of the current frame.
 
         :examples:
 
@@ -1439,9 +1439,9 @@ class H2OFrame(Keyed):
 
     def lgamma(self):
         """
-        Create a new H2OFrame equal to elementwise logarirth of the gamma function of the current frame.
+        Create a new H2OFrame equal to element-wise logarithm of the gamma function of the current frame.
         
-        :returns: New H2OFrame equal to elementwise logarithm of the gamma function of the current frame.
+        :returns: New H2OFrame equal to element-wise logarithm of the gamma function of the current frame.
 
         :examples:
 
@@ -1454,9 +1454,9 @@ class H2OFrame(Keyed):
 
     def digamma(self):
         """
-        Create a new H2OFrame equal to elementwise digamma function of the current frame.
+        Create a new H2OFrame equal to element-wise digamma function of the current frame.
         
-        :returns: New H2OFrame equal to elementwise digamma function of the current frame.
+        :returns: New H2OFrame equal to element-wise digamma function of the current frame.
 
         :examples:
 
@@ -1469,9 +1469,9 @@ class H2OFrame(Keyed):
 
     def trigamma(self):
         """
-        Create a new H2OFrame equal to the elementwise trigamma function of the current frame.
+        Create a new H2OFrame equal to the element-wise trigamma function of the current frame.
         
-        :returns: new H2OFrame equal to elementwise trigamma function of the current frame.
+        :returns: new H2OFrame equal to element-wise trigamma function of the current frame.
 
         :examples:
 
@@ -2166,7 +2166,7 @@ class H2OFrame(Keyed):
             list, in a row-wise order.
         :param bool header: If True (default), then column names will be appended as the first row in list
 
-        :returns: A python object (a list of lists of strings, each list is a row, if use_pandas=False, otherwise
+        :returns: A python object (a list of lists of strings, each list is a row, if ``use_pandas=False``, otherwise
             a pandas DataFrame) containing this H2OFrame instance's data.
 
         :examples:
@@ -2946,7 +2946,13 @@ class H2OFrame(Keyed):
         :param int column: Index of the column to impute, or -1 to impute the entire frame.
         :param str method: The method of imputation: ``"mean"``, ``"median"``, or ``"mode"``.
         :param str combine_method: When the method is ``"median"``, this setting dictates how to combine quantiles
-            for even samples. One of ``"interpolate"``, ``"average"``, ``"low"``, ``"high"``.
+            for even samples. One of:
+
+                - ``"interpolate"``
+                - ``"average"``
+                - ``"low"``
+                - ``"high"``
+                
         :param by: The list of columns to group on.
         :param H2OFrame group_by_frame: Impute the values with this pre-computed grouped frame.
         :param List values: The list of impute values, one per column. None indicates to skip the column.
@@ -3000,7 +3006,7 @@ class H2OFrame(Keyed):
 
     def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
         """
-        Merge two datasets based on common column names.  We do not support all_x=True and all_y=True.
+        Merge two datasets based on common column names.  We do not support ``all_x=True`` and ``all_y=True``.
         Only one can be True or none is True.  The default merge method is auto and it will default to the
         radix method.  The radix method will return the correct merge result regardless of duplicated rows
         in the right frame.  In addition, the radix method can perform merge even if you have string columns
@@ -3088,7 +3094,7 @@ class H2OFrame(Keyed):
         Supports weights.
 
         :param str weights_column: The weight column
-        :param int top_n: Only re-level top_n levels (eg.: for top_n=1 only move the most frequent level to the top)
+        :param int top_n: Only re-level top_n levels (e.g. for ``top_n=1`` only move the most frequent level to the top)
         :returns: A new Frame with the same shape and data, with levels re-ordered  
         """
         return H2OFrame._expr(expr=ExprNode("relevel.by.freq", self, weights_column, top_n))
@@ -3622,7 +3628,7 @@ class H2OFrame(Keyed):
         """
         Tokenize String
 
-        tokenize() is similar to strsplit(), the difference between them is that tokenize() will store the tokenized
+        ``tokenize()`` is similar to ``strsplit()``; the difference between them is that ``tokenize()`` will store the tokenized
         text into a single column making it easier for additional processing (filtering stop words, word2vec algo, ...).
 
         :param tokenize split: The regular expression to tokenize on.
@@ -3705,9 +3711,9 @@ class H2OFrame(Keyed):
         """
         For each string, return a new string that is a substring of the original string.
 
-        If end_index is not specified, then the substring extends to the end of the original string. If the start_index
-        is longer than the length of the string, or is greater than or equal to the end_index, an empty string is
-        returned. Negative start_index is coerced to 0.
+        If ``end_index`` is not specified, then the substring extends to the end of the original string. If the ``start_index``
+        is longer than the length of the string, or is greater than or equal to the ``end_index``, an empty string is
+        returned. Negative ``start_index`` is coerced to 0.
 
         :param int start_index: The index of the original string at which to start the substring, inclusive.
         :param int end_index: The index of the original string at which to end the substring, exclusive.
@@ -3855,15 +3861,23 @@ class H2OFrame(Keyed):
         """
         Compute a histogram over a numeric column.
 
-        :param breaks: Can be one of ``"sturges"``, ``"rice"``, ``"sqrt"``, ``"doane"``, ``"fd"``, ``"scott"``;
-            or a single number for the number of breaks; or a list containing the split points, e.g:
-            ``[-50, 213.2123, 9324834]``. If breaks is "fd", the MAD is used over the IQR in computing bin width.
+        :param breaks: Can be one of:
+
+            - ``"sturges"``
+            - ``"rice"``
+            - ``"sqrt"``
+            - ``"doane"``
+            - ``"fd"``
+            - ``"scott"``
+            
+            or a single number for the number of breaks, or a list containing the split points (e.g:
+            ``[-50, 213.2123, 9324834]``). If breaks is "fd", the MAD is used over the IQR in computing bin width.
         :param bool plot: If True (default), then a plot will be generated using ``matplotlib``.
         :param save_plot_path: a path to save the plot via using matplotlib function savefig.
 
         :returns: If ``plot`` is False, return H2OFrame with these columns: breaks, counts, mids_true,
-            mids, and density; otherwise this method draws a plot and returns H2OFrame and a plot (can be accessed 
-            using result.figure()).
+            mids, and density; otherwise, this method draws a plot and returns H2OFrame and a plot (can be accessed 
+            using ``result.figure()``).
 
         :examples:
 
@@ -4165,8 +4179,8 @@ class H2OFrame(Keyed):
         """
         This function will add a new column rank where the ranking is produced as follows:
         
-         1. Sorts the H2OFrame by columns sorted in by columns specified in group_by_cols and sort_cols in the directions
-         specified by the ascending for the sort_cols.  The sort directions for the group_by_cols are ascending only.
+         1. Sorts the H2OFrame by columns sorted in by columns specified in ``group_by_cols`` and ``sort_cols`` in the directions
+         specified by the ascending for the ``sort_cols``.  The sort directions for the ``group_by_cols`` are ascending only.
 
          2. A new rank column is added to the frame which will contain a rank assignment performed next.  The user can
          choose to assign a name to this new column.  The default name is New_Rank_column.
@@ -4174,8 +4188,8 @@ class H2OFrame(Keyed):
          3. For each groupby groups, a rank is assigned to the row starting from 1, 2, ... to the end of that 
          group.
 
-         4. If sort_cols_sorted is TRUE, a final sort on the frame will be performed frame according to the sort_cols and
-         the sort directions in ascending.  If sort_cols_sorted is FALSE (by default), the frame from step 3 will be
+         4. If ``sort_cols_sorted`` is TRUE, a final sort on the frame will be performed frame according to the sort_cols and
+         the sort directions in ascending.  If ``sort_cols_sorted`` is FALSE (by default), the frame from step 3 will be
          returned as is with no extra sort.  This may provide a small speedup if desired.
 
         :param group_by_cols: The columns to group on (either a single column name/index, or a list of column names
@@ -4185,11 +4199,11 @@ class H2OFrame(Keyed):
         :param ascending: Optional Boolean array to denote sorting direction for each sorting column.  True for
           ascending, False for descending.  Default is ascending sort.  Sort direction for enums will be ignored.
         :param new_col_name: Optional String to denote the new column names.  Default to New_Rank_column.
-        :param sort_cols_sorted: Optional Boolean to denote if the returned frame should be sorted according to sort_cols
+        :param sort_cols_sorted: Optional Boolean to denote if the returned frame should be sorted according to ``sort_cols``
           and sort directions specified in ascending.  Default is False.
 
         :returns: A new Frame with new rank (sorted by columns in sort_cols) column within the grouping 
-          specified by the group_by_cols.
+          specified by the ``group_by_cols``.
 
         :examples:
 
@@ -4419,14 +4433,14 @@ class H2OFrame(Keyed):
         of a string column.
 
         Default behavior is to return indices of the elements matching the pattern. Parameter
-        `output_logical` can be used to return a logical vector indicating if the element matches
+        ``output_logical`` can be used to return a logical vector indicating if the element matches
         the pattern (1) or not (0).
 
         :param str pattern: A character string containing a regular expression.
         :param bool ignore_case: If True, then case is ignored during matching.
         :param bool invert:  If True, then identify elements that do not match the pattern.
         :param bool output_logical: If True, then return logical vector of indicators instead of list of matching positions
-        :return: H2OFrame holding the matching positions or a logical list if `output_logical` is enabled.
+        :return: H2OFrame holding the matching positions or a logical list if ``output_logical`` is enabled.
 
         :examples:
 

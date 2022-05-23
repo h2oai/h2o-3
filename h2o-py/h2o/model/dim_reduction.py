@@ -18,9 +18,9 @@ class H2ODimReductionModel(ModelBase):
 
     def varimp(self, use_pandas=False):
         """
-        Return the Importance of components associcated with a pca model.
+        Return the Importance of components associated with a PCA model.
 
-        :param bool use_pandas: If True, then the variable importances will be returned as a pandas data frame. (Default is False.)
+        :param bool use_pandas: If ``True``, then the variable importances will be returned as a pandas data frame. (Default: ``False``)
         """
         model = self._model_json["output"]
         if "importance" in list(model.keys()) and model["importance"]:
@@ -101,10 +101,10 @@ class H2ODimReductionModel(ModelBase):
         Library ``matplotlib`` is required for this function.
 
         :param str type: either ``"barplot"`` or ``"lines"``.
-        :param bool server: if true set server settings to matplotlib and do not show the graph
-        :param save_plot_path: a path to save the plot via using matplotlib function savefig
+        :param bool server: if ``True``, set ``server`` settings to matplotlib and do not show the graph.
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig.
         
-        :returns: Object that contains the resulting scree plot (can be accessed like result.figure()).
+        :returns: Object that contains the resulting scree plot (can be accessed like ``result.figure()``).
         """
         # check for matplotlib. exit if absent.
         plt = get_matplotlib_pyplot(server)

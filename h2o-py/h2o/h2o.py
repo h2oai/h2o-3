@@ -52,11 +52,11 @@ def connect(server=None, url=None, ip=None, port=None,
     """
     Connect to an existing H2O server, remote or local.
 
-    There are two ways to connect to a server: either pass a `server` parameter containing an instance of
-    an H2OLocalServer, or specify `ip` and `port` of the server that you want to connect to.
+    There are two ways to connect to a server: either pass a ``server`` parameter containing an instance of
+    an H2OLocalServer, or specify ``ip`` and ``port`` of the server that you want to connect to.
 
     :param server: An H2OLocalServer instance to connect to (optional).
-    :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
+    :param url: Full URL of the server to connect to (can be used instead of ``ip`` + ``port`` + ``https``).
     :param ip: The ip address (or host name) of the server where H2O is running.
     :param port: Port number that H2O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.
@@ -142,7 +142,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
-    :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
+    :param url: Full URL of the server to connect to (can be used instead of ``ip`` + ``port`` + ``https``).
     :param ip: The ip address (or host name) of the server where H2O is running.
     :param port: Port number that H2O service is listening to.
     :param name: Cluster name. If None while connecting to an existing cluster it will not check the cluster name.
@@ -159,12 +159,21 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param nthreads: "Number of threads" option when launching a new h2o server.
     :param ice_root: Directory for temporary files for the new h2o server.
     :param log_dir: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
-    :param log_level: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA. Default is INFO. Ignored if connecting to an existing node.
+    :param log_level: The logger level for H2O if a new instance is started. One of:
+    
+        - TRACE
+        - DEBUG
+        - INFO
+        - WARN
+        - ERRR
+        - FATA
+
+        Default is INFO. Ignored if connecting to an existing node.
     :param max_log_file_size: Maximum size of INFO and DEBUG log files. The file is rolled over after a specified size has been reached. (The default is 3MB. Minimum is 1MB and maximum is 99999MB)
     :param enable_assertions: Enable assertions in Java for the new h2o server.
     :param max_mem_size: Maximum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
 
-        - **Note:** If `max_mem_size` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+        - **Note:** If ``max_mem_size`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
     :param min_mem_size: Minimum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
@@ -354,9 +363,20 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
           data in the optimal manner.
         - "enum"    - force the column to be parsed as a categorical column.
         - "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
-          list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
-          "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
-          Times can also contain "AM" or "PM".
+          list of date time formats:
+
+              - "yyyy-MM-dd" (date),
+              - "yyyy MM dd" (date),
+              - "dd-MMM-yy" (date),
+              - "dd MMM yy" (date).
+              - "HH:mm:ss" (time),
+              - "HH:mm:ss:SSS" (time),
+              - "HH:mm:ss:SSSnnnnnn" (time),
+              - "HH.mm.ss" (time),
+              - "HH.mm.ss.SSS" (time),
+              - "HH.mm.ss.SSSnnnnnn" (time).
+              
+          Times can also contain "AM" or "PM".      
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
@@ -423,8 +443,19 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
           data in the optimal manner.
         - "enum"    - force the column to be parsed as a categorical column.
         - "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
-          list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
-          "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
+          list of date time formats:
+          
+              - "yyyy-MM-dd" (date),
+              - "yyyy MM dd" (date),
+              - "dd-MMM-yy" (date),
+              - "dd MMM yy" (date), 
+              - "HH:mm:ss" (time),
+              - "HH:mm:ss:SSS" (time),
+              - "HH:mm:ss:SSSnnnnnn" (time),
+              - "HH.mm.ss" (time),
+              - "HH.mm.ss.SSS" (time),
+              - "HH.mm.ss.SSSnnnnnn"(time).
+              
           Times can also contain "AM" or "PM".
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
@@ -616,12 +647,15 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle and Microsoft SQL.
 
     :param connection_url: URL of the SQL database connection as specified by the Java Database Connectivity (JDBC)
-        Driver. For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
+        Driver. For example::
+
+            "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
+            
     :param table: name of SQL table
     :param columns: a list of column names to import from SQL table. Default is to import all columns.
     :param username: username for SQL server
     :param password: password for SQL server
-    :param optimize: DEPRECATED. Ignored - use fetch_mode instead. Optimize import of SQL table for faster imports.
+    :param optimize: DEPRECATED. Ignored - use ``fetch_mode`` instead. Optimize import of SQL table for faster imports.
     :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
         from the database.
     :param num_chunks_hint: Desired number of chunks for the target Frame.
@@ -663,7 +697,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
       java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
 
-    Also see h2o.import_sql_table. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle 
+    Also see ``h2o.import_sql_table``. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Hive, Oracle 
     and Microsoft SQL Server.
 
     :param connection_url: URL of the SQL database connection as specified by the Java Database Connectivity (JDBC)
@@ -671,9 +705,9 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     :param select_query: SQL query starting with `SELECT` that returns rows from one or more database tables.
     :param username: username for SQL server
     :param password: password for SQL server
-    :param optimize: DEPRECATED. Ignored - use fetch_mode instead. Optimize import of SQL table for faster imports.
-    :param use_temp_table: whether a temporary table should be created from select_query
-    :param temp_table_name: name of temporary table to be created from select_query
+    :param optimize: DEPRECATED. Ignored - use ``fetch_mode`` instead. Optimize import of SQL table for faster imports.
+    :param use_temp_table: whether a temporary table should be created from ``select_query``
+    :param temp_table_name: name of temporary table to be created from ``select_query``
     :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
         from the database.
     :param num_chunks_hint: Desired number of chunks for the target Frame.
@@ -722,11 +756,11 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param separator: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
-    :param column_names: A list of column names for the file. If skipped_columns are specified, only list column names
+    :param column_names: A list of column names for the file. If ``skipped_columns`` are specified, only list column names
          of columns that are not skipped.
     :param column_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
-        one will be guessed. If skipped_columns are specified, only list column types of columns that are not skipped.
+        one will be guessed. If ``skipped_columns`` are specified, only list column types of columns that are not skipped.
         The possible types a column may have are:
 
         - "unknown" - this will force the column to be parsed as all NA
@@ -736,8 +770,19 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
           data in the optimal manner.
         - "enum"    - force the column to be parsed as a categorical column.
         - "time"    - force the column to be parsed as a time column. H2O will attempt to parse the following
-          list of date time formats: (date) "yyyy-MM-dd", "yyyy MM dd", "dd-MMM-yy", "dd MMM yy", (time)
-          "HH:mm:ss", "HH:mm:ss:SSS", "HH:mm:ss:SSSnnnnnn", "HH.mm.ss" "HH.mm.ss.SSS", "HH.mm.ss.SSSnnnnnn".
+          list of date time formats:
+
+          - "yyyy-MM-dd" (date),
+          - "yyyy MM dd" (date),
+          - "dd-MMM-yy" (date),
+          - "dd MMM yy" (date), 
+          - "HH:mm:ss" (time),
+          - "HH:mm:ss:SSS" (time),
+          - "HH:mm:ss:SSSnnnnnn" (time),
+          - "HH.mm.ss" (time),
+          - "HH.mm.ss.SSS" (time),
+          - "HH.mm.ss.SSSnnnnnn" (time).
+          
           Times can also contain "AM" or "PM".
 
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
@@ -1110,7 +1155,7 @@ def get_grid(grid_id):
 
 def get_frame(frame_id, **kwargs):
     """
-    Obtain a handle to the frame in H2O with the frame_id key.
+    Obtain a handle to the frame in H2O with the ``frame_id`` key.
 
     :param str frame_id: id of the frame to retrieve.
     :returns: an :class:`H2OFrame` object
@@ -1396,9 +1441,11 @@ def download_all_logs(dirname=".", filename=None, container=None):
     :param dirname: a character string indicating the directory that the log file should be saved in.
     :param filename: a string indicating the name that the CSV file should be.
                      Note that the default container format is .zip, so the file name must include the .zip extension.
-    :param container: a string indicating how to archive the logs, choice of "ZIP" (default) and "LOG"
-                      ZIP: individual log files archived in a ZIP package
-                      LOG: all log files will be concatenated together in one text file
+    :param container: a string indicating how to archive the logs, choice of "ZIP" (default) and "LOG":
+    
+                      - ZIP: individual log files archived in a ZIP package
+                      - LOG: all log files will be concatenated together in one text file
+                      
     :returns: path of logs written in a zip file.
 
     :examples: The following code will save the zip file `'h2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
@@ -1495,7 +1542,7 @@ def download_model(model, path="", export_cross_validation_predictions=False, fi
 def upload_model(path):
     """
     Upload a binary model from the provided local path to the H2O cluster.
-    (H2O model can be saved in a binary form either by save_model() or by download_model() function.)
+    (H2O model can be saved in a binary form either by ``save_model()`` or by ``download_model()`` function.)
     
     :param path: A path on the machine this python session is currently connected to, specifying the location of the model to upload.
     
@@ -1546,7 +1593,7 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     :param compression: how to compress the exported dataset (default none; gzip, bzip2 and snappy available)
     :param parts: enables export to multiple 'part' files instead of just a single file.
         Convenient for large datasets that take too long to store in a single file.
-        Use parts=-1 to instruct H2O to determine the optimal number of part files or
+        Use ``parts = -1`` to instruct H2O to determine the optimal number of part files or
         specify your desired maximum number of part files. Path needs to be a directory
         when exporting to multiple files, also that directory must be empty.
         Default is ``parts = 1``, which is to export to a single file.
@@ -1635,9 +1682,9 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
 
     :param frame_id: the destination key. If empty, this will be auto-generated.
     :param rows: the number of rows of data to generate.
-    :param cols: the number of columns of data to generate. Excludes the response column if has_response is True.
+    :param cols: the number of columns of data to generate. Excludes the response column if ``has_response`` is True.
     :param randomize: If True, data values will be randomly generated. This must be True if either
-        categorical_fraction or integer_fraction is non-zero.
+        ``categorical_fraction`` or ``integer_fraction`` is non-zero.
     :param value: if randomize is False, then all real-valued entries will be set to this value.
     :param real_range: the range of randomly generated real values.
     :param real_fraction: the fraction of columns that are real-valued.
@@ -1652,8 +1699,8 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     :param missing_fraction: the fraction of total entries in the data frame that are set to NA.
     :param has_response: A logical value indicating whether an additional response column should be prepended to the
         final H2O data frame. If set to True, the total number of columns will be ``cols + 1``.
-    :param response_factors: if has_response is True, then this variable controls the type of the "response" column:
-        setting response_factors to 1 will generate real-valued response, any value greater or equal than 2 will
+    :param response_factors: if ``has_response`` is True, then this variable controls the type of the "response" column:
+        setting ``response_factors`` to 1 will generate real-valued response, any value greater or equal than 2 will
         create categorical response with that many categories.
     :param positive_reponse: when response variable is present and of real type, this will control whether it
         contains positive values only, or both positive and negative.
@@ -1847,7 +1894,7 @@ def as_list(data, use_pandas=True, header=True):
 
     WARNING! This will pull all data local!
 
-    If Pandas is available (and use_pandas is True), then pandas will be used to parse the
+    If Pandas is available (and ``use_pandas`` is True), then pandas will be used to parse the
     data frame. Otherwise, a list-of-lists populated by character data will be returned (so
     the types of data will all be str).
 
@@ -1881,7 +1928,7 @@ def demo(funcname, interactive=True, echo=True, test=False):
     :param funcname: A string that identifies the h2o python function to demonstrate.
     :param interactive: If True, the user will be prompted to continue the demonstration after every segment.
     :param echo: If True, the python commands that are executed will be displayed.
-    :param test: If True, `h2o.init()` will not be called (used for pyunit testing).
+    :param test: If True, ``h2o.init()`` will not be called (used for pyunit testing).
 
     :example:
     
@@ -1931,10 +1978,24 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     :param H2OFrame weights: an H2OFrame containing observation weights (optional).
     :param H2OFrame treatment: an H2OFrame containing treatment information for uplift binomial classification only.
     :param auc_type: For multinomial classification you have to specify which type of agregated AUC/AUCPR 
-           will be used to calculate this metric. Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, 
-           NONE and AUTO (OVO = One vs. One, OVR = One vs. Rest). Default is "NONE" (AUC and AUCPR are not calculated).
+           will be used to calculate this metric. Possibilities are:
+
+               - MACRO_OVO
+               - MACRO_OVR
+               - WEIGHTED_OVO
+               - WEIGHTED_OVR
+               - NONE
+               - AUTO 
+
+           (OVO = One vs. One, OVR = One vs. Rest). Default is "NONE" (AUC and AUCPR are not calculated).
     :param auuc_type: For uplift binomial classification you have to specify which type of AUUC will be used to 
-           calculate this metric. Possibilities are gini, lift, gain, AUTO. Default is AUTO which means qini.
+           calculate this metric. Choose from:
+
+               - gini
+               - lift
+               - gain
+               - AUTO (default, uses qini)
+               
     :param auuc_nbins: For uplift binomial classification you have to specify number of bins to be used 
            for calculation the AUUC. Default is -1, which means 1000.
     :examples:
@@ -2349,8 +2410,8 @@ def estimate_cluster_mem(ncols, nrows, num_cols=0, string_cols=0, cat_cols=0, ti
     Number of columns and number of rows are required. For a better estimate you can provide a counts of different
     types of columns in the dataset.
 
-    :param ncols: total number of columns in a dataset. An required parameter, integer, can't be negative
-    :param nrows: total number of rows in a dataset. An required parameter, integer, can't be negative 
+    :param ncols: (Required) total number of columns in a dataset. Integer, can't be negative
+    :param nrows: (Required) total number of rows in a dataset. Integer, can't be negative 
     :param num_cols: number of numeric columns in a dataset. Integer, can't be negative.
     :param string_cols: number of string columns in a dataset. Integer, can't be negative.
     :param cat_cols: number of categorical columns in a dataset. Integer, can't be negative.
@@ -2361,12 +2422,12 @@ def estimate_cluster_mem(ncols, nrows, num_cols=0, string_cols=0, cat_cols=0, ti
     :example:
 
     >>> from h2o import estimate_cluster_mem
-    >>> ### I will load an parquet file with 18 columns and 2 million lines
+    >>> ### I will load a parquet file with 18 columns and 2 million lines
     >>> estimate_cluster_mem(18, 2000000)
-    >>> ### I will load an other parquet file with 16 columns and 2 million lines, I ask for a more precise estimate 
-    >>> ### because I know 12 of 16 columns are categorical and one of 16 columns consist of uuids.
+    >>> ### I will load another parquet file with 16 columns and 2 million lines; I ask for a more precise estimate 
+    >>> ### because I know 12 of 16 columns are categorical and 1 of 16 columns consist of uuids.
     >>> estimate_cluster_mem(18, 2000000, cat_cols=12, uuid_cols=1)
-    >>> ### I will load an parquet file with 8 columns and 31 million lines, I ask for a more precise estimate 
+    >>> ### I will load a parquet file with 8 columns and 31 million lines; I ask for a more precise estimate 
     >>> ### because I know 4 of 8 columns are categorical and 4 of 8 columns consist of numbers.
     >>> estimate_cluster_mem(ncols=8, nrows=31000000, cat_cols=4, num_cols=4)
     

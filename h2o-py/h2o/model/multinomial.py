@@ -50,13 +50,13 @@ class H2OMultinomialModel(ModelBase):
         """
         Retrieve the Hit Ratios.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param train: If train is True, then return the hit ratio value for the training data.
-        :param valid: If valid is True, then return the hit ratio value for the validation data.
-        :param xval:  If xval is True, then return the hit ratio value for the cross validation data.
+        :param train: If train is ``True``, then return the hit ratio value for the training data.
+        :param valid: If valid is ``True``, then return the hit ratio value for the validation data.
+        :param xval:  If xval is ``True``, then return the hit ratio value for the cross validation data.
         :return: The hit ratio for this regression model.
 
         :example:
@@ -90,17 +90,17 @@ class H2OMultinomialModel(ModelBase):
 
     def mean_per_class_error(self, train=False, valid=False, xval=False):
         """
-        Retrieve the mean per class error across all classes
+        Retrieve the mean per class error across all classes.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If True, return the mean_per_class_error value for the training data.
-        :param bool valid: If True, return the mean_per_class_error value for the validation data.
-        :param bool xval:  If True, return the mean_per_class_error value for each of the cross-validated splits.
+        :param bool train: If ``True``, return the ``mean_per_class_error`` value for the training data.
+        :param bool valid: If ``True``, return the ``mean_per_class_error`` value for the validation data.
+        :param bool xval:  If ``True``, return the ``mean_per_class_error`` value for each of the cross-validated splits.
 
-        :returns: The mean_per_class_error values for the specified key(s).
+        :returns: The ``mean_per_class_error`` values for the specified key(s).
 
         :examples:
 
@@ -133,15 +133,15 @@ class H2OMultinomialModel(ModelBase):
         """
         Retrieve the multinomial AUC table.
     
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
     
-        :param bool train: If True, return the multinomial_auc_table for the training data.
-        :param bool valid: If True, return the multinomial_auc_table for the validation data.
-        :param bool xval:  If True, return the multinomial_auc_table for each of the cross-validated splits.
+        :param bool train: If ``True``, return the ``multinomial_auc_table`` for the training data.
+        :param bool valid: If ``True``, return the ``multinomial_auc_table`` for the validation data.
+        :param bool xval:  If ``True``, return the ``multinomial_auc_table`` for each of the cross-validated splits.
     
-        :returns: The multinomial_auc_table values for the specified key(s).
+        :returns: The ``multinomial_auc_table`` values for the specified key(s).
     
         :examples:
     
@@ -174,15 +174,15 @@ class H2OMultinomialModel(ModelBase):
         """
         Retrieve the multinomial PR AUC table.
     
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
     
-        :param bool train: If True, return the amultinomial_aucpr_table for the training data.
-        :param bool valid: If True, return the multinomial_aucpr_table for the validation data.
-        :param bool xval:  If True, return the multinomial_aucpr_table for each of the cross-validated splits.
+        :param bool train: If ``True``, return the ``multinomial_aucpr_table`` for the training data.
+        :param bool valid: If ``True``, return the ``multinomial_aucpr_table`` for the validation data.
+        :param bool xval:  If ``True``, return the ``multinomial_aucpr_table`` for each of the cross-validated splits.
     
-        :returns: The average_pairwise_auc values for the specified key(s).
+        :returns: The ``average_pairwise_auc`` values for the specified key(s).
     
         :examples:
     
@@ -216,10 +216,20 @@ class H2OMultinomialModel(ModelBase):
         Plots training set (and validation set if available) scoring history for an H2OMultinomialModel. The timestep
         and metric arguments are restricted to what is available in its scoring history.
 
-        :param timestep: A unit of measurement for the x-axis. This can be AUTO, duration, or number_of_trees.
-        :param metric: A unit of measurement for the y-axis. This can be AUTO, logloss, classification_error, or rmse.
+        :param timestep: A unit of measurement for the x-axis. One of:
 
-        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure()).
+            - 'AUTO'
+            - 'duration'
+            - 'number_of_trees'
+            
+        :param metric: A unit of measurement for the y-axis. One of:
+
+            - 'AUTO'
+            - 'logloss'
+            - 'classification_error'
+            - 'rmse'
+
+        :returns: Object that contains the resulting scoring history plot (can be accessed using ``result.figure()``).
 
         :examples:
 
