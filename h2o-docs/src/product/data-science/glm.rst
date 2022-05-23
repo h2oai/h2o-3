@@ -998,10 +998,10 @@ For an example, refer `here <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-
 Modifying or Creating a Custom GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In R and python, the makeGLMModel call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or python:
+In R and Python, the ``makeGLMModel`` call can be used to create an H2O model from given coefficients. It needs a source GLM model trained on the same dataset to extract the dataset information. To make a custom GLM model from R or Python:
 
-- R: call h2o.makeGLMModel. This takes a model, a vector of coefficients, and (optional) decision threshold as parameters.
-- Pyton: H2OGeneralizedLinearEstimator.makeGLMModel (static method) takes a model, a dictionary containing coefficients, and (optional) decision threshold as parameters.
+- **R**: call ``h2o.makeGLMModel``. This takes a model, a vector of coefficients, and (optional) decision threshold as parameters.
+- **Python**: ``H2OGeneralizedLinearEstimator.makeGLMModel`` (static method) takes a model, a dictionary containing coefficients, and (optional) decision threshold as parameters.
 
 Examples
 ~~~~~~~~
@@ -1082,21 +1082,21 @@ Below is a simple example showing how to build a Generalized Linear model.
     predictors = ["AGE", "RACE", "VOL", "GLEASON"]
     response_col = "CAPSULE"
 
-    glm_model = H2OGeneralizedLinearEstimator(family= "binomial", 
+    prostate_glm = H2OGeneralizedLinearEstimator(family= "binomial", 
                                               lambda_ = 0, 
                                               compute_p_values = True)
-    glm_model.train(predictors, response_col, training_frame= prostate)
+    prostate_glm.train(predictors, response_col, training_frame= prostate)
     
     # Coefficients that can be applied to the non-standardized data.
-    print(glm_model.coef())
+    print(prostate_glm.coef())
     {u'GLEASON': 1.2503593867263176, u'VOL': -0.012783348665664449, u'AGE': -0.017888697161812357, u'Intercept': -6.6751553940827195, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
 
     # Coefficients fitted on the standardized data (requires standardize = True, which is on by default)
-    print(glm_model.coef_norm())
+    print(prostate_glm.coef_norm())
     {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
 
     # Print the Coefficients table
-    glm_model._model_json['output']['coefficients_table']
+    prostate_glm._model_json['output']['coefficients_table']
     Coefficients: glm coefficients
     names      coefficients    std_error    z_value    p_value      standardized_coefficients
     ---------  --------------  -----------  ---------  -----------  ---------------------------
@@ -1108,19 +1108,55 @@ Below is a simple example showing how to build a Generalized Linear model.
     GLEASON    1.25036         0.156156     8.0071     1.22125e-15  1.36533
 
     # Print the Standard error
-    print(glm_model._model_json['output']['coefficients_table']['std_error'])
+    print(prostate_glm._model_json['output']['coefficients_table']['std_error'])
     [1.9317603626604352, 1.3242308316851008, 1.3734657932878116, 0.01870193337051072, 0.007514353657915356, 0.15615627100850296]
 
     # Print the p values
-    print(glm_model._model_json['output']['coefficients_table']['p_value'])
+    print(prostate_glm._model_json['output']['coefficients_table']['p_value'])
     [0.0005493180609459358, 0.73809783692024, 0.6675489550762566, 0.33881164088847204, 0.0889071809658667, 1.2212453270876722e-15]
 
     # Print the z values
-    print(glm_model._model_json['output']['coefficients_table']['z_value'])
+    print(prostate_glm._model_json['output']['coefficients_table']['z_value'])
     [-3.4554779791058787, -0.3343733631736653, -0.42951434726559384, -0.9565159284557886, -1.7011907141473064, 8.007103260414265]
 
     # Retrieve a graphical plot of the standardized coefficient magnitudes
-    glm_model.std_coef_plot()
+    prostate_glm.std_coef_plot()
+
+Calling Model Attributes
+''''''''''''''''''''''''
+
+While not all model attributes have their own callable APIs, you can still retrieve their information. Using the previous example, here is how to call a model's attributes:
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Retrieve all model attributes:
+      prostate_glm@model$model_summary
+      GLM Model: summary
+          family  link regularization number_of_predictors_total
+      1 binomial logit           None                          5
+        number_of_active_predictors number_of_iterations  training_frame
+      1                           5                    4 RTMP_sid_8b2d_6
+
+      # Retrieve a specific model attribute (for example, the number of active predictors):
+      prostate_glm@model$model_summary['number_of_active_predictors']
+      number_of_active_predictors
+      1                         5
+
+
+   .. code-tab:: python
+
+      # Retrieve all model attributes:
+      prostate_glm._model_json["output"]['model_summary']
+      GLM Model: summary
+          family    link    regularization    number_of_predictors_total    number_of_active_predictors    number_of_iterations    training_frame
+      --  --------  ------  ----------------  ----------------------------  -----------------------------  ----------------------  ----------------
+          binomial  logit   None              5                             5                              4                       py_4_sid_9981
+
+
+      # Retrieve a specific model attribute (for example, the number of active predictors):
+      prostate_glm._model_json["output"]['model_summary']['number_of_active_predictors']
+      ['5']
 
 
 FAQ
