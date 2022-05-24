@@ -1517,6 +1517,14 @@ public abstract class GLMTask  {
     double wsum, wsumu;
     double _sumsqe;
     int _c = -1;
+    
+    public double[] getXY() {
+      return _xy;
+    }
+    
+    public double getYY() {
+      return _yy;
+    }
 
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw,double [] beta) {
       super(null,dinfo,jobKey);

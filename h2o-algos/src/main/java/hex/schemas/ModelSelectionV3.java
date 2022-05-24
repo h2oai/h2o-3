@@ -68,7 +68,7 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "nparallelism",
                 "max_predictor_number",  // denote maximum number of predictors to build models for
                 "min_predictor_number",
-                "mode", // naive, maxr, backward
+                "mode", // naive, maxr, maxrsweep, backward
                 "p_values_threshold"
         };
 
@@ -76,7 +76,7 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         public long seed;
 
         // Input fields
-        @API(help = "Family. For MaxR, only gaussian.  For backward, ordinal and multinomial families are not supported",
+        @API(help = "Family. For maxr/maxrsweep, only gaussian.  For backward, ordinal and multinomial families are not supported",
                 values = {"AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson",
                         "gamma", "tweedie", "negativebinomial"}, level = API.Level.critical)
         // took tweedie out since it's not reliable
@@ -183,7 +183,8 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 valuesProvider = ModelSelectionModeProvider.class,
                 help = "Mode: Used to choose model selection algorithms to use.  Options include "
                         + "'allsubsets' for all subsets, "
-                        + "'maxr' for MaxR, "
+                        + "'maxr' for MaxR calling GLM to build all models, "
+                        + "'maxrsweep' for using sweep in MaxR, "
                         + "'backward' for backward selection"
         )
         public ModelSelectionModel.ModelSelectionParameters.Mode mode;

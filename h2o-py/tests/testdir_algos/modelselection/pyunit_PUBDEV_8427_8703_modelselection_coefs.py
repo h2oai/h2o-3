@@ -15,10 +15,15 @@ def test_modelselection_gaussian_coefs():
     allsubsets_model.train(training_frame=d, x=my_x, y=my_y)
     coefs_allsubsets = allsubsets_model.coef()
     coefs_norm_allsubsets = allsubsets_model.coef_norm()
+    maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
+    maxrsweep_model.train(training_frame=d, x=my_x, y=my_y)
     maxr_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxr")
     maxr_model.train(training_frame=d, x=my_x, y=my_y)
+    # make sure results returned by maxr and maxrsweep are the same
+    pyunit_utils.compare_frames_local(maxr_model.result()[2:4], maxrsweep_model.result()[2:4], prob=1.0, tol=1e-6)
     coefs_maxr = maxr_model.coef()
     coefs_norm_maxr = maxr_model.coef_norm()
+    
     for ind in list(range(len(coefs_allsubsets))):
         one_coef_allsubsets = coefs_allsubsets[ind]
         one_coef_norm_allsubsets = coefs_norm_allsubsets[ind]

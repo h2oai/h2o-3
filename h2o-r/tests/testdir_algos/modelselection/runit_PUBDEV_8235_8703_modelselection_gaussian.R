@@ -13,6 +13,8 @@ testModelSelection <- function() {
   bestPredictorNamesAllsubsets <- h2o.get_best_model_predictors(allsubsetsModel)
   maxrModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=2, mode="maxr")
   bestR2ValueMaxr <- h2o.get_best_r2_values(maxrModel)
+  maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=2, mode="maxrsweep")
+  bestR2ValueMaxrsweep <- h2o.get_best_r2_values(maxrModel)
   # check and make sure two predictor model found has the highest R2 value
   pred2List <- list(c("AGE","RACE"), c("AGE","CAPSULE"), c("AGE","DCAPS"), c("AGE", "PSA"), c("AGE","VOL"),c("AGE", "DPROS"),
                     c("RACE","CAPSULE"),c("RACE","DCAPS"),c("RACE","PSA"),c("RACE","VOL"),c("RACE","DPROS"), c("CAPSULE","DCAPS"),
@@ -37,6 +39,7 @@ testModelSelection <- function() {
   }
   expect_true(abs(max(bestR2)-bestR2ValueAllsubsets[2]) < 1e-6)
   expect_true(abs(max(bestR2)-bestR2ValueMaxr[2]) < 1e-6)
+  expect_true(abs(bestR2ValueMaxr[2] - bestR2ValueMaxrsweep[2]) < 1e-5)
   print("Model wth best R2 value have predictors:")
   print(bestPredictorNamesAllsubsets[[2]])
 }

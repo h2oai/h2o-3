@@ -55,8 +55,8 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
     
     public static class ModelSelectionParameters extends Model.Parameters {
         public double[] _alpha;
-        public double[] _lambda;
         public boolean _standardize = true;
+        public boolean _intercept = true;
         GLMModel.GLMParameters.Family _family = AUTO;
         public boolean _lambda_search;
         public GLMModel.GLMParameters.Link _link = GLMModel.GLMParameters.Link.family_default;
@@ -77,11 +77,16 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public Mode _mode = Mode.maxr;  // mode chosen to perform model selection
         public double _beta_epsilon = 1e-4;
         public double _objective_epsilon = -1;  // -1 to use default setting
+        public double _gradient_epsilon = -1;   // -1 to use default setting
+        public double _obj_reg = -1.0;
+        public double[] _lambda = new double[]{0.0};
+        public boolean _use_all_factor_levels = false;
         
         public enum Mode {
             allsubsets, // use combinatorial, exponential runtime
-            maxr,       // use sequential replacement
-            backward    // use backward selection
+            maxr, // use sequential replacement but calls GLM to build all models
+            maxrsweep, // use sequential replacement but use sweep to generate GLM coefficients
+            backward // use backward selection
         }
         @Override
         public String algoName() {

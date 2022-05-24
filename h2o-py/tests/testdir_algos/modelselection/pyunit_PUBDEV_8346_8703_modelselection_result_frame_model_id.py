@@ -21,6 +21,12 @@ def test_modelselection_gaussian_model_id():
     maxr_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxr")
     maxr_model.train(training_frame=d, x=my_x, y=my_y)
     result_frame_maxr = maxr_model.result()
+    maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
+    maxrsweep_model.train(training_frame=d, x=my_x, y=my_y)
+
+    # make sure results returned by maxr and maxrsweep are the same
+    pyunit_utils.compare_frames_local(maxr_model.result()[2:4], maxrsweep_model.result()[2:4], prob=1.0, tol=1e-6)
+
     for ind in list(range(numRows)):
         model_from_frame_allsubsets = h2o.get_model(result_frame_allsubsets["model_id"][ind, 0])
         pred_frame_allsubsets = model_from_frame_allsubsets.predict(d)

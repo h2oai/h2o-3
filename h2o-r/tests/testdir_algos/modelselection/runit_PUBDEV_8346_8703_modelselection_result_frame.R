@@ -16,6 +16,12 @@ testModelSelectionResultFrame <- function() {
   mode="maxr")
   bestR2Maxr <- h2o.get_best_r2_values(maxrModel)
   resultFrameMaxr <- h2o.result(maxrModel)
+ 
+   maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
+   mode="maxrsweep")
+   bestR2Maxrsweep <- h2o.get_best_r2_values(maxrsweepModel)
+   resultFrameMaxrsweep <- h2o.result(maxrsweepModel) 
+  
   for (ind in c(1:numModel)) {
     r2Allsubsets <- bestR2Allsubsets[ind]
     r2FrameAllsubsets <- resultFrameAllsubsets[ind, 3] # get r2
@@ -27,12 +33,16 @@ testModelSelectionResultFrame <- function() {
     expect_equal(r2FrameAllsubsets, r2ModelAllsubsets, tolerance=1e-06)
     
     r2Maxr <- bestR2Maxr[ind]
-    r2FrameMaxr <- resultFrameMaxr[ind, 3] # get r2
+    r2Maxrsweep <- bestR2Maxrsweep[ind]
+    r2FrameMaxr <- resultFrameMaxr[ind, 3]  # get r2
+    r2FrameMaxrsweep <- resultFrameMaxrsweep[ind, 3]
     glmModelMaxr <- h2o.getModel(resultFrameMaxr[ind, 2])
     predFrameMaxr <- h2o.predict(glmModelMaxr, bhexFV)
     print(predFrameMaxr[1,1])
         r2ModelMaxr <- h2o.r2(glmModelMaxr)
     expect_equal(r2Maxr, r2FrameMaxr, tolerance=1e-6)
+    expect_equal(r2Maxrsweep, r2FrameMaxrsweep, tolerance=1e-6)
+    expect_equal(r2Maxrsweep, r2Maxr, tolerance=1e-5)
     expect_equal(r2FrameMaxr, r2ModelMaxr, tolerance=1e-06)
     expect_equal(r2FrameMaxr, r2ModelAllsubsets, tolerance=1e-06)
   }
