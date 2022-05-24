@@ -1,0 +1,18 @@
+ext {
+  hadoopVersion = 'mapr6.2'
+  jetty9version = '9.4.44.v20210927'
+  hadoopMavenArtifactVersion = '2.7.6.200-eep-810'
+  maprExtraDependency = 'org.json:org.json:chargebee-1.0'
+  orcSupported = false
+}
+
+apply from: '../assemblyjar.gradle'
+
+dependencies {
+  api(project(":h2o-jetty-9")) {
+    exclude module: "servlet-api"
+    exclude group: "javax.servlet", module: "javax.servlet-api"
+  }
+  api "org.eclipse.jetty.websocket:websocket-api:${jetty9version}"
+  api "org.eclipse.jetty.websocket:websocket-server:${jetty9version}"
+}
