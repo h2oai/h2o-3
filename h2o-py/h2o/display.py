@@ -132,8 +132,16 @@ def format_user_tips(tips, fmt=None):
 --
 Use `h2o.display.toggle_user_tips()` to switch on/off this section.
 """.format(tips=tips) if _user_tips_on_ else ""
-    return '<pre style="font-size: smaller">{tips}</pre>'.format(tips=tips) if (tips and fmt == 'html') else tips
+    return '<pre style="font-size: smaller; margin: 1em 0 0 0;">{tips}</pre>'.format(tips=tips) if (tips and fmt == 'html') else tips
 
+def _display(obj, fmt=None):
+    with repr_context(fmt):
+        if isinstance(obj, str) and fmt == 'plain':
+            obj = repr(obj)  # keep the string quoted in plain format
+        try:
+            print2(obj)
+        except UnicodeEncodeError:
+            print2(str(obj).encode("ascii", "replace"))
 
 def display(obj, fmt=None):
     """
@@ -143,26 +151,28 @@ def display(obj, fmt=None):
     """
     if fmt == 'auto':
         fmt = None
-    is_str = isinstance(obj, str)
-    if in_ipy():
-        from IPython.display import HTML, display as idisplay
-        if fmt == 'html' and is_str:
-            idisplay(HTML(obj))
-        else:
-            idisplay(obj)
-    elif in_zep() and fmt in [None, 'html']:
-        with repr_context('html'):
-            try:
-                global z  # variable provided by Zeppelin, use of `global` just to get rid of error in IDE
-                z.show(obj)
-            except NameError:
+    if in_zep():  # prioritize as Py in Zep uses iPy 
+        if fmt in [None, 'html']:  # default rendering to 'html' in zep
+            with repr_context('html'):
                 print2("%html {}".format(obj))
+        else:
+            with repr_context(fmt):
+                try:
+                    global z  # variable provided by Zeppelin, use of `global` just to get rid of error in IDE
+                    z.show(obj)
+                except NameError:
+                    _display(obj, fmt)
+    elif in_ipy():
+        from IPython.display import HTML, display as idisplay
+        if fmt is None:  # by default, let the iPy mechanism decide on the format
+            idisplay(obj)
+        elif fmt == 'html':
+            with repr_context(fmt):
+                idisplay(HTML(str(obj)))
+        else:
+            _display(obj, fmt)
     else:
-        with repr_context(fmt):
-            try:
-                print2(obj)
-            except UnicodeEncodeError:
-                print2(str(obj).encode("ascii", "replace"))
+        _display(obj, fmt)
                 
 
 def to_str(obj, fmt=None):
@@ -182,9 +192,9 @@ def _auto_html_element_wrapper(it, pre=None, nex=None):
     if isinstance(it, str):
         before, after = "", ""
         if not isinstance(pre, str):
-            before = "<br><pre>"
+            before = "<pre style='margin: 1em 0 1em 0;'>"
         if not isinstance(nex, str):
-            after = "</pre><br>"
+            after = "</pre>"
     else:
         before, after = "<div>", "</div>"
     return before, after
@@ -339,6 +349,18 @@ class H2ODisplay(DisplayMixin):
         return to_str(self, fmt=fmt)
 
 
+class H2OStringDisplay(H2ODisplay):
+    """
+    Wrapper ensuring that the given string is rendered consistently in unique format for all environments.
+    """
+    
+    def __init__(self, s):
+        self._s = s
+        
+    def _str_(self):
+        return self._s
+    
+
 class H2ODisplayWrapper(H2ODisplay):
     """
     Wraps a function returning a string into a displayable object 
@@ -462,7 +484,10 @@ class H2OTableDisplay(H2ODisplay):
                                .set_table_styles([dict(selector="caption", 
                                                        props=[("font-size", "larger"),
                                                               ("text-align", "left"),
-                                                              ("white-space", "nowrap")])], 
+                                                              ("white-space", "nowrap")]),
+                                                  dict(selector="table",
+                                                       props=[("margin-top", "1em"),
+                                                              ("margin-bottom", "1em")])], 
                                                  overwrite=False)
                                .to_html())
         
@@ -491,12 +516,14 @@ class H2OTableDisplay(H2ODisplay):
 }
 .h2o-table {
   /* width: 100%; */
+  margin-top: 1em;
+  margin-bottom: 1em;
 }
 .h2o-table caption {
   white-space: nowrap;
   caption-side: top;
   text-align: left;
-  /* margin: 0 0 0 1em; */
+  /* margin-left: 1em; */
   margin: 0;
   font-size: larger;
 }
@@ -542,8 +569,8 @@ class H2OTableDisplay(H2ODisplay):
         nrows = "{nrow} row{s}".format(nrow=nr, s="" if nr == 1 else "s")
         ncols = "{ncol} column{s}".format(ncol=nc, s="" if nc == 1 else "s")
         template = dict(
-            html="<pre>[{nrows} x {ncols}]</pre>"
-        ).get(fmt, "\n[{nrows} x {ncols}])")
+            html="<pre style='font-size: smaller; margin-bottom: 1em;'>[{nrows} x {ncols}]</pre>"
+        ).get(fmt, "\n[{nrows} x {ncols}]\n")
         return template.format(nrows=nrows, ncols=ncols)
 
 

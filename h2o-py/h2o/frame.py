@@ -4955,7 +4955,7 @@ class H2OFrame(Keyed, H2ODisplay):
     def _has_content(self):
         return self._ex and (self._ex._children or self._ex._cache._id)
 
-    def show(self, use_pandas=None, rows=10, cols=200):
+    def show(self, use_pandas=None, rows=10, cols=200, fmt=None):
         """
         Print a snippet of the data frame.
         
@@ -4978,7 +4978,7 @@ class H2OFrame(Keyed, H2ODisplay):
         if use_pandas is None:
             use_pandas = H2OTableDisplay.prefer_pandas()
         with local_context(rows=rows, cols=cols, pandas=use_pandas):
-            display(self)
+            display(self, fmt=fmt)
 
     def _str_summary(self, fmt=None):
         fr_str = self._str_edge_cases()
