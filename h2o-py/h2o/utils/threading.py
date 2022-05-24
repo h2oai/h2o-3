@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import contextlib
-import contextvars
 import threading
 
 try:
@@ -9,7 +8,7 @@ try:
     # then simply initialize it as a dictionary that we're going to manipulate.
     # This also allows a simplified shared interface (dict) for context vars and thread-locals.
     from contextvars import ContextVar, copy_context  # Py 3.7+
-    local = contextvars.ContextVar('h2o_context')
+    local = ContextVar('h2o_context')
     local.set({})
     
     def _get_local(copy=True):
