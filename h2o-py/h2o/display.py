@@ -21,7 +21,7 @@ import tabulate
 # noinspection PyUnresolvedReferences
 from .utils.compatibility import *  # NOQA
 from .utils.shared_utils import can_use_pandas
-from .utils.threading import thread_context, thread_env
+from .utils.threading import local_context, local_env
 
 __no_export = set(dir())  # all variables defined above this are not exported
 
@@ -54,11 +54,11 @@ def repr_def(obj, attributes='public'):
 
 @contextlib.contextmanager
 def repr_context(ctxt=None, force=False):
-    if ctxt is not None and (force or thread_env('repr') is None):
-        with thread_context(repr=ctxt):
-            yield thread_env('repr') 
+    if ctxt is not None and (force or local_env('repr') is None):
+        with local_context(repr=ctxt):
+            yield local_env('repr') 
     else:
-        yield thread_env('repr')
+        yield local_env('repr')
 
 
 def in_ipy():  # are we in ipy? then pretty print tables with _repr_html
@@ -144,19 +144,19 @@ def display(obj, fmt=None):
     if fmt == 'auto':
         fmt = None
     is_str = isinstance(obj, str)
-    if in_zep() and fmt in [None, 'html']:
+    if in_ipy():
+        from IPython.display import HTML, display as idisplay
+        if fmt == 'html' and is_str:
+            idisplay(HTML(obj))
+        else:
+            idisplay(obj)
+    elif in_zep() and fmt in [None, 'html']:
         with repr_context('html'):
             try:
                 global z  # variable provided by Zeppelin, use of `global` just to get rid of error in IDE
                 z.show(obj)
             except NameError:
                 print2("%html {}".format(obj))
-    elif in_ipy() and fmt in [None, 'html']:
-        from IPython.display import HTML, display as idisplay
-        if fmt == 'html' and is_str:
-            idisplay(HTML(obj))
-        else:
-            idisplay(obj) 
     else:
         with repr_context(fmt):
             try:
@@ -252,7 +252,7 @@ class DisplayMixin(object):
         :return: the "informal" nicely printable representation of the current object.
         
         """
-        repr_type = thread_env('repr')
+        repr_type = local_env('repr')
         if repr_type == 'html':
             return self._str_html_()
         elif repr_type in ['pretty', 'repl']:
@@ -557,7 +557,7 @@ def print2(*msgs, **kwargs):
     #     return
     file = kwargs.get('file', None)
     if file is None:
-        file = thread_env('stdout', sys.stdout)
+        file = local_env('stdout', sys.stdout)
         kwargs['file'] = file
     bi_print = get_builtin('print')
     if PY2:

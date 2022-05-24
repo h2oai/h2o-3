@@ -33,7 +33,7 @@ from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_fra
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized, 
                                     check_frame_id)
-from h2o.utils.threading import thread_context, thread_env
+from h2o.utils.threading import local_context, local_env
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
 
@@ -4915,8 +4915,8 @@ class H2OFrame(Keyed, H2ODisplay):
         if self.nrows == 0:
             return "H2OFrame is empty."
         # ensure that the cached frame has data to display
-        rows = thread_env('rows', 10)
-        cols = thread_env('cols', -1)
+        rows = local_env('rows', 10)
+        cols = local_env('cols', -1)
         self._frame()._ex._cache.fill(rows=rows, cols=cols)
         return None
 
@@ -4929,9 +4929,9 @@ class H2OFrame(Keyed, H2ODisplay):
         if fr_str is not None:
             return fr_str
 
-        rows = thread_env('rows', 10)
-        cols = thread_env('cols', 200)
-        use_pandas = thread_env('pandas', H2OTableDisplay.prefer_pandas())
+        rows = local_env('rows', 10)
+        cols = local_env('cols', 200)
+        use_pandas = local_env('pandas', H2OTableDisplay.prefer_pandas())
         if use_pandas:
             df = self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True)
             table = df.to_html() if fmt == 'html' else df.to_string()
@@ -4977,7 +4977,7 @@ class H2OFrame(Keyed, H2ODisplay):
         # changing default behaviour, suggesting to use pandas by default as soon as it's available and preferred.
         if use_pandas is None:
             use_pandas = H2OTableDisplay.prefer_pandas()
-        with thread_context(rows=rows, cols=cols, pandas=use_pandas):
+        with local_context(rows=rows, cols=cols, pandas=use_pandas):
             display(self)
 
     def _str_summary(self, fmt=None):

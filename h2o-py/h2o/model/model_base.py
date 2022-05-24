@@ -14,7 +14,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas, can_use_numpy
-from h2o.utils.threading import thread_context, thread_env
+from h2o.utils.threading import local_context, local_env
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
 
 
@@ -1799,7 +1799,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             return "This model (key={}) has been removed".format(self.key)
 
         items = []
-        verbose = verbose or thread_env('verbose')
+        verbose = verbose or local_env('verbose')
         if verbose:
             items.extend([
                 "Model Details",
@@ -1879,7 +1879,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             display(summary)
             
     def show(self):
-        with thread_context(verbose=True):
+        with local_context(verbose=True):
             return display(self)
 
     def _show_old(self):

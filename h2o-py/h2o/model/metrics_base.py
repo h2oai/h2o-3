@@ -12,7 +12,7 @@ from collections import OrderedDict
 from h2o.display import H2ODisplay, display, repr_def, format_to_html, format_to_multiline
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
-from h2o.utils.threading import thread_context
+from h2o.utils.threading import local_context
 from h2o.utils.typechecks import is_type, numeric
 
 
