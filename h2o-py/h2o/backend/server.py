@@ -43,10 +43,10 @@ class H2OLocalServer(object):
         hs.ip                           # ip address of the server, typically "127.0.0.1"
         hs.port                         # port on which the server is listening
 
-    Once started, the server will run until the script terminates, or until you call `.shutdown()` on it. Moreover,
+    Once started, the server will run until the script terminates, or until you call ``.shutdown()`` on it. Moreover,
     if the server terminates with an exception, then the server will not stop and will continue to run even after
     Python process exits. This runaway process may end up being in a bad shape (e.g. frozen), then the only way to
-    terminate it is to kill the java process from the terminal.
+    terminate it is to end the Java process from the terminal.
 
     Alternatively, it is possible to start the server as a context manager, in which case it will be automatically
     shut down even if an exception occurs in Python (but not if the Python process is killed)::
@@ -69,10 +69,10 @@ class H2OLocalServer(object):
         Start new H2O server on the local machine.
 
         :param jar_path: Path to the h2o.jar executable. If not given, then we will search for h2o.jar in the
-            locations returned by `._jar_paths()`.
+            locations returned by ``._jar_paths()``.
         :param nthreads: Number of threads in the thread pool. This should be related to the number of CPUs used.
             -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly.
-        :param enable_assertions: If True, pass `-ea` option to the JVM.
+        :param enable_assertions: If True, pass ``-ea`` option to the JVM.
         :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
         :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
         :param log_dir: Directory for H2O logs to be stored if a new instance is started. Default directory is determined
@@ -81,18 +81,18 @@ class H2OLocalServer(object):
         :param max_log_file_size: Maximum size of INFO and DEBUG log files. The file is rolled over after a specified 
             size has been reached. (The default is 3MB. Minimum is 1MB and maximum is 99999MB)
         :param ice_root: A directory where H2O stores its temporary files. Default location is determined by
-            tempfile.mkdtemp().
+            ``tempfile.mkdtemp()``.
         :param port: Port where to start the new server. This could be either an integer, or a string of the form
             "DDDDD+", indicating that the server should start looking for an open port starting from DDDDD and up.
-        :param name: name of the h2o cluster to be started
+        :param name: name of the h2o cluster to be started.
         :param extra_classpath: List of paths to libraries that should be included on the Java classpath.
         :param verbose: If True, then connection info will be printed to the stdout.
-        :param jvm_custom_args: Custom, user-defined arguments for the JVM H2O is instantiated in
+        :param jvm_custom_args: Custom, user-defined arguments for the JVM H2O is instantiated in.
         :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local
             machine (default) or if it can be reached from other computers on the network.
             Only applicable when H2O is started from the Python client.
 
-        :returns: a new H2OLocalServer instance
+        :returns: a new H2OLocalServer instance.
         """
         assert_is_type(jar_path, None, str)
         assert_is_type(port, None, int, str)

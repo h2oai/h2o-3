@@ -14,11 +14,11 @@ from h2o.utils.typechecks import assert_is_type
 
 class H2OAssembly(object):
     """
-    H2OAssembly class can be used to specify multiple frame operations in one place.
+    The H2OAssembly class can be used to specify multiple frame operations in one place.
 
-    :returns: a new H2OFrame
+    :returns: a new H2OFrame.
 
-    Sample usage:
+    :example:
 
     >>> iris = h2o.load_dataset("iris")
     >>> from h2o.assembly import *
@@ -48,25 +48,25 @@ class H2OAssembly(object):
     [150 rows x 4 columns]
 
 
-    In this example, we first load the iris frame.  Next, the following data munging operations are performed on the
-    iris frame
+    In this example, we first load the iris frame. Next, the following data munging operations are performed on the
+    iris frame:
 
-        1. only select three columns out of the five columns;
-        2. take the cosine of the column Sepal.Length and replace the original column with the cosine of the column;
-        3. want to count the number of rows with the letter s in the class column.  Since inplace is set to
-           False, a new column is generated to hold the result.
+        1. select only three out of the five columns;
+        2. take the cosine of the column "Sepal.Length" and replace the original column with the cosine of the column;
+        3. count the number of rows with the letter "s" in the class column. Since ``inplace=False``,
+           a new column is generated to hold the result.
 
     Extension class of Pipeline implementing additional methods:
 
-       - to_pojo: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
+       - ``to_pojo``: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
 
-    In addition, H2OAssembly provides a few static methods that perform element to element operations between
-    two frames. They all are called as
+    Additionally, H2OAssembly provides a few static methods that perform element to element operations between
+    two frames. They all are called as:
 
     >>> H2OAssembly.op(frame1, frame2)
 
-    while frame1, frame2 are H2OFrame of the same size and same column types.  It will return a H2OFrame
-    containing the element-wise result of operation op.  The following operations are currently supported
+    where ``frame1, frame2`` are H2OFrames of the same size and same column types. It will return an H2OFrame
+    containing the element-wise result of operation op. The following operations are currently supported:
 
         - divide
         - plus
@@ -307,10 +307,10 @@ class H2OAssembly(object):
         """
         Convert the munging operations performed on H2OFrame into a POJO.
 
-        :param pojo_name:  (str) Name of POJO
+        :param pojo_name:  (str) Name of POJO.
         :param path:  (str) path of POJO.
-        :param get_jar: (bool) Whether to also download the h2o-genmodel.jar file needed to compile the POJO
-        :return: None
+        :param get_jar: (bool) Whether to also download the h2o-genmodel.jar file needed to compile the POJO.
+        :return: None.
 
         :examples:
 
@@ -359,7 +359,7 @@ class H2OAssembly(object):
 
     def fit(self, fr):
         """
-        To perform the munging operations on a frame specified in steps on the frame fr.
+        To perform the munging operations on a frame specified in steps on the frame ``fr``.
 
         :param fr: H2OFrame where munging operations are to be performed on.
         :return: H2OFrame after munging operations are completed.

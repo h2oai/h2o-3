@@ -18,7 +18,7 @@ class H2OOrdinalModel(ModelBase):
 
     def confusion_matrix(self, data):
         """
-        Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
+        Returns a confusion matrix based on H2O's default prediction threshold for a dataset.
 
         :param H2OFrame data: the frame with the prediction results for which the confusion matrix should be extracted.
         """
@@ -31,13 +31,13 @@ class H2OOrdinalModel(ModelBase):
         """
         Retrieve the Hit Ratios.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one options is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param train: If train is True, then return the hit ratio value for the training data.
-        :param valid: If valid is True, then return the hit ratio value for the validation data.
-        :param xval:  If xval is True, then return the hit ratio value for the cross validation data.
+        :param train: If train is ``True``, then return the hit ratio value for the training data.
+        :param valid: If valid is ``True``, then return the hit ratio value for the validation data.
+        :param xval:  If xval is ``True``, then return the hit ratio value for the cross validation data.
         :return: The hit ratio for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
@@ -50,15 +50,15 @@ class H2OOrdinalModel(ModelBase):
         """
         Retrieve the mean per class error across all classes
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one options is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If True, return the mean_per_class_error value for the training data.
-        :param bool valid: If True, return the mean_per_class_error value for the validation data.
-        :param bool xval:  If True, return the mean_per_class_error value for each of the cross-validated splits.
+        :param bool train: If ``True``, return the ``mean_per_class_error`` value for the training data.
+        :param bool valid: If ``True``, return the ``mean_per_class_error`` value for the validation data.
+        :param bool xval:  If ``True``, return the ``mean_per_class_error`` value for each of the cross-validated splits.
 
-        :returns: The mean_per_class_error values for the specified key(s).
+        :returns: The ``mean_per_class_error`` values for the specified key(s).
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -68,14 +68,14 @@ class H2OOrdinalModel(ModelBase):
 
     def plot(self, timestep="AUTO", metric="AUTO", save_plot_path=None, **kwargs):
         """
-        Plots training set (and validation set if available) scoring history for an H2OOrdinalModel. The timestep
-        and metric arguments are restricted to what is available in its scoring history.
+        Plots training set (and validation set if available) scoring history for an H2OOrdinalModel. The ``timestep``
+        and ``metric`` arguments are restricted to what is available in its scoring history.
 
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
-        :param save_plot_path: a path to save the plot via using matplotlib function savefig
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig.
 
-        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure()).
+        :returns: Object that contains the resulting scoring history plot (can be accessed using ``result.figure()``).
         """
         if not has_extension(self, 'ScoringHistory'):
             raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
