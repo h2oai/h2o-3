@@ -67,7 +67,7 @@ def local_env(key, default=None):
     :return: the value for the given key attached to the thread context 
              or the default value if the key was not present in the thread context.
     """
-    context = _get_local()
+    context = _get_local(copy=False)
     return context.get(key, default)
 
 
