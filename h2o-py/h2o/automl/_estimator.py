@@ -21,18 +21,23 @@ _params_doc_ = dict()  # holds the doc per param extracted from H2OAutoML constr
 
 
 def _extract_params_doc(docstr):
-    pat = re.compile(r"^:param (\w+ )?(?P<name>\w+):\s?(?P<doc>.*)")  # match param doc-start in Sphinx format ":param type name: description"
+    pat = re.compile(r"^:param (?P<type>.*? )?(?P<name>\w+):\s?(?P<doc>.*)")  # match param doc-start in Sphinx format ":param type name: description"
     lines = docstr.splitlines()
-    param, doc = None, None
+    param, ptype, pdoc = None, None, None
     for l in lines:
         m = pat.match(l)
         if m:
             if param:
-                _params_doc_[param] = "\n".join(doc)
+                fulldoc = "\n".join(pdoc)
+                if ptype:
+                    fulldoc += "\n\nType: %s" % ptype
+                _params_doc_[param] = fulldoc
+
             param = m.group('name')
-            doc = [m.group('doc')]
+            ptype = m.group('type')
+            pdoc = [m.group('doc')]
         elif param:
-            doc.append(l)
+            pdoc.append(l)
 
 
 def _aml_property(param_path, name=None, types=None, validate_fn=None, freezable=False, set_input=True):
@@ -186,9 +191,21 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Defaults to ``AUTO``.
         :param str stopping_metric: Specifies the metric to use for early stopping. 
             The available options are:
-            ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
-            ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``aucpr``, ``"lift_top_group"``,
-            ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
+            
+                - ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression)
+                - ``"deviance"``
+                - ``"logloss"``
+                - ``"mse"``
+                - ``"rmse"``
+                - ``"mae"``
+                - ``"rmsle"``
+                - ``"auc"``
+                - ``aucpr``
+                - ``"lift_top_group"``
+                - ``"misclassification"``
+                - ``"mean_per_class_error"``
+                - ``"r2"``
+                
             Defaults to ``"AUTO"``.
         :param float stopping_tolerance: Specify the relative tolerance for the metric-based stopping criterion to stop a grid search and
             the training of individual models within the AutoML run.
@@ -249,9 +266,30 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Deleting them will save memory in the H2O cluster. 
             Defaults to ``False``.
         :param sort_metric: Metric to sort the leaderboard by at the end of an AutoML run. 
-            For binomial classification choose between ``"auc"``, ``"aucpr"``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
-            For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
-            For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``.
+            For binomial classification, select from the following options:
+            
+                - ``"auc"``
+                - ``"aucpr"``
+                - ``"logloss"``
+                - ``"mean_per_class_error"``
+                - ``"rmse"``
+                - ``"mse"``
+                
+            For multinomial classification, select from the following options:
+            
+                - ``"mean_per_class_error"``
+                - ``"logloss"``
+                - ``"rmse"``
+                - ``"mse"``
+                
+            For regression, select from the following options:
+
+                - ``"deviance"``
+                - ``"rmse"``
+                - ``"mse"``
+                - ``"mae"``
+                - ``"rmlse"``
+                
             Defaults to ``"AUTO"`` (This translates to ``"auc"`` for binomial classification, ``"mean_per_class_error"`` for multinomial classification, ``"deviance"`` for regression).
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.

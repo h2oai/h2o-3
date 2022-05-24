@@ -32,8 +32,8 @@ dependencies {
         exclude group: "org.apache.hadoop"
     }
     // Force latest version Hadoop with unused components excluded - we need Hadoop for Parquet and S3A export 
-    api "org.apache.hadoop:hadoop-hdfs-client:3.3.2"
-    api("org.apache.hadoop:hadoop-common:3.3.2") {
+    api "org.apache.hadoop:hadoop-hdfs-client:3.3.3"
+    api("org.apache.hadoop:hadoop-common:3.3.3") {
         exclude group: "com.sun.jersey"
         exclude group: "javax.servlet"
         exclude group: "org.apache.avro"
@@ -41,7 +41,7 @@ dependencies {
         exclude group: "org.apache.zookeeper"
         exclude group: "org.eclipse.jetty"
     }
-    api("org.apache.hadoop:hadoop-aws:3.3.2") {
+    api("org.apache.hadoop:hadoop-aws:3.3.3") {
         exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
     }
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 

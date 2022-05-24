@@ -16,14 +16,14 @@ class H2ORegressionModel(ModelBase):
 
     def plot(self, timestep="AUTO", metric="AUTO", save_plot_path=None, **kwargs):
         """
-        Plots training set (and validation set if available) scoring history for an H2ORegressionModel. The timestep
-        and metric arguments are restricted to what is available in its scoring history.
+        Plots training set (and validation set if available) scoring history for an H2ORegressionModel. The ``timestep``
+        and ``metric`` arguments are restricted to what is available in its scoring history.
 
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
-        :param save_plot_path: a path to save the plot via using matplotlib function savefig
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig.
 
-        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure()).
+        :returns: Object that contains the resulting scoring history plot (can be accessed using ``result.figure()``).
 
         :examples:
 
@@ -58,9 +58,9 @@ def _mean_var(frame, weights=None):
     """
     Compute the (weighted) mean and variance.
 
-    :param frame: Single column H2OFrame
-    :param weights: optional weights column
-    :returns: The (weighted) mean and variance
+    :param frame: Single column H2OFrame.
+    :param weights: optional weights column.
+    :returns: The (weighted) mean and variance.
     """
     return _colmean(frame), frame.var()
 
@@ -71,7 +71,7 @@ def h2o_mean_absolute_error(y_actual, y_predicted, weights=None):
 
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
-    :param weights: (Optional) sample weights
+    :param weights: (Optional) sample weights.
     :returns: mean absolute error loss (best is 0.0).
     """
     ModelBase._check_targets(y_actual, y_predicted)
@@ -84,7 +84,7 @@ def h2o_mean_squared_error(y_actual, y_predicted, weights=None):
 
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
-    :param weights: (Optional) sample weights
+    :param weights: (Optional) sample weights.
     :returns: mean squared error loss (best is 0.0).
     """
     ModelBase._check_targets(y_actual, y_predicted)
@@ -97,7 +97,7 @@ def h2o_median_absolute_error(y_actual, y_predicted):
 
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
-    :returns: median absolute error loss (best is 0.0)
+    :returns: median absolute error loss (best is 0.0).
     """
     ModelBase._check_targets(y_actual, y_predicted)
     return (y_predicted - y_actual).abs().median()
@@ -109,7 +109,7 @@ def h2o_explained_variance_score(y_actual, y_predicted, weights=None):
 
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
-    :param weights: (Optional) sample weights
+    :param weights: (Optional) sample weights.
     :returns: the explained variance score.
     """
     ModelBase._check_targets(y_actual, y_predicted)
@@ -127,7 +127,7 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
 
     :param y_actual: H2OFrame of actual response.
     :param y_predicted: H2OFrame of predicted response.
-    :param weights: (Optional) sample weights
+    :param weights: (Optional) sample weights.
     :returns: R-squared (best is 1.0, lower is worse).
     """
     ModelBase._check_targets(y_actual, y_predicted)
