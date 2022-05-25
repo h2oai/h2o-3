@@ -5063,7 +5063,7 @@ class H2OFrame(Keyed, H2ODisplay):
             ]
             if chunk_summary:
                 # The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
-                fr_desc = self._ex._cache.fill(force=True)
+                fr_desc = self._frame()._ex._cache.fill(force=True)
                 items.extend([
                     fr_desc["chunk_summary"],
                     fr_desc["distribution_summary"],

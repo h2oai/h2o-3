@@ -134,6 +134,7 @@ Use `h2o.display.toggle_user_tips()` to switch on/off this section.
 """.format(tips=tips) if _user_tips_on_ else ""
     return '<pre style="font-size: smaller; margin: 1em 0 0 0;">{tips}</pre>'.format(tips=tips) if (tips and fmt == 'html') else tips
 
+
 def _display(obj, fmt=None):
     with repr_context(fmt):
         if isinstance(obj, str) and fmt == 'plain':
@@ -142,6 +143,7 @@ def _display(obj, fmt=None):
             print2(obj)
         except UnicodeEncodeError:
             print2(str(obj).encode("ascii", "replace"))
+
 
 def display(obj, fmt=None):
     """
@@ -189,6 +191,13 @@ def to_html(obj):
 
 
 def _auto_html_element_wrapper(it, pre=None, nex=None):
+    """
+    To avoid consuming code of `format_to_html` having to deal with proper formatting,
+    this default html wrapper tries to be clever by:
+    - wrapping consecutive string items into a single <pre> element.
+    - wrapping complex objects into a <div> bloc.
+    - ensuring there is a collapsable fixed margin between all elements.
+    """
     if isinstance(it, str):
         before, after = "", ""
         if not isinstance(pre, str):
@@ -196,8 +205,23 @@ def _auto_html_element_wrapper(it, pre=None, nex=None):
         if not isinstance(nex, str):
             after = "</pre>"
     else:
-        before, after = "<div>", "</div>"
+        before, after = "<div style='margin: 1em 0 1em 0;'>", "</div>"
     return before, after
+
+
+def _auto_end_of_line(it, nex=None):
+    """
+    To avoid consuming code of `format_to_multiline` having to deal with proper formatting,
+    this default end-of-line generator tries to be clever by:
+     - adding a new line character between items by default,
+     - adding an additional new line between "blocs/objects" for clarity: every item that is not a simple string is considered as a bloc.
+    """
+    sep = "\n"
+    if nex is None:
+        sep = ""
+    elif not isinstance(it, str) or not isinstance(nex, str):
+        sep += "\n"  # 2 lines sep between "blocks" 
+    return sep
 
 
 def format_to_html(objs, element_wrapper='auto'):
@@ -209,7 +233,7 @@ def format_to_html(objs, element_wrapper='auto'):
     items = [objs] if isinstance(objs, str) else list(objs)
 
     wrap_tags_gen = None
-    if element_wrapper == 'auto':
+    if element_wrapper in [None, 'auto']:
         wrap_tags_gen = _auto_html_element_wrapper
     elif isinstance(element_wrapper, tuple):
         wrap_tags_gen = lambda it, p, n: element_wrapper
@@ -220,17 +244,32 @@ def format_to_html(objs, element_wrapper='auto'):
         assert callable(element_wrapper)
         wrap_tags_gen = element_wrapper
 
-    def _make_elem(e, idx):
+    def _make_elem(it, idx):
         pre, nex = items[idx-1] if idx > 0 else None, items[idx+1] if idx < len(items)-1 else None
-        before, after = wrap_tags_gen(e, pre=pre, nex=nex)
-        return "".join([before, str(e), after])
+        before, after = wrap_tags_gen(it, pre, nex)
+        return "".join([before, str(it), after])
 
     with repr_context('html'):
         return "\n".join(_make_elem(it, i) for i, it in enumerate(items))
 
 
-def format_to_multiline(objs, separator='\n'):
-    return separator.join(str(o) for o in objs)
+def format_to_multiline(objs, end_of_line='auto'):
+    items = [objs] if isinstance(objs, str) else list(objs)
+    eol_gen = None
+    if end_of_line in [None, 'auto']:
+        eol_gen = _auto_end_of_line
+    elif isinstance(end_of_line, str):
+        eol_gen = lambda it, n: end_of_line
+    else:
+        assert callable(end_of_line)
+        eol_gen = end_of_line
+
+    def _make_line(it, idx):
+        nex = items[idx+1] if idx < len(items)-1 else None
+        eol = eol_gen(it, nex)
+        return str(it)+eol
+    
+    return "".join(_make_line(it, i) for i, it in enumerate(items))
 
 
 class DisplayMixin(object):
@@ -352,6 +391,7 @@ class H2ODisplay(DisplayMixin):
 class H2OStringDisplay(H2ODisplay):
     """
     Wrapper ensuring that the given string is rendered consistently in unique format for all environments.
+    
     """
     
     def __init__(self, s):
@@ -472,22 +512,23 @@ class H2OTableDisplay(H2ODisplay):
 
     def _str_(self):
         table = self._display_table
-        return (table.to_string() if H2OTableDisplay.is_pandas(table)
-                else tabulate.tabulate(table,
-                                       headers=self._columns_labels or (),
-                                       **self._kwargs))
+        table_str = (table.to_string() if H2OTableDisplay.is_pandas(table)
+                     else tabulate.tabulate(table,
+                                            headers=self._columns_labels or (),
+                                            **self._kwargs))
+        return format_to_multiline([self._caption, table_str]) if self._caption else table_str
 
     def _str_html_(self):
         table = self._display_table
         if H2OTableDisplay.is_pandas(table):
             html = (table.style.set_caption(self._caption)
-                               .set_table_styles([dict(selector="caption", 
+                               .set_table_styles([dict(selector="",
+                                                       props=[("margin-top", "1em"),
+                                                              ("margin-bottom", "1em")]),
+                                                  dict(selector="caption",
                                                        props=[("font-size", "larger"),
                                                               ("text-align", "left"),
-                                                              ("white-space", "nowrap")]),
-                                                  dict(selector="table",
-                                                       props=[("margin-top", "1em"),
-                                                              ("margin-bottom", "1em")])], 
+                                                              ("white-space", "nowrap")])],
                                                  overwrite=False)
                                .to_html())
         
