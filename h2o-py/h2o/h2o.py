@@ -1582,7 +1582,7 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, parallel=False):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, parallel=False, format="csv"):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
@@ -1601,6 +1601,9 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     :param quote_header: if True, quote column names in the header.
     :param parallel: use a parallel export to a single file (doesn't apply when num_parts != 1, 
         might create temporary files in the destination directory).
+    :param format: one of 'csv' or 'parquet'. Defaults to 'csv'. Export
+        to parquet is multipart and H2O itself determines the optimal number
+        of files (1 file per chunk).
 
     :examples:
 
@@ -1626,10 +1629,11 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     assert_is_type(header, bool)
     assert_is_type(quote_header, bool)
     assert_is_type(parallel, bool)
+    assert_is_type(format, str)
     H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
                data={"path": path, "num_parts": parts, "force": force, 
                      "compression": compression, "separator": ord(sep),
-                     "header": header, "quote_header": quote_header, "parallel": parallel}), "Export File").poll()
+                     "header": header, "quote_header": quote_header, "parallel": parallel, "format": format}), "Export File").poll()
 
 
 def load_frame(frame_id, path, force=True):
