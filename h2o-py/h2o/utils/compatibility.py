@@ -166,13 +166,27 @@ def repr2(x):
 
 if PY2:
     str_type = (str, _native_unicode)
-    str2 = _native_unicode   
+    
+    class str2(_native_unicode):
+        """
+        same goal as str in Py3, but handles both Py2 types 
+        and converts str (byte arrays) to proper unicode string even when the str contains non-ascii chars.
+        """
+        def __new__(cls, o):
+            if isinstance(o, str):
+                try:
+                    return super(str2, cls).__new__(cls, o)
+                except UnicodeDecodeError:
+                    return super(str2, cls).__new__(cls, o.decode('utf8'))
+            else:
+                return super(str2, cls).__new__(cls, o)
+            
 else:
     str_type = str2 = str
 
 
 def _is_py2_unicode(s):
-    return PY2 and type(s) is _native_unicode
+    return PY2 and isinstance(s, _native_unicode)
     
 
 def get_builtin(fn_name):
@@ -196,7 +210,9 @@ def set_builtin(name, value):
 
 class PList(list):
     """
-    Wrapper for printable lists ensuring that the list is printed/represented the same way in Py2 and Py3
+    Wrapper for printable lists ensuring that the list is printed/represented the same way in Py2 and Py3.
+    Use with caution: in PY2, this will work only if all items in the list are ascii-compatible.
+    Mainly aimed for usage in docstrings or warnings where list items are defined statically.
     """
     
     def __init__(self, arr):

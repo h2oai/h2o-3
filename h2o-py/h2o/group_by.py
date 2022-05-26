@@ -360,7 +360,7 @@ class GroupBy(object):
             warnings.warn("Column {0} is a string column.  No groupby operation will be performed on it.".format(self._fr.names[colIndex]))
 
     def __repr__(self):
-        return repr_def(self, )
+        return repr_def(self, attributes=['_fr', '_by', '_aggs'])
 
     def __str__(self):
         return """GroupBy:

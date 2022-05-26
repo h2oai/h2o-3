@@ -143,7 +143,7 @@ def _display(obj, fmt=None):
         try:
             print2(obj)
         except UnicodeEncodeError:
-            print2(str(obj).encode("ascii", "replace"))
+            print2(str(obj))  # compatibility.str2 will handle the encoding issue
 
 
 def display(obj, fmt=None):
