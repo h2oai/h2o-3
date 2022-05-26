@@ -9,6 +9,7 @@ import itertools
 
 import h2o
 from h2o.base import Keyed
+from h2o.display import H2ODisplay, display
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.exceptions import H2OValueError, H2OJobCancelled
@@ -27,7 +28,7 @@ from h2o.utils.typechecks import assert_is_type, is_type
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
 )
-class H2OGridSearch(h2o_meta(Keyed)):
+class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
     """
     Grid Search of a Hyper-Parameter Space for a Model
     
@@ -809,6 +810,23 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.scoring_history() for model in self.models}
     
+    def _as_table(self):
+        hyper_combos = itertools.product(*list(self.hyper_params.values()))
+        if not self.models:
+            # what the hell is this?
+            # if we don't have models yet, then we display all possible combinations?
+            # there can be literally trillions of them when using a random search!!
+            c_values = [[idx + 1, list(val)] for idx, val in enumerate(hyper_combos)]
+            return H2OTwoDimTable(
+                table_header="Grid Search of Model {}".format(self.model.__class__.__name__),
+                col_header=["Model", "Hyperparameters: [{}]".format(', '.join(list(self.hyper_params.keys())))],
+                cell_values=c_values)
+        else:
+            return self.sorted_metric_table(use_pandas=False)
+    
+    def _str_(self):
+        return str(self._as_table())
+    
     def show(self):
         """
         Renders all models in the grid, sorted by performance metric.
@@ -830,21 +848,19 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
         >>> gs.show()
         """
-        
-        hyper_combos = itertools.product(*list(self.hyper_params.values()))
-        if not self.models:
-            # what the hell is this?
-            # if we don't have models yet, then we display all possible combinations?
-            # there can be literally trillions of them when using a random search!!
-            c_values = [[idx + 1, list(val)] for idx, val in enumerate(hyper_combos)]
-            table = H2OTwoDimTable(
-                table_header="Grid Search of Model {}".format(self.model.__class__.__name__),
-                col_header=["Model", "Hyperparameters: [{}]".format(', '.join(list(self.hyper_params.keys())))],
-                cell_values=c_values)
-        else:
-            table = self.sorted_metric_table(use_pandas=False)
-        table.show(max_rows=-1)
+        self._as_table().show(max_rows=-1)
 
+    def get_summary(self):
+        table = []
+        for model in self.models:
+            model_summary = model._model_json["output"]["model_summary"]
+            r_values = list(model_summary.cell_values[0])
+            r_values[0] = model.model_id
+            table.append(r_values)
+        return H2OTwoDimTable(table_header="Grid Summary",
+                              col_header=['Model Id'] + model_summary.col_header[1:],
+                              cell_values=table)        
+    
     def show_summary(self):
         """
         Renders a detailed summary of the explored models.
@@ -866,98 +882,15 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
         >>> gs.show_summary()
         """
-        table = []
-        for model in self.models:
-            model_summary = model._model_json["output"]["model_summary"]
-            r_values = list(model_summary.cell_values[0])
-            r_values[0] = model.model_id
-            table.append(r_values)
-            
-        H2OTableDisplay(table,
-                        caption="Grid Summary",
-                        columns_labels=['Model Id'] + model_summary.col_header[1:],
-                        numalign="left", stralign="left").show()
+        self.get_summary().show(max_rows=-1)  # always display all models in the grid
     
     def summary(self):
         """Deprecated. Please use `show_summary()` instead"""
         self.show_summary() 
 
-    def _summary_old(self, header=True):
-        """
-        DELETE ME!
-        Print a detailed summary of the explored models.
-
-        :examples:
-
-        >>> from h2o.estimators import H2ODeepLearningEstimator
-        >>> from h2o.grid.grid_search import H2OGridSearch
-        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
-        >>> insurance["offset"] = insurance["Holders"].log()
-        >>> insurance["Group"] = insurance["Group"].asfactor()
-        >>> insurance["Age"] = insurance["Age"].asfactor()
-        >>> insurance["District"] = insurance["District"].asfactor()
-        >>> hyper_params = {'huber_alpha': [0.2,0.5],
-        ...                 'quantile_alpha': [0.2,0.6]}
-        >>> from h2o.estimators import H2ODeepLearningEstimator
-        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
-        ...                    hyper_params)
-        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
-        >>> gs.summary()
-        """
-        table = []
-        for model in self.models:
-            model_summary = model._model_json["output"]["model_summary"]
-            r_values = list(model_summary.cell_values[0])
-            r_values[0] = model.model_id
-            table.append(r_values)
-
-        # if h2o.can_use_pandas():
-        #  import pandas
-        #  pandas.options.display.max_rows = 20
-        #  print pandas.DataFrame(table,columns=self.col_header)
-        #  return
-        print()
-        if header:
-            print('Grid Summary:')
-        print()
-        H2OTableDisplay(table,
-                        columns_labels=['Model Id'] + model_summary.col_header[1:],
-                        numalign="left", stralign="left").show()
-
-    def _show_old(self):
-        """
-        DELETE ME!
-        Print models sorted by metric.
-
-        :examples:
-
-        >>> from h2o.estimators import H2ODeepLearningEstimator
-        >>> from h2o.grid.grid_search import H2OGridSearch
-        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
-        >>> insurance["offset"] = insurance["Holders"].log()
-        >>> insurance["Group"] = insurance["Group"].asfactor()
-        >>> insurance["Age"] = insurance["Age"].asfactor()
-        >>> insurance["District"] = insurance["District"].asfactor()
-        >>> hyper_params = {'huber_alpha': [0.2,0.5],
-        ...                 'quantile_alpha': [0.2,0.6]}
-        >>> from h2o.estimators import H2ODeepLearningEstimator
-        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
-        ...                    hyper_params)
-        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
-        >>> gs.show()
-        """
-        hyper_combos = itertools.product(*list(self.hyper_params.values()))
-        if not self.models:
-            c_values = [[idx + 1, list(val)] for idx, val in enumerate(hyper_combos)]
-            print(H2OTwoDimTable(
-                col_header=['Model', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']'],
-                table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values))
-        else:
-            print(self.sorted_metric_table())
-
     def varimp(self, use_pandas=False):
         """
-        Pretty print the variable importances, or return them in a list/pandas DataFrame.
+        Return the variable importances as a list/pandas DataFrame.
 
         :param bool use_pandas: If True, then the variable importances will be returned as a pandas data frame.
 

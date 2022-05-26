@@ -1882,46 +1882,5 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         with local_context(verbose=True):
             return display(self)
 
-    def _show_old(self):
-        """
-        DELETE ME!
-        Print innards of model, without regards to type.
-        """
-        if self._future:
-            self._job.poll_once()
-            return
-        if self._model_json is None:
-            print("No model trained yet")
-            return
-        if self.model_id is None:
-            print("This H2OEstimator has been removed.")
-            return
-        model = self._model_json["output"]
-        print("Model Details")
-        print("=============")
-
-        print(self.__class__.__name__, ": ", self._model_json["algo_full_name"])
-        print("Model Key: ", self._id)
-        print()
-
-        self.show_summary()
-
-        # training metrics
-        tm = model["training_metrics"]
-        if tm is not None: 
-            tm._show_old()
-        vm = model["validation_metrics"]
-        if vm is not None: vm._show_old()
-        xm = model["cross_validation_metrics"]
-        if xm is not None: xm._show_old()
-        xms = model["cross_validation_metrics_summary"]
-        if xms is not None: xms._show_old()
-
-        if "scoring_history" in model and model["scoring_history"]:
-            model["scoring_history"]._show_old()
-        if "variable_importances" in model and model["variable_importances"]:
-            model["variable_importances"]._show_old()
-
-
     # FIXME: find a way to get rid of this awful habit that consists in doing [if data is present return data else print("no data")]
     

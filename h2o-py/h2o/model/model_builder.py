@@ -16,14 +16,14 @@ import h2o
 from ..frame import H2OFrame
 from ..job import H2OJob
 from .model_future import H2OModelFuture
-from .dim_reduction import H2ODimReductionModel
-from .autoencoder import H2OAutoEncoderModel
-from .multinomial import H2OMultinomialModel
-from .ordinal import H2OOrdinalModel
-from .regression import H2ORegressionModel
-from .binomial import H2OBinomialModel
-from .clustering import H2OClusteringModel
-from .word_embedding import H2OWordEmbeddingModel
+from .models.dim_reduction import H2ODimReductionModel
+from .models.autoencoder import H2OAutoEncoderModel
+from .models.multinomial import H2OMultinomialModel
+from .models.ordinal import H2OOrdinalModel
+from .models.regression import H2ORegressionModel
+from .models.binomial import H2OBinomialModel
+from .models.clustering import H2OClusteringModel
+from .models.word_embedding import H2OWordEmbeddingModel
 
 
 def build_model(algo_params):
