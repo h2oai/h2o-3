@@ -67,7 +67,7 @@ __all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",
            "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
            "apply", "cmp", "coerce", "execfile", "file", "long", "raw_input", "reduce", "reload", "unicode", "xrange",
            "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", 
-           "repr2", "PList", 'get_builtin', 'set_builtin')
+           "str_type", "repr2", 'str2', "PList", 'get_builtin', 'set_builtin')
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -164,6 +164,13 @@ def repr2(x):
     return s
 
 
+if PY2:
+    str_type = (str, _native_unicode)
+    str2 = _native_unicode   
+else:
+    str_type = str2 = str
+
+
 def _is_py2_unicode(s):
     return PY2 and type(s) is _native_unicode
     
@@ -201,3 +208,4 @@ class PList(list):
     def __repr__(self):
         return repr([str(it) if _is_py2_unicode(it) else it for it in self])
     
+

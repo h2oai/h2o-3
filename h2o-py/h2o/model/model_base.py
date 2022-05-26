@@ -1809,7 +1809,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             "%s : %s" % (self.__class__.__name__, self._model_json["algo_full_name"]),
             "Model Key: %s" % self.key,
         ])
-        summary = self.summary()
+        summary = self.get_summary()
         if summary is not None:
             items.extend(["", summary])
             
@@ -1850,7 +1850,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             return format_to_multiline(items)
         return items
 
-    def _str_repl_(self):
+    def _str_pretty_(self):
         return self._str_()+self._str_usage()
     
     def _str_html_(self):

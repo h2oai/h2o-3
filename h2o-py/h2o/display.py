@@ -20,6 +20,7 @@ import tabulate
 
 # noinspection PyUnresolvedReferences
 from .utils.compatibility import *  # NOQA
+from .utils.compatibility import str2 as str
 from .utils.shared_utils import can_use_pandas
 from .utils.threading import local_context, local_env
 
@@ -61,27 +62,26 @@ def repr_context(ctxt=None, force=False):
         yield local_env('repr')
 
 
-def in_ipy():  # are we in ipy? then pretty print tables with _repr_html
-    return get_builtin('__IPYTHON__') is not None
+def in_py_repl():
+    """test if we are in Python REPL: 
+    not perfect, doesn't handle the case where a script is executed from the REPL 
+    (in which case the script is interpreted as running as instructions in the REPL)
+    so, use wisely.
+    """
+    import inspect
+    interpreter_frame = inspect.stack()[-1]
+    is_py = interpreter_frame[1] == '<stdin>'  # use index `[1]` instead of `.filename` attribute to also work in Py2.7
+    return is_py
 
 
-def in_zep():  # are we in zeppelin? then use zeppelin pretty print support
+def in_ipy():
+    """test if we are in iPython runner."""
+    return get_builtin('__IPYTHON__')
+
+
+def in_zep():
+    """test if we are in Zepeplin runner."""
     return in_ipy() and "ZEPPELIN_RUNNER" in os.environ
-
-
-@contextlib.contextmanager
-def capture_output(out=None, err=None):
-    tmp_out = out or StringIO()
-    tmp_err = err or StringIO()
-    ori_out = sys.stdout
-    ori_err = sys.stderr
-    try:
-        sys.stdout = tmp_out
-        sys.stderr = tmp_err
-        yield tmp_out, tmp_err
-    finally:
-        sys.stdout = ori_out
-        sys.stderr = ori_err
 
 
 class ReplHook:
@@ -126,18 +126,19 @@ def toggle_user_tips(on=None):
         
         
 def format_user_tips(tips, fmt=None):
-    tips = """
+    tips_section = """
+
 [tips]
 {tips}
 --
-Use `h2o.display.toggle_user_tips()` to switch on/off this section.
-""".format(tips=tips) if _user_tips_on_ else ""
-    return '<pre style="font-size: smaller; margin: 1em 0 0 0;">{tips}</pre>'.format(tips=tips) if (tips and fmt == 'html') else tips
+Use `h2o.display.toggle_user_tips()` to switch on/off this section.""".format(tips=tips) if _user_tips_on_ else ""
+    html_wrap = '<pre style="font-size: smaller; margin: 1em 0 0 0;">{tips}</pre>'
+    return html_wrap.format(tips=tips_section) if (tips and fmt == 'html') else tips_section
 
 
 def _display(obj, fmt=None):
     with repr_context(fmt):
-        if isinstance(obj, str) and fmt == 'plain':
+        if isinstance(obj, str_type) and fmt == 'plain':
             obj = repr(obj)  # keep the string quoted in plain format
         try:
             print2(obj)
@@ -198,11 +199,11 @@ def _auto_html_element_wrapper(it, pre=None, nex=None):
     - wrapping complex objects into a <div> bloc.
     - ensuring there is a collapsable fixed margin between all elements.
     """
-    if isinstance(it, str):
+    if isinstance(it, str_type):
         before, after = "", ""
-        if not isinstance(pre, str):
+        if not isinstance(pre, str_type):
             before = "<pre style='margin: 1em 0 1em 0;'>"
-        if not isinstance(nex, str):
+        if not isinstance(nex, str_type):
             after = "</pre>"
     else:
         before, after = "<div style='margin: 1em 0 1em 0;'>", "</div>"
@@ -219,7 +220,7 @@ def _auto_end_of_line(it, nex=None):
     sep = "\n"
     if nex is None:
         sep = ""
-    elif not isinstance(it, str) or not isinstance(nex, str):
+    elif not isinstance(it, str_type) or not isinstance(nex, str_type):
         sep += "\n"  # 2 lines sep between "blocks" 
     return sep
 
@@ -230,14 +231,14 @@ def format_to_html(objs, element_wrapper='auto'):
     :param element_wrapper: a html tag name, or a tuple containing
     :return an HTML representation of objs
     """
-    items = [objs] if isinstance(objs, str) else list(objs)
+    items = [objs] if isinstance(objs, str_type) else list(objs)
 
     wrap_tags_gen = None
     if element_wrapper in [None, 'auto']:
         wrap_tags_gen = _auto_html_element_wrapper
     elif isinstance(element_wrapper, tuple):
         wrap_tags_gen = lambda it, p, n: element_wrapper
-    elif isinstance(element_wrapper, str):
+    elif isinstance(element_wrapper, str_type):
         _before, _after = "<{}>".format(element_wrapper), "</{}>".format(element_wrapper)
         wrap_tags_gen = lambda it, p, n: (_before, _after)
     else:
@@ -254,11 +255,11 @@ def format_to_html(objs, element_wrapper='auto'):
 
 
 def format_to_multiline(objs, end_of_line='auto'):
-    items = [objs] if isinstance(objs, str) else list(objs)
+    items = [objs] if isinstance(objs, str_type) else list(objs)
     eol_gen = None
     if end_of_line in [None, 'auto']:
         eol_gen = _auto_end_of_line
-    elif isinstance(end_of_line, str):
+    elif isinstance(end_of_line, str_type):
         eol_gen = lambda it, n: end_of_line
     else:
         assert callable(end_of_line)
@@ -304,7 +305,7 @@ class DisplayMixin(object):
         repr_type = local_env('repr')
         if repr_type == 'html':
             return self._str_html_()
-        elif repr_type in ['pretty', 'repl']:
+        elif repr_type == 'pretty':
             return self._str_pretty_()
         return self._str_()
 
@@ -334,9 +335,10 @@ class DisplayMixin(object):
     def _repr_repl_(self):  # py repl
         """
         H2O hook called when printing the result in Python REPL.
-        Please don't override this, override `_str_repl_()` instead.
+        This hook is triggered only if `ReplHook` is activated, and we activate it only when using default Python REPL.
+        Please don't override this, override `_str_pretty_()` instead.
         """
-        with repr_context('repl'):
+        with repr_context('pretty'):
             return str(self)
 
     def _str_(self):
@@ -613,6 +615,21 @@ class H2OTableDisplay(H2ODisplay):
             html="<pre style='font-size: smaller; margin-bottom: 1em;'>[{nrows} x {ncols}]</pre>"
         ).get(fmt, "\n[{nrows} x {ncols}]\n")
         return template.format(nrows=nrows, ncols=ncols)
+
+
+@contextlib.contextmanager
+def capture_output(out=None, err=None):
+    tmp_out = out or StringIO()
+    tmp_err = err or StringIO()
+    ori_out = sys.stdout
+    ori_err = sys.stderr
+    try:
+        sys.stdout = tmp_out
+        sys.stderr = tmp_err
+        yield tmp_out, tmp_err
+    finally:
+        sys.stdout = ori_out
+        sys.stderr = ori_err
 
 
 def print2(*msgs, **kwargs):

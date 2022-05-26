@@ -8,7 +8,6 @@ This module provides helper functions to write code that is backward-compatible.
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
 from __future__ import division, print_function, absolute_import
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import _str_type
 
 from functools import wraps
 import inspect
@@ -61,10 +60,10 @@ def deprecated_params(deprecations):
                 if k in old:
                     new = deprecations[k]
                     new_tup = (((lambda ov: None), None) if new in [None, ()] 
-                               else ((lambda ov: {new: ov}), None) if isinstance(new, _str_type)
+                               else ((lambda ov: {new: ov}), None) if isinstance(new, str_type)
                                else (new, None) if callable(new)
                                else ((lambda ov: None), new[1]) if isinstance(new, tuple) and new[0] is None
-                               else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], _str_type)
+                               else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], str_type)
                                else new)
                     assert isinstance(new_tup, tuple), (
                             "`deprecations` values must be one of: "

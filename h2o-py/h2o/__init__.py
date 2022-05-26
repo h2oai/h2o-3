@@ -93,12 +93,12 @@ except ImportError:
 
 
 def _init_():
-    from .display import ReplHook
+    from .display import ReplHook, in_py_repl
     from .backend.connection import register_session_hook
-    _replhook_ = ReplHook()
-    register_session_hook('open', _replhook_.__enter__)
-    register_session_hook('close', _replhook_.__exit__)
+    if in_py_repl():
+        _replhook_ = ReplHook()
+        register_session_hook('open', _replhook_.__enter__)
+        register_session_hook('close', _replhook_.__exit__)
     
     
-# _init_()
-
+_init_()
