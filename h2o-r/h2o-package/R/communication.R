@@ -1090,6 +1090,7 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 #'
 #' Disable Progress Bar
 #' 
+#' @seealso \code{\link{h2o.show_progress}}
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -1116,6 +1117,7 @@ h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
 #'
 #' Enable Progress Bar
 #'
+#' @seealso \code{\link{h2o.no_progress}}
 #' @examples 
 #' \dontrun{
 #' library(h2o)
