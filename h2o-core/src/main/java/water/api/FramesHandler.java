@@ -7,6 +7,7 @@ import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.fvec.persist.FramePersist;
+import water.util.ExportFileFormat;
 import water.util.Log;
 
 import java.util.*;
@@ -244,12 +245,23 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   public FramesV3 export(int version, FramesV3 s) {
     Frame fr = getFromDKV("key", s.frame_id.key());
     Log.info("ExportFiles processing (" + s.path + ")");
-    Frame.CSVStreamParams csvParms = new Frame.CSVStreamParams()
-            .setSeparator(s.separator)
-            .setHeaders(s.header)
-            .setQuoteColumnNames(s.quote_header);
-    s.job = new JobV3(Frame.export(fr, s.path, s.frame_id.key().toString(),
-            s.force, s.num_parts, s.parallel, s.compression, csvParms));
+
+    if (s.format.equals(ExportFileFormat.parquet)) {
+      Log.warn("Format is 'parquet', csv parameter values: separator, header, quote_header will be ignored!");
+      Log.warn("Format is 'parquet', H2O itself determines the optimal number of files (1 file per chunk). Parts parameter value will be ignored!");
+      if (s.parallel) {
+        Log.warn("Parallel export to a single file is not supported for parquet format! Export will continue with a parquet-specific setup.");
+      }
+      s.job = new JobV3(Frame.exportParquet(fr, s.path, s.force, s.compression));
+    } else {
+      Frame.CSVStreamParams csvParms = new Frame.CSVStreamParams()
+              .setSeparator(s.separator)
+              .setHeaders(s.header)
+              .setQuoteColumnNames(s.quote_header);
+      s.job = new JobV3(Frame.export(fr, s.path, s.frame_id.key().toString(),
+              s.force, s.num_parts, s.parallel, s.compression, csvParms));
+    }
+
     return s;
   }
 
