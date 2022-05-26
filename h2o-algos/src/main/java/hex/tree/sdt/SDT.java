@@ -117,12 +117,12 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         subtreeRoot.setThreshold(threshold);
 
         // split data
-        Frame split = splitData(bestFeatureIndex, threshold);
-        String[] outputColNamesLeft = Arrays.stream(_train.names()).map(n -> n + "Left").toArray(String[]::new);
-        String[] outputColNamesRight = Arrays.stream(_train.names()).map(n -> n + "Right").toArray(String[]::new);
-        subtreeRoot.setLeft(buildSubtree(split.subframe(outputColNamesLeft),
+        DataSplit split = splitData(bestFeatureIndex, threshold);
+//        String[] outputColNamesLeft = Arrays.stream(_train.names()).map(n -> n + "Left").toArray(String[]::new);
+//        String[] outputColNamesRight = Arrays.stream(_train.names()).map(n -> n + "Right").toArray(String[]::new);
+        subtreeRoot.setLeft(buildSubtree(split.leftSplit,
                 featuresLimits.updateMax(bestFeatureIndex, threshold), nodeDepth + 1));
-        subtreeRoot.setRight(buildSubtree(split.subframe(outputColNamesRight),
+        subtreeRoot.setRight(buildSubtree(split.rightSplit,
                 featuresLimits.updateMin(bestFeatureIndex, threshold), nodeDepth + 1));
         return subtreeRoot;
     }
@@ -148,7 +148,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         double a2 = (entropyBinarySplit(task.countRight0 * 1.0 / (task.countRight))
                              * task.countRight / (task.countLeft + task.countRight));
         double value = a1 + a2;
-//        System.out.println("value: " + value);
+//        System.out.println("value: " + value + ", t.l " + task.countLeft + ", t.l0 " + task.countLeft0 + ", t.r " + task.countRight + ", t.r0 " + task.countRight0);
         return value;
 
     }
@@ -241,27 +241,43 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 //    }
 
 
-    public Frame splitData(final int feature, final double threshold /* are all features double ? todo*/) {
-        byte[] outputTypes = Arrays.copyOf(_train.types(), _train.types().length * 2);
-        System.arraycopy(_train.types(), 0, outputTypes, _train.types().length, _train.types().length);
-
-        String[][] outputDomains = Arrays.copyOf(_train.domains(), _train.domains().length * 2);
-        System.arraycopy(_train.domains(), 0, outputDomains, _train.domains().length, _train.domains().length);
-        String[] outputColNames = (Stream.concat(Arrays.stream(_train.names()).map(n -> n + "Left"),
-                Arrays.stream(_train.names()).map(n -> n + "Right")).toArray(String[]::new));
+    private static class DataSplit {
+        Frame leftSplit;
+        Frame rightSplit;
+        int featureIndex;
+        double threshold;
+    }
+    public DataSplit splitData(final int feature, final double threshold /* are all features double ? todo*/) {
+//        byte[] outputTypes = Arrays.copyOf(_train.types(), _train.types().length * 2);
+//        System.arraycopy(_train.types(), 0, outputTypes, _train.types().length, _train.types().length);
+//
+//        String[][] outputDomains = Arrays.copyOf(_train.domains(), _train.domains().length * 2);
+//        System.arraycopy(_train.domains(), 0, outputDomains, _train.domains().length, _train.domains().length);
+//        String[] outputColNames = (Stream.concat(Arrays.stream(_train.names()).map(n -> n + "Left"),
+//                Arrays.stream(_train.names()).map(n -> n + "Right")).toArray(String[]::new));
         
         // Define task
-        SplitFrameMRTask task = new SplitFrameMRTask(feature, threshold);
+        SplitFrameMRTask taskLeftSplit = new SplitFrameMRTask(feature, threshold, 0);
+        SplitFrameMRTask taskRightSplit = new SplitFrameMRTask(feature, threshold, 1);
         System.out.println("trainData.types().length: " + _train.types().length);
+        
+        DataSplit split = new DataSplit();
+        split.featureIndex = feature;
+        split.threshold = threshold;
         // Run task
-        task.doAll(outputTypes, _train);
-        System.out.println("Domains: " + Arrays.deepToString(_train.domains()));
-
-        return task.outputFrame(
+        taskLeftSplit.doAll(_train.types(), _train);
+        taskRightSplit.doAll(_train.types(), _train);
+        split.leftSplit = taskLeftSplit.outputFrame(
                 null, // The output Frame will be stored in DKV and you can access it with this Key, can be null, in case you don't wanted in DKV
-                outputColNames,
-                outputDomains // Categorical columns need domain, pass null for Numerical and String columns
+                _train.names(),
+                _train.domains() // Categorical columns need domain, pass null for Numerical and String columns
         );
+        split.rightSplit = taskRightSplit.outputFrame(
+                null, // The output Frame will be stored in DKV and you can access it with this Key, can be null, in case you don't wanted in DKV
+                _train.names(),
+                _train.domains() // Categorical columns need domain, pass null for Numerical and String columns
+        );
+        return split;
     }
 
     private Double getZeroRatio(final Frame data) {
