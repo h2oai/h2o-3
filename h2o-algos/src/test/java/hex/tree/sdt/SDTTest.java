@@ -1,6 +1,8 @@
 package hex.tree.sdt;
 
 import hex.ConfusionMatrix;
+import hex.tree.drf.DRF;
+import hex.tree.drf.DRFModel;
 import org.junit.*;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.runner.RunWith;
@@ -20,19 +22,18 @@ import java.util.Arrays;
 import static org.junit.Assert.*;
 import static water.TestUtil.*;
 
-@CloudSize(2)
+@CloudSize(1)
 @RunWith(H2ORunner.class)
-public class 
-SDTTest {
+public class SDTTest extends TestUtil {
 
-    @ClassRule
-    public static EnvironmentVariables environmentVariables = new EnvironmentVariables();
-    
-    @BeforeClass
-    public static void initTest() {
-        final File h2oHomeDir = new File(System.getProperty("user.dir")).getParentFile();
-        environmentVariables.set("H2O_FILES_SEARCH_PATH", h2oHomeDir.getAbsolutePath());
-    }
+//    @ClassRule
+//    public static EnvironmentVariables environmentVariables = new EnvironmentVariables();
+//    
+//    @BeforeClass
+//    public static void initTest() {
+//        final File h2oHomeDir = new File(System.getProperty("user.dir")).getParentFile();
+//        environmentVariables.set("H2O_FILES_SEARCH_PATH", h2oHomeDir.getAbsolutePath());
+//    }
 
     @Test
     public void testBasicData() {
@@ -53,7 +54,7 @@ SDTTest {
                     new SDTModel.SDTParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p.depth = 3;
+            p.depth = 5;
             p._response_column = "Prediction";
 
             SDT sdt = new SDT(p);
@@ -156,36 +157,41 @@ SDTTest {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
-            Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+            Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test_preprocessed.csv"));
             System.out.println(Arrays.toString(train.names()));
-            
-            
+//            train.toCategoricalCol("IsDepDelayed");
+//            test.toCategoricalCol("IsDepDelayed");
+//            
 
 
             SDTModel.SDTParameters p =
                     new SDTModel.SDTParameters();
+//            DRFModel.DRFParameters p =
+//                    new DRFModel.DRFParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
+//            p._ntrees = 10;
             p.depth = 10;
             p._response_column = "IsDepDelayed";
 //             IsDepDelayed,fYear,fMonth,fDayofMonth,fDayOfWeek,UniqueCarrier,Origin,Dest,Distance
 
 
             SDT sdt = new SDT(p);
+//            DRF sdt = new DRF(p);
             SDTModel model = sdt.trainModel().get();
+//            DRFModel model = sdt.trainModel().get();
             assertNotNull(model);
             Scope.track_generic(model);
             
-            
-
             Frame out = model.score(test);
+            
             Scope.track_generic(out);
             System.out.println(Arrays.toString(out.names()));
             assertEquals(test.numRows(), out.numRows());
 
             System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
 //            System.out.println(test.vec(p._response_column));
-            System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0))));
+            System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0).toCategoricalVec())));
             System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p._response_column))));
 
             ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(
@@ -198,7 +204,7 @@ SDTTest {
             System.out.println("F1: " + cm.f1());
             System.out.println("F2: " + cm.f2());
 
-            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));
+//            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));
 
         } finally {
             Scope.exit();
