@@ -35,6 +35,9 @@
 #'        Default is to include the header in the output file.
 #' @param quote_header logical, indicates whether column names should be
 #'        quoted. Default is to use quotes.
+#' @param format string, one of "csv" or "parquet". Default is "csv". Export
+#'        to parquet is multipart and H2O itself determines the optimal number
+#'        of files (1 file per chunk).
 #'        
 #' @examples
 #'\dontrun{
@@ -49,7 +52,7 @@
 #' }
 #' @export
 h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = NULL, parts = 1,
-                           header = TRUE, quote_header = TRUE) {
+                           header = TRUE, quote_header = TRUE, format = "csv") {
   if (!is.H2OFrame(data))
     stop("`data` must be an H2OFrame object")
 
@@ -67,8 +70,11 @@ h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = N
 
   if(!is.logical(quote_header) || length(quote_header) != 1L || is.na(quote_header))
     stop("`quote_header` must be TRUE or FALSE")
+
+  if(!is.character(format) && !(format == "csv" || format == "parquet"))
+    stop("`format` must be 'csv' or 'parquet'")
     
-  params <- list(path=path, num_parts=parts, force=force, separator=.asc(sep), header=header, quote_header=quote_header)
+  params <- list(path=path, num_parts=parts, force=force, separator=.asc(sep), header=header, quote_header=quote_header, format=format)
   if (! is.null(compression)) {
     params$compression <- compression
   }
