@@ -2,6 +2,32 @@
 
 ## H2O
 
+### Zumbo (3.36.1.2) - 5/26/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/2/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8702]](https://h2oai.atlassian.net/browse/PUBDEV-8702) - Refactored Uplift DRF methods.
+- [[PUBDEV-8699]](https://h2oai.atlassian.net/browse/PUBDEV-8699) - Removed duplicate runs in MaxR.
+- [[PUBDEV-8682]](https://h2oai.atlassian.net/browse/PUBDEV-8682) - Fixed the ambiguity check in Explain’s consolidate varimp.
+- [[PUBDEV-8673]](https://h2oai.atlassian.net/browse/PUBDEV-8673) - Improved efficiency of ``pd_plot`` and ``ice_plot`` and made ``rug`` optional.
+- [[PUBDEV-8672]](https://h2oai.atlassian.net/browse/PUBDEV-8672) - Fixed H2O failing with null pointer exception when providing an improper ``-network`` to h2o.jar.
+- [[PUBDEV-8671]](https://h2oai.atlassian.net/browse/PUBDEV-8671) - Fixed external XGBoost on K8s.
+- [[PUBDEV-8640]](https://h2oai.atlassian.net/browse/PUBDEV-8640) - Fixed failing concurrent-running GLM training processes.
+- [[PUBDEV-8375]](https://h2oai.atlassian.net/browse/PUBDEV-8375) - Fixed missing time values SHAP summary plot error.
+- [[PUBDEV-7913]](https://h2oai.atlassian.net/browse/PUBDEV-7913) - Fixed Partial Dependence Plot’s date/time handling from explainability modules.
+
+#### New Feature
+
+- [[PUBDEV-8696]](https://h2oai.atlassian.net/browse/PUBDEV-8696) - Updated Uplift DRF API.
+
+#### Docs
+
+- [[PUBDEV-8700]](https://h2oai.atlassian.net/browse/PUBDEV-8700) - Added ``model_summary`` examples for GLM.
+- [[PUBDEV-8687]](https://h2oai.atlassian.net/browse/PUBDEV-8687) - Updated incorrect formula in GLM booklet.
+- [[PUBDEV-8442]](https://h2oai.atlassian.net/browse/PUBDEV-8442) - Updated Python Module documentation readability.
+
 ### Zumbo (3.36.1.1) - 4/13/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/1/index.html</a>
