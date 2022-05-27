@@ -61,7 +61,7 @@ def test_estimator_with_h2o_frames(estimator_cls):
 
     data = _get_data(format='h2o', n_classes=2)
     assert isinstance(data.X_train, h2o.H2OFrame)
-    estimator.fit(data.X_train, data.y_train)
+    estimator.fit(data.X_train, data.y_train, verbose=True)  # Adding verbose to test fit_params integration
     preds = estimator.predict(data.X_test)
     print(preds)
     assert isinstance(preds, h2o.H2OFrame)
