@@ -265,6 +265,8 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._n,              172);
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
+
+      assertFalse(model.haveMojo());
     } finally {
       Scope.exit();
     }
