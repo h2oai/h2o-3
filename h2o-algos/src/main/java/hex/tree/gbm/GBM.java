@@ -3,7 +3,6 @@ package hex.tree.gbm;
 import hex.*;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
