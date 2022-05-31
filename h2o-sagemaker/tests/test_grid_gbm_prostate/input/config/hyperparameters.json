@@ -1,0 +1,11 @@
+{
+  "training": "{'target': 'CAPSULE', 'categorical_columns': 'RACE'}",
+  "hyper_params": {
+    "learn_rate": [0.1],
+    "max_depth": [5, 9],
+    "sample_rate": [0.8, 1.0],
+    "col_sample_rate": [0.2, 0.5, 1.0]
+  },
+  "export_checkpoints_dir": "/opt/ml/checkpoints"
+}
+
