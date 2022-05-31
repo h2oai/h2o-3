@@ -5,6 +5,9 @@ THIS_FILE := $(lastword $(MAKEFILE_LIST))
 build-sagemaker-image:
 	docker build -t h2o-gbm-sagemaker -f gbm/Dockerfile gbm/
 
+build-grid-sagemaker-image:
+	docker build -t h2o-grid-sagemaker -f grid/Dockerfile grid/
+
 build-local-image:
 	cp -r gbm/gbm_scripts ../build
 	cp -r ../h2o-py/build/main/dist/ ../build/dist
