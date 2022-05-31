@@ -1,21 +1,4 @@
 ########################################### UTILS ##################################################
-#' Suppresses h2o progress output from \code{expr}
-#'
-#' @param expr expression
-#'
-#' @return result of \code{expr}
-with_no_h2o_progress <- function(expr) {
-  show_progress <- environment(h2o.no_progress)$
-    .pkg.env$
-    PROGRESS_BAR
-  if (length(show_progress) == 0L || show_progress) {
-    on.exit(h2o.show_progress())
-  } else {
-    on.exit(h2o.no_progress())
-  }
-  h2o.no_progress()
-  force(expr)
-}
 
 #' Stop with a user friendly message if a user is missing the ggplot2 package or has an old version of it.
 #'
@@ -600,7 +583,7 @@ with_no_h2o_progress <- function(expr) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  with_no_h2o_progress({
+  h2o.with_no_h2o_progress({
     suppressWarnings({
       varimp <- h2o.varimp(model)
     })
@@ -635,7 +618,7 @@ with_no_h2o_progress <- function(expr) {
   indices <- which(!duplicated(substr(leaderboard$model_id, 1, 3)))
   indices <- c(seq_len(top_n), indices[indices > top_n])
   leaderboard <- leaderboard[indices,]
-  with_no_h2o_progress({
+  h2o.with_no_h2o_progress({
     leaderboard <-
       cbind(leaderboard,
             do.call(
@@ -1130,7 +1113,7 @@ pd_ice_common <- function(model,
             column, "\" feature.")
   }
 
-  with_no_h2o_progress({
+  h2o.with_no_h2o_progress({
     if (is_ice) {
       return(handle_ice(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value, nbins, show_rug))
     } else {
@@ -1660,7 +1643,7 @@ h2o.shap_summary_plot <-
       newdata <- newdata[indices,]
     }
 
-    with_no_h2o_progress({
+    h2o.with_no_h2o_progress({
       newdata_df <- as.data.frame(newdata)
 
       contributions <- as.data.frame(h2o.predict_contributions(model, newdata))
@@ -1870,7 +1853,7 @@ h2o.shap_explain_row_plot <-
 
     x <- model@allparameters$x
 
-    with_no_h2o_progress({
+    h2o.with_no_h2o_progress({
       contributions <-
         as.data.frame(h2o.predict_contributions(model, newdata[row_index,]))
       contributions_names <- names(contributions)
@@ -2231,7 +2214,7 @@ h2o.varimp_heatmap <- function(object,
 h2o.model_correlation <- function(object, newdata, top_n = 20, cluster_models = TRUE) {
   models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
   models <- models_info$model_ids
-  with_no_h2o_progress({
+  h2o.with_no_h2o_progress({
     preds <- do.call(h2o.cbind,
       lapply(models, function(m, df) {
         m <- models_info$get_model(m)
@@ -2409,7 +2392,7 @@ h2o.residual_analysis_plot <- function(model, newdata) {
   if (h2o.isfactor(newdata[[model@allparameters$y]]))
     stop("Residual analysis is not implemented for classification.")
 
-  with_no_h2o_progress({
+  h2o.with_no_h2o_progress({
     y <- model@allparameters$y
 
     predictions <- stats::predict(model, newdata)
@@ -2605,7 +2588,7 @@ h2o.pd_multi_plot <- function(object,
     if (models_info$is_multinomial_classification) {
       targets <- h2o.levels(newdata[[models_info$y]])
     }
-    with_no_h2o_progress({
+    h2o.with_no_h2o_progress({
       pdps <-
         h2o.partialPlot(models_info$get_model(models_info$model_ids[[1]]), newdata, column,
                         plot = FALSE, targets = targets,
@@ -2699,7 +2682,7 @@ h2o.pd_multi_plot <- function(object,
     })
   }
 
-  with_no_h2o_progress({
+  h2o.with_no_h2o_progress({
     results <- NULL
     models_to_plot <- models_info$model_ids
     if (best_of_family)

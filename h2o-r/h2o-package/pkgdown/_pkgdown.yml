@@ -352,7 +352,8 @@ reference:
       - h2o.weights
       - h2o.which_max
       - h2o.which_min
-      - h2o.which 
+      - h2o.which
+      - h2o.with_no_h2o_progress
       - h2o.withinss
       - h2o.word2vec
       - h2o.xgboost.available
