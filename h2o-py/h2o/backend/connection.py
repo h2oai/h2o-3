@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.utils.compatibility import *  # NOQA
 
 import atexit
+from collections import defaultdict
 import os
 import re
 import sys
@@ -46,7 +47,7 @@ if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
           "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
 
 
-_session_hooks_ = dict()
+_session_hooks_ = defaultdict(list)
 
 
 def apply_session_hooks(event='open'):
@@ -63,8 +64,6 @@ def apply_session_hooks(event='open'):
 def register_session_hook(event='open', hook=None):
     assert hook is not None
     handler = 'on_{}'.format(event)
-    if handler not in _session_hooks_:
-        _session_hooks_[handler] = []
     _session_hooks_[handler].append(hook)
 
 

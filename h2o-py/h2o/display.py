@@ -65,7 +65,8 @@ def repr_context(ctxt=None, force=False):
 def in_py_repl():
     """test if we are in Python REPL: 
     not perfect, doesn't handle the case where a script is executed from the REPL 
-    (in which case the script is interpreted as running as instructions in the REPL)
+    (in which case the script is interpreted as running instructions in the REPL 
+    which shouldn't harm regarding display behaviour)
     so, use wisely.
     """
     import inspect
@@ -80,7 +81,7 @@ def in_ipy():
 
 
 def in_zep():
-    """test if we are in Zepeplin runner."""
+    """test if we are in Zeppelin runner."""
     return in_ipy() and "ZEPPELIN_RUNNER" in os.environ
 
 
@@ -638,8 +639,6 @@ def print2(*msgs, **kwargs):
     function. When in that state, autodoc doesn't display any errors or warnings, but instead completely
     ignores the "bysource" member-order option.
     """
-    # if sys.gettrace() is not None:
-    #     return
     file = kwargs.get('file', None)
     if file is None:
         file = local_env('stdout', sys.stdout)
