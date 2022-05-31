@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 ##
 
 test.HGLMData1 <- function() {
-  tol = 1e-4
+  tol = 2e-2
   h2odata <- h2o.importFile(locate("smalldata/glm_test/semiconductor.csv"))
   h2odata$Device <- h2o.asfactor(h2odata$Device)
   yresp <- "y"

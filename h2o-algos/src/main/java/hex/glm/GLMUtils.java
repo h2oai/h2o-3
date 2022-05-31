@@ -3,7 +3,6 @@ package hex.glm;
 import water.DKV;
 import water.Key;
 import water.MemoryManager;
-import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -13,12 +12,10 @@ import water.util.TwoDimTable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import static water.fvec.Vec.T_NUM;
 import static water.fvec.Vec.T_STR;
 
 public class GLMUtils {
-
   /***
    * From the gamColnames, this method attempts to translate to the column indices in adaptFrame.
    * @param adaptFrame

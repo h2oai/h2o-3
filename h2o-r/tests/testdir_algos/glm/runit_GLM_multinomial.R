@@ -8,7 +8,7 @@ glmMultinomial <- function() {
   
   Log.info("Build the model")
   m1 <- h2o.glm(y = Y, x = X, training_frame = D, family = "multinomial", alpha = 0.99, solver='IRLSM')  
-  m2 <- h2o.glm(y = Y, x = X, training_frame = D, family = "multinomial", alpha = 0.99, solver = 'L_BFGS',max_iter=500)  
+  m2 <- h2o.glm(y = Y, x = X, training_frame = D, family = "multinomial", alpha = 0.99, solver = 'L_BFGS',max_iterations=500)  
   print(m1)
   print(m2)  
   checkTrue(m1@model$training_metrics@metrics$residual_deviance <= 26309.91 + 1, "residual deviance too high")

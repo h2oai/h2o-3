@@ -52,6 +52,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "missing_values_handling",
             "plug_values",
             "compute_p_values",
+            "dispersion_factor_method",
+            "init_dispersion_factor",
             "remove_collinear_columns",
             "intercept",
             "non_negative",
@@ -83,7 +85,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_runtime_secs",
             "custom_metric_func",
             "generate_scoring_history",
-            "auc_type"
+            "auc_type",
+            "dispersion_epsilon",
+            "max_iterations_dispersion"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -176,6 +180,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "inverse", "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
     public GLMParameters.Link link;
     
+    @API(help="Method used to estimate the dispersion factor for Tweedie, Gamma and Negative Binomial only.",
+            level = Level.secondary, values={"pearson", "ml"})
+    public GLMParameters.DispersionMethod dispersion_factor_method;
+    
     @API(help = "Link function array for random component in HGLM.", values = {"[identity]", "[family_default]"},level = Level.secondary, gridable=true)   
     public GLMParameters.Link[] rand_link; // link function for random components
 
@@ -196,6 +204,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
+
+    @API(help = "Initial value of disperion factor to be estimated using either pearson or ml.  Default to 1.0.", level = Level.expert)
+    public double init_dispersion_factor;
 
     @API(help = "Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all coefficients to zero)." +
     " Default indicates: if the number of observations is greater than the number of variables, then lambda_min_ratio" +
@@ -251,6 +262,12 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
+
+    @API(help = "if changes in dispersion parameter estimation is smaller than dispersion_epsilon, will break out of the dispersion parameter estimation loop using maximum likelihood", level = API.Level.secondary, direction = API.Direction.INOUT)
+    public double dispersion_epsilon;
+    
+    @API(help = "control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood", level = API.Level.secondary, direction = API.Direction.INOUT)
+    public int max_iterations_dispersion;
 
     @API(help="If set to true, will generate scoring history for GLM.  This may significantly slow down the algo.", 
             level = Level.secondary, direction = Direction.INPUT)

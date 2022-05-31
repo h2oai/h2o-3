@@ -72,6 +72,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip", "plug_values"]
                  plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  compute_p_values=False,  # type: bool
+                 dispersion_factor_method="pearson",  # type: Literal["pearson", "ml"]
+                 init_dispersion_factor=1.0,  # type: float
                  remove_collinear_columns=False,  # type: bool
                  intercept=True,  # type: bool
                  non_negative=False,  # type: bool
@@ -103,6 +105,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  custom_metric_func=None,  # type: Optional[str]
                  generate_scoring_history=False,  # type: bool
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 dispersion_epsilon=0.0001,  # type: float
+                 max_iterations_dispersion=1000000,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -232,6 +236,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                regularization
                Defaults to ``False``.
         :type compute_p_values: bool
+        :param dispersion_factor_method: Method used to estimate the dispersion factor for Tweedie, Gamma and Negative
+               Binomial only.
+               Defaults to ``"pearson"``.
+        :type dispersion_factor_method: Literal["pearson", "ml"]
+        :param init_dispersion_factor: Initial value of disperion factor to be estimated using either pearson or ml.
+               Default to 1.0.
+               Defaults to ``1.0``.
+        :type init_dispersion_factor: float
         :param remove_collinear_columns: In case of linearly dependent columns, remove some of the dependent columns
                Defaults to ``False``.
         :type remove_collinear_columns: bool
@@ -351,6 +363,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        :param dispersion_epsilon: if changes in dispersion parameter estimation is smaller than dispersion_epsilon,
+               will break out of the dispersion parameter estimation loop using maximum likelihood
+               Defaults to ``0.0001``.
+        :type dispersion_epsilon: float
+        :param max_iterations_dispersion: control the maximum number of iterations in the dispersion parameter
+               estimation loop using maximum likelihood
+               Defaults to ``1000000``.
+        :type max_iterations_dispersion: int
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -389,6 +409,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.missing_values_handling = missing_values_handling
         self.plug_values = plug_values
         self.compute_p_values = compute_p_values
+        self.dispersion_factor_method = dispersion_factor_method
+        self.init_dispersion_factor = init_dispersion_factor
         self.remove_collinear_columns = remove_collinear_columns
         self.intercept = intercept
         self.non_negative = non_negative
@@ -420,6 +442,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.custom_metric_func = custom_metric_func
         self.generate_scoring_history = generate_scoring_history
         self.auc_type = auc_type
+        self.dispersion_epsilon = dispersion_epsilon
+        self.max_iterations_dispersion = max_iterations_dispersion
 
     @property
     def training_frame(self):
@@ -1363,6 +1387,34 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["compute_p_values"] = compute_p_values
 
     @property
+    def dispersion_factor_method(self):
+        """
+        Method used to estimate the dispersion factor for Tweedie, Gamma and Negative Binomial only.
+
+        Type: ``Literal["pearson", "ml"]``, defaults to ``"pearson"``.
+        """
+        return self._parms.get("dispersion_factor_method")
+
+    @dispersion_factor_method.setter
+    def dispersion_factor_method(self, dispersion_factor_method):
+        assert_is_type(dispersion_factor_method, None, Enum("pearson", "ml"))
+        self._parms["dispersion_factor_method"] = dispersion_factor_method
+
+    @property
+    def init_dispersion_factor(self):
+        """
+        Initial value of disperion factor to be estimated using either pearson or ml.  Default to 1.0.
+
+        Type: ``float``, defaults to ``1.0``.
+        """
+        return self._parms.get("init_dispersion_factor")
+
+    @init_dispersion_factor.setter
+    def init_dispersion_factor(self, init_dispersion_factor):
+        assert_is_type(init_dispersion_factor, None, numeric)
+        self._parms["init_dispersion_factor"] = init_dispersion_factor
+
+    @property
     def remove_collinear_columns(self):
         """
         In case of linearly dependent columns, remove some of the dependent columns
@@ -2132,6 +2184,35 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+    @property
+    def dispersion_epsilon(self):
+        """
+        if changes in dispersion parameter estimation is smaller than dispersion_epsilon, will break out of the
+        dispersion parameter estimation loop using maximum likelihood
+
+        Type: ``float``, defaults to ``0.0001``.
+        """
+        return self._parms.get("dispersion_epsilon")
+
+    @dispersion_epsilon.setter
+    def dispersion_epsilon(self, dispersion_epsilon):
+        assert_is_type(dispersion_epsilon, None, numeric)
+        self._parms["dispersion_epsilon"] = dispersion_epsilon
+
+    @property
+    def max_iterations_dispersion(self):
+        """
+        control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood
+
+        Type: ``int``, defaults to ``1000000``.
+        """
+        return self._parms.get("max_iterations_dispersion")
+
+    @max_iterations_dispersion.setter
+    def max_iterations_dispersion(self, max_iterations_dispersion):
+        assert_is_type(max_iterations_dispersion, None, int)
+        self._parms["max_iterations_dispersion"] = max_iterations_dispersion
 
     Lambda = deprecated_property('Lambda', lambda_)
 

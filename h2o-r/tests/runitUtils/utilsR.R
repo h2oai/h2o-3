@@ -834,7 +834,11 @@ compare_arrays <- function(array1, array2, tol=1e-6) {
     expect_equal(dim1, dim2)
 
     for (i in 1:dim1) {
-            expect_equal(TRUE, (abs(array1[i]-array2[i]) < tol))
+            diff <- abs(array1[i]-array2[i])
+            if (diff >= tol) {
+                print(diff)
+            }
+            expect_equal(TRUE, (diff < tol))
     }
 }
 #----------------------------------------------------------------------
