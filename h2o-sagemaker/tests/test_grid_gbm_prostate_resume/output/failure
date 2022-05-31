@@ -1,0 +1,15 @@
+Exception during training: Job<$0301ac11000232d4ffffffff$_b474a95adda0b9779c3ad8596e624245> was cancelled by the user.
+Traceback (most recent call last):
+  File "/opt/program/train", line 175, in _train_model
+    gbm_model.train(x=X, y=y, training_frame=train_data)
+  File "/root/.local/lib/python3.6/site-packages/h2o/grid/grid_search.py", line 351, in train
+    self.build_model(parms)
+  File "/root/.local/lib/python3.6/site-packages/h2o/grid/grid_search.py", line 388, in build_model
+    self._model_build(x, y, training_frame, validation_frame, algo_params)
+  File "/root/.local/lib/python3.6/site-packages/h2o/grid/grid_search.py", line 406, in _model_build
+    self._run_grid_job(kwargs, rest_ver=rest_ver)
+  File "/root/.local/lib/python3.6/site-packages/h2o/grid/grid_search.py", line 415, in _run_grid_job
+    grid.poll()
+  File "/root/.local/lib/python3.6/site-packages/h2o/job.py", line 87, in poll
+    raise H2OJobCancelled("Job<%s> was cancelled by the user." % self.job_key)
+h2o.exceptions.H2OJobCancelled: Job<$0301ac11000232d4ffffffff$_b474a95adda0b9779c3ad8596e624245> was cancelled by the user.
