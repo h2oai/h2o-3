@@ -51,6 +51,8 @@ import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.ml;
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.pearson;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.*;
 import static hex.glm.GLMUtils.*;
@@ -990,6 +992,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error(_parms._non_negative ? "non_negative" : "beta_constraints",
                 " does not work with " + _parms._family + " family.");
       }
+      // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
+      if (ml.equals(_parms._dispersion_factor_method) && !gamma.equals(_parms._family))
+        error("dispersion_factor_mode", " ml can only be used for family gamma.");
+      
+      if (ml.equals(_parms._dispersion_factor_method)) {
+        if (_parms._max_iterations_dispersion <= 0)
+          error("max_iterations_dispersion", " must > 0.");
+        if (_parms._dispersion_epsilon < 0)
+          error("dispersion_epsilon", " must >= 0.");
+      }
+      
+      if (_parms._init_dispersion_factor <= 0)
+        error("init_dispersion_factor", " must exceed 0.0.");
 
       boolean standardizeQ = _parms._HGLM?false:_parms._standardize;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, standardizeQ ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
@@ -2301,17 +2316,28 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       if (_parms._compute_p_values) { // compute p-values
-        double se = 1;
+        double se = _parms._init_dispersion_factor;
         boolean seEst = false;
         double[] beta = _state.beta();
-
+        Log.info("estimating dispersion factor using method: " + _parms._dispersion_factor_method);
         if (_parms._family != binomial && _parms._family != Family.poisson) {
           seEst = true;
-          ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
-          if (_parms._useDispersion1)
-            se = 1.0;
-          else
-            se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate
+          if (pearson.equals(_parms._dispersion_factor_method)) {
+            if (_parms._useDispersion1) {
+              se = 1;
+            } else {
+              ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta,
+                      _parms).doAll(_state.activeData()._adaptedFrame);
+              se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate using pearson
+            }
+          } else if (ml.equals(_parms._dispersion_factor_method)) {
+            ComputeMLSETsk mlCT = new ComputeMLSETsk(null, _state.activeData(), _job._key, beta,
+                    _parms).doAll(_state.activeData()._adaptedFrame);
+            if (gamma.equals(_parms._family)) {
+              double oneOverSe = estimateMLSE(mlCT, 1.0 / se, beta);
+              se = 1.0 / oneOverSe;
+            }
+          }
         }
         double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
         Cholesky chol = _chol;
@@ -2337,6 +2363,57 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           zvalues[i] = beta[i] / Math.sqrt(inv[i][i]);
         _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
       }
+    }
+
+    /***
+     * Estimate dispersion factor using maximum likelihood.  I followed section IV of the doc in 
+     * https://h2oai.atlassian.net/browse/PUBDEV-8683 . 
+     */
+    public double estimateMLSE(GLMTask.ComputeMLSETsk mlCT, double alpha, double[] beta) {
+      double constantValue = mlCT._wsum + mlCT._sumlnyiOui - mlCT._sumyiOverui;
+      DataInfo dinfo = _state.activeData();
+      Frame adaptedF = dinfo._adaptedFrame;
+      long currTime = System.currentTimeMillis();
+      long modelBuiltTime = currTime - _model._output._start_time;
+      long timeLeft = _parms._max_runtime_secs > 0 ? (long) (_parms._max_runtime_secs * 1000 - modelBuiltTime) : Long.MAX_VALUE;
+      
+      // stopping condition for while loop are:
+      // 1. magnitude of iterative change to se < EPS
+      // 2. there are more than MAXITERATIONS of updates
+      // 2. for every 100th iteration, we check for additional stopping condition:
+      //    a.  User requests stop via stop_requested;
+      //    b.  User sets max_runtime_sec and that time has been exceeded.
+      for (int index=0; index<_parms._max_iterations_dispersion; index++) {
+        GLMTask.ComputeDiTriGammaTsk ditrigammatsk = new GLMTask.ComputeDiTriGammaTsk(null, dinfo, _job._key, beta,
+                _parms, alpha).doAll(adaptedF);
+        double numerator = mlCT._wsum*Math.log(alpha)-ditrigammatsk._sumDigamma+constantValue; // equation 2 of doc
+        double denominator = mlCT._wsum/alpha - ditrigammatsk._sumTrigamma;  // equation 3 of doc
+        double change = numerator/denominator;
+        if (denominator == 0 || Double.isNaN(change))
+          return alpha;
+        if (Math.abs(change) < _parms._dispersion_epsilon) // stop if magnitude of iterative updates to se < EPS
+          return alpha-change;
+        else {
+          double se = alpha - change;
+          if (se < 0) // heuristic to prevent seInit <= 0
+            alpha *= 0.5;
+          else
+            alpha = se;
+        }
+
+        if ((index % 100 == 0) && // check for additional stopping conditions for every 100th iterative steps
+            (stop_requested() ||  // user requested stop via stop_requested()
+            (System.currentTimeMillis()-currTime) > timeLeft)) { // time taken to find dispersino exceeds GLM model building time
+          Log.warn("gamma dispersion parameter estimation was interrupted by user or due to time out.  Estimation " +
+                  "process has not converged. Increase your max_runtime_secs if you have set maximum runtime for your " +
+                  "model building process.");
+          return alpha;
+        }
+      }
+      Log.warn("gamma dispersion parameter estimation fails to converge within "+
+              _parms._max_iterations_dispersion+" iterations.  Increase max_iterations_dispersion or decrease " +
+              "dispersion_epsilon.");
+      return alpha;
     }
 
     private long _lastScore = System.currentTimeMillis();
