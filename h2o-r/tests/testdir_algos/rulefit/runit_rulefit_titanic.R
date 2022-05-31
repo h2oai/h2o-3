@@ -22,7 +22,7 @@ test.rulefit.titanic <- function() {
 
     rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules")
 
-    print(rfit@model$rule_importance)
+    print(h2o.rule_importance(rfit))
     expect_true(!is.null(rfit@model$model_summary))
     expect_true(length(rfit@model$model_summary) > 0)
 
@@ -34,19 +34,24 @@ test.rulefit.titanic <- function() {
     rfit2 <- h2o.rulefit(y = response, x = predictors, training_frame = train, validation_frame = test, min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules", lambda=1e-8)
 
     expect_true(!is.null(rfit@model$validation_metrics))
-    expect_true(length(rfit@model$rule_importance$rule) < length(rfit2@model$rule_importance$rule))
+    expect_true(length(h2o.rule_importance(rfit)$rule) < length(h2o.rule_importance(rfit2)$rule))
 
     result = h2o.predict_rules(rfit, train, c("M1T0N7, M1T49N7, M1T16N7", "M1T36N7", "M2T19N19"))
     expect_true(sum(result[2]) ==  210)
     expect_true(sum(result[3]) ==  632)
 
     rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules_and_linear")
-    print(rfit@model$rule_importance)
+    print(h2o.rule_importance(rfit))
     result = h2o.predict_rules(rfit, train, c("M3T19N35", "M4T29N58", "linear.fare"))
     expect_true(sum(result["M3T19N35"]) == 497)
     expect_true(sum(result["M4T29N58"]) == 449)
     expect_true(sum(result["linear.fare"]) == h2o.nrow(train))
-    
+
+
+    # demonstrate max_categorical_levels usage:
+    rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, min_rule_length = 1, max_rule_length = 10,
+                        max_num_rules = 100, seed = 1, model_type="rules_and_linear", max_categorical_levels = 3)
+    print(h2o.rule_importance(rfit))
 }
 
 doTest("RuleFit Test: Titanic Data", test.rulefit.titanic)

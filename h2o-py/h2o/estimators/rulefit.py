@@ -7,6 +7,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.utils.metaclass import deprecated_params, deprecated_property
+import h2o
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -43,6 +44,7 @@ class H2ORuleFitEstimator(H2OEstimator):
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  remove_duplicates=True,  # type: bool
                  lambda_=None,  # type: Optional[List[float]]
+                 max_categorical_levels=10,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -105,6 +107,10 @@ class H2ORuleFitEstimator(H2OEstimator):
         :param lambda_: Lambda for LASSO regressor.
                Defaults to ``None``.
         :type lambda_: List[float], optional
+        :param max_categorical_levels: For every categorical feature, only use this many most frequent categorical
+               levels for model training. Only used for categorical_encoding == EnumLimited.
+               Defaults to ``10``.
+        :type max_categorical_levels: int
         """
         super(H2ORuleFitEstimator, self).__init__()
         self._parms = {}
@@ -125,6 +131,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         self.auc_type = auc_type
         self.remove_duplicates = remove_duplicates
         self.lambda_ = lambda_
+        self.max_categorical_levels = max_categorical_levels
 
     @property
     def training_frame(self):
@@ -357,6 +364,21 @@ class H2ORuleFitEstimator(H2OEstimator):
         assert_is_type(lambda_, None, numeric, [numeric])
         self._parms["lambda"] = lambda_
 
+    @property
+    def max_categorical_levels(self):
+        """
+        For every categorical feature, only use this many most frequent categorical levels for model training. Only used
+        for categorical_encoding == EnumLimited.
+
+        Type: ``int``, defaults to ``10``.
+        """
+        return self._parms.get("max_categorical_levels")
+
+    @max_categorical_levels.setter
+    def max_categorical_levels(self, max_categorical_levels):
+        assert_is_type(max_categorical_levels, None, int)
+        self._parms["max_categorical_levels"] = max_categorical_levels
+
     Lambda = deprecated_property('Lambda', lambda_)
 
     def rule_importance(self):
@@ -367,7 +389,12 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         if self._model_json["algo"] != "rulefit":
             raise H2OValueError("This function is available for Rulefit models only")
-        return self._model_json["output"]['rule_importance']
+
+        kwargs = {}
+        kwargs["model_id"] = self.model_id
+
+        json = h2o.api("POST /3/SignificantRules", data=kwargs)
+        return json['significant_rules_table']
 
     def predict_rules(self, frame, rule_ids):
         """
