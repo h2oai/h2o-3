@@ -16,7 +16,7 @@ __all__ = ["ModelBase", "MetricsBase",
 
 
 # for full backwards compatibility after having moved some modules to `h2o.model.models` submodule.
-# not that users don't need to import those submodules in client 
+# Note that users don't need to import those submodules in client 
 # code except for some (old) top functions in `regression` submodule.
 module = sys.modules[__name__]
 for mod in ['regression']:

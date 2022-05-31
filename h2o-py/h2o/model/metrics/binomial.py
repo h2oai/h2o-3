@@ -930,3 +930,4 @@ class H2OBinomialModelMetrics(MetricsBase):
             return decorate_plot_result(res=gl, figure=fig)
         else:
             return decorate_plot_result(res=gl)
+
