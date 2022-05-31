@@ -92,23 +92,26 @@ class ReplHook:
 
     def __enter__(self):
         self.ori_displayhook = sys.displayhook
-        sys.displayhook = repl_displayhook
+        sys.displayhook = self.displayhook
 
     def __exit__(self, *args):
         if self.ori_displayhook is not None:
             sys.displayhook = self.ori_displayhook
-
-
-def repl_displayhook(value):
-    if value is None:
-        return
-    set_builtin('_', None)
-    if hasattr(value, '_repr_repl_'):
-        s = value._repr_repl_()
-    else:
-        s = repr(value)
-    print(s)
-    set_builtin('_', value)
+            
+    def displayhook(self, value):
+        if local_env('repl_hook', True):
+            if value is None:
+                return
+            set_builtin('_', None)
+            if hasattr(value, '_repr_repl_'):
+                s = value._repr_repl_()
+            else:
+                s = repr(value)
+            print2(s)
+            set_builtin('_', value)
+        else:
+            assert self.ori_displayhook is not None
+            self.ori_displayhook(value)
 
 
 _user_tips_on_ = True
@@ -400,7 +403,7 @@ class H2OStringDisplay(H2ODisplay):
     def __init__(self, s):
         self._s = s
         
-    def _str_(self):
+    def _repr_(self):
         return self._s
     
 

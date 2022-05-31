@@ -7,9 +7,9 @@ from h2o.utils.compatibility import *  # NOQA
 
 import copy
 
-from h2o.display import H2ODisplay, H2OTableDisplay, capture_output, print2 as print, repr_def
+from h2o.display import H2ODisplay, H2OTableDisplay, repr_def
 from h2o.exceptions import H2OValueError
-from h2o.utils.shared_utils import _is_list_of_lists, can_use_pandas
+from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, is_type
 
 
