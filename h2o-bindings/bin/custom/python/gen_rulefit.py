@@ -9,7 +9,12 @@ def class_extensions():
         """
         if self._model_json["algo"] != "rulefit":
             raise H2OValueError("This function is available for Rulefit models only")
-        return self._model_json["output"]['rule_importance']
+
+        kwargs = {}
+        kwargs["model_id"] = self.model_id
+
+        json = h2o.api("POST /3/SignificantRules", data=kwargs)
+        return json['significant_rules_table']
 
     def predict_rules(self, frame, rule_ids):
         """
@@ -27,6 +32,7 @@ def class_extensions():
     
 
 extensions = dict(
+    __imports__="""import h2o""",
     __class__=class_extensions,
 )
 

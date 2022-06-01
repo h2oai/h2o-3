@@ -50,7 +50,9 @@ def _get_default_args(estimator_cls):
 
 def _get_custom_behaviour(estimator_cls):
     custom = dict(
-        # H2ODeepLearningClassifier=dict(scores_may_differ=True),
+        H2ODeepLearningClassifier=dict(allow_verbose=True),  # just testing verbosity on a couple of algos
+        H2OGradientBoostingClassifier=dict(allow_verbose=True),
+        H2ORandomForestClassifier=dict(allow_verbose=True),
     )
     return custom.get(estimator_cls.__name__, dict())
 
@@ -61,7 +63,10 @@ def test_estimator_with_h2o_frames(estimator_cls):
 
     data = _get_data(format='h2o', n_classes=2)
     assert isinstance(data.X_train, h2o.H2OFrame)
-    estimator.fit(data.X_train, data.y_train, verbose=True)  # Adding verbose to test fit_params integration
+    if _get_custom_behaviour(estimator_cls).get('allow_verbose', False):
+        estimator.fit(data.X_train, data.y_train, verbose=True)  # Adding verbose to test fit_params integration
+    else:
+        estimator.fit(data.X_train, data.y_train)
     preds = estimator.predict(data.X_test)
     print(preds)
     assert isinstance(preds, h2o.H2OFrame)

@@ -69,6 +69,8 @@ Defining a RuleFit Model (Beta API)
 
 - **lambda**: Specify the regularization strength for LASSO regressor.
 
+- **max_categorical_levels**: Rulefit handles categorical features by EnumLimited scheme. That means it automatically reduces categorical levels to the most prevalent ones and only keeps the ``max_categorical_levels`` most frequent levels. Defaults to 10.
+
 
 Interpreting a RuleFit Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
