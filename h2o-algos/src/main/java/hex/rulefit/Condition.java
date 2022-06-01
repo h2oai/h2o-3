@@ -8,7 +8,10 @@ import water.util.ArrayUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static hex.rulefit.Condition.Type.Numerical;
 
 
 public class Condition extends Iced {
@@ -33,10 +36,33 @@ public class Condition extends Iced {
         this.numTreshold = numTreshold;
         this.languageCatTreshold = languageCatTreshold;
         this.catTreshold = catTreshold;
-        
-        this.languageCondition = constructLanguageCondition();
+
     }
-    
+
+    public int getFeatureIndex() {
+        return featureIndex;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public Operator getOperator() {
+        return operator;
+    }
+
+    public boolean isNAsIncluded() {
+        return NAsIncluded;
+    }
+
+    public int getNumCatTreshold() {
+        return catTreshold.length;
+    }
+
+    public double getNumTreshold() {
+        return numTreshold;
+    }
+
     String constructLanguageCondition() {
         StringBuilder description = new StringBuilder();
         description.append("(").append(this.featureName);
@@ -62,12 +88,38 @@ public class Condition extends Iced {
 
     @Override
     public boolean equals(Object obj) {
-        return this.hashCode() == obj.hashCode();
+        if (!(obj instanceof Condition))
+            return false;
+
+        Condition condition = (Condition) obj;
+        if (Numerical.equals(condition.type)) {
+            return (this.featureIndex == condition.featureIndex &&
+                    this.operator == condition.operator &&
+                    this.featureName.equals(condition.featureName) &&
+                    Math.abs(this.numTreshold - condition.numTreshold) < 1e-5 &&
+                    this.type == condition.type);
+        } else {
+            return (this.NAsIncluded == condition.NAsIncluded &&
+                    this.operator == condition.operator &&
+                    Arrays.equals(this.catTreshold, condition.catTreshold) &&
+                    this.featureIndex == condition.featureIndex &&
+                    this.featureName.equals(condition.featureName) &&
+                    Arrays.equals(this.languageCatTreshold, condition.languageCatTreshold) &&
+                    this.type == condition.type);
+        }
     }
 
     @Override
     public int hashCode() {
-        return this.languageCondition.hashCode();
+        if (Numerical.equals(type)) {
+            int result = Objects.hash(featureIndex, type, operator, featureName, numTreshold);
+            return result;
+        } else {
+            int result = Objects.hash(featureIndex, type, operator, featureName, NAsIncluded);
+            result = 31 * result + Arrays.hashCode(languageCatTreshold);
+            result = 31 * result + Arrays.hashCode(catTreshold);
+            return result;
+        }
     }
 
     public void map(Chunk[] cs, byte[] out) {
@@ -81,7 +133,7 @@ public class Condition extends Iced {
             if (Condition.this.NAsIncluded && isNA) {
                 newVal = 1;
             } else if (!isNA) {
-                if (Condition.Type.Numerical.equals(Condition.this.type)) {
+                if (Numerical.equals(Condition.this.type)) {
                     if (Condition.Operator.LessThan.equals(Condition.this.operator)) {
                         if (col.atd(iRow) < Condition.this.numTreshold) {
                             newVal = 1;

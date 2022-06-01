@@ -174,3 +174,4 @@ water.api.schemas3.SegmentModelsParametersV3
 water.api.schemas3.FeatureInteractionV3
 water.api.RecoveryHandler$ResumeV3
 water.api.schemas3.FriedmanPopescusHV3
+water.api.schemas3.SignificantRulesV3

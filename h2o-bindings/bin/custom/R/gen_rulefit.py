@@ -54,6 +54,34 @@ h2o.predict_rules <- function(model, frame, rule_ids) {
         return(NULL)
     }
 }
+
+
+#' This function returns the table with estimated coefficients and language representations (in case it is a rule) 
+#' for each of the significant baselearners.
+#'
+#' @param model of the interest
+#' @export
+h2o.rule_importance <- function(model) {
+  o <- model
+  if (is(o, "H2OModel")) {
+    if (o@algorithm == "rulefit"){
+      parms <- list()
+      parms$model_id <- model@model_id
+
+      json <- .h2o.doSafePOST(urlSuffix = "SignificantRules", parms=parms)
+      source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
+
+      return(source$significant_rules_table)
+    } else {
+      warning(paste0("No calculation available for this model"))
+      return(NULL)
+    }
+  } else {
+    warning(paste0("No calculation available for ", class(o)))
+    return(NULL)
+  }
+}
+
 """
 )
 

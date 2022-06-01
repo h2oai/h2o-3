@@ -47,6 +47,12 @@ def cancer():
     print(str(rfit.mse(valid=True)) + " vs. " + str(rfit_multi.mse(valid=True)))
 
 
+    # demonstrate max_categorical_levels usage:
+    rfit_multi = H2ORuleFitEstimator(min_rule_length=1, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules", max_categorical_levels=3)
+    rfit_multi.train(training_frame=train, x=x, y=y, validation_frame=test)
+    print(rfit_multi.rule_importance())
+
+
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(cancer)
