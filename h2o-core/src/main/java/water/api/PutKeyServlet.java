@@ -33,29 +33,30 @@ public class PutKeyServlet extends HttpServlet {
         return;
       }
 
-      InputStream is = ServletUtils.extractInputStream(request, response);
-      if (is == null) {
-        return;
-      }
+      try (InputStream is = ServletUtils.extractInputStream(request, response)) {
+        if (is == null) {
+          return;
+        }
 
-      //
-      // Note: this is necessary since we are saving data into local K/V.
-      //
-      Key key = Key.make(destKey);
-      int bytesStored = -1;
-      if (DKV.get(key) == null || overwrite) {
-        byte[] ba = IOUtils.toByteArray(is);
-        // Save the binary data into K/V
-        DKV.put(key, new Value(key, ba));
-        bytesStored = ba.length;
+        //
+        // Note: this is necessary since we are saving data into local K/V.
+        //
+        Key key = Key.make(destKey);
+        int bytesStored = -1;
+        if (DKV.get(key) == null || overwrite) {
+          byte[] ba = IOUtils.toByteArray(is);
+          // Save the binary data into K/V
+          DKV.put(key, new Value(key, ba));
+          bytesStored = ba.length;
+        }
+
+        String responsePayload = "{ " +
+                "\"destination_key\": \"" + destKey + "\", " +
+                "\"total_bytes\": " + bytesStored + " " +
+                "}\n";
+        response.setContentType("application/json");
+        response.getWriter().write(responsePayload);
       }
-      
-      String responsePayload = "{ " +
-          "\"destination_key\": \"" + destKey + "\", " +
-          "\"total_bytes\": " + bytesStored + " " +
-          "}\n";
-      response.setContentType("application/json");
-      response.getWriter().write(responsePayload);
     } catch (Exception e) {
       ServletUtils.sendErrorResponse(response, e, uri);
     } finally {

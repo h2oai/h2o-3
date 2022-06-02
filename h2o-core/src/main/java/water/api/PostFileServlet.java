@@ -31,19 +31,20 @@ public class PostFileServlet extends HttpServlet {
       // JSON Payload returned is:
       //     { "destination_frame": "key_name", "total_bytes": nnn }
       //
-      InputStream is = ServletUtils.extractInputStream(request, response);
-      if (is == null) {
-        return;
-      }
+      try (InputStream is = ServletUtils.extractInputStream(request, response)) {
+        if (is == null) {
+          return;
+        }
 
-      UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
-      UploadFileVec.readPut(destination_frame, is, stats);
-      String responsePayload = "{ " +
-          "\"destination_frame\": \"" + destination_frame + "\", " +
-          "\"total_bytes\": " + stats.total_bytes + " " +
-          "}\n";
-      response.setContentType("application/json");
-      response.getWriter().write(responsePayload);
+        UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
+        UploadFileVec.readPut(destination_frame, is, stats);
+        String responsePayload = "{ " +
+                "\"destination_frame\": \"" + destination_frame + "\", " +
+                "\"total_bytes\": " + stats.total_bytes + " " +
+                "}\n";
+        response.setContentType("application/json");
+        response.getWriter().write(responsePayload);
+      }
     } catch (Exception e) {
       ServletUtils.sendErrorResponse(response, e, uri);
     } finally {
