@@ -74,20 +74,21 @@ public class NpsBinServlet extends HttpServlet {
       String categoryName = params[0];
       String keyName = params[1];
 
-      InputStream is = ServletUtils.extractInputStream(request, response);
-      if (is == null) {
-        return;
-      }
+      try (InputStream is = ServletUtils.extractInputStream(request, response)) {
+        if (is == null) {
+          return;
+        }
 
-      H2O.getNPS().put(categoryName, keyName, is);
-      long length = H2O.getNPS().get_length(categoryName, keyName);
-      String responsePayload = "{ " +
-          "\"category\" : " + "\"" + categoryName + "\", " +
-          "\"name\" : " + "\"" + keyName + "\", " +
-          "\"total_bytes\" : " + length + " " +
-          "}\n";
-      response.setContentType("application/json");
-      response.getWriter().write(responsePayload);
+        H2O.getNPS().put(categoryName, keyName, is);
+        long length = H2O.getNPS().get_length(categoryName, keyName);
+        String responsePayload = "{ " +
+                "\"category\" : " + "\"" + categoryName + "\", " +
+                "\"name\" : " + "\"" + keyName + "\", " +
+                "\"total_bytes\" : " + length + " " +
+                "}\n";
+        response.setContentType("application/json");
+        response.getWriter().write(responsePayload);
+      }
     } catch (Exception e) {
       ServletUtils.sendErrorResponse(response, e, uri);
     } finally {
