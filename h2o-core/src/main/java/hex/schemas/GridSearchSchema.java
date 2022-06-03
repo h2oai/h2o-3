@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.Model;
 import hex.grid.Grid;
+import hex.grid.HyperSpaceSearchCriteria;
 import water.H2O;
 import water.Key;
 import water.api.API;
@@ -112,22 +113,15 @@ public class GridSearchSchema<G extends Grid<MP>,
           throw new H2OIllegalArgumentException("search_criteria.strategy", "null");
         }
 
-        // TODO: move this into a factory method in HyperSpaceSearchCriteriaV99
-        String strategy = (String)p.get("strategy");
-        if ("Cartesian".equals(strategy)) {
-          search_criteria = new HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99();
-        } else if ("RandomDiscrete".equals(strategy)) {
-          search_criteria = new HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99();
-          if (p.containsKey("max_runtime_secs") && Double.parseDouble((String) p.get("max_runtime_secs"))<0) {
-            throw new H2OIllegalArgumentException("max_runtime_secs must be >= 0 (0 for unlimited time)", strategy);
-          }
-          if (p.containsKey("max_models") && Integer.parseInt((String) p.get("max_models"))<0) {
-            throw new H2OIllegalArgumentException("max_models must be >= 0 (0 for all models)", strategy);
-          }
-        } else {
-          throw new H2OIllegalArgumentException("search_criteria.strategy", strategy);
+        HyperSpaceSearchCriteria.Strategy strategy = HyperSpaceSearchCriteria.Strategy.valueOf((String) p.get("strategy"));
+        search_criteria = HyperSpaceSearchCriteriaV99.make(strategy);
+        if (p.containsKey("max_runtime_secs") && Double.parseDouble((String) p.get("max_runtime_secs"))<0) {
+          throw new H2OIllegalArgumentException("max_runtime_secs must be >= 0 (0 for unlimited time)", strategy.toString());
         }
-        
+        if (p.containsKey("max_models") && Integer.parseInt((String) p.get("max_models"))<0) {
+          throw new H2OIllegalArgumentException("max_models must be >= 0 (0 for all models)", strategy.toString());
+        }
+
         search_criteria.fillWithDefaults();
         search_criteria.fillFromParms(p);
       }

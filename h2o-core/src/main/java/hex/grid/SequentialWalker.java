@@ -37,6 +37,29 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
         _searchCriteria = searchCriteria;
     }
 
+    public SequentialWalker(MP params,
+                            Map<String, Object[]> hyperParams,
+                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                            SequentialSearchCriteria searchCriteria) {
+        assert hyperParams.size() > 1;
+
+        _params = params;
+        _paramsBuilderFactory = paramsBuilderFactory;
+        _searchCriteria = searchCriteria;
+
+        int paramsLength = hyperParams.entrySet().iterator().next().getValue().length;
+        int counter = 0;
+        _hyperParamNames = new String[hyperParams.size()];
+        _hyperParams = new Object[paramsLength][hyperParams.size()];
+        for(Map.Entry<String, Object[]> entry: hyperParams.entrySet()) {
+            assert entry.getValue().length == paramsLength;
+            _hyperParamNames[counter] = entry.getKey();
+            for (int i = 0; i < entry.getValue().length; i++) {
+                _hyperParams[i][counter] = entry.getValue()[i];
+            }
+            counter ++;
+        }
+    }
     @Override
     public SequentialSearchCriteria search_criteria() {
         return _searchCriteria;
@@ -81,6 +104,7 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
 
     @Override
     public boolean stopEarly(Model model, ScoringInfo[] sk) {
+        if (!search_criteria().earlyStoppingEnabled()) return false;
         StoppingCriteria stoppingCriteria = search_criteria().stoppingCriteria();
         return ScoreKeeper.stopEarly(
                 ScoringInfo.scoreKeepers(sk),
@@ -117,6 +141,9 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
 
             @Override
             public boolean hasNext() {
+               if (search_criteria().stoppingCriteria().getMaxModels() > 0 &&
+                        _index >= search_criteria().stoppingCriteria().getMaxModels() - 1)
+                    return false;
                 return _index+1 < getMaxHyperSpaceSize();
             }
 

@@ -2,6 +2,7 @@ package hex.grid;
 
 import hex.ScoreKeeper.StoppingMetric;
 import water.Iced;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 
 /**
@@ -9,8 +10,15 @@ import water.fvec.Frame;
  * when to stop the search.
  */
 public class HyperSpaceSearchCriteria extends Iced {
-  public enum Strategy { Unknown, Cartesian, RandomDiscrete, Sequential} // search strategy
-
+  public enum Strategy { Unknown, Cartesian, RandomDiscrete, Sequential }; // search strategy
+  public static HyperSpaceSearchCriteria make(Strategy strategy) {
+    switch (strategy) {
+      case Cartesian: return new CartesianSearchCriteria();
+      case RandomDiscrete: return new RandomDiscreteValueSearchCriteria();
+      case Sequential: return new SequentialSearchCriteria();
+      default: throw new H2OIllegalArgumentException("search_criteria.strategy", strategy.toString());
+    }
+  }
   public static class StoppingCriteria extends Iced {
 
     public static class Builder {
@@ -61,8 +69,6 @@ public class HyperSpaceSearchCriteria extends Iced {
 
   public StoppingCriteria stoppingCriteria() { return null; }
 
-
-// TODO: add a factory which accepts a Strategy and calls the right constructor
 
   public HyperSpaceSearchCriteria(Strategy strategy) {
     this._strategy = strategy;
@@ -172,16 +178,25 @@ public class HyperSpaceSearchCriteria extends Iced {
   public static final class SequentialSearchCriteria extends HyperSpaceSearchCriteria {
 
     private StoppingCriteria _stoppingCriteria;
+    private boolean _early_stopping; // has to be snake_case to match the field in the schema
 
     public SequentialSearchCriteria() {
-      this(new StoppingCriteria());
+      this(new StoppingCriteria(), true);
     }
 
     public SequentialSearchCriteria(StoppingCriteria stoppingCriteria) {
-      super(Strategy.Sequential);
-      _stoppingCriteria = stoppingCriteria;
+      this(stoppingCriteria, true);
     }
 
+    public SequentialSearchCriteria(StoppingCriteria stoppingCriteria, boolean earlyStopping) {
+      super(Strategy.Sequential);
+      _stoppingCriteria = stoppingCriteria;
+      _early_stopping = earlyStopping;
+    }
+
+    public boolean earlyStoppingEnabled() {
+      return _early_stopping;
+    }
     @Override
     public StoppingCriteria stoppingCriteria() {
       return _stoppingCriteria;
