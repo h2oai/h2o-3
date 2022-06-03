@@ -128,9 +128,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             }
             // iterate all bins
             Pair<Double, Double> minEntropyForFeature = histogram.calculateBinsStatisticsForFeature(featureIndex).stream()
-                    .peek(binStatistics -> {
-                        System.out.println(binStatistics._leftCount + " " + binStatistics._rightCount);
-                    })
+//                    .peek(binStatistics -> {
+//                        System.out.println(binStatistics._leftCount + " " + binStatistics._rightCount);
+//                    })
                     .map(binStatistics -> new Pair<>(
                             binStatistics._maxBinValue, calculateEntropyOfSplit(binStatistics)))
                     .min(Comparator.comparing(Pair::_2))
@@ -179,7 +179,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         // todo - add limit by information gain (at least because of ideal split for example 11111)
         double zeroRatio = getZeroRatio(data);
         if (actualDepth >= maxDepth || data.numRows() <= LIMIT_NUM_ROWS_FOR_SPLIT || zeroRatio > 0.9 || zeroRatio < 0.1) {
-            System.out.println("actualDepth: " + actualDepth + ", data.numRows(): " + data.numRows() + ", zeroRatio: " + zeroRatio);
+//            System.out.println("actualDepth: " + actualDepth + ", data.numRows(): " + data.numRows() + ", zeroRatio: " + zeroRatio);
             if (zeroRatio >= 0.5) {
                 subtreeRoot.setDecisionValue(0);
             } else if (zeroRatio < 0.5) {

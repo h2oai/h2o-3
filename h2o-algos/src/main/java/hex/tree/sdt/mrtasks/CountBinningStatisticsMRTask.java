@@ -48,10 +48,6 @@ public class CountBinningStatisticsMRTask extends MRTask<CountBinningStatisticsM
                         && (cs[_featureSplit].atd(row) < _thresholdMax
                         || Precision.equals(cs[_featureSplit].atd(row), _thresholdMax, 0.000001d))) {
                     _count++;
-                    if (_featureSplit == 5 && _thresholdMax > 100) {
-                        System.out.println("threshold max: " + _thresholdMax + ", value: " + cs[_featureSplit].atd(row)
-                                + ", row: " + row + ", count: " + _count);
-                    }
                     if (Precision.equals(cs[classFeature].atd(row), 0, 0.000001d)) {
                         _count0++;
                     }
