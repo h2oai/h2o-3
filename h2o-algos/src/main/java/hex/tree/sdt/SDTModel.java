@@ -94,7 +94,7 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
 
         @Override
         public long progressUnits() {
-            return 0;
-        } // todo - ??
+            return 1;
+        }
     }
 }
