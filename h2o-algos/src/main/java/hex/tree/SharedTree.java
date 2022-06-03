@@ -265,7 +265,7 @@ public abstract class SharedTree<
 
         // Compute the print-out response domain; makes for nicer printouts
         assert (_nclass > 1 && actualDomain != null) || (_nclass==1 && actualDomain==null);
-        final String[] domain = _nclass == 1 ? new String[] {"r"} : actualDomain; // For regression, give a nam to class 0   
+        final String[] domain = _nclass == 1 ? new String[] {"r"} : actualDomain; // For regression, give a name to class 0   
 
         // Compute class distribution, used to for initial guesses and to
         // upsample minority classes (if asked for).
