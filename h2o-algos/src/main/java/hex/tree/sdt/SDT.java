@@ -225,37 +225,14 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return true;
     }
 
-//    public Vec predict(final Frame data) {
-//        // task to recursively apply nodes criteria to each row, so it can be parallelized by rows 
-//        // (should it be parallelised one more time, not only map-reduce?)
-//        PredictMRTask task = new PredictMRTask(getCompressedTree());
-//        byte[] outputTypes = new byte[]{Vec.T_NUM};
-//        task.doAll(outputTypes, data);
-//
-//        Frame result = task.outputFrame(
-//                null, // The output Frame will be stored in DKV and you can access it with this Key, can be null, in case you don't wanted in DKV
-//                new String[]{"outputClass"},
-//                new String[][]{null} // Categorical columns need domain, pass null for Numerical and String columns
-//        );
-//        return result.vec(0);
-//    }
-
-
     private static class DataSplit {
         Frame leftSplit;
         Frame rightSplit;
         int featureIndex;
         double threshold;
     }
-    public DataSplit splitData(final int feature, final double threshold /* are all features double ? todo*/) {
-//        byte[] outputTypes = Arrays.copyOf(_train.types(), _train.types().length * 2);
-//        System.arraycopy(_train.types(), 0, outputTypes, _train.types().length, _train.types().length);
-//
-//        String[][] outputDomains = Arrays.copyOf(_train.domains(), _train.domains().length * 2);
-//        System.arraycopy(_train.domains(), 0, outputDomains, _train.domains().length, _train.domains().length);
-//        String[] outputColNames = (Stream.concat(Arrays.stream(_train.names()).map(n -> n + "Left"),
-//                Arrays.stream(_train.names()).map(n -> n + "Right")).toArray(String[]::new));
-        
+
+    public DataSplit splitData(final int feature, final double threshold) {
         // Define task
         SplitFrameMRTask taskLeftSplit = new SplitFrameMRTask(feature, threshold, 0);
         SplitFrameMRTask taskRightSplit = new SplitFrameMRTask(feature, threshold, 1);
@@ -302,7 +279,6 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
 
 // todo:
-// use real dataset in test. Get score for some dataset
 // train random forest on the same data to see the difference
 // train sklearn decision tree on the same data
 // debug dtree and see how the clustering is used

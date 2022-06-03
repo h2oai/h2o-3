@@ -92,7 +92,6 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
             return SDTModel.class.getName();
         }
 
-        // ?
         @Override
         public long progressUnits() {
             return 0;
