@@ -188,35 +188,20 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             return subtreeRoot;
         }
 
-        // find split (feature and threshold)
-        Pair<Double, Double> currentMinEntropyPair = new Pair<>(-1., Double.MAX_VALUE);
-        int bestFeatureIndex = -1;
-        for (int featureIndex = 0; featureIndex < featuresNumber - 1 /*last column is prediction*/; featureIndex++) {
-            final int featureIndexForLambda = featureIndex;
-            // iterate all candidate values of threshold
-            Pair<Double, Double> minEntropyForFeature = featuresLimits.getFeatureRange(featureIndex)
-                    .map(candidateValue -> new Pair<>(
-                            candidateValue, calculateEntropyOfSplit(featureIndexForLambda, candidateValue)))
-                    .min(Comparator.comparing(Pair::_2))
-                    .get();
-            if (minEntropyForFeature._2() < currentMinEntropyPair._2()) {
-                currentMinEntropyPair = minEntropyForFeature;
-                bestFeatureIndex = featureIndex;
-            }
-        }
-        
-        double threshold = currentMinEntropyPair._1();
-        subtreeRoot.setFeature(bestFeatureIndex);
-        subtreeRoot.setThreshold(threshold);
+        SplitInfo bestSplitInfo = findBestSplit(data, featuresLimits);
+
+
+        subtreeRoot.setFeature(bestSplitInfo._splitFeatureIndex);
+        subtreeRoot.setThreshold(bestSplitInfo._threshold);
 
         // split data
-        DataSplit split = splitData(bestFeatureIndex, threshold);
+        DataSplit split = splitData(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
 //        String[] outputColNamesLeft = Arrays.stream(_train.names()).map(n -> n + "Left").toArray(String[]::new);
 //        String[] outputColNamesRight = Arrays.stream(_train.names()).map(n -> n + "Right").toArray(String[]::new);
         subtreeRoot.setLeft(buildSubtree(split.leftSplit,
-                featuresLimits.updateMax(bestFeatureIndex, threshold), nodeDepth + 1));
+                featuresLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold), nodeDepth + 1));
         subtreeRoot.setRight(buildSubtree(split.rightSplit,
-                featuresLimits.updateMin(bestFeatureIndex, threshold), nodeDepth + 1));
+                featuresLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold), nodeDepth + 1));
         return subtreeRoot;
     }
 
