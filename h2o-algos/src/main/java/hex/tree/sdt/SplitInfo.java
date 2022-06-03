@@ -13,5 +13,4 @@ public class SplitInfo {
         this.leftSplitCount = null;
         this.rightSplitCount = null;
     }
-    
 }

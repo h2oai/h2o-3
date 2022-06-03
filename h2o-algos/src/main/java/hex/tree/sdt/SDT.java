@@ -194,10 +194,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             _job.update(1);
             model.update(_job);
         }
-        
+
     }
 
-    
+
 //
 //    public void trainSDT() {
 //        root = buildSubtree(trainData, getStartFeaturesLimits());
@@ -208,7 +208,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     protected Driver trainModelImpl() {
         return new SDTDriver();
     }
-    
+
 
     @Override
     public ModelCategory[] can_build() {
@@ -217,7 +217,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 //                ModelCategory.Multinomial,
 //                                            ModelCategory.Ordinal,
 //                ModelCategory.Regression
-                };
+        };
     }
 
     @Override
@@ -260,7 +260,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         SplitFrameMRTask taskLeftSplit = new SplitFrameMRTask(feature, threshold, 0);
         SplitFrameMRTask taskRightSplit = new SplitFrameMRTask(feature, threshold, 1);
         System.out.println("trainData.types().length: " + _train.types().length);
-        
+
         DataSplit split = new DataSplit();
         split.featureIndex = feature;
         split.threshold = threshold;
@@ -290,7 +290,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     public Node getRoot() {
         return root;
     }
-    
+
 
 }
 

@@ -13,13 +13,14 @@ public class DataFeaturesLimits {
     public DataFeaturesLimits clone() {
         return new DataFeaturesLimits(featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
     }
+
     public DataFeaturesLimits updateMin(final int selectedFeature, final double newMin) {
         DataFeaturesLimits clone = new DataFeaturesLimits(
                 featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
         clone.featuresLimits.get(selectedFeature).setNewMin(newMin);
         return clone;
     }
-    
+
     public DataFeaturesLimits updateMax(final int selectedFeature, final double newMax) {
         DataFeaturesLimits clone = new DataFeaturesLimits(
                 featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));

@@ -33,10 +33,10 @@ public class SplitFrameMRTask extends MRTask<SplitFrameMRTask> {
                 for (int column = 0; column < numCols; column++) {
                     nc[column].addNum(cs[column].atd(row));
                 }
-            } 
+            }
         }
     }
-    
+
 //    @Override
 //    public void map(Chunk[] cs, NewChunk[] nc) {
 //        int numCols = cs.length;

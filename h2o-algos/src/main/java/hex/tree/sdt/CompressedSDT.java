@@ -6,9 +6,9 @@ import water.Keyed;
 
 
 public class CompressedSDT extends Keyed<CompressedSDT> {
-    
+
     public double[][] nodes;
-    
+
     public CompressedSDT(int nodes_count) {
         _key = Key.make("CompressedSDT" + Key.rand());
         nodes = new double[nodes_count][3];
@@ -18,7 +18,7 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
         _key = Key.make("CompressedSDT" + Key.rand());
         this.nodes = nodes;
     }
-    
+
     public int predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex) {
         double featureOrDummy = nodes[actualNodeIndex][0];
         double thresholdOrValue = nodes[actualNodeIndex][1];
