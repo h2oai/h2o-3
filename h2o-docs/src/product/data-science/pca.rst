@@ -8,6 +8,11 @@ Principal Components Analysis (PCA) is closely related to Principal Components R
 
 PCA is commonly used to model without regularization or perform dimensionality reduction. It can also be useful to carry out as a preprocessing step before distance-based algorithms such as K-Means since PCA guarantees that all dimensions of a manifold are orthogonal.
 
+MOJO Support
+''''''''''''
+
+PCA currently only supports exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining a PCA Model
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -166,7 +171,7 @@ associated with :math:`\lambda`.
 Solve for :math:`x` by Gaussian elimination.
 
 Recovering SVD from GLRM
-^^^^^^^^^^^^^^^^^^^^^^^^
+''''''''''''''''''''''''
 
 GLRM gives :math:`x` and :math:`y`, where :math:`x\in\rm \Bbb I \!\Bbb R^{n \times k}` and :math:`y\in\rm \Bbb I \!\Bbb R ^{k \times m}`
 

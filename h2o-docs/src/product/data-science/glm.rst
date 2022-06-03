@@ -21,6 +21,11 @@ The GLM suite includes:
 -  Negative Binomial regression
 -  Tweedie distribution
 
+MOJO Support
+''''''''''''
+
+GLM supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining a GLM Model
 ~~~~~~~~~~~~~~~~~~~~
 

@@ -14,6 +14,11 @@ XGBoost in H2O supports multicore, thanks to OpenMP. The multicore implementatio
 
 Refer to the `XGBoost in H2O Machine Learning Platform <https://www.h2o.ai/blog/xgboost-in-h2o-machine-learning-platform/>`__ blog post for an example of how to use XGBoost with the HIGGS dataset. 
 
+MOJO Support
+''''''''''''
+
+XGBoost supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining an XGBoost Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

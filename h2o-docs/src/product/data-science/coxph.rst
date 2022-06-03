@@ -15,6 +15,11 @@ This combination of a non-parametric baseline hazard function and a parametric r
 
 `An R demo is available here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.coxph.R>`__. This uses the CoxPH algorithm along with the WA\_Fn-UseC\_-Telco-Customer-Churn.csv dataset. 
 
+MOJO Support
+''''''''''''
+
+CoxPH supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining a CoxPH Model
 ~~~~~~~~~~~~~~~~~~~~~~
 

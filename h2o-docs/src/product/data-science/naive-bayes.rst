@@ -8,6 +8,10 @@ Naïve Bayes is a classification algorithm that relies on strong assumptions of 
 
 Naïve Bayes models are commonly used as an alternative to decision trees for classification problems. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
 
+MOJO Support
+''''''''''''
+
+Naïve Bayes Classifier currently does not support `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
 Defining a Naïve Bayes Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

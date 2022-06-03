@@ -10,6 +10,10 @@ Uplift DRF can be applied in fields where we operate with two groups of subjects
 
 The current version of Uplift DRF is based on the implementation of DRF because the principle of training is similar to DRF. When given a set of data, Uplift DRF generates a forest of classification uplift trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. Classification take the average prediction over all of their trees to make a final prediction. (Note: For a categorical response column, Uplift DRF maps factors  (e.g. 'dog', 'cat', 'mouse) in lexicographic order to a name lookup array with integer indices (e.g. 'cat -> 0, 'dog' -> 1, 'mouse' -> 2.)
 
+MOJO Support
+''''''''''''
+
+Uplift DRF currently doesn't support `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
 Uplift DRF demo
 ~~~~~~~~~~~~~~~

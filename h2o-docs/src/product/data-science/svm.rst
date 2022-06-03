@@ -10,6 +10,11 @@ In machine learning, support vector machines are supervised learning models with
 
 H2O’s implementation of support vector machine follows the `PSVM:Parallelizing Support Vector Machineson Distributed Computers <http://papers.nips.cc/paper/3202-parallelizing-support-vector-machines-on-distributed-computers.pdf>`__ specification and can be used to solve binary classification problems only.
 
+MOJO Support
+''''''''''''
+
+SVM currently does not support `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining an SVM Model
 ~~~~~~~~~~~~~~~~~~~~~
 

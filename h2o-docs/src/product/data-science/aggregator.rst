@@ -15,6 +15,10 @@ Aggregator maintains outliers as outliers, but lumps together dense clusters int
 
 The Aggregator method behaves just any other unsupervised model. You can ignore columns, which will then be dropped for distance computation. Training itself creates the aggregated H2O Frame, which also includes the count of members for every row/exemplar. The aggregated frame always includes the full original content of the training frame, even if some columns were ignored for the distance computation. Scoring/prediction is overloaded with a function that returns the members of a given exemplar row index from 0...Nexemplars (this time without a count). 
 
+MOJO Support
+''''''''''''
+
+Aggregator currently does not support `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
 Defining an Aggregator Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -23,6 +23,11 @@ features:
 -  Support for more distribution functions (such as Gamma, Poisson, and
    Tweedie)
 
+MOJO Support
+''''''''''''
+
+GBM supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Quick Start
 ~~~~~~~~~~~~
 * Quick GBM using H2O Flow (Lending Club Dataset) `[Youtube] <https://www.youtube.com/watch?v=1R9iBBCxhE8>`__

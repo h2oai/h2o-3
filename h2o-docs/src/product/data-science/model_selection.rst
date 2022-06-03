@@ -9,6 +9,11 @@ We implemented the ModelSelection toolbox based on GLM at H2O to help users sele
 
 This model only supports GLM regression families. 
 
+MOJO Support
+''''''''''''
+
+ModelSelection currently does not support `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining a ModelSelection Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

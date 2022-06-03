@@ -8,6 +8,11 @@ Introduction
 
 A generalized additive model (GAM) is a :ref:`glm` in which the linear predictor depends linearly on predictor variables and smooth functions of predictor variables. H2O's GAM implementation follows closely the implementation as described in "Generalized Additive Models: An Introduction with R, Texts in Statistical Science [:ref:`1<ref1>`]" by Simon N. Wood. Another good resource for GAM can be found in "Generalized Additive Models" by T.J. Hastie and R.J. Tibshirani [:ref:`2<ref2>`].
 
+MOJO Support
+''''''''''''
+
+GAM supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining a GAM Model
 ~~~~~~~~~~~~~~~~~~~~
 

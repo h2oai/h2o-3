@@ -10,6 +10,11 @@ H2O's Stacked Ensemble method is a supervised ensemble machine learning algorith
 
 Native support for ensembles of H2O algorithms was added into core H2O in version 3.10.3.1.  A separate implementation, the **h2oEnsemble** R package, is also still `available <https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble>`__, however for new projects we recommend using the native H2O version, documented below.
 
+MOJO Support
+''''''''''''
+
+Stacked Ensemble supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 
 Stacking / Super Learning
 ~~~~~~~~~~~~~~~~~~~~~~~~~
