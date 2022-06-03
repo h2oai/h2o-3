@@ -27,6 +27,10 @@ class GlobalQuantilesCalc {
                                   double[][] priorSplitPoints, final int N, int nbins_top_level) {
         final int[] frToTrain = new int[trainFr.numCols()];
         final Frame fr = collectColumnsForQuantile(trainFr, weightsColumn, priorSplitPoints, frToTrain);
+        final double[][] splitPoints = new double[trainFr.numCols()][];
+        if (fr.numCols() == 0 || weightsColumn != null && fr.numCols() == 1 && weightsColumn.equals(fr.name(0))) {
+            return splitPoints;
+        }
         Key<Frame> tmpFrameKey = Key.make();
         DKV.put(tmpFrameKey, fr);
         QuantileModel qm = null;
@@ -43,7 +47,6 @@ class GlobalQuantilesCalc {
             job.remove();
             double[][] origQuantiles = qm._output._quantiles;
             //pad the quantiles until we have nbins_top_level bins
-            double[][] splitPoints = new double[trainFr.numCols()][];
             for (int q = 0; q < origQuantiles.length; q++) {
                 if (origQuantiles[q].length <= 1) {
                     continue;
