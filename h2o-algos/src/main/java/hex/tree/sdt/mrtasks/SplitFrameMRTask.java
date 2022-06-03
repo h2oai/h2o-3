@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.sdt.mrtasks;
 
 
 import water.MRTask;

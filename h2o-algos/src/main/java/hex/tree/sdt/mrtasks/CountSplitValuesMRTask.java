@@ -1,16 +1,16 @@
-package hex.tree.sdt;
+package hex.tree.sdt.mrtasks;
 
 import water.MRTask;
 import water.fvec.Chunk;
 
 // todo - adapt for any number of classes, now it is binary
 public class CountSplitValuesMRTask extends MRTask<CountSplitValuesMRTask> {
-    int featureSplit;
-    double threshold;
-    int countLeft;
-    int countLeft0;
-    int countRight;
-    int countRight0;
+    public int featureSplit;
+    public double threshold;
+    public int countLeft;
+    public int countLeft0;
+    public int countRight;
+    public int countRight0;
 
     public CountSplitValuesMRTask(int featureSplit, double threshold) {
         this.featureSplit = featureSplit;
