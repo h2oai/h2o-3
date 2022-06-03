@@ -2,6 +2,12 @@ package hex.tree.sdt;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.tree.sdt.binning.BinAccumulatedStatistics;
+import hex.tree.sdt.binning.BinningStrategy;
+import hex.tree.sdt.binning.Histogram;
+import hex.tree.sdt.mrtasks.CountSplitValuesMRTask;
+import hex.tree.sdt.mrtasks.GetClassCountsMRTask;
+import hex.tree.sdt.mrtasks.SplitFrameMRTask;
 import org.apache.log4j.Logger;
 import water.DKV;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -74,6 +80,94 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             compress();
         }
         return compressedTree;
+    }
+
+    /**
+     * When we split data in each node.
+     *
+     * @param data
+     * @param featuresLimits
+     * @return
+     */
+    private SplitInfo findBestSplit(final Frame data, DataFeaturesLimits featuresLimits) {
+        // find split (feature and threshold)
+        int featuresNumber = data.numCols();
+        Pair<Double, Double> currentMinEntropyPair = new Pair<>(-1., Double.MAX_VALUE);
+        int bestFeatureIndex = -1;
+        for (int featureIndex = 0; featureIndex < featuresNumber - 1 /*last column is prediction*/; featureIndex++) {
+            final int featureIndexForLambda = featureIndex;
+            // iterate all candidate values of threshold
+            Pair<Double, Double> minEntropyForFeature = featuresLimits.getFeatureRange(featureIndex)
+                    .map(candidateValue -> new Pair<>(
+                            candidateValue, calculateEntropyOfSplit(data, featureIndexForLambda, candidateValue)))
+                    .min(Comparator.comparing(Pair::_2))
+                    .get();
+            if (minEntropyForFeature._2() < currentMinEntropyPair._2()) {
+                currentMinEntropyPair = minEntropyForFeature;
+                bestFeatureIndex = featureIndex;
+            }
+        }
+        double threshold = currentMinEntropyPair._1();
+        return new SplitInfo(bestFeatureIndex, threshold);
+    }
+
+    /**
+     * When we don't split the frame, but update features limits and use binning
+     *
+     * @return
+     */
+    private SplitInfo findBestSplit(Histogram histogram) {
+        // find split (feature and threshold)
+        int featuresNumber = histogram.featuresCount();
+        Pair<Double, Double> currentMinEntropyPair = new Pair<>(-1., Double.MAX_VALUE);
+        int bestFeatureIndex = -1;
+        for (int featureIndex = 0; featureIndex < featuresNumber - 1 /*last column is prediction*/; featureIndex++) {
+            // skip constant features
+            if (histogram.isConstant(featureIndex)) {
+                continue;
+            }
+            // iterate all bins
+            Pair<Double, Double> minEntropyForFeature = histogram.calculateBinsStatisticsForFeature(featureIndex).stream()
+                    .peek(binStatistics -> {
+                        System.out.println(binStatistics._leftCount + " " + binStatistics._rightCount);
+                    })
+                    .map(binStatistics -> new Pair<>(
+                            binStatistics._maxBinValue, calculateEntropyOfSplit(binStatistics)))
+                    .min(Comparator.comparing(Pair::_2))
+                    .get();
+            if (minEntropyForFeature._2() < currentMinEntropyPair._2()) {
+                currentMinEntropyPair = minEntropyForFeature;
+                bestFeatureIndex = featureIndex;
+            }
+        }
+        double threshold = currentMinEntropyPair._1();
+        return new SplitInfo(bestFeatureIndex, threshold);
+    }
+
+    private Double binaryEntropy(int leftCount, int leftCount0, int rightCount, int rightCount0) {
+        double a1 = (entropyBinarySplit(leftCount0 * 1.0 / leftCount)
+                * leftCount / (leftCount + rightCount));
+        double a2 = (entropyBinarySplit(rightCount0 * 1.0 / rightCount)
+                * rightCount / (leftCount + rightCount));
+        double value = a1 + a2;
+//        System.out.println("value: " + value + ", t.l " + task.countLeft + ", t.l0 " + task.countLeft0 + ", t.r " + task.countRight + ", t.r0 " + task.countRight0);
+        return value;
+    }
+
+    private double entropyBinarySplit(final double oneClassFrequency) {
+        return -1 * ((oneClassFrequency < 0.01 ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
+                + (oneClassFrequency > 0.99 ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
+    }
+
+    private Double calculateEntropyOfSplit(BinAccumulatedStatistics binStatistics) {
+        return binaryEntropy(binStatistics._leftCount, binStatistics._leftCount0,
+                binStatistics._rightCount, binStatistics._rightCount0);
+    }
+
+    public double calculateEntropyOfSplit(final Frame data, final int featureIndex, final double threshold) {
+        CountSplitValuesMRTask task = new CountSplitValuesMRTask(featureIndex, threshold);
+        task.doAll(data);
+        return binaryEntropy(task.countLeft, task.countLeft0, task.countRight, task.countRight0);
     }
 
     public Node buildSubtree(final Frame data, DataFeaturesLimits featuresLimits, int nodeDepth) {
