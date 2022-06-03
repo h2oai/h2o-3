@@ -25,25 +25,14 @@ class GlobalQuantilesCalc {
      */
     static double[][] splitPoints(Frame trainFr, String weightsColumn, 
                                   double[][] priorSplitPoints, final int N, int nbins_top_level) {
-        final Frame fr = new Frame();
         final int[] frToTrain = new int[trainFr.numCols()];
-        for (int i = 0; i < trainFr.numCols(); ++i) {
-            if (priorSplitPoints != null && priorSplitPoints[i] != null) {
-                continue;
-            }
-            if (!trainFr.vec(i).isNumeric() || trainFr.vec(i).isCategorical() || 
-                    trainFr.vec(i).isBinary() || trainFr.vec(i).isConst()) {
-                continue;
-            }
-            frToTrain[fr.numCols()] = i;
-            fr.add(trainFr.name(i), trainFr.vec(i));
-        }
-        Key<Frame> rndKey = Key.make();
-        DKV.put(rndKey, fr);
+        final Frame fr = collectColumnsForQuantile(trainFr, weightsColumn, priorSplitPoints, frToTrain);
+        Key<Frame> tmpFrameKey = Key.make();
+        DKV.put(tmpFrameKey, fr);
         QuantileModel qm = null;
         try {
             QuantileModel.QuantileParameters p = new QuantileModel.QuantileParameters();
-            p._train = rndKey;
+            p._train = tmpFrameKey;
             p._weights_column = weightsColumn;
             p._combine_method = QuantileModel.CombineMethod.INTERPOLATE;
             p._probs = new double[N];
@@ -70,11 +59,31 @@ class GlobalQuantilesCalc {
             }
             return splitPoints;
         } finally {
-            DKV.remove(rndKey);
+            DKV.remove(tmpFrameKey);
             if (qm != null) {
                 qm.delete();
             }
         }
+    }
+
+    static Frame collectColumnsForQuantile(Frame trainFr, String weightsColumn, double[][] priorSplitPoints,
+                                           int[] frToTrainMap) {
+        final Frame fr = new Frame();
+        final int weightsIdx = trainFr.find(weightsColumn);
+        for (int i = 0; i < trainFr.numCols(); ++i) {
+            if (i != weightsIdx) {
+                if (priorSplitPoints != null && priorSplitPoints[i] != null) {
+                    continue;
+                }
+                if (!trainFr.vec(i).isNumeric() || trainFr.vec(i).isCategorical() ||
+                        trainFr.vec(i).isBinary() || trainFr.vec(i).isConst()) {
+                    continue;
+                }
+            }
+            frToTrainMap[fr.numCols()] = i;
+            fr.add(trainFr.name(i), trainFr.vec(i));
+        }
+        return fr;
     }
 
 }
