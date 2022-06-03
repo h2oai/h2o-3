@@ -205,30 +205,39 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return subtreeRoot;
     }
 
-    private double entropyBinarySplit(final double oneClassFrequency) {
-//        System.out.println(oneClassFrequency + "..." + (oneClassFrequency < 0.01 ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
-//        + "..." + (oneClassFrequency > 0.99 ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
-//        int elementsCount = valuesCounts.values().stream().reduce(0, Integer::sum);
-        return -1 * ((oneClassFrequency < 0.01 ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
-                             + (oneClassFrequency > 0.99 ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
-    }
+    public Node buildSubtree(DataFeaturesLimits featuresLimits, int nodeDepth) {
+        Node subtreeRoot = new Node();
+        nodesCount++;
+        if (actualDepth < nodeDepth) {
+            actualDepth = nodeDepth;
+        }
+        // todo - add limit by information gain (at least because of ideal split for example 11111)
+        // (count0, count1)
+        Pair<Integer, Integer> classesCount = countClasses(featuresLimits);
+        double zeroRatio = classesCount._1() /*0*/ * 1.0 / (classesCount._1() /*0*/ + classesCount._2() /*1*/);
+        if ((actualDepth >= maxDepth) || ((classesCount._1() + classesCount._2()) <= LIMIT_NUM_ROWS_FOR_SPLIT)
+                || zeroRatio > 0.9 || zeroRatio < 0.1) {
+            if (zeroRatio >= 0.5) {
+                subtreeRoot.setDecisionValue(0);
+            } else if (zeroRatio < 0.5) {
+                subtreeRoot.setDecisionValue(1);
+            }
+            return subtreeRoot;
+        }
+        Histogram histogram = new Histogram(_train, featuresLimits, BinningStrategy.EQUAL_WIDTH);
 
-    public double calculateEntropyOfSplit(final int featureIndex, final double threshold) {
-        CountSplitValuesMRTask task = new CountSplitValuesMRTask(featureIndex, threshold);
-        task.doAll(_train);
+        SplitInfo bestSplitInfo = findBestSplit(histogram);
 
-//        System.out.println(task.countLeft + " " + task.countLeft0 + " " + task.countRight + " " + task.countRight0);
-//        // just count data records with needed value of feature
-//        System.out.println("hh " + entropyBinarySplit(task.countLeft0 * 1.0 / (task.countLeft)) + " "
-//        + task.countLeft + " " + (task.countLeft + task.countRight));
-        double a1 = (entropyBinarySplit(task.countLeft0 * 1.0 / (task.countLeft))
-                             * task.countLeft / (task.countLeft + task.countRight));
-        double a2 = (entropyBinarySplit(task.countRight0 * 1.0 / (task.countRight))
-                             * task.countRight / (task.countLeft + task.countRight));
-        double value = a1 + a2;
-//        System.out.println("value: " + value + ", t.l " + task.countLeft + ", t.l0 " + task.countLeft0 + ", t.r " + task.countRight + ", t.r0 " + task.countRight0);
-        return value;
 
+        subtreeRoot.setFeature(bestSplitInfo._splitFeatureIndex);
+        subtreeRoot.setThreshold(bestSplitInfo._threshold);
+
+        DataFeaturesLimits limitsLeft = featuresLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
+        DataFeaturesLimits limitsRight = featuresLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
+        subtreeRoot.setLeft(buildSubtree(limitsLeft, nodeDepth + 1));
+        subtreeRoot.setRight(buildSubtree(limitsRight, nodeDepth + 1));
+
+        return subtreeRoot;
     }
 
 
@@ -264,8 +273,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         }
 
         private void buildSDT() {
-            root = buildSubtree(_train, getStartFeaturesLimits(), 1);
-            
+            // switch to using or not using binning
+//            root = buildSubtree(_train, getInitialFeaturesLimits(), 1); // without histogram
+            root = buildSubtree(getInitialFeaturesLimits(), 1); // with histogram
+
             CompressedSDT compressedSDT = new CompressedSDT(compress());
 
             model._output.treeKey = compressedSDT._key;
@@ -336,12 +347,30 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return split;
     }
 
-    private Double getZeroRatio(final Frame data) {
-        GetClassCountsMRTask task = new GetClassCountsMRTask();
-        task.doAll(data);
-        return task.count0 * 1.0 / (task.count0 + task.count1);
+    private Pair<Integer, Integer> countClasses(final DataFeaturesLimits featuresLimits) {
+        GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
+                ? Stream.generate(() -> new double[]{Double.MIN_VALUE, Double.MAX_VALUE}).limit(_train.numCols()).toArray(double[][]::new)
+                : featuresLimits.toDoubles());
+        task.doAll(_train);
+
+        return new Pair<>(task._count0, task._count1);
     }
 
+    private Double getZeroRatio(final Frame data) {
+        GetClassCountsMRTask task = new GetClassCountsMRTask(null);
+        task.doAll(data);
+
+        return task._count0 * 1.0 / (task._count0 + task._count1);
+    }
+
+    private Double getZeroRatio(final DataFeaturesLimits featuresLimits) {
+        GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
+                ? Stream.generate(() -> new double[]{Double.MIN_VALUE, Double.MAX_VALUE}).limit(_train.numCols()).toArray(double[][]::new)
+                : featuresLimits.toDoubles());
+        task.doAll(_train);
+//        System.out.println(task._count0 * 1.0 / (task._count0 + task._count1) + " task._count0: " + task._count0 + ", task._count1: " + task._count1);
+        return task._count0 * 1.0 / (task._count0 + task._count1);
+    }
 
     public Node getRoot() {
         return root;
