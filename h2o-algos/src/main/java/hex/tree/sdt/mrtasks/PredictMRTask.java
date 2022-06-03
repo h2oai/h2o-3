@@ -1,5 +1,6 @@
 package hex.tree.sdt.mrtasks;
 
+import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
@@ -21,8 +22,7 @@ public class PredictMRTask extends MRTask<PredictMRTask> {
         if (featureOrDummy == -1) {
             return (int) thresholdOrValue;
         }
-
-        if (rowValues[(int) featureOrDummy] <= thresholdOrValue) {
+        if (rowValues[(int) featureOrDummy] < thresholdOrValue || Precision.equals(rowValues[(int) featureOrDummy], thresholdOrValue, 0.000001d)) {
             return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1);
         } else {
             return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 2);

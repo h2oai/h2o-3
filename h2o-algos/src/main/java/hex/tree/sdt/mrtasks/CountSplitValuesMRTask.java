@@ -1,5 +1,6 @@
 package hex.tree.sdt.mrtasks;
 
+import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 
@@ -26,15 +27,16 @@ public class CountSplitValuesMRTask extends MRTask<CountSplitValuesMRTask> {
         int classFeature = cs.length - 1;
         int numRows = cs[0]._len;
         for (int row = 0; row < numRows; row++) {
-            if (cs[featureSplit].atd(row) <= threshold) {
+            if (cs[featureSplit].atd(row) < threshold
+                    || Precision.equals(cs[featureSplit].atd(row), threshold, 0.000001d)) {
                 countLeft++;
-                if (Math.abs(cs[classFeature].atd(row)) <= 0.1) {
+                if (Precision.equals(cs[classFeature].atd(row), 0, 0.000001d)) {
                     countLeft0++;
                 }
             } else {
                 countRight++;
 //                System.out.println(cs[classFeature].atd(row));
-                if (Math.abs(cs[classFeature].atd(row)) <= 0.1) {
+                if (Precision.equals(cs[classFeature].atd(row), 0, 0.000001d)) {
                     countRight0++;
 //                    System.out.println("yes, " + countRight0);
                 }
