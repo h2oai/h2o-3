@@ -504,8 +504,11 @@ public abstract class SharedTree<
         if (_parms._in_training_checkpoints_dir != null) {
           try {
             String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + (_ntreesInCheckpoint + tid);
+            Key<M> keybackup = _model._key;
             _model.setInputParms(_parms);
+            _model._key = Key.make(_model._key + "." + (_ntreesInCheckpoint + tid));
             _model.exportBinaryModel(modelFile, true);
+            _model._key = keybackup;
           } catch (IOException e) {
             throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
           }
