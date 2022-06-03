@@ -61,10 +61,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         if (actualNode == null) {
             return;
         }
-        compressedTree[actualIndex][0] = actualNode.getFeature() == null ? -1 
-                                                 : actualNode.getFeature().doubleValue();
-        compressedTree[actualIndex][1] = actualNode.getFeature() == null ? actualNode.getDecisionValue().doubleValue()
-                                                 : actualNode.getThreshold();
+        compressedTree[actualIndex][0] = actualNode.getFeature() == null ? -1
+                : actualNode.getFeature().doubleValue();
+        compressedTree[actualIndex][1] = actualNode.getThreshold() == null ? actualNode.getDecisionValue()
+                : actualNode.getThreshold();
         writeSubtreeStartingFromIndex(actualNode.getLeft(), 2 * actualIndex + 1);
         writeSubtreeStartingFromIndex(actualNode.getRight(), 2 * actualIndex + 2);
     }
@@ -79,21 +79,20 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     public Node buildSubtree(final Frame data, DataFeaturesLimits featuresLimits, int nodeDepth) {
         Node subtreeRoot = new Node();
         nodesCount++;
-        if(actualDepth < nodeDepth) {
+        if (actualDepth < nodeDepth) {
             actualDepth = nodeDepth;
         }
         // todo - add limit by information gain (at least because of ideal split for example 11111)
         double zeroRatio = getZeroRatio(data);
         if (actualDepth >= maxDepth || data.numRows() <= LIMIT_NUM_ROWS_FOR_SPLIT || zeroRatio > 0.9 || zeroRatio < 0.1) {
             System.out.println("actualDepth: " + actualDepth + ", data.numRows(): " + data.numRows() + ", zeroRatio: " + zeroRatio);
-            if(zeroRatio >= 0.5) {
+            if (zeroRatio >= 0.5) {
                 subtreeRoot.setDecisionValue(0);
-            } else if(zeroRatio < 0.5) {
+            } else if (zeroRatio < 0.5) {
                 subtreeRoot.setDecisionValue(1);
             }
             return subtreeRoot;
         }
-        int featuresNumber = data.numCols();
 
         // find split (feature and threshold)
         Pair<Double, Double> currentMinEntropyPair = new Pair<>(-1., Double.MAX_VALUE);
@@ -153,7 +152,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     }
 
-    private DataFeaturesLimits getStartFeaturesLimits() {
+
+    private DataFeaturesLimits getInitialFeaturesLimits() {
         return new DataFeaturesLimits(
                 Arrays.stream(_train.vecs())
                         .map(v -> new FeatureLimits(v.min(), v.max())).collect(Collectors.toList()));
@@ -167,7 +167,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             model = null;
             try {
                 init(false);
-                if(error_count() > 0) {
+                if (error_count() > 0) {
                     throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SDT.this);
                 }
                 rand = RandomUtils.getRNG(_parms._seed);
@@ -179,7 +179,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 //                model._output._model_summary = createModelSummaryTable();
                 LOG.info(model.toString());
             } finally {
-                if(model != null)
+                if (model != null)
                     model.unlock(_job);
             }
         }

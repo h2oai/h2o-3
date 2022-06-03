@@ -5,31 +5,31 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DataFeaturesLimits {
-    private List<FeatureLimits> featuresLimits;
-    
+    private final List<FeatureLimits> _featuresLimits;
+
     public DataFeaturesLimits(final List<FeatureLimits> featureLimits) {
-        this.featuresLimits = featureLimits;
+        this._featuresLimits = featureLimits;
     }
     public DataFeaturesLimits clone() {
-        return new DataFeaturesLimits(featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
+        return new DataFeaturesLimits(_featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
     }
 
     public DataFeaturesLimits updateMin(final int selectedFeature, final double newMin) {
         DataFeaturesLimits clone = new DataFeaturesLimits(
-                featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
-        clone.featuresLimits.get(selectedFeature).setNewMin(newMin);
+                _featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
+        clone._featuresLimits.get(selectedFeature).setNewMin(newMin);
         return clone;
     }
 
     public DataFeaturesLimits updateMax(final int selectedFeature, final double newMax) {
         DataFeaturesLimits clone = new DataFeaturesLimits(
-                featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
-        clone.featuresLimits.get(selectedFeature).setNewMax(newMax);
+                _featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
+        clone._featuresLimits.get(selectedFeature).setNewMax(newMax);
         return clone;
     }
 
     public Stream<Double> getFeatureRange(final int featureIndex) {
-        return featuresLimits.get(featureIndex).getFeatureRange();
+        return _featuresLimits.get(featureIndex).getFeatureRange();
     }
     
 }
