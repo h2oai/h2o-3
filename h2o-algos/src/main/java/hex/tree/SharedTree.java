@@ -322,15 +322,31 @@ public abstract class SharedTree<
         if (_parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal
                 || _parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
           _job.update(1, "Computing top-level histogram split-points.");
-          final double[][] splitPoints = GlobalQuantilesCalc.splitPoints(_train, _parms._weights_column, _parms._nbins, _parms._nbins_top_level);
+
+          final Timer exactT = new Timer();
+          final double[][] exactSplitPoints = ExactSplitPoints.splitPoints(_train, _parms._nbins);
+          LOG.info("Calculating exact (low cardinality) histogram split-points took " + exactT);
+
+          final Timer quantileT = new Timer();
+          final double[][] quantileSplitPoints = GlobalQuantilesCalc.splitPoints(_train, _parms._weights_column, 
+                  exactSplitPoints, _parms._nbins, _parms._nbins_top_level);
           Futures fs = new Futures();
-          for (int i = 0; i < splitPoints.length; i++) {
-            Key<DHistogram.HistoQuantiles> key = getGlobalQuantilesKey(i);
-            if (splitPoints[i] != null && key != null) {
-              DKV.put(new DHistogram.HistoQuantiles(key, splitPoints[i]), fs);
+          int qCnt = 0, eCnt = 0;
+          for (int i = 0; i < quantileSplitPoints.length; i++) {
+            assert exactSplitPoints[i] == null || quantileSplitPoints[i] == null;
+            Key<DHistogram.HistoSplitPoints> key = getGlobalSplitPointsKey(i);
+            if (key == null)
+              continue;
+            boolean useQuantiles = exactSplitPoints[i] == null;
+            double[] sp = useQuantiles ? quantileSplitPoints[i] : exactSplitPoints[i];
+            if (sp != null) {
+              if (useQuantiles) { qCnt++; } else { eCnt++; }
+              DKV.put(new DHistogram.HistoSplitPoints(key, sp, useQuantiles), fs);
             }
           }
           fs.blockForPending();
+          LOG.info("Split-points are defined using " + eCnt + " exact sets of points and " + qCnt + " sets of quantile values.");
+          LOG.info("Calculating top-level histogram split-points took " + quantileT);
         }
 
         // Also add to the basic working Frame these sets:
@@ -387,7 +403,7 @@ public abstract class SharedTree<
           _eventPublisher.onAllIterationsComplete();
         }
         if( _model!=null ) _model.unlock(_job);
-        for (Key<?> k : getGlobalQuantilesKeys()) Keyed.remove(k);
+        for (Key<?> k : getGlobalSplitPointsKeys()) Keyed.remove(k);
         if (_validWorkspace != null) {
           _validWorkspace.remove();
           _validWorkspace = null;
@@ -418,17 +434,17 @@ public abstract class SharedTree<
 
     protected Frame makeValidWorkspace() { return null; }
 
-    // Helpers to store quantiles in DKV - keep a cache on each node (instead of sending around over and over)
-    protected Key<DHistogram.HistoQuantiles> getGlobalQuantilesKey(int i) {
+    // Helpers to store split-points in DKV - keep a cache on each node (instead of sending around over and over)
+    protected Key<DHistogram.HistoSplitPoints> getGlobalSplitPointsKey(int i) {
       if (_model==null || _model._key == null || _parms._histogram_type!= SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal
               && _parms._histogram_type!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) return null;
-      return Key.makeSystem(_model._key+"_quantiles_col_"+i);
+      return Key.makeSystem(_model._key+"_splits_col_"+i);
     }
-    protected Key<DHistogram.HistoQuantiles>[] getGlobalQuantilesKeys() {
+    protected Key<DHistogram.HistoSplitPoints>[] getGlobalSplitPointsKeys() {
       @SuppressWarnings("unchecked")
-      Key<DHistogram.HistoQuantiles>[] keys = new Key[_ncols];
+      Key<DHistogram.HistoSplitPoints>[] keys = new Key[_ncols];
       for (int i=0;i<keys.length;++i)
-        keys[i] = getGlobalQuantilesKey(i);
+        keys[i] = getGlobalSplitPointsKey(i);
       return keys;
     }
 
