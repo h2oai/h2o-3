@@ -20,6 +20,16 @@ from tests import pyunit_utils
 #
 # and import  https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/citibike_20k.csv to each new db as a new table citibike_new
 
+# Drivers needed:
+#  // https://mvnrepository.com/artifact/mysql/mysql-connector-java
+#  implementation group: 'mysql', name: 'mysql-connector-java', version: '8.0.28'
+#  // https://mvnrepository.com/artifact/org.postgresql/postgresql
+#  implementation group: 'org.postgresql', name: 'postgresql', version: '42.3.3'
+#// https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
+#  implementation group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '10.2.0.jre8'
+#
+#  implementation 'org.mariadb.jdbc:mariadb-java-client:2.1.2'
+
 
 # postgre OK:
 def test_postgre():
