@@ -60,6 +60,34 @@ public class GLMCheckpointTest extends TestUtil {
   }
 
   @Test
+  public void testCheckpointDefaultFamilyWontFail() {
+    Frame tfr = null;
+    GLMModel glm = null;
+    GLMModel glm2 = null;
+
+    try {
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
+      GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+
+      parms._train = tfr._key;
+      parms._response_column = "C5";
+      parms._seed = 0xdecaf;
+
+      glm = new GLM(parms).trainModel().get();
+
+      GLMModel.GLMParameters parms2 = (GLMModel.GLMParameters)parms.clone();
+      parms2._checkpoint = glm._key;
+
+      glm2 = new GLM(parms2).trainModel().get();
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (glm != null) glm.delete();
+      if (glm2 != null) glm2.delete();
+    }
+  }
+
+  @Test
   public void testRestoreLambdaScoringHistory() {
     try {
       Scope.enter();
