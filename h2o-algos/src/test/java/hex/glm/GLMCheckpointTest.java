@@ -72,11 +72,16 @@ public class GLMCheckpointTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "C5";
       parms._seed = 0xdecaf;
+      parms._solver = IRLSM;
 
       glm = new GLM(parms).trainModel().get();
 
-      GLMModel.GLMParameters parms2 = (GLMModel.GLMParameters)parms.clone();
+      GLMModel.GLMParameters parms2 = new GLMModel.GLMParameters();
+      parms2._train = tfr._key;
+      parms2._response_column = "C5";
+      parms2._seed = 0xdecaf;
       parms2._checkpoint = glm._key;
+      parms2._solver = IRLSM;
 
       glm2 = new GLM(parms2).trainModel().get();
 
