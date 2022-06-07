@@ -1090,7 +1090,10 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 #'
 #' Disable Progress Bar
 #'
-#' @seealso \code{\link{h2o.with_no_h2o_progress}, \link{h2o.show_progress}}
+#' @param expr When specified, disable progress bar only for the evaluation of the expr and after the evaluation return to the previous setting (default is to show the progress bar), otherwise disable it globally.
+#' @returns Value of expr if specified, otherwise NULL.
+#'
+#' @seealso \link{h2o.show_progress}}
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -1112,11 +1115,28 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 #'                       standardize = FALSE, seed = 1234)
 #' }
 #' @export
-h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
+h2o.no_progress <- function(expr) {
+  if (missing(expr)) {
+    assign("PROGRESS_BAR", FALSE, .pkg.env)
+    invisible(NULL)
+  } else {
+    show_progress <- .h2o.is_progress()
+    if (length(show_progress) == 0L || show_progress) {
+      on.exit(h2o.show_progress())
+    } else {
+      on.exit(h2o.no_progress())
+    }
+    h2o.no_progress()
+    force(expr)
+  }
+}
 
 #'
 #' Enable Progress Bar
-#' @seealso \code{\link{h2o.with_no_h2o_progress}, \link{h2o.no_progress}}
+#' @param expr When specified enable progress only for the evaluation of the expr and after the evaluation return to the previous setting (default is to show the progress bar), otherwise enable it globally.
+#' @returns Value of expr if specified, otherwise NULL.
+#'
+#' @seealso \link{h2o.no_progress}}
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -1139,44 +1159,20 @@ h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
 #'                       standardize = FALSE, seed = 1234)
 #' }
 #' @export
-h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
-
-#' Suppresses h2o progress output from \code{expr}
-#'
-#' @param expr expression
-#'
-#' @return result of \code{expr}
-#' @seealso \code{\link{h2o.show_progress}, \link{h2o.no_progress}}
-#' @examples
-#' \dontrun{
-#' library(h2o)
-#' h2o.init()
-#'
-#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
-#' iris <- h2o.importFile(f)
-#' iris["class"] <- as.factor(iris["class"])
-#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
-#' splits <- h2o.splitFrame(iris, ratios = 0.8, seed = 1234)
-#' train <- splits[[1]]
-#' valid <- splits[[2]]
-#' h2o.with_no_h2o_progress({
-#'  iris_km <- h2o.kmeans(x = predictors,
-#'                       training_frame = train,
-#'                       validation_frame = valid,
-#'                       k = 10, estimate_k = TRUE,
-#'                       standardize = FALSE, seed = 1234)
-#' })
-#' }
-#' @export
-h2o.with_no_h2o_progress <- function(expr) {
-  show_progress <- .h2o.is_progress()
-  if (length(show_progress) == 0L || show_progress) {
-    on.exit(h2o.show_progress())
+h2o.show_progress <- function(expr) {
+  if (missing(expr)) {
+    assign("PROGRESS_BAR", TRUE, .pkg.env)
+    invisible(NULL)
   } else {
-    on.exit(h2o.no_progress())
+    show_progress <- .h2o.is_progress()
+    if (length(show_progress) == 0L || show_progress) {
+      on.exit(h2o.show_progress())
+    } else {
+      on.exit(h2o.no_progress())
+    }
+    h2o.show_progress()
+    force(expr)
   }
-  h2o.no_progress()
-  force(expr)
 }
 
 #'
