@@ -46,8 +46,9 @@ class LocalSequentialSegmentModelsBuilder extends Iced<LocalSequentialSegmentMod
       Exception failure = null;
       try {
         builder.init(false);
-        if (builder.error_count() == 0)
+        if (builder.error_count() == 0) {
           builder.trainModel().get();
+        }
       } catch (Exception e) {
         failure = e;
       } finally {
