@@ -106,7 +106,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
                     genericModel = importMojo(modelBytes, dataKey);
                 } else {
                     warn("_path", "Trying to import a POJO model - this is currently an experimental feature.");
-                    genericModel = importPojo(modelBytes, dataKey);
+                    genericModel = importPojo(modelBytes, dataKey, _result.toString());
                 }
                 genericModel.write_lock(_job);
                 genericModel.unlock(_job);
@@ -131,8 +131,8 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             return new GenericModel(_result, _parms, genericModelOutput, mojoModel, dataKey);
         }
 
-        private GenericModel importPojo(ByteVec pojoBytes, Key<Frame> pojoKey) throws IOException {
-            GenModel genmodel = PojoLoader.loadPojoFromSourceCode(pojoBytes, pojoKey);
+        private GenericModel importPojo(ByteVec pojoBytes, Key<Frame> pojoKey, String modelId) throws IOException {
+            GenModel genmodel = PojoLoader.loadPojoFromSourceCode(pojoBytes, pojoKey, modelId);
             ModelDescriptor pojoDescriptor = ModelDescriptorBuilder.makeDescriptor(genmodel);
             final GenericModelOutput genericModelOutput = new GenericModelOutput(pojoDescriptor);
             return new GenericModel(_result, _parms, genericModelOutput, genmodel, pojoKey);
