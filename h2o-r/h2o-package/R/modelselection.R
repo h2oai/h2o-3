@@ -319,7 +319,7 @@ h2o.modelSelection <- function(x,
   model <- .h2o.modelJob('modelselection', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-.h2o.train_segments_modelSelection <- function(x,
+.h2o.train_segments_modelselection <- function(x,
                                                y,
                                                training_frame,
                                                validation_frame = NULL,

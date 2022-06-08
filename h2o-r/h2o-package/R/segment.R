@@ -40,7 +40,7 @@ h2o.train_segments <- function(algorithm,
                                parallelism = 1,
                                ...)
 {
-    train_segments_fun_name <- sprintf(".h2o.train_segments_%s", algorithm)
+    train_segments_fun_name <- sprintf(".h2o.train_segments_%s", tolower(algorithm))
   if (!exists(train_segments_fun_name)) {
     stop(sprintf("Algorithm %s is not recognized, please check the spelling. For the name to be valid, a function h2o.%s needs to exist as well).", algorithm, algorithm))
   }
