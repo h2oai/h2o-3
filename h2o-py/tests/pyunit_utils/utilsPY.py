@@ -53,6 +53,7 @@ from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
 from h2o.model.ordinal import H2OOrdinalModel
 from h2o.model.regression import H2ORegressionModel
+from h2o.model.anomaly_detection import H2OAnomalyDetectionModel
 from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
     H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
     H2ORandomForestEstimator, H2OPrincipalComponentAnalysisEstimator
@@ -286,6 +287,20 @@ def check_models(model1, model2, use_cross_validation=False, op='e'):
         elif op == 'ge': assert totss1 >= totss2, "The first model has an TOTSS of {0} and the second model has an " \
                                                   "TOTSS of {1}. Expected the first to be >= than the second." \
                                                   "".format(totss1, totss2)
+    elif isinstance(model1,H2OAnomalyDetectionModel):  # Anomaly Detection
+        # anomaly score
+        anscore1 = model1._model_json["output"]["training_metrics"]._metric_json["mean_normalized_score"]
+        anscore2 = model2._model_json["output"]["training_metrics"]._metric_json["mean_normalized_score"]
+        if op == 'e': assert anscore1 == anscore2, "The first model has an Anomaly Score of {0} and the second model has an " \
+                                               "Anomaly Score of {1}. Expected the first to be == to the second.".format(anscore1,
+                                                                                                                 anscore2)
+        elif op == 'g': assert anscore1 > anscore2, "The first model has an Anomaly Score of {0} and the second model has an " \
+                                                "Anomaly Score of {1}. Expected the first to be > than the second.".format(anscore1,
+                                                                                                                   anscore2)
+        elif op == 'ge': assert anscore1 >= anscore2, "The first model has an Anomaly Score of {0} and the second model has an " \
+                                                  "Anomaly Score of {1}. Expected the first to be >= than the second." \
+                                                  "".format(anscore1, anscore2)
+
 
 def check_dims_values(python_obj, h2o_frame, rows, cols, dim_only=False):
     """
