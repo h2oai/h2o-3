@@ -21,7 +21,7 @@ dependencies {
   compile("com.github.wendykierp:JTransforms:3.1") { exclude module: "junit" }
   compile project(":h2o-jaas-pam")
 
-  compile "com.google.code.gson:gson:2.6.2"
+  compile "com.google.code.gson:gson:2.8.9"
   compile 'commons-lang:commons-lang:2.6'
   
   // Duke library: collection of String comparators
