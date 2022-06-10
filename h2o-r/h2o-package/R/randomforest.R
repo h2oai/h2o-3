@@ -295,7 +295,7 @@ h2o.randomForest <- function(x,
   model <- .h2o.modelJob('drf', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
 }
-.h2o.train_segments_randomForest <- function(x,
+.h2o.train_segments_randomforest <- function(x,
                                              y,
                                              training_frame,
                                              validation_frame = NULL,

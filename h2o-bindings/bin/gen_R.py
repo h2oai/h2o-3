@@ -161,8 +161,8 @@ def gen_module(schema, algo, module):
         #
         # Segment model building
         #
-        bulk_param_indent = len(".h2o.train_segments_%s <- function(" % module)
-        yield reformat_block(".h2o.train_segments_%s <- function(%s)" % (module, ',\n'.join(sig_bulk_params)), indent=bulk_param_indent, indent_first=False)
+        bulk_param_indent = len(".h2o.train_segments_%s <- function(" % str.lower(module))
+        yield reformat_block(".h2o.train_segments_%s <- function(%s)" % (str.lower(module), ',\n'.join(sig_bulk_params)), indent=bulk_param_indent, indent_first=False)
     
         # start train_segments-function body
         yield "{"
