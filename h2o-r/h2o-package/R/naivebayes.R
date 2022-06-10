@@ -181,7 +181,7 @@ h2o.naiveBayes <- function(x,
   model <- .h2o.modelJob('naivebayes', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-.h2o.train_segments_naiveBayes <- function(x,
+.h2o.train_segments_naivebayes <- function(x,
                                            y,
                                            training_frame,
                                            nfolds = 0,
