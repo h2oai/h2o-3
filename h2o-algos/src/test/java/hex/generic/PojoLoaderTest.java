@@ -24,13 +24,13 @@ public class PojoLoaderTest {
 
     @Test
     public void loadPojoFromSourceCode_invalid() throws IOException {
-        ee.expectMessage("POJO compilation failed: Please make sure key 'Invalid.java' contains a valid POJO source code and you are running a Java JDK (compiler present: 'true', self-check passed: 'true').");
+        ee.expectMessage("POJO compilation failed: Please make sure key 'Invalid.java' contains a valid POJO source code for class 'Invalid' and you are running a Java JDK (compiler present: 'true', self-check passed: 'true'");
         try {
             Scope.enter();
             NFSFileVec v = TestUtil.makeNfsFileVec("smalldata/testng/prostate.csv");
             assertNotNull(v);
             Scope.track(v);
-            PojoLoader.loadPojoFromSourceCode(v, Key.make("Invalid.java"));
+            PojoLoader.loadPojoFromSourceCode(v, Key.make("Invalid.java"), "Generic_121");
         } finally {
             Scope.exit();
         }

@@ -6,6 +6,7 @@ import water.*;
 import water.api.FramesHandler;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.parser.BinaryFormatExporter;
 import water.parser.BufferedString;
 import water.rapids.Merge;
 import water.util.*;
@@ -1534,7 +1535,6 @@ public class Frame extends Lockable<Frame> {
                            String compression, CSVStreamParams csvParms) {
     return export(fr, path, frameName, overwrite, nParts, false, compression, csvParms);
   }
-
   public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts, boolean parallel,
                            String compression, CSVStreamParams csvParms) {
     boolean forceSingle = nParts == 1;
@@ -1554,8 +1554,34 @@ public class Frame extends Lockable<Frame> {
     }
     CompressionFactory compressionFactory = compression != null ? CompressionFactory.make(compression) : null;
     Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
+
     FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(
             fr, path, frameName, overwrite, job, nParts, parallel, compressionFactory, csvParms);
+    return job.start(t, fr.anyVec().nChunks());
+  }
+
+  public static Job exportParquet(Frame fr, String path, boolean overwrite, String compression) {
+    // Validate input
+    if (! H2O.getPM().isEmptyDirectoryAllNodes(path)) {
+      throw new H2OIllegalArgumentException(path, "exportFrame", "Cannot use path " + path +
+              " to store part files! The target needs to be either an existing empty directory or not exist yet.");
+    }
+
+    BinaryFormatExporter parquetExporter = null;
+    ServiceLoader<BinaryFormatExporter> parquetExporters = ServiceLoader.load(BinaryFormatExporter.class);
+    for (BinaryFormatExporter exporter : parquetExporters) {
+      if (exporter.supports(ExportFileFormat.parquet)) {
+        parquetExporter = exporter;
+        break;
+      }
+    }
+    if (parquetExporter == null) {
+      Log.warn("No parquet exporter on the classpath!");
+      throw new RuntimeException("No parquet exporter on the classpath!");
+    }
+    Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
+
+    H2O.H2OCountedCompleter t = parquetExporter.export(fr, path, overwrite, compression);
     return job.start(t, fr.anyVec().nChunks());
   }
 

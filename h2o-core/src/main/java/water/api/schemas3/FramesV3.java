@@ -3,6 +3,7 @@ package water.api.schemas3;
 import water.api.API;
 import water.api.FramesHandler.Frames;
 import water.fvec.Frame;
+import water.util.ExportFileFormat;
 
 public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
 
@@ -42,6 +43,9 @@ public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
 
   @API(help="Use parallel export to a single file (doesn't apply when num_parts != 1, creates temporary files in the destination directory)",json=false)
   public boolean parallel;
+
+  @API(help="Output file format. Defaults to 'csv'.", values = { "csv", "parquet"} , json=false)
+  public ExportFileFormat format;
 
   @API(help="Compression method (default none; gzip, bzip2 and snappy available depending on runtime environment)")
   public String compression;

@@ -3,9 +3,11 @@ package hex.rulefit;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.SharedTreeModel;
+import org.apache.commons.math3.util.Precision;
 import water.Iced;
 import water.fvec.Chunk;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,7 +24,6 @@ public class Rule extends Iced {
         this.conditions = conditions;
         this.predictionValue = predictionValue;
         this.varName = varName;
-        this.languageRule = generateLanguageRule();
     }
 
     public Rule(Condition[] conditions, double predictionValue, String varName,  double coefficient, double support) {
@@ -30,7 +31,6 @@ public class Rule extends Iced {
         this.predictionValue = predictionValue;
         this.varName = varName; 
         this.coefficient = coefficient;
-        this.languageRule = generateLanguageRule();
         this.support = support;
     }
 
@@ -38,12 +38,16 @@ public class Rule extends Iced {
         this.coefficient = coefficient;
     }
 
+    public void setVarName(String varName) {
+        this.varName = varName;
+    }
+
     String generateLanguageRule() {
         StringBuilder languageRule = new StringBuilder();
         if (!this.varName.startsWith("linear.")) {
             for (int i = 0; i < conditions.length; i++) {
                 if (i != 0) languageRule.append(" & ");
-                languageRule.append(conditions[i].languageCondition);
+                languageRule.append(conditions[i].constructLanguageCondition());
             }
         }
         return languageRule.toString();
@@ -54,19 +58,50 @@ public class Rule extends Iced {
             c.map(cs, out);
         }
     }
-    
+
+    // two non-linear rules are considered equal when they have the same condition but can differ in varname/pred value/coefficient
+    // two linear rules (conditions == null) are considered equal when they have the same varname
     @Override
-    public int hashCode() {
-        int hashCode = 0;
-        for (int i = 0; i < conditions.length; i++) {
-            hashCode += conditions[i].hashCode();
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Rule))
+            return false;
+
+        Rule rule = (Rule) obj;
+        if (this.conditions == null && rule.conditions == null) {
+            if (this.varName == rule.varName) {
+                return true;
+            }
+            return false;
         }
-        return hashCode;
+        if ((this.conditions == null && rule.conditions != null) || (this.conditions != null && rule.conditions == null)) {
+            return false;
+        }
+        if (!Arrays.asList(rule.conditions).containsAll(Arrays.asList(conditions))) {
+            return false;
+        }
+
+        return Math.abs(this.support - rule.support) < 1e-5;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return this.hashCode() == obj.hashCode();
+    public int hashCode() {
+        int result = Objects.hash(Precision.round(support, 5, BigDecimal.ROUND_HALF_UP));
+
+        if (conditions != null) {
+            Condition[] sorted = Arrays.asList(conditions).stream().sorted(
+                    Comparator.comparing(Condition::getFeatureIndex)
+                            .thenComparing(Condition::isNAsIncluded)
+                            .thenComparing(Condition::getType)
+                            .thenComparing(Condition::getOperator)
+                            .thenComparing(Condition::getNumCatTreshold)
+                            .thenComparing(Condition::getNumTreshold)
+            ).collect(Collectors.toList()).toArray(new Condition[0]);
+
+            result = 31 * result + Arrays.hashCode(sorted);
+        } else {
+            result = 31 * result + varName.hashCode();
+        }
+        return result;
     }
 
     public static List<Rule> extractRulesListFromModel(SharedTreeModel model, int modelId, int nclasses) {
@@ -95,16 +130,16 @@ public class Rule extends Iced {
             if (classString != null) {
                 varName += classString;
             }
-            traversePath(leaf, rules, varName);
+            traversePath(leaf, rules, varName, leaf.getPredValue());
         }
         return rules;
     }
     
-    private static void traversePath(SharedTreeNode node, List<Condition> conditions, Set<Rule> rules, String varName) {
+    private static void traversePath(SharedTreeNode node, List<Condition> conditions, Set<Rule> rules, String varName, double predValue) {
         SharedTreeNode parent = node.getParent();
         if (parent == null) {
             conditions = conditions.stream().sorted(Comparator.comparing(condition -> condition.featureName)).collect(Collectors.toList());
-            rules.add(new Rule(conditions.toArray(new Condition[]{}), node.getPredValue(), varName));
+            rules.add(new Rule(conditions.toArray(new Condition[]{}), predValue, varName));
         } else {
             Condition actualCondition;
             Condition newCondition;
@@ -127,12 +162,12 @@ public class Rule extends Iced {
             } else {
                 actualCondition = actualCondition.expandBy(newCondition);
             }
-            traversePath(node.getParent(), conditions, rules, varName);
+            traversePath(node.getParent(), conditions, rules, varName, predValue);
         }
     }
 
-    private static void traversePath(SharedTreeNode node, Set<Rule> rules, String varName) {
-        traversePath(node, new ArrayList<>(), rules, varName);
+    private static void traversePath(SharedTreeNode node, Set<Rule> rules, String varName, double predValue) {
+        traversePath(node, new ArrayList<>(), rules, varName, predValue);
     }
     
     private static Condition getConditionByFeatureNameAndOperator(List<Condition> conditions, String featureName, Condition.Operator operator) {

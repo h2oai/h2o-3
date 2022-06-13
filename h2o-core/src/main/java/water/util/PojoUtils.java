@@ -409,7 +409,37 @@ public class PojoUtils {
     try {
       Object va = fa.get(a);
       Object vb = fb.get(b);
-      return va == null ? vb == null : va.equals(vb);
+
+      if (va == null)
+        return vb == null;
+
+      Class clazz = va.getClass();
+      if (clazz.isArray()) {
+        if (clazz.equals(vb.getClass())) {
+          switch (fa.getType().getSimpleName()) {
+            case "double[]":
+              return Arrays.equals((double[]) va, (double[])vb);
+            case "int[]":
+              return Arrays.equals((int[]) va, (int[]) vb);
+            case "byte[]":
+              return Arrays.equals((byte[]) va, (byte[]) vb);
+            case "char[]":
+              return Arrays.equals((char[]) va, (char[]) vb);
+            case "float[]":
+              return Arrays.equals((float[]) va, (float[]) vb);
+            case "long[]":
+              return Arrays.equals((long[]) va, (long[]) vb);
+            case "short[]":
+              return Arrays.equals((short[]) va, (short[]) vb);
+            case "boolean[]":
+              return Arrays.equals((boolean[]) va, (boolean[]) vb);
+            default:
+              return Arrays.equals((Object[]) va, (Object[]) vb);
+          }
+        }
+        return false;
+      }
+      return va.equals(vb);
     } catch (IllegalAccessException e) {
       Log.err(e);
       return false;

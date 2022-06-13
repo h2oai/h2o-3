@@ -168,8 +168,9 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
 
     private int fetchCloudSize() {
         final CloudSize annotation = getTestClass().getAnnotation(CloudSize.class);
-        if (annotation == null)
-            throw new IllegalStateException("@CloudSize annotation is missing for test class: " + getTestClass().getName());
+        if (annotation == null) {
+            return 1;
+        }
 
         final int cloudSize = annotation.value();
 

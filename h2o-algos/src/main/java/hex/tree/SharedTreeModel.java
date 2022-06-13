@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import static hex.genmodel.GenModel.createAuxKey;
 import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
+import static hex.tree.SharedTree.createModelSummaryTable;
 
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
@@ -272,6 +273,7 @@ public abstract class SharedTreeModel<
       _scored_train = Arrays.copyOf(_scored_train, _ntrees + 1);
       _scored_valid = _scored_valid != null ? Arrays.copyOf(_scored_valid, _ntrees + 1) : null;
       _training_time_ms = Arrays.copyOf(_training_time_ms, _ntrees + 1);
+      _model_summary = createModelSummaryTable(_ntrees, _treeStats);
       fs.blockForPending();
     }
 

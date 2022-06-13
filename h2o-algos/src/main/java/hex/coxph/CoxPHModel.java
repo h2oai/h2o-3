@@ -15,6 +15,7 @@ import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.IcedInt;
+import water.util.Log;
 
 import java.util.*;
 
@@ -392,11 +393,16 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   @Override
   public boolean haveMojo() {
     final boolean hasInteraction = _parms.interactionSpec() != null;
-    if (hasInteraction) {
-      return false;
-    } else {
-      return super.haveMojo();
+    final boolean enabled = !hasInteraction && super.haveMojo();
+    if (! enabled) {
+      boolean forceEnabled = H2O.getSysBoolProperty("coxph.mojo.forceEnable", false);
+      if (forceEnabled) {
+        Log.warn("Model " + this._key + " doesn't technically support MOJO, but MOJO support was force-enabled.");
+        return true;
+      }
     }
+    return enabled;
   }
+
 }
 

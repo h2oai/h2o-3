@@ -171,7 +171,7 @@ h2o.upliftRandomForest <- function(x,
   model <- .h2o.modelJob('upliftdrf', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
 }
-.h2o.train_segments_upliftRandomForest <- function(x,
+.h2o.train_segments_upliftrandomforest <- function(x,
                                                    y,
                                                    training_frame,
                                                    treatment_column,

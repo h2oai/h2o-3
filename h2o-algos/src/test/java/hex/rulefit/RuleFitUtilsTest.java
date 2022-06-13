@@ -66,7 +66,13 @@ public class RuleFitUtilsTest extends TestUtil {
             assertEquals(fr4.vec(0).at(4), fr2.vec(0).at(4)*fr3.vec(0).at(4),1e-8);
             assertEquals(fr4.vec(0).at(322), fr2.vec(0).at(322)*fr3.vec(0).at(322),1e-8);
             assertEquals(fr4.vec(0).at(323), fr2.vec(0).at(323)*fr3.vec(0).at(323),1e-8);
-            
+
+            Rule rule2 = new Rule(new Condition[]{condition, condition3}, 0.3456, "somevarname");
+            assertTrue(rule.equals(rule2));
+            Rule rule3 = new Rule(new Condition[]{condition, condition3}, 0.3456, "somedifferentvarname");
+            assertTrue(rule.equals(rule3));
+            Rule rule4 = new Rule(new Condition[]{condition, condition}, 0.3456, "somevarname");
+            assertFalse(rule.equals(rule4));
         } finally {
             Scope.exit();
         }
@@ -103,18 +109,17 @@ public class RuleFitUtilsTest extends TestUtil {
             Condition condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
             Condition[] conditions = new Condition[] {condition1, condition2, condition3};
 
-            Rule rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-
-            assertEquals(treeRules.contains(rule),true);
+            final Rule rule = new Rule(conditions, 0.032236840575933456, "M0T0N20");
+            assertTrue(treeRules.contains(rule));
 
             condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"GLEASON", true);
             condition2 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null, "DPROS", false);
             condition3 = new Condition(4, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.6455078125, null, null,"PSA", false);
             conditions = new Condition[] {condition1, condition2, condition3};
 
-            rule = new Rule(conditions, 0.032236840575933456, "somevarname");
+            final Rule rule2 = new Rule(conditions, 0.012861842289566994, "M0T0N18");
+            assertTrue(treeRules.contains(rule2));
 
-            assertEquals(treeRules.contains(rule),true);
 
             List<Rule> wholeModelRules = Rule.extractRulesListFromModel(gbm, 0, 1);
             assertEquals(wholeModelRules.size(), 16);
@@ -147,7 +152,7 @@ public class RuleFitUtilsTest extends TestUtil {
             Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0, null);
             assertEquals(treeRules.size(), 8);
 
-            List<String> languageRules = treeRules.stream().map(it -> it.languageRule).sorted().collect(Collectors.toList());
+            List<String> languageRules = treeRules.stream().map(it -> it.generateLanguageRule()).sorted().collect(Collectors.toList());
             // Note: this hard-coded list of expected rules is sensitive to changes in the upstream algo
             List<String> expectedRules = Arrays.asList(
                     "(Distance < 211.5) & (fYear in {f1987, f1988, f1989, f1990, f1991, f1992, f1993} or fYear is NA)",
@@ -173,6 +178,8 @@ public class RuleFitUtilsTest extends TestUtil {
     public void deduplicateRulesTest() {
         try {
             Scope.enter();
+            double original_r1_coef_value = 4.0;
+            double original_r4_coef_value = 3.0;
 
             Condition conditionr11 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"PSA", true);
             Condition conditionr12 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
@@ -180,7 +187,7 @@ public class RuleFitUtilsTest extends TestUtil {
             Condition[] conditions1 = new Condition[] {conditionr11, conditionr12, conditionr13};
 
             Rule rule1 = new Rule(conditions1, 0.032236840575933456, "somevarname1");
-            rule1.coefficient = 4.0;
+            rule1.coefficient = original_r1_coef_value;
 
             Condition conditionr21 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1, new String[] {"ABC", "AAA"}, new int[] {2, 6},"PSA", true);
             Condition conditionr22 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1,  new String[] { "CCC", "BBB", "AAA"}, new int[] {1, 3, 6}, "PSA", false);
@@ -202,7 +209,7 @@ public class RuleFitUtilsTest extends TestUtil {
             Condition[] conditions4 = new Condition[] {conditionr41, conditionr42, conditionr43};
 
             Rule rule4 = new Rule(conditions4, 10.23, "somevarname4");
-            rule4.coefficient = 3.0;
+            rule4.coefficient = original_r4_coef_value;
             
             Rule[] rulesToDeduplicate = new Rule[] {rule1, rule2, rule3, rule4};
 
@@ -215,7 +222,7 @@ public class RuleFitUtilsTest extends TestUtil {
                     .findAny()
                     .orElse(null);
             
-            assertEquals(deduplicatedRule.coefficient, rule1.coefficient + rule4.coefficient, 0.0);
+            assertEquals(deduplicatedRule.coefficient, original_r1_coef_value + original_r4_coef_value, 0.0);
             assertEquals("somevarname1, somevarname4", deduplicatedRule.varName);
             
         } finally {

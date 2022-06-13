@@ -14,12 +14,12 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'homesite': [
                 50: [
-                    'train_time_min': 9,
+                    'train_time_min': 8,
                     'train_time_max': 10
                 ],
                 200: [
-                    'train_time_min': 37,
-                    'train_time_max': 39
+                    'train_time_min': 35,
+                    'train_time_max': 40
                 ]
             ],
             'redhat': [
@@ -29,17 +29,17 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 104,
-                    'train_time_max': 107
+                    'train_time_max': 110
                 ]
             ],
             'springleaf': [
                 50: [
                     'train_time_min': 52,
-                    'train_time_max': 54
+                    'train_time_max': 58
                 ],
                 200: [
                     'train_time_min': 475,
-                    'train_time_max': 484
+                    'train_time_max': 500
                 ]
             ],
             'higgs': [
@@ -48,8 +48,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 76
                 ],
                 200: [
-                    'train_time_min': 378,
-                    'train_time_max': 389
+                    'train_time_min': 370,
+                    'train_time_max': 390
                 ]
             ]
         ],

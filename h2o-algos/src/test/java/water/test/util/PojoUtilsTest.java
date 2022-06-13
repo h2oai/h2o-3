@@ -1,5 +1,6 @@
 package water.test.util;
 
+import hex.glm.GLMModel;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -11,6 +12,8 @@ import water.api.schemas3.FrameV3;
 import water.api.schemas3.SchemaV3;
 import water.fvec.Frame;
 import water.util.PojoUtils;
+
+import java.lang.reflect.Field;
 
 public class PojoUtilsTest extends TestUtil {
   @BeforeClass()
@@ -112,6 +115,49 @@ public class PojoUtilsTest extends TestUtil {
     Assert.assertEquals(42, nested.meaning);
     Assert.assertEquals(17, nested.parameters._ntrees);
     Assert.assertEquals(5, nested.parameters._max_depth);
+  }
+
+  @Test
+  public void TestEquals() {
+    GLMModel.GLMParameters params1 = new GLMModel.GLMParameters();
+    GLMModel.GLMParameters params2 = new GLMModel.GLMParameters();
+
+    Field field1 = params1.getClass().getFields()[11];
+    Field field2 = params2.getClass().getFields()[11];
+
+    // check null
+    assert PojoUtils.equals(params1,  field1, params2,  field2);
+
+    // check double[] array:
+    params1._alpha = new double[] {1.2, 1.3, 1.4};
+    params2._alpha = new double[] {1.2, 1.3, 1.4};
+    assert PojoUtils.equals(params1,  field1, params2,  field2);
+
+    params1._alpha = new double[] {1.2, 1.3, 1.4};
+    params2._alpha = new double[] {1.2, 1.5, 1.4};
+    assert PojoUtils.equals(params1,  field1, params2,  field2) == false;
+
+    //  check Family[] _rand_family;
+    field1 = params1.getClass().getFields()[3];
+    field2 = params2.getClass().getFields()[3];
+
+    assert PojoUtils.equals(params1,  field1, params2,  field2);
+
+    params1._rand_family = new GLMModel.GLMParameters.Family[]  {GLMModel.GLMParameters.Family.binomial};
+    params2._rand_family = new GLMModel.GLMParameters.Family[]  {GLMModel.GLMParameters.Family.multinomial};
+    assert PojoUtils.equals(params1,  field1, params2,  field2) == false;
+
+    //check Link[] _rand_link;
+    field1 = params1.getClass().getFields()[5];
+    field2 = params2.getClass().getFields()[5];
+
+    params1._rand_link = new GLMModel.GLMParameters.Link[] {GLMModel.GLMParameters.Link.identity, GLMModel.GLMParameters.Link.inverse};
+    params2._rand_link = new GLMModel.GLMParameters.Link[] {GLMModel.GLMParameters.Link.identity, GLMModel.GLMParameters.Link.inverse};
+    assert PojoUtils.equals(params1,  field1, params2,  field2);
+
+    params1._rand_link = new GLMModel.GLMParameters.Link[] {GLMModel.GLMParameters.Link.identity, GLMModel.GLMParameters.Link.inverse};
+    params2._rand_link = new GLMModel.GLMParameters.Link[] {GLMModel.GLMParameters.Link.identity};
+    assert PojoUtils.equals(params1,  field1, params2,  field2) == false;
   }
 
 }

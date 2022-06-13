@@ -149,7 +149,7 @@ h2o.isolationForest <- function(training_frame,
   model <- .h2o.modelJob('isolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-.h2o.train_segments_isolationForest <- function(training_frame,
+.h2o.train_segments_isolationforest <- function(training_frame,
                                                 x,
                                                 score_each_iteration = FALSE,
                                                 score_tree_interval = 0,

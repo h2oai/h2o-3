@@ -2,6 +2,10 @@ package hex.coxph;
 
 import hex.ModelMetricsRegressionCoxPH;
 import hex.StringPair;
+import hex.genmodel.MojoModel;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.prediction.CoxPHModelPrediction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.*;
@@ -213,7 +217,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   }
 
   @Test
-  public void testCoxPHEfron1Interaction() {
+  public void testCoxPHEfron1Interaction() throws Exception {
     try {
       Scope.enter();
       final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
@@ -252,7 +256,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals("Surv(start, stop, event) ~ age1:age2", parms.toFormula(fr));
 
       CoxPH builder = new CoxPH(parms);
-      CoxPHModel model = (CoxPHModel) Scope.track_generic(builder.trainModel().get());
+      CoxPHModel model = Scope.track_generic(builder.trainModel().get());
 
       // Expect the same result as we used "age"
       assertEquals(model._output._coef[0],        0.0307077486571334,   1e-8);
@@ -265,7 +269,43 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._n,              172);
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
+
+      Frame scored = model.score(fr);
+      Scope.track(scored);
+
+      assertFalse(model.haveMojo());
+      
+      System.setProperty("sys.ai.h2o.coxph.mojo.forceEnable", "true");
+      assertTrue(model.haveMojo());
+      
+      MojoModel mojo = model.toMojo();
+
+      EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
+              .setModel(mojo);
+      EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(config);
+
+      // Sanity Test on a single row
+      RowData rd = new RowData();
+      rd.put("age1_age2", (double) (7 * 6));
+      CoxPHModelPrediction pred = wrapper.predictCoxPH(rd);
+      assertEquals(pred.value, model._output._coef[0] * (7 * 6 - model._output._x_mean_num[0][0]), 1e-8);
+
+      // Compare whole frame predictions
+      for (int i = 0; i < fr.numRows(); i++) {
+        double age1 = fr.vec("age1").at(i);
+        double age2 = fr.vec("age2").at(i);
+        RowData row = new RowData();
+        row.put("age1_age2", age1 * age2);
+
+        CoxPHModelPrediction p = wrapper.predictCoxPH(row);
+        assertEquals(
+                "Predictions for row #" + i + " should match",
+                p.value, 
+                model._output._coef[0] * (age1 * age2 - model._output._x_mean_num[0][0]),
+                1e-8);
+      }
     } finally {
+      System.setProperty("sys.ai.h2o.coxph.mojo.forceEnable", "false");
       Scope.exit();
     }
   }

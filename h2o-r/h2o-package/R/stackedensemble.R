@@ -210,7 +210,7 @@ h2o.stackedEnsemble <- function(x,
   }
   return(model)
 }
-.h2o.train_segments_stackedEnsemble <- function(x,
+.h2o.train_segments_stackedensemble <- function(x,
                                                 y,
                                                 training_frame,
                                                 validation_frame = NULL,

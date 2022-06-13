@@ -641,10 +641,15 @@ public class TestUtil extends Iced {
     return Boolean.parseBoolean(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
 
+  private static File getLocalSmalldataFile(final String fname) {
+    String projectDir = System.getenv("H2O_PROJECT_DIR");
+    return projectDir != null ? new File(projectDir, fname) : new File(fname);
+  }
+  
   protected static long downloadTestFileFromS3(String fname) throws IOException {
     if (fname.startsWith("./"))
       fname = fname.substring(2);
-    File f = new File(fname);
+    final File f = getLocalSmalldataFile(fname);
     if (!f.exists()) {
       if (f.getParentFile() != null) {
         boolean dirsCreated = f.getParentFile().mkdirs();

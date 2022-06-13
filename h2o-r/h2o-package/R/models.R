@@ -4023,6 +4023,7 @@ setMethod("h2o.kolmogorov_smirnov", "H2OModel", function(object) {
 #'        This value is only used in the case of
 #'        \linkS4class{H2OBinomialMetrics} objects.
 #' @param valid Retrieve the validation metric.
+#' @param xval Retrieve the cross-validation metric.
 #' @param ... Extra arguments for extracting train or valid confusion matrices.
 #' @return Calling this function on \linkS4class{H2OModel} objects returns a
 #'         confusion matrix corresponding to the \code{\link{predict}} function.
@@ -4049,14 +4050,23 @@ setGeneric("h2o.confusionMatrix", function(object, ...) {})
 
 #' @rdname h2o.confusionMatrix
 #' @export
-setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FALSE, ...) {
+setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FALSE, xval=FALSE,...) {
   model.parts <- .model.parts(object)
   if( missing(newdata) ) {
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
       else                          return( h2o.confusionMatrix(model.parts$vm, ...) )
-    } else                          return( h2o.confusionMatrix(model.parts$tm, ...) )
-  } else if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
+    } else if( xval ) {
+      if( is.null(model.parts$xm) ) return( invisible(.warn.no.cross.validation()) )
+      else                          return( h2o.confusionMatrix(model.parts$xm, ...) )
+    }
+    else {
+                                    return( h2o.confusionMatrix(model.parts$tm, ...) )
+    }   
+  } else {
+    if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
+    if( xval ) stop("Cannot have both `newdata` and `xval=TRUE`", call.=FALSE)
+  }
 
   # ok need to score on the newdata
   url <- paste0("Predictions/models/",object@model_id, "/frames/", h2o.getId(newdata))
