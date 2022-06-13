@@ -687,7 +687,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.36.01 - Winter 2021
+### H2O 3.36.0.1 - Winter 2021
 
 * [[PUBDEV-4940]](https://h2oai.atlassian.net/browse/PUBDEV-4940) Uplift Trees
 * [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - Infogram
@@ -696,7 +696,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 * Improved support for CDP (S3A with IDBroker)
 * Support for Java 16 and 17, Python 3.8
 
-### H2O 3.38.01 - Spring 2022
+### H2O 3.38.0.1 - Spring 2022
 
 * [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - stage 2 (algos)
 * Multi-Output Regression in Deep Learning
