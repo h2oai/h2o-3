@@ -22,30 +22,30 @@ import java.util.stream.Stream;
  * Single Decision Tree
  */
 public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel.SDTOutput> {
-    private int maxDepth;
-    int nodesCount;
+    private int _maxDepth;
+    int _nodesCount;
 
-    private double[][] compressedTree;
+    private double[][] _compressedTree;
 
-    private Integer actualDepth;
+    private Integer _actualDepth;
 
-    private Node root;
+    private Node _root;
 
-    private SDTModel model;
-    transient Random rand;
+    private SDTModel _model;
+    transient Random _rand;
 
     // todo - create file with constants ?
-    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 3;
+    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 10;
 
     private static final Logger LOG = Logger.getLogger(SDT.class);
 
 
     public SDT(SDTModel.SDTParameters parameters) {
         super(parameters);
-        this.maxDepth = parameters.depth;
-        this.actualDepth = 0;
-        this.nodesCount = 0;
-        this.compressedTree = null;
+        _maxDepth = parameters.depth;
+        _actualDepth = 0;
+        _nodesCount = 0;
+        _compressedTree = null;
         init(false);
     }
 
@@ -56,30 +56,30 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     public double[][] compress() {
         //  if parent node is at index i in the array then the left child of that node is at index (2*i + 1) 
         //  and right child is at index (2*i + 2) in the array. 
-        System.out.println("Nodes count when compressing: " + nodesCount);
+        System.out.println("Nodes count when compressing: " + _nodesCount);
         // 2^k - 1 is max count of nodes, where k is depth
-        compressedTree = new double[(int) Math.pow(2, actualDepth)][2];
-        writeSubtreeStartingFromIndex(root, 0);
-        return compressedTree;
+        _compressedTree = new double[(int) Math.pow(2, _maxDepth)][2];
+        writeSubtreeStartingFromIndex(_root, 0);
+        return _compressedTree;
     }
 
     private void writeSubtreeStartingFromIndex(final Node actualNode, final int actualIndex) {
         if (actualNode == null) {
             return;
         }
-        compressedTree[actualIndex][0] = actualNode.getFeature() == null ? -1
+        _compressedTree[actualIndex][0] = actualNode.getFeature() == null ? -1
                 : actualNode.getFeature().doubleValue();
-        compressedTree[actualIndex][1] = actualNode.getThreshold() == null ? actualNode.getDecisionValue()
+        _compressedTree[actualIndex][1] = actualNode.getThreshold() == null ? actualNode.getDecisionValue()
                 : actualNode.getThreshold();
         writeSubtreeStartingFromIndex(actualNode.getLeft(), 2 * actualIndex + 1);
         writeSubtreeStartingFromIndex(actualNode.getRight(), 2 * actualIndex + 2);
     }
 
     public double[][] getCompressedTree() {
-        if (compressedTree == null) {
+        if (_compressedTree == null) {
             compress();
         }
-        return compressedTree;
+        return _compressedTree;
     }
 
     /**
@@ -172,9 +172,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     public Node buildSubtree(final Frame data, DataFeaturesLimits featuresLimits, int nodeDepth) {
         Node subtreeRoot = new Node();
-        nodesCount++;
-        if (actualDepth < nodeDepth) {
-            actualDepth = nodeDepth;
+        _nodesCount++;
+        if (_actualDepth < nodeDepth) {
+            _actualDepth = nodeDepth;
         }
         // todo - add limit by information gain (at least because of ideal split for example 11111)
         double zeroRatio = getZeroRatio(data);
@@ -207,9 +207,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     public Node buildSubtree(DataFeaturesLimits featuresLimits, int nodeDepth) {
         Node subtreeRoot = new Node();
-        nodesCount++;
-        if (actualDepth < nodeDepth) {
-            actualDepth = nodeDepth;
+        _nodesCount++;
+        if (_actualDepth < nodeDepth) {
+            _actualDepth = nodeDepth;
         }
         // todo - add limit by information gain (at least because of ideal split for example 11111)
         // (count0, count1)
@@ -252,37 +252,40 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
         @Override
         public void computeImpl() {
-            model = null;
+            _model = null;
             try {
                 init(false);
                 if (error_count() > 0) {
                     throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SDT.this);
                 }
-                rand = RandomUtils.getRNG(_parms._seed);
+                _rand = RandomUtils.getRNG(_parms._seed);
 //                isolationTreeStats = new IsolationTreeStats();
-                model = new SDTModel(dest(), _parms,
+                _model = new SDTModel(dest(), _parms,
                         new SDTModel.SDTOutput(SDT.this));
-                model.delete_and_lock(_job);
+                _model.delete_and_lock(_job);
                 buildSDT();
 //                model._output._model_summary = createModelSummaryTable();
-                LOG.info(model.toString());
+                LOG.info(_model.toString());
             } finally {
-                if (model != null)
-                    model.unlock(_job);
+                if (_model != null)
+                    _model.unlock(_job);
             }
         }
 
         private void buildSDT() {
             // switch to using or not using binning
 //            root = buildSubtree(_train, getInitialFeaturesLimits(), 1); // without histogram
-            root = buildSubtree(getInitialFeaturesLimits(), 1); // with histogram
+            _root = buildSubtree(getInitialFeaturesLimits(), 1); // with histogram
+            System.out.println("depth: " + _maxDepth + ", nodes count: " + _nodesCount);
 
             CompressedSDT compressedSDT = new CompressedSDT(compress());
 
-            model._output.treeKey = compressedSDT._key;
+            _model._output.treeKey = compressedSDT._key;
             DKV.put(compressedSDT);
             _job.update(1);
-            model.update(_job);
+            _model.update(_job);
+            System.out.println("Tree:");
+            System.out.println(Arrays.deepToString(_compressedTree));
         }
 
     }
@@ -373,7 +376,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
     public Node getRoot() {
-        return root;
+        return _root;
     }
 
 
