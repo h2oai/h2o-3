@@ -1123,17 +1123,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn, w?, o?, f?, u?, r]
     // cn are predictor cols, r is response, w is weights, o is offset, f is fold and t is treatment - these are optional
+    protected int lastSpecialColumnIdx() {
+      return _names.length - 1 - (isSupervised()?1:0);
+    }
     public int weightsIdx() {
       if(!_hasWeights) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1 - (hasFold()?1:0) - (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasOffset()?1:0) - (hasFold()?1:0) - (hasTreatment()?1:0);
     }
     public int offsetIdx() {
       if(!_hasOffset) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasFold()?1:0) - 1 - (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasFold()?1:0) - (hasTreatment()?1:0);
     }
     public int foldIdx() {
       if(!_hasFold) return -1;
-      return _names.length - (isSupervised()?1:0) - 1 -  (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasTreatment()?1:0);
     }
     
     public int responseIdx() {
@@ -3353,7 +3356,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       @Override
       public String offsetColumn() { return _output.offsetName(); }
       @Override
-      public String weightsColumn() { return _output.offsetName(); }
+      public String weightsColumn() { return _output.weightsName(); }
       @Override
       public String foldColumn() { return _output.foldName(); }
       @Override
