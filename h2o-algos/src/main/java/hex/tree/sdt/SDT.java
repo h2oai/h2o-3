@@ -128,17 +128,25 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             }
             // iterate all bins
             Pair<Double, Double> minEntropyForFeature = histogram.calculateBinsStatisticsForFeature(featureIndex).stream()
-//                    .peek(binStatistics -> {
-//                        System.out.println(binStatistics._leftCount + " " + binStatistics._rightCount);
-//                    })
+                    .filter(binStatistics -> ((binStatistics._leftCount >= LIMIT_NUM_ROWS_FOR_SPLIT)
+                            && (binStatistics._rightCount >= LIMIT_NUM_ROWS_FOR_SPLIT))) // todo - consider setting min count of samples in bin 
+                    .peek(binStatistics -> {
+                        System.out.println("counts: " + binStatistics._maxBinValue + " " + binStatistics._leftCount + " " + binStatistics._rightCount);
+                    })
                     .map(binStatistics -> new Pair<>(
                             binStatistics._maxBinValue, calculateEntropyOfSplit(binStatistics)))
                     .min(Comparator.comparing(Pair::_2))
-                    .get();
+                    .orElse(null);
+            if(minEntropyForFeature == null) {
+                continue; // no split was found for this feature
+            }
             if (minEntropyForFeature._2() < currentMinEntropyPair._2()) {
                 currentMinEntropyPair = minEntropyForFeature;
                 bestFeatureIndex = featureIndex;
             }
+        }
+        if(bestFeatureIndex == -1) {
+            return null; // no split could be found
         }
         double threshold = currentMinEntropyPair._1();
         return new SplitInfo(bestFeatureIndex, threshold);
@@ -227,13 +235,24 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         Histogram histogram = new Histogram(_train, featuresLimits, BinningStrategy.EQUAL_WIDTH);
 
         SplitInfo bestSplitInfo = findBestSplit(histogram);
-
+        // if no split could be found, make a list from current node
+        if(bestSplitInfo == null) {
+            return makeListFromNode(zeroRatio, subtreeRoot);
+        }
 
         subtreeRoot.setFeature(bestSplitInfo._splitFeatureIndex);
         subtreeRoot.setThreshold(bestSplitInfo._threshold);
 
         DataFeaturesLimits limitsLeft = featuresLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
-        DataFeaturesLimits limitsRight = featuresLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
+        // set new min to something bigger than threshold as the threshold is included in the left split and excluded in the right
+        DataFeaturesLimits limitsRight = featuresLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold + 0.001);
+//        System.out.println("root: " + countClasses(featuresLimits) + ", left: " + countClasses(limitsLeft) +
+//                ", right: " + countClasses(limitsRight));
+//        System.out.println("feature: " + bestSplitInfo._splitFeatureIndex + ", threshold: " + bestSplitInfo._threshold);
+//        System.out.println("Left min-max: " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
+//                " " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
+//        System.out.println("Right min-max: " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
+//                " " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
         subtreeRoot.setLeft(buildSubtree(limitsLeft, nodeDepth + 1));
         subtreeRoot.setRight(buildSubtree(limitsRight, nodeDepth + 1));
 
