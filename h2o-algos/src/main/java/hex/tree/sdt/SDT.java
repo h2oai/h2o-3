@@ -178,6 +178,15 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return binaryEntropy(task.countLeft, task.countLeft0, task.countRight, task.countRight0);
     }
 
+    public Node makeListFromNode(double zeroRatio, Node node) {
+        if (zeroRatio >= 0.5) {
+            node.setDecisionValue(0);
+        } else if (zeroRatio < 0.5) {
+            node.setDecisionValue(1);
+        }
+        return node;
+    }
+    
     public Node buildSubtree(final Frame data, DataFeaturesLimits featuresLimits, int nodeDepth) {
         Node subtreeRoot = new Node();
         _nodesCount++;
@@ -186,7 +195,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         }
         // todo - add limit by information gain (at least because of ideal split for example 11111)
         double zeroRatio = getZeroRatio(data);
-        if (actualDepth >= maxDepth || data.numRows() <= LIMIT_NUM_ROWS_FOR_SPLIT || zeroRatio > 0.9 || zeroRatio < 0.1) {
+        if (nodeDepth >= _maxDepth || data.numRows() <= LIMIT_NUM_ROWS_FOR_SPLIT || zeroRatio > 0.9 || zeroRatio < 0.1) {
 //            System.out.println("actualDepth: " + actualDepth + ", data.numRows(): " + data.numRows() + ", zeroRatio: " + zeroRatio);
             if (zeroRatio >= 0.5) {
                 subtreeRoot.setDecisionValue(0);
@@ -223,14 +232,14 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         // (count0, count1)
         Pair<Integer, Integer> classesCount = countClasses(featuresLimits);
         double zeroRatio = classesCount._1() /*0*/ * 1.0 / (classesCount._1() /*0*/ + classesCount._2() /*1*/);
-        if ((actualDepth >= maxDepth) || ((classesCount._1() + classesCount._2()) <= LIMIT_NUM_ROWS_FOR_SPLIT)
-                || zeroRatio > 0.9 || zeroRatio < 0.1) {
-            if (zeroRatio >= 0.5) {
-                subtreeRoot.setDecisionValue(0);
-            } else if (zeroRatio < 0.5) {
-                subtreeRoot.setDecisionValue(1);
-            }
-            return subtreeRoot;
+        if(nodeDepth == 1) {
+            System.out.println("Classes counts in dataset: 0 - " + classesCount._1() +", 1 - " + classesCount._2());
+        }
+        if ((nodeDepth >= _maxDepth) || (classesCount._1() <= LIMIT_NUM_ROWS_FOR_SPLIT) || (classesCount._2() <= LIMIT_NUM_ROWS_FOR_SPLIT)
+//                || zeroRatio > 0.999 || zeroRatio < 0.001
+        ) {
+            System.out.println("Reason: depth=" + _actualDepth + ", ratio=" + zeroRatio + ", class0=" + classesCount._1() + ", class1=" + classesCount._2());
+            return makeListFromNode(zeroRatio, subtreeRoot);
         }
         Histogram histogram = new Histogram(_train, featuresLimits, BinningStrategy.EQUAL_WIDTH);
 
