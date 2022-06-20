@@ -1093,7 +1093,7 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 #' @param expr When specified, disable progress bar only for the evaluation of the expr and after the evaluation return to the previous setting (default is to show the progress bar), otherwise disable it globally.
 #' @returns Value of expr if specified, otherwise NULL.
 #'
-#' @seealso \link{h2o.show_progress}}
+#' @seealso \link{h2o.show_progress}
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -1136,7 +1136,7 @@ h2o.no_progress <- function(expr) {
 #' @param expr When specified enable progress only for the evaluation of the expr and after the evaluation return to the previous setting (default is to show the progress bar), otherwise enable it globally.
 #' @returns Value of expr if specified, otherwise NULL.
 #'
-#' @seealso \link{h2o.no_progress}}
+#' @seealso \link{h2o.no_progress}
 #' @examples 
 #' \dontrun{
 #' library(h2o)
