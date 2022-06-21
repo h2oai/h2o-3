@@ -13,6 +13,7 @@ import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
+import hex.leaderboard.*;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -70,7 +71,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         ModelingStep step = aml.session().getModelingStep(model.getKey());
         return new LeaderboardCell[] {
                 new TrainingTime(model),
-                new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
+                new ScoringTimePerRow(model, aml.getLeaderboardFrame() == null ? aml.getTrainingFrame() : aml.getLeaderboardFrame()),
 //                new ModelSize(model._key)
                 new AlgoName(model),
                 new ModelProvider(model, step),
@@ -375,7 +376,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if ("deviance".equalsIgnoreCase(sortMetric)) {
         sortMetric = "mean_residual_deviance"; //compatibility with names used in leaderboard
     }
-    _leaderboard = Leaderboard.getOrMake(_key.toString(), _eventLog, _leaderboardFrame, sortMetric);
+    _leaderboard = Leaderboard.getOrMake(_key.toString(), _leaderboardFrame, sortMetric);
     _leaderboard.setExtensionsProvider(createLeaderboardExtensionProvider(this));
   }
 

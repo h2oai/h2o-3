@@ -2,8 +2,8 @@ package water.automl.api.schemas3;
 
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.StepDefinition;
+import hex.leaderboard.Leaderboard;
 import water.Iced;
 import water.Key;
 import water.api.API;
@@ -106,7 +106,7 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
     Leaderboard lb = autoML.leaderboard();
     if (null == lb) {
-      lb = new Leaderboard(project_name, eventLog, autoML.getLeaderboardFrame(), sort_metric);
+      lb = new Leaderboard(project_name, autoML.getLeaderboardFrame(), sort_metric);
     }
     leaderboard = new LeaderboardV99().fillFromImpl(lb);
     leaderboard_table = leaderboard.table; //for backwards compatibility

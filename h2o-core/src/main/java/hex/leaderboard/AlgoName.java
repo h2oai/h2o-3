@@ -1,9 +1,8 @@
-package ai.h2o.automl.leaderboard;
+package hex.leaderboard;
 
 import hex.Model;
 import water.Iced;
 import water.Key;
-import water.util.Log;
 
 public class AlgoName extends Iced<AlgoName> implements LeaderboardCell<String, AlgoName> {
     public static final LeaderboardColumn COLUMN = new LeaderboardColumn("algo", "string", "%s");

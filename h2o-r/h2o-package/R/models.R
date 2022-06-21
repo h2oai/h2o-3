@@ -6150,3 +6150,46 @@ h2o.predicted_vs_actual_by_variable <- function(object,
   attr(vi, "formats") <- c("%s", rep_len("%5f", ncol(vi) - 1))
   vi
 }
+
+#'Create a leaderboard from a list of model
+#'
+#' @param object
+#' @param leaderboard_frame
+#' @param sort_metric
+#' @param extra_columns
+#' @param scoring_data
+#' @return data.frame
+#' @export
+h2o.make_leaderboard <- function(object,
+                                 leaderboard_frame,
+                                 sort_metric = "AUTO",
+                                 extra_columns = c(),
+                                 scoring_data = c("AUTO", "train", "valid", "xval")
+) {
+  .get_models <- function(obj){
+    if (is.list(obj)) {
+      return(lapply(obj, .get_models))
+    } else if (.is.H2OAutoML(obj)) {
+      return(unlist(as.list(obj@leaderboard$model_id)))
+    } else if (inherits(obj, "H2OGrid")) {
+      return(unlist(obj@model_ids))
+    } else if (is.character(obj)) {
+      return(obj)
+    } else if (inherits(obj, "H2OModel")) {
+      return(h2o.keyof(obj))
+    } else {
+      stop("Unsupported object!")
+    }
+  }
+  model_ids <- unlist(.get_models(object))
+  extra_cols <- paste0(extra_columns, collapse = "\", \"")
+  scoring_data <- match.arg(scoring_data)
+
+  as.data.frame(.newExpr("makeLeaderboard",
+                         model_ids,
+                         paste0("\"", (if (missing(leaderboard_frame) || is.null(leaderboard_frame)) NULL else h2o.keyof(leaderboard_frame)), "\""),
+                         paste0("\"", sort_metric, "\""),
+                         paste0("[\"", extra_cols, "\"]"),
+                         paste0("\"", scoring_data, "\"")
+  ), check.names = FALSE)
+}

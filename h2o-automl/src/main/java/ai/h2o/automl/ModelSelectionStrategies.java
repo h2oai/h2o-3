@@ -1,7 +1,7 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
+import hex.leaderboard.Leaderboard;
 import org.apache.log4j.Logger;
 import water.Key;
 import water.util.ArrayUtils;

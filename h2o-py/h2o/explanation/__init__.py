@@ -30,6 +30,7 @@ try:
     import numpy
     import matplotlib
     from ._explain import *
+    from ._leaderboard import *
 
     __all__ = [
         "explain",

@@ -6,8 +6,8 @@ import ai.h2o.automl.ModelSelectionStrategies.KeepBestNFromSubgroup;
 import ai.h2o.automl.ModelSelectionStrategies.LeaderboardHolder;
 import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
+import hex.leaderboard.Leaderboard;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -75,7 +75,7 @@ public class ModelSelectionStrategiesTest {
         leaderboardSupplier = () -> {
             String name = "selection_lb";
             EventLog el = EventLog.getOrMake(Key.make(name)); //toDelete.add(el);
-            Leaderboard lb = Leaderboard.getOrMake(name, el, fr, "logloss"); //toDelete.add(lb);
+            Leaderboard lb = Leaderboard.getOrMake(name,  fr, "logloss"); //toDelete.add(lb);
             return new LeaderboardHolder() {
                 @Override
                 public Leaderboard get() {

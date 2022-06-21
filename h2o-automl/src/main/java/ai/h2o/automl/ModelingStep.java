@@ -9,7 +9,6 @@ import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
-import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
@@ -23,6 +22,7 @@ import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceWalker;
+import hex.leaderboard.Leaderboard;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
@@ -709,10 +709,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         private LeaderboardHolder makeLeaderboard(String name, EventLog eventLog) {
             Leaderboard amlLeaderboard = aml().leaderboard();
-            EventLog tmpEventLog = eventLog == null ? EventLog.getOrMake(Key.make(name)) : eventLog;
             Leaderboard tmpLeaderboard = Leaderboard.getOrMake(
                     name,
-                    tmpEventLog,
                     amlLeaderboard.leaderboardFrame(),
                     amlLeaderboard.getSortMetric()
             );
@@ -727,9 +725,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     //by default, just empty the leaderboard and remove the container without touching anything model-related.
                     tmpLeaderboard.removeModels(tmpLeaderboard.getModelKeys(), false);
                     tmpLeaderboard.remove(false);
-                    if (eventLog == null) {
-                        tmpEventLog.remove();
-                    }
                 }
             };
         }

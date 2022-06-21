@@ -1,8 +1,5 @@
-package ai.h2o.automl.leaderboard;
+package hex.leaderboard;
 
-import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.events.EventLogEntry.Stage;
-import ai.h2o.automl.utils.DKVUtils;
 import hex.Model;
 import hex.ModelContainer;
 import hex.ModelMetrics;
@@ -13,6 +10,7 @@ import water.logging.Logger;
 import water.logging.LoggerFactory;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -63,12 +61,12 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * then we can't guarantee the fairness of the leaderboard ranking.
    *
    * @param projectName
-   * @param eventLog
    * @param leaderboardFrame
    * @param sortMetric
+   * @param scoreData
    * @return an existing leaderboard if there's already one in DKV for this project, or a new leaderboard added to DKV.
    */
-  public static Leaderboard getOrMake(String projectName, EventLog eventLog, Frame leaderboardFrame, String sortMetric) {
+  public static Leaderboard getOrMake(String projectName,  Frame leaderboardFrame, String sortMetric, String scoreData) {
     Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(projectName)));
     if (null != leaderboard) {
       if (leaderboardFrame != null
@@ -76,21 +74,45 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
                           || leaderboardFrame.checksum() != leaderboard._leaderboard_frame_checksum)) {
         throw new H2OIllegalArgumentException("Cannot use leaderboard "+projectName+" with a new leaderboard frame"
                 +" (existing leaderboard frame: "+leaderboard._leaderboard_frame_key+").");
-      } else {
-        eventLog.warn(Stage.Workflow, "New models will be added to existing leaderboard "+projectName
-                +" (leaderboard frame="+leaderboard._leaderboard_frame_key+") with already "+leaderboard.getModelKeys().length+" models.");
       }
+      else {
+        log.warn("New models will be added to existing leaderboard "+projectName
+                +" (leaderboard frame="+leaderboard._leaderboard_frame_key+") with already "+leaderboard.getModelKeys().length+" models.");
+//        eventLog.warn(Stage.Workflow, "New models will be added to existing leaderboard "+projectName
+//                +" (leaderboard frame="+leaderboard._leaderboard_frame_key+") with already "+leaderboard.getModelKeys().length+" models.");
+      }
+      leaderboard._score_data = scoreData;
       if (sortMetric != null && !sortMetric.equals(leaderboard._sort_metric)) {
         leaderboard._sort_metric = sortMetric.toLowerCase();
         if (leaderboard.getLeader() != null) leaderboard.setDefaultMetrics(leaderboard.getLeader()); //reinitialize
       }
     } else {
-      leaderboard = new Leaderboard(projectName, eventLog, leaderboardFrame, sortMetric);
+      leaderboard = new Leaderboard(projectName, leaderboardFrame, sortMetric);
     }
     DKV.put(leaderboard);
     return leaderboard;
   }
-  
+
+  /**
+   * Retrieves a leaderboard from DKV or creates a fresh one and add it to DKV.
+   *
+   * Note that if the leaderboard is reused to add new models, we have to use the same leaderboard frame.
+   *
+   * IMPORTANT!
+   * if the leaderboard is created without leaderboardFrame, the models will be sorted according to their default metrics
+   * (in order of availability: cross-validation metrics, validation metrics, training metrics).
+   * Therefore, if some models were trained with/without cross-validation, or with different training or validation frames,
+   * then we can't guarantee the fairness of the leaderboard ranking.
+   *
+   * @param projectName
+   * @param leaderboardFrame
+   * @param sortMetric
+   * @return an existing leaderboard if there's already one in DKV for this project, or a new leaderboard added to DKV.
+   */
+  public static Leaderboard getOrMake(String projectName,  Frame leaderboardFrame, String sortMetric){
+    return getOrMake(projectName, leaderboardFrame, sortMetric, "auto");
+  }
+
   private static final Logger log = LoggerFactory.getLogger(Leaderboard.class);
 
   /**
@@ -133,17 +155,16 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   private String _sort_metric;
 
   /**
+   * One of "auto", "xval", "valid", "train";
+   */
+  private String _score_data = "auto";
+  /**
    * Metrics reported in leaderboard
    * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
    * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
    * Multinomial metrics: logloss, mean_per_class_error, rmse, mse
    */
   private String[] _metrics;
-
-  /**
-   * The eventLog attached to same instance as this Leaderboard object.
-   */
-  private final Key<EventLog> _eventlog_key;
 
   /**
    * Frame for which we return the metrics, by default.
@@ -160,14 +181,12 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   /**
    * Constructs a new leaderboard (doesn't put it in DKV).
    * @param projectName
-   * @param eventLog
    * @param leaderboardFrame
    * @param sortMetric
    */
-  public Leaderboard(String projectName, EventLog eventLog, Frame leaderboardFrame, String sortMetric) {
+  public Leaderboard(String projectName, Frame leaderboardFrame, String sortMetric) {
     super(Key.make(idForProject(projectName)));
     _project_name = projectName;
-    _eventlog_key = eventLog._key;
     _leaderboard_frame_key = leaderboardFrame == null ? null : leaderboardFrame._key;
     _leaderboard_frame_checksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
     _sort_metric = sortMetric == null ? null : sortMetric.toLowerCase();
@@ -288,8 +307,6 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     return _metric_values.get(metricName);
   }
 
-  private EventLog eventLog() { return _eventlog_key.get(); }
-
   private void setDefaultMetrics(Model m) {
     write_lock();
     String[] metrics = defaultMetricsForModel(m);
@@ -313,13 +330,23 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     return getOrCreateModelMetrics(modelKey, getExtensionsAsMap());
   }
 
+  private ModelMetrics getModelMetrics(Model model) {
+    switch (_score_data) {
+      case "auto": return ModelMetrics.defaultModelMetrics(model);
+      case "xval": return model._output._cross_validation_metrics;
+      case "valid": return model._output._validation_metrics;
+      case "train": return model._output._training_metrics;
+      default: throw new H2OIllegalArgumentException("Unsupported score data argument: "+_score_data+". Use one of: auto, xval, valid, train.");
+    }
+  }
+
   private ModelMetrics getOrCreateModelMetrics(Key<Model> modelKey, Map<Key<Model>, LeaderboardCell[]> extensions) {
     final Frame leaderboardFrame = leaderboardFrame();
     ModelMetrics mm;
     Model model = modelKey.get();
     if (leaderboardFrame == null) {
       // If leaderboardFrame is null, use default model metrics instead
-      mm = ModelMetrics.defaultModelMetrics(model);
+      mm = getModelMetrics(model);
     } else {
       mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
       if (mm == null) { // metrics haven't been computed yet (should occur max once per model)
@@ -366,9 +393,12 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     for (Key<Model> k : newModelKeys) {
       Model m = k.get();
       if (m == null) continue; // warning handled in next loop below
-      eventLog().debug(Stage.ModelTraining, "Adding model "+k+" to leaderboard "+_key+"."
-              + " Training time: model=" + Math.round(m._output._run_time / 1000) + "s,"
-              + " total=" + Math.round(m._output._total_run_time / 1000) + "s");
+      Log.debug("Adding model "+k+" to leaderboard "+_key+"."
+              + " Training time: model=" + Math.round(m._output._run_time / 1000.) + "s,"
+              + " total=" + Math.round(m._output._total_run_time / 1000.) + "s");
+//      eventLog().debug(Stage.ModelTraining, "Adding model "+k+" to leaderboard "+_key+"."
+//              + " Training time: model=" + Math.round(m._output._run_time / 1000) + "s,"
+//              + " total=" + Math.round(m._output._total_run_time / 1000) + "s");
     }
 
     final List<ModelMetrics> modelMetrics = new ArrayList<>();
@@ -378,7 +408,8 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       Model model = modelKey.get();
       if (model == null) {
         badKeys.add(modelKey);
-        eventLog().warn(Stage.ModelTraining, "Model `"+modelKey+"` has unexpectedly been deleted from H2O: ignoring the model and/or removing it from the leaderboard.");
+        Log.warn("Model `"+modelKey+"` has unexpectedly been deleted from H2O: ignoring the model and/or removing it from the leaderboard.");
+//        eventLog().warn(Stage.ModelTraining, "Model `"+modelKey+"` has unexpectedly been deleted from H2O: ignoring the model and/or removing it from the leaderboard.");
         continue;
       }
 
@@ -389,7 +420,8 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       assert mm != null: "Missing metrics for model "+modelKey;
       if (mm == null) {
         badKeys.add(modelKey);
-        eventLog().warn(Stage.ModelTraining, "Metrics for model `"+modelKey+"` are missing: ignoring the model and/or removing it from the leaderboard.");
+        Log.warn("Metrics for model `"+modelKey+"` are missing: ignoring the model and/or removing it from the leaderboard.");
+//        eventLog().warn(Stage.ModelTraining, "Metrics for model `"+modelKey+"` are missing: ignoring the model and/or removing it from the leaderboard.");
         continue;
       }
       modelMetrics.add(mm);
@@ -415,8 +447,9 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     }, null);
 
     if (oldLeaderKey == null || !oldLeaderKey.equals(_model_keys[0])) {
-      eventLog().info(Stage.ModelTraining,
-              "New leader: "+_model_keys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
+      Log.info("New leader: "+_model_keys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
+//      eventLog().info(Stage.ModelTraining,
+//              "New leader: "+_model_keys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
     }
   } // addModels
 
@@ -430,7 +463,8 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
             || Arrays.stream(modelKeys).noneMatch(k -> ArrayUtils.contains(_model_keys, k))) return;
 
     Arrays.stream(modelKeys).filter(k -> ArrayUtils.contains(_model_keys, k)).forEach(k -> {
-      eventLog().debug(Stage.ModelTraining, "Removing model "+k+" from leaderboard "+_key);
+      Log.debug("Removing model "+k+" from leaderboard "+_key);
+//      eventLog().debug(Stage.ModelTraining, "Removing model "+k+" from leaderboard "+_key);
     });
     Key<Model>[] remainingKeys = Arrays.stream(_model_keys).filter(k -> !ArrayUtils.contains(modelKeys, k)).toArray(Key[]::new);
     atomicUpdate(() -> {
@@ -573,7 +607,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
         // otherwise use default model metrics
         Key model_key = m._key;
         long model_checksum = m.checksum();
-        ModelMetrics mm = ModelMetrics.defaultModelMetrics(m);
+        ModelMetrics mm = getModelMetrics(m);
         metrics[i++] = ModelMetrics.getMetricFromModelMetric(
             _leaderboard_model_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
             metric
@@ -620,7 +654,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     return values;
   }
 
-  String rankTsv() {
+  public String rankTsv() {
     String lineSeparator = "\n";
 
     StringBuilder sb = new StringBuilder();

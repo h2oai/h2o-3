@@ -1,12 +1,11 @@
 package water.automl.api;
 
-import ai.h2o.automl.leaderboard.Leaderboard;
+import hex.leaderboard.Leaderboard;
 import water.*;
 import water.api.Handler;
 import water.api.schemas3.TwoDimTableV3;
 import water.automl.api.schemas3.LeaderboardV99;
 import water.automl.api.schemas3.LeaderboardsV99;
-import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2OKeyWrongTypeArgumentException;
 
