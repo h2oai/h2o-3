@@ -6,8 +6,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 test.grid.sequential <- function() {
   iris.hex <- h2o.importFile(path = locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
 
-  ntrees_opts <- 1:10
-  learn_rate_opts <- 10**(-(1:10))
+  ntrees_opts <- 1:6
+  learn_rate_opts <- 10^(-(1:6))
   size_of_hyper_space <- length(ntrees_opts)
 
   hyper_parameters <- list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)

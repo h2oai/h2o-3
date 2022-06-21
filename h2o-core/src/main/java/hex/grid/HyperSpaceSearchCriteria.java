@@ -16,7 +16,7 @@ public class HyperSpaceSearchCriteria extends Iced {
       case Cartesian: return new CartesianSearchCriteria();
       case RandomDiscrete: return new RandomDiscreteValueSearchCriteria();
       case Sequential: return new SequentialSearchCriteria();
-      default: throw new H2OIllegalArgumentException("search_criteria.strategy", strategy.toString());
+      default: throw new H2OIllegalArgumentException("strategy", strategy.toString());
     }
   }
   public static class StoppingCriteria extends Iced {
@@ -178,7 +178,7 @@ public class HyperSpaceSearchCriteria extends Iced {
   public static final class SequentialSearchCriteria extends HyperSpaceSearchCriteria {
 
     private StoppingCriteria _stoppingCriteria;
-    private boolean _early_stopping; // has to be snake_case to match the field in the schema
+    private boolean _early_stopping;
 
     public SequentialSearchCriteria() {
       this(new StoppingCriteria(), true);

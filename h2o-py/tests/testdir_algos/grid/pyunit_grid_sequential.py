@@ -1,6 +1,5 @@
 import sys
 import os
-import tempfile
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
@@ -13,8 +12,8 @@ def test_grid_sequential():
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     # run GBM Grid Search
     hyper_parameters_1 = {
-        "ntrees": [i for i in range(1, 11)],
-        "learn_rate": [10.0**(-i) for i in range(1, 11)]
+        "ntrees": [i for i in range(1, 7)],
+        "learn_rate": [10.0**(-i) for i in range(1, 7)]
     }
 
     grid1 = H2OGridSearch(
@@ -28,7 +27,7 @@ def test_grid_sequential():
         )
     )
     grid1.train(x=list(range(4)), y=4, training_frame=train, seed=1)
-    assert len(grid1.model_ids) == 10
+    assert len(grid1.model_ids) == 6
 
     grid2 = H2OGridSearch(
         H2OGradientBoostingEstimator,
