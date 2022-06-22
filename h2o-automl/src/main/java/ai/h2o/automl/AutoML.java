@@ -8,7 +8,9 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
-import ai.h2o.automl.leaderboard.*;
+import ai.h2o.automl.leaderboard.ModelGroup;
+import ai.h2o.automl.leaderboard.ModelProvider;
+import ai.h2o.automl.leaderboard.ModelStep;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
@@ -376,7 +378,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if ("deviance".equalsIgnoreCase(sortMetric)) {
         sortMetric = "mean_residual_deviance"; //compatibility with names used in leaderboard
     }
-    _leaderboard = Leaderboard.getOrMake(_key.toString(), _leaderboardFrame, sortMetric);
+    _leaderboard = Leaderboard.getOrMake(_key.toString(), eventLog().asLogger(Stage.Workflow), _leaderboardFrame, sortMetric);
     _leaderboard.setExtensionsProvider(createLeaderboardExtensionProvider(this));
   }
 

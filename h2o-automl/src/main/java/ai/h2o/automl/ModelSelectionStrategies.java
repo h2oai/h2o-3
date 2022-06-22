@@ -1,5 +1,7 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.leaderboard.Leaderboard;
 import org.apache.log4j.Logger;
@@ -38,11 +40,11 @@ public final class ModelSelectionStrategies {
 
         @Override
         @SuppressWarnings("unchecked")
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog) {
             LeaderboardHolder lbHolder = makeSelectionLeaderboard();
             Leaderboard tmpLeaderboard = lbHolder.get();
-            tmpLeaderboard.addModels((Key<Model>[]) originalModels);
-            tmpLeaderboard.addModels((Key<Model>[]) newModels);
+            tmpLeaderboard.addModels((Key<Model>[]) originalModels, eventLog.asLogger(EventLogEntry.Stage.ModelTraining));
+            tmpLeaderboard.addModels((Key<Model>[]) newModels, eventLog.asLogger(EventLogEntry.Stage.ModelTraining));
             if (LOG.isDebugEnabled()) LOG.debug(tmpLeaderboard.toLogString());
             Key<Model>[] sortedKeys = tmpLeaderboard.getModelKeys();
             Key<Model>[] bestN = ArrayUtils.subarray(sortedKeys, 0, Math.min(sortedKeys.length, _N));
@@ -61,8 +63,8 @@ public final class ModelSelectionStrategies {
         }
 
         @Override
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
-            return new KeepBestN<M>(originalModels.length, _leaderboardSupplier).select(originalModels, newModels);
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog) {
+            return new KeepBestN<M>(originalModels.length, _leaderboardSupplier).select(originalModels, newModels, eventLog);
         }
     }
 
@@ -78,10 +80,10 @@ public final class ModelSelectionStrategies {
         }
 
         @Override
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog) {
             Key<M>[] originalModelsSubgroup = Arrays.stream(originalModels).filter(_criterion).toArray(Key[]::new);
             Key<M>[] newModelsSubGroup = Arrays.stream(newModels).filter(_criterion).toArray(Key[]::new);
-            return new KeepBestN<M>(_N, _leaderboardSupplier).select(originalModelsSubgroup, newModelsSubGroup);
+            return new KeepBestN<M>(_N, _leaderboardSupplier).select(originalModelsSubgroup, newModelsSubGroup, eventLog);
         }
     }
 

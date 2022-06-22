@@ -6,6 +6,7 @@ import ai.h2o.automl.ModelSelectionStrategies.KeepBestNFromSubgroup;
 import ai.h2o.automl.ModelSelectionStrategies.LeaderboardHolder;
 import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.leaderboard.Leaderboard;
 import org.junit.After;
@@ -37,7 +38,7 @@ public class ModelSelectionStrategiesTest {
     private Model[] oldModels;
     private Model[] newModels;
     private Supplier<LeaderboardHolder> leaderboardSupplier;
-
+    private static Key<AutoML> dummy = Key.make();
     static class DummyScoreModel extends DummyModel {
 
         private double[] _perfectPreds;
@@ -75,7 +76,7 @@ public class ModelSelectionStrategiesTest {
         leaderboardSupplier = () -> {
             String name = "selection_lb";
             EventLog el = EventLog.getOrMake(Key.make(name)); //toDelete.add(el);
-            Leaderboard lb = Leaderboard.getOrMake(name,  fr, "logloss"); //toDelete.add(lb);
+            Leaderboard lb = Leaderboard.getOrMake(name, el.asLogger(EventLogEntry.Stage.Workflow),  fr, "logloss"); //toDelete.add(lb);
             return new LeaderboardHolder() {
                 @Override
                 public Leaderboard get() {
@@ -116,7 +117,8 @@ public class ModelSelectionStrategiesTest {
 
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new)
+                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
+                    EventLog.getOrMake(dummy)
             );
 
             assertNotNull(selection);
@@ -126,6 +128,7 @@ public class ModelSelectionStrategiesTest {
             assertArrayEquals(ar("dummy_1.0", "dummy_2.0", "dummy_3.0"), Arrays.stream(selection._remove).map(Object::toString).toArray(String[]::new));
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
 
@@ -137,7 +140,8 @@ public class ModelSelectionStrategiesTest {
             // swapping old and new for the sake of this test
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new)
+                    Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
+                    EventLog.getOrMake(dummy)
             );
 
             assertNotNull(selection);
@@ -146,6 +150,7 @@ public class ModelSelectionStrategiesTest {
             assertArrayEquals(ar("dummy_1.1", "dummy_2.2"), Arrays.stream(selection._remove).map(Object::toString).toArray(String[]::new));
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
 
@@ -157,7 +162,8 @@ public class ModelSelectionStrategiesTest {
             // swapping old and new for the sake of this test
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new)
+                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
+                    EventLog.getOrMake(dummy)
             );
 
             assertNotNull(selection);
@@ -166,6 +172,7 @@ public class ModelSelectionStrategiesTest {
             assertEquals(0, selection._remove.length);
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
 
@@ -176,7 +183,8 @@ public class ModelSelectionStrategiesTest {
 
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new)
+                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
+                    EventLog.getOrMake(dummy)
             );
 
             assertNotNull(selection);
@@ -186,6 +194,7 @@ public class ModelSelectionStrategiesTest {
             assertArrayEquals(ar("dummy_1.0"), Arrays.stream(selection._remove).map(Object::toString).toArray(String[]::new));
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
 
@@ -203,7 +212,8 @@ public class ModelSelectionStrategiesTest {
 
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new)
+                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
+                    EventLog.getOrMake(dummy)
             );
 
             assertNotNull(selection);
@@ -213,8 +223,7 @@ public class ModelSelectionStrategiesTest {
             assertArrayEquals(ar("dummy_1.0", "dummy_3.0"), Arrays.stream(selection._remove).map(Object::toString).toArray(String[]::new));
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
-
-
 }

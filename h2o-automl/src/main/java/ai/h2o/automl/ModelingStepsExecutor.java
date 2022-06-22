@@ -2,10 +2,10 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.AutoML.Constraint;
 import ai.h2o.automl.StepResultState.ResultStatus;
-import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import hex.Model;
 import hex.ModelContainer;
 import hex.leaderboard.Leaderboard;
@@ -15,7 +15,9 @@ import water.Key;
 import water.util.Countdown;
 import water.util.Log;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -206,7 +208,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         for (Key<Model> key : container.getModelKeys()) step.register(key);
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModels(container.getModelKeys());
+        leaderboard.addModels(container.getModelKeys(), eventLog().asLogger(Stage.ModelTraining));
         int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }
@@ -215,7 +217,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         step.register(model._key);
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModel(model._key);
+        leaderboard.addModel(model._key, eventLog().asLogger(Stage.ModelTraining));
         int after = leaderboard.getModelCount();
         if (!step.ignores(Constraint.MODEL_COUNT))
             _modelCount.addAndGet(after - before);

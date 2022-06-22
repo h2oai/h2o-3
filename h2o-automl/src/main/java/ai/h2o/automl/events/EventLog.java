@@ -121,4 +121,69 @@ public class EventLog extends Keyed<EventLog> {
   public String toString() {
     return this.toTwoDimTable().toString();
   }
+
+  public Logger asLogger(Stage stage) {
+    final EventLog el = this;
+    return new Logger() {
+      @Override
+      public void trace(String message) {
+        el.debug(stage, message);
+      }
+
+      @Override
+      public void debug(String message) {
+        el.debug(stage, message);
+      }
+
+      @Override
+      public void info(String message) {
+        el.info(stage, message);
+      }
+
+      @Override
+      public void warn(String message) {
+        el.warn(stage, message);
+      }
+
+      @Override
+      public void error(String message) {
+        el.error(stage, message);
+      }
+
+      @Override
+      public void fatal(String message) {
+        el.error(stage, message);
+      }
+
+      @Override
+      public boolean isTraceEnabled() {
+        return false;
+      }
+
+      @Override
+      public boolean isDebugEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isInfoEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isWarnEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isErrorEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isFatalEnabled() {
+        return false;
+      }
+    };
+  }
 }

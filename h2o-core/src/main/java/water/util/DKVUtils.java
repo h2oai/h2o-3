@@ -1,4 +1,4 @@
-package hex.leaderboard;
+package water.util;
 
 import water.Job;
 import water.Key;

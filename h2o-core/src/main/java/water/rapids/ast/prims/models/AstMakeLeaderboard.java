@@ -1,12 +1,15 @@
 package water.rapids.ast.prims.models;
 
 import hex.Model;
+import hex.ModelContainer;
 import hex.grid.Grid;
 import hex.leaderboard.*;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -58,9 +61,9 @@ public class AstMakeLeaderboard extends AstPrimitive {
                     Object obj = DKV.getGet(model_id);
                     if (obj instanceof Model) {
                         return Stream.of(Key.make(model_id));
-                    } else if (obj instanceof Grid) {
-                        Grid g = (Grid) obj;
-                        return Stream.of(g.getModelKeys());
+                    } else if (obj instanceof ModelContainer) {
+                        ModelContainer mc = (ModelContainer) obj;
+                        return Stream.of(mc.getModelKeys());
                     } else {
                         throw new RuntimeException("Unsupported model/grid id: " + model_id + "!");
                     }
@@ -139,9 +142,10 @@ public class AstMakeLeaderboard extends AstPrimitive {
             Log.warn("Leaderboard frame present but scoring data are set to " + scoringData +
                     ". Using scores from " + scoringData + ".");
 
-        ldb = Leaderboard.getOrMake(projectName, leaderboardFrame, sortMetric, scoringData);
+        final Logger logger = LoggerFactory.getLogger(Leaderboard.class);
+        ldb = Leaderboard.getOrMake(projectName, logger, leaderboardFrame, sortMetric, scoringData);
         ldb.setExtensionsProvider(createLeaderboardExtensionProvider(leaderboardFrame));
-        ldb.addModels(models);
+        ldb.addModels(models, logger);
         Frame leaderboard = twoDimTableToFrame(ldb.toTwoDimTable(extensions), Key.make());
         return new ValFrame(leaderboard);
     }

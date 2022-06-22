@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.events.EventLog;
 import hex.Model;
 import water.Key;
 
@@ -16,5 +17,5 @@ public interface ModelSelectionStrategy<M extends Model>{
         }
     }
 
-    Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels);
+    Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog);
 }

@@ -5,6 +5,7 @@ import ai.h2o.automl.AutoML;
 import ai.h2o.automl.ModelingStep;
 import ai.h2o.automl.dummy.DummyStepsProvider;
 import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.leaderboard.*;
 import hex.tree.gbm.GBM;
@@ -36,7 +37,7 @@ public class LeaderboardTest extends water.TestUtil {
     Leaderboard lb = null;
     EventLog eventLog = EventLog.getOrMake(dummy);
     try {
-      lb = Leaderboard.getOrMake("dummy_lb_no_sort_metric",  new Frame(), null);
+      lb = Leaderboard.getOrMake("dummy_lb_no_sort_metric", eventLog.asLogger(EventLogEntry.Stage.Workflow),  new Frame(), null);
 
       TwoDimTable table = lb.toTwoDimTable();
       assertNotNull("empty leaderboard should also produce a TwoDimTable", table);
@@ -52,7 +53,7 @@ public class LeaderboardTest extends water.TestUtil {
     Leaderboard lb = null;
     EventLog eventLog = EventLog.getOrMake(dummy);
     try {
-      lb = Leaderboard.getOrMake("dummy_lb_logloss_sort_metric",  new Frame(), "logloss");
+      lb = Leaderboard.getOrMake("dummy_lb_logloss_sort_metric", eventLog.asLogger(EventLogEntry.Stage.Workflow),  new Frame(), "logloss");
 
       TwoDimTable table = lb.toTwoDimTable();
       assertNotNull("empty leaderboard should also produce a TwoDimTable", table);
@@ -80,8 +81,8 @@ public class LeaderboardTest extends water.TestUtil {
       GBM job = new GBM(parms);
       model = job.trainModel().get();
       
-      lb = Leaderboard.getOrMake("dummy_rank_tsv",  null, "mae");
-      lb.addModel(model._key);
+      lb = Leaderboard.getOrMake("dummy_rank_tsv", eventLog.asLogger(EventLogEntry.Stage.Workflow),  null, "mae");
+      lb.addModel(model._key, eventLog.asLogger(EventLogEntry.Stage.ModelTraining));
       Log.info(lb.rankTsv());
       assertEquals("Error\n[0.3448260574357465, 0.44675855535636816, 0.19959320678410908, 0.31468498072970547, 0.19959320678410908]\n", lb.rankTsv());
     } finally {
@@ -115,7 +116,8 @@ public class LeaderboardTest extends water.TestUtil {
       ModelingStep step = new DummyStepsProvider.DummyModelStep(Algo.GBM, "my_gbm", null);
 
       EventLog eventLog = EventLog.getOrMake(dummy); removables.add(eventLog);
-      Leaderboard lb = Leaderboard.getOrMake("leaderboard_with_ext",  null, null); removables.add(lb);
+      Leaderboard lb = Leaderboard.getOrMake("leaderboard_with_ext", eventLog.asLogger(EventLogEntry.Stage.Workflow),null,null);
+      removables.add(lb);
       lb.setExtensionsProvider(new LeaderboardExtensionsProvider() {
         @Override
         public LeaderboardCell[] createExtensions(Model model) {
@@ -129,7 +131,7 @@ public class LeaderboardTest extends water.TestUtil {
           };
         }
       });
-      lb.addModel(model._key);
+      lb.addModel(model._key, eventLog.asLogger(EventLogEntry.Stage.ModelTraining));
       TwoDimTable lb_table = lb.toTwoDimTable();
       assertEquals(1, lb_table.getRowDim()); // one model, one row
       assertEquals(7, lb_table.getColDim()); // model_id + 6 binomial metrics

@@ -1,16 +1,12 @@
-from h2o.automl._base import H2OAutoMLBaseMixin
-from h2o.grid import H2OGridSearch
-from h2o.model.model_base import ModelBase
-from h2o.utils.typechecks import is_type
-from h2o.frame import H2OFrame
-from h2o.expr import ExprNode
-from h2o.exceptions import H2OValueError
-
 
 def make_leaderboard(object, leaderboard_frame=None,
                      sort_metric="AUTO",
                      extra_columns=[],
                      scoring_data="AUTO"):
+    from .utils.typechecks import is_type
+    from .frame import H2OFrame
+    from .expr import ExprNode
+    from .exceptions import H2OValueError
 
     def _get_models(obj):
         if isinstance(obj, list):
@@ -22,11 +18,11 @@ def make_leaderboard(object, leaderboard_frame=None,
                 else:
                     result.append(res)
             return result
-        elif isinstance(obj, H2OAutoMLBaseMixin):
+        elif hasattr(obj, "leaderboard"):
             return [row[0] for row in obj.leaderboard.as_data_frame(use_pandas=False, header=False)]
-        elif isinstance(obj, H2OGridSearch):
+        elif hasattr(obj, "model_ids"):
             return obj.model_ids
-        elif isinstance(obj, ModelBase):
+        elif hasattr(obj, "model_id"):
             return obj.model_id
         elif isinstance(is_type(obj, str)):
             return obj

@@ -8,10 +8,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
-import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -66,7 +63,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * @param scoreData
    * @return an existing leaderboard if there's already one in DKV for this project, or a new leaderboard added to DKV.
    */
-  public static Leaderboard getOrMake(String projectName,  Frame leaderboardFrame, String sortMetric, String scoreData) {
+  public static Leaderboard getOrMake(String projectName, Logger logger, Frame leaderboardFrame, String sortMetric, String scoreData) {
     Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(projectName)));
     if (null != leaderboard) {
       if (leaderboardFrame != null
@@ -76,10 +73,8 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
                 +" (existing leaderboard frame: "+leaderboard._leaderboard_frame_key+").");
       }
       else {
-        log.warn("New models will be added to existing leaderboard "+projectName
+        logger.warn("New models will be added to existing leaderboard "+projectName
                 +" (leaderboard frame="+leaderboard._leaderboard_frame_key+") with already "+leaderboard.getModelKeys().length+" models.");
-//        eventLog.warn(Stage.Workflow, "New models will be added to existing leaderboard "+projectName
-//                +" (leaderboard frame="+leaderboard._leaderboard_frame_key+") with already "+leaderboard.getModelKeys().length+" models.");
       }
       leaderboard._score_data = scoreData;
       if (sortMetric != null && !sortMetric.equals(leaderboard._sort_metric)) {
@@ -94,23 +89,10 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   }
 
   /**
-   * Retrieves a leaderboard from DKV or creates a fresh one and add it to DKV.
-   *
-   * Note that if the leaderboard is reused to add new models, we have to use the same leaderboard frame.
-   *
-   * IMPORTANT!
-   * if the leaderboard is created without leaderboardFrame, the models will be sorted according to their default metrics
-   * (in order of availability: cross-validation metrics, validation metrics, training metrics).
-   * Therefore, if some models were trained with/without cross-validation, or with different training or validation frames,
-   * then we can't guarantee the fairness of the leaderboard ranking.
-   *
-   * @param projectName
-   * @param leaderboardFrame
-   * @param sortMetric
-   * @return an existing leaderboard if there's already one in DKV for this project, or a new leaderboard added to DKV.
+   * @see #getOrMake(String, Frame, String, String, Logger)
    */
-  public static Leaderboard getOrMake(String projectName,  Frame leaderboardFrame, String sortMetric){
-    return getOrMake(projectName, leaderboardFrame, sortMetric, "auto");
+  public static Leaderboard getOrMake(String projectName, Logger logger,  Frame leaderboardFrame, String sortMetric){
+    return getOrMake(projectName, logger, leaderboardFrame, sortMetric, "auto");
   }
 
   private static final Logger log = LoggerFactory.getLogger(Leaderboard.class);
@@ -372,7 +354,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * we allow the caller to add the same model multiple times and we eliminate the duplicates here.
    * @param modelKeys
    */
-  public void addModels(final Key<Model>[] modelKeys) {
+  public void addModels(final Key<Model>[] modelKeys, Logger logger) {
     if (modelKeys == null || modelKeys.length == 0) return;
     if (null == _key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
@@ -393,12 +375,9 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     for (Key<Model> k : newModelKeys) {
       Model m = k.get();
       if (m == null) continue; // warning handled in next loop below
-      Log.debug("Adding model "+k+" to leaderboard "+_key+"."
+      logger.debug("Adding model "+k+" to leaderboard "+_key+"."
               + " Training time: model=" + Math.round(m._output._run_time / 1000.) + "s,"
               + " total=" + Math.round(m._output._total_run_time / 1000.) + "s");
-//      eventLog().debug(Stage.ModelTraining, "Adding model "+k+" to leaderboard "+_key+"."
-//              + " Training time: model=" + Math.round(m._output._run_time / 1000) + "s,"
-//              + " total=" + Math.round(m._output._total_run_time / 1000) + "s");
     }
 
     final List<ModelMetrics> modelMetrics = new ArrayList<>();
@@ -408,8 +387,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       Model model = modelKey.get();
       if (model == null) {
         badKeys.add(modelKey);
-        Log.warn("Model `"+modelKey+"` has unexpectedly been deleted from H2O: ignoring the model and/or removing it from the leaderboard.");
-//        eventLog().warn(Stage.ModelTraining, "Model `"+modelKey+"` has unexpectedly been deleted from H2O: ignoring the model and/or removing it from the leaderboard.");
+        logger.warn("Model `"+modelKey+"` has unexpectedly been deleted from H2O: ignoring the model and/or removing it from the leaderboard.");
         continue;
       }
 
@@ -420,8 +398,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       assert mm != null: "Missing metrics for model "+modelKey;
       if (mm == null) {
         badKeys.add(modelKey);
-        Log.warn("Metrics for model `"+modelKey+"` are missing: ignoring the model and/or removing it from the leaderboard.");
-//        eventLog().warn(Stage.ModelTraining, "Metrics for model `"+modelKey+"` are missing: ignoring the model and/or removing it from the leaderboard.");
+        logger.warn("Metrics for model `"+modelKey+"` are missing: ignoring the model and/or removing it from the leaderboard.");
         continue;
       }
       modelMetrics.add(mm);
@@ -447,9 +424,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     }, null);
 
     if (oldLeaderKey == null || !oldLeaderKey.equals(_model_keys[0])) {
-      Log.info("New leader: "+_model_keys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
-//      eventLog().info(Stage.ModelTraining,
-//              "New leader: "+_model_keys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
+      logger.info("New leader: "+_model_keys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
     }
   } // addModels
 
@@ -457,19 +432,18 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * @param modelKeys the keys of the models to be removed from this leaderboard.
    * @param cascade if true, the model itself and its dependencies will be completely removed from the backend.
    */
-  public void removeModels(final Key<Model>[] modelKeys, boolean cascade) {
+  public void removeModels(final Key<Model>[] modelKeys, boolean cascade, Logger logger) {
     if (modelKeys == null
             || modelKeys.length == 0
             || Arrays.stream(modelKeys).noneMatch(k -> ArrayUtils.contains(_model_keys, k))) return;
 
     Arrays.stream(modelKeys).filter(k -> ArrayUtils.contains(_model_keys, k)).forEach(k -> {
-      Log.debug("Removing model "+k+" from leaderboard "+_key);
-//      eventLog().debug(Stage.ModelTraining, "Removing model "+k+" from leaderboard "+_key);
+      logger.debug("Removing model "+k+" from leaderboard "+_key);
     });
     Key<Model>[] remainingKeys = Arrays.stream(_model_keys).filter(k -> !ArrayUtils.contains(modelKeys, k)).toArray(Key[]::new);
     atomicUpdate(() -> {
       _model_keys = new Key[0];
-      addModels(remainingKeys);
+      addModels(remainingKeys, logger);
     }, null);
 
     if (cascade) {
@@ -495,12 +469,12 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   }
 
   /**
-   * @see #addModels(Key[])
+   * @see #addModels(Key[], Logger)
    */
   @SuppressWarnings("unchecked")
-  public <M extends Model> void addModel(final Key<M> key) {
+  public <M extends Model> void addModel(final Key<M> key, Logger logger) {
     if (key == null) return;
-    addModels(new Key[] {key});
+    addModels(new Key[] {key}, logger);
   }
 
   /**
@@ -508,9 +482,9 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * @param cascade if true, the model itself and it's dependencies will be completely removed from the backend.
    */
   @SuppressWarnings("unchecked")
-  public <M extends Model> void removeModel(final Key<M> key, boolean cascade) {
+  public <M extends Model> void removeModel(final Key<M> key, boolean cascade, Logger logger) {
     if (key == null) return;
-    removeModels(new Key[] {key}, cascade);
+    removeModels(new Key[] {key}, cascade, logger);
   }
 
   private void addModelMetrics(ModelMetrics modelMetrics) {
