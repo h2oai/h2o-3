@@ -1,6 +1,7 @@
 package hex.leaderboard;
 
 import hex.Model;
+import hex.ModelCategory;
 import hex.ModelContainer;
 import hex.ModelMetrics;
 import water.*;
@@ -372,9 +373,18 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     if (newModelKeys.isEmpty()) return;
 
     allModelKeys.forEach(DKV::prefetch);
+    final ModelCategory[] allowedModelCategories = new ModelCategory[] {
+            ModelCategory.Binomial,
+            ModelCategory.Multinomial,
+            ModelCategory.Regression,
+    };
     for (Key<Model> k : newModelKeys) {
       Model m = k.get();
       if (m == null) continue; // warning handled in next loop below
+      assert m.isSupervised(): "Leaderboard supports only supervised models!";
+      assert ArrayUtils.contains(allowedModelCategories, m._output.getModelCategory()) :
+              "Leaderboard doesn't support " + m._output.getModelCategory() + " model category!";
+
       logger.debug("Adding model "+k+" to leaderboard "+_key+"."
               + " Training time: model=" + Math.round(m._output._run_time / 1000.) + "s,"
               + " total=" + Math.round(m._output._total_run_time / 1000.) + "s");
