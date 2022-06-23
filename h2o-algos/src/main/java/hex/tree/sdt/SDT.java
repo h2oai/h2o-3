@@ -31,6 +31,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     private Integer _actualDepth;
 
+    /**
+     * Tree root - used only when tree is built recursively
+     */
     private Node _root;
 
     private SDTModel _model;
@@ -93,11 +96,11 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
     /**
-     * When we split data in each node.
+     * This method is used only when we split data in each node (old implementation of findBestSplit)
      *
-     * @param data
-     * @param featuresLimits
-     * @return
+     * @param data - frame with relevant data for current node
+     * @param featuresLimits - limits for each feature - in this case used for optimalization only
+     * @return split info - holds feature index and threshold
      */
     private SplitInfo findBestSplit(final Frame data, DataFeaturesLimits featuresLimits) {
         // find split (feature and threshold)
@@ -122,9 +125,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
     /**
-     * When we don't split the frame, but update features limits and use binning
+     * When we don't split the frame, but use binning and update features limits for child nodes.
      *
-     * @return
+     * @param histogram - histogram for relevant data
+     * @return split info - holds feature index and threshold, null if the split could not be found.
      */
     private SplitInfo findBestSplit(Histogram histogram) {
         int featuresNumber = histogram.featuresCount();
@@ -351,6 +355,12 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return subtreeRoot;
     }
 
+    /**
+     * Used when we use binning, but the tree is built recursively
+     * @param featuresLimits
+     * @param nodeDepth
+     * @return
+     */
     public Node buildSubtree(DataFeaturesLimits featuresLimits, int nodeDepth) {
         Node subtreeRoot = new Node();
         _nodesCount++;
@@ -400,6 +410,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
 
+    /**
+     * Compute initial features limits.
+     * @return
+     */
     private DataFeaturesLimits getInitialFeaturesLimits() {
         return new DataFeaturesLimits(
                 Arrays.stream(_train.vecs())
@@ -433,6 +447,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             }
         }
 
+        /**
+         * Select strategy for building sdt - splitting frame, recursively binning or iterative binning
+         */
         private void buildSDT() {
             // switch to using or not using binning
 //            if(Objects.equals(_parms._buildingStrategy, "splitting")) {
@@ -508,6 +525,12 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         double threshold;
     }
 
+    /**
+     * Not used in new implementation - splits frame
+     * @param feature
+     * @param threshold
+     * @return
+     */
     public DataSplit splitData(final int feature, final double threshold) {
         // Define task
         SplitFrameMRTask taskLeftSplit = new SplitFrameMRTask(feature, threshold, 0);
@@ -542,6 +565,12 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return new Pair<>(task._count0, task._count1);
     }
 
+
+    /**
+     * Not used now - calculates ratio in the given frame
+     * @param data
+     * @return
+     */
     private Double getZeroRatio(final Frame data) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(null);
         task.doAll(data);
@@ -549,6 +578,11 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return task._count0 * 1.0 / (task._count0 + task._count1);
     }
 
+    /**
+     * Not used - ratio is now calculated from classes count
+     * @param featuresLimits
+     * @return
+     */
     private Double getZeroRatio(final DataFeaturesLimits featuresLimits) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
                 ? Stream.generate(() -> new double[]{Double.MIN_VALUE, Double.MAX_VALUE}).limit(_train.numCols()).toArray(double[][]::new)

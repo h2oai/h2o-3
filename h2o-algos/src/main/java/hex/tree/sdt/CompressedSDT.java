@@ -19,6 +19,7 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
         this.nodes = nodes;
     }
 
+    // todo - maybe move away from the compressed tree class, not it's responsibility
     public int predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex) {
         double featureOrDummy = nodes[actualNodeIndex][0];
         double thresholdOrValue = nodes[actualNodeIndex][1];

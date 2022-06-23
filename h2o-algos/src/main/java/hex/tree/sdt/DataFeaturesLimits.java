@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DataFeaturesLimits {
+    // limits for each feature
     private final List<FeatureLimits> _featuresLimits;
 
     public DataFeaturesLimits(final List<FeatureLimits> featureLimits) {
