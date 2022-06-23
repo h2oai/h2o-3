@@ -3,6 +3,7 @@ package hex.genmodel.algos.coxph;
 import hex.genmodel.MojoModel;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class CoxPHMojoModel extends MojoModel  {
@@ -66,10 +67,15 @@ public class CoxPHMojoModel extends MojoModel  {
 
   @Override
   public double[] score0(double[] row, double[] predictions) {
+    return score0(row, 0, predictions);
+  }
+
+  @Override
+  public double[] score0(double[] row, double offset, double[] predictions) {
     if (_interaction_targets != null) {
       evaluateInteractions(row);
     }
-    predictions[0] = forCategories(row) + forOtherColumns(row) - forStrata(row);
+    predictions[0] = forCategories(row) + forOtherColumns(row) - forStrata(row) + offset;
     return predictions;
   }
 

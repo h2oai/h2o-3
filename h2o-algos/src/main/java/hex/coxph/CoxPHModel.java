@@ -173,11 +173,30 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       _formula = coxPH._parms.toFormula(train);
       _interactionSpec = coxPH._parms.interactionSpec();
       _strataMap = strataMap;
+      _hasStartColumn = coxPH.hasStartColumn();
+      _hasStrataColumn = coxPH._parms.isStratified();
     }
 
     @Override
     public int nclasses() {
       return 1;
+    }
+
+    @Override
+    protected int lastSpecialColumnIdx() {
+      return super.lastSpecialColumnIdx() - 1 - (_hasStartColumn ? 1 : 0) - (_hasStrataColumn ? 1 : 0);
+    }
+
+    public int weightsIdx() {
+      if (!_hasWeights)
+        return -1;
+      return lastSpecialColumnIdx() - (hasFold() ? 1 : 0);
+    }
+
+    public int offsetIdx() {
+      if (!_hasOffset)
+        return -1;
+      return lastSpecialColumnIdx() - (hasWeights() ? 1 : 0) - (hasFold() ? 1 : 0);
     }
 
     private static Frame fullFrame(CoxPH coxPH, Frame adaptFr, Frame train) {
@@ -212,6 +231,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     DataInfo data_info;
     IcedHashMap<AstGroup.G, IcedInt> _strataMap;
     String[] _strataOnlyCols;
+    private final boolean _hasStartColumn;
+    private final boolean _hasStrataColumn;
 
     public String[] _coef_names;
     public double[] _coef;
@@ -335,6 +356,11 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     return msgs;
   }
 
+  @Override
+  protected String[] adaptTestForJavaScoring(Frame test, boolean computeMetrics) {
+    return super.adaptTestForTrain(test, true, computeMetrics);
+  }
+
   private static class CoxPHScore extends MRTask<CoxPHScore> {
     private DataInfo _dinfo;
     private double[] _coef;
@@ -364,6 +390,9 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
         _dinfo.extractDenseRow(chks, rid, r);
         if (r.predictors_bad) {
           nc.addNA();
+          continue;
+        } else if (r.weight == 0) {
+          nc.addNum(0);
           continue;
         }
         final double s = _hasStrata ? chks[_dinfo.responseChunkId(0)].atd(rid) : 0;

@@ -1097,6 +1097,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return true;
   }
 
+  protected boolean validateBinaryResponse() {
+    return true;
+  }
+
   protected void checkEarlyStoppingReproducibility() {
     // nothing by default -> meant to be overridden 
   }
@@ -1506,8 +1510,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._check_constant_response && _response.isConst()) {
           error("_response", "Response cannot be constant.");
         }
-        if(_nclass == 1 && _response.isBinary(true)) {
-          warn("_response", "Response is numeric, so the regression model will be trained. However, the cardinality is equaled to two, so if you want to train a classification model, convert the response column to categorical before training.");
+        if (validateBinaryResponse() && _nclass == 1 && _response.isBinary(true)) {
+          warn("_response", 
+                  "We have detected that your response column has only 2 unique values (0/1). " +
+                  "If you wish to train a binary model instead of a regression model, " +
+                  "convert your target column to categorical before training."
+          );
         }
       }
       if (! _parms._balance_classes)

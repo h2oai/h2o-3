@@ -15,7 +15,6 @@ import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 import water.util.Timer;
 
-import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static water.util.ArrayUtils.constAry;
 
@@ -291,6 +290,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
+  }
+
+  public boolean hasStartColumn() {
+    return _parms._start_column != null;
+  }
+
+  @Override
+  protected boolean validateBinaryResponse() {
+    return false; // CoxPH can handle numerical 0-1 response, no warnings needed
   }
 
   public class CoxPHDriver extends Driver {

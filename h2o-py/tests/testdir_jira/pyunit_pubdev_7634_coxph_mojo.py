@@ -33,8 +33,7 @@ def coxph_mojo_predict_with_interactions(sandbox_dir):
         start_column="start",
         stop_column="stop",
         weights_column="W",
-        # PUBDEV-8738 CoxPH MOJO doesn't support offset
-        # offset_column="Offset",
+        offset_column="Offset",
         interactions=["X1", "X2"],
         stratify_by=["age"]
     )

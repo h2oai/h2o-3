@@ -1525,3 +1525,14 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
     }
     print("Test completed!")
 }
+
+assertTestJavaScoring <- function(object, frame, predictions, epsilon) {
+  o <- object
+  if( is(o, "H2OModel") ) {
+    isCorrect <- .newExpr("model.testJavaScoring", list(o@model_id, h2o.getId(frame), h2o.getId(predictions), epsilon))[1,1]
+    expect_true(isCorrect == 1)
+  } else {
+    stop( paste0("model.testJavaScoring cannot be called for class ", class(o)) )
+    return(NULL)
+  }
+}

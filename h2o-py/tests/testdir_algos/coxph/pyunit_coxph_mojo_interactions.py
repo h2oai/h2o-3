@@ -22,7 +22,7 @@ def mojo_predict_pandas_test(sandbox_dir, stratify_by=None):
     if stratify_by:
         for strat_col in stratify_by:
             data[strat_col] = data[strat_col].asfactor()
-    # https://h2oai.atlassian.net/browse/PUBDEV-7634 - mojo inconsistency when surgery is turned into a categorical column
+    # https://h2oai.atlassian.net/browse/PUBDEV-8737 - mojo inconsistency when surgery is turned into a categorical column
     # data['surgery'] = data['surgery'].asfactor()
 
     data_random_local = pandas.DataFrame(np.random.random(size=(data.nrow, len(random_cols))), columns=random_cols)

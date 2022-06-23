@@ -3,16 +3,21 @@ package hex.coxph;
 import hex.ModelMetricsRegressionCoxPH;
 import hex.StringPair;
 import hex.genmodel.MojoModel;
+import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.CoxPHModelPrediction;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
+import water.util.PojoUtils;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -487,4 +492,76 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     Scope.track(scored);
     assertTrue(model.testJavaScoring(fr, scored, 1e-5));
   }
+
+  @Test
+  public void testSpecialColumns()  {
+    Assume.assumeTrue(H2O.CLOUD.isSingleNode()); // too slow on multinode and not needed
+    try {
+      Scope.enter();
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv")
+              .toCategoricalCol("surgery");
+
+      final CoxPHModel.CoxPHParameters blueprintParms = new CoxPHModel.CoxPHParameters();
+      blueprintParms._train           = fr._key;
+      blueprintParms._start_column    = "start";
+      blueprintParms._stop_column     = "stop";
+      blueprintParms._response_column = "event";
+      blueprintParms._stratify_by     = new String[]{"surgery"};
+      blueprintParms._offset_column   = "year";
+      blueprintParms._weights_column  = "transplant";
+      blueprintParms._ignored_columns = new String[]{"id"};
+
+      final String[] optionalFields = {"_start_column", "_stratify_by", "_offset_column", "_weights_column"};
+      for (Set<String> fields : powerSet(optionalFields)) {
+        CoxPHModel.CoxPHParameters parms = (CoxPHModel.CoxPHParameters) blueprintParms.clone();
+        fields.forEach(name -> PojoUtils.setField(parms, name, null, PojoUtils.FieldNaming.CONSISTENT));
+
+        final CoxPH builder = new CoxPH(parms);
+        final CoxPHModel model = builder.trainModel().get();
+        Scope.track_generic(model);
+        ModelDescriptor md = model.modelDescriptor();
+        
+        if (parms._weights_column != null) {
+          assertEquals("transplant", model._output.weightsName());
+          assertEquals("transplant", md.weightsColumn());
+        }
+        if (parms._offset_column != null) {
+          assertEquals("year", md.offsetColumn());
+          assertEquals("year", model._output.offsetName());
+        }
+
+        Frame test = new Frame(fr);
+        if (parms._weights_column != null) { // we want to test all rows
+          test.remove(parms._weights_column);
+        }
+        Frame scored = model.score(test);
+        Scope.track(scored);
+
+        assertTrue(model.testJavaScoring(fr, scored, 1e-8));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  Set<Set<String>> powerSet(String[] vals) {
+    Set<Set<String>> ps = new HashSet<>();
+    ps.add(Collections.emptySet());
+    while (true) {
+      Set<Set<String>> newSets = new HashSet<>();
+      for (Set<String> set : ps) {
+        for (String val : vals) {
+          if (set.contains(val))
+            continue;
+          Set<String> extended = new HashSet<>(set);
+          extended.add(val);
+          newSets.add(extended);
+        }
+      }
+      if (!ps.addAll(newSets))
+        break;
+    }
+    return ps;
+  }
+
 }

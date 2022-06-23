@@ -902,12 +902,16 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
   
-  public CoxPHModelPrediction predictCoxPH(RowData data) throws PredictException {
-    final double[] preds = preamble(ModelCategory.CoxPH, data);
+  public CoxPHModelPrediction predictCoxPH(RowData data, double offset) throws PredictException {
+    final double[] preds = preamble(ModelCategory.CoxPH, data, offset);
     CoxPHModelPrediction p = new CoxPHModelPrediction();
     p.value = preds[0];
     
     return p;
+  }
+
+  public CoxPHModelPrediction predictCoxPH(RowData data) throws PredictException {
+    return predictCoxPH(data, 0);
   }
 
   public float[] predictContributions(RowData data) throws PredictException {
