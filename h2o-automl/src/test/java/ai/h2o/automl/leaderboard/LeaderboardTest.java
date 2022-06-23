@@ -81,8 +81,8 @@ public class LeaderboardTest extends water.TestUtil {
       GBM job = new GBM(parms);
       model = job.trainModel().get();
       
-      lb = Leaderboard.getOrMake("dummy_rank_tsv", eventLog.asLogger(EventLogEntry.Stage.Workflow),  null, "mae");
-      lb.addModel(model._key, eventLog.asLogger(EventLogEntry.Stage.ModelTraining));
+      lb = Leaderboard.getOrMake("dummy_rank_tsv", eventLog.asLogger(EventLogEntry.Stage.ModelTraining),  null, "mae");
+      lb.addModel(model._key);
       Log.info(lb.rankTsv());
       assertEquals("Error\n[0.3448260574357465, 0.44675855535636816, 0.19959320678410908, 0.31468498072970547, 0.19959320678410908]\n", lb.rankTsv());
     } finally {
@@ -116,7 +116,7 @@ public class LeaderboardTest extends water.TestUtil {
       ModelingStep step = new DummyStepsProvider.DummyModelStep(Algo.GBM, "my_gbm", null);
 
       EventLog eventLog = EventLog.getOrMake(dummy); removables.add(eventLog);
-      Leaderboard lb = Leaderboard.getOrMake("leaderboard_with_ext", eventLog.asLogger(EventLogEntry.Stage.Workflow),null,null);
+      Leaderboard lb = Leaderboard.getOrMake("leaderboard_with_ext", eventLog.asLogger(EventLogEntry.Stage.ModelTraining),null,null);
       removables.add(lb);
       lb.setExtensionsProvider(new LeaderboardExtensionsProvider() {
         @Override
@@ -131,7 +131,7 @@ public class LeaderboardTest extends water.TestUtil {
           };
         }
       });
-      lb.addModel(model._key, eventLog.asLogger(EventLogEntry.Stage.ModelTraining));
+      lb.addModel(model._key);
       TwoDimTable lb_table = lb.toTwoDimTable();
       assertEquals(1, lb_table.getRowDim()); // one model, one row
       assertEquals(7, lb_table.getColDim()); // model_id + 6 binomial metrics

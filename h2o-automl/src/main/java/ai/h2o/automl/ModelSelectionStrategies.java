@@ -43,8 +43,8 @@ public final class ModelSelectionStrategies {
         public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog) {
             LeaderboardHolder lbHolder = makeSelectionLeaderboard();
             Leaderboard tmpLeaderboard = lbHolder.get();
-            tmpLeaderboard.addModels((Key<Model>[]) originalModels, eventLog.asLogger(EventLogEntry.Stage.ModelTraining));
-            tmpLeaderboard.addModels((Key<Model>[]) newModels, eventLog.asLogger(EventLogEntry.Stage.ModelTraining));
+            tmpLeaderboard.addModels((Key<Model>[]) originalModels);
+            tmpLeaderboard.addModels((Key<Model>[]) newModels);
             if (LOG.isDebugEnabled()) LOG.debug(tmpLeaderboard.toLogString());
             Key<Model>[] sortedKeys = tmpLeaderboard.getModelKeys();
             Key<Model>[] bestN = ArrayUtils.subarray(sortedKeys, 0, Math.min(sortedKeys.length, _N));

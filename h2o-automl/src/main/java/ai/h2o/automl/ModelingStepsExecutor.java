@@ -208,7 +208,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         for (Key<Model> key : container.getModelKeys()) step.register(key);
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModels(container.getModelKeys(), eventLog().asLogger(Stage.ModelTraining));
+        leaderboard.addModels(container.getModelKeys());
         int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }
@@ -217,7 +217,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         step.register(model._key);
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModel(model._key, eventLog().asLogger(Stage.ModelTraining));
+        leaderboard.addModel(model._key);
         int after = leaderboard.getModelCount();
         if (!step.ignores(Constraint.MODEL_COUNT))
             _modelCount.addAndGet(after - before);
@@ -228,7 +228,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     }
 
     private Leaderboard leaderboard() {
-        return _leaderboardKey.get();
+        return Leaderboard.getInstance(_leaderboardKey, eventLog().asLogger(Stage.ModelTraining));
     }
 
 }

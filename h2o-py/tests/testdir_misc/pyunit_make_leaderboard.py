@@ -12,6 +12,21 @@ from h2o.estimators import *
 from h2o.grid import H2OGridSearch
 
 
+def test_leaderboard_with_automl_uses_eventlog():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    train["name"] = train["name"].asfactor()
+    y = "fare"
+
+    aml1 = H2OAutoML(seed=1234, max_models=5, project_name="a1")
+    aml1.train(y=y, training_frame=train)
+
+    aml2 = H2OAutoML(seed=234, max_models=5, project_name="a1")
+    aml2.train(y=y, training_frame=train)
+
+    assert aml2.event_log["message"].grep("New models will be added").nrow > 0
+    assert aml1.event_log["message"].grep("Adding model ").nrow > 0
+    assert aml2.event_log["message"].grep("Adding model ").nrow > 0
+
 def test_make_leaderboard():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
     train["name"] = train["name"].asfactor()
@@ -128,7 +143,8 @@ def test_make_leaderboard_uplift():
 
 
 pyunit_utils.run_tests([
+    test_leaderboard_with_automl_uses_eventlog,
     test_make_leaderboard,
     test_make_leaderboard_unsupervised,
-    test_make_leaderboard_uplift
+    test_make_leaderboard_uplift,
 ])

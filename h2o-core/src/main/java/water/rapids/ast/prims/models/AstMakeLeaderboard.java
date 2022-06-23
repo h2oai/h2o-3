@@ -106,26 +106,26 @@ public class AstMakeLeaderboard extends AstPrimitive {
         boolean warnAboutNFolds = false;
         boolean warnAboutLeaderboard = false;
 
-        if (scoringData.equalsIgnoreCase("auto") && leaderboardFrame == null) {
+        if (scoringData.equals("auto") && leaderboardFrame == null) {
             warnAboutTrain = true;
             warnAboutNFolds = true;
             scoringData = "xval";
         }
-        if (scoringData.equalsIgnoreCase("xval")) {
+        if (scoringData.equals("xval")) {
             warnAboutTrain = true;
             warnAboutNFolds = true;
             warnAboutLeaderboard = true;
             if (!allCV)
                 scoringData = "valid";
         }
-        if (scoringData.equalsIgnoreCase("valid")) {
+        if (scoringData.equals("valid")) {
             warnAboutTrain = false;
             warnAboutValid = true;
             warnAboutLeaderboard = true;
             if (!allHasValid)
                 scoringData = "train";
         }
-        if (scoringData.equalsIgnoreCase("train")) {
+        if (scoringData.equals("train")) {
             warnAboutTrain = true;
             warnAboutValid = false;
             warnAboutLeaderboard = true;
@@ -143,9 +143,9 @@ public class AstMakeLeaderboard extends AstPrimitive {
                     ". Using scores from " + scoringData + ".");
 
         final Logger logger = LoggerFactory.getLogger(Leaderboard.class);
-        ldb = Leaderboard.getOrMake(projectName, logger, leaderboardFrame, sortMetric, scoringData);
+        ldb = Leaderboard.getOrMake(projectName, logger, leaderboardFrame, sortMetric, Leaderboard.ScoreData.valueOf(scoringData));
         ldb.setExtensionsProvider(createLeaderboardExtensionProvider(leaderboardFrame));
-        ldb.addModels(models, logger);
+        ldb.addModels(models);
         Frame leaderboard = twoDimTableToFrame(ldb.toTwoDimTable(extensions), Key.make());
         return new ValFrame(leaderboard);
     }

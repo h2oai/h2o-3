@@ -378,7 +378,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if ("deviance".equalsIgnoreCase(sortMetric)) {
         sortMetric = "mean_residual_deviance"; //compatibility with names used in leaderboard
     }
-    _leaderboard = Leaderboard.getOrMake(_key.toString(), eventLog().asLogger(Stage.Workflow), _leaderboardFrame, sortMetric);
+    _leaderboard = Leaderboard.getInstance(_key.toString(), eventLog().asLogger(Stage.ModelTraining), _leaderboardFrame, sortMetric, Leaderboard.ScoreData.auto);
+    if (null != _leaderboard) {
+      eventLog().warn(Stage.Workflow, "New models will be added to existing leaderboard "+_key.toString()
+              +" (leaderboard frame="+(_leaderboardFrame == null ? null : _leaderboardFrame._key)+") with already "+_leaderboard.getModelKeys().length+" models.");
+    } else {
+      _leaderboard = Leaderboard.getOrMake(_key.toString(), eventLog().asLogger(Stage.ModelTraining), _leaderboardFrame, sortMetric, Leaderboard.ScoreData.auto);
+    }
     _leaderboard.setExtensionsProvider(createLeaderboardExtensionProvider(this));
   }
 

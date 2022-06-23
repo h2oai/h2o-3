@@ -725,7 +725,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 @Override
                 public void cleanup() {
                     //by default, just empty the leaderboard and remove the container without touching anything model-related.
-                    tmpLeaderboard.removeModels(tmpLeaderboard.getModelKeys(), false, tmpEventLog.asLogger(Stage.ModelTraining));
+                    tmpLeaderboard.removeModels(tmpLeaderboard.getModelKeys(), false);
                     tmpLeaderboard.remove(false);
                     if (null == eventLog)
                         tmpEventLog.remove();
@@ -780,9 +780,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                             selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys(), selectionEventLog);
                             Leaderboard lb = aml().leaderboard();
                             Log.debug("Selection result for job "+key, ToStringBuilder.reflectionToString(selection));
-                            lb.removeModels(selection._remove, false, selectionEventLog.asLogger(Stage.ModelTraining)); // do remove the model immediately from DKV: if it were part of a grid, it prevents the grid from being resumed.
+                            lb.removeModels(selection._remove, false); // do remove the model immediately from DKV: if it were part of a grid, it prevents the grid from being resumed.
                             aml().trackKeys(selection._remove);
-                            lb.addModels(selection._add, selectionEventLog.asLogger(Stage.ModelTraining));
+                            lb.addModels(selection._add);
                         } else if (state.is(ResultStatus.failed)) {
                             throw (RuntimeException)state.error();
                         } else if (state.is(ResultStatus.cancelled)) {
@@ -800,11 +800,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 @Override
                 public void onCompletion(CountedCompleter caller) {
                     Keyed.remove(selectionKey, new Futures(), false); // don't cascade: tmp models removal is is done using the logic below.
-                    selectionLeaderboard.get().removeModels(trainedModelKeys, false, selectionEventLog.asLogger(Stage.ModelTraining)); // if original models were added to selection leaderboard, just remove them.
+                    selectionLeaderboard.get().removeModels(trainedModelKeys, false); // if original models were added to selection leaderboard, just remove them.
                     selectionLeaderboard.get().removeModels( // for newly trained models, fully remove those that don't appear in the result container.
                             Arrays.stream(selectionLeaderboard.get().getModelKeys()).filter(k -> !ArrayUtils.contains(result.getModelKeys(), k)).toArray(Key[]::new),
-                            true,
-                            selectionEventLog.asLogger(Stage.ModelTraining)
+                            true
                     );
                     selectionLeaderboard.cleanup();
                     if (!aml().eventLog()._key.equals(selectionEventLog._key)) selectionEventLog.remove();
