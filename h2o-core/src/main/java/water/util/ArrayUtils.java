@@ -1373,6 +1373,18 @@ public class ArrayUtils {
     return c;
   }
 
+  static public String[] insert( String[] a, String[] b, int pos ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    String[] c = new String[a.length + b.length];
+    System.arraycopy(a, 0, c, 0, pos);
+    System.arraycopy(b, 0, c, pos, b.length);
+    System.arraycopy(a, pos, c, pos + b.length, a.length - pos);
+    return c;
+  }
+
   // Java7+  @SafeVarargs
   public static <T> T[] append(T[] a, T... b) {
     if( a==null ) return b;

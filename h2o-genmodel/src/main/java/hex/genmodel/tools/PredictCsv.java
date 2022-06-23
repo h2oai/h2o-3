@@ -306,7 +306,7 @@ public class PredictCsv {
           }
           
           case CoxPH: {
-              CoxPHModelPrediction p = modelWrapper.predictCoxPH(row);
+              CoxPHModelPrediction p = modelWrapper.predictCoxPH(row, offset);
               output.write(myDoubleToString(p.value));
 
             break;

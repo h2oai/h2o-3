@@ -320,10 +320,9 @@ public class Env extends Iced {
     // Segment Models
     init(new AstSegmentModelsAsFrame());
     
-    // Reset model threshold
+    // Models
     init(new AstModelResetThreshold());
-
-    // Permutation Variable Importance
+    init(new AstTestJavaScoring());
     init(new AstPermutationVarImp());
 
     // Filters
