@@ -58,8 +58,7 @@ NULL
 #' The musculoskeletal model, experimental data, settings files, and results 
 #' for three-dimensional, muscle-actuated simulations at walking speed as 
 #' described in Hamner and Delp (2013). Simulations were generated using OpenSim 2.4.
-#' The data is available from \url{https://simtk.org/frs/index.php?group_id=603}.
-#' 
+#'
 #' @docType data
 #' @keywords datasets
 #' @name walking
