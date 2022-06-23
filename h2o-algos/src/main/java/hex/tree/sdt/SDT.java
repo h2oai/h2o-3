@@ -198,9 +198,124 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         } else {
             return 1;
         }
+    }
+
+    /**
+     * When tree is build recursively.
+     * @param zeroRatio #zero/#one in list
+     * @param node node to set decision value
+     * @return list node
+     */
+    public Node makeListFromNode(double zeroRatio, Node node) {
+        node.setDecisionValue(selectDecisionValue(zeroRatio));
         return node;
     }
-    
+
+    /**
+     * When tree is build iteratively.
+     * @param zeroRatio #zero/#one in list
+     * @param nodeIndex node index
+     */
+    public void makeListFromNode(double zeroRatio, int nodeIndex) {
+        _tree[nodeIndex][0] = -1; // list
+        _tree[nodeIndex][1] = selectDecisionValue(zeroRatio);
+        // nothing to return, node is modified inplace
+    }
+
+    /**
+     * Log with base 2.
+     * @param value value
+     * @return log_2(value)
+     */
+    private int log2(int value) {
+        return (int)(Math.log(value) / Math.log(2));
+    }
+
+    /**
+     * Build ext node when tree is built iteratively. The queue is updated here.
+     * @param limitsQueue queue with feature limits for nodes
+     * @param nodeIndex index of node in the tree array
+     */
+    public void buildNextNode(Queue<DataFeaturesLimits> limitsQueue, int nodeIndex) {
+        // take limits for actual node
+        DataFeaturesLimits actualLimits = limitsQueue.poll();
+        // if the element is null, then the node should not be built. Nulls exist to keep the array building straightforward
+        if(actualLimits == null) {
+            // don't save anything to tree (no node is created)
+            // add imaginary left and right children to imitate right tree structure
+            // left child
+            limitsQueue.add(null);
+            // right child
+            limitsQueue.add(null);
+            return;
+        }
+        
+        // todo - add limit by information gain (at least because of ideal split for example 11111)
+        // (count0, count1)
+        Pair<Integer, Integer> classesCount = countClasses(actualLimits);
+        double zeroRatio = classesCount._1() /*0*/ * 1.0 / (classesCount._1() /*0*/ + classesCount._2() /*1*/);
+        if(nodeIndex == 1) {
+            System.out.println("Classes counts in dataset: 0 - " + classesCount._1() +", 1 - " + classesCount._2());
+        }
+        // compute node depth
+        int nodeDepth = (int) Math.floor(log2(nodeIndex + 1));
+        if ((nodeDepth >= _maxDepth) || (classesCount._1() <= LIMIT_NUM_ROWS_FOR_SPLIT) || (classesCount._2() <= LIMIT_NUM_ROWS_FOR_SPLIT)
+//                || zeroRatio > 0.999 || zeroRatio < 0.001
+        ) {
+//            System.out.println("Reason: depth=" + _actualDepth + ", ratio=" + zeroRatio + ", class0=" + classesCount._1() + ", class1=" + classesCount._2());
+            
+            // add imaginary left and right children to imitate valid tree structure
+            // left child
+            limitsQueue.add(null);
+            // right child
+            limitsQueue.add(null);
+            makeListFromNode(zeroRatio, nodeIndex);
+            return;
+        }
+        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH);
+
+        SplitInfo bestSplitInfo = findBestSplit(histogram);
+        // if no split could be found, make a list from current node
+        if(bestSplitInfo == null) {
+            // add imaginary left and right children to imitate right tree structure
+            // left child
+            limitsQueue.add(null);
+            // right child
+            limitsQueue.add(null);
+            makeListFromNode(zeroRatio, nodeIndex);
+            return;
+        }
+
+        _tree[nodeIndex][0] = bestSplitInfo._splitFeatureIndex;
+        _tree[nodeIndex][1] = bestSplitInfo._threshold;
+
+        DataFeaturesLimits limitsLeft = actualLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
+        // set new min to something bigger than threshold as the threshold is included in the left split and excluded in the right
+        DataFeaturesLimits limitsRight = actualLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold/* + 0.0000000001*/);
+//        System.out.println("root: " + countClasses(actualLimits) + ", left: " + countClasses(limitsLeft) +
+//                ", right: " + countClasses(limitsRight) + ", best feature: " + bestSplitInfo._splitFeatureIndex
+//                + ", threshold: " + bestSplitInfo._threshold);
+
+//        System.out.println("feature: " + bestSplitInfo._splitFeatureIndex + ", threshold: " + bestSplitInfo._threshold);
+//        System.out.println("Left min-max: " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
+//                " " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
+//        System.out.println("Right min-max: " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
+//                " " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
+        
+        // store limits for left child
+        limitsQueue.add(limitsLeft);
+        // store limits for right child
+        limitsQueue.add(limitsRight);
+    }
+
+
+    /**
+     * Used only when we split dataframes (old implementation of buildSubtree)
+     * @param data
+     * @param featuresLimits
+     * @param nodeDepth
+     * @return
+     */
     public Node buildSubtree(final Frame data, DataFeaturesLimits featuresLimits, int nodeDepth) {
         Node subtreeRoot = new Node();
         _nodesCount++;
@@ -331,7 +446,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 //                throw new MalformedParametersException();
 //            }
 //            root = buildSubtree(_train, getInitialFeaturesLimits(), 1); // without histogram
-            _root = buildSubtree(getInitialFeaturesLimits(), 1); // with histogram
+//            _root = buildSubtree(getInitialFeaturesLimits(), 0); // with histogram // todo - 0 or 1 (0 works fine as well)
+            buildSDTIteratively();
             System.out.println("depth: " + _maxDepth + ", nodes count: " + _nodesCount);
 
             CompressedSDT compressedSDT = new CompressedSDT(compress());
@@ -343,6 +459,17 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             System.out.println("Tree:");
             System.out.println(Arrays.deepToString(_tree));
         }
+        
+        private void buildSDTIteratively() {
+            _tree = new double[(int) Math.pow(2, _maxDepth + 1)][2];
+            Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
+            limitsQueue.add(getInitialFeaturesLimits());
+            for(int nodeIndex = 0; nodeIndex < _tree.length; nodeIndex ++) {
+                buildNextNode(limitsQueue, nodeIndex);
+            }
+        }
+        
+        
 
     }
 
