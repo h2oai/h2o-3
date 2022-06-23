@@ -574,4 +574,16 @@ public class ArrayUtilsTest {
     }
   }
 
+  @Test
+  public void testInsert() {
+    String[] ar1 = {"a", "b", "c", "d", "e"};
+    String[] ar2 = {"1", "2", "3"};
+    assertNull(ArrayUtils.insert(null, null, -1));
+    assertSame(ar1, ArrayUtils.insert(ar1, null, -1));
+    assertSame(ar2, ArrayUtils.insert(null, ar2, -1));
+    assertArrayEquals(ArrayUtils.append(ar1, ar2), ArrayUtils.insert(ar1, ar2, ar1.length));
+    assertArrayEquals(ArrayUtils.append(ar2, ar1), ArrayUtils.insert(ar1, ar2, 0));
+    assertArrayEquals(new String[]{"a", "b", "1", "2", "3", "c", "d", "e"}, ArrayUtils.insert(ar1, ar2, 2));
+  }
+  
 }

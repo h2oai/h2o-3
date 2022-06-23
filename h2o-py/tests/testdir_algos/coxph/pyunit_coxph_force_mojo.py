@@ -7,14 +7,17 @@ from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
 from h2o.exceptions import H2OValueError
 
 
-def coxph_force_mojo():
+def coxph_force_mojo_categorical_interaction():
     heart = h2o.import_file(pyunit_utils.locate("smalldata/coxph_test/heart.csv"))
+    heart[["surgery"]] = heart[["surgery"]].asfactor()
+
     coxph = H2OCoxProportionalHazardsEstimator(
         start_column="start",
         stop_column="stop",
-        interactions=["age", "year"]
+        interactions=["age", "surgery"]
     )
-    coxph.train(x=["age", "year"], y="event", training_frame=heart)
+    coxph.train(x=["age", "surgery"], y="event", training_frame=heart)
+    print(coxph)
 
     # MOJO will not be enabled if interactions were used
     try:
@@ -38,9 +41,9 @@ def coxph_force_mojo():
         coxph2 = H2OCoxProportionalHazardsEstimator(
             start_column="start",
             stop_column="stop",
-            interactions=["age", "year"]
+            interactions=["age", "surgery"]
         )
-        coxph2.train(x=["age", "year"], y="event", training_frame=heart)
+        coxph2.train(x=["age", "surgery"], y="event", training_frame=heart)
         mojo = coxph2.download_mojo()
         assert mojo is not None
     finally:
@@ -48,6 +51,6 @@ def coxph_force_mojo():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(coxph_force_mojo)
+    pyunit_utils.standalone_test(coxph_force_mojo_categorical_interaction)
 else:
-    coxph_force_mojo()
+    coxph_force_mojo_categorical_interaction()
