@@ -79,6 +79,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OSdtEstimator`
+----------------------
+.. autoclass:: h2o.estimators.sdt.H2OSdtEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OStackedEnsembleEstimator`
 ----------------------------------
 .. autoclass:: h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
