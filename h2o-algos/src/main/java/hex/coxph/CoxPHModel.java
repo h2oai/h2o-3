@@ -71,18 +71,27 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     InteractionSpec interactionSpec() {
       // add "stratify by" columns to "interaction only"
       final String[] interOnly;
-      if (_interactions_only != null && _stratify_by != null) {
-        String[] io = _interactions_only.clone();
+      if (getInteractionsOnly() != null && _stratify_by != null) {
+        String[] io = getInteractionsOnly().clone();
         Arrays.sort(io);
         String[] sb = _stratify_by.clone();
         Arrays.sort(sb);
         interOnly = ArrayUtils.union(io, sb, true);
       } else {
-        interOnly = _interactions_only != null ? _interactions_only : _stratify_by;
+        interOnly = getInteractionsOnly() != null ? getInteractionsOnly() : _stratify_by;
       }
       return InteractionSpec.create(_interactions, _interaction_pairs, interOnly, _stratify_by);
     }
 
+    private String[] getInteractionsOnly() {
+      // clients sometimes represent empty interactions as [""] - sanitize this
+      if (_interactions_only != null && _interactions_only.length == 1 && "".equals(_interactions_only[0])) {
+        return null;
+      } else {
+        return _interactions_only;
+      }
+    }
+    
     boolean isStratified() { return _stratify_by != null && _stratify_by.length > 0; }
 
     String toFormula(Frame f) {

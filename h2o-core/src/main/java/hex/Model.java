@@ -889,7 +889,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (interactionIDs[i] == -1)
             throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactionIDs[i]);
         }
-        allPairwise =  Model.InteractionPair.generatePairwiseInteractionsFromList(f, interactionIDs);
+        allPairwise =  Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
       }
       if (_pairs != null) {
         Arrays.sort(interactionIDs);
@@ -904,7 +904,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             throw new IllegalArgumentException("Invalid interactions specified (second column is missing): " + p.toJsonString() + " in " + Arrays.toString(f.names()));
           if (Arrays.binarySearch(interactionIDs, aIdx) >= 0 && Arrays.binarySearch(interactionIDs, bIdx) >= 0)
             continue; // This interaction is already included in set of all pairwise interactions
-          allExplicit[n++] = new InteractionPair(f, aIdx, bIdx, f.vec(aIdx).domain(), f.vec(bIdx).domain());
+          allExplicit[n++] = new InteractionPair(aIdx, bIdx, null, null);
         }
         if (n != allExplicit.length) {
           InteractionPair[] resized = new InteractionPair[n];
@@ -3135,7 +3135,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  TODO: refactor the CreateInteractions to be useful here and in InteractionWrappedVec
    */
   public static class InteractionPair extends Iced<InteractionPair> {
-    public final String  _name1, _name2;
     private int _v1,_v2;
 
     private String[] _v1Enums;
@@ -3143,9 +3142,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     private int _hash;
     private boolean _needsAllFactorLevels;
 
-    private InteractionPair(Frame f, int v1, int v2, String[] v1Enums, String[] v2Enums) {
-      _name1 = f.name(v1);
-      _name2 = f.name(v2);
+    private InteractionPair() {}
+    private InteractionPair(int v1, int v2, String[] v1Enums, String[] v2Enums) {
       _v1=v1;_v2=v2;_v1Enums=v1Enums;_v2Enums=v2Enums;
       // hash is column ints; Item 9 p.47 of Effective Java
       _hash=17;
@@ -3172,7 +3170,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @param indexes An array of column indices.
      * @return An array of interaction pairs
      */
-    public static InteractionPair[] generatePairwiseInteractionsFromList(Frame f, int... indexes) {
+    public static InteractionPair[] generatePairwiseInteractionsFromList(int... indexes) {
       if( null==indexes ) return null;
       if( indexes.length < 2 ) {
         if( indexes.length==1 && indexes[0]==-1 ) return null;
@@ -3182,7 +3180,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int idx=0;
       for(int i=0;i<indexes.length;++i)
         for(int j=i+1;j<indexes.length;++j)
-          res[idx++] = new InteractionPair(f, indexes[i],indexes[j],f.vec(indexes[i]).domain(),f.vec(indexes[j]).domain());
+          res[idx++] = new InteractionPair(indexes[i],indexes[j],null,null);
       return res;
     }
 
