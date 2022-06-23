@@ -242,11 +242,13 @@ public abstract class SharedTreeModel<
       Futures fs = new Futures();
       for( int i=0; i<nclasses(); i++ ) if( trees[i] != null ) {
         CompressedTree ct = trees[i].compress(_ntrees,i,_domains);
+        System.out.println("Putting key = " + ct._key);
         DKV.put(keys[i]=ct._key,ct,fs);
         _treeStats.updateBy(trees[i]); // Update tree shape stats
 
         CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1);
         keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
+        System.out.println("Putting Auxkey = " + ctAux._key);
         DKV.put(ctAux,fs);
       }
       _ntrees++;
@@ -781,6 +783,7 @@ public abstract class SharedTreeModel<
         CompressedTree newCt = IcedUtils.deepCopy(ct);
         newCt._key = CompressedTree.makeTreeKey(i, j);
         DKV.put(treeKeys[i][j] = newCt._key,newCt);
+        System.out.println("DKVPUt");
       }
     }
     // Clone Aux info
@@ -793,6 +796,7 @@ public abstract class SharedTreeModel<
           CompressedTree newCt = IcedUtils.deepCopy(ct);
           newCt._key = Key.make(createAuxKey(treeKeys[i][j].toString()));
           DKV.put(treeKeysAux[i][j] = newCt._key,newCt);
+          System.out.println("DKVPUt");
         }
       }
     }

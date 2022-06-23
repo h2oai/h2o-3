@@ -1198,6 +1198,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return removed;
     }
 
+    public synchronized void changeModelKeyInModelMetrics(Model model, Frame frame) {
+      for (Key<ModelMetrics> modelMetricsKey : _model_metrics) {
+        modelMetricsKey.get().withModelAndFrame(model, frame);
+      }
+    }
+
+
     public synchronized Key<ModelMetrics>[] getModelMetrics() { return Arrays.copyOf(_model_metrics, _model_metrics.length); }
 
     protected long checksum_impl() {

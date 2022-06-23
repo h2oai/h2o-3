@@ -30,10 +30,12 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.persist.Persist;
 import water.util.*;
 
 import java.io.*;
 import java.lang.reflect.Array;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.Consumer;
@@ -62,7 +64,7 @@ public class GBMTest extends TestUtil {
       return Collections.singletonList("Default");
     } else {
       // only run scenario "EmulateConstraints" for cloud size 1 (to avoid too long test execution)
-      return Arrays.asList("Default", "EmulateConstraints");
+      return Arrays.asList("Default");
     }
   }
   
@@ -5261,7 +5263,7 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       // prepare training data
-      String response = "CAPSULE";
+      String response = "GLEASON";
       Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
       Scope.track(train);
       train.toCategoricalCol(response);
@@ -5271,31 +5273,54 @@ public class GBMTest extends TestUtil {
       parms._seed = 0xDEDA;
       parms._train = train._key;
       parms._response_column = response;
+      parms._distribution = multinomial;
 
       // Train referential model
       parms._ntrees = 6;
       GBMModel modelReference = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
-      Scope.track_generic(modelReference);
+      Scope.track_generic(modelReference); 
       Frame scoreReference = modelReference.score(train);
       Scope.track(scoreReference);
 
       // Train another model and do in-training checkpoints
-      parms._in_training_checkpoints_dir = temporaryFolder.newFolder("gbm_checkpoints").getAbsolutePath();
+      parms._in_training_checkpoints_dir = "../checkpoints"; //temporaryFolder.newFolder("gbm_checkpoints").getAbsolutePath();
       parms._ntrees = 4;
       GBMModel gbmWithCheckpoints = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
       Scope.track_generic(gbmWithCheckpoints);
 
       // Load in-training checkpoint with 2. trees and use it as checkpoint for another training
-      Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.2");
-      DKV.put(checkpoint);
+      GBMModel checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbmtree.2");
+      System.out.println(checkpoint._key);
+      System.out.println("zdaar");
+      System.out.println(Arrays.deepToString(checkpoint._output._treeKeys));
+      System.out.println("Printing loaded model");
+      System.out.println(checkpoint);
       Scope.track_generic(checkpoint);
+
+      InputStream is = null;
+      try {
+      URI targetUri = FileUtils.getURI(parms._in_training_checkpoints_dir + "/gbm.2tree");
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      is = p.open(targetUri.toString());
+      final AutoBuffer ab = new AutoBuffer(is);
+      ab.sourceName = targetUri.toString();
+      @SuppressWarnings("unchecked")
+      Keyed model = Keyed.readAll(ab);
+      Keyed.readAll(ab); // CV holdouts frame 
+      ab.close();
+      is.close();
+      } finally {
+        FileUtils.closeSilently(is);
+      }
 
       // Train another model and do in-training checkpoints
       parms._ntrees = 6;
       parms._checkpoint = checkpoint._key;
       parms._in_training_checkpoints_dir = null;
-      GBMModel gbmFinal = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      GBMModel gbmFinal = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbmFromCheckpoint")).trainModel().get());
       Scope.track_generic(gbmFinal);
+      System.out.println("zdaar2");
+      System.out.println(Arrays.deepToString(gbmFinal._output._treeKeys));      
       Frame scoreFinal = gbmFinal.score(train);
       Scope.track(scoreFinal);
 
@@ -5305,4 +5330,48 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testLoadTree() throws IOException {
+    Scope.enter();
+    try {
+      // prepare training data
+      String response = "GLEASON";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      Scope.track(train);
+      train.toCategoricalCol(response);
+
+      // Common model parameters
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._seed = 0xDEDA;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._distribution = multinomial;
+
+      // Train another model and do in-training checkpoints
+      parms._in_training_checkpoints_dir = "../checkpoints"; //temporaryFolder.newFolder("gbm_checkpoints").getAbsolutePath();
+      parms._ntrees = 4;
+      GBMModel gbmWithCheckpoints = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      Scope.track_generic(gbmWithCheckpoints);
+
+      InputStream is = null;
+      try {
+        URI targetUri = FileUtils.getURI(parms._in_training_checkpoints_dir + "/gbm.2_0");
+        Persist p = H2O.getPM().getPersistForURI(targetUri);
+        is = p.open(targetUri.toString());
+        final AutoBuffer ab = new AutoBuffer(is);
+        ab.sourceName = targetUri.toString();
+        @SuppressWarnings("unchecked")
+        CompressedTree model = (CompressedTree) Keyed.readAll(ab);
+        Keyed.readAll(ab); // CV holdouts frame 
+        ab.close();
+        is.close();
+        System.out.println(model);
+      } finally {
+        FileUtils.closeSilently(is);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }  
 }

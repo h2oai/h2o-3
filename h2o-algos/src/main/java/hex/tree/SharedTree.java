@@ -16,16 +16,21 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.persist.Persist;
 import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
+
+import static hex.genmodel.GenModel.createAuxKey;
 
 public abstract class SharedTree<
     M extends SharedTreeModel<M,P,O>, 
@@ -502,22 +507,48 @@ public abstract class SharedTree<
           _coordinator.updateParameters();
         }
         if (_parms._in_training_checkpoints_dir != null) {
-          try {
-            String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + (_ntreesInCheckpoint + tid);
-            Key<M> keybackup = _model._key;
-            _model.setInputParms(_parms);
-            _model._key = Key.make(_model._key + "." + (_ntreesInCheckpoint + tid));
-            _model.exportBinaryModel(modelFile, true);
-            _model._key = keybackup;
-          } catch (IOException e) {
-            throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
+            String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + ".";
+
+            Key[][] treeKeys = _model._output._treeKeys;
+            
+            for (int j = 0; j < treeKeys[tid].length; j++) {
+              if (treeKeys[tid][j] == null) continue;
+              saveTree(tid, j, modelFile);
+            }
+            
+            Key[][] treeKeysAux = _model._output._treeKeysAux;
+            if (treeKeysAux != null) {
+                for (int j = 0; j < treeKeysAux[tid].length; j++) {
+                  if (treeKeysAux[tid][j] == null) continue;
+                  saveTree(tid, j, modelFile + "aux.");
+                }
+              }
           }
         }
-      }
       // Final scoring (skip if job was cancelled)
       doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
     }
   }
+  
+  private void saveTree(int tid, int domainid, String filename) {
+    Key[][] treeKeys = _model._output._treeKeys;
+    URI targetUri = FileUtils.getURI(filename + tid + "_" + domainid);
+    Persist p = H2O.getPM().getPersistForURI(targetUri);
+    OutputStream os = null;
+    try {
+      os = p.create(targetUri.toString(), true);
+      try (AutoBuffer ab = new AutoBuffer(os, true)) {
+        ab.putKey(treeKeys[tid][domainid]);
+      }
+      os.close();
+    }
+    catch (IOException e) {
+      throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
+    }
+    finally {
+      FileUtils.closeSilently(os);
+    }
+  } 
 
   private void postProcessModel() {
     // Model Calibration (only for the final model, not CV models)
