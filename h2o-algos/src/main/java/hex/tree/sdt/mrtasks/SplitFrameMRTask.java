@@ -6,7 +6,9 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 
-
+/**
+ * Not used anymore - splits frame
+ */
 public class SplitFrameMRTask extends MRTask<SplitFrameMRTask> {
     int feature;
     double threshold;
