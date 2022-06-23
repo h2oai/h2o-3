@@ -14,6 +14,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.*;
 
+import java.lang.reflect.MalformedParametersException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,7 +26,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     private int _maxDepth;
     int _nodesCount;
 
-    private double[][] _compressedTree;
+    private double[][] _tree;
+//    private double[][] _iterativelyBuiltTree;
 
     private Integer _actualDepth;
 
@@ -59,6 +61,12 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         //  if parent node is at index i in the array then the left child of that node is at index (2*i + 1) 
         //  and right child is at index (2*i + 2) in the array. 
         System.out.println("Nodes count when compressing: " + _nodesCount);
+        
+        // When built iteratively, tree is already in compressed array
+        if(_tree != null) {
+            return _tree;
+        }
+        // save linked tree to array
         // 2^k - 1 is max count of nodes, where k is depth
         _tree = new double[(int) Math.pow(2, _maxDepth + 1)][2];
         writeSubtreeStartingFromIndex(_root, 0);
@@ -280,7 +288,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     private DataFeaturesLimits getInitialFeaturesLimits() {
         return new DataFeaturesLimits(
                 Arrays.stream(_train.vecs())
-                        .map(v -> new FeatureLimits(v.min(), v.max())).collect(Collectors.toList()));
+                        // decrease min as the minimum border is always excluded and real min value could be lost
+                        .map(v -> new FeatureLimits(v.min() - EPSILON, v.max()))
+                        .collect(Collectors.toList()));
     }
 
 

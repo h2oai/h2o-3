@@ -32,7 +32,7 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
      */
     private void tryUpdatingMin(int feature, double candidateValue) {
         if (_realFeatureLimits[feature][LIMIT_MIN] > candidateValue) {
-            _realFeatureLimits[feature][LIMIT_MIN] = candidateValue;
+            _realFeatureLimits[feature][LIMIT_MIN] = candidateValue - 0.0001;
         }
     }
 
@@ -56,9 +56,10 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
         // select only rows that fulfill all conditions
         for (int row = 0; row < numRows; row++) {
             conditionsFailed = false;
-            for (int column = 0; column < numCols; column++) {
+            // - 1 because of the class column - don't check limits on it
+            for (int column = 0; column < numCols - 1; column++) {
                 // if the value is out of the given limit, skip this row
-                if ((cs[column].atd(row) < _featuresLimits[column][LIMIT_MIN])
+                if ((cs[column].atd(row) <= _featuresLimits[column][LIMIT_MIN])
                         || (cs[column].atd(row) > _featuresLimits[column][LIMIT_MAX])) {
                     conditionsFailed = true;
                     break;

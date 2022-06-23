@@ -16,7 +16,7 @@ public enum BinningStrategy {
 
     EQUAL_WIDTH {
 
-        public final int VALUES_COUNT_IN_RANGE = 100;
+        public final int VALUES_COUNT_IN_RANGE = 10;
 
         public int DECIMALS_TO_CONSIDER = 2;
 
@@ -56,7 +56,7 @@ public enum BinningStrategy {
             // get thresholds which are maximums of bins
             double finalStep = step;
             List<Double> binningValues = new ArrayList<>();
-            for (double value = featureLimits._min + step; value < featureLimits._max; value += step) {
+            for (double value = featureLimits._min + step; value <= featureLimits._max; value += step) {
                 binningValues.add(value);
             }
             List<Bin> emptyBins = binningValues.stream()
@@ -64,7 +64,7 @@ public enum BinningStrategy {
                     // get bins - calculate minimum value and construct bin for each previously computed maximum value
                     .map(v -> new Pair<>(v - finalStep, v)).map(Bin::new).collect(Collectors.toList());
             // set the firs min to some lower value so the actual value equal to min is not lost
-            emptyBins.get(0)._min = emptyBins.get(0)._min - 0.1 * step;
+            emptyBins.get(0)._min = emptyBins.get(0)._min - 0.0001 * step;
             // set the last max to the real max value to avoid precision troubles
             emptyBins.get(emptyBins.size() - 1)._max = featureLimits._max;
 //            System.out.println("Real max: " + featureLimits._max 

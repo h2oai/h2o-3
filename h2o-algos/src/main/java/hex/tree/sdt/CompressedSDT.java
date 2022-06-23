@@ -26,7 +26,7 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
         if (featureOrDummy == -1) {
             return (int) thresholdOrValue;
         }
-        if (rowValues[(int) featureOrDummy] < thresholdOrValue
+        if (rowValues[(int) featureOrDummy] <= thresholdOrValue
                 || Precision.equals(rowValues[(int) featureOrDummy], thresholdOrValue, 0.000001d)) {
             return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1);
         } else {
