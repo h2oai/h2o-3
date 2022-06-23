@@ -34,6 +34,11 @@ def mojo_predict_pandas_test(sandbox_dir, stratify_by=None):
                 training_frame=data)
     print(model)
 
+    # reference predictions
+    h2o_prediction = model.predict(data)
+
+    assert pyunit_utils.test_java_scoring(model, data, h2o_prediction, 1e-8)
+
     # download mojo
     mojo = pyunit_utils.download_mojo(model)
 
@@ -42,7 +47,6 @@ def mojo_predict_pandas_test(sandbox_dir, stratify_by=None):
     h2o.export_file(data, input_csv)
     pandas_frame = pandas.read_csv(input_csv)
 
-    h2o_prediction = model.predict(data)
     mojo_prediction = h2o.mojo_predict_pandas(dataframe=pandas_frame, **mojo)
 
     assert len(mojo_prediction) == h2o_prediction.nrow
