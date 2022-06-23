@@ -54,7 +54,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testAirlines2() {
     Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     try {
-      Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2), true, true,true);
+      Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(fr, 8, 16, 2), true, true,true);
       int len=0;
       for(Vec v: interactions.vecs()) len += ((InteractionWrappedVec)v).expandedLength();
       interactions.delete();
@@ -108,7 +108,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testAirlines3() {
     Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     try {
-      Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2), false, true, true);
+      Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(fr, 8, 16, 2), false, true, true);
       int len=0;
       for(Vec v: interactions.vecs()) len += ((InteractionWrappedVec)v).expandedLength();
       interactions.delete();
@@ -197,7 +197,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testIris1() {  // test that getting sparseRows and denseRows produce the same results
     Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(1,4);
-    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(0, 1);
+    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(fr, 0, 1);
     DataInfo di=null;
 
     try {
@@ -229,7 +229,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testIris2() {  // test that getting sparseRows and denseRows produce the same results
     Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(1,4);
-    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(0, 1);
+    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(fr, 0, 1);
     DataInfo di=null;
     try {
       di = new DataInfo(
@@ -260,7 +260,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testIris3() {  // test that getting sparseRows and denseRows produce the same results
     Frame fr = parseTestFile(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(2,4);
-    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(0, 1, 2, 3);
+    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(fr, 0, 1, 2, 3);
     DataInfo di=null;
     try {
       di = new DataInfo(
@@ -295,7 +295,7 @@ public class DataInfoTest extends TestUtil {
     H2O.submitTask(new RebalanceDataSet(fr,k,1)).join();
     fr.delete();
     fr = DKV.getGet(k);
-    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(8,16,2);
+    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(fr, 8,16,2);
     DataInfo di=null;
     try {
       di = new DataInfo(
@@ -330,7 +330,7 @@ public class DataInfoTest extends TestUtil {
     H2O.submitTask(new RebalanceDataSet(fr,k,1)).join();
     fr.delete();
     fr = DKV.getGet(k);
-    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(8,16,2);
+    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(fr, 8,16,2);
     DataInfo di=null;
     try {
       di = new DataInfo(

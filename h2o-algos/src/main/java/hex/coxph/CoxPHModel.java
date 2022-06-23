@@ -3,6 +3,7 @@ package hex.coxph;
 import hex.*;
 import hex.coxph.CoxPHModel.CoxPHOutput;
 import hex.coxph.CoxPHModel.CoxPHParameters;
+import hex.genmodel.descriptor.ModelDescriptor;
 import hex.schemas.CoxPHModelV3;
 import water.*;
 import water.api.schemas3.ModelSchemaV3;
@@ -18,6 +19,8 @@ import water.util.IcedInt;
 import water.util.Log;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
@@ -71,18 +74,27 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     InteractionSpec interactionSpec() {
       // add "stratify by" columns to "interaction only"
       final String[] interOnly;
-      if (_interactions_only != null && _stratify_by != null) {
-        String[] io = _interactions_only.clone();
+      if (getInteractionsOnly() != null && _stratify_by != null) {
+        String[] io = getInteractionsOnly().clone();
         Arrays.sort(io);
         String[] sb = _stratify_by.clone();
         Arrays.sort(sb);
         interOnly = ArrayUtils.union(io, sb, true);
       } else {
-        interOnly = _interactions_only != null ? _interactions_only : _stratify_by;
+        interOnly = getInteractionsOnly() != null ? getInteractionsOnly() : _stratify_by;
       }
       return InteractionSpec.create(_interactions, _interaction_pairs, interOnly, _stratify_by);
     }
 
+    private String[] getInteractionsOnly() {
+      // clients sometimes represent empty interactions as [""] - sanitize this
+      if (_interactions_only != null && _interactions_only.length == 1 && "".equals(_interactions_only[0])) {
+        return null;
+      } else {
+        return _interactions_only;
+      }
+    }
+    
     boolean isStratified() { return _stratify_by != null && _stratify_by.length > 0; }
 
     String toFormula(Frame f) {
@@ -392,8 +404,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override
   public boolean haveMojo() {
-    final boolean hasInteraction = _parms.interactionSpec() != null;
-    final boolean enabled = !hasInteraction && super.haveMojo();
+    final boolean enabled = super.haveMojo() && hasOnlyNumericInteractions();
     if (! enabled) {
       boolean forceEnabled = H2O.getSysBoolProperty("coxph.mojo.forceEnable", false);
       if (forceEnabled) {
@@ -402,6 +413,59 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       }
     }
     return enabled;
+  }
+
+  boolean hasOnlyNumericInteractions() {
+    if (_output._interactionSpec == null) {
+      return true;
+    }
+    return Stream.of(_output.data_info._interactions)
+            .allMatch(InteractionPair::isNumeric);
+  }
+
+  @Override
+  public ModelDescriptor modelDescriptor() {
+    return new CoxPHModelDescriptor(extraMojoFeatures());
+  }
+
+  public String[] extraMojoFeatures() {
+    InteractionSpec interactionSpec = _parms.interactionSpec();
+    if (interactionSpec == null) {
+      return new String[0];
+    }
+    String[] interactionsOnly = interactionSpec.getInteractionsOnly();
+    if (interactionsOnly == null) {
+      return new String[0];
+    }
+    Set<String> alreadyExported = new HashSet<>(Arrays.asList(_output._names));
+    return Stream.of(interactionsOnly)
+            .filter(((Predicate<String>) alreadyExported::contains).negate())
+            .toArray(String[]::new);
+  }
+
+  class CoxPHModelDescriptor extends H2OModelDescriptor {
+
+    private final String[] _extraMojoFeatures;
+
+    private CoxPHModelDescriptor(String[] extraMojoFeatures) {
+      _extraMojoFeatures = extraMojoFeatures;
+    }
+
+    @Override
+    public int nfeatures() {
+      return super.nfeatures() + _extraMojoFeatures.length;
+    }
+
+    @Override
+    public String[] features() {
+      return ArrayUtils.append(super.features(), _extraMojoFeatures);
+    }
+
+    @Override
+    public String[] columnNames() {
+      return ArrayUtils.insert(super.columnNames(), _extraMojoFeatures, super.nfeatures());
+    }
+
   }
 
 }

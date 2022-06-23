@@ -23,9 +23,10 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     _model._cats = readkv("cats");
     _model._useAllFactorLevels = readkv("use_all_factor_levels");
     _model._lpBase = _model.computeLpBase();
+    _model._interactions_1 = readkv("interactions_1");
+    _model._interactions_2 = readkv("interactions_2");
+    _model._interaction_targets = readkv("interaction_targets");
   }
-
-  
 
   private HashMap<CoxPHMojoModel.Strata, Integer> readStrata() {
     final int count = readkv("strata_count");

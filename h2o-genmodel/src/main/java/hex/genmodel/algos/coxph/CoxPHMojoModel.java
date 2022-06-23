@@ -55,6 +55,10 @@ public class CoxPHMojoModel extends MojoModel  {
   double[] _lpBase;
   boolean _useAllFactorLevels;
 
+  int[] _interactions_1;
+  int[] _interactions_2;
+  int[] _interaction_targets;
+
   CoxPHMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
 
@@ -62,6 +66,9 @@ public class CoxPHMojoModel extends MojoModel  {
 
   @Override
   public double[] score0(double[] row, double[] predictions) {
+    if (_interaction_targets != null) {
+      evaluateInteractions(row);
+    }
     predictions[0] = forCategories(row) + forOtherColumns(row) - forStrata(row);
     return predictions;
   }
@@ -131,6 +138,15 @@ public class CoxPHMojoModel extends MojoModel  {
     } else {
       final Strata o = new Strata(row, _strata_len);
       return _strata.get(o);
+    }
+  }
+
+  private void evaluateInteractions(double[] row) {
+    for (int i = 0; i < _interaction_targets.length; i++) {
+      final int target = _interaction_targets[i];
+      if (Double.isNaN(row[target])) {
+        row[target] = row[_interactions_1[i]] * row[_interactions_2[i]];
+      }
     }
   }
 
