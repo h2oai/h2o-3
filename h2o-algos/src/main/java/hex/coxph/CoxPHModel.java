@@ -386,6 +386,9 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
         if (r.predictors_bad) {
           nc.addNA();
           continue;
+        } else if (r.weight == 0) {
+          nc.addNum(0);
+          continue;
         }
         final double s = _hasStrata ? chks[_dinfo.responseChunkId(0)].atd(rid) : 0;
         final boolean unknownStrata = Double.isNaN(s);
