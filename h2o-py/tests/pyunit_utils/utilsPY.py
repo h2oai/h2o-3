@@ -4563,3 +4563,30 @@ def set_forbidden_paths(paths):
 
 def clear_forbidden_paths():
     set_forbidden_paths([])
+
+
+def download_mojo(model, mojo_zip_path=None, genmodel_path=None):
+    if not mojo_zip_path:
+        mojo_zip_path = os.path.join(locate("results"), model._id)
+
+    mojo_zip_path = os.path.abspath(mojo_zip_path)
+    parent_dir = os.path.dirname(mojo_zip_path)
+
+    print("\nDownloading MOJO @... " + parent_dir)
+    time0 = time.time()
+    if genmodel_path is None:
+        genmodel_path = os.path.join(parent_dir, "h2o-genmodel.jar")
+    mojo_file = model.download_mojo(path=mojo_zip_path, get_genmodel_jar=True, genmodel_name=genmodel_path)
+
+    print("    => %s  (%d bytes)" % (mojo_file, os.stat(mojo_file).st_size))
+    assert os.path.exists(mojo_file)
+    print("    Time taken = %.3fs" % (time.time() - time0))
+    assert os.path.exists(mojo_zip_path)
+    print("    => %s  (%d bytes)" % (mojo_zip_path, os.stat(mojo_zip_path).st_size))
+    assert os.path.exists(genmodel_path)
+    print("    => %s  (%d bytes)" % (genmodel_path, os.stat(genmodel_path).st_size))
+
+    return {
+        "mojo_zip_path": mojo_zip_path,
+        "genmodel_jar_path": genmodel_path
+    }
