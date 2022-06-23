@@ -356,6 +356,11 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     return msgs;
   }
 
+  @Override
+  protected String[] adaptTestForJavaScoring(Frame test, boolean computeMetrics) {
+    return super.adaptTestForTrain(test, true, computeMetrics);
+  }
+
   private static class CoxPHScore extends MRTask<CoxPHScore> {
     private DataInfo _dinfo;
     private double[] _coef;

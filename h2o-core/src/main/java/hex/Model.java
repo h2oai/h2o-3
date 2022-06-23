@@ -2745,7 +2745,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame fr = new Frame(data);
     boolean computeMetrics = data.vec(_output.responseName()) != null && !data.vec(_output.responseName()).isBad();
     try {
-      String[] warns = adaptTestForTrain(fr,true, computeMetrics);
+      String[] warns = adaptTestForJavaScoring(fr, computeMetrics);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
 
@@ -2923,6 +2923,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 case KLime:
                   p = epmw.predictKLime(rowData);
                   break;
+                case CoxPH:
+                  p = epmw.predictCoxPH(rowData, offset);
+                  break;
                 default:
                   throw new UnsupportedOperationException("Predicting with offset current not supported for " + genmodel.getModelCategory());
               }
@@ -3028,6 +3031,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     } finally {
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, data);  // Remove temp keys.
     }
+  }
+  protected String[] adaptTestForJavaScoring(Frame test, boolean computeMetrics) {
+    return adaptTestForTrain(test, true, computeMetrics);
   }
 
   private static void checkSerializable(MojoModel mojoModel) {
