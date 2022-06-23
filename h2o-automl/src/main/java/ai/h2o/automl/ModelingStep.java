@@ -727,8 +727,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     //by default, just empty the leaderboard and remove the container without touching anything model-related.
                     tmpLeaderboard.removeModels(tmpLeaderboard.getModelKeys(), false);
                     tmpLeaderboard.remove(false);
-                    if (null == eventLog)
+                    if (eventLog == null) {
                         tmpEventLog.remove();
+                    }
                 }
             };
         }
@@ -777,7 +778,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
                         if (state.is(ResultStatus.success)) {
                             Log.debug("Selection leaderboard "+selectionLeaderboard.get()._key, selectionLeaderboard.get().toLogString());
-                            selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys(), selectionEventLog);
+                            selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys());
                             Leaderboard lb = aml().leaderboard();
                             Log.debug("Selection result for job "+key, ToStringBuilder.reflectionToString(selection));
                             lb.removeModels(selection._remove, false); // do remove the model immediately from DKV: if it were part of a grid, it prevents the grid from being resumed.

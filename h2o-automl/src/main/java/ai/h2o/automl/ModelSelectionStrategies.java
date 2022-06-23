@@ -1,7 +1,5 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.leaderboard.Leaderboard;
 import org.apache.log4j.Logger;
@@ -40,7 +38,7 @@ public final class ModelSelectionStrategies {
 
         @Override
         @SuppressWarnings("unchecked")
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog) {
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
             LeaderboardHolder lbHolder = makeSelectionLeaderboard();
             Leaderboard tmpLeaderboard = lbHolder.get();
             tmpLeaderboard.addModels((Key<Model>[]) originalModels);
@@ -63,8 +61,8 @@ public final class ModelSelectionStrategies {
         }
 
         @Override
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog) {
-            return new KeepBestN<M>(originalModels.length, _leaderboardSupplier).select(originalModels, newModels, eventLog);
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
+            return new KeepBestN<M>(originalModels.length, _leaderboardSupplier).select(originalModels, newModels);
         }
     }
 
@@ -80,10 +78,10 @@ public final class ModelSelectionStrategies {
         }
 
         @Override
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog) {
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
             Key<M>[] originalModelsSubgroup = Arrays.stream(originalModels).filter(_criterion).toArray(Key[]::new);
             Key<M>[] newModelsSubGroup = Arrays.stream(newModels).filter(_criterion).toArray(Key[]::new);
-            return new KeepBestN<M>(_N, _leaderboardSupplier).select(originalModelsSubgroup, newModelsSubGroup, eventLog);
+            return new KeepBestN<M>(_N, _leaderboardSupplier).select(originalModelsSubgroup, newModelsSubGroup);
         }
     }
 

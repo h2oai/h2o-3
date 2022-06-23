@@ -17,5 +17,5 @@ public interface ModelSelectionStrategy<M extends Model>{
         }
     }
 
-    Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels, EventLog eventLog);
+    Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels);
 }

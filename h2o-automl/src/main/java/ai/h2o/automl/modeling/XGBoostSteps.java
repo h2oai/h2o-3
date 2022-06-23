@@ -256,9 +256,9 @@ public class XGBoostSteps extends ModelingSteps {
 
                 @Override
                 protected ModelSelectionStrategy getSelectionStrategy() {
-                    return (originalModels, newModels, eventLog) ->
+                    return (originalModels, newModels) ->
                             new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _provider+"_"+_id)))
-                                    .select(new Key[] { getBestXGB()._key }, newModels, eventLog);
+                                    .select(new Key[] { getBestXGB()._key }, newModels);
                 }
             },
 
@@ -268,9 +268,9 @@ public class XGBoostSteps extends ModelingSteps {
 
                 @Override
                 protected ModelSelectionStrategy getSelectionStrategy() {
-                    return (originalModels, newModels, eventLog) ->
+                    return (originalModels, newModels) ->
                             new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _provider+"_"+_id)))
-                                    .select(new Key[] { getBestXGB()._key }, newModels, eventLog);
+                                    .select(new Key[] { getBestXGB()._key }, newModels);
                 }
 
                 @Override

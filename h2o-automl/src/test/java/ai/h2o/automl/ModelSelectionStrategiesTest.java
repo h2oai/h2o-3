@@ -117,8 +117,7 @@ public class ModelSelectionStrategiesTest {
 
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
-                    EventLog.getOrMake(dummy)
+                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new)
             );
 
             assertNotNull(selection);
@@ -140,8 +139,7 @@ public class ModelSelectionStrategiesTest {
             // swapping old and new for the sake of this test
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    EventLog.getOrMake(dummy)
+                    Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new)
             );
 
             assertNotNull(selection);
@@ -162,8 +160,7 @@ public class ModelSelectionStrategiesTest {
             // swapping old and new for the sake of this test
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
-                    EventLog.getOrMake(dummy)
+                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new)
             );
 
             assertNotNull(selection);
@@ -183,8 +180,7 @@ public class ModelSelectionStrategiesTest {
 
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
-                    EventLog.getOrMake(dummy)
+                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new)
             );
 
             assertNotNull(selection);
@@ -212,8 +208,7 @@ public class ModelSelectionStrategiesTest {
 
             ModelSelectionStrategy.Selection<DummyModel> selection = strategy.select(
                     Arrays.stream(oldModels).map(m -> m._key).toArray(Key[]::new),
-                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new),
-                    EventLog.getOrMake(dummy)
+                    Arrays.stream(newModels).map(m -> m._key).toArray(Key[]::new)
             );
 
             assertNotNull(selection);
