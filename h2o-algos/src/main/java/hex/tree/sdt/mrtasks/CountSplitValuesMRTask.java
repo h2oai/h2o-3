@@ -13,6 +13,8 @@ public class CountSplitValuesMRTask extends MRTask<CountSplitValuesMRTask> {
     public int countRight;
     public int countRight0;
 
+    private static final double EPSILON = 0.000001d;
+
     public CountSplitValuesMRTask(int featureSplit, double threshold) {
         this.featureSplit = featureSplit;
         this.threshold = threshold;
@@ -28,16 +30,16 @@ public class CountSplitValuesMRTask extends MRTask<CountSplitValuesMRTask> {
         int numRows = cs[0]._len;
         for (int row = 0; row < numRows; row++) {
             if (cs[featureSplit].atd(row) < threshold
-                    || Precision.equals(cs[featureSplit].atd(row), threshold, 0.000001d)) {
+                    || Precision.equals(cs[featureSplit].atd(row), threshold, EPSILON)) {
                 countLeft++;
-                if (Precision.equals(cs[classFeature].atd(row), 0, 0.000001d)) {
+                if (Precision.equals(cs[classFeature].atd(row), 0, EPSILON)) {
                     countLeft0++;
                 }
             } else {
-                countRight++;
+                countRight ++;
 //                System.out.println(cs[classFeature].atd(row));
-                if (Precision.equals(cs[classFeature].atd(row), 0, 0.000001d)) {
-                    countRight0++;
+                if (Precision.equals(cs[classFeature].atd(row), 0, EPSILON)) {
+                    countRight0 ++;
 //                    System.out.println("yes, " + countRight0);
                 }
             }

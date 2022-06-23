@@ -8,11 +8,6 @@ public class BinAccumulatedStatistics {
 
     public int _rightCount0;
     public int _rightCount;
-
-//    public BinAccumulatedStatistics(int count0, int count) {
-//        _count0 = count0;
-//        _count = count;
-//    }
     
     public BinAccumulatedStatistics() {
         _leftCount0 = 0;

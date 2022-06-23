@@ -35,17 +35,19 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     transient Random _rand;
 
     // todo - create file with constants ?
-    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 10;
+    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 2; // todo - make a parameter with default value
+    private final static double EPSILON = 0.000001d; 
+    
 
     private static final Logger LOG = Logger.getLogger(SDT.class);
 
 
     public SDT(SDTModel.SDTParameters parameters) {
         super(parameters);
-        _maxDepth = parameters.depth;
+        _maxDepth = parameters._maxDepth;
         _actualDepth = 0;
         _nodesCount = 0;
-        _compressedTree = null;
+        _tree = null;
         init(false);
     }
 
@@ -58,28 +60,28 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         //  and right child is at index (2*i + 2) in the array. 
         System.out.println("Nodes count when compressing: " + _nodesCount);
         // 2^k - 1 is max count of nodes, where k is depth
-        _compressedTree = new double[(int) Math.pow(2, _maxDepth)][2];
+        _tree = new double[(int) Math.pow(2, _maxDepth + 1)][2];
         writeSubtreeStartingFromIndex(_root, 0);
-        return _compressedTree;
+        return _tree;
     }
 
     private void writeSubtreeStartingFromIndex(final Node actualNode, final int actualIndex) {
         if (actualNode == null) {
             return;
         }
-        _compressedTree[actualIndex][0] = actualNode.getFeature() == null ? -1
+        _tree[actualIndex][0] = actualNode.getFeature() == null ? -1
                 : actualNode.getFeature().doubleValue();
-        _compressedTree[actualIndex][1] = actualNode.getThreshold() == null ? actualNode.getDecisionValue()
+        _tree[actualIndex][1] = actualNode.getThreshold() == null ? actualNode.getDecisionValue()
                 : actualNode.getThreshold();
         writeSubtreeStartingFromIndex(actualNode.getLeft(), 2 * actualIndex + 1);
         writeSubtreeStartingFromIndex(actualNode.getRight(), 2 * actualIndex + 2);
     }
 
     public double[][] getCompressedTree() {
-        if (_compressedTree == null) {
+        if (_tree == null) {
             compress();
         }
-        return _compressedTree;
+        return _tree;
     }
 
     /**
@@ -117,7 +119,6 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
      * @return
      */
     private SplitInfo findBestSplit(Histogram histogram) {
-        // find split (feature and threshold)
         int featuresNumber = histogram.featuresCount();
         Pair<Double, Double> currentMinEntropyPair = new Pair<>(-1., Double.MAX_VALUE);
         int bestFeatureIndex = -1;
@@ -130,9 +131,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             Pair<Double, Double> minEntropyForFeature = histogram.calculateBinsStatisticsForFeature(featureIndex).stream()
                     .filter(binStatistics -> ((binStatistics._leftCount >= LIMIT_NUM_ROWS_FOR_SPLIT)
                             && (binStatistics._rightCount >= LIMIT_NUM_ROWS_FOR_SPLIT))) // todo - consider setting min count of samples in bin 
-                    .peek(binStatistics -> {
-                        System.out.println("counts: " + binStatistics._maxBinValue + " " + binStatistics._leftCount + " " + binStatistics._rightCount);
-                    })
+//                    .peek(binStatistics -> {
+//                        System.out.println("counts: " + binStatistics._maxBinValue + " " + binStatistics._leftCount + " " + binStatistics._rightCount);
+//                    })
                     .map(binStatistics -> new Pair<>(
                             binStatistics._maxBinValue, calculateEntropyOfSplit(binStatistics)))
                     .min(Comparator.comparing(Pair::_2))
@@ -162,9 +163,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return value;
     }
 
-    private double entropyBinarySplit(final double oneClassFrequency) {
-        return -1 * ((oneClassFrequency < 0.01 ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
-                + (oneClassFrequency > 0.99 ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
+    private double entropyBinarySplit(final double oneClassFrequency) { 
+        return -1 * ((oneClassFrequency < EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
+                + ((1 - oneClassFrequency) < EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
     }
 
     private Double calculateEntropyOfSplit(BinAccumulatedStatistics binStatistics) {
@@ -178,11 +179,16 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return binaryEntropy(task.countLeft, task.countLeft0, task.countRight, task.countRight0);
     }
 
-    public Node makeListFromNode(double zeroRatio, Node node) {
+    /**
+     * Select decision value for list.
+     * @param zeroRatio #zero/#one in list
+     * @return decision value (in current case - 0 or 1)
+     */
+    private int selectDecisionValue(double zeroRatio) {
         if (zeroRatio >= 0.5) {
-            node.setDecisionValue(0);
-        } else if (zeroRatio < 0.5) {
-            node.setDecisionValue(1);
+            return 0;
+        } else {
+            return 1;
         }
         return node;
     }
@@ -238,7 +244,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         if ((nodeDepth >= _maxDepth) || (classesCount._1() <= LIMIT_NUM_ROWS_FOR_SPLIT) || (classesCount._2() <= LIMIT_NUM_ROWS_FOR_SPLIT)
 //                || zeroRatio > 0.999 || zeroRatio < 0.001
         ) {
-            System.out.println("Reason: depth=" + _actualDepth + ", ratio=" + zeroRatio + ", class0=" + classesCount._1() + ", class1=" + classesCount._2());
+//            System.out.println("Reason: depth=" + _actualDepth + ", ratio=" + zeroRatio + ", class0=" + classesCount._1() + ", class1=" + classesCount._2());
             return makeListFromNode(zeroRatio, subtreeRoot);
         }
         Histogram histogram = new Histogram(_train, featuresLimits, BinningStrategy.EQUAL_WIDTH);
@@ -254,9 +260,11 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
         DataFeaturesLimits limitsLeft = featuresLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
         // set new min to something bigger than threshold as the threshold is included in the left split and excluded in the right
-        DataFeaturesLimits limitsRight = featuresLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold + 0.001);
+        DataFeaturesLimits limitsRight = featuresLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold/* + 0.0000000001*/);
 //        System.out.println("root: " + countClasses(featuresLimits) + ", left: " + countClasses(limitsLeft) +
-//                ", right: " + countClasses(limitsRight));
+//                ", right: " + countClasses(limitsRight) + ", best feature: " + bestSplitInfo._splitFeatureIndex 
+//                + ", threshold: " + bestSplitInfo._threshold);
+        
 //        System.out.println("feature: " + bestSplitInfo._splitFeatureIndex + ", threshold: " + bestSplitInfo._threshold);
 //        System.out.println("Left min-max: " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
 //                " " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
@@ -302,18 +310,28 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
         private void buildSDT() {
             // switch to using or not using binning
+//            if(Objects.equals(_parms._buildingStrategy, "splitting")) {
+//                _root = buildSubtree(_train, getInitialFeaturesLimits(), 1); // without histogram
+//            } else if(Objects.equals(_parms._buildingStrategy, "binning")) {
+//                _root = buildSubtree(getInitialFeaturesLimits(), 0); // with histogram
+//            } else if(Objects.equals(_parms._buildingStrategy, "iterative")){
+//                buildSDTIteratively();
+//            } else {
+//                System.out.println("No building strategy found for name " + _parms._buildingStrategy);
+//                throw new MalformedParametersException();
+//            }
 //            root = buildSubtree(_train, getInitialFeaturesLimits(), 1); // without histogram
             _root = buildSubtree(getInitialFeaturesLimits(), 1); // with histogram
             System.out.println("depth: " + _maxDepth + ", nodes count: " + _nodesCount);
 
             CompressedSDT compressedSDT = new CompressedSDT(compress());
 
-            _model._output.treeKey = compressedSDT._key;
+            _model._output._treeKey = compressedSDT._key;
             DKV.put(compressedSDT);
             _job.update(1);
             _model.update(_job);
             System.out.println("Tree:");
-            System.out.println(Arrays.deepToString(_compressedTree));
+            System.out.println(Arrays.deepToString(_tree));
         }
 
     }

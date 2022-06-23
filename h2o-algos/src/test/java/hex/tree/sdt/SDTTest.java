@@ -4,7 +4,6 @@ import hex.ConfusionMatrix;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import org.junit.*;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.runner.RunWith;
 import water.Scope;
 import water.*;
@@ -23,7 +22,6 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
-import static water.TestUtil.*;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
@@ -71,7 +69,7 @@ public class SDTTest extends TestUtil {
             assertEquals(train.numRows(), out.numRows());
 
 
-            System.out.println(DKV.getGet(model._output.treeKey));
+            System.out.println(DKV.getGet(model._output._treeKey));
 
             Frame test = new TestFrameBuilder()
                     .withVecTypes(Vec.T_NUM, Vec.T_NUM)
@@ -81,7 +79,7 @@ public class SDTTest extends TestUtil {
                     .build();
             Scope.track_generic(test);
 
-            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));
+            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output._treeKey)).nodes));
 
             Frame prediction = model.score(test);
             Scope.track_generic(prediction);
@@ -125,7 +123,7 @@ public class SDTTest extends TestUtil {
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p.depth = 5;
+        p._maxDepth = 5;
         p._response_column = "CAPSULE";
 
         DRFModel.DRFParameters p1 =
@@ -136,15 +134,15 @@ public class SDTTest extends TestUtil {
         p1._train = train._key;
         p1._seed = 0xDECAF;
 
-        testDataset(train, train, p, p1, "prostate");
+        testDataset(train, test, p, p1, "prostate");
         
     }
 
     @Test
     public void testAirlinesSmallData() {
         Scope.enter();
-        Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train.csv"));
-        Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test.csv"));
+        Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+        Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test_preprocessed.csv"));
 
         SDTModel.SDTParameters p =
                 new SDTModel.SDTParameters();
@@ -261,8 +259,10 @@ public class SDTTest extends TestUtil {
 
             System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
 //            System.out.println(test.vec(p._response_column));
-//            System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0).toCategoricalVec())));
-//            System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p._response_column))));
+            if(out.vec(0).length() < 100000) {
+                System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0).toCategoricalVec())));
+                System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p._response_column))));
+            }
 
             ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(
                     test.vec(p._response_column).toCategoricalVec(),

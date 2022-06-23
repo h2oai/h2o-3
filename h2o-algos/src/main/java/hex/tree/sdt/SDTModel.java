@@ -26,41 +26,41 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        assert _output.treeKey != null : "Output has no tree, check if tree is properly set to the output.";
+        assert _output._treeKey != null : "Output has no tree, check if tree is properly set to the output.";
         // compute score for given point
-        CompressedSDT tree = DKV.getGet(_output.treeKey);
+        CompressedSDT tree = DKV.getGet(_output._treeKey);
         int predictionValue = tree.predictRowStartingFromNode(data, 0);
         return new double[]{predictionValue};
     }
 
     public static class SDTOutput extends Model.Output {
         // all parameters of tree to be able to build it (?)
-        public int depth;
+        public int _maxDepth;
         
-        public Key<CompressedSDT> treeKey;
+        public Key<CompressedSDT> _treeKey;
 
         public SDTOutput(SDT sdt) {
             super(sdt);
-            depth = sdt._parms.depth;
+            _maxDepth = sdt._parms._maxDepth;
         }
         
     }
     
     @Override
     protected Futures remove_impl(Futures fs, boolean cascade) {
-        Keyed.remove(_output.treeKey, fs, true);
+        Keyed.remove(_output._treeKey, fs, true);
         return super.remove_impl(fs, cascade);
     }
 
     @Override
     protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-        ab.putKey(_output.treeKey);
+        ab.putKey(_output._treeKey);
         return super.writeAll_impl(ab);
     }
 
     @Override
     protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-        ab.getKey(_output.treeKey, fs);
+        ab.getKey(_output._treeKey, fs);
         return super.readAll_impl(ab,fs);
     }
 
@@ -69,12 +69,15 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
         /**
          * Depth (max depth) of the tree
          */
-        public int depth;
-        
+        public int _maxDepth;
+
+        // splitting, binning, iterative - not used yet, 
+        // probably will never be used as we need only the best building strategy
+        public String _buildingStrategy; 
         
         public SDTParameters() {
             super();
-            depth = 100;
+            _maxDepth = 100;
         }
         
         @Override
