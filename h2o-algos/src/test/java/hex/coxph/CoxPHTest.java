@@ -3,6 +3,8 @@ package hex.coxph;
 import hex.ModelMetricsRegressionCoxPH;
 import hex.StringPair;
 import hex.genmodel.MojoModel;
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.attributes.parameters.ModelParameter;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -17,9 +19,9 @@ import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.PojoUtils;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.parseAndTrackTestFile;
@@ -562,6 +564,43 @@ public class CoxPHTest extends Iced<CoxPHTest> {
         break;
     }
     return ps;
+  }
+
+  @Test
+  public void testMojoParsesInteractionPairs() throws Exception {
+    try {
+      Scope.enter();
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
+
+      final CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._train             = fr._key;
+      parms._start_column      = "start";
+      parms._stop_column       = "stop";
+      parms._response_column   = "event";
+      parms._interaction_pairs = new StringPair[]{new StringPair("surgery", "age")};
+      parms._ignored_columns   = new String[]{"id"};
+      
+      final CoxPH builder = new CoxPH(parms);
+      final CoxPHModel model = builder.trainModel().get();
+      Scope.track_generic(model);
+      
+      MojoModel mojoModel = model.toMojo(true);
+      ModelAttributes modelAttributes = mojoModel._modelAttributes;
+      assertNotNull(modelAttributes);
+
+      List<Object> pairs = Stream.of(modelAttributes.getModelParameters())
+              .filter(p -> "interaction_pairs".equals(p.name))
+              .map(ModelParameter::getActualValue)
+              .collect(Collectors.toList());
+      assertEquals(1, pairs.size());
+      assertEquals(1, ((Object[]) pairs.get(0)).length);
+      assertEquals(
+              new hex.genmodel.attributes.parameters.StringPair("surgery", "age"),
+              ((Object[]) pairs.get(0))[0]
+      );
+    } finally {
+      Scope.exit();
+    }
   }
 
 }
