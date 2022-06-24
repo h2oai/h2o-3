@@ -16,7 +16,6 @@ import water.*;
 import water.fvec.*;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.ArrayUtils;
 import water.util.PojoUtils;
 
 import java.util.*;
@@ -598,6 +597,45 @@ public class CoxPHTest extends Iced<CoxPHTest> {
               new hex.genmodel.attributes.parameters.StringPair("surgery", "age"),
               ((Object[]) pairs.get(0))[0]
       );
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testCategoricalColumnsDontBreakStratifiedMOJOs() {
+    try {
+      Scope.enter();
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv")
+              .toCategoricalCol("surgery")
+              .toCategoricalCol("start")
+              .toCategoricalCol("transplant");
+
+      final CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._train             = fr._key;
+      parms._stop_column       = "stop";
+      parms._response_column   = "event";
+      parms._stratify_by       = new String[]{"surgery"};
+      parms._ignored_columns   = new String[]{"id"};
+
+      final CoxPH builder = new CoxPH(parms);
+      final CoxPHModel model = builder.trainModel().get();
+      Scope.track_generic(model);
+
+      assertEquals(
+                      fr.vec("transplant").domain().length - 1 +
+                      fr.vec("start").domain().length - 1 +
+                      1 /*age */ + 
+                      1 /*year*/,
+              model._output._coef_names.length);
+      assertTrue(Arrays.stream(model._output._coef)
+              .filter(x -> x == 0.0d)
+              .count() < 10); // only few can be 0
+
+      Frame scored = model.score(fr);
+      Scope.track(scored);
+
+      assertTrue(model.testJavaScoring(fr, scored, 1e-6));
     } finally {
       Scope.exit();
     }
