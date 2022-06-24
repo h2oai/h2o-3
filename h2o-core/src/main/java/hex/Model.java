@@ -790,9 +790,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public static class InteractionSpec extends Iced {
-    private String[] _columns;
-    private StringPair[] _pairs;
-    private String[] _interactionsOnly;
+    private final String[] _columns;
+    private final StringPair[] _pairs;
+    private final String[] _interactionsOnly;
     private String[] _ignored; // list of columns that can be dropped if they are not used in any interaction
 
     private InteractionSpec(String[] columns, StringPair[] pairs, String[] interactionsOnly, String[] ignored) {
@@ -803,6 +803,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         _ignored = ignored.clone();
         Arrays.sort(_ignored);
       }
+    }
+
+    public String[] getInteractionsOnly() {
+      return _interactionsOnly;
     }
 
     public static InteractionSpec allPairwise(String[] columns) {
@@ -889,7 +893,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (interactionIDs[i] == -1)
             throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactionIDs[i]);
         }
-        allPairwise =  Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
+        allPairwise =  Model.InteractionPair.generatePairwiseInteractionsFromList(f, interactionIDs);
       }
       if (_pairs != null) {
         Arrays.sort(interactionIDs);
@@ -904,7 +908,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             throw new IllegalArgumentException("Invalid interactions specified (second column is missing): " + p.toJsonString() + " in " + Arrays.toString(f.names()));
           if (Arrays.binarySearch(interactionIDs, aIdx) >= 0 && Arrays.binarySearch(interactionIDs, bIdx) >= 0)
             continue; // This interaction is already included in set of all pairwise interactions
-          allExplicit[n++] = new InteractionPair(aIdx, bIdx, null, null);
+          allExplicit[n++] = new InteractionPair(f, aIdx, bIdx, f.vec(aIdx).domain(), f.vec(bIdx).domain());
         }
         if (n != allExplicit.length) {
           InteractionPair[] resized = new InteractionPair[n];
@@ -1119,17 +1123,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn, w?, o?, f?, u?, r]
     // cn are predictor cols, r is response, w is weights, o is offset, f is fold and t is treatment - these are optional
+    protected int lastSpecialColumnIdx() {
+      return _names.length - 1 - (isSupervised()?1:0);
+    }
     public int weightsIdx() {
       if(!_hasWeights) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1 - (hasFold()?1:0) - (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasOffset()?1:0) - (hasFold()?1:0) - (hasTreatment()?1:0);
     }
     public int offsetIdx() {
       if(!_hasOffset) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasFold()?1:0) - 1 - (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasFold()?1:0) - (hasTreatment()?1:0);
     }
     public int foldIdx() {
       if(!_hasFold) return -1;
-      return _names.length - (isSupervised()?1:0) - 1 -  (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasTreatment()?1:0);
     }
     
     public int responseIdx() {
@@ -2738,7 +2745,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame fr = new Frame(data);
     boolean computeMetrics = data.vec(_output.responseName()) != null && !data.vec(_output.responseName()).isBad();
     try {
-      String[] warns = adaptTestForTrain(fr,true, computeMetrics);
+      String[] warns = adaptTestForJavaScoring(fr, computeMetrics);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
 
@@ -2916,6 +2923,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 case KLime:
                   p = epmw.predictKLime(rowData);
                   break;
+                case CoxPH:
+                  p = epmw.predictCoxPH(rowData, offset);
+                  break;
                 default:
                   throw new UnsupportedOperationException("Predicting with offset current not supported for " + genmodel.getModelCategory());
               }
@@ -3021,6 +3031,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     } finally {
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, data);  // Remove temp keys.
     }
+  }
+  protected String[] adaptTestForJavaScoring(Frame test, boolean computeMetrics) {
+    return adaptTestForTrain(test, true, computeMetrics);
   }
 
   private static void checkSerializable(MojoModel mojoModel) {
@@ -3135,6 +3148,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  TODO: refactor the CreateInteractions to be useful here and in InteractionWrappedVec
    */
   public static class InteractionPair extends Iced<InteractionPair> {
+    public final String  _name1, _name2;
     private int _v1,_v2;
 
     private String[] _v1Enums;
@@ -3142,8 +3156,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     private int _hash;
     private boolean _needsAllFactorLevels;
 
-    private InteractionPair() {}
-    private InteractionPair(int v1, int v2, String[] v1Enums, String[] v2Enums) {
+    private InteractionPair(Frame f, int v1, int v2, String[] v1Enums, String[] v2Enums) {
+      _name1 = f.name(v1);
+      _name2 = f.name(v2);
       _v1=v1;_v2=v2;_v1Enums=v1Enums;_v2Enums=v2Enums;
       // hash is column ints; Item 9 p.47 of Effective Java
       _hash=17;
@@ -3170,7 +3185,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @param indexes An array of column indices.
      * @return An array of interaction pairs
      */
-    public static InteractionPair[] generatePairwiseInteractionsFromList(int... indexes) {
+    public static InteractionPair[] generatePairwiseInteractionsFromList(Frame f, int... indexes) {
       if( null==indexes ) return null;
       if( indexes.length < 2 ) {
         if( indexes.length==1 && indexes[0]==-1 ) return null;
@@ -3180,7 +3195,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int idx=0;
       for(int i=0;i<indexes.length;++i)
         for(int j=i+1;j<indexes.length;++j)
-          res[idx++] = new InteractionPair(indexes[i],indexes[j],null,null);
+          res[idx++] = new InteractionPair(f, indexes[i],indexes[j],f.vec(indexes[i]).domain(),f.vec(indexes[j]).domain());
       return res;
     }
 
@@ -3196,6 +3211,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public int getV1() { return _v1; }
     public int getV2() { return _v2; }
+
+    public boolean isNumeric() {
+      return _v1Enums == null && _v2Enums == null;
+    }
   }
 
   /**
@@ -3328,7 +3347,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public ModelDescriptor modelDescriptor() {
-    return new ModelDescriptor() {
+    return new H2OModelDescriptor();
+  }
+
+  protected class H2OModelDescriptor implements ModelDescriptor {
       @Override
       public String[][] scoringDomains() { return Model.this.scoringDomains(); }
       @Override
@@ -3340,7 +3362,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       @Override
       public String offsetColumn() { return _output.offsetName(); }
       @Override
-      public String weightsColumn() { return _output.offsetName(); }
+      public String weightsColumn() { return _output.weightsName(); }
       @Override
       public String foldColumn() { return _output.foldName(); }
       @Override
@@ -3371,7 +3393,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String[] getOrigNames() { return _output._origNames; }
       @Override
       public String[][] getOrigDomains() { return _output._origDomains; }
-    };
   }
 
   /**

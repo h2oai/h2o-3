@@ -1,13 +1,13 @@
 package hex.coxph;
 
+import hex.Model;
 import hex.ModelMojoWriter;
 import water.rapids.ast.prims.mungers.AstGroup;
+import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.IcedInt;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxPHParameters, CoxPHModel.CoxPHOutput> {
 
@@ -32,6 +32,7 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
     writekv("cat_offsets", model._output.data_info._catOffsets);
     writekv("use_all_factor_levels", model._output.data_info._useAllFactorLevels);
     writeStrata();
+    writeInteractions();
   }
 
   private void writeStrata() throws IOException {
@@ -44,4 +45,29 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
       strataNum++;
     }
   }
+
+  private void writeInteractions() throws IOException {
+    final Model.InteractionPair[] interactions = model._output.data_info._interactions;
+    if (interactions == null || interactions.length == 0) {
+      return;
+    }
+
+    final String[] columnNames = model.modelDescriptor().columnNames();
+
+    int[] interaction_1 = new int[interactions.length];
+    int[] interaction_2 = new int[interactions.length];
+    for (int i = 0; i < interactions.length; i++) {
+      interaction_1[i] = ArrayUtils.find(columnNames, interactions[i]._name1);
+      interaction_2[i] = ArrayUtils.find(columnNames, interactions[i]._name2);
+    }
+    writekv("interactions_1", interaction_1);
+    writekv("interactions_2", interaction_2);
+
+    int[] targets = new int[model._output.data_info._interactionVecs.length];
+    for (int i = 0; i < targets.length; i++) {
+      targets[i] = ArrayUtils.find(columnNames, model._output.data_info._adaptedFrame.name(model._output.data_info._interactionVecs[i]));
+    }
+    writekv("interaction_targets", targets);
+  }
+
 }

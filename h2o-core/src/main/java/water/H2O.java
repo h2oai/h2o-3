@@ -2013,10 +2013,15 @@ final public class H2O {
 
   // Construct a new H2O Cloud from the member list
   H2O( H2ONode[] h2os, int hash, int idx ) {
-    _memary = h2os;             // Need to clone?
-    java.util.Arrays.sort(_memary);       // ... sorted!
-    _hash = hash;               // And record hash for cloud rollover
-    _idx = (char)(idx&0x0ff);   // Roll-over at 256
+    this(h2os, false, hash, idx);
+  }
+
+  H2O( H2ONode[] h2os, boolean presorted, int hash, int idx ) {
+    _memary = h2os;
+    if (!presorted)
+      java.util.Arrays.sort(_memary); // ... sorted!
+    _hash = hash;                     // And record hash for cloud rollover
+    _idx = (char)(idx&0x0ff);         // Roll-over at 256
   }
 
   // One-shot atomic setting of the next Cloud, with an empty K/V store.
@@ -2046,6 +2051,7 @@ final public class H2O {
   }
 
   public final int size() { return _memary.length; }
+  public boolean isSingleNode() { return size() == 1; }
   public final H2ONode leader() {
     return _memary[0];
   }

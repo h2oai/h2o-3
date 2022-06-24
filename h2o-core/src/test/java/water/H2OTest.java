@@ -60,4 +60,12 @@ public class H2OTest {
       Assume.assumeTrue(TestUtil.isCI());
       assertTrue(H2O.isCI());
     }
+
+    @Test
+    public void testIsSingleNode() {
+      assertFalse(new H2O(new H2ONode[0], true, -1, -1).isSingleNode());
+      assertTrue(new H2O(new H2ONode[1], true, -1, -1).isSingleNode());
+      assertFalse(new H2O(new H2ONode[3], true, -1, -1).isSingleNode());
+    }
+
 }
