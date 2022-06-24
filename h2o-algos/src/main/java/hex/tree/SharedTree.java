@@ -523,8 +523,10 @@ public abstract class SharedTree<
             Key<M> keybackup = _model._key;
             _model.setInputParms(_parms);
             _model._key = Key.make(_model._key + "." + (_ntreesInCheckpoint + tid));
+            _model._output.changeModelMetricsKey(_model._key);
             _model.exportBinaryModel(modelFile, true);
             _model._key = keybackup;
+            _model._output.changeModelMetricsKey(_model._key);
           } catch (IOException e) {
             throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
           }

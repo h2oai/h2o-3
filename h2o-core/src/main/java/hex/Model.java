@@ -1208,6 +1208,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public synchronized Key<ModelMetrics>[] getModelMetrics() { return Arrays.copyOf(_model_metrics, _model_metrics.length); }
 
+    public synchronized void changeModelMetricsKey(Key modelkey) {
+      for (Key<ModelMetrics> modelMetrics : _model_metrics) {
+        modelMetrics.get().setModelKey(modelkey);
+      }
+    }
+
     protected long checksum_impl() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
               (null == _domains ? 17 : Arrays.deepHashCode(_domains)) *
