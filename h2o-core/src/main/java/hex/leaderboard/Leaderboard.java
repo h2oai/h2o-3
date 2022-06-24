@@ -227,7 +227,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   public Leaderboard(String projectName, Logger logger, Frame leaderboardFrame, String sortMetric, ScoreData scoreData) {
     super(Key.make(idForProject(projectName, scoreData)));
     _project_name = projectName;
-    _eventLogger = logger;
+    _eventLogger = logger == null ? log : logger;
     _leaderboard_frame_key = leaderboardFrame == null ? null : leaderboardFrame._key;
     _leaderboard_frame_checksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
     _sort_metric = sortMetric == null ? null : sortMetric.toLowerCase();

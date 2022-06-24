@@ -30,14 +30,14 @@ public class LeaderboardTest extends water.TestUtil {
     stall_till_cloudsize(1);
   }
 
-  private static Key<AutoML> dummy = Key.make();
+  private static final Key<AutoML> dummy = Key.make();
 
   @Test
   public void test_toTwoDimTable_with_empty_models_and_without_sort_metric() {
     Leaderboard lb = null;
     EventLog eventLog = EventLog.getOrMake(dummy);
     try {
-      lb = Leaderboard.getOrMake("dummy_lb_no_sort_metric", eventLog.asLogger(EventLogEntry.Stage.Workflow),  new Frame(), null);
+      lb = Leaderboard.getOrMake("dummy_lb_no_sort_metric", eventLog.asLogger(EventLogEntry.Stage.ModelTraining),  new Frame(), null);
 
       TwoDimTable table = lb.toTwoDimTable();
       assertNotNull("empty leaderboard should also produce a TwoDimTable", table);
@@ -53,7 +53,7 @@ public class LeaderboardTest extends water.TestUtil {
     Leaderboard lb = null;
     EventLog eventLog = EventLog.getOrMake(dummy);
     try {
-      lb = Leaderboard.getOrMake("dummy_lb_logloss_sort_metric", eventLog.asLogger(EventLogEntry.Stage.Workflow),  new Frame(), "logloss");
+      lb = Leaderboard.getOrMake("dummy_lb_logloss_sort_metric", eventLog.asLogger(EventLogEntry.Stage.ModelTraining),  new Frame(), "logloss");
 
       TwoDimTable table = lb.toTwoDimTable();
       assertNotNull("empty leaderboard should also produce a TwoDimTable", table);

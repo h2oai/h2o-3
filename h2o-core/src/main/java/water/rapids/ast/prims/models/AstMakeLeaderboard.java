@@ -2,19 +2,16 @@ package water.rapids.ast.prims.models;
 
 import hex.Model;
 import hex.ModelContainer;
-import hex.grid.Grid;
 import hex.leaderboard.*;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
-import water.util.TwoDimTable;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -55,7 +52,7 @@ public class AstMakeLeaderboard extends AstPrimitive {
     }
 
     @Override
-    public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    public ValFrame apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
         Key[] models = Arrays.stream(stk.track(asts[1].exec(env)).getStrs())
                 .flatMap(model_id -> {
                     Object obj = DKV.getGet(model_id);
@@ -74,18 +71,14 @@ public class AstMakeLeaderboard extends AstPrimitive {
         Frame leaderboardFrame = null;
         if (!leaderboardFrameKey.isEmpty())
             leaderboardFrame = DKV.getGet(leaderboardFrameKey);
+        else
+            leaderboardFrameKey = null;
         String sortMetric = stk.track(asts[3].exec(env)).getStr();
         String[] extensions = stk.track(asts[4].exec(env)).getStrs();
         String scoringData = stk.track(asts[5].exec(env)).getStr().toLowerCase();
 
-        String projectName = leaderboardFrameKey + "_" + Arrays.deepHashCode(models) + "_" + sortMetric + "_" +
-                Arrays.deepHashCode(extensions) + "_" + scoringData;
-        Leaderboard ldb = DKV.getGet(Leaderboard.idForProject(projectName));
-        if (null != ldb) {
-            // Since the project name should be unique for the input parameters we should already have the expected result so
-            // no need to add the same models to leaderboard multiple times.
-            return new ValFrame(twoDimTableToFrame(ldb.toTwoDimTable(extensions), Key.make()));
-        }
+        String projectName = leaderboardFrameKey + "_" + Arrays.deepHashCode(models) + "_" + scoringData;
+
         Arrays.stream(models).forEach(DKV::prefetch);
 
         if (sortMetric.equalsIgnoreCase("auto")) sortMetric = null;
@@ -143,42 +136,10 @@ public class AstMakeLeaderboard extends AstPrimitive {
                     ". Using scores from " + scoringData + ".");
 
         final Logger logger = LoggerFactory.getLogger(Leaderboard.class);
-        ldb = Leaderboard.getOrMake(projectName, logger, leaderboardFrame, sortMetric, Leaderboard.ScoreData.valueOf(scoringData));
+        Leaderboard ldb = Leaderboard.getOrMake(projectName, logger, leaderboardFrame, sortMetric, Leaderboard.ScoreData.valueOf(scoringData));
         ldb.setExtensionsProvider(createLeaderboardExtensionProvider(leaderboardFrame));
         ldb.addModels(models);
-        Frame leaderboard = twoDimTableToFrame(ldb.toTwoDimTable(extensions), Key.make());
+        Frame leaderboard = ldb.toTwoDimTable(extensions).asFrame(Key.make());
         return new ValFrame(leaderboard);
-    }
-
-    private static Frame twoDimTableToFrame(TwoDimTable twoDimTable, Key frameKey) {
-        String[] colNames = new String[twoDimTable.getColDim()];
-        System.arraycopy(twoDimTable.getColHeaders(), 0, colNames, 0, twoDimTable.getColDim());
-
-        Vec[] vecs = new Vec[colNames.length];
-        vecs[0] = Vec.makeVec(twoDimTable.getRowHeaders(), Vec.newKey());
-
-        for (int j = 0; j < twoDimTable.getColDim(); j++) {
-            if (twoDimTable.getColTypes()[j].equalsIgnoreCase("string")) {
-                String[] tmpRow = new String[twoDimTable.getRowDim()];
-                for (int i = 0; i < twoDimTable.getRowDim(); i++) {
-                    tmpRow[i] = (String) twoDimTable.get(i, j);
-                }
-                vecs[j] = Vec.makeVec(tmpRow, Vec.newKey());
-            } else if (twoDimTable.getColTypes()[j].equalsIgnoreCase("long")) {
-                double[] tmpRow = new double[twoDimTable.getRowDim()];
-                for (int i = 0; i < twoDimTable.getRowDim(); i++) {
-                    tmpRow[i] = (long) twoDimTable.get(i, j);
-                }
-                vecs[j] = Vec.makeVec(tmpRow, Vec.newKey());
-            } else {
-                double[] tmpRow = new double[twoDimTable.getRowDim()];
-                for (int i = 0; i < twoDimTable.getRowDim(); i++) {
-                    tmpRow[i] = (double) twoDimTable.get(i, j);
-                }
-                vecs[j] = Vec.makeVec(tmpRow, Vec.newKey());
-            }
-        }
-        Frame fr = new Frame(frameKey, colNames, vecs);
-        return fr;
     }
 }

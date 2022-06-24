@@ -1,4 +1,3 @@
-
 def make_leaderboard(object, leaderboard_frame=None,
                      sort_metric="AUTO",
                      extra_columns=[],

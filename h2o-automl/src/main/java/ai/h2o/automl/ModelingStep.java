@@ -151,7 +151,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
     }
 
-    private transient AutoML _aml;
+    private final transient AutoML _aml;
 
     protected final IAlgo _algo;
     protected final String _provider;
@@ -274,7 +274,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             exec.accept(job);
         }
         _onDone.clear();
-    };
+    }
 
     protected void register(Key key) {
         aml().session().registerKeySource(key, this);
@@ -375,7 +375,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     
     protected void setCrossValidationParams(Model.Parameters params) {
         AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-        params._keep_cross_validation_predictions = aml().getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
+        params._keep_cross_validation_predictions = aml().getBlendingFrame() == null || buildSpec.build_control.keep_cross_validation_predictions;
         params._fold_column = buildSpec.input_spec.fold_column;
 
         if (buildSpec.input_spec.fold_column == null) {
@@ -712,7 +712,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             EventLog tmpEventLog = eventLog == null ? EventLog.getOrMake(Key.make(name)) : eventLog;
             Leaderboard tmpLeaderboard = Leaderboard.getOrMake(
                     name,
-                    tmpEventLog.asLogger(Stage.Workflow),
+                    tmpEventLog.asLogger(Stage.ModelTraining),
                     amlLeaderboard.leaderboardFrame(),
                     amlLeaderboard.getSortMetric()
             );
@@ -756,11 +756,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             return job.start(new H2O.H2OCountedCompleter() {
 
-                Models result = new Models(key, Model.class, job);
-                Key<Models> selectionKey = Key.make(key+"_select");
-                EventLog selectionEventLog = EventLog.getOrMake(selectionKey);
+                final Models result = new Models(key, Model.class, job);
+                final Key<Models> selectionKey = Key.make(key+"_select");
+                final EventLog selectionEventLog = EventLog.getOrMake(selectionKey);
 //                EventLog selectionEventLog = aml().eventLog();
-                LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toString(), selectionEventLog);
+final LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toString(), selectionEventLog);
 
                 {
                     result.delete_and_lock(job);
@@ -831,7 +831,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Job<Models> jModels = new Job<>(result, Models.class.getName(), job._description); // can use the same result key as original job, as it is dropped once its result is read
             return jModels.start(new H2O.H2OCountedCompleter() {
 
-                Models models = new Models(result, Model.class, jModels);
+                final Models models = new Models(result, Model.class, jModels);
                 {
                     models.delete_and_lock(jModels);
                 }

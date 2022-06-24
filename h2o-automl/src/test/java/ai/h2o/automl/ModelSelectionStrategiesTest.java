@@ -32,17 +32,17 @@ import static water.TestUtil.*;
 @RunWith(H2ORunner.class)
 public class ModelSelectionStrategiesTest {
 
-    private List<Keyed> toDelete = new ArrayList<>();
+    private final List<Keyed> toDelete = new ArrayList<>();
     private Frame fr;
     private double[] perfectPreds;
     private Model[] oldModels;
     private Model[] newModels;
     private Supplier<LeaderboardHolder> leaderboardSupplier;
-    private static Key<AutoML> dummy = Key.make();
+    private static final Key<AutoML> dummy = Key.make();
     static class DummyScoreModel extends DummyModel {
 
-        private double[] _perfectPreds;
-        private int _goodPredsCount;
+        private final double[] _perfectPreds;
+        private final int _goodPredsCount;
 
         public DummyScoreModel(String key, double[] perfectPreds, int goodPredsCount) {
             super(key);
@@ -76,7 +76,7 @@ public class ModelSelectionStrategiesTest {
         leaderboardSupplier = () -> {
             String name = "selection_lb";
             EventLog el = EventLog.getOrMake(Key.make(name)); //toDelete.add(el);
-            Leaderboard lb = Leaderboard.getOrMake(name, el.asLogger(EventLogEntry.Stage.Workflow),  fr, "logloss"); //toDelete.add(lb);
+            Leaderboard lb = Leaderboard.getOrMake(name, el.asLogger(EventLogEntry.Stage.ModelTraining),  fr, "logloss"); //toDelete.add(lb);
             return new LeaderboardHolder() {
                 @Override
                 public Leaderboard get() {

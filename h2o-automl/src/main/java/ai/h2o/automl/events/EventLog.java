@@ -44,7 +44,7 @@ public class EventLog extends Keyed<EventLog> {
   private static String idForRun(Key runKey) {
     if (null == runKey)
       return "Events_dummy";
-    return "Events_" + runKey.toString();
+    return "Events_" + runKey;
   }
 
   /** Add a Debug EventLogEntry and log. */
@@ -157,7 +157,7 @@ public class EventLog extends Keyed<EventLog> {
 
       @Override
       public boolean isTraceEnabled() {
-        return false;
+        return true;
       }
 
       @Override
@@ -182,7 +182,7 @@ public class EventLog extends Keyed<EventLog> {
 
       @Override
       public boolean isFatalEnabled() {
-        return false;
+        return true;
       }
     };
   }

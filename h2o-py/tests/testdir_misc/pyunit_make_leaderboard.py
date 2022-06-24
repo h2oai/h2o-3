@@ -27,6 +27,7 @@ def test_leaderboard_with_automl_uses_eventlog():
     assert aml1.event_log["message"].grep("Adding model ").nrow > 0
     assert aml2.event_log["message"].grep("Adding model ").nrow > 0
 
+
 def test_make_leaderboard():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
     train["name"] = train["name"].asfactor()
@@ -42,6 +43,7 @@ def test_make_leaderboard():
     grid.train(y=y, training_frame=train)
 
     assert h2o.make_leaderboard(aml).nrow > 0
+    assert h2o.make_leaderboard(aml).nrow == h2o.make_leaderboard(aml).nrow  # creating the same leaderboard doesn't end up with duplicate models
     assert h2o.make_leaderboard(grid).nrow > 0
     assert h2o.make_leaderboard([aml, aml2, grid, aml.leader]).nrow > 0
 
@@ -84,7 +86,6 @@ def test_make_leaderboard():
     # sort metrics
     for sm in ("rmse", "mse", "mae", "rmsle", "mean_residual_deviance"):
         assert h2o.make_leaderboard(grid, train, sort_metric=sm).columns[1] == sm
-
 
 
 def test_make_leaderboard_unsupervised():
