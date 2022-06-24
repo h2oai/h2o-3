@@ -399,6 +399,9 @@ public class GamUtils {
     
     List<String> ignored_cols = parms._ignored_columns == null?new ArrayList<>():Arrays.asList(parms._ignored_columns);
     Vec weightsVec = null;
+    Vec offsetVec = null;
+    if (parms._offset_column != null)
+      offsetVec = train.remove(parms._offset_column);
     if (parms._weights_column != null) // move weight vector to be the last vector before response variable
       weightsVec = train.remove(parms._weights_column);
     for (int colIdx = 0; colIdx < parms._gam_columns_sorted.length; colIdx++) {  // append the augmented columns to _train
@@ -407,6 +410,8 @@ public class GamUtils {
       if (ignored_cols.contains(parms._gam_columns_sorted[colIdx]))
         train.remove(parms._gam_columns_sorted[colIdx]);
     }
+    if (offsetVec != null)
+      train.add(parms._offset_column, offsetVec);
     if (weightsVec != null)
       train.add(parms._weights_column, weightsVec);
     if (responseVec != null)
