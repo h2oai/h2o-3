@@ -2096,7 +2096,7 @@ def varimp_heatmap(
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         models = _check_deprecated_top_n_argument(models, top_n)
-    varimps, model_ids,  x = varimp(models=models, cluster=cluster, use_pandas=False)
+    varimps, model_ids,  x = varimp(models=models, cluster=cluster, num_of_features=num_of_features, use_pandas=False)
 
     plt.figure(figsize=figsize)
     plt.imshow(varimps, cmap=plt.get_cmap(colormap))
