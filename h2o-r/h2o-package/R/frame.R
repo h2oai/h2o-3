@@ -1430,7 +1430,7 @@ h2o.year <- function(x) .newExpr("year", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.month(hdf["ds9"])
 #' }
@@ -1472,7 +1472,7 @@ h2o.week <- function(x) .newExpr("week", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.day(hdf["ds9"])
 #' }
@@ -1493,7 +1493,7 @@ h2o.day <- function(x) .newExpr("day", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.dayOfWeek(hdf["ds9"])
 #' }
@@ -1513,7 +1513,7 @@ h2o.dayOfWeek <- function(x) .newExpr("dayOfWeek", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.hour(hdf["ds9"])
 #' }
@@ -1599,7 +1599,7 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.as_date(hdf["ds5"], "%d.%m.%y %H:%M")
 #' }
@@ -2261,7 +2261,7 @@ tail.H2OFrame <- h2o.tail
 #'
 #' @rdname is.factor
 #' @param x An H2OFrame object
-#' @example 
+#' @examples
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()

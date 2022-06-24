@@ -3885,7 +3885,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @seealso \code{\link{predict}} for generating prediction frames,
 #'          \code{\link{h2o.performance}} for creating
 #'          \linkS4class{H2OModelMetrics}.
-#' @alias h2o.gains_lift
+#' @aliases h2o.gains_lift
 #' @examples
 #' \dontrun{
 #' library(h2o)
