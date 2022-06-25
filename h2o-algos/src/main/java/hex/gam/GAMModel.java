@@ -499,13 +499,18 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
 
     Vec respV = null;
     Vec weightV = null;
-    if (parms._weights_column != null)  // move weight column to be last column before response column
+    Vec offsetV = null;
+    if (parms._weights_column != null && ArrayUtils.contains(testNames, parms._weights_column))  // move weight column to be last column before response column
       weightV = adptedF.remove(parms._weights_column);
+    if (parms._offset_column != null && ArrayUtils.contains(testNames, parms._offset_column))
+      offsetV = adptedF.remove(parms._offset_column);
     if (ArrayUtils.contains(testNames, parms._response_column))
       respV = adptedF.remove(parms._response_column);
     adptedF.add(csAugmentedColumns.names(), csAugmentedColumns.removeAll());
     Scope.track(csAugmentedColumns);
     
+    if (offsetV != null)
+      adptedF.add(parms._offset_column, offsetV);
     if (weightV != null)
       adptedF.add(parms._weights_column, weightV);
     if (respV != null)
@@ -531,13 +536,18 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     
     Vec respV = null;
     Vec weightV = null;
-    if (parms._weights_column != null)  // move weight column to be last column before response column
+    Vec offsetV = null;
+    if (parms._weights_column != null && ArrayUtils.contains(valid.names(), parms._weights_column))  // move weight column to be last column before response column
       weightV = valid.remove(parms._weights_column);
+    if (parms._offset_column != null && ArrayUtils.contains(valid.names(), parms._offset_column))
+      offsetV = valid.remove(parms._offset_column);
     if (ArrayUtils.contains(valid.names(), parms._response_column))
       respV = valid.remove(parms._response_column);
     valid.add(csAugmentedColumns.names(), csAugmentedColumns.removeAll());
     Scope.track(csAugmentedColumns);
 
+    if (offsetV != null)
+      valid.add(parms._offset_column, offsetV);
     if (weightV != null)
       valid.add(parms._weights_column, weightV);
     if (respV != null)
@@ -632,15 +642,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       Scope.track(gamifiedISCols);
       return gamifiedCSCols;
     }
-  }
-  
-  public static void removeVec(Vec[] vecs2Remove) {
-    if (vecs2Remove == null)
-      return;
-    int len = vecs2Remove.length;
-    for (int index=0; index<len; index++)
-      if (vecs2Remove[index] != null)
-        vecs2Remove[index].remove();
   }
 
   @Override
