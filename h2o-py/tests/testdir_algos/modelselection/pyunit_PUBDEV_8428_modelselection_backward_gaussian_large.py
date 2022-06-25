@@ -41,7 +41,7 @@ def test_modelselection_backward_gaussian():
             "".format(eliminated_p_values[counter], removed_pvalue)
         counter += 1
         coefs = model_backward.coef(len(pred_large)) # check coefficients result correct length
-        assert len(coefs) == len(pred_large)+1, "Expected coef length: {0}, Actual: {1}".format(len(coefs), len(pred_large)+1)
+        assert len(coefs) == len(pred_large), "Expected coef length: {0}, Actual: {1}".format(len(coefs), len(pred_large))
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_modelselection_backward_gaussian)

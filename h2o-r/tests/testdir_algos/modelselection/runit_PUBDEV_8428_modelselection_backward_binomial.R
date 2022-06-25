@@ -20,7 +20,7 @@ testModelSelection <- function() {
     predMissing <- xor(predNamesL, predNamesS)
     print(predMissing)
     coefs <- h2o.coef(backwardModel, length(predNamesL))
-    expect_equal(length(coefs), length(predNamesL)+1, tol=1e-6) # coefficient length should be equal to arguments used
+    expect_equal(length(coefs), length(predNamesL), tol=1e-6) # coefficient length should be equal to arguments used
   }
 }
 

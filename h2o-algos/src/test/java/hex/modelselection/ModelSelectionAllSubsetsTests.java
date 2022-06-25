@@ -181,9 +181,7 @@ public class ModelSelectionAllSubsetsTests extends TestUtil {
                 assertTrue(scoreFrame.numRows() == trainF.numRows());
                 Scope.track(scoreFrame);
                 String[] coeff = oneModel._output._coefficient_names;   // contains the name intercept as well
-                String[] coeffWOIntercept = new String[coeff.length - 1];
-                System.arraycopy(coeff, 0, coeffWOIntercept, 0, coeffWOIntercept.length);
-                assertArrayEquals("best predictor subset containing different predictors", coeffWOIntercept,
+                assertArrayEquals("best predictor subset containing different predictors", coeff, 
                         bestPredictorSubsets[index]);
             }
         } finally {

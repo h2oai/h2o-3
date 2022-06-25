@@ -4,7 +4,6 @@ import hex.*;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
-import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -13,8 +12,6 @@ import water.util.TwoDimTable;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import static hex.glm.GLMModel.GLMParameters.Family.AUTO;
@@ -80,13 +77,11 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public Mode _mode = Mode.maxr;  // mode chosen to perform model selection
         public double _beta_epsilon = 1e-4;
         public double _objective_epsilon = -1;  // -1 to use default setting
-        public double _gradient_epsilon = -1;   // -1 to use default setting
-        public double _obj_reg = -1.0;
         
         public enum Mode {
             allsubsets, // use combinatorial, exponential runtime
-            maxr, // use sequential replacement
-            backward // use backward selection
+            maxr,       // use sequential replacement
+            backward    // use backward selection
         }
         @Override
         public String algoName() {
@@ -288,11 +283,10 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
             }
             extractCoeffs(bestModel, index);
         }
-        
+
         void extractCoeffs(GLMModel model, int index) {
             _coefficient_names[index] = model._output.coefficientNames().clone(); // all coefficients
             ArrayList<String> coeffNames = new ArrayList<>(Arrays.asList(model._output.coefficientNames()));
-            coeffNames.remove(coeffNames.size()-1); // remove intercept as it is not a predictor
             _best_model_predictors[index] = coeffNames.toArray(new String[0]); // without intercept
         }
 
@@ -300,15 +294,12 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
          * Eliminate predictors with lowest z-value (z-score) magnitude as described in III of 
          * ModelSelectionTutorial.pdf in https://h2oai.atlassian.net/browse/PUBDEV-8428
          */
-        void extractPredictors4NextModel(GLMModel model, int index, List<String> predNames, List<Integer> predIndices) {
+        void extractPredictors4NextModel(GLMModel model, int index, List<String> predNames, List<Integer> predIndices,
+                                         List<String> numPredNames, List<String> catPredNames) {
             extractCoeffs(model, index);
             _best_model_ids[index] = model.getKey();
-            List<Double> zValList = Arrays.stream(model._output.zValues()).boxed().map(Math::abs).collect(Collectors.toList());
-            zValList.remove(zValList.size()-1);    // remove intercept terms
-            int minZInd = zValList.indexOf(zValList.stream().min(Double::compare).get());   // find min magnitude
-            String minZvalPred = _best_model_predictors[index][minZInd];
-            int predIndex = predNames.indexOf(minZvalPred);
-            predIndices.remove(predIndices.indexOf(predIndex));
+            int predIndex2Remove = findMinZValue(model, numPredNames, catPredNames, predNames);
+            predIndices.remove(predIndices.indexOf(predIndex2Remove));
             _z_values[index] = model._output.zValues().clone();
             _coef_p_values[index] = model._output.pValues().clone();
         }
