@@ -11,6 +11,8 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.rapids.ast.prims.advmath.AstKFold;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.RandomUtils;
@@ -93,6 +95,73 @@ public class GamCVTest extends TestUtil {
         if (rnd.nextDouble() <= threshold) {
           int foldNum = (int) fold_assignment_frame.vec(0).at(rind);
           assert Math.abs(predFrames[foldNum].vec(2).at(rind) - cvModelPreds[foldNum].vec(2).at(rind)) < 1e-6 
+                  : "Frame contents differ.";
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testCVFoldColumnBinomial() {
+    try {
+      Scope.enter();
+      Frame train = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+      int nfolds = 3;
+      Vec foldColumn = AstKFold.moduloKfoldColumn(train.anyVec().makeZero(), nfolds);
+      DKV.put(foldColumn);
+      Scope.track(foldColumn);
+      train.prepend("fold", foldColumn);
+      Random rnd = RandomUtils.getRNG(train.byteSize());
+      // change training data frame
+      int response_index = train.numCols() - 1;
+      String[] enumCnames = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C21"};
+      int[] eCol = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, response_index};
+      int count = 0;
+      for (String cname : enumCnames) {
+        train.replace((eCol[count]), train.vec(cname).toCategoricalVec()).remove();
+        count++;
+      }
+      Scope.track(train);
+      DKV.put(train);
+      double threshold = 0.5;
+      GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+      params._family = GLMModel.GLMParameters.Family.binomial;
+      params._response_column = "C21";
+      params._max_iterations = 3;
+      params._gam_columns = new String[][]{{"C11"}};
+      params._train = train._key;
+      params._solver = GLMModel.GLMParameters.Solver.IRLSM;
+      params._fold_column = "fold";
+      params._keep_cross_validation_fold_assignment = false;
+      params._keep_cross_validation_models = true;
+      params._keep_cross_validation_predictions = true;
+      GAMModel gam = new GAM(params).trainModel().get();
+      Scope.track_generic(gam);
+      
+      // make sure fold column is still accessible
+      assert train.vec(0).at(0)>=0;
+      assertNotNull(gam._output._cross_validation_models);
+      assertNotNull(gam._output._cross_validation_metrics_summary);
+      assertEquals(nfolds, gam._output._cross_validation_models.length);
+
+      GAMModel[] cv_models = new GAMModel[nfolds];
+      Frame[] cvModelPreds = new Frame[nfolds];
+      Frame[] predFrames = new Frame[nfolds];
+
+      // generate prediction from different cv models
+      for (int foldRun = 0; foldRun < nfolds; foldRun++) {
+        cv_models[foldRun] = DKV.getGet(gam._output._cross_validation_models[foldRun]);
+        Scope.track_generic(cv_models[foldRun]);
+        predFrames[foldRun] = Scope.track(cv_models[foldRun].score(train));
+        cvModelPreds[foldRun] = Scope.track((Frame) DKV.getGet(gam._output._cross_validation_predictions[foldRun]));
+      }
+      // compare cv predictions and fresh predictions from cv models and they better be EQUAL
+      for (int rind = 0; rind < train.numRows(); rind++) {
+        if (rnd.nextDouble() <= threshold) {
+          int foldNum = (int) train.vec("fold").at(rind);
+          assert Math.abs(predFrames[foldNum].vec(2).at(rind) - cvModelPreds[foldNum].vec(2).at(rind)) < 1e-6
                   : "Frame contents differ.";
         }
       }

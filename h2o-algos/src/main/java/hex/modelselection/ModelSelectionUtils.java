@@ -7,13 +7,10 @@ import hex.glm.GLMModel;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
-
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static hex.genmodel.utils.MathUtils.combinatorial;
 
 public class ModelSelectionUtils {
     public static Frame[] generateTrainingFrames(ModelSelectionModel.ModelSelectionParameters parms, int predNum, String[] predNames,
@@ -305,6 +302,102 @@ public class ModelSelectionUtils {
             frameNames.remove(foldColumn);
         return frameNames.stream().toArray(String[]::new);
         
+    }
+    
+    public static int findMinZValue(GLMModel model, List<String> numPredNames, List<String> catPredNames, 
+                                    List<String> predNames) {
+        List<Double> zValList = Arrays.stream(model._output.zValues()).boxed().map(Math::abs).collect(Collectors.toList());
+        List<String> coeffNames = Arrays.stream(model._output.coefficientNames()).collect(Collectors.toList());
+        if (coeffNames.contains("Intercept")) { // remove intercept terms
+            int interceptIndex = coeffNames.indexOf("Intercept");
+            zValList.remove(interceptIndex);
+            coeffNames.remove(interceptIndex);
+        }
+        // grab min z-values for numerical and categorical columns
+        PredNameMinZVal numericalPred = findNumMinZVal(numPredNames, zValList, coeffNames);
+        PredNameMinZVal categoricalPred = findCatMinZVal(model, zValList);
+        
+        // choose the min z-value from numerical and categorical predictors and return its index in predNames
+        if (categoricalPred._minZVal >= 0 && categoricalPred._minZVal < numericalPred._minZVal) { // categorical pred has minimum z-value
+            catPredNames.remove(catPredNames.indexOf(categoricalPred._predName));
+            return predNames.indexOf(categoricalPred._predName);
+        } else {    // numerical pred has minimum z-value
+            numPredNames.remove(numPredNames.indexOf(numericalPred._predName));
+            return predNames.indexOf(numericalPred._predName);
+        }
+    }
+    
+    public static PredNameMinZVal findNumMinZVal(List<String> numPredNames, List<Double> zValList, List<String> coeffNames) {
+        double minNumVal = -1;
+        String numPredMinZ = null;
+        if (numPredNames != null && numPredNames.size() > 0) {
+            List<Double> numZValues = new ArrayList<>();
+            for (String predName : numPredNames) {
+                int eleInd = coeffNames.indexOf(predName);
+                double oneZValue = zValList.get(eleInd);
+                if (Double.isNaN(oneZValue)) {
+                    zValList.set(eleInd, 0.0);
+                    numZValues.add(0.0);    // NaN corresponds to coefficient of 0.0
+                } else {
+                    numZValues.add(oneZValue);
+                }
+            }
+            minNumVal = numZValues.stream().min(Double::compare).get(); // minimum z-value of numerical predictors
+            numPredMinZ = numPredNames.get(numZValues.indexOf(minNumVal));
+        }
+        return new PredNameMinZVal(numPredMinZ, minNumVal);
+    }
+
+    /***
+     * This method extracts the categorical coefficient z-value by using the following method:
+     * 1. From GLMModel model, it extracts the column names of the dinfo._adaptedFrame that is used to build the glm 
+     * model and generate the glm coefficients.  The column names will be in exactly the same order as the coefficient
+     * names with the exception that each enum levels will not be given a name in the column names.
+     * 2. To figure out which coefficient name corresponds to which column name, we use the catOffsets which will tell
+     * us how many enum levels are used in the glm model coefficients.  If the catOffset for the first coefficient
+     * says 3, that means that column will have three enum levels represented in the glm model coefficients.
+     */
+    public static PredNameMinZVal findCatMinZVal(GLMModel model, List<Double> zValList) {
+        String[] columnNames = model.names(); // column names of dinfo._adaptedFrame
+        int[] catOffsets = model._output.getDinfo()._catOffsets;
+        double minCatVal = -1;
+        String catPredMinZ = null;
+        if (catOffsets != null) {
+            minCatVal = Double.MAX_VALUE;
+            int numCatCol = catOffsets.length-1;
+
+            for (int catInd = 0; catInd < numCatCol; catInd++) {    // go through each categorical column
+                List<Double> catZValues = new ArrayList<>();
+                int nextCatOffset = catOffsets[catInd+1];
+                for (int eleInd = catOffsets[catInd]; eleInd < nextCatOffset; eleInd++) {   // check z-value for each level
+                    double oneZVal = zValList.get(eleInd);
+                    if (Double.isNaN(oneZVal)) {
+                        zValList.set(eleInd, 0.0);
+                        catZValues.add(0.0);
+                    } else {
+                        catZValues.add(oneZVal);
+                    }
+                }
+                if (catZValues.size() > 0) {
+                    double oneCatMinZ = catZValues.stream().max(Double::compare).get(); // choose the best z-value here
+                    if (oneCatMinZ < minCatVal) {
+                        minCatVal = oneCatMinZ;
+                        catPredMinZ = columnNames[catInd];
+                    }
+                }
+            }
+        }
+        return new PredNameMinZVal(catPredMinZ, minCatVal);
+    }
+    
+    static class PredNameMinZVal {
+        String _predName;
+        double _minZVal;
+        
+        public PredNameMinZVal(String predName, double minZVal) {
+            _predName= predName;
+            _minZVal = minZVal;
+        }
     }
     
     public static List<String> extraModelColumnNames(List<String> coefNames, GLMModel bestModel) {

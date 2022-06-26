@@ -66,14 +66,14 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  max_iterations=0,  # type: int
                  objective_epsilon=-1.0,  # type: float
                  beta_epsilon=0.0001,  # type: float
-                 gradient_epsilon=-1.0,  # type: float
+                 gradient_epsilon=0.0,  # type: float
                  startval=None,  # type: Optional[List[float]]
                  prior=0.0,  # type: float
                  cold_start=False,  # type: bool
                  lambda_min_ratio=0.0,  # type: float
                  beta_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
                  max_active_predictors=-1,  # type: int
-                 obj_reg=-1.0,  # type: float
+                 obj_reg=0.0,  # type: float
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
@@ -224,7 +224,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                L-BFGS solver. Default (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero,
                the default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If
                lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.
-               Defaults to ``-1.0``.
+               Defaults to ``0.0``.
         :type gradient_epsilon: float
         :param startval: double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
                Defaults to ``None``.
@@ -253,7 +253,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``-1``.
         :type max_active_predictors: int
         :param obj_reg: Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs
-               Defaults to ``-1.0``.
+               Defaults to ``0.0``.
         :type obj_reg: float
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
                length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
@@ -872,7 +872,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the
         conditional values above are 1E-8 and 1E-6 respectively.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.0``.
         """
         return self._parms.get("gradient_epsilon")
 
@@ -976,7 +976,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         """
         Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``float``, defaults to ``0.0``.
         """
         return self._parms.get("obj_reg")
 
