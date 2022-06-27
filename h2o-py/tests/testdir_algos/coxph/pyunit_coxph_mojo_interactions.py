@@ -14,7 +14,9 @@ from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
 
 
 def mojo_predict_pandas_test(sandbox_dir, stratify_by=None):
-    os.makedirs(sandbox_dir, exist_ok=True)
+    if not os.path.exists(sandbox_dir):
+        os.makedirs(sandbox_dir)
+
     # bunch of random columns to be added to the dataset
     random_cols = ["c1", "c2", "c3", "c4"]
 
