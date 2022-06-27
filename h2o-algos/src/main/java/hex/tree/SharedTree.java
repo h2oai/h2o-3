@@ -162,6 +162,7 @@ public abstract class SharedTree<
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (_parms._r2_stopping!=Double.MAX_VALUE) warn("_r2_stopping", "_r2_stopping is no longer supported - please use stopping_rounds, stopping_metric and stopping_tolerance instead.");
     if (_parms._score_tree_interval < 0) error ("_score_tree_interval", "_score_tree_interval must be >= 0.");
+    if (_parms._in_training_checkpoints_tree_interval <= 0) error ("_in_training_checkpoints_tree_interval", "_in_training_checkpoints_tree_interval must be >= 0.");
     validateRowSampleRate();
     if (_parms._min_split_improvement < 0)
       error("_min_split_improvement", "min_split_improvement must be >= 0, but is " + _parms._min_split_improvement + ".");
@@ -517,7 +518,9 @@ public abstract class SharedTree<
         if (tid == _ntrees - 1 && _coordinator != null) {
           _coordinator.updateParameters();
         }
-        if (_parms._in_training_checkpoints_dir != null) {
+
+        boolean manualCheckpointsInterval = _parms._in_training_checkpoints_tree_interval > 0 && tid % _parms._in_training_checkpoints_tree_interval == 0;
+        if (_parms._in_training_checkpoints_dir != null && manualCheckpointsInterval) {
           try {
             String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + (_ntreesInCheckpoint + tid);
             Key<M> keybackup = _model._key;

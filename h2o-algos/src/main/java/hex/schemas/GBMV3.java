@@ -67,6 +67,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "custom_distribution_func",      
       "export_checkpoints_dir",
       "in_training_checkpoints_dir",
+      "in_training_checkpoints_tree_interval",
       "monotone_constraints",
       "check_constant_response",
       "gainslift_bins", 
@@ -101,6 +102,9 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help="In-training checkpoints", level = API.Level.expert, gridable = false)
     public String in_training_checkpoints_dir;
+
+    @API(help="Checkpoint the model after every so many trees. Default is 1 when in_training_checkpoints_dir is not null.", level = API.Level.expert, gridable = false)
+    public int in_training_checkpoints_tree_interval;
 
 //    // TODO debug only, remove!
 //    @API(help="Internal flag, use new version of histo tsk if set", level = API.Level.expert, gridable = false)

@@ -111,6 +111,8 @@ public abstract class SharedTreeModel<
 
     public String _in_training_checkpoints_dir;
 
+    public int _in_training_checkpoints_tree_interval = 1;  // save model checkpoint every so many trees (no matter what)
+
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */

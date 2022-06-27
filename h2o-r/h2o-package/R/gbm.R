@@ -98,6 +98,8 @@
 #' @param custom_distribution_func Reference to custom distribution, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param in_training_checkpoints_dir In-training checkpoints
+#' @param in_training_checkpoints_tree_interval Checkpoint the model after every so many trees. Default is 1 when in_training_checkpoints_dir is not null.
+#'        Defaults to 1.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
@@ -180,6 +182,7 @@ h2o.gbm <- function(x,
                     custom_distribution_func = NULL,
                     export_checkpoints_dir = NULL,
                     in_training_checkpoints_dir = NULL,
+                    in_training_checkpoints_tree_interval = 1,
                     monotone_constraints = NULL,
                     check_constant_response = TRUE,
                     gainslift_bins = -1,
@@ -322,6 +325,8 @@ h2o.gbm <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(in_training_checkpoints_dir))
     parms$in_training_checkpoints_dir <- in_training_checkpoints_dir
+  if (!missing(in_training_checkpoints_tree_interval))
+    parms$in_training_checkpoints_tree_interval <- in_training_checkpoints_tree_interval
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))
@@ -392,6 +397,7 @@ h2o.gbm <- function(x,
                                     custom_distribution_func = NULL,
                                     export_checkpoints_dir = NULL,
                                     in_training_checkpoints_dir = NULL,
+                                    in_training_checkpoints_tree_interval = 1,
                                     monotone_constraints = NULL,
                                     check_constant_response = TRUE,
                                     gainslift_bins = -1,
@@ -538,6 +544,8 @@ h2o.gbm <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(in_training_checkpoints_dir))
     parms$in_training_checkpoints_dir <- in_training_checkpoints_dir
+  if (!missing(in_training_checkpoints_tree_interval))
+    parms$in_training_checkpoints_tree_interval <- in_training_checkpoints_tree_interval
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))

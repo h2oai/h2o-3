@@ -5257,6 +5257,43 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
+  public void testPartialCheckpointAreProperlyExported_definedInterval() throws IOException {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      Scope.track(train);
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._seed = 0xDEDA;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._ntrees = 10;
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+      parms._in_training_checkpoints_tree_interval = 3;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm_checkpoint_interval")).trainModel().get());
+
+      File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
+      assertTrue(checkpointsDirectory.exists());
+      assertTrue(checkpointsDirectory.isDirectory());
+
+      for (int tid = 0; tid < parms._ntrees; tid++) {
+        File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+        if (tid % parms._in_training_checkpoints_tree_interval != 0) {
+          assertFalse(checkpointFile.exists());
+          continue;
+        }
+        assertTrue(checkpointFile.exists());
+        assertTrue(checkpointFile.isFile());
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testUsageOfPartialCheckpointGivesTheSameModelPrediction() throws IOException {
     Scope.enter();
     try {
