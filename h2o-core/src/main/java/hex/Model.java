@@ -6,6 +6,7 @@ import hex.genmodel.algos.tree.ContributionComposer;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -3336,13 +3337,33 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IOException when writing MOJO fails
    */
   public MojoModel toMojo() throws IOException {
+    MojoReaderBackend mojoReaderBackend = convertToInMemoryMojoReader();
+    return MojoModel.load(mojoReaderBackend);
+  }
+
+  /**
+   * Convenience method to convert Model to a MOJO representation. Please be aware that converting models
+   * to MOJOs using this function will require sufficient memory (to hold the mojo representation and interim
+   * serialized representation as well).
+   *
+   * @param readMetadata If true, parses also model metadata (model performance metrics... {@link ModelAttributes})
+   *                     Model metadata are not required for scoring, it is advised to leave this option disabled
+   *                     if you want to use MOJO for inference only.
+   * @return instance of MojoModel
+   * @throws IOException when writing MOJO fails
+   */
+  public MojoModel toMojo(boolean readMetadata) throws IOException {
+    MojoReaderBackend mojoReaderBackend = convertToInMemoryMojoReader();
+    return ModelMojoReader.readFrom(mojoReaderBackend, readMetadata);
+  }
+  
+  MojoReaderBackend convertToInMemoryMojoReader() throws IOException {
     if (! haveMojo())
       throw new IllegalStateException("Model doesn't support MOJOs.");
     try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
       this.getMojo().writeTo(os);
-      MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+      return MojoReaderBackendFactory.createReaderBackend(
               new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
-      return MojoModel.load(mojoReaderBackend);
     }
   }
 
