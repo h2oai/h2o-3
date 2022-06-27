@@ -773,15 +773,23 @@ class H2OEstimatorScoreSupport(BaseEstimatorMixin):
             return delegate.score(_to_numpy(X), y=(_vector_to_1d_array(y)), sample_weight=sample_weight)
 
         # delegate to default sklearn scoring methods
-        parent = super(H2OEstimatorScoreSupport, self)
-        if hasattr(parent, 'score') and callable(parent.score):
-            return delegate_score(parent)
-        elif self.is_classifier():
-            with Mixin(self, ClassifierMixin) as delegate:
-                return delegate_score(delegate)
-        elif self.is_regressor():
-            with Mixin(self, RegressorMixin) as delegate:
-                return delegate_score(delegate)
+        scoring_frame = X if y is None else X.concat(y)
+        if hasattr(self._estimator, 'model_performance') and self.is_classifier():
+            # sklearn default classification metric is accuracy
+            return self._estimator.model_performance(scoring_frame).accuracy()
+        elif hasattr(self._estimator, 'model_performance') and self.is_regressor():
+            # sklearn default regression metric is r2
+            return self._estimator.model_performance(scoring_frame).r2()
+        else:
+            parent = super(H2OEstimatorScoreSupport, self)
+            if hasattr(parent, 'score') and callable(parent.score):
+                    return delegate_score(parent)
+            elif self.is_classifier():
+                with Mixin(self, ClassifierMixin) as delegate:
+                    return delegate_score(delegate)
+            elif self.is_regressor():
+                with Mixin(self, RegressorMixin) as delegate:
+                    return delegate_score(delegate)
 
 
 class H2OEstimatorTransformSupport(BaseSklearnEstimator, TransformerMixin):
