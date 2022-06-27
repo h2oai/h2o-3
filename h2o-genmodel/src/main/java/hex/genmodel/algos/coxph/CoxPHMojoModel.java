@@ -3,7 +3,6 @@ package hex.genmodel.algos.coxph;
 import hex.genmodel.MojoModel;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.HashMap;
 
 public class CoxPHMojoModel extends MojoModel  {
@@ -62,7 +61,6 @@ public class CoxPHMojoModel extends MojoModel  {
 
   CoxPHMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
-
   }
 
   @Override
@@ -84,7 +82,7 @@ public class CoxPHMojoModel extends MojoModel  {
 
     int catOffsetDiff = _cat_offsets[_cats] - _cats;
     for(int i = _cats ; i + catOffsetDiff < _coef.length; i++) {
-      result += _coef[catOffsetDiff + i] * row[i + _strata_len];
+      result += _coef[catOffsetDiff + i] * featureValue(row, i);
     }
     
     return result;
@@ -100,7 +98,7 @@ public class CoxPHMojoModel extends MojoModel  {
 
     if (!_useAllFactorLevels) {
     for(int category = 0; category < _cat_offsets.length - 1; ++category) {
-        if (row[category] != 0) {
+        if (featureValue(row, category) != 0) {
           result += forOneCategory(row, category, 1);
         }
       }
@@ -112,9 +110,9 @@ public class CoxPHMojoModel extends MojoModel  {
     return result;
   }
 
-  private double forOneCategory(double[] row, int category, int lowestFactorValue) {
-    final int value = (int) row[category] - lowestFactorValue;
-    if (value != row[category] - lowestFactorValue) {
+  double forOneCategory(double[] row, int category, int lowestFactorValue) {
+    final int value = (int) featureValue(row, category) - lowestFactorValue;
+    if (value != featureValue(row, category) - lowestFactorValue) {
       throw new IllegalArgumentException("categorical value out of range");
     }
     final int x = value + _cat_offsets[category];
@@ -136,6 +134,10 @@ public class CoxPHMojoModel extends MojoModel  {
         lpBase[s] += _x_mean_num[s][i] * _coef[i + _numStart];
     }
     return lpBase;
+  }
+
+  double featureValue(double[] row, int featureIdx) {
+    return row[featureIdx + _strata_len];
   }
 
   private int strataForRow(double[] row) {
