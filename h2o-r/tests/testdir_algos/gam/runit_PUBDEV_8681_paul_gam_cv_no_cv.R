@@ -48,4 +48,4 @@ test.model.gam <- function() {
     expect_true(abs(h2o.residual_deviance(object = mod, train = TRUE)-h2o.residual_deviance(object = mod2, train = TRUE))<1e-6)
 }
 
-doTest("General Additive Model test", test.model.gam)
+doTest("General Additive Model test: cv with fold column", test.model.gam)
