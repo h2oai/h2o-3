@@ -310,6 +310,11 @@ def test_explanation_automl_binomial_classification():
     assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
+    # test that num_of_features is propagated
+    for n_features in [1, 3, 5]:
+        assert n_features == len(aml.varimp_heatmap(num_of_features=n_features).figure().get_axes()[0].get_yticks())
+        matplotlib.pyplot.close()
+
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 

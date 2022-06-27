@@ -467,7 +467,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           _starT = GamUtils.allocate3DArrayTP(_thinPlateSmoothersWithKnotsNum, _parms, _parms._num_knots_tp, _parms._M);
       }
       addGAM2Train();  // add GAM columns to training frame
-      return buildGamFrame(_parms, _train, _gamFrameKeysCenter); // add gam cols to _train
+      return buildGamFrame(_parms, _train, _gamFrameKeysCenter, _foldColumn); // add gam cols to _train
     }
     
     // This class generate the thin plate regression smoothers as denoted in GamThinPlateRegressionH2O.pdf
@@ -798,6 +798,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       final IcedHashSet<Key<Frame>> validKeys = new IcedHashSet<>();
       try {
         _job.update(0, "Adding GAM columns to training dataset...");
+        if (_foldColumn != null)
+          _parms._fold_column = _foldColumn;
         _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels 
                 || _parms._lambda_search, _parms._standardize ? 
                 DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
@@ -807,6 +809,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 _parms.makeImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(),
                 _parms.interactionSpec());
         DKV.put(_dinfo._key, _dinfo);
+        if (_foldColumn != null)
+          _parms._fold_column = null;
         model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, _dinfo));
         model.write_lock(_job);
         if (_parms._keep_gam_cols) {  // save gam column keys

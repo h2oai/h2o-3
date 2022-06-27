@@ -9,8 +9,8 @@ from h2o.estimators.model_selection import H2OModelSelectionEstimator as modelSe
 # test modelselection with mode=binomial.  Aim to compare with customer run.  However, we do not have good 
 # agreement here.
 def test_modelselection_backward_gaussian():
-    predictor_elimination_order = ["C15", "C33", "C164", "C144", "C27"]
-    eliminated_p_values = [0.6702, 0.6663, 0.0157, 0.0026, 0.0002]
+    predictor_elimination_order = ['C33', 'C24', 'C164', 'C66', 'C15']
+    eliminated_p_values = [0.9711, 0.0694, 0.0388, 0.0127, 0.0009]
     tst_data = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/backwardBinomial200C50KRows.csv"))
     predictors = tst_data.columns[0:-1]
     response_col = 'response'
@@ -38,13 +38,10 @@ def test_modelselection_backward_gaussian():
         pred_pvalue.append(round(model_backward._model_json["output"]["coef_p_values"][ind][predictor_removed_index], 4))
         counter += 1
         coefs = model_backward.coef(len(pred_large)) # check coefficients result correct length
-        assert len(coefs) == len(pred_large)+1, "Expected coef length: {0}, Actual: {1}".format(len(coefs), len(pred_large)+1)
+        assert len(coefs) == len(pred_large), "Expected coef length: {0}, Actual: {1}".format(len(coefs), len(pred_large))
     common_elimination = list(set(predictor_elimination_order) & set(pred_ele))
-    assert len(common_elimination) >= 2
-    print("Expected predictor elimination order: {0}".format(predictor_elimination_order))
-    print("Expected predictor p-values: {0}".format(eliminated_p_values))
-    print("Predictor elimination order: {0}".format(pred_ele))
-    print("Predictor p-values: {0}".format(pred_pvalue))
+    assert len(common_elimination) == len(pred_ele)
+    pyunit_utils.equal_two_arrays(pred_pvalue, eliminated_p_values, tolerance=1e-6)
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_modelselection_backward_gaussian)

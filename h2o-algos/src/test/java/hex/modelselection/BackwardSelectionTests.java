@@ -8,13 +8,14 @@ import water.*;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.backward;
 import static org.junit.Assert.assertTrue;
@@ -52,6 +53,117 @@ public class BackwardSelectionTests extends TestUtil {
                 }
         } finally {
             Scope.exit();
+        }
+    }
+
+    /**
+     * added support to include categorical columns in modelselection backward mode.
+     */
+    @Test
+    public void testWithCatPredictors() {
+        Scope.enter();
+        try {
+            final Frame trainF = Scope.track(parseTestFile("smalldata/demos/bank-additional-full.csv"));
+            ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
+            parms._response_column = "y";
+            parms._lambda = new double[]{0.0};
+            parms._remove_collinear_columns = true;
+            parms._train = trainF._key;
+            parms._mode = backward;
+            parms._seed = 12345;
+            parms._ignored_columns = new String[]{"previous", "poutcome", "pdays"};
+            parms._min_predictor_number = 5;
+            final ModelSelectionModel fullModel = new hex.modelselection.ModelSelection(parms).trainModel().get();
+            Scope.track_generic(fullModel);
+            assertCorrectPredElimination(fullModel);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    /***
+     * Check and make sure at each model building step, the predictor with the smallest z-value magnitude is removed.
+     */
+    public static void assertCorrectPredElimination(ModelSelectionModel fullModel) {
+        List<String> catPreds = Arrays.asList("job", "marital", "education", "default", "housing", "loan", "contact",
+                "month", "day_of_week", "poutcome");
+        List<String> catCoeffs = Arrays.asList("job.blue-collar", "job.entrepreneur", "job.housemaid", "job.management", 
+                "job.retired", "job.self-employed", "job.services", "job.student", "job.technician", "job.unemployed", 
+                "job.unknown", "education.basic.6y", "education.basic.9y", "education.high.school", 
+                "education.illiterate",  "education.professional.course", "education.university.degree", 
+                "education.unknown", "day_of_week.mon", "day_of_week.thu", "day_of_week.tue", "day_of_week.wed", 
+                "month.jul", "month.jun", "month.may", "marital.married", "marital.single", "marital.unknown", 
+                "housing.unknown", "housing.yes", "loan.unknown", "loan.yes", "contact.telephone");
+        String[][] allModelCoefs = fullModel._output._coefficient_names;
+        double[][] allModelZValues = fullModel._output._z_values;
+        int maxModelIndex = allModelCoefs.length-1;
+        
+        for (int modInd=maxModelIndex; modInd >= 1; modInd--) {
+            List<String> modelCoefsHigh = Arrays.asList(allModelCoefs[modInd]);
+            List<String> modelCoefsLow = Arrays.asList(allModelCoefs[modInd-1]);
+            double[] modelZValues = allModelZValues[modInd];
+            List<String> removedPredName = extractRemovedPredictors(modelCoefsHigh, modelCoefsLow);
+            assertCorrectMinZRemoved(modelCoefsHigh, modelZValues, removedPredName, catPreds, catCoeffs);
+        }
+    }
+    
+    public static List<String> extractRemovedPredictors(List<String> modelCoefsHigh, List<String> modelCoefsLow) {
+        List<String> removedCoeffNames = new ArrayList<>();
+        for (String oneCoeff : modelCoefsHigh) {
+            if (modelCoefsHigh.contains(oneCoeff) && !modelCoefsLow.contains(oneCoeff))
+                removedCoeffNames.add(oneCoeff);
+        }
+        return removedCoeffNames;
+    }
+    
+    public static void assertCorrectMinZRemoved(List<String> modelCoefs, double[] modelZValues, 
+                                                List<String> removedPreds, List<String> catPreds, List<String> catCoeffs) {
+        double[] removedZValues = new double[removedPreds.size()];
+        int counter = 0;
+        for (String removedPred : removedPreds) {
+            double zVal = modelZValues[modelCoefs.indexOf(removedPred)];
+            if (Double.isNaN(zVal))
+                removedZValues[counter++] = 0.0;
+            else
+                removedZValues[counter++] = Math.abs(zVal);
+        }
+        double minZMag = ArrayUtils.maxValue(removedZValues);
+        for (String name : modelCoefs) {
+            Log.info("coefficient ", name);
+            if (!name.equals("Intercept")) {    // exclude Intercept term
+                double modelZVal = extractModelZVal(name, modelCoefs, modelZValues, catPreds, catCoeffs);
+                if (Double.isNaN(modelZVal))
+                    modelZVal = 0.0;
+                assertTrue("Wrong predictor is eliminated with higher z-value.",
+                        Math.abs(modelZVal) >= minZMag);
+            }
+        }
+    }
+    
+    public static double extractModelZVal(String predName, List<String> modelCoeffs, double[] modelZValues, 
+                                          List<String> catPreds, List<String> catCoeffs) {
+        boolean catCol = catCoeffs.contains(predName);
+        if (catCol) {  // categorical predictors here
+            String predPrefix = null;
+            for (String catPred : catPreds) {
+                if (predName.contains(catPred)) {
+                    predPrefix = catPred;
+                    break;
+                }
+            }
+            List<Double> catZValues = new ArrayList<>();
+            for (String onePred : modelCoeffs) {
+                if (onePred.contains(predPrefix)) {
+                    double zVal = modelZValues[modelCoeffs.indexOf(onePred)];
+                    if (Double.isNaN(zVal))
+                        catZValues.add(0.0);
+                    else
+                        catZValues.add(Math.abs(zVal));
+                }
+            }
+            return Collections.max(catZValues);
+        } else {
+            return modelZValues[modelCoeffs.indexOf(predName)];
         }
     }
     

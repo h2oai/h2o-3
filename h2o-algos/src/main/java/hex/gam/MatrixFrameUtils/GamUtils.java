@@ -394,19 +394,29 @@ public class GamUtils {
     return polyBasisName.toString();
   }
 
-  public static Frame buildGamFrame(GAMParameters parms, Frame train, Key<Frame>[] gamFrameKeysCenter) {
+  public static Frame buildGamFrame(GAMParameters parms, Frame train, Key<Frame>[] gamFrameKeysCenter, String foldColumn) {
     Vec responseVec = train.remove(parms._response_column);
     
     List<String> ignored_cols = parms._ignored_columns == null?new ArrayList<>():Arrays.asList(parms._ignored_columns);
     Vec weightsVec = null;
+    Vec offsetVec = null;
+    Vec foldVec = null;
+    if (parms._offset_column != null)
+      offsetVec = train.remove(parms._offset_column);
     if (parms._weights_column != null) // move weight vector to be the last vector before response variable
       weightsVec = train.remove(parms._weights_column);
+    if (foldColumn != null)
+      foldVec = train.remove(foldColumn);
     for (int colIdx = 0; colIdx < parms._gam_columns_sorted.length; colIdx++) {  // append the augmented columns to _train
       Frame gamFrame = Scope.track(gamFrameKeysCenter[colIdx].get());
       train.add(gamFrame.names(), gamFrame.removeAll());
       if (ignored_cols.contains(parms._gam_columns_sorted[colIdx]))
         train.remove(parms._gam_columns_sorted[colIdx]);
     }
+    if (offsetVec != null)
+      train.add(parms._offset_column, offsetVec);
+    if (foldColumn != null)
+      train.add(foldColumn, foldVec);
     if (weightsVec != null)
       train.add(parms._weights_column, weightsVec);
     if (responseVec != null)

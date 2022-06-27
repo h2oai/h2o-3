@@ -1205,6 +1205,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double lambda_1se(){
       return _lambda_1se; // (_lambda_1se==-1 || _submodels.length==0 || _lambda_1se>=_submodels.length) ? -1 : _submodels[_lambda_1se].lambda_value;
     }
+    
+    public DataInfo getDinfo() { return _dinfo; }
     public int bestSubmodelIndex() { return _selected_submodel_idx; }
     public double lambda_selected(){
       return _submodels[_selected_submodel_idx].lambda_value;

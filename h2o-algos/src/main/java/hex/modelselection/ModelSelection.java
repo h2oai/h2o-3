@@ -6,16 +6,13 @@ import hex.glm.GLMModel;
 import water.DKV;
 import water.H2O;
 import water.Key;
-import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.Log;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static hex.genmodel.utils.MathUtils.combinatorial;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
@@ -249,6 +246,9 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         private int buildBackwardModels(ModelSelectionModel model) {
             List<String> coefNames = new ArrayList<>(Arrays.asList(_predictorNames));
             List<Integer> coefIndice = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList());
+            Frame train = DKV.getGet(_parms._train);
+            List<String> numPredNames = coefNames.stream().filter(x -> train.vec(x).isNumeric()).collect(Collectors.toList());
+            List<String> catPredNames = coefNames.stream().filter(x -> !numPredNames.contains(x)).collect(Collectors.toList());
             int numModelsBuilt = 0;
             String[] coefName = coefNames.toArray(new String[0]);
             for (int predNum = _numPredictors; predNum >= _parms._min_predictor_number; predNum--) {
@@ -263,7 +263,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
 
                 // evaluate which variable to drop for next round of testing and store corresponding values
                 // if p_values_threshold is specified, model building may stop
-                model._output.extractPredictors4NextModel(glmModel, modelIndex, coefNames, coefIndice);
+                model._output.extractPredictors4NextModel(glmModel, modelIndex, coefNames, coefIndice, numPredNames, 
+                        catPredNames);
                 numModelsBuilt++;
                 DKV.remove(trainingFrame._key);
                 _job.update(predNum, "Finished building all models with "+predNum+" predictors.");
