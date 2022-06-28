@@ -2,6 +2,9 @@
 from __future__ import print_function
 from future import standard_library
 
+from h2o import H2OFrame
+from h2o.expr import ExprNode
+
 standard_library.install_aliases()
 from past.builtins import basestring
 
@@ -4605,3 +4608,8 @@ def download_mojo(model, mojo_zip_path=None, genmodel_path=None):
         "mojo_zip_path": mojo_zip_path,
         "genmodel_jar_path": genmodel_path
     }
+
+
+def test_java_scoring(model, frame, predictions, epsilon):
+    fr = H2OFrame._expr(ExprNode("model.testJavaScoring", model, frame, predictions, epsilon))
+    return fr.flatten() == 1

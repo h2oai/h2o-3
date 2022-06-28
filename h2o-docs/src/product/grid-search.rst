@@ -47,7 +47,9 @@ Grid Search in R and Python
 
     More about ``search_criteria``:  
 
-    This is a named list of control parameters for smarter hyperparameter search.  The list can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
+    This is a named list of control parameters for smarter hyperparameter search.  The list can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.
+    You can also use "Sequential", which goes through the specified parameters in sequence and requires the specified parameter lists to have the same length. "Sequential" strategy exposes ``early_stopping`` parameter (defaults to TRUE) that can be used to disable early stopping while still obeying the ``max_models`` and ``max_runtime_secs``.
+    Some examples below:
 
     .. code-block:: r 
 
@@ -57,6 +59,11 @@ Grid Search in R and Python
         list(strategy = "RandomDiscrete", stopping_tolerance = 0.001, stopping_rounds = 10)
         list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.0005, stopping_rounds = 5)
 
+        list(strategy = "Sequential", max_runtime_secs = 3600)
+        list(strategy = "Sequential", max_models = 42, max_runtime_secs = 28800)
+        list(strategy = "Sequential", stopping_tolerance = 0.001, stopping_rounds = 10)
+        list(strategy = "Sequential", early_stopping = FALSE)
+        list(strategy = "Sequential", early_stopping = FALSE, max_models = 42, max_runtime_secs = 28800)
    .. group-tab:: Python
 
     -  Class is ``H2OGridSearch``
@@ -79,7 +86,9 @@ Grid Search in R and Python
 
     More about ``search_criteria``:  
 
-    This is a dictionary of control parameters for smarter hyperparameter search.  The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
+    This is a dictionary of control parameters for smarter hyperparameter search.  The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.
+    You can also use "Sequential", which goes through the specified parameters in sequence and requires the specified parameter lists to have the same length. "Sequential" strategy exposes ``early_stopping`` parameter (defaults to True) that can be used to disable early stopping while still obeying the ``max_models`` and ``max_runtime_secs``.
+    Some examples below:
 
     .. code-block:: python
 
@@ -88,6 +97,12 @@ Grid Search in R and Python
         {'strategy': "RandomDiscrete", 'max_models': 42, 'max_runtime_secs': 28800}
         {'strategy': "RandomDiscrete", 'stopping_tolerance': 0.001, 'stopping_rounds': 10}
         {'strategy': "RandomDiscrete", 'stopping_metric': "misclassification", 'stopping_tolerance': 0.0005, 'stopping_rounds': 5}
+
+        {'strategy': "Sequential", 'max_runtime_secs': 3600}
+        {'strategy': "Sequential", 'max_models': 42, 'max_runtime_secs': 28800}
+        {'strategy': "Sequential", 'stopping_tolerance': 0.001, 'stopping_rounds': 10}
+        {'strategy': "Sequential", 'early_stopping': False}
+        {'strategy': "Sequential", 'early_stopping': False, 'max_models': 42, 'max_runtime_secs': 28800}
 
 
 Grid Search Examples

@@ -14,7 +14,9 @@ from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
 
 
 def mojo_predict_pandas_test(sandbox_dir, stratify_by=None):
-    os.makedirs(sandbox_dir, exist_ok=True)
+    if not os.path.exists(sandbox_dir):
+        os.makedirs(sandbox_dir)
+
     # bunch of random columns to be added to the dataset
     random_cols = ["c1", "c2", "c3", "c4"]
 
@@ -22,8 +24,7 @@ def mojo_predict_pandas_test(sandbox_dir, stratify_by=None):
     if stratify_by:
         for strat_col in stratify_by:
             data[strat_col] = data[strat_col].asfactor()
-    # https://h2oai.atlassian.net/browse/PUBDEV-8737 - mojo inconsistency when surgery is turned into a categorical column
-    # data['surgery'] = data['surgery'].asfactor()
+    data['surgery'] = data['surgery'].asfactor()
 
     data_random_local = pandas.DataFrame(np.random.random(size=(data.nrow, len(random_cols))), columns=random_cols)
     data = data.cbind(h2o.H2OFrame(data_random_local))
@@ -34,6 +35,11 @@ def mojo_predict_pandas_test(sandbox_dir, stratify_by=None):
                 training_frame=data)
     print(model)
 
+    # reference predictions
+    h2o_prediction = model.predict(data)
+
+    assert pyunit_utils.test_java_scoring(model, data, h2o_prediction, 1e-8)
+
     # download mojo
     mojo = pyunit_utils.download_mojo(model)
 
@@ -42,7 +48,6 @@ def mojo_predict_pandas_test(sandbox_dir, stratify_by=None):
     h2o.export_file(data, input_csv)
     pandas_frame = pandas.read_csv(input_csv)
 
-    h2o_prediction = model.predict(data)
     mojo_prediction = h2o.mojo_predict_pandas(dataframe=pandas_frame, **mojo)
 
     assert len(mojo_prediction) == h2o_prediction.nrow
