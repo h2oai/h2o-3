@@ -1,12 +1,23 @@
+from .utils.typechecks import is_type
+from .frame import H2OFrame
+from .expr import ExprNode
+from .exceptions import H2OValueError
+
+
 def make_leaderboard(object, leaderboard_frame=None,
                      sort_metric="AUTO",
                      extra_columns=[],
                      scoring_data="AUTO"):
-    from .utils.typechecks import is_type
-    from .frame import H2OFrame
-    from .expr import ExprNode
-    from .exceptions import H2OValueError
+    """
+    Create a leaderboard from a list of models, grids and/or automls.
 
+    :param object: List of models, automls, or grids; or just single automl/grid object.
+    :param leaderboard_frame: Frame used for generating the metrics (optional).
+    :param sort_metric:  Metric used for sorting the leaderboard.
+    :param extra_columns: What extra columns should be calculated (might require leaderboard_frame). Use "ALL" for all available or list of extra columns.
+    :param scoring_data: Metrics to be reported in the leaderboard ("xval", "train", or "valid"). Used if no leaderboard_frame is provided.
+    :return: H2OFrame
+    """
     def _get_models(obj):
         if isinstance(obj, list):
             result = []

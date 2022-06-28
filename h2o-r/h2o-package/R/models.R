@@ -6151,13 +6151,13 @@ h2o.predicted_vs_actual_by_variable <- function(object,
   vi
 }
 
-#'Create a leaderboard from a list of model
+#' Create a leaderboard from a list of models, grids and/or automls.
 #'
-#' @param object
-#' @param leaderboard_frame
-#' @param sort_metric
-#' @param extra_columns
-#' @param scoring_data
+#' @param object List of models, automls, or grids; or just single automl/grid object.
+#' @param leaderboard_frame Frame used for generating the metrics (optional).
+#' @param sort_metric Metric used for sorting the leaderboard.
+#' @param extra_columns What extra columns should be calculated (might require leaderboard_frame). Use "ALL" for all available or list of extra columns.
+#' @param scoring_data Metrics to be reported in the leaderboard ("xval", "train", or "valid"). Used if no leaderboard_frame is provided.
 #' @return data.frame
 #' @export
 h2o.make_leaderboard <- function(object,

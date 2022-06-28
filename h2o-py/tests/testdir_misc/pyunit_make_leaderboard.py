@@ -28,7 +28,7 @@ def test_leaderboard_with_automl_uses_eventlog():
     assert aml2.event_log["message"].grep("Adding model ").nrow > 0
 
 
-def test_make_leaderboard():
+def test_make_leaderboard_without_leaderboard_frame():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
     train["name"] = train["name"].asfactor()
     y = "fare"
@@ -56,11 +56,24 @@ def test_make_leaderboard():
 
     try:
         print(h2o.make_leaderboard(aml, extra_columns="predict_time_per_row_ms"))
-
         assert False, "Should fail - Cannot calculate the predict time without leaderboard frame"
     except h2o.exceptions.H2OResponseError:
         pass
 
+
+def test_make_leaderboard_with_leaderboard_frame():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    train["name"] = train["name"].asfactor()
+    y = "fare"
+
+    aml = H2OAutoML(seed=1234, max_models=5)
+    aml.train(y=y, training_frame=train)
+
+    aml2 = H2OAutoML(seed=134, max_models=5)
+    aml2.train(y=y, training_frame=train)
+
+    grid = H2OGridSearch(H2OGradientBoostingEstimator(), hyper_params={"ntrees": [1, 2, 3]})
+    grid.train(y=y, training_frame=train)
     # with leaderboard frame
     expected_cols = ("model_id", "rmse", "mse", "mae", "rmsle", "mean_residual_deviance",
                      "training_time_ms", "predict_time_per_row_ms", "algo")
@@ -145,7 +158,8 @@ def test_make_leaderboard_uplift():
 
 pyunit_utils.run_tests([
     test_leaderboard_with_automl_uses_eventlog,
-    test_make_leaderboard,
+    test_make_leaderboard_without_leaderboard_frame,
+    test_make_leaderboard_with_leaderboard_frame,
     test_make_leaderboard_unsupervised,
     test_make_leaderboard_uplift,
 ])
