@@ -19,7 +19,14 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
   @API(help = "Hyperparameter space search strategy.", required = true, valuesProvider = StrategyValuesProvider.class, direction = API.Direction.INOUT)
   public HyperSpaceSearchCriteria.Strategy strategy;
 
-  // TODO: add a factory which accepts a Strategy and calls the right constructor
+  public static HyperSpaceSearchCriteriaV99 make(HyperSpaceSearchCriteria.Strategy strategy){
+    switch (strategy) {
+      case Cartesian: return new CartesianSearchCriteriaV99();
+      case RandomDiscrete: return new RandomDiscreteValueSearchCriteriaV99();
+      case Sequential: return new SequentialSearchCriteriaV99();
+      default: throw new H2OIllegalArgumentException("search_criteria.strategy", strategy.toString());
+    }
+  }
 
   /**
    * Search criteria for an exhaustive Cartesian hyperparameter search.
@@ -92,6 +99,52 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
     }
   }
 
+  /**
+   * Search criteria for a Sequential hyperparameter search.
+   */
+  public static class SequentialSearchCriteriaV99 extends HyperSpaceSearchCriteriaV99<HyperSpaceSearchCriteria.SequentialSearchCriteria, SequentialSearchCriteriaV99> {
+    public SequentialSearchCriteriaV99() {
+      strategy = HyperSpaceSearchCriteria.Strategy.Sequential;
+    }
+
+    @API(help = "Maximum number of models to build (optional).", direction = API.Direction.INOUT)
+    public int max_models;
+
+    @API(help = "Maximum time to spend building models (optional).", direction = API.Direction.INOUT)
+    public double max_runtime_secs;
+
+    @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)",
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public int stopping_rounds;
+
+    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)",
+            valuesProvider = RandomSearchStoppingMetricValuesProvider.class,
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public StoppingMetric stopping_metric;
+
+    @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)",
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public double stopping_tolerance;
+
+    @API(help = "Use early stopping",
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public boolean early_stopping;
+
+    @Override
+    public HyperSpaceSearchCriteria.SequentialSearchCriteria fillImpl(HyperSpaceSearchCriteria.SequentialSearchCriteria impl) {
+      HyperSpaceSearchCriteria.SequentialSearchCriteria filledImpl = super.fillImpl(impl);
+      PojoUtils.copyProperties(filledImpl.stoppingCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      return filledImpl;
+    }
+
+    @Override
+    public SequentialSearchCriteriaV99 fillFromImpl(HyperSpaceSearchCriteria.SequentialSearchCriteria impl) {
+      SequentialSearchCriteriaV99 schema = super.fillFromImpl(impl);
+      PojoUtils.copyProperties(this, impl.stoppingCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+      return schema;
+    }
+  }
+
   public static class StrategyValuesProvider extends EnumValuesProvider<HyperSpaceSearchCriteria.Strategy> {
     public StrategyValuesProvider() {
       super(HyperSpaceSearchCriteria.Strategy.class);
@@ -102,18 +155,8 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
    * Fill with the default values from the corresponding Iced object.
    */
   public S fillWithDefaults() {
-    HyperSpaceSearchCriteria defaults = null;
-
-    if (HyperSpaceSearchCriteria.Strategy.Cartesian == strategy) {
-      defaults = new HyperSpaceSearchCriteria.CartesianSearchCriteria();
-    } else if (HyperSpaceSearchCriteria.Strategy.RandomDiscrete == strategy) {
-      defaults = new RandomDiscreteValueSearchCriteria();
-    } else {
-      throw new H2OIllegalArgumentException("search_criteria.strategy", strategy.toString());
-    }
-
+    HyperSpaceSearchCriteria defaults = HyperSpaceSearchCriteria.make(strategy);
     fillFromImpl((I)defaults);
-
     return (S) this;
   }
 }

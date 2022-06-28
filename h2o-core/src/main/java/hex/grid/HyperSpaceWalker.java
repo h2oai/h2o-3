@@ -214,6 +214,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             return new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory, (CartesianSearchCriteria) search_criteria);
           case RandomDiscrete:
             return new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, (RandomDiscreteValueSearchCriteria) search_criteria);
+          case Sequential:
+            return new SequentialWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.SequentialSearchCriteria) search_criteria);
           default:
             throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
         }
