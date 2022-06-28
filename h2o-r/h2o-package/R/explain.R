@@ -489,27 +489,7 @@ with_no_h2o_progress <- function(expr) {
     leaderboard <- models_info$leaderboard
     return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
   }
-  leaderboard <-
-    as.data.frame(t(sapply(models_info$model_ids, function(m) {
-      m <- models_info$get_model(m)
-      metrics <- h2o.performance(m, leaderboard_frame)@metrics
-      unlist(metrics[intersect(c(
-        "AUC",
-        "mean_residual_deviance",
-        "mean_per_class_error",
-        "logloss",
-        "pr_auc",
-        "RMSE",
-        "MSE",
-        "mae",
-        "rmsle"
-      ), names(metrics))])
-    })))
-  leaderboard <- cbind(data.frame(model_id = .model_ids(models_info$model_ids), stringsAsFactors = FALSE),
-                       leaderboard)
-  leaderboard <- leaderboard[order(leaderboard[[2]]),]
-  names(leaderboard) <- tolower(names(leaderboard))
-  row.names(leaderboard) <- seq_len(nrow(leaderboard))
+  leaderboard <- h2o.make_leaderboard(models_info$model_ids, leaderboard_frame, extra_columns = "ALL")
   return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
 }
 

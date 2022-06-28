@@ -2762,61 +2762,18 @@ def _get_leaderboard(
     :param top_n: show just top n models in the leaderboard
     :returns: H2OFrame
     """
-    if _is_automl_or_leaderboard(models):
-        leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.automl.get_leaderboard(models, extra_columns="ALL")
-        leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
-        if row_index is not None:
-            model_ids = [m[0] for m in
-                         leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
-            with no_progress():
-                preds = h2o.get_model(model_ids[0]).predict(frame[row_index, :])
-                for model_id in model_ids[1:]:
-                    preds = preds.rbind(h2o.get_model(model_id).predict(frame[row_index, :]))
-
-                leaderboard = leaderboard.cbind(preds)
-        return leaderboard
-    else:
-        METRICS = [
-            "AUC",
-            "mean_residual_deviance",
-            "mean_per_class_error",
-            "logloss",
-            "pr_auc",
-            "RMSE",
-            "MSE",
-            "mae",
-            "rmsle",
-        ]
-        import math
-        from collections import defaultdict
-        task = None
-        result = defaultdict(list)
-        predictions = []
+    leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.make_leaderboard(models, frame, extra_columns="ALL")
+    leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
+    if row_index is not None:
+        model_ids = [m[0] for m in
+                     leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
         with no_progress():
-            for model in models:
-                result["model_id"].append(model.model_id)
-                perf = model.model_performance(frame)
-                task = perf._metric_json.get("model_category")
-                for metric in METRICS:
-                    result[metric.lower()].append(perf._metric_json.get(metric))
-                if row_index is not None:
-                    predictions.append(model.predict(frame[row_index, :]))
-            for metric in METRICS:
-                if not any(result[metric.lower()]) or not all([not math.isnan(float(m)) for m in result[metric.lower()]]):
-                    del result[metric.lower()]
-            leaderboard = h2o.H2OFrame(result)[["model_id"] + [m.lower()
-                                                               for m in METRICS
-                                                               if m.lower() in result]]
-            if row_index is not None:
-                preds = predictions[0]
-                for pr in predictions[1:]:
-                    preds = preds.rbind(pr)
-                leaderboard = leaderboard.cbind(preds)
-            sort_metric = "mse" if task is None else \
-                "auc" if task.lower() == "binomial" else \
-                "logloss" if task.lower() == "multinomial" else \
-                "mean_residual_deviance"
-            return leaderboard.sort(sort_metric).head(rows=min(top_n, leaderboard.nrow))
+            preds = h2o.get_model(model_ids[0]).predict(frame[row_index, :])
+            for model_id in model_ids[1:]:
+                preds = preds.rbind(h2o.get_model(model_id).predict(frame[row_index, :]))
+
+            leaderboard = leaderboard.cbind(preds)
+    return leaderboard
 
 
 def _process_explanation_lists(
