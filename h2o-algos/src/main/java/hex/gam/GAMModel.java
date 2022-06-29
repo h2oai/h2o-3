@@ -241,6 +241,11 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public Key<Frame> _beta_constraints = null;
     public double _lambda_min_ratio = -1;
     public boolean _betaConstraintsOff = false; // used for cross-validations
+    // internal parameters added to support client mode
+    int _glmNFolds = 0;
+    Model.Parameters.FoldAssignmentScheme _glmFoldAssignment = null;
+    String _glmFoldColumn = null;
+    boolean _glmCvOn = false;
 
     @Override
     public long progressUnits() {
