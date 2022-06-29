@@ -7,7 +7,7 @@ h2o -- module for using H2O services.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import contextlib
+from contextlib import contextmanager
 import os
 import sys
 
@@ -22,7 +22,7 @@ import tabulate
 from .utils.compatibility import *  # NOQA
 from .utils.compatibility import str2 as str
 from .utils.shared_utils import can_use_pandas
-from .utils.threading import local_context, local_env
+from .utils.threading import local_context, local_context_safe, local_env
 
 __no_export = set(dir())  # all variables defined above this are not exported
 
@@ -53,14 +53,27 @@ def repr_def(obj, attributes='public'):
     )
 
 
-@contextlib.contextmanager
-def repr_context(ctxt=None, force=False):
-    if ctxt is not None and (force or local_env('repr') is None):
-        with local_context(repr=ctxt):
-            yield local_env('repr') 
-    else:
-        yield local_env('repr')
+_repr_formats = [None, 'plain', 'pretty', 'html']
 
+@contextmanager
+def _repr_format(fmt=None, force=False):
+    assert fmt in _repr_formats, "Unsupported format '%s', `fmt` should be one of %s" % (fmt, _repr_formats)
+    with local_context_safe('repr_format', fmt, force) as lc:
+        yield lc
+
+_repr_verbosity_levels = [None, 'short', 'medium', 'full']
+
+@contextmanager
+def _repr_verbosity(verbosity=None, force=False):
+    assert verbosity in _repr_verbosity_levels, "Unsupported verbosity '%s', `verbosity` should be one of %s" % (verbosity, _repr_verbosity_levels)
+    with local_context_safe('repr_verbosity', verbosity, force) as lc:
+        yield lc
+           
+def _get_repr_format(default=None):
+    return local_env('repr_format', default)
+
+def _get_repr_verbosity(default=None):
+    return local_env('repr_verbosity', default)
 
 def in_py_repl():
     """test if we are in Python REPL: 
@@ -116,6 +129,16 @@ class ReplHook:
 
 _user_tips_on_ = True
 
+@contextmanager
+def user_tips_enabled(on=True):
+    global _user_tips_on_
+    ut = _user_tips_on_
+    try:
+        _user_tips_on_=on
+        yield
+    finally:
+        _user_tips_on_=ut
+        
 
 def toggle_user_tips(on=None):
     """
@@ -140,8 +163,8 @@ Use `h2o.display.toggle_user_tips()` to switch on/off this section.""".format(ti
     return html_wrap.format(tips=tips_section) if (tips and fmt == 'html') else tips_section
 
 
-def _display(obj, fmt=None):
-    with repr_context(fmt):
+def _display(obj, fmt=None, verbosity=None):
+    with _repr_format(fmt), _repr_verbosity(verbosity):
         if isinstance(obj, str_type) and fmt == 'plain':
             obj = repr(obj)  # keep the string quoted in plain format
         try:
@@ -150,49 +173,70 @@ def _display(obj, fmt=None):
             print2(str(obj))  # compatibility.str2 will handle the encoding issue
 
 
-def display(obj, fmt=None):
+def display(obj, fmt=None, verbosity=None):
     """
-    Render the given object using the provided format.
+    Render the given object using the provided format and verbosity level (if supported).
     :param obj: 
-    :param fmt: one of (None, 'auto', 'plain', 'pretty', 'html')
+    :param fmt: one of (None, 'plain', 'pretty', 'html').
+                Defaults to None (picks appropriate format depending on platform/context).
+    :param verbosity: one of (None, 'short', 'medium', 'full').
+                Defaults to None (object's default verbosity).
     """
-    if fmt == 'auto':
-        fmt = None
     if in_zep():  # prioritize as Py in Zep uses iPy 
         if fmt in [None, 'html']:  # default rendering to 'html' in zep
-            with repr_context('html'):
+            with _repr_format('html'), _repr_verbosity(verbosity):
                 print2("%html {}".format(obj))
         else:
-            with repr_context(fmt):
+            with _repr_format(fmt), _repr_verbosity(verbosity):
                 try:
                     global z  # variable provided by Zeppelin, use of `global` just to get rid of error in IDE
                     z.show(obj)
                 except NameError:
-                    _display(obj, fmt)
+                    _display(obj, fmt, verbosity=verbosity)
     elif in_ipy():
         from IPython.display import HTML, display as idisplay
         if fmt is None:  # by default, let the iPy mechanism decide on the format
-            idisplay(obj)
+            with _repr_verbosity(verbosity):
+                idisplay(obj)
         elif fmt == 'html':
-            with repr_context(fmt):
+            with _repr_format(fmt), _repr_verbosity(verbosity):
                 idisplay(HTML(str(obj)))
         else:
-            _display(obj, fmt)
+            _display(obj, fmt, verbosity=verbosity)
     else:
-        _display(obj, fmt)
+        _display(obj, fmt, verbosity=verbosity)
                 
 
-def to_str(obj, fmt=None):
-    with repr_context(fmt, force=True):
+def to_str(obj, verbosity=None, fmt=None):
+    """
+    :param obj: 
+    :param verbosity: one of (None, 'short', 'medium', 'full').
+                Defaults to None (object's default verbosity).
+    :param fmt: one of (None, 'plain', 'pretty', 'html').
+                Defaults to None (picks appropriate format depending on platform/context).
+    :return: a string representation of the given object using the provided format and verbosity level (if supported).
+    """
+    with _repr_format(fmt, force=True), _repr_verbosity(verbosity, force=True):
         return str(obj)
     
-    
-def to_pretty_str(obj):
-    return to_str(obj, fmt='pretty')
+def to_pretty_str(obj, verbosity=None):
+    """
+    :param obj: 
+    :param verbosity: one of (None, 'short', 'medium', 'full').
+                Defaults to None (object's default verbosity).
+    :return: a pretty string representation of the given object using the provided verbosity level (if supported).
+    """
+    return to_str(obj, verbosity=verbosity, fmt='pretty')
 
 
-def to_html(obj):
-    return to_str(obj, fmt='html')
+def to_html(obj, verbosity=None):
+    """
+    :param obj: 
+    :param verbosity: one of (None, 'short', 'medium', 'full').
+                Defaults to None (object's default verbosity).
+    :return: a html string representation of the given object using the provided verbosity level (if supported).
+    """
+    return to_str(obj, verbosity=verbosity, fmt='html')
 
 
 def _auto_html_element_wrapper(it, pre=None, nex=None):
@@ -254,7 +298,7 @@ def format_to_html(objs, element_wrapper='auto'):
         before, after = wrap_tags_gen(it, pre, nex)
         return "".join([before, str(it), after])
 
-    with repr_context('html'):
+    with _repr_format('html'):
         return "\n".join(_make_elem(it, i) for i, it in enumerate(items))
 
 
@@ -306,12 +350,13 @@ class DisplayMixin(object):
         :return: the "informal" nicely printable representation of the current object.
         
         """
-        repr_type = local_env('repr')
-        if repr_type == 'html':
-            return self._str_html_()
-        elif repr_type == 'pretty':
-            return self._str_pretty_()
-        return self._str_()
+        repr_fmt = _get_repr_format()
+        repr_verb = _get_repr_verbosity()
+        if repr_fmt == 'html':
+            return self._str_html_(verbosity=repr_verb)
+        elif repr_fmt == 'pretty':
+            return self._str_pretty_(verbosity=repr_verb)
+        return self._str_(verbosity=repr_verb)
 
     def _repr_(self):
         """Override this method to change the technical string representation."""
@@ -322,7 +367,7 @@ class DisplayMixin(object):
         IPython hook called when printing the cell result (iPy repl/fallback in Jupyter).
         Please don't override this, override `_str_pretty_()` instead.
         """
-        with repr_context('pretty'):
+        with _repr_format('pretty'):
             if cycle:
                 p.text("{}(...)".format(self.__class__.__name__))
             else:
@@ -333,7 +378,7 @@ class DisplayMixin(object):
         IPython hook called when printing the cell result in Jupyter.
         Please don't override this, override `_str_html_()` instead.
         """
-        with repr_context('html'):
+        with _repr_format('html'):
             return str(self)
 
     def _repr_repl_(self):  # py repl
@@ -342,20 +387,20 @@ class DisplayMixin(object):
         This hook is triggered only if `ReplHook` is activated, and we activate it only when using default Python REPL.
         Please don't override this, override `_str_pretty_()` instead.
         """
-        with repr_context('pretty'):
+        with _repr_format('pretty'):
             return str(self)
 
-    def _str_(self):
+    def _str_(self, verbosity=None):
         """Override this method to return the informal string representation."""
         return repr(self)
 
-    def _str_html_(self):
+    def _str_html_(self, verbosity=None):
         """Override this method to return a string description in html format."""
-        return self._str_()
+        return self._str_(verbosity=verbosity)
 
-    def _str_pretty_(self):
+    def _str_pretty_(self, verbosity=None):
         """Override this method to return a pretty string description used by default as repl output."""
-        return self._str_()
+        return self._str_(verbosity=verbosity)
 
 
 class H2ODisplay(DisplayMixin):
@@ -363,35 +408,43 @@ class H2ODisplay(DisplayMixin):
     A convenient mixin for H2O classes, providing standard methods for formatting and rendering.
     """
 
-    def show(self, fmt=None):
+    def show(self, verbosity=None, fmt=None):
         """
-        Describe and renders the current object in the given format,
+        Describe and renders the current object in the given format and verbosity level if supported,
         by default guessing the best format for the current environment.
         
-        :param fmt: one of (None, 'auto', 'plain', 'pretty', 'html').
-                    Defaults to None/'auto'.
+        :param verbosity: one of (None, 'short', 'medium', 'full').
+                    Defaults to None (object's default verbosity).
+        :param fmt: one of (None, 'plain', 'pretty', 'html').
+                    Defaults to None (picks appropriate format depending on platform/context).
         """
-        display(self, fmt=fmt)
+        display(self, fmt=fmt, verbosity=verbosity)
         
-    def to_html(self):
+    def to_html(self, verbosity=None):
         """
+        :param verbosity: one of (None, 'short', 'medium', 'full').
+                    Defaults to None (object's default verbosity).
         :return: a html representation of the current object.
         """
-        return to_html(self)
+        return to_html(self, verbosity)
     
-    def to_pretty_str(self):
+    def to_pretty_str(self, verbosity=None):
         """
+        :param verbosity: one of (None, 'short', 'medium', 'full').
+                    Defaults to None (object's default verbosity).
         :return: a pretty string representation of the current object.
         """
-        return to_pretty_str(self)
+        return to_pretty_str(self, verbosity)
     
-    def to_str(self, fmt=None):
+    def to_str(self, verbosity=None, fmt=None):
         """
-        :return: a string representation of the current object.
+        :param verbosity: one of (None, 'short', 'medium', 'full').
+                    Defaults to None (object's default verbosity).
         :param fmt: one of (None, 'plain', 'pretty', 'html').
                     Defaults to None/'plain'.
+        :return: a string representation of the current object.
         """
-        return to_str(self, fmt=fmt)
+        return to_str(self, verbosity=verbosity, fmt=fmt)
 
 
 class H2OStringDisplay(H2ODisplay):
@@ -415,19 +468,20 @@ class H2ODisplayWrapper(H2ODisplay):
 
     def __init__(self, repr_fn):
         """
-        :param repr_fn: the wrapped representation function with signature: (fmt: Optional[str]) -> str
+        :param repr_fn: the wrapped representation function with signature: (verbosity: Optional[str], fmt: Optional[str]) -> str
         See ``display`` function for the list supported formats. 
         """
         self._repr_fn = repr_fn
 
-    def _str_(self):
-        return self._repr_fn()
+    def _str_(self, verbosity=None):
+        return self._repr_fn(verbosity)
 
-    def _str_pretty_(self):
-        return self._repr_fn(fmt='pretty')
+    def _str_pretty_(self, verbosity=None):
+        return self._repr_fn(verbosity, 'pretty')
 
-    def _str_html_(self):
-        return self._repr_fn(fmt='html')
+
+    def _str_html_(self, verbosity=None):
+        return self._repr_fn(verbosity, 'html')
 
 
 class H2OItemsDisplay(H2ODisplay):
@@ -438,10 +492,10 @@ class H2OItemsDisplay(H2ODisplay):
         """
         self._items = items
 
-    def _str_(self):
+    def _str_(self, verbosity=None):
         return format_to_multiline(self._items)
 
-    def _str_html_(self):
+    def _str_html_(self, verbosity=None):
         return format_to_html(self._items)
 
 
@@ -452,7 +506,27 @@ class H2OTableDisplay(H2ODisplay):
     _prefer_pandas = True
 
     @staticmethod
-    def prefer_pandas():
+    @contextmanager
+    def pandas_rendering_enabled(value=True):
+        """
+        Context manager used to temporarily prefer (ie. use pandas if available) 
+        or disable usage of pandas for H2OTableDisplay rendering.
+        
+        Usage recommended mainly for tests or other single threaded usages: this is not thread-safe!
+        :param bool value: True iff pandas should be preferred.
+        """
+        pp = H2OTableDisplay._prefer_pandas
+        try:
+            H2OTableDisplay._prefer_pandas = value
+            yield
+        finally:
+            H2OTableDisplay._prefer_pandas = pp
+
+    @staticmethod
+    def use_pandas():
+        """
+        :return: True iff pandas will be used for rendering.
+        """
         return H2OTableDisplay._prefer_pandas and can_use_pandas()
 
     @staticmethod
@@ -492,13 +566,13 @@ class H2OTableDisplay(H2ODisplay):
     def truncated(self):
         return self._truncated or self.shape_displayed < self.shape
     
-    def show(self, fmt=None):
-        super().show()
+    def show(self, verbosity=None, fmt=None):
+        super().show(verbosity=verbosity, fmt=fmt)
         if self.truncated:
             print("(Use max_rows=-1 to render the whole table)")
         
     def _prepare(self, prefer_pandas=True):
-        if prefer_pandas and H2OTableDisplay.prefer_pandas():
+        if prefer_pandas and H2OTableDisplay.use_pandas():
             import pandas as pd
             df = self._table if H2OTableDisplay.is_pandas(self._table) else pd.DataFrame(self._table, columns=self._columns_labels)
             self._display_table = df.head(self._max_rows) if self._max_rows > 0 else df
@@ -516,7 +590,7 @@ class H2OTableDisplay(H2ODisplay):
             else:
                 self._display_table = self._table
 
-    def _str_(self):
+    def _str_(self, verbosity=None):
         table = self._display_table
         table_str = (table.to_string() if H2OTableDisplay.is_pandas(table)
                      else tabulate.tabulate(table,
@@ -524,7 +598,7 @@ class H2OTableDisplay(H2ODisplay):
                                             **self._kwargs))
         return format_to_multiline([self._caption, table_str]) if self._caption else table_str
 
-    def _str_html_(self):
+    def _str_html_(self, verbosity=None):
         table = self._display_table
         if H2OTableDisplay.is_pandas(table):
             html = (table.style.set_caption(self._caption)
@@ -616,12 +690,14 @@ class H2OTableDisplay(H2ODisplay):
         nrows = "{nrow} row{s}".format(nrow=nr, s="" if nr == 1 else "s")
         ncols = "{ncol} column{s}".format(ncol=nc, s="" if nc == 1 else "s")
         template = dict(
+            plain="\n[{nrows} x {ncols}]\n",
+            pretty="\n[{nrows} x {ncols}]\n",
             html="<pre style='font-size: smaller; margin-bottom: 1em;'>[{nrows} x {ncols}]</pre>"
-        ).get(fmt, "\n[{nrows} x {ncols}]\n")
+        ).get(fmt or 'plain')
         return template.format(nrows=nrows, ncols=ncols)
 
 
-@contextlib.contextmanager
+@contextmanager
 def capture_output(out=None, err=None):
     tmp_out = out or StringIO()
     tmp_err = err or StringIO()

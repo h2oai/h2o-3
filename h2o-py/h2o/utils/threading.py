@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-import contextlib
+from contextlib import contextmanager
 import threading
 
 try:
@@ -31,7 +31,7 @@ except ImportError:
 __no_export = set(dir())  # all variables defined above this are not exported
 
 
-@contextlib.contextmanager
+@contextmanager
 def local_context(**kwargs):
     """
     Attach some key-value pairs to a local context on the current thread for the execution lifetime of the context block.
@@ -56,6 +56,22 @@ def local_context(**kwargs):
             else:
                 del context[k]
         _set_local(context)
+        
+        
+@contextmanager
+def local_context_safe(key=None, value=None, force=False):
+    """
+    sets the value on the local context key iff the value is not None and there's no value already set for that key 
+    (overriding existing value must be requested explicitly by setting `force` param to True).
+    :param str key:
+    :param value:
+    :param bool force: set to True to possibly override existing value on the local context.
+    """
+    if value is not None and (force or local_env(key) is None):
+        with local_context(**{key: value}):
+            yield local_env(key)
+    else:
+        yield local_env(key)
 
 
 def local_env(key, default=None):

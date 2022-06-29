@@ -61,8 +61,8 @@ class ConfusionMatrix(H2ODisplay):
         self.table = H2OTwoDimTable(row_header=row_header, col_header=col_header,
                                     table_header=table_header, cell_values=cell_values)
         
-    def _str_(self):
-        return str(self.table)
+    def _str_(self, verbosity=None):
+        return self.table.to_str(verbosity=verbosity)
 
     def to_list(self):
         """Convert this confusion matrix into a 2x2 plain list of values."""

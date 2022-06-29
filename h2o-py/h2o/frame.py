@@ -4924,38 +4924,39 @@ class H2OFrame(Keyed, H2ODisplay):
         # no need to pollute debug string with cell values, headers should be enough
         return repr_def(self, attributes=['_ex'])
     
-    def _to_str(self, fmt=None):
+    def _to_str(self, fmt=None, verbosity=None):
         fr_str = self._str_edge_cases()
         if fr_str is not None:
             return fr_str
 
         rows = local_env('rows', 10)
         cols = local_env('cols', 200)
-        use_pandas = local_env('pandas', H2OTableDisplay.prefer_pandas())
+        use_pandas = local_env('pandas', H2OTableDisplay.use_pandas())
         if use_pandas:
             df = self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True)
             table = df.to_html() if fmt == 'html' else df.to_string()
         else:
             tablefmt = dict(
+                plain='plain',
                 pretty='simple',
                 html='html'
-            ).get(fmt, 'plain')
+            ).get(fmt or 'plain')
             table = self._frame(fill_cache=True)._ex._cache._tabulate(tablefmt, rollups=False, rows=rows)
         return table+H2OTableDisplay.table_footer(self, fmt=fmt)
 
-    def _str_(self):
-        return self._to_str()
+    def _str_(self, verbosity=None):
+        return self._to_str(verbosity=verbosity)
     
-    def _str_pretty_(self):
-        return self._to_str('pretty')
+    def _str_pretty_(self, verbosity=None):
+        return self._to_str('pretty', verbosity)
 
-    def _str_html_(self):
-        return self._to_str('html')
+    def _str_html_(self, verbosity=None):
+        return self._to_str('html', verbosity)
 
     def _has_content(self):
         return self._ex and (self._ex._children or self._ex._cache._id)
 
-    def show(self, use_pandas=None, rows=10, cols=200, fmt=None):
+    def show(self, use_pandas=None, rows=10, cols=200, verbosity=None, fmt=None):
         """
         Print a snippet of the data frame.
         
@@ -4976,19 +4977,20 @@ class H2OFrame(Keyed, H2ODisplay):
         
         # changing default behaviour, suggesting to use pandas by default as soon as it's available and preferred.
         if use_pandas is None:
-            use_pandas = H2OTableDisplay.prefer_pandas()
+            use_pandas = H2OTableDisplay.use_pandas()
         with local_context(rows=rows, cols=cols, pandas=use_pandas):
-            display(self, fmt=fmt)
+            display(self, fmt=fmt, verbosity=verbosity)
 
-    def _str_summary(self, fmt=None):
+    def _str_summary(self, verbosity=None, fmt=None):
         fr_str = self._str_edge_cases()
         if fr_str is not None:
             return fr_str
         
         tablefmt = dict(
+            plain='plain',
             pretty='simple',
             html='html'
-        ).get(fmt, 'plain')
+        ).get(fmt or 'plain')
         table = self._ex._cache._tabulate(tablefmt, rollups=True)
         return table+H2OTableDisplay.table_footer(self, fmt=fmt)
 

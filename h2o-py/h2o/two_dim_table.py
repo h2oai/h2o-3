@@ -155,8 +155,8 @@ class H2OTwoDimTable(H2ODisplay):
         # no need to pollute debug string with cell values, headers should be enough
         return repr_def(self, attributes=['_table_header', '_col_header'])
 
-    def _str_(self, max_rows=20, prefer_pandas=True):
-        return str(self._as_display(max_rows=max_rows, prefer_pandas=prefer_pandas)) 
+    def _str_(self, verbosity=None, max_rows=20, prefer_pandas=True):
+        return self._as_display(max_rows=max_rows, prefer_pandas=prefer_pandas).to_str(verbosity=verbosity)
     
-    def show(self, header=True, max_rows=20, prefer_pandas=True):
-        self._as_display(header, max_rows=max_rows, prefer_pandas=prefer_pandas).show()
+    def show(self, header=True, max_rows=20, prefer_pandas=True, verbosity=None, fmt=None):
+        self._as_display(header, max_rows=max_rows, prefer_pandas=prefer_pandas).show(verbosity=verbosity, fmt=fmt)

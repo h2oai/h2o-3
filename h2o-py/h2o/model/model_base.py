@@ -1788,7 +1788,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     # ModelBase representation methods
     # --------------------------------
     
-    def _str_items(self, verbose=False):
+    def _str_items(self, verbosity=None):
+        verbosity = verbosity or 'medium'  # default verbosity when printing model
         # edge cases
         if self._future:
             self._job.poll_once()
@@ -1799,8 +1800,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             return "This model (key={}) has been removed".format(self.key)
 
         items = []
-        verbose = verbose or local_env('verbose')
-        if verbose:
+        if verbosity in ['full']:
             items.extend([
                 "Model Details",
                 "============="
@@ -1809,11 +1809,12 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             "%s : %s" % (self.__class__.__name__, self._model_json["algo_full_name"]),
             "Model Key: %s" % self.key,
         ])
-        summary = self.get_summary()
-        if summary is not None:
-            items.extend(["", summary])
+        if verbosity in ['medium', 'full']:
+            summary = self.get_summary()
+            if summary is not None:
+                items.extend(["", summary])
             
-        if verbose:
+        if verbosity in ['full']:
             model = self._model_json["output"]
             tm = model["training_metrics"]
             if tm is not None: items.append(tm)
@@ -1831,11 +1832,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             
         return items
     
-    def _str_usage(self, fmt=None):
-        return format_user_tips(format_to_multiline([
-            "Use `model.show()` for more details.",
-            "Use `model.explain(…)` to inspect the model.",
-        ] + self._str_usage_custom()), fmt=fmt) if self._model_json else ""
+    def _str_usage(self, verbosity=None, fmt=None):
+        verbosity = verbosity or 'medium'  # default verbosity when printing model
+        if not self._model_json or verbosity == 'short':
+            return ""
+        lines = []
+        if verbosity != 'full':
+            lines.append("Use `model.show()` for more details.")
+        lines.append("Use `model.explain()` to inspect the model.")
+        lines.extend(self._str_usage_custom())
+        return format_user_tips(format_to_multiline(lines), fmt=fmt) if lines else ""
     
     def _str_usage_custom(self):
         """
@@ -1844,19 +1850,19 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         return []
 
-    def _str_(self):
-        items = self._str_items()
+    def _str_(self, verbosity=None):
+        items = self._str_items(verbosity)
         if isinstance(items, list):
             return format_to_multiline(items)
         return items
 
-    def _str_pretty_(self):
-        return self._str_()+self._str_usage()
+    def _str_pretty_(self, verbosity=None):
+        return self._str_(verbosity)+self._str_usage(verbosity, 'pretty')
     
-    def _str_html_(self):
-        items = self._str_items()
+    def _str_html_(self, verbosity=None):
+        items = self._str_items(verbosity)
         html = format_to_html(items) if isinstance(items, list) else items
-        usage = self._str_usage('html')
+        usage = self._str_usage(verbosity, 'html')
         return html+usage
 
     def _summary(self):
@@ -1878,9 +1884,9 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if summary is not None:
             display(summary)
             
-    def show(self):
-        with local_context(verbose=True):
-            return display(self)
+    def show(self, verbosity=None, fmt=None):
+        verbosity = verbosity or 'full'  # default verbosity for showing model
+        return display(self, fmt=fmt, verbosity=verbosity)
 
     # FIXME: find a way to get rid of this awful habit that consists in doing [if data is present return data else print("no data")]
     

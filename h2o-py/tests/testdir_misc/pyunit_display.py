@@ -10,10 +10,11 @@ from tests import pyunit_utils as pu
 
 
 _disp_constant = H2OStringDisplay("never changes")
-_disp_spamegg = H2ODisplayWrapper(lambda fmt=None: dict(
-    html="<spam>and eggs</spam>",
-    pretty="No spam, just eggs please"
-).get(fmt, "spam & eggs"))
+_disp_spamegg = H2ODisplayWrapper(lambda v=None, fmt=None: dict(
+    plain="s & e" if v == 'short' else "spam & eggs",
+    pretty="No" if v == 'short' else "No spam, just eggs please",
+    html="<s>+e</s>" if v == 'short' else "<spam>and eggs</spam>"
+).get(fmt or "plain"))
 
 
 def test_string_representations_of_constant_object():
@@ -24,9 +25,12 @@ def test_string_representations_of_constant_object():
 def test_string_representations_of_simple_object():
     obj = _disp_spamegg
     assert repr(obj).startswith("H2ODisplayWrapper")
-    assert str(obj) == obj.to_str() == "spam & eggs"
-    assert obj.to_pretty_str() == "No spam, just eggs please"
-    assert obj.to_html() == "<spam>and eggs</spam>"
+    assert str(obj) == obj.to_str() == obj.to_str('full') == "spam & eggs"
+    assert obj.to_pretty_str() == obj.to_pretty_str('full') == "No spam, just eggs please"
+    assert obj.to_html() == obj.to_html('full') == "<spam>and eggs</spam>"
+    assert obj.to_str('short') == "s & e"
+    assert obj.to_pretty_str('short') == "No"
+    assert obj.to_html('short') == "<s>+e</s>"
         
 
 def test_items_string_representations_of_complex_object():

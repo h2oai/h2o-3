@@ -60,7 +60,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
     def _has(dictionary, key):
         return key in dictionary and dictionary[key] is not None
     
-    def _str_items(self):
+    def _str_items(self, verbosity=None):
         # edge cases
         if self._metric_json is None:
             return "WARNING: Model metrics cannot be calculated, please check that the response column was correctly provided in your dataset."
@@ -161,20 +161,20 @@ class MetricsBase(h2o_meta(H2ODisplay)):
     def _repr_(self):
         return repr_def(self, attributes='all')
 
-    def _str_(self):
-        items = self._str_items()
+    def _str_(self, verbosity=None):
+        items = self._str_items(verbosity)
         if isinstance(items, list):
             return format_to_multiline(items)
         return items
 
-    def _str_html_(self):
-        items = self._str_items()
+    def _str_html_(self, verbosity=None):
+        items = self._str_items(verbosity)
         if isinstance(items, list):
             return format_to_html(items)
         return items
     
-    def show(self):
-        return display(self)
+    def show(self, verbosity=None, fmt=None):
+        return display(self, fmt=fmt, verbosity=verbosity)
 
     def r2(self):
         """The R squared coefficient.

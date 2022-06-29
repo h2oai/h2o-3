@@ -824,8 +824,8 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         else:
             return self.sorted_metric_table(use_pandas=False)
     
-    def _str_(self):
-        return str(self._as_table())
+    def _str_(self, verbosity=None):
+        return self._as_table().to_str(verbosity=verbosity)
     
     def show(self):
         """
