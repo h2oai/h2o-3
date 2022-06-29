@@ -192,14 +192,19 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   @Override
   public void init(boolean expensive) {
     if (_parms._nfolds > 0 || _parms._fold_column != null) {
-      _cvOn = true;
-      _glmNFolds = _parms._fold_column == null ? _parms._nfolds 
+      _parms._glmCvOn = true; // added for client mode
+      _parms._glmNFolds = _parms._fold_column == null ? _parms._nfolds
               : _parms.train().vec(_parms._fold_column).toCategoricalVec().domain().length;
+      _cvOn = true;
+      _glmNFolds = _parms._glmNFolds;
+
       if (_parms._fold_assignment != null) {
+        _parms._glmFoldAssignment = _parms._fold_assignment; // added for client mode
         _foldAssignment = _parms._fold_assignment;
         _parms._fold_assignment = null;
       }
       if (_parms._fold_column != null) {
+        _parms._glmFoldColumn = _parms._fold_column; // added for client mode
         _foldColumn = _parms._fold_column;
         _parms._fold_column = null;
       }
@@ -409,6 +414,14 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
 
   @Override
   protected GAMDriver trainModelImpl() {
+    if (_parms._glmCvOn) {  // for client mode, copy over the cv settings
+      _cvOn = true;
+      if (_parms._glmFoldAssignment != null)
+        _foldAssignment = _parms._glmFoldAssignment;
+      if (_parms._glmFoldColumn != null)
+        _foldColumn = _parms._glmFoldColumn;
+      _glmNFolds = _parms._glmNFolds;
+    }
     return new GAMDriver();
   }
 
