@@ -12,8 +12,8 @@ public class TreeStats extends Iced {
   public long _byte_size;
   public int _num_trees = 0;
 
-  transient long _sum_depth = 0;
-  transient long _sum_leaves = 0;
+  long _sum_depth = 0;
+  long _sum_leaves = 0;
   public boolean isValid() { return _min_depth <= _max_depth; }
   public void updateBy(DTree tree) {
     if( tree == null ) return;
