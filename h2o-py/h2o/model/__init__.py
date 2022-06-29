@@ -4,6 +4,7 @@ from h2o.utils.mixin import register_submodule
 
 from .confusion_matrix import ConfusionMatrix
 from .metrics_base import MetricsBase
+from .metrics import *
 from .model_base import ModelBase
 from .models import *
 from .segment_models import H2OSegmentModels
@@ -15,7 +16,8 @@ __all__ = ["ModelBase", "MetricsBase",
            "ConfusionMatrix",  "H2OSegmentModels", ]
 
 
-# for full backwards compatibility after having moved some modules to `h2o.model.models` submodule.
+# Aliasing some submodules to 'h2o.model' for full backwards compatibility 
+# after having moved some modules to `h2o.model.models` submodule.
 # Note that users don't need to import those submodules in client 
 # code except for some (old) top functions in `regression` submodule.
 module = sys.modules[__name__]
