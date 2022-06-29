@@ -85,7 +85,7 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         #  we could have mixin extensions for algos like (H)GLM instead taking everything from this (not so) "base" class.
         # specific metric cond
         m_supports_logloss = m_is_binomial or m_is_multinomial or m_is_ordinal
-        m_supports_mpce = (m_is_binomial or m_is_multinomial) and not m_is_glm  # GLM excluded?
+        m_supports_mpce = (m_is_binomial or m_is_multinomial or m_is_ordinal) and not m_is_glm  # GLM excluded?
         m_supports_mse = not (m_is_anomaly or m_is_clustering or m_is_uplift)
         m_supports_r2 = m_is_regression and m_is_glm
         

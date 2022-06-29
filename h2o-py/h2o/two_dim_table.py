@@ -142,7 +142,7 @@ class H2OTwoDimTable(H2ODisplay):
     # 2DimTable representation methods
     # --------------------------------
         
-    def _as_display(self, header=True, max_rows=20, prefer_pandas=True):
+    def _as_display(self, header=True, max_rows=20, prefer_pandas=None):
         return H2OTableDisplay(self._cell_values,
                                caption=((self._table_header if self._table_description is None 
                                          else "{}: {}".format(self._table_header, self._table_description)) if header else None),
@@ -155,8 +155,8 @@ class H2OTwoDimTable(H2ODisplay):
         # no need to pollute debug string with cell values, headers should be enough
         return repr_def(self, attributes=['_table_header', '_col_header'])
 
-    def _str_(self, verbosity=None, max_rows=20, prefer_pandas=True):
+    def _str_(self, verbosity=None, max_rows=20, prefer_pandas=None):
         return self._as_display(max_rows=max_rows, prefer_pandas=prefer_pandas).to_str(verbosity=verbosity)
     
-    def show(self, header=True, max_rows=20, prefer_pandas=True, verbosity=None, fmt=None):
+    def show(self, header=True, max_rows=20, prefer_pandas=None, verbosity=None, fmt=None):
         self._as_display(header, max_rows=max_rows, prefer_pandas=prefer_pandas).show(verbosity=verbosity, fmt=fmt)

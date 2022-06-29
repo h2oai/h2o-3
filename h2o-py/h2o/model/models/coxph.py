@@ -17,9 +17,12 @@ class H2OCoxPHModel(ModelBase):
     def coefficients_table(self):
         """Coefficients table."""
         return self._model_json["output"]["coefficients_table"]
+    
+    def summary(self):
+        """legacy behaviour as for some reason, CoxPH is formatting summary differently than other models"""
+        return self._summary()
 
-    def _summary(self):
-        """Prints summary information about this model."""
+    def get_summary(self):
         output = self._model_json["output"]
         return """Call:
 {formula}

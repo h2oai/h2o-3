@@ -4975,9 +4975,6 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> h2oframe.show(use_pandas=False)
         """
         
-        # changing default behaviour, suggesting to use pandas by default as soon as it's available and preferred.
-        if use_pandas is None:
-            use_pandas = H2OTableDisplay.use_pandas()
         with local_context(rows=rows, cols=cols, pandas=use_pandas):
             display(self, fmt=fmt, verbosity=verbosity)
 

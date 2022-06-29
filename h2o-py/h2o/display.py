@@ -503,7 +503,19 @@ class H2OTableDisplay(H2ODisplay):
     
     THOUSANDS = "{:,}"
     
-    _prefer_pandas = True
+    _prefer_pandas = False
+    
+    
+    @staticmethod
+    def toggle_pandas_rendering(on=None):
+        """
+        Globally toggles usage of pandas for rendering of frames and tables in H2O.
+        :param on: True or False to force or prevent usage of pandas for all display.
+        """
+        if on is None:
+            H2OTableDisplay._prefer_pandas = not H2OTableDisplay._prefer_pandas
+        else:
+            H2OTableDisplay._prefer_pandas = on
 
     @staticmethod
     @contextmanager
@@ -543,7 +555,7 @@ class H2OTableDisplay(H2ODisplay):
 
     def __init__(self, table=None, caption=None,
                  columns_labels=None, max_rows=-1,
-                 prefer_pandas=True,
+                 prefer_pandas=None,
                  **kwargs):
         self._table = table
         self._caption = caption
@@ -571,8 +583,8 @@ class H2OTableDisplay(H2ODisplay):
         if self.truncated:
             print("(Use max_rows=-1 to render the whole table)")
         
-    def _prepare(self, prefer_pandas=True):
-        if prefer_pandas and H2OTableDisplay.use_pandas():
+    def _prepare(self, prefer_pandas=None):
+        if prefer_pandas or (prefer_pandas is None and H2OTableDisplay.use_pandas()):
             import pandas as pd
             df = self._table if H2OTableDisplay.is_pandas(self._table) else pd.DataFrame(self._table, columns=self._columns_labels)
             self._display_table = df.head(self._max_rows) if self._max_rows > 0 else df

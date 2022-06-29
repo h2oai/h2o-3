@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(1,"../../")
 
 from h2o.utils.threading import local_context, local_env
 
@@ -50,7 +51,7 @@ tests = [test_local_context]
 
 
 try:
-    from optional_threading import test_local_context_in_async_loop
+    from tests.testdir_utils.optional_threading import test_local_context_in_async_loop
     if sys.version_info > (3, 7):  # we need asyncio.run
         tests.append(test_local_context_in_async_loop)
     

@@ -827,7 +827,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
     def _str_(self, verbosity=None):
         return self._as_table().to_str(verbosity=verbosity)
     
-    def show(self):
+    def show(self, verbosity=None, fmt=None):
         """
         Renders all models in the grid, sorted by performance metric.
 
@@ -848,7 +848,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
         >>> gs.show()
         """
-        self._as_table().show(max_rows=-1)
+        self._as_table().show(max_rows=-1, verbosity=verbosity, fmt=fmt)
 
     def get_summary(self):
         table = []
@@ -1462,9 +1462,9 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         >>> gs.sorted_metric_table()
         """
         summary = self._grid_json["summary_table"]
-        if use_pandas and summary is not None: 
-            return summary.as_data_frame()
-        print("No sorted metric table for this grid search")
+        if summary is None:
+            print("No sorted metric table for this grid search")
+        return summary.as_data_frame() if use_pandas else summary
 
     @staticmethod
     def _metrics_class(model_json):
