@@ -6,6 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from h2o.base import Keyed
+from h2o.frame import H2OFrame
+from h2o.expr import ExprNode
+from h2o.expr import ASTId
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -1052,3 +1056,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
+    def transform_frame(self, fr):
+        """
+        GLRM performs A=X*Y during training.  When a new dataset is given, GLRM will perform Anew = Xnew*Y.  When
+        predict is called, Xnew*Y is returned.  When transform_frame is called, Xnew is returned instead.
+        :return: an H2OFrame that contains Xnew.
+        """
+        return H2OFrame._expr(expr=ExprNode("transform", ASTId(self.key), ASTId(fr.key)))._frame(fill_cache=True)
