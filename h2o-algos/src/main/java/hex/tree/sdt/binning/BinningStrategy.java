@@ -32,7 +32,6 @@ public enum BinningStrategy {
 
         @Override
         List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
-//            System.out.println("Executing strategy A");
             FeatureLimits featureLimits = featuresLimits.getFeatureLimits(feature);
             double step = (featureLimits._max - featureLimits._min) / VALUES_COUNT_IN_RANGE;
             // constant feature - dont use for split
