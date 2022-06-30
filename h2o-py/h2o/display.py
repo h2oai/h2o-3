@@ -504,7 +504,12 @@ class H2OTableDisplay(H2ODisplay):
     THOUSANDS = "{:,}"
     
     _prefer_pandas = False
+    __html_table_counter = 0
     
+    @staticmethod
+    def gen_html_table_id():
+        H2OTableDisplay.__html_table_counter +=1
+        return "h2o-table-%s" % H2OTableDisplay.__html_table_counter
     
     @staticmethod
     def toggle_pandas_rendering(on=None):
@@ -601,6 +606,7 @@ class H2OTableDisplay(H2ODisplay):
                 self._truncated = True  # due to the --- row, we can't trust the display_table shape 
             else:
                 self._display_table = self._table
+        print(type(self._display_table))
 
     def _str_(self, verbosity=None):
         table = self._display_table
@@ -635,7 +641,7 @@ class H2OTableDisplay(H2ODisplay):
 <style>
 {css}
 </style>      
-<div class="h2o-container">
+<div id="{id}" class="h2o-container">
   <table class="h2o-table">
     <caption>{caption}</caption>
     <thead>{head}</thead>
@@ -644,15 +650,15 @@ class H2OTableDisplay(H2ODisplay):
 </div>
 """
         css = """
-.h2o-container {
+#id.h2o-container {
   overflow-x: auto;
 }
-.h2o-table {
+#id .h2o-table {
   /* width: 100%; */
   margin-top: 1em;
   margin-bottom: 1em;
 }
-.h2o-table caption {
+#id .h2o-table caption {
   white-space: nowrap;
   caption-side: top;
   text-align: left;
@@ -660,19 +666,22 @@ class H2OTableDisplay(H2ODisplay):
   margin: 0;
   font-size: larger;
 }
-.h2o-table thead {
+#id .h2o-table thead {
   white-space: nowrap; 
-  background-color: #A0A0A0;
   position: sticky;
   top: 0;
+  box-shadow: 0 -1px inset;
 }
-.h2o-table tbody {
+#id .h2o-table tbody {
   overflow: auto;
 }
-.h2o-table th,
-.h2o-table td {
+#id .h2o-table th,
+#id .h2o-table td {
   text-align: right;
   /* border: 1px solid; */
+}
+#id .h2o-table tr:nth-child(even) {
+  /* background: #F5F5F5 */
 }
 """
         head_trs = []
@@ -681,10 +690,12 @@ class H2OTableDisplay(H2ODisplay):
         body_trs = []
         for row in rows:
             body_trs.append(H2OTableDisplay._html_row(row))
-        return html.format(caption=caption or "",
+        table_id = H2OTableDisplay.gen_html_table_id()
+        return html.format(id=table_id,
+                           caption=caption or "",
                            head="\n".join(head_trs), 
                            body="\n".join(body_trs),
-                           css=css)
+                           css=css.replace("#id", "#"+table_id))
 
     @staticmethod
     def _html_row(row, header=False):

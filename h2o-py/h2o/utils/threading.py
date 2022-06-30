@@ -8,8 +8,7 @@ try:
     # then simply initialize it as a dictionary that we're going to manipulate.
     # This also allows a simplified shared interface (dict) for context vars and thread-locals.
     from contextvars import ContextVar, copy_context  # Py 3.7+
-    local = ContextVar('h2o_context')
-    local.set({})
+    local = ContextVar('h2o_context', default={})
     
     def _get_local(copy=True):
         loc = local.get()
@@ -74,17 +73,19 @@ def local_context_safe(key=None, value=None, force=False):
         yield local_env(key)
 
 
-def local_env(key, default=None):
+def local_env(key, default=None, use_default_if_none=False):
     """
     Look up and return the value associated with the given key in the thread context.
     
     :param key: the key to look up in the thread context.
     :param default: the default value of key was not found in the thread context (defaults to None).
+    :param use_default_if_none: also return the default value if the key exists with a None value (defaults to False).
     :return: the value for the given key attached to the thread context 
              or the default value if the key was not present in the thread context.
     """
     context = _get_local(copy=False)
-    return context.get(key, default)
+    value = context.get(key, default)
+    return default if use_default_if_none and value is None else value
 
 
 __all__ = [s for s in dir() if not s.startswith('_') and s not in __no_export]

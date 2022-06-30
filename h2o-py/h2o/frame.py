@@ -4931,7 +4931,7 @@ class H2OFrame(Keyed, H2ODisplay):
 
         rows = local_env('rows', 10)
         cols = local_env('cols', 200)
-        use_pandas = local_env('pandas', H2OTableDisplay.use_pandas())
+        use_pandas = local_env('pandas', H2OTableDisplay.use_pandas(), use_default_if_none=True)
         if use_pandas:
             df = self.head(rows=rows, cols=cols).as_data_frame(use_pandas=True)
             table = df.to_html() if fmt == 'html' else df.to_string()
