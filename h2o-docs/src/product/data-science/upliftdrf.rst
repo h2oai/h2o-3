@@ -49,18 +49,18 @@ The uplift score is used as prediction of the leaf. Every leaf in a tree holds t
 where:
 
 - :math:`l` leaf of a tree
-- :math:`T_cl` how many observations in a leaf are from the treatment group (how many data rows in a leaf have ``treatment_column`` label == 1) 
-- :math:`C_cl` how many observations in a leaf are from the control group (how many data rows in the leaf have ``treatment_column`` label == 0)
-- :math:`TY1_cl` how many observations in a leaf are from the treatment group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 1 and ``response_column`` label == 1)
-- :math:`CY1_cl` how many observations in a leaf are from the control group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 0 and ``response_column`` label == 1)
-- :math:`TP_cl` treatment prediction of a leaf
-- :math:`CP_cl` control prediction of a leaf
+- :math:`T_l` how many observations in a leaf are from the treatment group (how many data rows in a leaf have ``treatment_column`` label == 1) 
+- :math:`C_l` how many observations in a leaf are from the control group (how many data rows in the leaf have ``treatment_column`` label == 0)
+- :math:`TY1_l` how many observations in a leaf are from the treatment group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 1 and ``response_column`` label == 1)
+- :math:`CY1_l` how many observations in a leaf are from the control group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 0 and ``response_column`` label == 1)
+- :math:`TP_l` treatment prediction of a leaf
+- :math:`CP_l` control prediction of a leaf
 
 The uplift score for the leaf is calculated as the difference between the treatment prediction and the control prediction:
 
 .. math::
 
-   uplift_score_cl = TP_cl - CP_cl
+   uplift\_score_l = TP_l - CP_l
 
 A higher uplift score means more observations from the treatment group responded to the offer than from the control group. This means the offered treatment has a positive effect. The uplift score can also be negative if more observations from the control group respond to the offer without treatment.
 
@@ -68,7 +68,7 @@ The final prediction is calculated in the same way as the DRF algorithm. Predict
 
 When the ``predict`` method is called on the test data, the result frame has these columns:
 
-- ``uplift_predict``: result uplift prediction score, which is calculated as :math:`p_y1_ct1 - p_y1_ct0`
+- ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_ct1 - p_y1_ct0``
 - ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
 - ``p_y1_ct0``: probability the response is 1 if the row is from the control group
 
