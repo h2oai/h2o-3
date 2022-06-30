@@ -848,7 +848,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
         >>> gs.show()
         """
-        self._as_table().show(max_rows=-1, verbosity=verbosity, fmt=fmt)
+        self._as_table().show(rows=-1, verbosity=verbosity, fmt=fmt)
 
     def get_summary(self):
         table = []
@@ -882,7 +882,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
         >>> gs.show_summary()
         """
-        self.get_summary().show(max_rows=-1)  # always display all models in the grid
+        self.get_summary().show(rows=-1)  # always display all models in the grid
     
     def summary(self):
         """Deprecated. Please use `show_summary()` instead"""

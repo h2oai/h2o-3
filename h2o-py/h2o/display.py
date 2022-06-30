@@ -576,13 +576,13 @@ class H2OTableDisplay(H2ODisplay):
                 else (len(table), len(table[0])))
 
     def __init__(self, table=None, caption=None,
-                 columns_labels=None, max_rows=-1,
+                 columns_labels=None, rows=-1,
                  prefer_pandas=None,
                  **kwargs):
         self._table = table
         self._caption = caption
         self._columns_labels = columns_labels
-        self._max_rows = max_rows
+        self._max_rows = rows
         self._kwargs = kwargs
         self._display_table = None
         self._truncated = False
@@ -603,7 +603,7 @@ class H2OTableDisplay(H2ODisplay):
     def show(self, verbosity=None, fmt=None):
         super().show(verbosity=verbosity, fmt=fmt)
         if self.truncated:
-            print("(Use max_rows=-1 to render the whole table)")
+            print("(Use rows=-1 to render the whole table)")
         
     def _prepare(self, prefer_pandas=None):
         if prefer_pandas or (prefer_pandas is None and H2OTableDisplay.use_pandas()):

@@ -147,7 +147,7 @@ class H2OTwoDimTable(H2ODisplay):
                                caption=((self._table_header if self._table_description is None 
                                          else "{}: {}".format(self._table_header, self._table_description)) if header else None),
                                columns_labels=self._col_header,
-                               max_rows=rows,
+                               rows=rows,
                                prefer_pandas=prefer_pandas,
                                numalign="left", stralign="left")
 
