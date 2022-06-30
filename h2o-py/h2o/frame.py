@@ -4942,6 +4942,7 @@ class H2OFrame(Keyed, H2ODisplay):
                 html='html'
             ).get(fmt or 'plain')
             table = self._frame(fill_cache=True)._ex._cache._tabulate(tablefmt, rollups=False, rows=rows)
+            table = H2OTableDisplay.fixup_table_repr(table, fmt=fmt)
         return table+H2OTableDisplay.table_footer(self, fmt=fmt)
 
     def _str_(self, verbosity=None):
@@ -4989,6 +4990,7 @@ class H2OFrame(Keyed, H2ODisplay):
             html='html'
         ).get(fmt or 'plain')
         table = self._ex._cache._tabulate(tablefmt, rollups=True)
+        table = H2OTableDisplay.fixup_table_repr(table, fmt=fmt)
         return table+H2OTableDisplay.table_footer(self, fmt=fmt)
 
     def get_summary(self):

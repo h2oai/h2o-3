@@ -511,6 +511,23 @@ class H2OTableDisplay(H2ODisplay):
         H2OTableDisplay.__html_table_counter +=1
         return "h2o-table-%s" % H2OTableDisplay.__html_table_counter
     
+    
+    @staticmethod
+    def fixup_table_repr(table_repr, fmt=None):
+        """
+        A fix-up function to improve table rendering in some environments.
+        
+        :param str table_repr: the string representation of the table, to which the fix-up can be applied.
+        :param fmt: the format of this representation.
+        :return: the table representation (as string) with the potential fix-up applied if needed.
+        """
+        if fmt == 'html' and in_ipy():
+            # Applying `class='dataframe'` greatly improves rendering in JetBrain's tools,
+            # but unfortunately there doesn't seem to be any way to detect DataSpell or PyCharm, 
+            # this would allow us to apply this more specifically.
+            return table_repr.replace("<table>", "<table class='dataframe'>")
+        return table_repr
+    
     @staticmethod
     def toggle_pandas_rendering(on=None):
         """
