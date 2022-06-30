@@ -20,6 +20,13 @@ def test_modelselection_serialization():
     maxr_model.train(training_frame=d, x=my_x, y=my_y)
     model_path_maxr = maxr_model.download_model(tmpdir)
 
+    maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
+    maxrsweep_model.train(training_frame=d, x=my_x, y=my_y)
+    model_path_maxrsweep = maxrsweep_model.download_model(tmpdir)
+
+    # make sure results returned by maxr and maxrsweep are the same
+    pyunit_utils.compare_frames_local(maxr_model.result()[2:4], maxrsweep_model.result()[2:4], prob=1.0, tol=1e-5)
+
     h2o.remove_all()
     d = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     loaded_allsubsets_model = h2o.load_model(model_path_allsubsets)    
@@ -27,7 +34,9 @@ def test_modelselection_serialization():
     numRows = result_frame_allsubsets.nrows
     modelIDs_allsubsets = loaded_allsubsets_model._model_json["output"]["best_model_ids"]
     loaded_maxr_model = h2o.load_model(model_path_maxr)
-    modelIDs_maxr = loaded_allsubsets_model._model_json["output"]["best_model_ids"]
+    modelIDs_maxr = loaded_maxr_model._model_json["output"]["best_model_ids"]
+    loaded_maxrsweep_model = h2o.load_model(model_path_maxrsweep)
+    modelIDs_maxrsweep = loaded_maxrsweep_model._model_json["output"]["best_model_ids"]
     for ind in list(range(numRows)):
         model_from_frame_allsubsets = h2o.get_model(result_frame_allsubsets["model_id"][ind, 0])
         pred_frame_allsubsets = model_from_frame_allsubsets.predict(d)
@@ -37,7 +46,10 @@ def test_modelselection_serialization():
         model_from_id_maxr = h2o.get_model(modelIDs_maxr[ind]['name'])
         pred_id_maxr = model_from_id_maxr.predict(d)
         pyunit_utils.compare_frames_local(pred_frame_allsubsets, pred_id_maxr, prob=1)
-
+        model_from_id_maxrsweep = h2o.get_model(modelIDs_maxrsweep[ind]['name'])
+        pred_id_maxrsweep = model_from_id_maxrsweep.predict(d)
+        pyunit_utils.compare_frames_local(pred_id_maxr, pred_id_maxrsweep, prob=1, tol=1e-6)        
+        
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_modelselection_serialization)
 else:
