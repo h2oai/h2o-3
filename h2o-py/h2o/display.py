@@ -630,7 +630,8 @@ class H2OTableDisplay(H2ODisplay):
                      else tabulate.tabulate(table,
                                             headers=self._columns_labels or (),
                                             **self._kwargs))
-        return format_to_multiline([self._caption, table_str]) if self._caption else table_str
+        table_str = format_to_multiline([self._caption, table_str]) if self._caption else table_str
+        return table_str+H2OTableDisplay.table_footer(self) if self.truncated else table_str
 
     def _str_html_(self, verbosity=None):
         table = self._display_table
