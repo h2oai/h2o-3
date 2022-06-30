@@ -606,7 +606,6 @@ class H2OTableDisplay(H2ODisplay):
                 self._truncated = True  # due to the --- row, we can't trust the display_table shape 
             else:
                 self._display_table = self._table
-        print(type(self._display_table))
 
     def _str_(self, verbosity=None):
         table = self._display_table
@@ -619,6 +618,7 @@ class H2OTableDisplay(H2ODisplay):
     def _str_html_(self, verbosity=None):
         table = self._display_table
         if H2OTableDisplay.is_pandas(table):
+            
             html = (table.style.set_caption(self._caption)
                                .set_table_styles([dict(selector="",
                                                        props=[("margin-top", "1em"),
@@ -626,8 +626,7 @@ class H2OTableDisplay(H2ODisplay):
                                                   dict(selector="caption",
                                                        props=[("font-size", "larger"),
                                                               ("text-align", "left"),
-                                                              ("white-space", "nowrap")])],
-                                                 overwrite=False)
+                                                              ("white-space", "nowrap")])])
                                .to_html())
         
         else:
