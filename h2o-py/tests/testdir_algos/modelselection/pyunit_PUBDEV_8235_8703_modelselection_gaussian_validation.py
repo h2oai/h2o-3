@@ -30,7 +30,6 @@ def test_modelselection_validation():
     maxr_model_v = modelSelection(seed=12345, max_predictor_number=3, mode="maxr")
     maxr_model_v.train(training_frame=train, validation_frame=test, x=my_x, y=my_y)
     best_r2_maxr_v = maxr_model_v.get_best_R2_values()
-    best_predictor_maxr_v = maxr_model_v.get_best_model_predictors()
     
     # R2 values are different between the two models
     numSet = len(best_r2_allsubsets)

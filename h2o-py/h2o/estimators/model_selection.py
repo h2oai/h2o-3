@@ -52,7 +52,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  theta=0.0,  # type: float
                  solver="irlsm",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
                  alpha=None,  # type: Optional[List[float]]
-                 lambda_=None,  # type: Optional[List[float]]
+                 lambda_=[0.0],  # type: List[float]
                  lambda_search=False,  # type: bool
                  early_stopping=False,  # type: bool
                  nlambdas=0,  # type: int
@@ -61,19 +61,19 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  compute_p_values=False,  # type: bool
                  remove_collinear_columns=False,  # type: bool
-                 intercept=False,  # type: bool
+                 intercept=True,  # type: bool
                  non_negative=False,  # type: bool
                  max_iterations=0,  # type: int
                  objective_epsilon=-1.0,  # type: float
                  beta_epsilon=0.0001,  # type: float
-                 gradient_epsilon=0.0,  # type: float
+                 gradient_epsilon=-1.0,  # type: float
                  startval=None,  # type: Optional[List[float]]
                  prior=0.0,  # type: float
                  cold_start=False,  # type: bool
                  lambda_min_ratio=0.0,  # type: float
                  beta_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
                  max_active_predictors=-1,  # type: int
-                 obj_reg=0.0,  # type: float
+                 obj_reg=-1.0,  # type: float
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
@@ -86,7 +86,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  nparallelism=0,  # type: int
                  max_predictor_number=1,  # type: int
                  min_predictor_number=1,  # type: int
-                 mode="maxr",  # type: Literal["allsubsets", "maxr", "backward"]
+                 mode="maxr",  # type: Literal["allsubsets", "maxr", "maxrsweep", "backward"]
                  p_values_threshold=0.0,  # type: float
                  ):
         """
@@ -140,8 +140,8 @@ class H2OModelSelectionEstimator(H2OEstimator):
                that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
                Defaults to ``None``.
         :type weights_column: str, optional
-        :param family: Family. For MaxR, only gaussian.  For backward, ordinal and multinomial families are not
-               supported
+        :param family: Family. For maxr/maxrsweep, only gaussian.  For backward, ordinal and multinomial families are
+               not supported
                Defaults to ``"auto"``.
         :type family: Literal["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma",
                "tweedie", "negativebinomial"]
@@ -170,8 +170,8 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``None``.
         :type alpha: List[float], optional
         :param lambda_: Regularization strength
-               Defaults to ``None``.
-        :type lambda_: List[float], optional
+               Defaults to ``[0.0]``.
+        :type lambda_: List[float]
         :param lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
                Defaults to ``False``.
         :type lambda_search: bool
@@ -202,7 +202,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``False``.
         :type remove_collinear_columns: bool
         :param intercept: Include constant term in the model
-               Defaults to ``False``.
+               Defaults to ``True``.
         :type intercept: bool
         :param non_negative: Restrict coefficients (not intercept) to be non-negative
                Defaults to ``False``.
@@ -224,7 +224,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                L-BFGS solver. Default (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero,
                the default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If
                lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.
-               Defaults to ``0.0``.
+               Defaults to ``-1.0``.
         :type gradient_epsilon: float
         :param startval: double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
                Defaults to ``None``.
@@ -253,7 +253,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``-1``.
         :type max_active_predictors: int
         :param obj_reg: Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs
-               Defaults to ``0.0``.
+               Defaults to ``-1.0``.
         :type obj_reg: float
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
                length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
@@ -304,9 +304,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``1``.
         :type min_predictor_number: int
         :param mode: Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all
-               subsets, 'maxr' for MaxR, 'backward' for backward selection
+               subsets, 'maxr' for MaxR calling GLM to build all models, 'maxrsweep' for using sweep in MaxR, 'backward'
+               for backward selection
                Defaults to ``"maxr"``.
-        :type mode: Literal["allsubsets", "maxr", "backward"]
+        :type mode: Literal["allsubsets", "maxr", "maxrsweep", "backward"]
         :param p_values_threshold: For mode='backward' only.  If specified, will stop the model building process when
                all coefficientsp-values drop below this threshold
                Defaults to ``0.0``.
@@ -562,7 +563,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
     @property
     def family(self):
         """
-        Family. For MaxR, only gaussian.  For backward, ordinal and multinomial families are not supported
+        Family. For maxr/maxrsweep, only gaussian.  For backward, ordinal and multinomial families are not supported
 
         Type: ``Literal["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma",
         "tweedie", "negativebinomial"]``, defaults to ``"auto"``.
@@ -669,7 +670,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         """
         Regularization strength
 
-        Type: ``List[float]``.
+        Type: ``List[float]``, defaults to ``[0.0]``.
         """
         return self._parms.get("lambda")
 
@@ -796,7 +797,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         """
         Include constant term in the model
 
-        Type: ``bool``, defaults to ``False``.
+        Type: ``bool``, defaults to ``True``.
         """
         return self._parms.get("intercept")
 
@@ -872,7 +873,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the
         conditional values above are 1E-8 and 1E-6 respectively.
 
-        Type: ``float``, defaults to ``0.0``.
+        Type: ``float``, defaults to ``-1.0``.
         """
         return self._parms.get("gradient_epsilon")
 
@@ -976,7 +977,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         """
         Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs
 
-        Type: ``float``, defaults to ``0.0``.
+        Type: ``float``, defaults to ``-1.0``.
         """
         return self._parms.get("obj_reg")
 
@@ -1164,15 +1165,15 @@ class H2OModelSelectionEstimator(H2OEstimator):
     def mode(self):
         """
         Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all subsets, 'maxr'
-        for MaxR, 'backward' for backward selection
+        for MaxR calling GLM to build all models, 'maxrsweep' for using sweep in MaxR, 'backward' for backward selection
 
-        Type: ``Literal["allsubsets", "maxr", "backward"]``, defaults to ``"maxr"``.
+        Type: ``Literal["allsubsets", "maxr", "maxrsweep", "backward"]``, defaults to ``"maxr"``.
         """
         return self._parms.get("mode")
 
     @mode.setter
     def mode(self, mode):
-        assert_is_type(mode, None, Enum("allsubsets", "maxr", "backward"))
+        assert_is_type(mode, None, Enum("allsubsets", "maxr", "maxrsweep", "backward"))
         self._parms["mode"] = mode
 
     @property
