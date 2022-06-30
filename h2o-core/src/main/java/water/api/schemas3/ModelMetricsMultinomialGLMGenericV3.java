@@ -29,8 +29,8 @@ public class ModelMetricsMultinomialGLMGenericV3 extends ModelMetricsMultinomial
     this.AIC = mms._AIC;
     this.residual_deviance = mms._resDev;
     this.null_deviance = mms._nullDev;
-    this.null_degrees_of_freedom = mms._nullDegressOfFreedom;
-    this.residual_degrees_of_freedom = mms._residualDegressOfFreedom;
+    this.null_degrees_of_freedom = mms._nullDegreesOfFreedom;
+    this.residual_degrees_of_freedom = mms._residualDegreesOfFreedom;
     this.coefficients_table = mms._coefficients_table != null ? new TwoDimTableV3().fillFromImpl(mms._coefficients_table) : null;
     this.r2 = mms.r2();
 

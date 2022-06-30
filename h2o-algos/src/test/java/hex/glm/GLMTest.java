@@ -1614,7 +1614,7 @@ public class GLMTest  extends TestUtil {
   public static double nullDOF(GLMModel m) {
     if (m._parms._family == Family.binomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
-      return metrics._nullDegressOfFreedom;
+      return metrics._nullDegreesOfFreedom;
     } else {
       ModelMetricsRegressionGLM metrics = (ModelMetricsRegressionGLM) m._output._training_metrics;
       return metrics._nullDegressOfFreedom;
@@ -1624,7 +1624,7 @@ public class GLMTest  extends TestUtil {
   public static double resDOF(GLMModel m) {
     if (m._parms._family == Family.binomial || m._parms._family == Family.quasibinomial) {
       ModelMetricsBinomialGLM metrics = (ModelMetricsBinomialGLM) m._output._training_metrics;
-      return metrics._residualDegressOfFreedom;
+      return metrics._residualDegreesOfFreedom;
     } else {
       ModelMetricsRegressionGLM metrics = (ModelMetricsRegressionGLM) m._output._training_metrics;
       return metrics._residualDegressOfFreedom;
