@@ -1849,6 +1849,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     throw new UnsupportedOperationException("this model doesn't support constant frame results");
   }
 
+  public Frame transform(Frame fr) {
+    throw new UnsupportedOperationException("this model doesn't support constant frame results");
+  }
+
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
    *  Vec is the predicted class, the remaining Vecs are the probability
    *  distributions.  For Regression (single-class) models, the 1st and only
