@@ -39,7 +39,11 @@ except:
     from io import StringIO  # py3
     
 # 3rd parties
-import matplotlib
+try:
+    import matplotlib
+except:
+    # okay for local testing - most tests don't need matplotlib
+    print("matplotlib not imported")
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
