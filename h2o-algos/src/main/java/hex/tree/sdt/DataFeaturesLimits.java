@@ -3,7 +3,6 @@ package hex.tree.sdt;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Features limits for the whole dataset.
@@ -64,8 +63,6 @@ public class DataFeaturesLimits {
      * @return
      */
     public double[][] toDoubles() {
-//        System.out.println(featuresLimits.toString());
-//        System.out.println(Arrays.deepToString(featuresLimits.stream().map(v -> new double[]{v._min, v._max}).toArray(double[][]::new)));
         return _featuresLimits.stream().map(v -> new double[]{v._min, v._max}).toArray(double[][]::new);
     }
 }

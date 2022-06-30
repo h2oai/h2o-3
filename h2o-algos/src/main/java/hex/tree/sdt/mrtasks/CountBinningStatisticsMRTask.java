@@ -50,9 +50,9 @@ public class CountBinningStatisticsMRTask extends MRTask<CountBinningStatisticsM
                 // count feature values in the current bin
                 if ((cs[_featureSplit].atd(row) > _thresholdMin)
                         && (cs[_featureSplit].atd(row) < _thresholdMax
-                        || Precision.equals(cs[_featureSplit].atd(row), _thresholdMax, 0.000001d))) {
+                        || Precision.equals(cs[_featureSplit].atd(row), _thresholdMax, Precision.EPSILON))) {
                     _count++;
-                    if (Precision.equals(cs[classFeature].atd(row), 0, 0.000001d)) {
+                    if (Precision.equals(cs[classFeature].atd(row), 0, Precision.EPSILON)) {
                         _count0++;
                     }
                 }

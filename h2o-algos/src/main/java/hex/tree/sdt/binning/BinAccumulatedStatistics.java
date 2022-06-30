@@ -13,7 +13,7 @@ public class BinAccumulatedStatistics {
 
     public int _rightCount0;
     public int _rightCount;
-    
+
     public BinAccumulatedStatistics() {
         _leftCount0 = 0;
         _leftCount = 0;

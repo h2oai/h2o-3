@@ -5,16 +5,13 @@ import hex.ModelCategory;
 import hex.tree.sdt.binning.BinAccumulatedStatistics;
 import hex.tree.sdt.binning.BinningStrategy;
 import hex.tree.sdt.binning.Histogram;
-import hex.tree.sdt.mrtasks.CountSplitValuesMRTask;
 import hex.tree.sdt.mrtasks.GetClassCountsMRTask;
-import hex.tree.sdt.mrtasks.SplitFrameMRTask;
+import org.apache.commons.math3.util.Precision;
 import org.apache.log4j.Logger;
 import water.DKV;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Frame;
 import water.util.*;
 
-import java.lang.reflect.MalformedParametersException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,7 +55,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     public SDT(SDTModel.SDTParameters parameters) {
         super(parameters);
         _maxDepth = parameters._maxDepth;
-        _actualDepth = 0;
+        _limitNumSamplesForSplit = parameters._limitNumSamplesForSplit;
         _nodesCount = 0;
         _tree = null;
         init(false);
@@ -76,7 +73,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
      */
     private SplitInfo findBestSplit(Histogram histogram) {
         int featuresNumber = histogram.featuresCount();
-        Pair<Double, Double> currentMinEntropyPair = new Pair<>(-1., Double.MAX_VALUE);
+        Pair<Double, Double> currentMinCriterionPair = new Pair<>(-1., Double.MAX_VALUE);
         int bestFeatureIndex = -1;
         for (int featureIndex = 0; featureIndex < featuresNumber - 1 /*last column is prediction*/; featureIndex++) {
             // skip constant features
@@ -84,28 +81,32 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
                 continue;
             }
             // iterate all bins
-            Pair<Double, Double> minEntropyForFeature = histogram.calculateBinsStatisticsForFeature(featureIndex).stream()
-                    .filter(binStatistics -> ((binStatistics._leftCount >= LIMIT_NUM_ROWS_FOR_SPLIT)
-                            && (binStatistics._rightCount >= LIMIT_NUM_ROWS_FOR_SPLIT))) // todo - consider setting min count of samples in bin 
-//                    .peek(binStatistics -> {
-//                        System.out.println("counts: " + binStatistics._maxBinValue + " " + binStatistics._leftCount + " " + binStatistics._rightCount);
-//                    })
+            Pair<Double, Double> minCriterionForFeature = histogram
+                    .calculateBinsStatisticsForFeature(featureIndex)
+                    .stream()
+                    // todo - consider setting min count of samples in bin instead of filtering splits
+                    .filter(binStatistics -> ((binStatistics._leftCount >= _limitNumSamplesForSplit)
+                            && (binStatistics._rightCount >= _limitNumSamplesForSplit)))
+                    .peek(binStatistics -> Log.debug("counts: " + binStatistics._maxBinValue + " "
+                            + binStatistics._leftCount + " " + binStatistics._rightCount))
+                    // map to pairs (maxBinValue, criterion)
                     .map(binStatistics -> new Pair<>(
-                            binStatistics._maxBinValue, calculateEntropyOfSplit(binStatistics)))
+                            binStatistics._maxBinValue, calculateCriterionOfSplit(binStatistics)))
                     .min(Comparator.comparing(Pair::_2))
                     .orElse(null);
-            if(minEntropyForFeature == null) {
-                continue; // no split was found for this feature
+            if (minCriterionForFeature == null) {
+                continue; // split could not be found for this feature
             }
-            if (minEntropyForFeature._2() < currentMinEntropyPair._2()) {
-                currentMinEntropyPair = minEntropyForFeature;
+            // update current minimum criteria pair
+            if (minCriterionForFeature._2() < currentMinCriterionPair._2()) {
+                currentMinCriterionPair = minCriterionForFeature;
                 bestFeatureIndex = featureIndex;
             }
         }
-        if(bestFeatureIndex == -1) {
+        if (bestFeatureIndex == -1) {
             return null; // no split could be found
         }
-        double threshold = currentMinEntropyPair._1();
+        double threshold = currentMinCriterionPair._1();
         return new SplitInfo(bestFeatureIndex, threshold);
     }
 
@@ -115,22 +116,22 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         double a2 = (entropyBinarySplit(rightCount0 * 1.0 / rightCount)
                 * rightCount / (leftCount + rightCount));
         double value = a1 + a2;
-//        System.out.println("value: " + value + ", t.l " + task.countLeft + ", t.l0 " + task.countLeft0 + ", t.r " + task.countRight + ", t.r0 " + task.countRight0);
         return value;
     }
 
-    private double entropyBinarySplit(final double oneClassFrequency) { 
-        return -1 * ((oneClassFrequency < EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
-                + ((1 - oneClassFrequency) < EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
+    private double entropyBinarySplit(final double oneClassFrequency) {
+        return -1 * ((oneClassFrequency < Precision.EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
+                + ((1 - oneClassFrequency) < Precision.EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
     }
 
-    private Double calculateEntropyOfSplit(BinAccumulatedStatistics binStatistics) {
+    private Double calculateCriterionOfSplit(BinAccumulatedStatistics binStatistics) {
         return binaryEntropy(binStatistics._leftCount, binStatistics._leftCount0,
                 binStatistics._rightCount, binStatistics._rightCount0);
     }
 
     /**
      * Select decision value for list.
+     *
      * @param zeroRatio #zero/#one in list
      * @return decision value (in current case - 0 or 1)
      */
@@ -149,7 +150,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
      * @param nodeIndex node index
      */
     public void makeListFromNode(double zeroRatio, int nodeIndex) {
-        _tree[nodeIndex][0] = -1; // list
+        _tree[nodeIndex][0] = -1; // indicates list
         _tree[nodeIndex][1] = selectDecisionValue(zeroRatio);
         // nothing to return, node is modified inplace
     }
@@ -165,7 +166,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         // take limits for actual node
         DataFeaturesLimits actualLimits = limitsQueue.poll();
         // if the element is null, then the node should not be built. Nulls exist to keep the array building straightforward
-        if(actualLimits == null) {
+        if (actualLimits == null) {
             // don't save anything to tree (no node is created)
             // add imaginary left and right children to imitate right tree structure
             // left child
@@ -174,21 +175,22 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             limitsQueue.add(null);
             return;
         }
-        
+
         // todo - add limit by information gain (at least because of ideal split for example 11111)
         // (count0, count1)
         Pair<Integer, Integer> classesCount = countClasses(actualLimits);
         double zeroRatio = classesCount._1() /*0*/ * 1.0 / (classesCount._1() /*0*/ + classesCount._2() /*1*/);
-        if(nodeIndex == 1) {
-            System.out.println("Classes counts in dataset: 0 - " + classesCount._1() +", 1 - " + classesCount._2());
+        if (nodeIndex == 1) {
+            Log.info("Classes counts in dataset: 0 - " + classesCount._1() + ", 1 - " + classesCount._2());
         }
         // compute node depth
-        int nodeDepth = (int) Math.floor(log2(nodeIndex + 1));
-        if ((nodeDepth >= _maxDepth) || (classesCount._1() <= LIMIT_NUM_ROWS_FOR_SPLIT) || (classesCount._2() <= LIMIT_NUM_ROWS_FOR_SPLIT)
+        int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
+        // stop building from this node, the node will be list
+        if ((nodeDepth >= _maxDepth)
+                || (classesCount._1() <= _limitNumSamplesForSplit)
+                || (classesCount._2() <= _limitNumSamplesForSplit)
 //                || zeroRatio > 0.999 || zeroRatio < 0.001
         ) {
-//            System.out.println("Reason: depth=" + _actualDepth + ", ratio=" + zeroRatio + ", class0=" + classesCount._1() + ", class1=" + classesCount._2());
-            
             // add imaginary left and right children to imitate valid tree structure
             // left child
             limitsQueue.add(null);
@@ -197,11 +199,12 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             makeListFromNode(zeroRatio, nodeIndex);
             return;
         }
-        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH);
+
+        Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH/*, minNumSamplesInBin - todo consider*/);
 
         SplitInfo bestSplitInfo = findBestSplit(histogram);
         // if no split could be found, make a list from current node
-        if(bestSplitInfo == null) {
+        if (bestSplitInfo == null) {
             // add imaginary left and right children to imitate right tree structure
             // left child
             limitsQueue.add(null);
@@ -215,18 +218,17 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         _tree[nodeIndex][1] = bestSplitInfo._threshold;
 
         DataFeaturesLimits limitsLeft = actualLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
-        // set new min to something bigger than threshold as the threshold is included in the left split and excluded in the right
-        DataFeaturesLimits limitsRight = actualLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold/* + 0.0000000001*/);
-//        System.out.println("root: " + countClasses(actualLimits) + ", left: " + countClasses(limitsLeft) +
-//                ", right: " + countClasses(limitsRight) + ", best feature: " + bestSplitInfo._splitFeatureIndex
-//                + ", threshold: " + bestSplitInfo._threshold);
+        DataFeaturesLimits limitsRight = actualLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
+        Log.debug("root: " + countClasses(actualLimits) + ", left: " + countClasses(limitsLeft) +
+                ", right: " + countClasses(limitsRight) + ", best feature: " + bestSplitInfo._splitFeatureIndex
+                + ", threshold: " + bestSplitInfo._threshold);
 
-//        System.out.println("feature: " + bestSplitInfo._splitFeatureIndex + ", threshold: " + bestSplitInfo._threshold);
-//        System.out.println("Left min-max: " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
-//                " " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
-//        System.out.println("Right min-max: " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
-//                " " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
-        
+        Log.debug("feature: " + bestSplitInfo._splitFeatureIndex + ", threshold: " + bestSplitInfo._threshold);
+        Log.debug("Left min-max: " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
+                " " + limitsLeft.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
+        Log.debug("Right min-max: " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._min +
+                " " + limitsRight.getFeatureLimits(bestSplitInfo._splitFeatureIndex)._max);
+
         // store limits for left child
         limitsQueue.add(limitsLeft);
         // store limits for right child
@@ -259,12 +261,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
                     throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SDT.this);
                 }
                 _rand = RandomUtils.getRNG(_parms._seed);
-//                isolationTreeStats = new IsolationTreeStats();
                 _model = new SDTModel(dest(), _parms,
                         new SDTModel.SDTOutput(SDT.this));
                 _model.delete_and_lock(_job);
                 buildSDT();
-//                model._output._model_summary = createModelSummaryTable();
                 LOG.info(_model.toString());
             } finally {
                 if (_model != null)
@@ -277,16 +277,16 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
          */
         private void buildSDT() {
             buildSDTIteratively();
-            System.out.println("depth: " + _maxDepth + ", nodes count: " + _nodesCount);
+            Log.debug("depth: " + _maxDepth + ", nodes count: " + _nodesCount);
 
-            CompressedSDT compressedSDT = new CompressedSDT(compress());
+            CompressedSDT compressedSDT = new CompressedSDT(_tree);
 
             _model._output._treeKey = compressedSDT._key;
             DKV.put(compressedSDT);
             _job.update(1);
             _model.update(_job);
-            System.out.println("Tree:");
-            System.out.println(Arrays.deepToString(_tree));
+            Log.debug("Tree:");
+            Log.debug(Arrays.deepToString(_tree));
         }
 
         /**
@@ -296,12 +296,13 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             _tree = new double[(int) Math.pow(2, _maxDepth + 1)][2];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits());
-            for(int nodeIndex = 0; nodeIndex < _tree.length; nodeIndex ++) {
+            // build each node of the tree by picking limits from the queue and storing children's limits to the queue.
+            // Tree must not be perfect. Missing nodes are empty elements and their limits in queue are null.
+            for (int nodeIndex = 0; nodeIndex < _tree.length; nodeIndex++) {
                 buildNextNode(limitsQueue, nodeIndex);
             }
         }
-        
-        
+
 
     }
 
@@ -336,7 +337,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
      */
     private Pair<Integer, Integer> countClasses(final DataFeaturesLimits featuresLimits) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
-                ? Stream.generate(() -> new double[]{Double.MIN_VALUE, Double.MAX_VALUE}).limit(_train.numCols()).toArray(double[][]::new)
+                // create limits that are always fulfilled
+                ? Stream.generate(() -> new double[]{Double.MIN_VALUE, Double.MAX_VALUE})
+                .limit(_train.numCols()).toArray(double[][]::new)
                 : featuresLimits.toDoubles());
         task.doAll(_train);
 

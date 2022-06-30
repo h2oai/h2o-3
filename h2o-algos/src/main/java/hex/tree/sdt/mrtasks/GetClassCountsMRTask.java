@@ -10,7 +10,7 @@ import water.fvec.Chunk;
 public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
     public int _count0;
     public int _count1;
-    
+
     private final double[][] _featuresLimits;
 
     int LIMIT_MIN = 0;
@@ -40,7 +40,7 @@ public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
                 }
             }
             if (!conditionsFailed) {
-                if (Precision.equals(cs[classColumn].atd(row), 0, 0.000001d)) { // todo - not just 0 and 1
+                if (Precision.equals(cs[classColumn].atd(row), 0, Precision.EPSILON)) {
                     _count0++;
                 } else {
                     _count1++;

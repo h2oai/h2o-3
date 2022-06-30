@@ -56,8 +56,8 @@ public class SDTTest extends TestUtil {
             p._train = train._key;
             p._seed = 0xDECAF;
             p._maxDepth = 5;
+            p._limitNumSamplesForSplit = 2;
             p._response_column = "Prediction";
-            p._buildingStrategy = "splitting"; //"binning"; //"iterative";
 
             SDT sdt = new SDT(p);
             SDTModel model = sdt.trainModel().get();
@@ -80,7 +80,7 @@ public class SDTTest extends TestUtil {
                     .build();
             Scope.track_generic(test);
 
-            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output._treeKey)).nodes));
+            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output._treeKey))._nodes));
 
             Frame prediction = model.score(test);
             Scope.track_generic(prediction);

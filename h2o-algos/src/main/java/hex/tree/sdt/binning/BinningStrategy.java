@@ -4,6 +4,7 @@ import hex.tree.sdt.DataFeaturesLimits;
 import hex.tree.sdt.FeatureLimits;
 import hex.tree.sdt.mrtasks.CountBinningStatisticsMRTask;
 import water.fvec.Frame;
+import water.util.Log;
 import water.util.Pair;
 
 import java.math.BigDecimal;
@@ -41,7 +42,7 @@ public enum BinningStrategy {
             FeatureLimits featureLimits = featuresLimits.getFeatureLimits(feature);
             double step = (featureLimits._max - featureLimits._min) / VALUES_COUNT_IN_RANGE;
             // constant feature - dont use for split
-            if(step == 0) {
+            if (step == 0) {
                 return null;
             }
             double stepExponent = computeExponentForTheFeature(step);
@@ -53,11 +54,11 @@ public enum BinningStrategy {
                 // set lower decimal limit to work with lower values
                 if (stepExponent < DECIMALS_TO_CONSIDER * (-1) + 2) {
                     DECIMALS_TO_CONSIDER = (int) Math.floor(stepExponent) * (-1) + 2;
-//                    System.out.println("DECIMALS_TO_CONSIDER: " + DECIMALS_TO_CONSIDER);
+                    Log.debug("DECIMALS_TO_CONSIDER: " + DECIMALS_TO_CONSIDER);
                 }
                 step = roundToNDecimalPoints(step, DECIMALS_TO_CONSIDER);
             }
-//            System.out.println("New step: " + step);
+            Log.debug("New step: " + step);
             // get thresholds which are maximums of bins
             double finalStep = step;
             List<Double> binningValues = new ArrayList<>();
@@ -72,14 +73,14 @@ public enum BinningStrategy {
             emptyBins.get(0)._min = emptyBins.get(0)._min - 0.0001 * step;
             // set the last max to the real max value to avoid precision troubles
             emptyBins.get(emptyBins.size() - 1)._max = featureLimits._max;
-//            System.out.println("Real max: " + featureLimits._max 
-//                    + ", last bin min: " + emptyBins.get(emptyBins.size() - 1)._min 
-//                    + ", last bin max: " + emptyBins.get(emptyBins.size() - 1)._max + ", step: " + step);
+            Log.debug("Real max: " + featureLimits._max
+                    + ", last bin min: " + emptyBins.get(emptyBins.size() - 1)._min
+                    + ", last bin max: " + emptyBins.get(emptyBins.size() - 1)._max + ", step: " + step);
 
             // run MR task to compute accumulated statistic for bins
             return emptyBins.stream().peek(bin -> {
-                CountBinningStatisticsMRTask task = new CountBinningStatisticsMRTask(feature, bin._min, bin._max,
-                        featuresLimits.toDoubles());
+                CountBinningStatisticsMRTask task =
+                        new CountBinningStatisticsMRTask(feature, bin._min, bin._max, featuresLimits.toDoubles());
                 task.doAll(originData);
                 bin._count0 = task._count0;
                 bin._count = task._count;

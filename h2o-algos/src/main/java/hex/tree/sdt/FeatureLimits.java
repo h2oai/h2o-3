@@ -11,14 +11,12 @@ public class FeatureLimits {
         _max = max;
     }
 
-    public FeatureLimits setNewMax(final double newMax) {
+    public void setNewMax(final double newMax) {
         _max = newMax;
-        return this;
     }
 
-    public FeatureLimits setNewMin(final double newMin) {
+    public void setNewMin(final double newMin) {
         _min = newMin;
-        return this;
     }
 
     public static FeatureLimits clone(final FeatureLimits toClone) {

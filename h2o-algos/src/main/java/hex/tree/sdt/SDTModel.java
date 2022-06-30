@@ -8,19 +8,23 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
 
     private static final Logger LOG = Logger.getLogger(SDTModel.class);
 
-    
+
     public SDTModel(Key<SDTModel> selfKey, SDTModel.SDTParameters parms,
                     SDTModel.SDTOutput output) {
         super(selfKey, parms, output);
     }
-    
+
     @Override
     public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        switch(_output.getModelCategory()) {
-            case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-            case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain, _parms._auc_type);
-            case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
-            default: throw H2O.unimpl();
+        switch (_output.getModelCategory()) {
+            case Binomial:
+                return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+            case Multinomial:
+                return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain, _parms._auc_type);
+            case Regression:
+                return new ModelMetricsRegression.MetricBuilderRegression();
+            default:
+                throw H2O.unimpl();
         }
     }
 
@@ -34,18 +38,19 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
     }
 
     public static class SDTOutput extends Model.Output {
-        // all parameters of tree to be able to build it (?)
         public int _maxDepth;
-        
+        public int _limitNumSamplesForSplit;
+
         public Key<CompressedSDT> _treeKey;
 
         public SDTOutput(SDT sdt) {
             super(sdt);
             _maxDepth = sdt._parms._maxDepth;
+            _limitNumSamplesForSplit = sdt._parms._limitNumSamplesForSplit;
         }
-        
+
     }
-    
+
     @Override
     protected Futures remove_impl(Futures fs, boolean cascade) {
         Keyed.remove(_output._treeKey, fs, true);
@@ -61,7 +66,7 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
     @Override
     protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
         ab.getKey(_output._treeKey, fs);
-        return super.readAll_impl(ab,fs);
+        return super.readAll_impl(ab, fs);
     }
 
     public static class SDTParameters extends Model.Parameters {
@@ -71,15 +76,14 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
          */
         public int _maxDepth;
 
-        // splitting, binning, iterative - not used yet, 
-        // probably will never be used as we need only the best building strategy
-        public String _buildingStrategy; 
-        
+        public int _limitNumSamplesForSplit;
+
         public SDTParameters() {
             super();
             _maxDepth = 100;
+            _limitNumSamplesForSplit = 10;
         }
-        
+
         @Override
         public String algoName() {
             return "SDT";
