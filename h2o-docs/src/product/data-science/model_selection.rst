@@ -1,11 +1,12 @@
 ModelSelection
 --------------
 
-We implemented the ModelSelection toolbox based on GLM at H2O to help users select the best predictor subsets from their dataset for model building. We have currently implemented three modes to select the predictor subsets:
+We implemented the ModelSelection toolbox based on GLM at H2O to help users select the best predictor subsets from their dataset for model building. We have currently implemented four modes to select the predictor subsets:
 
 1. ``mode = "allsubsets"`` where all possible combinations of predictor subsets are generated for a given subset size. A model is built for each subset and the one with the highest :math:`R^2` is returned. The best subsets are also returned for subset size :math:`1, 2, ..., n`. This mode guarantees to return the predictor subset with the highest :math:`R^2` value at the cost of computation complexity.
 2. ``mode = "maxr"`` where a sequential replacement method is used to find the best subsets for subset size of :math:`1, 2, ..., n`. However, the predictor subsets are not guaranteed to have the highest :math:`R^2`` value.
 3. ``mode = "backward"`` where a model is built starting with all predictors. The predictor with the smallest absolute z-value (or z-score) is dropped after each model is built. This process repeats until only one predictor remains or until the number of predictors equal to ``min_predictor_number`` is reached. The model build can also be stopped using ``p_values_threshold``. 
+4. ``mode = "maxrsweep"`` where the model runs similar to ``mode = "maxr"`` except that instead of calling our GLM toolbox to build models, we use the sweep operator [:ref:`3<ref4>`] plus our own incremental sweep operation using sweep vectors. This change speeds up the execution of finding the best predictor subset for each subset size and is essential in dropping the build time of the model. 
 
 This model only supports GLM regression families. 
 
@@ -186,7 +187,7 @@ The main disadvantage of this mode is the long computation time.
 Understanding ModelSelection ``mode = maxr``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The H2O ModelSelection ``mode = maxr`` is implemented using the sequential replacement method [:ref:`1<ref1>`]. This consists of a forward step and a replacement step. The sequential replacement method goes like this (where the predictors are denoted by *A, B, C, ..., Z*):
+The H2O ModelSelection ``mode = maxr`` is implemented using the sequential replacement method [:ref:`1<ref4>`]. This consists of a forward step and a replacement step. The sequential replacement method goes like this (where the predictors are denoted by *A, B, C, ..., Z*):
 
 1. Start with the current *subset = {}* (empty)
 2. Forward step for 1 predictor subset:
@@ -463,8 +464,10 @@ Examples
 References
 ~~~~~~~~~~
 
-.. _ref1:
+.. _ref4:
 
 1. Alan Miller, Subset Selection in Regression, section 3.5, Second Edition, 2002 Chapman & Hall/CRC.
 
 2. Trevor Hastie, Robert Tibshirani, Jerome Friedman, The Elements of Statistical Learning, Section 3.3.2, Second Edition, Springer, 2008.
+
+3. M. Schatzoff, R. Tsao, S. Fierberg, “Efficient Calculation of All Possible Regressions”, TECHNOMETRICS, Vol. 10, No. 4, NOVEMBER 1968.
