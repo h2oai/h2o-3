@@ -1,5 +1,8 @@
 package hex.tree.sdt;
 
+/**
+ * Split info, holds feature index and threshold.
+ */
 public class SplitInfo {
     public int _splitFeatureIndex;
     public double _threshold;

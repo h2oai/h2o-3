@@ -4,6 +4,9 @@ import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 
+/**
+ * MR task for counting classes.
+ */
 public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
     public int _count0;
     public int _count1;

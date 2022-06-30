@@ -23,9 +23,27 @@ import java.util.stream.Stream;
  * Single Decision Tree
  */
 public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel.SDTOutput> {
+    /**
+     * Max depth - parameter for building.
+     */
     private int _maxDepth;
+
+    /**
+     * Minimum number of samples to split the set.
+     */
+    private int _limitNumSamplesForSplit;
+
+    /**
+     * Current number of build nodes.
+     */
     int _nodesCount;
 
+    /**
+     * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
+     * Shape n x 2.
+     * Values of second dimension: (feature index, threshold) or (-1, decision value).
+     * While building the tree nodes are being filled from index 0 iteratively
+     */
     private double[][] _tree;
 
     private SDTModel _model;
@@ -125,7 +143,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
     /**
-     * When tree is build iteratively.
+     * Set decision value to the node.
+     *
      * @param zeroRatio #zero/#one in list
      * @param nodeIndex node index
      */
@@ -137,9 +156,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
 
     /**
-     * Build ext node when tree is built iteratively. The queue is updated here.
+     * Build next node from the first limits in queue. The queue is updated with children here.
+     *
      * @param limitsQueue queue with feature limits for nodes
-     * @param nodeIndex index of node in the tree array
+     * @param nodeIndex   index of node in the tree array
      */
     public void buildNextNode(Queue<DataFeaturesLimits> limitsQueue, int nodeIndex) {
         // take limits for actual node
@@ -216,7 +236,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     /**
      * Compute initial features limits.
-     * @return
+     *
+     * @return features limits
      */
     private DataFeaturesLimits getInitialFeaturesLimits() {
         return new DataFeaturesLimits(
@@ -252,7 +273,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         }
 
         /**
-         * Select strategy for building sdt - splitting frame, recursively binning or iterative binning
+         * Build SDT and update infrastructure.
          */
         private void buildSDT() {
             buildSDTIteratively();
@@ -267,7 +288,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             System.out.println("Tree:");
             System.out.println(Arrays.deepToString(_tree));
         }
-        
+
+        /**
+         * Build the tree iteratively starting from the root node.
+         */
         private void buildSDTIteratively() {
             _tree = new double[(int) Math.pow(2, _maxDepth + 1)][2];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
@@ -305,10 +329,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     
 
     /**
-     * Not used in new implementation - splits frame
-     * @param feature
-     * @param threshold
-     * @return
+     * Count classes withing samples satisfying given limits.
+     *
+     * @param featuresLimits limits
+     * @return pair (count0, count1)
      */
     private Pair<Integer, Integer> countClasses(final DataFeaturesLimits featuresLimits) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null

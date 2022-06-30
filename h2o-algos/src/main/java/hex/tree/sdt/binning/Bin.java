@@ -2,6 +2,9 @@ package hex.tree.sdt.binning;
 
 import water.util.Pair;
 
+/**
+ * Single bin holding limits (min excluded), count of samples and count of class 0.
+ */
 public class Bin {
     double _min;
     double _max;

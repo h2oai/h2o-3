@@ -1,8 +1,8 @@
 package hex.tree.sdt;
 
-import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
-
+/**
+ * Limits for one feature.
+ */
 public class FeatureLimits {
     public double _min;
     public double _max;

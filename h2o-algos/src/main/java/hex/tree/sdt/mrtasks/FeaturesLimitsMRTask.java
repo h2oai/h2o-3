@@ -6,6 +6,9 @@ import water.fvec.NewChunk;
 
 import java.util.Arrays;
 
+/**
+ * MR task for calculating real features limits based on limits. Useful optimization equal-width binning.
+ */
 public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
 
     // numCol x 2 - min and max for each feature
@@ -13,7 +16,10 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
     // numCol x 2 - min and max for each feature - size is ok as it is linearly dependent on numCols
     public double[][] _realFeatureLimits;
 
+    // index of min
     int LIMIT_MIN = 0;
+
+    // index of max
     int LIMIT_MAX = 1;
 
     public FeaturesLimitsMRTask(double[][] featuresLimits) {
@@ -25,10 +31,10 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
     }
 
     /**
-     * Update current minimum if the candidate value is less than the actual minimum
+     * Update current minimum if the candidate value is less than the actual minimum.
      *
-     * @param feature
-     * @param candidateValue
+     * @param feature        feature index
+     * @param candidateValue new potential min
      */
     private void tryUpdatingMin(int feature, double candidateValue) {
         if (_realFeatureLimits[feature][LIMIT_MIN] > candidateValue) {
@@ -37,10 +43,10 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
     }
 
     /**
-     * Update current maximum if the candidate value is grater than the actual maximum
+     * Update current maximum if the candidate value is grater than the actual maximum.
      *
-     * @param feature
-     * @param candidateValue
+     * @param feature        feature index
+     * @param candidateValue new potential max
      */
     private void tryUpdatingMax(int feature, double candidateValue) {
         if (_realFeatureLimits[feature][LIMIT_MAX] < candidateValue) {

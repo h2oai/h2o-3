@@ -12,8 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Strategy for binning. Creates bins for single feature.
+ */
 public enum BinningStrategy {
 
+    /**
+     * Equal width: (max - min) / values_in_range, optimized. Min is always excluded.
+     */
     EQUAL_WIDTH {
 
         public final int VALUES_COUNT_IN_RANGE = 10;
@@ -81,6 +87,9 @@ public enum BinningStrategy {
         }
     },
 
+    /**
+     * Equal height: bins have approximately the same size - todo
+     */
     EQUAL_HEIGHT {
         @Override
         List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
@@ -89,6 +98,9 @@ public enum BinningStrategy {
 
     },
 
+    /**
+     * Custom bins: works with provided bins limits - todo
+     */
     CUSTOM_BINS {
         @Override
         List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
@@ -96,6 +108,14 @@ public enum BinningStrategy {
         }
     };
 
+    /**
+     * Creates bins for selected feature.
+     *
+     * @param originData     data - not modified
+     * @param featuresLimits limits for features
+     * @param feature        selected feature index
+     * @return list of created bins
+     */
     abstract List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature);
 
 }

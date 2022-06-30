@@ -17,11 +17,11 @@ public class FeatureBins {
         }
     }
 
-//    public FeatureBins updateFeatureBins(List<Bin> bins) {
-//        _bins = bins;
-//        return this;
-//    }
-
+    /**
+     * Calculates statistics for bins depending on all other bins - see BinAccumulatedStatistics.
+     *
+     * @return list of accumulated statistics, matches original bins
+     */
     public List<BinAccumulatedStatistics> calculateBinsStatisticsForFeature() {
         // init list with empty instances
         List<BinAccumulatedStatistics> statistics = _bins.stream()

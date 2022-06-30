@@ -15,9 +15,11 @@ public class Histogram {
 
     public Histogram(Frame originData, DataFeaturesLimits conditionLimits, BinningStrategy binningStrategy) {
         _binningStrategy = binningStrategy;
+        // call strategy to create bins for each feature separately
         _featuresBins = IntStream.range(0, originData.numCols())
                 .mapToObj(i -> new FeatureBins(
                         _binningStrategy.createFeatureBins(originData,
+                                // get real features limits where the conditions are fulfilled
                                 getFeaturesLimitsForConditions(originData, conditionLimits), i)))
                 .collect(Collectors.toList());
     }
@@ -30,7 +32,7 @@ public class Histogram {
      * Computes features limits considering known condition limits of ancestors.
      * For example: what are real limits of all features considering that feature x is limited by values x_i and x_j.
      *
-     * @return
+     * @return new features limits
      */
     private DataFeaturesLimits getFeaturesLimitsForConditions(Frame originData, DataFeaturesLimits conditionLimits) {
         FeaturesLimitsMRTask task = new FeaturesLimitsMRTask(conditionLimits == null

@@ -4,6 +4,9 @@ import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 
+/**
+ * MR task for counting samples in bins.
+ */
 public class CountBinningStatisticsMRTask extends MRTask<CountBinningStatisticsMRTask> {
     public int _featureSplit;
     public double _thresholdMin;
