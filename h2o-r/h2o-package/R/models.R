@@ -6159,6 +6159,16 @@ h2o.predicted_vs_actual_by_variable <- function(object,
 #' @param extra_columns What extra columns should be calculated (might require leaderboard_frame). Use "ALL" for all available or list of extra columns.
 #' @param scoring_data Metrics to be reported in the leaderboard ("xval", "train", or "valid"). Used if no leaderboard_frame is provided.
 #' @return data.frame
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' iris_hf <- as.h2o(iris)
+#' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris_hf,
+#'                  hyper_params = list(ntrees = c(1, 2, 3)))
+#' h2o.make_leaderboard(grid, iris_hf)
+#' }
 #' @export
 h2o.make_leaderboard <- function(object,
                                  leaderboard_frame,
