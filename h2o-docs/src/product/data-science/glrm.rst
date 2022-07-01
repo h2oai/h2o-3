@@ -152,7 +152,7 @@ Below is a simple example showing how to build a Generalized Low Rank model.
     # Generate predictions on a validation set (if necessary):
     arrests_pred <- h2o.predict(glrm_model, newdata = valid)
 
-    # Transform the data using the validation set to retrieve the new coefficients:
+    # Transform the data using the dataset "valid" to retrieve the new coefficients:
     glrm_transform <- h2o.transform_frame(glrm_model, valid)
 
 
@@ -180,7 +180,7 @@ Below is a simple example showing how to build a Generalized Low Rank model.
                                                 transform="standardize")
     glrm_model.train(training_frame=train) 
 
-    # Transform the data using the validation set to retrieve the new coefficients:
+    # Transform the data using the dataset "valid" to retrieve the new coefficients:
     glrm_transform = glrm_model.transform_frame(valid)
 
 
