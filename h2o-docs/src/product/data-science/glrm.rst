@@ -89,6 +89,33 @@ Defining a GLRM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+Transforming Data
+~~~~~~~~~~~~~~~~~
+
+With an initial GLRM model, when you give a dataset (**A**) to GLRM, it builds as:
+
+.. math::
+   
+   A = X \times Y
+
+where:
+
+- :math:`Y` is the archetype 
+- :math:`X` contains the coefficients to the archetype
+
+When a new dataset (**B**) is passed to the GLRM model, it performs as:
+
+.. math::
+   
+   B \sim Xnew \times Y
+
+where:
+
+- :math:`Y` is the original archetype generated from the training dataset
+- :math:`Xnew` contains the new coefficients to the archetype
+
+When you call ``score`` in Java or ``predict`` in Python or R with a new dataset, :math:`Xnew \times Y` is returned. However, if you call ``transform`` in Java or ``transform_frame`` in Python or R, only :math:`Xnew` is returned. See the following example for how to use ``transform_frame``.
+
 Examples
 ~~~~~~~~
 
@@ -125,6 +152,10 @@ Below is a simple example showing how to build a Generalized Low Rank model.
     # Generate predictions on a validation set (if necessary):
     arrests_pred <- h2o.predict(glrm_model, newdata = valid)
 
+    # Transform the data using the dataset "valid" to retrieve the new coefficients:
+    glrm_transform <- h2o.transform_frame(glrm_model, valid)
+
+
 
    .. code-tab:: python
 
@@ -148,6 +179,9 @@ Below is a simple example showing how to build a Generalized Low Rank model.
                                                 init="SVD", 
                                                 transform="standardize")
     glrm_model.train(training_frame=train) 
+
+    # Transform the data using the dataset "valid" to retrieve the new coefficients:
+    glrm_transform = glrm_model.transform_frame(valid)
 
 
 FAQ
