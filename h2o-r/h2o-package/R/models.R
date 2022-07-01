@@ -754,9 +754,14 @@ predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Pat
 #' @export
 h2o.predict_leaf_node_assignment <- predict_leaf_node_assignment.H2OModel
 
+h2o.transform_frame <- function(model, fr) {
+  if (!is(model, "H2OModel") || (is(model, "H2OModel") && model@algorithm != "glrm")) stop("h2o.transform_frame can only be applied to GLRM H2OModel instance.")
+  return(.newExpr("transform", model@model_id, h2o.getId(fr)))
+}
+
 h2o.result <- function(model) {
   if (!is(model, "H2OModel")) stop("h2o.result can only be applied to H2OModel instances with constant results")
-  return(as.data.frame(.newExpr("result", model@model_id)))
+  return(.newExpr("result", model@model_id))
 }
 
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random")) {

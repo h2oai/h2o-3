@@ -1,6 +1,5 @@
 supervised_learning = False
 
-
 doc = dict(
     __class__="""
 Builds a generalized low rank model of a H2O dataset.
@@ -384,4 +383,23 @@ examples = dict(
 ...                 validation_frame=iris)
 >>> iris_glrm.show()
 """
+)
+
+def class_extensions():
+    def transform_frame(self, fr):
+        """
+        GLRM performs A=X*Y during training.  When a new dataset is given, GLRM will perform Anew = Xnew*Y.  When
+        predict is called, Xnew*Y is returned.  When transform_frame is called, Xnew is returned instead.
+        :return: an H2OFrame that contains Xnew.
+        """
+        return H2OFrame._expr(expr=ExprNode("transform", ASTId(self.key), ASTId(fr.key)))._frame(fill_cache=True)
+
+extensions = dict(
+    __imports__="""
+    from h2o.base import Keyed
+    from h2o.frame import H2OFrame
+    from h2o.expr import ExprNode
+    from h2o.expr import ASTId
+""",
+    __class__=class_extensions,
 )

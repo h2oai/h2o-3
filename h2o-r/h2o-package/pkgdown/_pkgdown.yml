@@ -334,6 +334,7 @@ reference:
       - h2o.toupper
       - h2o.train_segments
       - h2o.transform
+      - h2o.transform_frame
       - h2o.transform_word2vec
       - h2o.transform,H2OTargetEncoderModel-method
       - h2o.transform,H2OWordEmbeddingModel-method
