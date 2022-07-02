@@ -26,8 +26,8 @@ Uplift DRF differentiates itself from DRF because it finds the best split using 
 The goal is to maximize the differences between the class distributions in the treatment and control sets, so the splitting criteria are based on distribution divergences. The distribution divergence is calculated based on the ``uplift_metric`` parameter. In H2O-3, three ``uplift_metric`` types are supported:
 
 - **Kullback-Leibler divergence** (``uplift_metric="KL"``) - uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values). :math:`KL(P, Q) = \sum_{i=0}^{N} p_i \log{\frac{p_i}{q_i}}`
-- **Squared Euclidean distance** (``uplift_metric="euclidean"``) - symmetric and stable distribution, does not tend to infinity values. :math:`E(P, Q) = \sum_{i=0}^{N} \sqrt{p_i-q_i}`
-- **Chi-squared divergence** (``uplift_metric="chi_squared"``) - Euclidean divergence normalized by control group distribution. Asymmetric and also tends to infinity values (if control group distribution contains zero values). :math:`\sqrt{X}(P, Q) = \sum_{i=0}^{N} \frac{\sqrt{p_i-q_i}}{q_i}`
+- **Squared Euclidean distance** (``uplift_metric="euclidean"``) - symmetric and stable distribution, does not tend to infinity values. :math:`E(P, Q) = \sum_{i=0}^{N} (p_i-q_i)^2`
+- **Chi-squared divergence** (``uplift_metric="chi_squared"``) - Euclidean divergence normalized by control group distribution. Asymmetric and also tends to infinity values (if control group distribution contains zero values). :math:`X^2(P, Q) = \sum_{i=0}^{N} \frac{(p_i-q_i)^2}{q_i}`
 
 where:
 
@@ -49,18 +49,18 @@ The uplift score is used as prediction of the leaf. Every leaf in a tree holds t
 where:
 
 - :math:`l` leaf of a tree
-- :math:`T_cl` how many observations in a leaf are from the treatment group (how many data rows in a leaf have ``treatment_column`` label == 1) 
-- :math:`C_cl` how many observations in a leaf are from the control group (how many data rows in the leaf have ``treatment_column`` label == 0)
-- :math:`TY1_cl` how many observations in a leaf are from the treatment group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 1 and ``response_column`` label == 1)
-- :math:`CY1_cl` how many observations in a leaf are from the control group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 0 and ``response_column`` label == 1)
-- :math:`TP_cl` treatment prediction of a leaf
-- :math:`CP_cl` control prediction of a leaf
+- :math:`T_l` how many observations in a leaf are from the treatment group (how many data rows in a leaf have ``treatment_column`` label == 1) 
+- :math:`C_l` how many observations in a leaf are from the control group (how many data rows in the leaf have ``treatment_column`` label == 0)
+- :math:`TY1_l` how many observations in a leaf are from the treatment group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 1 and ``response_column`` label == 1)
+- :math:`CY1_l` how many observations in a leaf are from the control group and respond to the offer (how many data rows in the leaf have ``treatment_column`` label == 0 and ``response_column`` label == 1)
+- :math:`TP_l` treatment prediction of a leaf
+- :math:`CP_l` control prediction of a leaf
 
 The uplift score for the leaf is calculated as the difference between the treatment prediction and the control prediction:
 
 .. math::
 
-   uplift_score_cl = TP_cl - CP_cl
+   uplift\_score_l = TP_l - CP_l
 
 A higher uplift score means more observations from the treatment group responded to the offer than from the control group. This means the offered treatment has a positive effect. The uplift score can also be negative if more observations from the control group respond to the offer without treatment.
 
@@ -68,7 +68,7 @@ The final prediction is calculated in the same way as the DRF algorithm. Predict
 
 When the ``predict`` method is called on the test data, the result frame has these columns:
 
-- ``uplift_predict``: result uplift prediction score, which is calculated as :math:`p_y1_ct1 - p_y1_ct0`
+- ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_ct1 - p_y1_ct0``
 - ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
 - ``p_y1_ct0``: probability the response is 1 if the row is from the control group
 
