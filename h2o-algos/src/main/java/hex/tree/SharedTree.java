@@ -500,6 +500,23 @@ public abstract class SharedTree<
             return;
           }
         }
+
+        boolean manualCheckpointsInterval = _model._output._ntrees > 0 && _model._output._ntrees % _parms._in_training_checkpoints_tree_interval == 0;
+        if (_parms._in_training_checkpoints_dir != null && manualCheckpointsInterval) {
+          try {
+            String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + (_ntreesInCheckpoint + _model._output._ntrees);
+            Key<M> keybackup = _model._key;
+            _model.setInputParms(_parms);
+            _model._key = Key.make(_model._key + "." + (_ntreesInCheckpoint + tid));
+            _model._output.changeModelMetricsKey(_model._key);
+            _model.exportBinaryModel(modelFile, true);
+            _model._key = keybackup;
+            _model._output.changeModelMetricsKey(_model._key);
+          } catch (IOException e) {
+            throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
+          }
+        }
+
         Timer kb_timer = new Timer();
         boolean converged = buildNextKTrees();
         LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
@@ -517,22 +534,6 @@ public abstract class SharedTree<
         if (stop_requested()) throw new Job.JobCancelledException();
         if (tid == _ntrees - 1 && _coordinator != null) {
           _coordinator.updateParameters();
-        }
-
-        boolean manualCheckpointsInterval = _parms._in_training_checkpoints_tree_interval > 0 && tid % _parms._in_training_checkpoints_tree_interval == 0;
-        if (_parms._in_training_checkpoints_dir != null && manualCheckpointsInterval) {
-          try {
-            String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + (_ntreesInCheckpoint + tid);
-            Key<M> keybackup = _model._key;
-            _model.setInputParms(_parms);
-            _model._key = Key.make(_model._key + "." + (_ntreesInCheckpoint + tid));
-            _model._output.changeModelMetricsKey(_model._key);
-            _model.exportBinaryModel(modelFile, true);
-            _model._key = keybackup;
-            _model._output.changeModelMetricsKey(_model._key);
-          } catch (IOException e) {
-            throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
-          }
         }
       }
       // Final scoring (skip if job was cancelled)

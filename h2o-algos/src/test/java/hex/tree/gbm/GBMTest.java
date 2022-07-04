@@ -5209,13 +5209,12 @@ public class GBMTest extends TestUtil {
 
       // Load in-training checkpoint with the same trees as reference has
       Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.3");
-      DKV.put(checkpoint);
       Scope.track_generic(checkpoint);
       Frame scoreCheckpoint = checkpoint.score(train);
       Scope.track(scoreCheckpoint);
 
       System.out.println("modelReference = " + modelReference);
-      System.out.println("checkpointFourTrees = " + checkpoint);
+      System.out.println("checkpoint = " + checkpoint);
 
       // Given output should be the same
       assertFrameEquals(scoreReference, scoreCheckpoint, 1e-3);
@@ -5246,7 +5245,7 @@ public class GBMTest extends TestUtil {
       assertTrue(checkpointsDirectory.exists());
       assertTrue(checkpointsDirectory.isDirectory());
 
-      for (int tid = 0; tid < parms._ntrees; tid++) {
+      for (int tid = 1; tid < parms._ntrees; tid++) {
         File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
         assertTrue(checkpointFile.exists());
         assertTrue(checkpointFile.isFile());
@@ -5279,7 +5278,7 @@ public class GBMTest extends TestUtil {
       assertTrue(checkpointsDirectory.exists());
       assertTrue(checkpointsDirectory.isDirectory());
 
-      for (int tid = 0; tid < parms._ntrees; tid++) {
+      for (int tid = 1; tid < parms._ntrees; tid++) {
         File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
         if (tid % parms._in_training_checkpoints_tree_interval != 0) {
           assertFalse(checkpointFile.exists());
