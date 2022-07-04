@@ -5179,7 +5179,7 @@ public class GBMTest extends TestUtil {
   }
   
   @Test
-  public void testPartialCheckpointGivesDifferentResultAsTheFinalModel() throws IOException {
+  public void testPartialCheckpointGivesTheSameResultAsTheFinalModel() throws IOException {
     Scope.enter();
     try {
       // prepare training data
@@ -5293,6 +5293,202 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
+  public void testPartialCheckpointAreProperlyExported_restart() throws IOException {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      Scope.track(train);
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._seed = 0xDEDA;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._ntrees = 4;
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+
+      File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
+      assertTrue(checkpointsDirectory.exists());
+      assertTrue(checkpointsDirectory.isDirectory());
+
+      // There should be checkpoints for 1, 2, 3 trees
+      for (int tid = 1; tid < parms._ntrees; tid++) {
+        File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+        assertTrue(checkpointFile.exists());
+        assertTrue(checkpointFile.isFile());
+      }
+
+      // Load the last checkpoint and restart training
+      Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.3");
+      Scope.track_generic(checkpoint);
+
+      parms._ntrees = 5;
+
+      // Export checkpoint to the different folder
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+      parms._checkpoint = checkpoint._key;
+      GBMModel gbmRestart = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+
+      checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
+      assertTrue(checkpointsDirectory.exists());
+      assertTrue(checkpointsDirectory.isDirectory());
+
+      // There should be checkpoints only for 4. tree and nothing else
+      for (int tid = 1; tid < parms._ntrees; tid++) {
+        File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+        if (tid < 4) {
+          assertFalse(checkpointFile.exists());
+          continue;
+        }
+        assertTrue(checkpointFile.exists());
+        assertTrue(checkpointFile.isFile());
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testPartialCheckpointAreProperlyExported_restartWithDefinedInterval() throws IOException {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      Scope.track(train);
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._seed = 0xDEDA;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._ntrees = 10;
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+      parms._in_training_checkpoints_tree_interval = 2;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+
+      File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
+      assertTrue(checkpointsDirectory.exists());
+      assertTrue(checkpointsDirectory.isDirectory());
+
+      // There should be checkpoints for 2, 4, 6, 8
+      for (int tid = 1; tid < parms._ntrees; tid++) {
+        File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+        if (tid % parms._in_training_checkpoints_tree_interval != 0) {
+          assertFalse(checkpointFile.exists());
+          continue;
+        }
+        assertTrue(checkpointFile.exists());
+        assertTrue(checkpointFile.isFile());
+      }
+
+      int chooseCheckpointNumber = 4;
+      Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm." + chooseCheckpointNumber);
+      Scope.track_generic(checkpoint);
+
+      // Export checkpoints to the different folder
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+      parms._checkpoint = checkpoint._key;
+      GBMModel gbmRestart = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+
+      checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
+      assertTrue(checkpointsDirectory.exists());
+      assertTrue(checkpointsDirectory.isDirectory());
+
+      // There should be checkpoints only for 6, 8
+      for (int tid = 1; tid < parms._ntrees; tid++) {
+        File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+        if (tid <= chooseCheckpointNumber) {
+          assertFalse(checkpointFile.exists());
+          continue;
+        }
+        if ((tid - chooseCheckpointNumber) % parms._in_training_checkpoints_tree_interval != 0) {
+          assertFalse(checkpointFile.exists());
+          continue;
+        }
+        assertTrue(checkpointFile.exists());
+        assertTrue(checkpointFile.isFile());
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testPartialCheckpointAreProperlyExported_restartAndChangeInterval() throws IOException {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      Scope.track(train);
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._seed = 0xDEDA;
+      parms._train = train._key;
+      parms._response_column = response;
+      parms._ntrees = 10;
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+      parms._in_training_checkpoints_tree_interval = 3;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+
+      File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
+      assertTrue(checkpointsDirectory.exists());
+      assertTrue(checkpointsDirectory.isDirectory());
+
+      // There should be checkpoints for 3, 6, 9
+      for (int tid = 1; tid < parms._ntrees; tid++) {
+        File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+        if (tid % parms._in_training_checkpoints_tree_interval != 0) {
+          assertFalse(checkpointFile.exists());
+          continue;
+        }
+        assertTrue(checkpointFile.exists());
+        assertTrue(checkpointFile.isFile());
+      }
+
+      int chooseCheckpointNumber = 3;
+      Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm." + chooseCheckpointNumber);
+      Scope.track_generic(checkpoint);
+      Frame scoreCheckpoint = checkpoint.score(train);
+      Scope.track(scoreCheckpoint);
+
+      // Export checkpoints to the different folder
+      parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+      parms._checkpoint = checkpoint._key;
+
+      // Change the interval of checkpoints
+      parms._in_training_checkpoints_tree_interval = 2;
+      GBMModel gbmRestart = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+
+      checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
+      assertTrue(checkpointsDirectory.exists());
+      assertTrue(checkpointsDirectory.isDirectory());
+
+      // There should be checkpoints for 5, 7, 9
+      for (int tid = 1; tid < parms._ntrees; tid++) {
+        File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+        if (tid <= chooseCheckpointNumber) {
+          assertFalse(checkpointFile.exists());
+          continue;
+        }
+        if ((tid - chooseCheckpointNumber) % parms._in_training_checkpoints_tree_interval != 0) {
+          assertFalse(checkpointFile.exists());
+          continue;
+        }
+        assertTrue(checkpointFile.exists());
+        assertTrue(checkpointFile.isFile());
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testUsageOfPartialCheckpointGivesTheSameModelPrediction() throws IOException {
     Scope.enter();
     try {
@@ -5323,7 +5519,6 @@ public class GBMTest extends TestUtil {
 
       // Load in-training checkpoint with 2. trees and use it as checkpoint for another training
       Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.2");
-      DKV.put(checkpoint);
       Scope.track_generic(checkpoint);
 
       // Train another model and do in-training checkpoints

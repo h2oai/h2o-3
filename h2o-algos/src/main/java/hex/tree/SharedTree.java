@@ -504,7 +504,7 @@ public abstract class SharedTree<
           }
         }
 
-        boolean manualCheckpointsInterval = _model._output._ntrees > 0 && _model._output._ntrees % _parms._in_training_checkpoints_tree_interval == 0;
+        boolean manualCheckpointsInterval = tid > 0 && tid % _parms._in_training_checkpoints_tree_interval == 0;
         if (_parms._in_training_checkpoints_dir != null && manualCheckpointsInterval) {
             doInTrainingCheckpoint();
         }
