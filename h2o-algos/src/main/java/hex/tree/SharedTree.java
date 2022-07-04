@@ -19,7 +19,6 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -434,6 +433,10 @@ public abstract class SharedTree<
     abstract protected boolean buildNextKTrees();
     abstract protected void initializeModelSpecifics();
 
+    protected void doInTrainingCheckpoint() {
+      throw new UnsupportedOperationException("In training checkpoints are not supported for this algorithm");
+    }
+
     // Common methods for all tree builders
 
     protected Frame makeValidWorkspace() { return null; }
@@ -503,18 +506,7 @@ public abstract class SharedTree<
 
         boolean manualCheckpointsInterval = _model._output._ntrees > 0 && _model._output._ntrees % _parms._in_training_checkpoints_tree_interval == 0;
         if (_parms._in_training_checkpoints_dir != null && manualCheckpointsInterval) {
-          try {
-            String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + (_ntreesInCheckpoint + _model._output._ntrees);
-            Key<M> keybackup = _model._key;
-            _model.setInputParms(_parms);
-            _model._key = Key.make(_model._key + "." + (_ntreesInCheckpoint + tid));
-            _model._output.changeModelMetricsKey(_model._key);
-            _model.exportBinaryModel(modelFile, true);
-            _model._key = keybackup;
-            _model._output.changeModelMetricsKey(_model._key);
-          } catch (IOException e) {
-            throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
-          }
+            doInTrainingCheckpoint();
         }
 
         Timer kb_timer = new Timer();

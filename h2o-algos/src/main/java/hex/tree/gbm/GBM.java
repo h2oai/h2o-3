@@ -16,6 +16,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -916,6 +917,21 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return new GBMModel(modelKey, parms, new GBMModel.GBMOutput(GBM.this));
     }
 
+    @Override
+    protected void doInTrainingCheckpoint() {
+      try {
+        String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + _model._output._ntrees;
+        Key keybackup = _model._key;
+        _model.setInputParms(_parms);
+        _model._key = Key.make(_model._key + "." +  _model._output._ntrees);
+        _model._output.changeModelMetricsKey(_model._key);
+        _model.exportBinaryModel(modelFile, true);
+        _model._key = keybackup;
+        _model._output.changeModelMetricsKey(_model._key);
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
+      }
+    }
   }
 
 
