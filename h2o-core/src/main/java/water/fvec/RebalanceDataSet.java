@@ -128,4 +128,28 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
       }
     }
   }
+
+  /**
+   * Rebalance a (small) frame into a single chunk. This function
+   * is useful after filtering/aggregating the frame.
+   * @param fr frame to rebalance
+   * @return rebalanced frame, installed into DKV with a random key
+   */
+  public static Frame toSingleChunk(Frame fr) {
+    Key<Frame> singleKey = Key.make();
+    return toSingleChunk(fr, singleKey);
+  }
+
+  /**
+   * Rebalance a (small) frame into a single chunk. This function
+   * is useful after filtering/aggregating the frame.
+   * @param fr frame to rebalance
+   * @param destinationKey key for the new single-chunk Frame
+   * @return rebalanced frame, keyed using destinationKey
+   */
+  public static Frame toSingleChunk(Frame fr, Key<Frame> destinationKey) {
+    H2O.submitTask(new RebalanceDataSet(fr, destinationKey, 1)).join();
+    return destinationKey.get();
+  }
+  
 }
