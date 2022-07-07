@@ -94,4 +94,8 @@ public class CVModelBuilder {
         }
     }
 
+    protected Job getJob() {
+        return job;
+    }
+    
 }

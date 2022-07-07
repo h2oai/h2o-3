@@ -7,6 +7,7 @@ import hex.tree.xgboost.exec.RemoteXGBoostExecutor;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Job;
+import water.Key;
 import water.fvec.Frame;
 
 import java.io.IOException;
@@ -50,14 +51,23 @@ public class SteamExecutorStarter implements SteamMessenger {
     }
 
     public RemoteXGBoostExecutor getRemoteExecutor(XGBoostModel model, Frame train, Job<XGBoostModel> job) throws IOException {
+        ClusterInfo clusterInfo = ensureClusterStarted(model._key, job);
+        return makeExecutor(model, train, clusterInfo);
+    }
+
+    public void startCluster(Key<XGBoostModel> key, Job<XGBoostModel> job) throws IOException {
+        ensureClusterStarted(key, job);
+    }
+    
+    private ClusterInfo ensureClusterStarted(Key<XGBoostModel> key, Job<XGBoostModel> job) throws IOException {
         synchronized (clusterLock) {
             if (cluster == null) {
-                LOG.info("Starting external cluster for model " + model._key + ".");
+                LOG.info("Starting external cluster for model " + key + ".");
                 startCluster(job);
             } else {
-                LOG.info("External cluster available, starting model " + model._key + " now.");
+                LOG.info("External cluster available, starting model " + key + " now.");
             }
-            return makeExecutor(model, train);
+            return cluster;
         }
     }
 
@@ -90,7 +100,7 @@ public class SteamExecutorStarter implements SteamMessenger {
         }
     }
 
-    private RemoteXGBoostExecutor makeExecutor(XGBoostModel model, Frame train) {
+    private static RemoteXGBoostExecutor makeExecutor(XGBoostModel model, Frame train, ClusterInfo cluster) {
         return new RemoteXGBoostExecutor(model, train, cluster.uri, cluster.userName, cluster.password);
     }
     
