@@ -2669,11 +2669,15 @@ def learning_curve_plot(
 
 
 def _calculate_pareto_front(x, y, top=True, left=True):
+    # Make sure we are not given something unexpected like pandas which has separate indexes and causes unintuitive results
+    assert isinstance(x, np.ndarray)
+    assert isinstance(y, np.ndarray)
+
     cumagg = np.maximum.accumulate if top else np.minimum.accumulate
     if not left:
         x = -x
 
-    order = np.argsort(y if left else -y)
+    order = np.argsort(-y if top else y)
     order = order[np.argsort(x[order], kind="stable")]
 
     return order[np.unique(cumagg(y[order]), return_index=True)[1]]
@@ -2695,9 +2699,10 @@ def _pretty_metric_name(metric):
     ).get(metric, metric)
 
 
-def pareto_front(models,
+def pareto_front(frame,  # type: H2OFrame
                  x_metric=None,  # type: Optional[str]
                  y_metric=None,  # type: Optional[str]
+                 optimum="top left",  # type: Literal["top left", "top right", "bottom left", "bottom right"]
                  title=None,  # type: Optional[str]
                  color_col="algo",  # type: str
                  figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
@@ -2709,9 +2714,10 @@ def pareto_front(models,
     models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
     the task is assumed to be minimization for both metrics.
 
-    :param models: H2OAutoML, H2OGrid, list of models, or leaderboard frame
+    :param frame: an H2OFrame
     :param x_metric: metric present in the leaderboard
     :param y_metric: metric present in the leaderboard
+    :param optimum: location of the optimum in XY plane
     :param title: title used for the plot
     :param color_col: Categorical column in the leaderboard that should be used for coloring the points
     :param figsize: figure size; passed directly to matplotlib
@@ -2721,6 +2727,8 @@ def pareto_front(models,
     :examples:
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> from h2o.grid import H2OGridSearch
     >>>
     >>> h2o.init()
     >>>
@@ -2738,58 +2746,37 @@ def pareto_front(models,
     >>> aml = H2OAutoML(max_models=10)
     >>> aml.train(y=response, training_frame=train)
     >>>
+    >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+    >>>                'max_depth': [3, 5, 9]}
+    >>> grid = H2OGridSearch(model=H2OGradientBoostingEstimator,
+    >>>                      hyper_params=gbm_params1)
+    >>> grid.train(y=response, training_frame=train)
+    >>>
+    >>> combined_leaderboard = h2o.make_leaderboard([aml, grid], test, extra_columns="ALL")
+    >>>
     >>> # Create the Pareto front
-    >>> pf = aml.pareto_front()
+    >>> pf = h2o.explanation.pareto_front(combined_leaderboard, "predict_time_per_row_ms", "rmse", optimum="bottom left")
     >>> pf.figure() # get the Pareto front plot
     >>> pf # H2OFrame containing the Pareto front subset of the leaderboard
     """
     plt = get_matplotlib_pyplot(False, True)
     from matplotlib.lines import Line2D
-    name = None
-    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        leaderboard = _get_leaderboard(models, None, top_n=float("inf"))
-        name = models.project_name
-    elif isinstance(models, h2o.grid.grid_search.H2OGridSearch):
-        leaderboard = _get_leaderboard(models.models, None, top_n=float("inf"))
-        name = models.grid_id
-    elif isinstance(models, list):
-        models = [h2o.get_model(m) if is_type(m, str) else m for m in models]
-        leaderboard = _get_leaderboard(models, None, top_n=float("inf"))
-    elif isinstance(models, h2o.H2OFrame):
-        leaderboard = models
+    if isinstance(frame, h2o.H2OFrame):
+        leaderboard = frame
     else:
-        try:
-            leaderboard = h2o.H2OFrame(models)
+        try:  # Maybe it's pandas or other datastructure coercible to H2OFrame
+            leaderboard = h2o.H2OFrame(frame)
         except Exception:
-            raise ValueError("`models` paraameter has to be either H2OAutoML, H2OGrid, list of models or coercible to H2OFrame!")
-
-    if x_metric is None:
-        if "predict_time_per_row_ms" in leaderboard.names:
-            x_metric = "predict_time_per_row_ms"
-        else:
-            x_metric = leaderboard.names[2] if "model_id" in leaderboard.names else leaderboard.names[0]
-    if y_metric is None:
-        y_metric = leaderboard.names[1]
-
-    if "model_id" in leaderboard.names: # do not lowercase the metric if we have some arbitrary frame as leaderboard
-        x_metric = x_metric.lower()
-        y_metric = y_metric.lower()
+            raise ValueError("`frame` parameter has to be either H2OAutoML, H2OGrid, list of models or coercible to H2OFrame!")
 
     if x_metric not in leaderboard.names:
         raise ValueError("x_metric {} is not in the leaderboard!".format(x_metric))
     if y_metric not in leaderboard.names:
         raise ValueError("y_metric {} is not in the leaderboard!".format(y_metric))
 
-    higher_is_better = ["auc", "aucpr"]
-
-    top = False
-    left = True
-
-    if x_metric in higher_is_better:
-        left = False
-
-    if y_metric in higher_is_better:
-        top = True
+    assert optimum.lower() in ("top left", "top right", "bottom left", "bottom right"), "Optimum has to be one of \"top left\", \"top right\", \"bottom left\", \"bottom right\"."
+    top = "top" in optimum.lower()
+    left = "left" in optimum.lower()
 
     x = np.array(leaderboard[x_metric].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
     y = np.array(leaderboard[y_metric].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
@@ -2815,10 +2802,7 @@ def pareto_front(models,
     if title is not None:
         plt.title(title)
     else:
-        if name is None:
-            plt.title("Pareto Front")
-        else:
-            plt.title("Pareto Front for {}".format(name))
+        plt.title("Pareto Front")
 
     leaderboard_pareto_subset = leaderboard[sorted(list(pf)), :]
 
@@ -2919,7 +2903,8 @@ def _get_leaderboard(
     :param top_n: show just top n models in the leaderboard
     :returns: H2OFrame
     """
-    leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.make_leaderboard(models, frame, extra_columns="ALL")
+    leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.make_leaderboard(models, frame,
+                                                                                       extra_columns="ALL" if frame is not None else None)
     leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
     if row_index is not None:
         model_ids = [m[0] for m in

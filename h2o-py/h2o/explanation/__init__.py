@@ -24,9 +24,7 @@ def _register_dummy_methods():
     h2o.automl._base.H2OAutoMLBaseMixin.explain_row = _complain_about_matplotlib
     h2o.automl._base.H2OAutoMLBaseMixin.model_correlation = _complain_about_matplotlib
     h2o.automl._base.H2OAutoMLBaseMixin.varimp = _complain_about_matplotlib
-    h2o.automl._base.H2OAutoMLBaseMixin.pareto_front = _complain_about_matplotlib
 
-    h2o.grid.grid_search.H2OGridSearch.pareto_front = _complain_about_matplotlib
 
 
 try:
@@ -70,6 +68,4 @@ def register_explain_methods():
     h2o.automl._base.H2OAutoMLBaseMixin.explain_row = explain_row
     h2o.automl._base.H2OAutoMLBaseMixin.model_correlation = model_correlation
     h2o.automl._base.H2OAutoMLBaseMixin.varimp = varimp
-    h2o.automl._base.H2OAutoMLBaseMixin.pareto_front = pareto_front
 
-    h2o.grid.grid_search.H2OGridSearch.pareto_front = pareto_front

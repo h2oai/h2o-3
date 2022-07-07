@@ -2,13 +2,15 @@
 
 #' Works like match.arg but ignores case
 #' @param arg argument to match that should be declared as a character vector containing possible values
+#' @param choices argument to choose from (OPTIONAL)
 #' @return matched arg
-case_insensitive_match_arg <- function(arg) {
+case_insensitive_match_arg <- function(arg, choices) {
   var_name <- as.character(substitute(arg))
-  choices <- eval(formals(sys.function(-1))[[var_name]])
+  if (missing(choices))
+    choices <- eval(formals(sys.function(-1))[[var_name]])
   orig_choices <- choices
 
-  if (identical(arg, choices))
+  if (identical(arg, eval(formals(sys.function(-1))[[var_name]])))
     arg <- choices[[1]]
 
   choices <- tolower(choices)
@@ -500,7 +502,7 @@ case_insensitive_match_arg <- function(arg) {
     leaderboard <- models_info$leaderboard
     return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
   }
-  leaderboard <- h2o.make_leaderboard(models_info$model_ids, leaderboard_frame, extra_columns = "ALL")
+  leaderboard <- h2o.make_leaderboard(models_info$model_ids, leaderboard_frame, extra_columns = if(!is.null(leaderboard_frame)) "ALL" else NULL)
   return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
 }
 
@@ -3320,18 +3322,15 @@ h2o.learning_curve_plot <- function(model,
 }
 
 
-.calculate_pareto_front <- function(df, x, y, optimum = c("topleft", "topright", "bottomleft", "bottomright")) {
+.calculate_pareto_front <- function(df, x, y, optimum = c("top left", "top right", "bottom left", "bottom right")) {
   optimum <- match.arg(optimum)
   cum_agg <- if (startsWith(optimum, "top")) {
     cummax
   } else {
     cummin
   }
-  decreasing <- if (endsWith(optimum, "left")) {
-    FALSE
-  } else {
-    TRUE
-  }
+  decreasing <- c(endsWith(optimum, "right"), startsWith(optimum, "top"))
+
   reordered_df <- df[order(df[[x]], df[[y]], decreasing = decreasing), ]
   reordered_df <- reordered_df[which(!duplicated(cum_agg(reordered_df[[y]]))), ]
   reordered_df[order(row.names(reordered_df)), ]  # Keep original order
@@ -3418,11 +3417,13 @@ setMethod("show", "H2OParetoFront", function(object) {
 #' models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
 #' the task is assumed to be minimization for both metrics.
 #'
-#' @param object H2OAutoML or H2OGrid
+#' @param object H2OAutoML or H2OGrid or a data.frame
+#' @param leaderboard_frame a frame used for generating the leaderboard. Used when \code{object} is not a frame.
 #' @param x_metric one of the metrics present in the leaderboard
 #' @param y_metric one of the metrics present in the leaderboard
-#' @param title Title used for plotting
-#' @param color_col Categorical column in the leaderboard that should be used for coloring the points
+#' @param optimum location of the optimum on XY plane
+#' @param title title used for plotting
+#' @param color_col categorical column in the leaderboard that should be used for coloring the points
 #'
 #' @return An H2OParetoFront S4 object with plot method and pareto_front slot
 #'
@@ -3453,40 +3454,50 @@ setMethod("show", "H2OParetoFront", function(object) {
 #' pf <- h2o.pareto_front(aml)
 #' plot(pf)
 #' pf@pareto_front # to retrieve the Pareto front subset of the leaderboard
+#'
+#' aml2 <- h2o.automl(y = response,
+#'                    training_frame = train,
+#'                    max_models = 10,
+#'                    seed = 42)
+#'
+#' combined_leaderboard <- h2o.make_leaderboard(list(aml, aml2), test, extra_columns = "ALL")
+#' pf_combined <- h2o.pareto_front(combined_leaderboard)
+#' plot(pf_combined)
+#' pf_combined@pareto_front
 #' }
 #' @export
 h2o.pareto_front <- function(object,
+                             leaderboard_frame = NULL,
                              x_metric = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
                                           "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
                                           "RMSE", "RMSLE", "training_time_ms"),
                              y_metric = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
                                           "mean_residual_deviance", "MSE", "predict_time_per_row_ms",
                                           "RMSE", "RMSLE", "training_time_ms"),
+                             optimum = c("AUTO", "top left", "top right", "bottom left", "bottom right"),
                              title = NULL,
                              color_col = "algo") {
-  leaderboard <- NULL
   if (is.data.frame(object) || inherits(object, "H2OFrame")) {
-    leaderboard <- as.data.frame(object)
-    if (missing(x_metric)) x_metric <- names(leaderboard)[[1]]
-    if (missing(y_metric)) y_metric <- names(leaderboard)[[2]]
+    leaderboard <- object
+  } else if (is.null(leaderboard_frame) && inherits(object, "H2OAutoML")) {
+    leaderboard <- h2o.get_leaderboard(object, "ALL")
   } else {
-    models_info <- .process_models_or_automl(object, NULL, require_multiple_models = TRUE,
-                                             require_newdata = FALSE, check_x_y_consistency = FALSE)
-    leaderboard <- .create_leaderboard(models_info, NULL, top_n = Inf)
-    x_metric <- case_insensitive_match_arg(x_metric)
-    y_metric <- case_insensitive_match_arg(y_metric)
-    if (x_metric == "AUTO") {
-      if ("predict_time_per_row_ms" %in% names(leaderboard))
-        x_metric <- "predict_time_per_row_ms"
-      else
-        x_metric <- names(leaderboard)[[3]]  # in case we were given a list of models not an aml object
-    }
-    if (y_metric == "AUTO")
-      y_metric <- names(leaderboard)[[2]]
-
-    x_metric <- tolower(x_metric)
-    y_metric <- tolower(y_metric)
+    leaderboard <- h2o.make_leaderboard(object, leaderboard_frame, extra_columns = if (!is.null(leaderboard_frame)) "ALL" else NULL)
   }
+  leaderboard <- as.data.frame(leaderboard)
+
+  x_metric <- case_insensitive_match_arg(x_metric, c("AUTO", names(leaderboard)))
+  y_metric <- case_insensitive_match_arg(y_metric, c("AUTO", names(leaderboard)))
+
+  if (x_metric == "AUTO") {
+    if ("predict_time_per_row_ms" %in% names(leaderboard))
+      x_metric <- "predict_time_per_row_ms"
+    else
+      stop("Please specify x_metric to use for pareto front plot. Defaults to `predict_time_per_row_ms` which is missing.")
+  }
+  if (y_metric == "AUTO")
+    y_metric <- names(leaderboard)[[2]]
+
   if (!x_metric %in% names(leaderboard))
     stop(sprintf("'%s' not found in the leaderboard!", x_metric), call. = FALSE)
   if (!y_metric %in% names(leaderboard))
@@ -3505,10 +3516,12 @@ h2o.pareto_front <- function(object,
   }
 
   higher_is_better <- c("auc", "aucpr")
-  optimum <- paste0(
-    if (y_metric %in% higher_is_better) "top" else "bottom",
-    if (x_metric %in% higher_is_better) "right" else "left"
-  )
+  optimum <- case_insensitive_match_arg(optimum)
+  if (optimum == "AUTO")
+    optimum <- paste(
+      if (y_metric %in% higher_is_better) "top" else "bottom",
+      if (x_metric %in% higher_is_better) "right" else "left"
+    )
 
   pareto_front <- .calculate_pareto_front(leaderboard, x = x_metric, y = y_metric, optimum = optimum)
   return(new("H2OParetoFront",
