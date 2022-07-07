@@ -1,4 +1,4 @@
-package ai.h2o.automl.leaderboard;
+package hex.leaderboard;
 
 /**
  * Meta info for a leaderboard column.

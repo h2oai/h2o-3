@@ -1,4 +1,4 @@
-package ai.h2o.automl.utils;
+package water.util;
 
 import water.Job;
 import water.Key;

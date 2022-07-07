@@ -2,6 +2,8 @@ package ai.h2o.automl.leaderboard;
 
 import ai.h2o.automl.ModelingStep;
 import hex.Model;
+import hex.leaderboard.LeaderboardCell;
+import hex.leaderboard.LeaderboardColumn;
 import water.Iced;
 import water.Key;
 

@@ -325,6 +325,9 @@ public class Env extends Iced {
     init(new AstTestJavaScoring());
     init(new AstPermutationVarImp());
 
+    // Make Leaderboard
+    init(new AstMakeLeaderboard());
+
     // Filters
     init(new AstDropDuplicates());
 

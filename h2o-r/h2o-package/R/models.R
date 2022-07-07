@@ -6155,3 +6155,56 @@ h2o.predicted_vs_actual_by_variable <- function(object,
   attr(vi, "formats") <- c("%s", rep_len("%5f", ncol(vi) - 1))
   vi
 }
+
+#' Create a leaderboard from a list of models, grids and/or automls.
+#'
+#' @param object List of models, automls, or grids; or just single automl/grid object.
+#' @param leaderboard_frame Frame used for generating the metrics (optional).
+#' @param sort_metric Metric used for sorting the leaderboard.
+#' @param extra_columns What extra columns should be calculated (might require leaderboard_frame). Use "ALL" for all available or list of extra columns.
+#' @param scoring_data Metrics to be reported in the leaderboard ("xval", "train", or "valid"). Used if no leaderboard_frame is provided.
+#' @return data.frame
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' iris_hf <- as.h2o(iris)
+#' grid <- h2o.grid("gbm", x = c(1:4), y = 5, training_frame = iris_hf,
+#'                  hyper_params = list(ntrees = c(1, 2, 3)))
+#' h2o.make_leaderboard(grid, iris_hf)
+#' }
+#' @export
+h2o.make_leaderboard <- function(object,
+                                 leaderboard_frame,
+                                 sort_metric = "AUTO",
+                                 extra_columns = c(),
+                                 scoring_data = c("AUTO", "train", "valid", "xval")
+) {
+  .get_models <- function(obj){
+    if (is.list(obj)) {
+      return(lapply(obj, .get_models))
+    } else if (.is.H2OAutoML(obj)) {
+      return(unlist(as.list(obj@leaderboard$model_id)))
+    } else if (inherits(obj, "H2OGrid")) {
+      return(unlist(obj@model_ids))
+    } else if (is.character(obj)) {
+      return(obj)
+    } else if (inherits(obj, "H2OModel")) {
+      return(h2o.keyof(obj))
+    } else {
+      stop("Unsupported object!")
+    }
+  }
+  model_ids <- unlist(.get_models(object))
+  extra_cols <- paste0(extra_columns, collapse = "\", \"")
+  scoring_data <- match.arg(scoring_data)
+
+  as.data.frame(.newExpr("makeLeaderboard",
+                         model_ids,
+                         paste0("\"", (if (missing(leaderboard_frame) || is.null(leaderboard_frame)) NULL else h2o.keyof(leaderboard_frame)), "\""),
+                         paste0("\"", sort_metric, "\""),
+                         paste0("[\"", extra_cols, "\"]"),
+                         paste0("\"", scoring_data, "\"")
+  ), check.names = FALSE)
+}
