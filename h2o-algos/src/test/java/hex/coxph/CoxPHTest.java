@@ -620,7 +620,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       // Note: there is an issue on Java 11+ that makes efron method to fail
       // because this test is just supposed to test consistency we use breslow
       // the original issue needs to be fixed in https://h2oai.atlassian.net/browse/PUBDEV-8756
-      //parms._ties              = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+      parms._ties              = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
 
       final CoxPH builder = new CoxPH(parms);
       final CoxPHModel model = builder.trainModel().get();
