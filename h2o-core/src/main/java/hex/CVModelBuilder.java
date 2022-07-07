@@ -28,9 +28,9 @@ public class CVModelBuilder {
         this.parallelization = parallelization;
     }
     
-    protected void prepare(ModelBuilder m) {}
+    protected void prepare(ModelBuilder<?, ?, ?> m) {}
     
-    protected void finished(ModelBuilder m) {}
+    protected void finished(ModelBuilder<?, ?, ?> m) {}
 
     public void bulkBuildModels() {
         final int N = modelBuilders.length;

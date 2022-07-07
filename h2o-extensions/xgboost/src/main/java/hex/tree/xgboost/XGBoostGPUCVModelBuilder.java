@@ -31,14 +31,14 @@ public class XGBoostGPUCVModelBuilder extends CVModelBuilder {
     }
 
     @Override
-    protected void prepare(ModelBuilder m) {
+    protected void prepare(ModelBuilder<?, ?, ?> m) {
         XGBoost xgb = (XGBoost) m;
         xgb._parms._gpu_id = new int[] { availableGpus.pop() };
         LOG.info("Building " + xgb.dest() + " on GPU " + xgb._parms._gpu_id[0]);
     }
 
     @Override
-    protected void finished(ModelBuilder m) {
+    protected void finished(ModelBuilder<?, ?, ?> m) {
         XGBoost xgb = (XGBoost) m;
         availableGpus.push(xgb._parms._gpu_id[0]);
     }
