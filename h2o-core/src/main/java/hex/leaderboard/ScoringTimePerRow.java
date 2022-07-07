@@ -1,8 +1,9 @@
-package ai.h2o.automl.leaderboard;
+package hex.leaderboard;
 
 import hex.Model;
 import water.Iced;
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 
 /**
@@ -16,21 +17,17 @@ public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements Leader
 
     private final Key<Model> _modelId;
     private final Key<Frame> _leaderboardFrameId;
-    private final Key<Frame> _trainingFrameId;
-
     private Double _scoringTimePerRowMillis;
 
-    public ScoringTimePerRow(Model model, Frame leaderboardFrame, Frame trainingFrame) {
+    public ScoringTimePerRow(Model model, Frame leaderboardFrame) {
         this(model._key,
-             leaderboardFrame == null ? null : leaderboardFrame._key,
-             trainingFrame == null ? null : trainingFrame._key
+             leaderboardFrame == null ? null : leaderboardFrame._key
         );
     }
 
-    public ScoringTimePerRow(Key<Model> modelId, Key<Frame> leaderboardFrameId, Key<Frame> trainingFrameId) {
+    public ScoringTimePerRow(Key<Model> modelId, Key<Frame> leaderboardFrameId) {
         _modelId = modelId;
         _leaderboardFrameId = leaderboardFrameId;
-        _trainingFrameId = trainingFrameId;
     }
 
     @Override
@@ -45,6 +42,9 @@ public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements Leader
 
     @Override
     public Double getValue() {
+        if (_scoringTimePerRowMillis == null && _leaderboardFrameId == null) {
+            throw new H2OIllegalArgumentException("predict_time_per_row_ms requires a leaderboard frame!");
+        }
         return _scoringTimePerRowMillis;
     }
 
@@ -64,7 +64,6 @@ public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements Leader
             try {
                 Model model = _modelId.get();
                 Frame scoringFrame = _leaderboardFrameId != null ? _leaderboardFrameId.get()
-                                : _trainingFrameId != null ? _trainingFrameId.get()
                                 : null;
                 if (scoringFrame != null) {
                     long nrows = scoringFrame.numRows();

@@ -8,6 +8,7 @@ import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsembleModel;
 import hex.glm.GLMModel;
+import hex.leaderboard.LeaderboardCell;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;

@@ -331,13 +331,13 @@ Leaderboard
 
 The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If you would like to score the models on a specific dataset, you can specify the ``leaderboard_frame`` argument in the AutoML run, and then the leaderboard will show scores on that dataset instead. 
 
-The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
+The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is RMSE.  Some additional metrics are also provided, for convenience.
 
 To help users assess the complexity of ``AutoML`` models, the ``h2o.get_leaderboard`` function has been been expanded by allowing an ``extra_columns`` parameter. This parameter allows you to specify which (if any) optional columns should be added to the leaderboard. This defaults to None. Allowed options include:
 
 - ``training_time_ms``: A column providing the training time of each model in milliseconds. (Note that this doesn't include the training of cross validation models.)
 - ``predict_time_per_row_ms``: A column providing the average prediction time by the model for a single row.
-- ``ALL``: Adds columns for both training_time_ms and predict_time_per_row_ms.
+- ``ALL``: Adds columns for both ``training_time_ms`` and ``predict_time_per_row_ms``.
 
 Using the previous example, you can retrieve the leaderboard as follows:
 
@@ -363,7 +363,7 @@ Here is an example of a leaderboard (with all columns) for a binary classificati
    :align: center
 
 
-
+To create a leaderboard with metrics from a new ``leaderboard_frame`` `h2o.make_leaderboard <performance-and-prediction.html#leaderboard>`__ can be used.
 
 Examine Models
 ~~~~~~~~~~~~~~

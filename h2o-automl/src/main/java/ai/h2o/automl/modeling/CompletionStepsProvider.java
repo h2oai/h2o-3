@@ -2,10 +2,10 @@ package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import ai.h2o.automl.ModelingStep.DynamicStep;
-import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.grid.Grid;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.leaderboard.Leaderboard;
 import water.Job;
 import water.Key;
 

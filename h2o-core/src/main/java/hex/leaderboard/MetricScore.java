@@ -1,4 +1,4 @@
-package ai.h2o.automl.leaderboard;
+package hex.leaderboard;
 
 import hex.Model;
 import water.Iced;

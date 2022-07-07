@@ -2385,6 +2385,115 @@ Multinomial Examples
   :alt: Multinomial Partial Dependence Plot
   :scale: 30%
 
+Leaderboard
+~~~~~~~~~~~
+Leaderboard is used for comparing multiple models. The models are ranked by a default metric based on the problem type (the second column of the leaderboard).
+In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error.
+In regression problems, the default sort metric is RMSE. Some additional metrics are also provided, for convenience.
+A different sort metric can be used by specifying the ``sort_metric`` argument.
+
+Leaderboard uses metrics calculated on the ``leaderboard_frame``.
+If you don't specify the ``leaderboard_frame``, you can use the ``scoring_data`` argument to specify what metrics should be used.
+The default value is ``AUTO`` which means that the leaderboard will try to use metrics from cross-validation and
+if not available then validation and if validation metrics aren't available it will use the training metrics.
+This is applied on per-model basis which can cause leaderboard to compare apples and oranges.
+You can specify one of ``xval``, ``valid``, or ``train`` to be certain that the comparison is using the same metrics.
+
+To help users assess the complexity of the models, the ``h2o.make_leaderboard`` function has an ``extra_columns`` parameter.
+This parameter allows you to specify which (if any) optional columns should be added to the leaderboard.
+This defaults to None.
+
+Allowed options include:
+
+ - ``training_time_ms``: A column providing the training time of each model in milliseconds. (Note that this doesn’t include the training of cross validation models.)
+ - ``predict_time_per_row_ms``: A column providing the average prediction time by the model for a single row.
+ - ``ALL``: Adds columns for both ``training_time_ms`` and ``predict_time_per_row_ms``.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+
+    h2o.init()
+
+    # Import a sample binary outcome dataset into H2O
+    data <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+    test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+
+    # Identify predictors and response
+    y <- "response"
+    x <- setdiff(names(data), y)
+
+    # For binary classification, response should be a factor
+    data[, y] <- as.factor(data[, y])
+    test[, y] <- as.factor(test[, y])
+
+    # Split data into train & validation
+    ss <- h2o.splitFrame(data, seed = 1)
+    train <- ss[[1]]
+    valid <- ss[[2]]
+
+    # GBM hyperparameters
+    gbm_params1 <- list(learn_rate = c(0.01, 0.1),
+                        max_depth = c(3, 5, 9),
+                        sample_rate = c(0.8, 1.0),
+                        col_sample_rate = c(0.2, 0.5, 1.0))
+
+    # Train and validate a cartesian grid of GBMs
+    gbm_grid1 <- h2o.grid("gbm", x = x, y = y,
+                          grid_id = "gbm_grid1",
+                          training_frame = train,
+                          validation_frame = valid,
+                          ntrees = 100,
+                          seed = 1,
+                          hyper_params = gbm_params1)
+
+    h2o.make_leaderboard(gbm_grid1, test)
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    from h2o.grid.grid_search import H2OGridSearch
+
+    h2o.init()
+
+    # Import a sample binary outcome dataset into H2O
+    data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+    test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+
+    # Identify predictors and response
+    x = data.columns
+    y = "response"
+    x.remove(y)
+
+    # For binary classification, response should be a factor
+    data[y] = data[y].asfactor()
+    test[y] = test[y].asfactor()
+
+    # Split data into train & validation
+    ss = data.split_frame(seed = 1)
+    train = ss[0]
+    valid = ss[1]
+
+    # GBM hyperparameters
+    gbm_params1 = {'learn_rate': [0.01, 0.1],
+                    'max_depth': [3, 5, 9],
+                    'sample_rate': [0.8, 1.0],
+                    'col_sample_rate': [0.2, 0.5, 1.0]}
+
+    # Train and validate a cartesian grid of GBMs
+    gbm_grid1 = H2OGridSearch(model=H2OGradientBoostingEstimator,
+                              grid_id='gbm_grid1',
+                              hyper_params=gbm_params1)
+    gbm_grid1.train(x=x, y=y,
+                    training_frame=train,
+                    validation_frame=valid,
+                    ntrees=100,
+                    seed=1)
+
+    h2o.make_leaderboard(gbm_grid1, test)
+
 
 Prediction
 ----------

@@ -2,20 +2,22 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.AutoML.Constraint;
 import ai.h2o.automl.StepResultState.ResultStatus;
-import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
-import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import hex.Model;
 import hex.ModelContainer;
+import hex.leaderboard.Leaderboard;
 import water.Iced;
 import water.Job;
 import water.Key;
 import water.util.Countdown;
 import water.util.Log;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -226,7 +228,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     }
 
     private Leaderboard leaderboard() {
-        return _leaderboardKey.get();
+        return Leaderboard.getInstance(_leaderboardKey, eventLog().asLogger(Stage.ModelTraining));
     }
 
 }
