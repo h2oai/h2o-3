@@ -55,6 +55,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.
 - [[PUBDEV-8753]](https://h2oai.atlassian.net/browse/PUBDEV-8753) - Fixed the `uplift_metric` documentation for Uplift DRF.
 - [[PUBDEV-8751]](https://h2oai.atlassian.net/browse/PUBDEV-8751) - Added `transform_frame` to GLRM documentation. 
 - [[PUBDEV-8746]](https://h2oai.atlassian.net/browse/PUBDEV-8746) - Added `mode = “maxrsweep”` to ModelSelection documentation.
+- [[PUBDEV-8744]](https://h2oai.atlassian.net/browse/PUBDEV-8744) - Corrected the R documentation on R^2.
 - [[PUBDEV-8719]](https://h2oai.atlassian.net/browse/PUBDEV-8719) - Updated supported MOJO list to include GAM MOJO import.
 
 #### Security
