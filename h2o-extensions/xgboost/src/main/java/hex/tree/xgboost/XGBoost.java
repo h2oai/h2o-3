@@ -305,6 +305,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return H2O.getSysBoolProperty("xgboost.multinode.gpu.enabled", false);
   }
 
+  static boolean prestartExternalClusterForCV() {
+    return H2O.getSysBoolProperty("xgboost.external.cv.prestart", false);
+  }
+
   @Override
   public XGBoost getModelBuilder() {
     return this;
@@ -774,6 +778,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   protected CVModelBuilder makeCVModelBuilder(ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization) {
     if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu && parallelization > 1) {
       return new XGBoostGPUCVModelBuilder(_job, modelBuilders, parallelization, _parms._gpu_id);      
+    } else if (H2O.ARGS.use_external_xgboost && prestartExternalClusterForCV()) {
+      return new XGBoostExternalCVModelBuilder(_job, modelBuilders, parallelization, SteamExecutorStarter.getInstance());
     } else {
       return super.makeCVModelBuilder(modelBuilders, parallelization);
     }

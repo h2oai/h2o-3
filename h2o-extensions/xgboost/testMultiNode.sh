@@ -70,7 +70,7 @@ else
     COVERAGE=""
 fi
 # Force enable LeaderNodeRequestFilter to emulate XGBoost external cluster deployments on K8S
-JVM="nice $JAVA_CMD $COVERAGE -ea -Xmx${MAX_MEM} -Xms${MAX_MEM} -Dsys.ai.h2o.ext.auth.toggle.LeaderNodeRequestFilter=true -DcloudSize=4 -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
+JVM="nice $JAVA_CMD $COVERAGE -ea -Xmx${MAX_MEM} -Xms${MAX_MEM} -Dsys.ai.h2o.ext.auth.toggle.LeaderNodeRequestFilter=true -Dsys.ai.h2o.xgboost.external.cv.prestart=true -DcloudSize=4 -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests

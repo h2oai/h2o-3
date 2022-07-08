@@ -65,7 +65,7 @@ then
 else
     COVERAGE=""
 fi
-JVM="nice $JAVA_CMD $COVERAGE -ea -Xmx${MAX_MEM} -Xms${MAX_MEM} -cp $JVM_CLASSPATH ${ADDITIONAL_TEST_JVM_OPTS}"
+JVM="nice $JAVA_CMD $COVERAGE -ea -Xmx${MAX_MEM} -Xms${MAX_MEM} -Dsys.ai.h2o.xgboost.external.cv.prestart=true -cp $JVM_CLASSPATH ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 # Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.
 # Also, sometimes see test files in the main-class directory, so put the test

@@ -790,7 +790,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Return the R squared for this regression model.
 
-        Will return :math:`R^2` for GLM Models and will return NaN otherwise.
+        Will return :math:`R^2` for GLM Models. 
 
         The :math:`R^2` value is defined to be :math:`1 - MSE / var`, where var is computed as :math:`\sigma * \sigma`.
 
