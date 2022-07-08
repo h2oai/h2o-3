@@ -83,6 +83,9 @@ test-py-smoke-minimal:
 test-py-smoke-steam: lookup-steam-assembly-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 6 --jvm.xmx 3g --h2ojar ../../h2o-assemblies/steam/build/libs/steam.jar 
 
+test-py-changed:
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitChangedTestList --numclouds 1 --jvm.xmx 3g
+
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
 	 && python h2o.init_test.py \
