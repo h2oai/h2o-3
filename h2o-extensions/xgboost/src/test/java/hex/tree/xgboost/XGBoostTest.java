@@ -2926,4 +2926,11 @@ public class XGBoostTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void checkRunningWithClusterPrestartInCI() {
+    Assume.assumeTrue(isCI());
+    assertTrue(hex.tree.xgboost.XGBoost.prestartExternalClusterForCV());
+  }
+
 }
