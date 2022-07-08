@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zumbo (3.36.1.3) - 7/6/2022
+### Zumbo (3.36.1.3) - 7/8/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.html</a>
 
