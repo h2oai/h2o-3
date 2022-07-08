@@ -2,6 +2,43 @@
 
 ## H2O
 
+### Zumbo (3.36.1.3) - 7/8/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8738]](https://h2oai.atlassian.net/browse/PUBDEV-8738) - Fixed CoxPH MOJO ignoring offset column.
+- [[PUBDEV-8737]](https://h2oai.atlassian.net/browse/PUBDEV-8737) - Fixed the incorrect predictions from the CoxPH MOJO on categorical columns. 
+- [[PUBDEV-8736]](https://h2oai.atlassian.net/browse/PUBDEV-8736) - Fixed the **View** button not working after completing an AutoML job.
+- [[PUBDEV-8718]](https://h2oai.atlassian.net/browse/PUBDEV-8718) - Fixed `num_of_features` not being used in call for `varimp_heatmap()`.
+- [[PUBDEV-8681]](https://h2oai.atlassian.net/browse/PUBDEV-8681) - Fixed GAM’s `fold_column` being treated as a normal column to score for.
+- [[PUBDEV-8625]](https://h2oai.atlassian.net/browse/PUBDEV-8625) - Updated GBM cross validation model summary tables to reflect that some trees are removed due to a better score occurring with fewer trees.
+- [[PUBDEV-8522]](https://h2oai.atlassian.net/browse/PUBDEV-8522) - Fixed `fit_params` passthrough for scikit-learn compatibility.
+- [[PUBDEV-7927]](https://h2oai.atlassian.net/browse/PUBDEV-7927) - Fixed validateWithCheckpoint to work with default parameter settings.
+- [[PUBDEV-7926]](https://h2oai.atlassian.net/browse/PUBDEV-7926) - Fixed validateWithCheckpoint to work with parameters that are arrays.
+
+#### Improvement
+
+- [[PUBDEV-8716]](https://h2oai.atlassian.net/browse/PUBDEV-8716) - Added expert option to force-enable MOJO for CoxPH even when `interactions` are enabled.
+- [[PUBDEV-8616]](https://h2oai.atlassian.net/browse/PUBDEV-8616) - Makes language rules generation on demand and introduced “EnumLimited” option for categorical encoding.
+
+#### New Feature
+
+- [[PUBDEV-8750]](https://h2oai.atlassian.net/browse/PUBDEV-8750) - Added `transform_frame` for GLRM allowing users to obtain the new X for a new data set.
+- [[PUBDEV-8739]](https://h2oai.atlassian.net/browse/PUBDEV-8739) - Added support for numerical interactions in CoxPH MOJO.
+
+#### Docs
+
+- [[PUBDEV-8753]](https://h2oai.atlassian.net/browse/PUBDEV-8753) - Fixed the `uplift_metric` documentation for Uplift DRF.
+- [[PUBDEV-8751]](https://h2oai.atlassian.net/browse/PUBDEV-8751) - Added `transform_frame` to GLRM documentation. 
+- [[PUBDEV-8746]](https://h2oai.atlassian.net/browse/PUBDEV-8746) - Added `mode = “maxrsweep”` to ModelSelection documentation.
+- [[PUBDEV-8719]](https://h2oai.atlassian.net/browse/PUBDEV-8719) - Updated supported MOJO list to include GAM MOJO import.
+
+#### Security
+
+- [[PUBDEV-8735]](https://h2oai.atlassian.net/browse/PUBDEV-8735) - Fixed security issue in genmodel (CVE-2022-25647).
+
 ### Zumbo (3.36.1.2) - 5/26/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/2/index.html</a>
