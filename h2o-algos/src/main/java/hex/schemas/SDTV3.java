@@ -17,7 +17,7 @@ public class SDTV3 extends ModelBuilderSchema<
                 "ignored_columns",
                 "ignore_const_cols",
                 "categorical_encoding",
-
+                "response_column",
                 // SDT specific
                 "max_depth",
         };
