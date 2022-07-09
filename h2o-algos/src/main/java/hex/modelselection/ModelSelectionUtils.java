@@ -825,19 +825,11 @@ public class ModelSelectionUtils {
                                                      List<Integer> currSubsetIndices) {
         for (int index=modIndex-1; index >= 0; index--)
             if (bestModels[index] != null) {
-/*                List<Integer> predList = IntStream.of(bestModels[index]._predSubset).boxed().collect(Collectors.toList());
+                List<Integer> predList = IntStream.of(bestModels[index]._predSubset).boxed().collect(Collectors.toList());
                 Integer lastSubIndex = predList.remove(predList.size()-1);
                 predList.add(index, lastSubIndex);
-                return predList;*/
-                return swapSubIndex(index, bestModels[index]._predSubset);
+                return predList;
             }
         return currSubsetIndices;
-    }
-    
-    public static List<Integer> swapSubIndex(int modIndex, int[] predSubset) {
-        List<Integer> predList = IntStream.of(predSubset).boxed().collect(Collectors.toList());
-        Integer lastSubIndex = predList.remove(predList.size()-1);
-        predList.add(modIndex, lastSubIndex);
-        return predList;
     }
 }

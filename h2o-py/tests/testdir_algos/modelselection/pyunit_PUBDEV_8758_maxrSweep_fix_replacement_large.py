@@ -4,8 +4,7 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.model_selection import H2OModelSelectionEstimator
 
-# compare mode maxr and maxrsweep.  They should generate the same models.
-def test_maxr_slow():
+def test_maxrsweep_replacement():
     correctPredSubsets = [["C78",'Intercept'], ["C78","C97",'Intercept'], ["C78","C97","C75",'Intercept'], 
                           ["C78","C97","C75","C76",'Intercept'], ["C78","C97","C75","C76","C88",'Intercept'], 
                           ["C78","C97","C75","C76","C88","C89",'Intercept'], 
@@ -13,8 +12,7 @@ def test_maxr_slow():
                           ["C78","C97","C75","C76","C88","C89","C7","C86",'Intercept'],
                           ["C78","C97","C75","C76","C88","C89","C7","C86","C101",'Intercept'],
                           ["C78","C97","C75","C76","C88","C89","C7","C86","C101","C4"'Intercept']]
-    #train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/model_selection/maxrglm200Cols50KRows.csv")
-    train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/maxrglm200Cols50KRows.csv"))
+    train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/model_selection/maxrglm200Cols50KRows.csv")
     response="response"
     predictors = train.names
     predictors.remove(response)
@@ -31,6 +29,6 @@ def test_maxr_slow():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_maxr_slow)
+    pyunit_utils.standalone_test(test_maxrsweep_replacement)
 else:
-    test_maxr_slow()
+    test_maxrsweep_replacement()
