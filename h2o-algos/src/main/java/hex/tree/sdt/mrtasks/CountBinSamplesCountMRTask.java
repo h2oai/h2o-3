@@ -7,7 +7,7 @@ import water.fvec.Chunk;
 /**
  * MR task for counting samples in bins.
  */
-public class CountBinningStatisticsMRTask extends MRTask<CountBinningStatisticsMRTask> {
+public class CountBinSamplesCountMRTask extends MRTask<CountBinSamplesCountMRTask> {
     public int _featureSplit;
     public double _thresholdMin;
     public double _thresholdMax;
@@ -19,8 +19,8 @@ public class CountBinningStatisticsMRTask extends MRTask<CountBinningStatisticsM
     int LIMIT_MIN = 0;
     int LIMIT_MAX = 1;
 
-    public CountBinningStatisticsMRTask(int featureSplit, double thresholdMin,
-                                        double thresholdMax, double[][] featuresLimits) {
+    public CountBinSamplesCountMRTask(int featureSplit, double thresholdMin,
+                                      double thresholdMax, double[][] featuresLimits) {
         _featureSplit = featureSplit;
         _thresholdMin = thresholdMin;
         _thresholdMax = thresholdMax;
@@ -37,8 +37,7 @@ public class CountBinningStatisticsMRTask extends MRTask<CountBinningStatisticsM
         // select only rows that fulfill all conditions
         for (int row = 0; row < numRows; row++) {
             conditionsFailed = false;
-            // - 1 because of the class column - don't check limits on it
-            for (int column = 0; column < cs.length - 1; column++) {
+            for (int column = 0; column < cs.length - 1 /*exclude prediction column*/; column++) {
                 // if the value is out of the given limit, skip this row
                 if (cs[column].atd(row) <= _featuresLimits[column][LIMIT_MIN]
                         || cs[column].atd(row) > _featuresLimits[column][LIMIT_MAX]) {
@@ -62,7 +61,7 @@ public class CountBinningStatisticsMRTask extends MRTask<CountBinningStatisticsM
     }
 
     @Override
-    public void reduce(CountBinningStatisticsMRTask mrt) {
+    public void reduce(CountBinSamplesCountMRTask mrt) {
         _count += mrt._count;
         _count0 += mrt._count0;
     }

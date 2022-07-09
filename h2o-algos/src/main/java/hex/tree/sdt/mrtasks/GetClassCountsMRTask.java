@@ -31,7 +31,7 @@ public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
         for (int row = 0; row < numRows; row++) {
             conditionsFailed = false;
             // - 1 because of the class column - don't check limits on it
-            for (int column = 0; column < cs.length - 1; column++) {
+            for (int column = 0; column < cs.length - 1 /*exclude prediction column*/; column++) {
                 // if the value is out of the given limit, skip this row
                 if (cs[column].atd(row) <= _featuresLimits[column][LIMIT_MIN]
                         || cs[column].atd(row) > _featuresLimits[column][LIMIT_MAX]) {

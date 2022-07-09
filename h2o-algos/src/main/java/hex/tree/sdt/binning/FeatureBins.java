@@ -47,4 +47,8 @@ public class FeatureBins {
     public boolean isConstant() {
         return _isConstant;
     }
+    
+    List<Bin> getFeatureBins() {
+        return _bins.stream().map(Bin::clone).collect(Collectors.toList());
+    }
 }

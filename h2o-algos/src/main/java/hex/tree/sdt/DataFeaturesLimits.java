@@ -65,4 +65,24 @@ public class DataFeaturesLimits {
     public double[][] toDoubles() {
         return _featuresLimits.stream().map(v -> new double[]{v._min, v._max}).toArray(double[][]::new);
     }
+
+    /**
+     * Get count of features.
+     * @return count of features
+     */
+    public int featuresCount() {
+        return _featuresLimits.size();
+    }
+
+    public boolean equals(DataFeaturesLimits other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || other.featuresCount() != featuresCount()) {
+            return false;
+        }
+        return Arrays.deepEquals(other.toDoubles(), toDoubles());
+    }
+
+
 }

@@ -16,12 +16,22 @@ public class Histogram {
     public Histogram(Frame originData, DataFeaturesLimits conditionLimits, BinningStrategy binningStrategy) {
         _binningStrategy = binningStrategy;
         // call strategy to create bins for each feature separately
-        _featuresBins = IntStream.range(0, originData.numCols())
+        _featuresBins = IntStream.range(0, originData.numCols() - 1/*exclude the last prediction column*/)
                 .mapToObj(i -> new FeatureBins(
                         _binningStrategy.createFeatureBins(originData,
                                 // get real features limits where the conditions are fulfilled
                                 getFeaturesLimitsForConditions(originData, conditionLimits), i)))
                 .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Get list of feature bins (copy) - for testing.
+     * @param featureIndex feature index
+     * @return list of feature bins
+     */
+    public List<Bin> getFeatureBins(int featureIndex) {
+        return _featuresBins.get(featureIndex).getFeatureBins();
     }
 
     public int featuresCount() {
@@ -34,9 +44,10 @@ public class Histogram {
      *
      * @return new features limits
      */
-    private DataFeaturesLimits getFeaturesLimitsForConditions(Frame originData, DataFeaturesLimits conditionLimits) {
+    public static DataFeaturesLimits getFeaturesLimitsForConditions(Frame originData, DataFeaturesLimits conditionLimits) {
         FeaturesLimitsMRTask task = new FeaturesLimitsMRTask(conditionLimits == null
-                ? Stream.generate(() -> new double[]{Double.MIN_VALUE, Double.MAX_VALUE}).limit(originData.numCols()).toArray(double[][]::new)
+                ? Stream.generate(() -> new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE})
+                .limit(originData.numCols() - 1/*exclude the last prediction column*/).toArray(double[][]::new)
                 : conditionLimits.toDoubles());
         task.doAll(originData);
         return new DataFeaturesLimits(task._realFeatureLimits);

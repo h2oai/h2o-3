@@ -6,10 +6,10 @@ import water.util.Pair;
  * Single bin holding limits (min excluded), count of samples and count of class 0.
  */
 public class Bin {
-    double _min;
-    double _max;
-    int _count0;
-    int _count;
+    public double _min;
+    public double _max;
+    public int _count0;
+    public int _count;
 
     public Bin(double min, double max, int count0, int count) {
         _min = min;
@@ -26,5 +26,9 @@ public class Bin {
     public Bin(Pair<Double, Double> binLimits) {
         _min = binLimits._1();
         _max = binLimits._2();
+    }
+    
+    public static Bin clone(Bin toCLone) {
+        return new Bin(toCLone._min, toCLone._max, toCLone._count0, toCLone._count);
     }
 }

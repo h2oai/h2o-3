@@ -2,10 +2,9 @@ package hex.tree.sdt.binning;
 
 import hex.tree.sdt.DataFeaturesLimits;
 import hex.tree.sdt.FeatureLimits;
-import hex.tree.sdt.mrtasks.CountBinningStatisticsMRTask;
+import hex.tree.sdt.mrtasks.CountBinSamplesCountMRTask;
 import water.fvec.Frame;
 import water.util.Log;
-import water.util.Pair;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,15 +16,15 @@ import java.util.stream.Collectors;
  * Strategy for binning. Creates bins for single feature.
  */
 public enum BinningStrategy {
-
+    
     /**
-     * Equal width: (max - min) / values_in_range, optimized. Min is always excluded.
+     * Equal width: (max - min) / num_bins, optimized. Min is always excluded.
      */
     EQUAL_WIDTH {
 
-        public final int VALUES_COUNT_IN_RANGE = 10;
+        public final int NUM_BINS = 10;
 
-        public int DECIMALS_TO_CONSIDER = 2;
+        public final int DECIMALS_TO_CONSIDER = 2;
 
         double computeExponentForTheFeature(double step) {
             return Math.log10(step);
@@ -36,11 +35,29 @@ public enum BinningStrategy {
             return bigDecimal.setScale(decimals, RoundingMode.HALF_UP).doubleValue();
         }
 
+        double roundToNDecimalPoints(double number) {
+            return roundToNDecimalPoints(number, DECIMALS_TO_CONSIDER);
+        }
 
+        private List<Bin> createEmptyBinsFromBinningValues(List<Double> binningValues, double realMin, double realMax) {
+            List<Bin> emptyBins = new ArrayList<>();
+            // create bins between nearest binning values, don't create bin starting with the last value (on index size - 1)
+            for (int i = 0; i < binningValues.size() - 1; i++) {
+                emptyBins.add(
+                        new Bin(roundToNDecimalPoints(binningValues.get(i)),
+                                roundToNDecimalPoints(binningValues.get(i + 1))));
+            }
+            // set the firs min to some lower value (relative to step) so the actual value equal to min is not lost
+            emptyBins.get(0)._min = realMin - 0.0001 * (binningValues.get(1) - binningValues.get(0));
+            // set the last max to the real max value to avoid precision troubles
+            emptyBins.get(emptyBins.size() - 1)._max = realMax;
+            return emptyBins;
+        }
+        
         @Override
         List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
             FeatureLimits featureLimits = featuresLimits.getFeatureLimits(feature);
-            double step = (featureLimits._max - featureLimits._min) / VALUES_COUNT_IN_RANGE;
+            double step = (featureLimits._max - featureLimits._min) / NUM_BINS;
             // constant feature - dont use for split
             if (step == 0) {
                 return null;
@@ -53,43 +70,32 @@ public enum BinningStrategy {
                 // if step is more than 2 positions less precise than selected decimal limit, 
                 // set lower decimal limit to work with lower values
                 if (stepExponent < DECIMALS_TO_CONSIDER * (-1) + 2) {
-                    DECIMALS_TO_CONSIDER = (int) Math.floor(stepExponent) * (-1) + 2;
-                    Log.debug("DECIMALS_TO_CONSIDER: " + DECIMALS_TO_CONSIDER);
+                    int newDecimalsToConsider = (int) Math.floor(stepExponent) * (-1) + 2;
+                    Log.debug("DECIMALS_TO_CONSIDER: " + newDecimalsToConsider);
+                    step = roundToNDecimalPoints(step, newDecimalsToConsider);
+                } else {
+                    step = roundToNDecimalPoints(step, DECIMALS_TO_CONSIDER);
                 }
-                step = roundToNDecimalPoints(step, DECIMALS_TO_CONSIDER);
             }
             Log.debug("New step: " + step);
-            // get thresholds which are maximums of bins
-            double finalStep = step;
+            // get thresholds which are minimums and maximums of bins (including min amd max)
             List<Double> binningValues = new ArrayList<>();
-            for (double value = featureLimits._min + step; value <= featureLimits._max; value += step) {
+            for (double value = featureLimits._min; value <= featureLimits._max; value += step) {
                 binningValues.add(value);
             }
-            List<Bin> emptyBins = binningValues.stream()
-                    .map(v -> roundToNDecimalPoints(v, DECIMALS_TO_CONSIDER))
-                    // get bins - calculate minimum value and construct bin for each previously computed maximum value
-                    .map(v -> new Pair<>(v - finalStep, v)).map(Bin::new).collect(Collectors.toList());
-            // set the firs min to some lower value so the actual value equal to min is not lost
-            emptyBins.get(0)._min = emptyBins.get(0)._min - 0.0001 * step;
-            // set the last max to the real max value to avoid precision troubles
-            emptyBins.get(emptyBins.size() - 1)._max = featureLimits._max;
+            List<Bin> emptyBins = createEmptyBinsFromBinningValues(binningValues, featureLimits._min, featureLimits._max);
+            
             Log.debug("Real max: " + featureLimits._max
                     + ", last bin min: " + emptyBins.get(emptyBins.size() - 1)._min
                     + ", last bin max: " + emptyBins.get(emptyBins.size() - 1)._max + ", step: " + step);
 
-            // run MR task to compute accumulated statistic for bins
-            return emptyBins.stream().peek(bin -> {
-                CountBinningStatisticsMRTask task =
-                        new CountBinningStatisticsMRTask(feature, bin._min, bin._max, featuresLimits.toDoubles());
-                task.doAll(originData);
-                bin._count0 = task._count0;
-                bin._count = task._count;
-            }).collect(Collectors.toList());
+            return calculateBinSamplesCount(originData, emptyBins, feature, featuresLimits.toDoubles());
         }
     },
 
     /**
-     * Equal height: bins have approximately the same size - todo
+     * Equal height: bins have approximately the same size - todo 
+     * - probably too costly to do it with MR task, better leave equal-width
      */
     EQUAL_HEIGHT {
         @Override
@@ -118,6 +124,16 @@ public enum BinningStrategy {
      * @return list of created bins
      */
     abstract List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature);
-
+    public static List<Bin> calculateBinSamplesCount(Frame data, List<Bin> emptyBins,
+                                                     int feature, double[][] featuresLimits) {
+        // run MR task to compute accumulated statistic for bins
+        return emptyBins.stream().peek(bin -> {
+            CountBinSamplesCountMRTask task =
+                    new CountBinSamplesCountMRTask(feature, bin._min, bin._max, featuresLimits);
+            task.doAll(data);
+            bin._count0 = task._count0;
+            bin._count = task._count;
+        }).collect(Collectors.toList());
+    }
 }
     

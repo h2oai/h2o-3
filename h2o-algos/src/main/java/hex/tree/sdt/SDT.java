@@ -10,10 +10,12 @@ import org.apache.commons.math3.util.Precision;
 import org.apache.log4j.Logger;
 import water.DKV;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.Frame;
 import water.util.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -47,7 +49,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     transient Random _rand;
 
     //    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 2; // todo - make a parameter with default value
-    private final static double EPSILON = 0.000001d;
+    public final static double EPSILON = 0.000001d;
 
     private static final Logger LOG = Logger.getLogger(SDT.class);
 
@@ -75,7 +77,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         int featuresNumber = histogram.featuresCount();
         Pair<Double, Double> currentMinCriterionPair = new Pair<>(-1., Double.MAX_VALUE);
         int bestFeatureIndex = -1;
-        for (int featureIndex = 0; featureIndex < featuresNumber - 1 /*last column is prediction*/; featureIndex++) {
+        for (int featureIndex = 0; featureIndex < featuresNumber; featureIndex++) {
             // skip constant features
             if (histogram.isConstant(featureIndex)) {
                 continue;
@@ -241,9 +243,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
      *
      * @return features limits
      */
-    private DataFeaturesLimits getInitialFeaturesLimits() {
+    public static DataFeaturesLimits getInitialFeaturesLimits(Frame data) {
         return new DataFeaturesLimits(
-                Arrays.stream(_train.vecs())
+                IntStream.range(0, data.numCols() - 1 /*exclude the last prediction column*/)
+                        .mapToObj(i -> data.vec(i))
                         // decrease min as the minimum border is always excluded and real min value could be lost
                         .map(v -> new FeatureLimits(v.min() - EPSILON, v.max()))
                         .collect(Collectors.toList()));
@@ -295,7 +298,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         private void buildSDTIteratively() {
             _tree = new double[(int) Math.pow(2, _maxDepth + 1)][2];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
-            limitsQueue.add(getInitialFeaturesLimits());
+            limitsQueue.add(getInitialFeaturesLimits(_train));
             // build each node of the tree by picking limits from the queue and storing children's limits to the queue.
             // Tree must not be perfect. Missing nodes are empty elements and their limits in queue are null.
             for (int nodeIndex = 0; nodeIndex < _tree.length; nodeIndex++) {
@@ -338,8 +341,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     private Pair<Integer, Integer> countClasses(final DataFeaturesLimits featuresLimits) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
                 // create limits that are always fulfilled
-                ? Stream.generate(() -> new double[]{Double.MIN_VALUE, Double.MAX_VALUE})
-                .limit(_train.numCols()).toArray(double[][]::new)
+                ? Stream.generate(() -> new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE})
+                .limit(_train.numCols() - 1 /*exclude the last prediction column*/).toArray(double[][]::new)
                 : featuresLimits.toDoubles());
         task.doAll(_train);
 

@@ -1,5 +1,6 @@
 package hex.tree.sdt.mrtasks;
 
+import hex.tree.sdt.SDT;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
@@ -26,7 +27,7 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
         _featuresLimits = featuresLimits;
         // Init value of max is min and init value of min is max so any real value is better than the init one
         _realFeatureLimits = Arrays.stream(featuresLimits)
-                .map(f -> new double[]{Double.MAX_VALUE, Double.MIN_VALUE})
+                .map(f -> new double[]{Double.MAX_VALUE, (-1) * Double.MAX_VALUE})
                 .toArray(double[][]::new);
     }
 
@@ -38,7 +39,7 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
      */
     private void tryUpdatingMin(int feature, double candidateValue) {
         if (_realFeatureLimits[feature][LIMIT_MIN] > candidateValue) {
-            _realFeatureLimits[feature][LIMIT_MIN] = candidateValue - 0.0001;
+            _realFeatureLimits[feature][LIMIT_MIN] = candidateValue - SDT.EPSILON;
         }
     }
 
@@ -56,14 +57,13 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
 
     @Override
     public void map(Chunk[] cs, NewChunk[] nc) {
-        int numCols = cs.length;
+        int numCols = cs.length - 1; // exclude prediction column
         int numRows = cs[0]._len;
         boolean conditionsFailed;
         // select only rows that fulfill all conditions
         for (int row = 0; row < numRows; row++) {
             conditionsFailed = false;
-            // - 1 because of the class column - don't check limits on it
-            for (int column = 0; column < numCols - 1; column++) {
+            for (int column = 0; column < numCols; column++) {
                 // if the value is out of the given limit, skip this row
                 if ((cs[column].atd(row) <= _featuresLimits[column][LIMIT_MIN])
                         || (cs[column].atd(row) > _featuresLimits[column][LIMIT_MAX])) {
