@@ -532,6 +532,13 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      *
      * see doc at https://h2oai.atlassian.net/browse/PUBDEV-8444 for details.
      *
+     * The most important thing here is to make sure validSubset contains the true eligible predictors to choose
+     * from.  Inside the for loop, I will remove and add predictors that have been chosen in oneLessSubset and add
+     * the removed predictor back to validSubset after it is no longer selected in the predictor subset.
+     *
+     * I also will reset the validSubset from time to time to just start to include all predictors as 
+     * valid, then I will remove all predictors that have been chosen in currSubsetIndices.
+     *
      */
     public SweepModel replacement(List<Integer> currSubsetIndices, List<String> coefNames, List<Integer> validSubset,
                                   Set<BitSet> usedCombos, SweepModel bestModel) {
