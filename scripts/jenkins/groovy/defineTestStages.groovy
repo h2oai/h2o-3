@@ -63,6 +63,13 @@ def call(final pipelineContext) {
     ]
   ]
 
+  def SMOKE_PR_STAGES = [
+    [
+      stageName: 'Py3.7 Changed Only', target: 'test-py-changed', pythonVersion: '3.7',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ]
+  ]
+
   // Stages executed after each push to PR branch.
   // for Python, mainly test with latest supported version
   def PR_STAGES = [
@@ -792,7 +799,11 @@ def call(final pipelineContext) {
       // in Nightly mode execute all jobs regardless whether smoke tests fail 
       executeInParallel(SMOKE_STAGES + jobs, pipelineContext)
     } else {
-      executeInParallel(SMOKE_STAGES, pipelineContext)
+      def smokeStages = SMOKE_STAGES
+      if (modeCode == MODE_PR_CODE) {
+        smokeStages += SMOKE_PR_STAGES
+      }
+      executeInParallel(smokeStages, pipelineContext)
       if (modeCode == MODE_PR_CODE) {
         jobs += METADATA_VALIDATION_STAGES
       }
