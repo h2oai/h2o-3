@@ -76,6 +76,7 @@ class BuildConfig {
   private List<String> additionalGradleOpts
   private String xgbVersion
   private String gradleVersion
+  private List<String> changedPythonTests
 
   void initialize(final context, final String mode, final String commitMessage, final changes,
                   final boolean ignoreChanges, final List<String> distributionsToBuild, final List<String> gradleOpts,
@@ -94,6 +95,7 @@ class BuildConfig {
       detectChanges(changes)
     }
     changesMap[COMPONENT_HADOOP] = buildHadoop
+    changedPythonTests = detectPythonTestChanges(changes)
 
     nodeLabels = NodeLabels.findByBuildURL(context.env.BUILD_URL)
     supportedXGBEnvironments = [
@@ -158,6 +160,10 @@ class BuildConfig {
       'JAVA_VERSION=8',
       "BUILD_HADOOP=false"
     ]
+  }
+
+  List<String> getChangedPythonTests() {
+    return changedPythonTests
   }
 
   void setJobProperties(final context) {
@@ -291,6 +297,14 @@ class BuildConfig {
       } else {
         markAllComponentsForTest()
       }
+    }
+  }
+
+  private static List<String> detectPythonTestChanges(changes) {
+    changes.findAll { change ->
+      change.startsWith('h2o-py/') && change.contains("pyunit_")
+    }.collect {
+      it.replaceFirst(".*pyunit_", "pyunit_") // Extract only filename from path
     }
   }
 
