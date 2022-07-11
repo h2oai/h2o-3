@@ -820,4 +820,16 @@ public class ModelSelectionUtils {
         validSubset.addAll(onlyInOriginal);
         validSubset.removeAll(onlyInCurr);
     }
+    
+    public static List<Integer> findLastModelpredSub(int modIndex, ModelSelection.SweepModel[] bestModels, 
+                                                     List<Integer> currSubsetIndices) {
+        for (int index=modIndex-1; index >= 0; index--)
+            if (bestModels[index] != null) {
+                List<Integer> predList = IntStream.of(bestModels[index]._predSubset).boxed().collect(Collectors.toList());
+                Integer lastSubIndex = predList.remove(predList.size()-1);
+                predList.add(index, lastSubIndex);
+                return predList;
+            }
+        return currSubsetIndices;
+    }
 }

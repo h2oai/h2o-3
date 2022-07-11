@@ -242,9 +242,12 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 validSubset.removeAll(currSubsetIndices);
                 _job.update(predNum, "Finished forward step with "+predNum+" predictors.");
 
-                if (predNum < _numPredictors && predNum > 1)  // implement the replacement part
+                if (predNum < _numPredictors && predNum > 1) {  // implement the replacement part
                     bestModel = replacement(currSubsetIndices, coefNames, validSubset, usedCombos, bestModel);
-                
+                    currSubsetIndices = IntStream.of(bestModel._predSubset).boxed().collect(Collectors.toList());
+                    validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
+                    validSubset.removeAll(currSubsetIndices);
+                }
                 // build glm model with best subcarrier subsets for size and record the update
                 GLMModel bestR2Model = buildGLMModel(currSubsetIndices);
                 DKV.put(bestR2Model);
@@ -529,6 +532,13 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      *
      * see doc at https://h2oai.atlassian.net/browse/PUBDEV-8444 for details.
      *
+     * The most important thing here is to make sure validSubset contains the true eligible predictors to choose
+     * from.  Inside the for loop, I will remove and add predictors that have been chosen in oneLessSubset and add
+     * the removed predictor back to validSubset after it is no longer selected in the predictor subset.
+     *
+     * I also will reset the validSubset from time to time to just start to include all predictors as 
+     * valid, then I will remove all predictors that have been chosen in currSubsetIndices.
+     *
      */
     public SweepModel replacement(List<Integer> currSubsetIndices, List<String> coefNames, List<Integer> validSubset,
                                   Set<BitSet> usedCombos, SweepModel bestModel) {
@@ -536,36 +546,37 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         int currSubsetSize = currSubsetIndices.size();  // predictor subset size
         int lastBestErrVarPosIndex=-1;
         int[] msePredPosIndex = new int[currSubsetSize];
-        int[][] subsetsCombo = new int[currSubsetSize][];
         SweepModel[] bestModels = new SweepModel[currSubsetSize];
         SweepModel currModel = new SweepModel(bestModel._predSubset, bestModel._CPM, bestModel._sweepVector,
                 bestModel._errorVariance);
         SweepModel bestErrVarModel = new SweepModel(bestModel._predSubset, bestModel._CPM, bestModel._sweepVector, 
                 bestModel._errorVariance);
-        List<Integer> originalSubset = new ArrayList<>(currSubsetSize);
         while (true) {  // loop to find better predictor subset via sequential replacement
             for (int index=0; index<currSubsetSize; index++) {
                 if (index != lastBestErrVarPosIndex) {
-                    ArrayList<Integer> oneLessSubset = new ArrayList<>(currSubsetIndices);
-                    oneLessSubset.remove(index);
+                    ArrayList<Integer> oneLessSubset = new ArrayList<>(findLastModelpredSub(index, bestModels, currSubsetIndices));
+                    int removedSubInd = oneLessSubset.remove(index);
+                    validSubset.removeAll(oneLessSubset);
                     currModel._predSubset = oneLessSubset.stream().mapToInt(x->x).toArray();
                     genBestSweepVector(currModel, _crossProdcutMatrix, _predictorIndex2CPMIndices, _parms._intercept);
                     bestModels[index] = forwardStep(oneLessSubset, coefNames, validSubset, usedCombos, 
                             _crossProdcutMatrix, _predictorIndex2CPMIndices, currModel, _parms._intercept);
-                    subsetsCombo[index] = bestModels[index]._predSubset;
+                    validSubset.add(removedSubInd);
                     msePredPosIndex[index] = index;
                 }
             }
             int bestErrVarIndex = findBestMSEModel(errorVarianceMin, bestModels);
             if (bestErrVarIndex < 0) {
+                validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
+                validSubset.removeAll(currSubsetIndices);
                 break;
             } else {
                 bestErrVarModel = bestModels[bestErrVarIndex];
                 errorVarianceMin = bestErrVarModel._errorVariance;
                 currSubsetIndices = Arrays.stream(bestErrVarModel._predSubset).boxed().collect(Collectors.toList());
                 lastBestErrVarPosIndex = msePredPosIndex[bestErrVarIndex];
-                updateValidSubset(validSubset, originalSubset, currSubsetIndices);
-                originalSubset = currSubsetIndices;
+                validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
+                validSubset.removeAll(currSubsetIndices);
             }
         }
         return bestErrVarModel;
