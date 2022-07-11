@@ -8,6 +8,7 @@ Test harness.
 """
 import sys
 import os
+import atexit
 import shutil
 import signal
 import time
@@ -1589,7 +1590,8 @@ class TestRunner(object):
         for test in self.tests:
             test.terminate_if_started()
 
-        for cloud in self.clouds:
+        # first clean-up the "good" clouds, then attempt suspicious and try the bad one last
+        for cloud in self.clouds + self.suspicious_clouds + self.bad_clouds:
             cloud.terminate()
 
     def get_regression_passed(self):
@@ -2736,5 +2738,11 @@ def main(argv):
         sys.exit(1)
 
 
+def cleanup_subprocesses():
+    os.killpg(0, signal.SIGKILL)
+
+
 if __name__ == "__main__":
+    os.setpgrp()
+    atexit.register(cleanup_subprocesses)
     main(sys.argv)
