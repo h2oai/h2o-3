@@ -17,7 +17,7 @@ def test_gamma_dispersion_factor():
     except Exception as ex:
         print(ex)
         temp = str(ex)
-        assert "is only supported for gamma, tweedie, negativebinomial families" in temp,"Wrong exception was received."
+        assert "is only allowed for tweedie, gamma and negativebinomial families" in temp,"Wrong exception was received."
         print("Test passed!")
 
 if __name__ == "__main__":

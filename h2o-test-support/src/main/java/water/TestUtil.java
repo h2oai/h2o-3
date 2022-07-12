@@ -1414,7 +1414,8 @@ public class TestUtil extends Iced {
   public static boolean equalTwoArrays(double[] array1, double[] array2, double tol) {
     assert array1.length == array2.length : "Arrays have different lengths";
     for (int index = 0; index < array1.length; index++) {
-      if (Math.abs(array1[index] - array2[index]) > tol)
+      double diff = Math.abs(array1[index] - array2[index])/Math.max(Math.abs(array1[index]), Math.abs(array2[index]));
+      if (diff > tol)
         return false;
     }
     return true;

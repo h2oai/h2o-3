@@ -140,7 +140,6 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
                 return new DataInfo.MeanImputer();
             }
         }
-        
     }
     
     public static class ModelSelectionModelOutput extends Model.Output {
