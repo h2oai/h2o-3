@@ -511,7 +511,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 bestInd = index;
             }
         }
-        if (bestInd == -1) {
+        if (bestInd == -1) { // Predictor sets are duplicates.  Return SweepModel for findBestMSEModel stream operations
             return new SweepModel(null, null, null, errorVarianceMin);
         } else {    // set new predictor subset to curSubsetIndices, 
             currSubsetIndices.clear();
