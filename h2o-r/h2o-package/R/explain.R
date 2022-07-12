@@ -3413,19 +3413,19 @@ setMethod("show", "H2OParetoFront", function(object) {
 #' Plot Pareto front
 #'
 #' Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
-#' Pareto front there isn't a model that would be better in both criteria. This can be useful for example in picking
+#' Pareto front there isn't a model that would be better in both criteria. For example, this can be useful in picking
 #' models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
 #' the task is assumed to be minimization for both metrics.
 #'
 #' @param object H2OAutoML or H2OGrid or a data.frame
-#' @param leaderboard_frame a frame used for generating the leaderboard. Used when \code{object} is not a frame.
+#' @param leaderboard_frame a frame used for generating the leaderboard (used when \code{object} is not a frame)
 #' @param x_metric one of the metrics present in the leaderboard
 #' @param y_metric one of the metrics present in the leaderboard
 #' @param optimum location of the optimum on XY plane
 #' @param title title used for plotting
 #' @param color_col categorical column in the leaderboard that should be used for coloring the points
 #'
-#' @return An H2OParetoFront S4 object with plot method and pareto_front slot
+#' @return An H2OParetoFront S4 object with plot method and `pareto_front`` slot
 #'
 #' @examples
 #'\dontrun{

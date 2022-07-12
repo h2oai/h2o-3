@@ -1547,19 +1547,20 @@ class H2OGridSearch(h2o_meta(Keyed)):
                      ):
         """
         Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
-        Pareto front there isn't a model that would be better in both criteria. This can be useful for example in picking
+        Pareto front there isn't a model that would be better in both criteria. For example, this can be useful in picking
         models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
         the task is assumed to be minimization for both metrics.
 
         :param x_metric: metric present in the leaderboard
         :param y_metric: metric present in the leaderboard
         :param title: title used for the plot
-        :param color_col: Categorical column in the leaderboard that should be used for coloring the points
+        :param color_col: categorical column in the leaderboard that should be used for coloring the points
         :param figsize: figure size; passed directly to matplotlib
         :param colormap: colormap to use
-        :return: object that contains the resulting figure (can be accessed using result.figure())
+        :return: object that contains the resulting figure (can be accessed using ``result.figure()``)
 
         :examples:
+        
         >>> import h2o
         >>> from h2o.automl import H2OAutoML
         >>> from h2o.estimators import H2OGradientBoostingEstimator
