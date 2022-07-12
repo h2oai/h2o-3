@@ -162,7 +162,8 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             EasyPredictModelWrapper wrapper = makeWrapper();
             GenModel model = wrapper.getModel();
             String[] responseDomain = model.getDomainValues(model.getResponseName());
-            AdaptFrameParameters adaptFrameParameters = makeAdaptFrameParameters();
+            AdaptFrameParameters adaptFrameParameters = makeAdaptFrameParameters(
+                    Parameters.CategoricalEncodingScheme.AUTO); // encoding will actually be handled by the MOJO itself
             _mb = _computeMetrics ? GenericModel.this.makeMetricBuilder(responseDomain) : null;
             try {
                 predict(wrapper, adaptFrameParameters, responseDomain, cs, ncs);
@@ -248,14 +249,17 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     @Override
     protected AdaptFrameParameters makeAdaptFrameParameters() {
-        final GenModel genModel = genModel();
-        CategoricalEncoding encoding = genModel.getCategoricalEncoding();
+        CategoricalEncoding encoding = genModel().getCategoricalEncoding();
         if (encoding.isParametrized()) {
             throw new UnsupportedOperationException(
                     "Models with categorical encoding '" + encoding + "' are not currently supported for predicting and/or calculating metrics.");
         }
-        final Parameters.CategoricalEncodingScheme encodingScheme = Parameters.CategoricalEncodingScheme.fromGenModel(encoding);
-        final ModelDescriptor descriptor = genModel instanceof MojoModel ? ((MojoModel) genModel)._modelDescriptor : null;
+        return makeAdaptFrameParameters(Parameters.CategoricalEncodingScheme.fromGenModel(encoding));
+    }
+
+    protected AdaptFrameParameters makeAdaptFrameParameters(final Parameters.CategoricalEncodingScheme encodingScheme) {
+        final GenModel genModel = genModel();
+        final ModelDescriptor descriptor = getModelDescriptor();
         return new AdaptFrameParameters() {
             @Override
             public Parameters.CategoricalEncodingScheme getCategoricalEncoding() {
@@ -288,6 +292,11 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 return -1; // returned but won't be used
             }
         };
+    }
+
+    private ModelDescriptor getModelDescriptor() {
+        final GenModel genModel = genModel();
+        return genModel instanceof MojoModel ? ((MojoModel) genModel)._modelDescriptor : null;
     }
 
     @Override
