@@ -41,7 +41,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
      * name of the algo for MOJO, "pojo" for POJO models
      */
     private final String _algoName; 
-    private final GenModelSource _genModelSource;
+    private final GenModelSource<?> _genModelSource;
 
     /**
      * Full constructor
@@ -147,7 +147,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         private final Job<?> _j;
 
         /** Output parameter: Metric builder */
-        private ModelMetrics.MetricBuilder _mb;
+        private ModelMetrics.MetricBuilder<?> _mb;
 
         public PredictScoreMojoTask(boolean computeMetrics, Job<?> j) {
             _computeMetrics = computeMetrics;
@@ -208,7 +208,6 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public void reduce(PredictScoreMojoTask bs) {
             super.reduce(bs);
             if (_mb != null) {
@@ -224,7 +223,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         }
     }
 
-    private ModelMetrics.MetricBuilder unsupportedMetricsBuilder() {
+    private ModelMetrics.MetricBuilder<?> unsupportedMetricsBuilder() {
         if (_parms._disable_algo_check) {
             Log.warn("Model category `" + _output._modelCategory + "` currently doesn't support calculating model metrics. " +
                     "Model metrics will not be available.");
