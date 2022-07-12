@@ -296,8 +296,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _dispersion_epsilon = 1e-4;
-    public int _max_iterations_dispersion = 1000000;
+    public double _dispersion_epsilon = 1e-4; // 1e-4 for gamma, 1e-4 for tweedie
+    public int _max_iterations_dispersion = 3000;
     public double _objective_epsilon = -1;  // -1 to set to default
     public double _gradient_epsilon = -1;   // -1 to set to default
     public double _obj_reg = -1;
@@ -318,6 +318,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _init_dispersion_parameter = 1.0;
     public boolean _fix_dispersion_parameter = false;
     public boolean _build_null_model = false;
+    public double _tweedie_epsilon = 8e-17; // paper suggests 8e-17
+    public boolean _fix_tweedie_variance_power = true;
+    public int _max_series_index = 5000;
+    public boolean _debugTDispersionOnly = true;  // debug only and will slow down model building
+    public double _dispersion_learning_rate = 0.5;
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {

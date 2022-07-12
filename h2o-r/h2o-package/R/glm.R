@@ -135,12 +135,21 @@
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param dispersion_epsilon if changes in dispersion parameter estimation is smaller than dispersion_epsilon, will break out of the
 #'        dispersion parameter estimation loop using maximum likelihood Defaults to 0.0001.
+#' @param tweedie_epsilon In estimating tweedie dispersion parameter using maximum likelihood, this is used to choose the lower and
+#'        upper indices in the approximating of the infinite series summation. Defaults to 8e-17.
 #' @param max_iterations_dispersion control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood
-#'        Defaults to 1000000.
+#'        Defaults to 3000.
 #' @param build_null_model \code{Logical}. If set, will build a model with only the intercept.  Default to false. Defaults to FALSE.
 #' @param fix_dispersion_parameter \code{Logical}. Only used for Tweedie, Gamma and Negative Binomial GLM.  If set, will use the dispsersion
 #'        parameter in init_dispersion_parameter as the standard error and use it to calculate the p-values. Default to
 #'        false. Defaults to FALSE.
+#' @param fix_tweedie_variance_power \code{Logical}. If true, will fix tweedie variance power value to the value set in tweedie_variance_power
+#'        Defaults to TRUE.
+#' @param dispersion_learning_rate Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. It must be
+#'        > 0.  This controls how much the dispersion parameter estimate is to be changed when the calculated
+#'        loglikelihood actually decreases with the new dispersion.  In this casek, instead of settingnew dispersion =
+#'        dispersion - change, we set new dispersion = dispersion + dispersion_learning_rate*change. Defaults to 0.5.
+#'        Defaults to 0.5.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -254,9 +263,12 @@ h2o.glm <- function(x,
                     generate_scoring_history = FALSE,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                     dispersion_epsilon = 0.0001,
-                    max_iterations_dispersion = 1000000,
+                    tweedie_epsilon = 8e-17,
+                    max_iterations_dispersion = 3000,
                     build_null_model = FALSE,
-                    fix_dispersion_parameter = FALSE)
+                    fix_dispersion_parameter = FALSE,
+                    fix_tweedie_variance_power = TRUE,
+                    dispersion_learning_rate = 0.5)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -421,12 +433,18 @@ h2o.glm <- function(x,
     parms$auc_type <- auc_type
   if (!missing(dispersion_epsilon))
     parms$dispersion_epsilon <- dispersion_epsilon
+  if (!missing(tweedie_epsilon))
+    parms$tweedie_epsilon <- tweedie_epsilon
   if (!missing(max_iterations_dispersion))
     parms$max_iterations_dispersion <- max_iterations_dispersion
   if (!missing(build_null_model))
     parms$build_null_model <- build_null_model
   if (!missing(fix_dispersion_parameter))
     parms$fix_dispersion_parameter <- fix_dispersion_parameter
+  if (!missing(fix_tweedie_variance_power))
+    parms$fix_tweedie_variance_power <- fix_tweedie_variance_power
+  if (!missing(dispersion_learning_rate))
+    parms$dispersion_learning_rate <- dispersion_learning_rate
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -522,9 +540,12 @@ h2o.glm <- function(x,
                                     generate_scoring_history = FALSE,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     dispersion_epsilon = 0.0001,
-                                    max_iterations_dispersion = 1000000,
+                                    tweedie_epsilon = 8e-17,
+                                    max_iterations_dispersion = 3000,
                                     build_null_model = FALSE,
                                     fix_dispersion_parameter = FALSE,
+                                    fix_tweedie_variance_power = TRUE,
+                                    dispersion_learning_rate = 0.5,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -694,12 +715,18 @@ h2o.glm <- function(x,
     parms$auc_type <- auc_type
   if (!missing(dispersion_epsilon))
     parms$dispersion_epsilon <- dispersion_epsilon
+  if (!missing(tweedie_epsilon))
+    parms$tweedie_epsilon <- tweedie_epsilon
   if (!missing(max_iterations_dispersion))
     parms$max_iterations_dispersion <- max_iterations_dispersion
   if (!missing(build_null_model))
     parms$build_null_model <- build_null_model
   if (!missing(fix_dispersion_parameter))
     parms$fix_dispersion_parameter <- fix_dispersion_parameter
+  if (!missing(fix_tweedie_variance_power))
+    parms$fix_tweedie_variance_power <- fix_tweedie_variance_power
+  if (!missing(dispersion_learning_rate))
+    parms$dispersion_learning_rate <- dispersion_learning_rate
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

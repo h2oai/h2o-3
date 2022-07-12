@@ -49,6 +49,8 @@ import java.util.stream.IntStream;
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
+import static hex.glm.DispersionUtils.estimateGammaMLSE;
+import static hex.glm.DispersionUtils.estimateTweedieDispersionOnly;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.*;
@@ -79,6 +81,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private boolean _earlyStopEnabled = false;
   private boolean _checkPointFirstIter = false;  // indicate first iteration for checkpoint model
   private boolean _betaConstraintsOn = false;
+  private boolean _tweedieDispersionOnly = false;
 
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
@@ -988,6 +991,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _offset = null;
       }
       
+      if (_parms._dispersion_learning_rate <= 0)
+        error("dispersion_learning_rate", "must > 0 and is only used with tweedie disersion" +
+                " parameter estimation using ml.");
+      
       if (hasOffsetCol() && ordinal.equals(_parms._family)) 
         error("offset_column", " does not work with ordinal family right now.  Will be fixed in" +
                 " the future.");
@@ -998,14 +1005,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 " does not work with " + _parms._family + " family.");
       }
       // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
-      if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family))
-        error("dispersion_parameter_mode", " ml can only be used for family gamma.");
+      if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family) && !tweedie.equals(_parms._family))
+        error("dispersion_parameter_mode", " ml can only be used for family gamma, tweedie.");
       
       if (ml.equals(_parms._dispersion_parameter_method)) {
+        if (!_parms._fix_tweedie_variance_power && !tweedie.equals(_parms._family))
+          error("fix_tweedie_variance_power", " can only be set to false for tweedie family.");
         if (_parms._max_iterations_dispersion <= 0)
           error("max_iterations_dispersion", " must > 0.");
         if (_parms._dispersion_epsilon < 0)
           error("dispersion_epsilon", " must >= 0.");
+        if (_parms._tweedie_variance_power <= 1)
+          error("tweedie_variance_power", " must exceed 1.");
+        if (_parms._tweedie_variance_power == 1 )
+          error("tweedie_variance_power", "Tweedie family with tweedie_variance_power=1.0 is " +
+                  "equivalent to the Poisson family.  Please use Poisson family instead.");
+        if (_parms._tweedie_variance_power == 2)
+          error("tweedie_variance_power", "Tweedie family with tweedie_variance_power=2.0 is " +
+                  "equivalent to the Gamma family.  Please use Gamma family instead.");
+        if (_parms._tweedie_epsilon <= 0)
+          error("tweedie_epsilon", " must exceed 0.");
       }
       
       if (_parms._fix_dispersion_parameter)
@@ -1183,7 +1202,28 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-6 : 1e-4;
         if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
       }
+      
+      // check for correct setting for Tweedie ML dispersion parameter setting
+      if (_parms._fix_dispersion_parameter) { // only tweeide, NB, gamma are allowed to use this
+        if (!tweedie.equals(_parms._family) && !gamma.equals(_parms._family) && !negativebinomial.equals(_parms._family))
+          error("fix_dispersion_parameter", " is only allowed for tweedie, gamma and " +
+                  "negativebinomial families");
+        if (!ml.equals(_parms._dispersion_parameter_method))
+          error("fix_dispersion_parameter", " can only be used when dispersion_parameter_method=ml");
+      }
+      
+      if (_parms._fix_tweedie_variance_power && tweedie.equals(_parms._family)) {
+        double minResponse = _parms.train().vec(_parms._response_column).min();
+        if (minResponse < 0)
+          error("response_column", " must >= 0");
+        
+        if (_parms._tweedie_variance_power > 2 && minResponse <= 0) 
+          warn("response_column", " must > 0 when tweedie_variance_power > 2, such rows will be ignored.");
+      }
 
+        if (_parms._fix_tweedie_variance_power && !_parms._fix_dispersion_parameter)
+        _tweedieDispersionOnly = true;
+      
       if (_parms.hasCheckpoint()) {
         if (!Family.gaussian.equals(_parms._family))  // Gaussian it not iterative and therefore don't care
           _checkPointFirstIter = true;  // mark the first iteration during iteration process of training
@@ -2317,7 +2357,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             throw H2O.unimpl();
         }
       }
-      if (_parms._compute_p_values) { // compute p-values
+
+      if (_parms._compute_p_values) { // compute p-values, standard error, estimate dispersion parameters...
         double se = _parms._init_dispersion_parameter;
         boolean seEst = false;
         double[] beta = _state.beta();
@@ -2334,11 +2375,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // dispersion parameter estimate
             }
           } else if (ml.equals(_parms._dispersion_parameter_method)) {
-            ComputeMLSETsk mlCT = new ComputeMLSETsk(null, _state.activeData(), _job._key, beta,
-                    _parms).doAll(_state.activeData()._adaptedFrame);
             if (gamma.equals(_parms._family)) {
-              double oneOverSe = estimateMLSE(mlCT, 1.0 / se, beta);
+              ComputeGammaMLSETsk mlCT = new ComputeGammaMLSETsk(null, _state.activeData(), _job._key, beta,
+                      _parms).doAll(_state.activeData()._adaptedFrame);
+
+              double oneOverSe = estimateGammaMLSE(mlCT, 1.0 / se, beta, _parms, _state, _job, _model);
               se = 1.0 / oneOverSe;
+            } else if (_tweedieDispersionOnly) {
+              se = estimateTweedieDispersionOnly(_parms, _model, _job, beta, _state.activeData());
+            } else {  // negative binomial
+              throw new UnsupportedOperationException("Dipsersion parameter estimation using ML for negative binomial" +
+                      " family is not implemented yet.  Please stay tuned.");
             }
           }
         }
@@ -2367,12 +2414,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
       }
     }
-
+      
     /***
-     * Estimate dispersion parameter using maximum likelihood.  I followed section IV of the doc in 
+     * Estimate dispersion parameter using maximum likelihood.  I followed section IV of the doc in
      * https://h2oai.atlassian.net/browse/PUBDEV-8683 . 
-     */
-    public double estimateMLSE(GLMTask.ComputeMLSETsk mlCT, double alpha, double[] beta) {
+     *//*
+    public double estimateGammaMLSE(ComputeGammaMLSETsk mlCT, double alpha, double[] beta) {
       double constantValue = mlCT._wsum + mlCT._sumlnyiOui - mlCT._sumyiOverui;
       DataInfo dinfo = _state.activeData();
       Frame adaptedF = dinfo._adaptedFrame;
@@ -2417,7 +2464,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _parms._max_iterations_dispersion+" iterations.  Increase max_iterations_dispersion or decrease " +
               "dispersion_epsilon.");
       return alpha;
-    }
+    }*/
 
     private long _lastScore = System.currentTimeMillis();
 
