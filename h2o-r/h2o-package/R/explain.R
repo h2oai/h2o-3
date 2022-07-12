@@ -3333,7 +3333,7 @@ h2o.learning_curve_plot <- function(model,
 
   reordered_df <- df[order(df[[x]], df[[y]], decreasing = decreasing), ]
   reordered_df <- reordered_df[which(!duplicated(cum_agg(reordered_df[[y]]))), ]
-  reordered_df[order(row.names(reordered_df)), ]  # Keep original order
+  reordered_df
 }
 
 
