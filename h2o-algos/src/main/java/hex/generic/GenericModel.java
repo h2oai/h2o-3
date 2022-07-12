@@ -25,7 +25,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     /**
      * Captures model-specific behaviors
      */
-    private static final Map<String, ModelBehavior[]> MODEL_BEHAVIORS;
+    private static final Map<String, ModelBehavior[]> DEFAULT_MODEL_BEHAVIORS;
     static{
         final Map<String, ModelBehavior[]> behaviors = new HashMap<>();
         behaviors.put(
@@ -34,7 +34,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 }
         );
 
-        MODEL_BEHAVIORS = Collections.unmodifiableMap(behaviors);
+        DEFAULT_MODEL_BEHAVIORS = Collections.unmodifiableMap(behaviors);
     }
 
     /**
@@ -51,9 +51,9 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                         MojoModel mojoModel, Key<Frame> mojoSource) {
         super(selfKey, parms, output);
         _algoName = mojoModel._algoName;
-        _genModelSource = new MojoModelSource(mojoSource, mojoModel);
+        _genModelSource = new MojoModelSource(mojoSource, mojoModel, defaultModelBehaviors(_algoName));
         _output = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
-        if(mojoModel._modelAttributes != null && mojoModel._modelAttributes.getModelParameters() != null) {
+        if (mojoModel._modelAttributes != null && mojoModel._modelAttributes.getModelParameters() != null) {
             _parms._modelParameters = GenericModelParameters.convertParameters(mojoModel._modelAttributes.getModelParameters());
         }
     }
@@ -64,6 +64,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         _algoName = "pojo";
         _genModelSource = new PojoModelSource(pojoSource, pojoModel);
         _output = new GenericModelOutput(ModelDescriptorBuilder.makeDescriptor(pojoModel));
+    }
+
+    static ModelBehavior[] defaultModelBehaviors(String algoName) {
+        return DEFAULT_MODEL_BEHAVIORS.get(algoName);
     }
 
     private static MojoModel reconstructMojo(ByteVec mojoBytes) {
@@ -129,7 +133,6 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     PredictScoreResult predictScoreMojoImpl(Frame fr, String destination_key, Job<?> j, boolean computeMetrics) {
         GenModel model = genModel();
-        assert model.isSupervised() : "MOJO Predict only works for supervised models";
         String[] names = model.getOutputNames();
         String[][] domains = model.getOutputDomains();
         byte[] type = new byte[domains.length];
@@ -161,7 +164,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
             EasyPredictModelWrapper wrapper = makeWrapper();
             GenModel model = wrapper.getModel();
-            String[] responseDomain = model.getDomainValues(model.getResponseName());
+            String[] responseDomain = model.isSupervised() ? model.getDomainValues(model.getResponseName()) : null;
             AdaptFrameParameters adaptFrameParameters = makeAdaptFrameParameters(
                     Parameters.CategoricalEncodingScheme.AUTO); // encoding will actually be handled by the MOJO itself
             _mb = _computeMetrics ? GenericModel.this.makeMetricBuilder(responseDomain) : null;
@@ -391,16 +394,36 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         Key<Frame> getSourceKey() {
             return _source;
         }
+
+        ModelBehavior[] getModelBehaviors() {
+            return null;
+        }
     }
     
     private static class MojoModelSource extends GenModelSource<MojoModelSource> {
-        MojoModelSource(Key<Frame> mojoSource, MojoModel mojoModel) {
+        private final ModelBehavior[] _modelBehaviors;
+
+        MojoModelSource(Key<Frame> mojoSource, MojoModel mojoModel, ModelBehavior[] defaultModelBehaviors) {
             super(mojoSource, mojoModel);
+            _modelBehaviors = mojoModeBehaviors(mojoModel, defaultModelBehaviors);
         }
 
         @Override
         GenModel reconstructGenModel(ByteVec bv) {
             return reconstructMojo(bv);
+        }
+
+        @Override
+        ModelBehavior[] getModelBehaviors() {
+            return _modelBehaviors;
+        }
+
+        static ModelBehavior[] mojoModeBehaviors(MojoModel mojoModel, ModelBehavior[] defaultModelBehaviors) {
+            boolean useMojoPredict = mojoModel.getCategoricalEncoding().isParametrized();
+            return useMojoPredict ?
+                    ArrayUtils.append(defaultModelBehaviors, ModelBehavior.USE_MOJO_PREDICT)
+                    :
+                    defaultModelBehaviors;
         }
     }
 
@@ -523,9 +546,10 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     boolean hasBehavior(ModelBehavior b) {
-        if (! MODEL_BEHAVIORS.containsKey(_algoName))
+        ModelBehavior[] modelBehaviors = _genModelSource.getModelBehaviors();
+        if (modelBehaviors == null)
             return false;
-        return ArrayUtils.find(MODEL_BEHAVIORS.get(_algoName), b) >= 0;
+        return ArrayUtils.find(modelBehaviors, b) >= 0;
     }
 
     enum ModelBehavior {

@@ -166,6 +166,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       case Regression:
         outputDomains[0] = null;
         break;
+      case AutoEncoder:
+        break;
 
       default:
         throw new UnsupportedOperationException("Getting output domains for model category '" +

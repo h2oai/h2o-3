@@ -25,6 +25,7 @@ import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -1457,5 +1458,55 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
-    
+
+    @Test
+    public void testAutoEncoderWithParametrizedEncoding() throws IOException {
+        try {
+            Scope.enter();
+            Frame train = TestUtil.parseAndTrackTestFile("smalldata/airlines/AirlinesTrain.csv.zip");
+
+            DeepLearningModel.DeepLearningParameters p = new DeepLearningModel.DeepLearningParameters();
+            p._train = train._key;
+            p._autoencoder = true;
+            p._seed = 0xDECAF;
+            p._hidden = new int[]{10, 5, 3};
+            p._adaptive_rate = true;
+            p._l1 = 1e-4;
+            p._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
+            p._max_w2 = 10;
+            p._train_samples_per_iteration = -1;
+            p._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
+            p._epochs = 0.2;
+            p._force_load_balance = true;
+            p._score_training_samples = 0;
+            p._score_validation_samples = 0;
+            p._reproducible = true;
+            p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+
+            DeepLearning dl = new DeepLearning(p);
+            DeepLearningModel autoencoder = dl.trainModel().get();
+            Assert.assertNotNull(autoencoder);
+            Scope.track_generic(autoencoder);
+
+            // first make sure MOJO predict works
+            Frame reconstructed = autoencoder.score(train);
+            Scope.track(reconstructed);
+            Assert.assertTrue(autoencoder.testJavaScoring(train, reconstructed, 1e-6));
+
+            File mojoFile = temporaryFolder.newFile();
+            URI mojoURI = autoencoder.exportMojo(mojoFile.getAbsolutePath(), true);
+
+            // now check that imported AE mojo produces the same results as original model
+            GenericModel genericAE = Generic.importMojoModel(mojoURI);
+            assertNotNull(genericAE);
+            Scope.track_generic(genericAE);
+
+            Frame reconstructedAE = genericAE.score(train);
+            Scope.track(reconstructedAE);
+            assertFrameEquals(reconstructed, reconstructedAE, 1e-6);
+        } finally {
+            Scope.exit();
+        }
+    }
+
 }
