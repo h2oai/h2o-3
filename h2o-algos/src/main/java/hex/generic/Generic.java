@@ -13,6 +13,7 @@ import water.parser.ZipUtil;
 import water.util.Log;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 
 /**
@@ -190,6 +191,10 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         p._path = location;
         p._disable_algo_check = disableAlgoCheck;
         return new Generic(p).trainModel().get();
+    }
+
+    public static GenericModel importMojoModel(URI location) {
+        return importMojoModel(location.toString(), false);
     }
 
 }
