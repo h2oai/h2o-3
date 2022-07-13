@@ -4,12 +4,9 @@ import sys
 import os
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
-import matplotlib
-matplotlib.use("Agg")  # remove warning from python2 (missing TKinter)
+import h2o
 import pandas as pd
 from tests import pyunit_utils
-from h2o.explanation._explain import *
-
 
 
 def data_from_csv():
@@ -39,8 +36,11 @@ def data_from_csv():
     assert hf.columns[4] == ']'
     assert hf.as_data_frame()[']'].get(0) == 'never'
 
-def artificial_data():
-    training_df = pd.DataFrame({"abcd)efgh": ["\"Test\"" for _ in range(5)], ")": ["\"Test2\"" for _ in range(5)]})
+
+def synthetic_data():
+    df_col0 = pd.DataFrame({"abcd)efgh": ["\"Test\"" for _ in range(5)]})
+    df_col1 = pd.DataFrame({")": ["\"Test2\"" for _ in range(5)]})
+    training_df = df_col0.join(df_col1)
     training_df.head()
 
     hf = h2o.H2OFrame(training_df)
@@ -68,6 +68,6 @@ def artificial_data():
 
 pyunit_utils.run_tests([
     data_from_csv,
-    artificial_data
+    synthetic_data
 ])
 
