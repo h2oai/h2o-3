@@ -1034,7 +1034,43 @@ public class VecUtils {
     return v;
   }
 
+  public static class MinMaxTask extends MRTask<MinMaxTask> {
+    public double _min = Double.POSITIVE_INFINITY;
+    public double _max = Double.NEGATIVE_INFINITY;
 
+    @Override
+    public void map(Chunk xs, Chunk weights) {
+      double min = _min;
+      double max = _max;
+      for (int i = 0; i < xs._len; i++) {
+        if (weights.atd(i) != 0) {
+          double value = xs.atd(i);
+          if (value < min)
+            min = value;
+          if (value > max)
+            max = value;
+        }
+      }
+      _min = min;
+      _max = max;
+    }
 
+    @Override
+    public void reduce(MinMaxTask mrt) {
+      if (!mrt.isEmpty()) {
+        _min = Math.min(_min, mrt._min);
+        _max = Math.max(_max, mrt._max);
+      }
+    }
+
+    private boolean isEmpty() {
+      return _min == Double.POSITIVE_INFINITY && _max == Double.NEGATIVE_INFINITY;
+    }
+
+  }
+
+  public static MinMaxTask findMinMax(Vec numVec, Vec weightVec) {
+    return new MinMaxTask().doAll(numVec, weightVec);
+  }
 
 }
