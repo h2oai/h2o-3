@@ -3433,11 +3433,11 @@ setMethod("show", "H2OParetoFront", function(object) {
 #' h2o.init()
 #'
 #' # Import the wine dataset into H2O:
-#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
-#' df <-  h2o.importFile(f)
+#' df <-  h2o.importFile("h2o://prostate.csv")
 #'
 #' # Set the response
-#' response <- "quality"
+#' response <- "CAPSULE"
+#' df[[response]] <- as.factor(df[[response]])
 #'
 #' # Split the dataset into a train and test set:
 #' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
@@ -3461,7 +3461,7 @@ setMethod("show", "H2OParetoFront", function(object) {
 #'                    seed = 42)
 #'
 #' combined_leaderboard <- h2o.make_leaderboard(list(aml, aml2), test, extra_columns = "ALL")
-#' pf_combined <- h2o.pareto_front(combined_leaderboard)
+#' pf_combined <- h2o.pareto_front(combined_leaderboard, x_metric = "predict_time_per_row_ms", y_metric = "rmse", optimum = "bottom left")
 #' plot(pf_combined)
 #' pf_combined@pareto_front
 #' }

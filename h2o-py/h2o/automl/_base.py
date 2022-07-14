@@ -238,10 +238,7 @@ class H2OAutoMLBaseMixin:
                      test_frame=None,  # type: Optional[H2OFrame]
                      x_metric=None,  # type: Optional[str]
                      y_metric=None,  # type: Optional[str]
-                     title=None,  # type: Optional[str]
-                     color_col="algo",  # type: str
-                     figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
-                     colormap="Dark2"  # type: str
+                     **kwargs
                      ):
         """
         Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
@@ -249,16 +246,15 @@ class H2OAutoMLBaseMixin:
         models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
         the task is assumed to be minimization for both metrics.
 
+        :param test_frame: a frame used to generate the metrics
         :param x_metric: metric present in the leaderboard
         :param y_metric: metric present in the leaderboard
-        :param title: title used for the plot
-        :param color_col: categorical column in the leaderboard that should be used for coloring the points
-        :param figsize: figure size; passed directly to matplotlib
-        :param colormap: colormap to use
+        :param kwargs: key, value mappings
+                       Other keyword arguments are passed through to
+                       :meth:`h2o.explanation.pareto_front`.
         :return: object that contains the resulting figure (can be accessed using ``result.figure()``)
 
         :examples:
-        
         >>> import h2o
         >>> from h2o.automl import H2OAutoML
         >>> from h2o.estimators import H2OGradientBoostingEstimator
@@ -267,11 +263,11 @@ class H2OAutoMLBaseMixin:
         >>> h2o.connect()
         >>>
         >>> # Import the wine dataset into H2O:
-        >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
-        >>> df = h2o.import_file(f)
+        >>> df = h2o.import_file("h2o://prostate.csv")
         >>>
         >>> # Set the response
-        >>> response = "quality"
+        >>> response = "CAPSULE"
+        >>> df[response] = df[response].asfactor()
         >>>
         >>> # Split the dataset into a train and test set:
         >>> train, test = df.split_frame([0.8])
@@ -301,17 +297,14 @@ class H2OAutoMLBaseMixin:
             "right" if x_metric.lower() in higher_is_better else "left"
         )
 
-        if title is None:
-            title = "Pareto Front for {}".format(self.project_name)
+        if kwargs.get("title") is None:
+            kwargs["title"] = "Pareto Front for {}".format(self.project_name)
 
         return h2o.explanation.pareto_front(frame=leaderboard,
                                             x_metric=x_metric,
                                             y_metric=y_metric,
                                             optimum=optimum,
-                                            title=title,
-                                            color_col=color_col,
-                                            figsize=figsize,
-                                            colormap=colormap)
+                                            **kwargs)
 
 
 def _fetch_leaderboard(aml_id, extensions=None):
