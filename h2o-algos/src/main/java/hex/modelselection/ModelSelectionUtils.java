@@ -10,6 +10,8 @@ import jsr166y.RecursiveAction;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
+import water.util.Log;
+
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -824,9 +826,9 @@ public class ModelSelectionUtils {
     public static List<Integer> findLastModelpredSub(int modIndex, ModelSelection.SweepModel[] bestModels, 
                                                      List<Integer> currSubsetIndices) {
         for (int index=modIndex-1; index >= 0; index--)
-            if (bestModels[index] != null) {
+            if (bestModels[index] != null && bestModels[index]._predSubset != null) {
                 List<Integer> predList = IntStream.of(bestModels[index]._predSubset).boxed().collect(Collectors.toList());
-                Integer lastSubIndex = predList.remove(predList.size()-1);
+                Integer lastSubIndex = predList.remove(predList.size() - 1);
                 predList.add(index, lastSubIndex);
                 return predList;
             }
