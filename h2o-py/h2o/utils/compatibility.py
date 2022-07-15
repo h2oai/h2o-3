@@ -67,7 +67,7 @@ __all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",
            "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
            "apply", "cmp", "coerce", "execfile", "file", "long", "raw_input", "reduce", "reload", "unicode", "xrange",
            "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", 
-           "str_type", "repr2", 'str2', "PList", 'get_builtin', 'set_builtin')
+           "str_type", "repr2", 'str2', "bytes2", "PList", 'get_builtin', 'set_builtin')
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -172,17 +172,32 @@ if PY2:
         same goal as str in Py3, but handles both Py2 types 
         and converts str (byte arrays) to proper unicode string even when the str contains non-ascii chars.
         """
-        def __new__(cls, o):
+        def __new__(cls, o, *args):
             if isinstance(o, str):
                 try:
-                    return super(str2, cls).__new__(cls, o)
+                    return super(str2, cls).__new__(cls, o, *args)
                 except UnicodeDecodeError:
-                    return super(str2, cls).__new__(cls, o.decode('utf8'))
+                    return super(str2, cls).__new__(cls, o.decode('utf8'), *args)
             else:
-                return super(str2, cls).__new__(cls, o)
+                return super(str2, cls).__new__(cls, o, *args)
+            
+    class bytes2(bytes):
+        """
+        same goal as bytes in Py3, but handles both Py2 types 
+        and converts unicode string to proper bytes if the string contains non-ascii chars.
+        """
+        def __new__(cls, s, *args):
+            if isinstance(s, _native_unicode):
+                try:
+                    return super(bytes2, cls).__new__(cls, s, *args)
+                except UnicodeEncodeError:
+                    return super(bytes2, cls).__new__(cls, s.encode('utf8'), *args)
+            else:
+                return super(bytes2, cls).__new__(cls, s, *args)
             
 else:
     str_type = str2 = str
+    bytes2 = bytes
 
 
 def _is_py2_unicode(s):

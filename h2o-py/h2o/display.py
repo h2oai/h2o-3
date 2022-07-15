@@ -20,7 +20,7 @@ import tabulate
 
 # noinspection PyUnresolvedReferences
 from .utils.compatibility import *  # NOQA
-from .utils.compatibility import str2 as str
+from .utils.compatibility import str2 as str, bytes2 as bytes
 from .utils.shared_utils import can_use_pandas
 from .utils.threading import local_context, local_context_safe, local_env
 
@@ -55,25 +55,31 @@ def repr_def(obj, attributes='public'):
 
 _repr_formats = [None, 'plain', 'pretty', 'html']
 
+
 @contextmanager
 def _repr_format(fmt=None, force=False):
     assert fmt in _repr_formats, "Unsupported format '%s', `fmt` should be one of %s" % (fmt, _repr_formats)
     with local_context_safe('repr_format', fmt, force) as lc:
         yield lc
 
+
 _repr_verbosity_levels = [None, 'short', 'medium', 'full']
+
 
 @contextmanager
 def _repr_verbosity(verbosity=None, force=False):
     assert verbosity in _repr_verbosity_levels, "Unsupported verbosity '%s', `verbosity` should be one of %s" % (verbosity, _repr_verbosity_levels)
     with local_context_safe('repr_verbosity', verbosity, force) as lc:
         yield lc
+   
            
 def _get_repr_format(default=None):
     return local_env('repr_format', default)
 
+
 def _get_repr_verbosity(default=None):
     return local_env('repr_verbosity', default)
+
 
 def in_py_repl():
     """test if we are in Python REPL: 
@@ -128,6 +134,7 @@ class ReplHook:
 
 
 _user_tips_on_ = True
+
 
 @contextmanager
 def user_tips_enabled(on=True):
@@ -218,6 +225,7 @@ def to_str(obj, verbosity=None, fmt=None):
     """
     with _repr_format(fmt, force=True), _repr_verbosity(verbosity, force=True):
         return str(obj)
+   
     
 def to_pretty_str(obj, verbosity=None):
     """
@@ -352,11 +360,20 @@ class DisplayMixin(object):
         """
         repr_fmt = _get_repr_format()
         repr_verb = _get_repr_verbosity()
+        s = None
         if repr_fmt == 'html':
-            return self._str_html_(verbosity=repr_verb)
+            s = self._str_html_(verbosity=repr_verb)
         elif repr_fmt == 'pretty':
-            return self._str_pretty_(verbosity=repr_verb)
-        return self._str_(verbosity=repr_verb)
+            s = self._str_pretty_(verbosity=repr_verb)
+        else:
+            s = self._str_(verbosity=repr_verb)
+        if PY2:  # in Py2, this must return a byte array, otherwise print() fails
+            return bytes(s)
+        return s
+    
+    def __unicode__(self):
+        """for Py2 compatibility"""
+        return str(self.__str__())  # calling str2 ensures proper encoding
 
     def _repr_(self):
         """Override this method to change the technical string representation."""
@@ -479,7 +496,6 @@ class H2ODisplayWrapper(H2ODisplay):
     def _str_pretty_(self, verbosity=None):
         return self._repr_fn(verbosity, 'pretty')
 
-
     def _str_html_(self, verbosity=None):
         return self._repr_fn(verbosity, 'html')
 
@@ -510,7 +526,6 @@ class H2OTableDisplay(H2ODisplay):
     def gen_html_table_id():
         H2OTableDisplay.__html_table_counter +=1
         return "h2o-table-%s" % H2OTableDisplay.__html_table_counter
-    
     
     @staticmethod
     def fixup_table_repr(table_repr, fmt=None):
