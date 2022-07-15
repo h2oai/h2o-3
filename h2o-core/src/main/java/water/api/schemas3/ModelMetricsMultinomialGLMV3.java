@@ -1,7 +1,6 @@
 package water.api.schemas3;
 
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
-import hex.ModelMetricsMultinomial;
 import water.api.API;
 import water.api.API.Direction;
 
@@ -27,8 +26,8 @@ public class ModelMetricsMultinomialGLMV3 extends ModelMetricsMultinomialV3<Mode
     this.AIC = mms._AIC;
     this.residual_deviance = mms._resDev;
     this.null_deviance = mms._nullDev;
-    this.null_degrees_of_freedom = mms._nullDegressOfFreedom;
-    this.residual_degrees_of_freedom = mms._residualDegressOfFreedom;
+    this.null_degrees_of_freedom = mms._nullDegreesOfFreedom;
+    this.residual_degrees_of_freedom = mms._residualDegreesOfFreedom;
     return this;
   }
 

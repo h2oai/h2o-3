@@ -4,9 +4,9 @@ import hex.genmodel.attributes.SerializedName;
 
 public class MojoModelMetricsRegressionGLM extends MojoModelMetricsRegression {
   @SerializedName("null_degrees_of_freedom")
-  public long _nullDegressOfFreedom;  
+  public long _nullDegreesOfFreedom;  
   @SerializedName("residual_degrees_of_freedom")
-  public long _residualDegressOfFreedom;
+  public long _residualDegreesOfFreedom;
   @SerializedName("residual_deviance")
   public double _resDev;
   @SerializedName("null_deviance")

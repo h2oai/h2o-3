@@ -31,8 +31,8 @@ public class ModelMetricsBinomialGLMGenericV3<I extends ModelMetricsBinomialGLMG
     this.AIC = modelMetrics._AIC;
     this.residual_deviance = modelMetrics._resDev;
     this.null_deviance = modelMetrics._nullDev;
-    this.null_degrees_of_freedom = modelMetrics._nullDegressOfFreedom;
-    this.residual_degrees_of_freedom = modelMetrics._residualDegressOfFreedom;
+    this.null_degrees_of_freedom = modelMetrics._nullDegreesOfFreedom;
+    this.residual_degrees_of_freedom = modelMetrics._residualDegreesOfFreedom;
 
     coefficients_table = modelMetrics._coefficients_table != null ?new TwoDimTableV3().fillFromImpl(modelMetrics._coefficients_table) : null;
 

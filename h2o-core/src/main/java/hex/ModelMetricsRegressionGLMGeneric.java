@@ -9,9 +9,9 @@ public class ModelMetricsRegressionGLMGeneric extends ModelMetricsRegressionGLM 
   public TwoDimTable _coefficients_table;
 
   public ModelMetricsRegressionGLMGeneric(Model model, Frame frame, long nobs, double mse, double sigma, double mae, double rmsle,
-                                          double meanResidualDeviance, CustomMetric customMetric, double r2, long nullDegressOfFreedom,
-                                          long residualDegressOfFreedom, double resDev, double nullDev, double aic, TwoDimTable coefficients_table) {
-    super(model, frame, nobs, mse, sigma, mae, rmsle, resDev, meanResidualDeviance, nullDev, aic, nullDegressOfFreedom, residualDegressOfFreedom, customMetric);
+                                          double meanResidualDeviance, CustomMetric customMetric, double r2, long nullDegreesOfFreedom,
+                                          long residualDegreesOfFreedom, double resDev, double nullDev, double aic, TwoDimTable coefficients_table) {
+    super(model, frame, nobs, mse, sigma, mae, rmsle, resDev, meanResidualDeviance, nullDev, aic, nullDegreesOfFreedom, residualDegreesOfFreedom, customMetric);
     _r2 = r2;
     _coefficients_table = coefficients_table; 
   }
