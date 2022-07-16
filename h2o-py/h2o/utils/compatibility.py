@@ -172,28 +172,28 @@ if PY2:
         same goal as str in Py3, but handles both Py2 types 
         and converts str (byte arrays) to proper unicode string even when the str contains non-ascii chars.
         """
-        def __new__(cls, o, *args):
+        def __new__(cls, o, *args, **kwargs):
             if isinstance(o, str):
                 try:
-                    return super(str2, cls).__new__(cls, o, *args)
+                    return super(str2, cls).__new__(cls, o, *args, **kwargs)
                 except UnicodeDecodeError:
-                    return super(str2, cls).__new__(cls, o.decode('utf8'), *args)
+                    return super(str2, cls).__new__(cls, o.decode('utf8'), *args, **kwargs)
             else:
-                return super(str2, cls).__new__(cls, o, *args)
+                return super(str2, cls).__new__(cls, o, *args, **kwargs)
             
     class bytes2(bytes):
         """
         same goal as bytes in Py3, but handles both Py2 types 
         and converts unicode string to proper bytes if the string contains non-ascii chars.
         """
-        def __new__(cls, s, *args):
+        def __new__(cls, s, *args, **kwargs):
             if isinstance(s, _native_unicode):
                 try:
-                    return super(bytes2, cls).__new__(cls, s, *args)
+                    return super(bytes2, cls).__new__(cls, s, *args, **kwargs)
                 except UnicodeEncodeError:
-                    return super(bytes2, cls).__new__(cls, s.encode('utf8'), *args)
+                    return super(bytes2, cls).__new__(cls, s.encode('utf8'), *args, **kwargs)
             else:
-                return super(bytes2, cls).__new__(cls, s, *args)
+                return super(bytes2, cls).__new__(cls, s, *args, **kwargs)
             
 else:
     str_type = str2 = str
