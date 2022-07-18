@@ -236,27 +236,6 @@ def call(final pipelineContext) {
       imageSpecifier: "mojocompat",
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
-    // temp additions
-    [
-            stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
-            timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-            stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-            timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-            stageName: 'Py2.7 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '2.7',
-            timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-            stageName: 'Py2.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '2.7',
-            timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-            stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-            timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
   ]
 
   def BENCHMARK_STAGES = [
