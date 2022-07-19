@@ -8,10 +8,10 @@ def test_gamma_dispersion_factor():
     training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
     Y = 'resp'
     x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
-    model = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True, dispersion_factor_method="ml")
+    model = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True, dispersion_parameter_method="ml")
     model.train(training_frame=training_data, x=x, y=Y)
     model_pearson = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True, 
-                                                  dispersion_factor_method="pearson")
+                                                  dispersion_parameter_method="pearson")
     model_pearson.train(training_frame=training_data, x=x, y=Y)
     true_dispersion_factor = 9
     R_dispersion_factor = 9.3

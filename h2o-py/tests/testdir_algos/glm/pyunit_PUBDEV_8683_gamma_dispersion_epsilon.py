@@ -12,13 +12,13 @@ def test_dispersion_epsilon():
     training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
     Y = 'resp'
     x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
-    model = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True, dispersion_factor_method="ml")
+    model = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True, dispersion_parameter_method="ml")
     model.train(training_frame=training_data, x=x, y=Y)
     model_short = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True,
-                                                  dispersion_factor_method="ml", dispersion_epsilon=1e-1)
+                                                  dispersion_parameter_method="ml", dispersion_epsilon=1e-1)
     model_short.train(training_frame=training_data, x=x, y=Y)
     model_long = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True,
-                                                dispersion_factor_method="ml", dispersion_epsilon=1e-4)
+                                                dispersion_parameter_method="ml", dispersion_epsilon=1e-4)
     model_long.train(training_frame=training_data, x=x, y=Y)
     true_dispersion_factor = 9
     assert abs(true_dispersion_factor-model_long._model_json["output"]["dispersion"]) <= abs(model_short._model_json["output"]["dispersion"]-true_dispersion_factor), \

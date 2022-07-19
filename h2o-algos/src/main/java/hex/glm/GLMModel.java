@@ -314,8 +314,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final static NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     public GLMType _glmType = GLMType.glm;
     public boolean _generate_scoring_history = false; // if true, will generate scoring history but will slow algo down
-    public DispersionMethod _dispersion_factor_method = DispersionMethod.pearson;
-    public double _init_dispersion_factor = 1.0;
+    public DispersionMethod _dispersion_parameter_method = DispersionMethod.pearson;
+    public double _init_dispersion_parameter = 1.0;
+    public boolean _fix_dispersion_parameter = false;
     public boolean _build_null_model = false;
     
     public void validate(GLM glm) {
