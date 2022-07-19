@@ -638,6 +638,91 @@ explanation_test_timeseries <- function() {
   expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
 }
 
+explanation_test_automl_pareto_front <- function() {
+  train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  y <- "CAPSULE"
+  train[, y] <- as.factor(train[, y])
+
+
+  aml <- h2o.automl(y = y,
+                    max_models = 5,
+                    training_frame = train,
+                    seed = 1234)
+
+  expect_true(is.data.frame(h2o.pareto_front(aml)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(aml)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(aml, x_metric = "training_time_ms", y_metric = "rmse")))
+}
+
+explanation_test_grid_pareto_front <- function() {
+  train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  y <- "CAPSULE"
+  train[, y] <- as.factor(train[, y])
+
+  grid <- h2o.grid("gbm", y = y, training_frame = train,
+                   hyper_params = list(ntrees = 1:6),
+                   seed = 1234)
+
+  expect_true(is.data.frame(h2o.pareto_front(grid, train)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(grid, train)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(grid, x_metric = "auc", y_metric = "rmse")))
+}
+
+explanation_test_some_dataframe_pareto_front <- function() {
+  expect_true(is.data.frame(h2o.pareto_front(iris, x_metric = "Petal.Length", y_metric = "Sepal.Width")@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(iris, x_metric = "Petal.Length", y_metric = "Sepal.Width")))
+
+  iris_h2o <- as.h2o(iris)
+  expect_true(is.data.frame(h2o.pareto_front(iris_h2o, x_metric = "Petal.Length", y_metric = "Sepal.Width")@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(iris_h2o, x_metric = "Petal.Length", y_metric = "Sepal.Width")))
+}
+
+pareto_front_corner_cases_test <- function() {
+  df <- data.frame(
+    name = c("top left", "left", "left", "bottom left", "bottom", "bottom", "bottom right", "right", "right", "top right", "top", "top", "inner"),
+    x    = c(         0,      0,      0,             0,      0.3,      0.6,              1,       1,       1,           1,   0.7,   0.4,    0.5),
+    y    = c(         1,    0.8,    0.2,             0,        0,        0,              0,    0.35,    0.65,           1,     1,     1,    0.5)
+  )
+
+  tl <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "top left")
+  tr <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "top right")
+  bl <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "bottom left")
+  br <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "bottom right")
+
+  expect_true(nrow(tl) == 1)
+  expect_true(nrow(tr) == 1)
+  expect_true(nrow(bl) == 1)
+  expect_true(nrow(br) == 1)
+
+  expect_true(all(tl$name == "top left"))
+  expect_true(all(tr$name == "top right"))
+  expect_true(all(bl$name == "bottom left"))
+  expect_true(all(br$name == "bottom right"))
+
+  df <- data.frame(
+    name = c("top left", "top left", "bottom left", "bottom left", "bottom left", "bottom right", "bottom right", "bottom right", "top right", "top right", "top right", "top left", "inner"),
+    x    = c(       0.1,          0,             0,           0.1,           0.3,      0.6,                  0.9,              1,           1,         0.9,         0.7,        0.4,    0.5),
+    y    = c(       0.9,        0.8,           0.2,           0.1,             0,        0,                  0.1,           0.35,        0.65,         0.9,           1,          1,    0.5)
+  )
+
+  tl <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "top left")
+  tr <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "top right")
+  bl <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "bottom left")
+  br <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "bottom right")
+
+  expect_true(nrow(tl) == 3)
+  expect_true(nrow(tr) == 3)
+  expect_true(nrow(bl) == 3)
+  expect_true(nrow(br) == 3)
+
+  expect_true(all(tl$name == "top left"))
+  expect_true(all(tr$name == "top right"))
+  expect_true(all(bl$name == "bottom left"))
+  expect_true(all(br$name == "bottom right"))
+}
+
 doSuite("Explanation Tests", makeSuite(
   varimp_test
   , explanation_test_single_model_regression
@@ -651,4 +736,8 @@ doSuite("Explanation Tests", makeSuite(
   , explanation_test_list_of_models_multinomial_classification
   , learning_curve_plot_test_of_models_not_included_in_automl
   , explanation_test_timeseries
+  , explanation_test_automl_pareto_front
+  , explanation_test_grid_pareto_front
+  , explanation_test_some_dataframe_pareto_front
+  , pareto_front_corner_cases_test
 ))

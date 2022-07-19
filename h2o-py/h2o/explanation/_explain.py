@@ -5,7 +5,7 @@ import warnings
 from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
 
-from h2o.utils.typechecks import assert_is_type, Enum
+from h2o.utils.typechecks import is_type, Enum
 
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
@@ -2668,6 +2668,148 @@ def learning_curve_plot(
     return decorate_plot_result(figure=plt.gcf())
 
 
+def _calculate_pareto_front(x, y, top=True, left=True):
+    # Make sure we are not given something unexpected like pandas which has separate indexes and causes unintuitive results
+    assert isinstance(x, np.ndarray)
+    assert isinstance(y, np.ndarray)
+
+    cumagg = np.maximum.accumulate if top else np.minimum.accumulate
+    if not left:
+        x = -x
+
+    order = np.argsort(-y if top else y)
+    order = order[np.argsort(x[order], kind="stable")]
+
+    return order[np.unique(cumagg(y[order]), return_index=True)[1]]
+
+
+def _pretty_metric_name(metric):
+    return dict(
+        auc="Area Under ROC Curve",
+        aucpr="Area Under Precision/Recall Curve",
+        logloss="Logloss",
+        mae="Mean Absolute Error",
+        mean_per_class_error="Mean Per Class Error",
+        mean_residual_deviance="Mean Residual Deviance",
+        mse="Mean Square Error",
+        predict_time_per_row_ms="Per-Row Prediction Time [ms]",
+        rmse="Root Mean Square Error",
+        rmsle="Root Mean Square Log Error",
+        training_time_ms="Training Time [ms]"
+    ).get(metric, metric)
+
+
+def pareto_front(frame,  # type: H2OFrame
+                 x_metric=None,  # type: Optional[str]
+                 y_metric=None,  # type: Optional[str]
+                 optimum="top left",  # type: Literal["top left", "top right", "bottom left", "bottom right"]
+                 title=None,  # type: Optional[str]
+                 color_col="algo",  # type: str
+                 figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
+                 colormap="Dark2"  # type: str
+                 ):
+    """
+    Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
+    Pareto front there isn't a model that would be better in both criteria. For example, this can be useful in picking
+    models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
+    the task is assumed to be minimization for both metrics.
+
+    :param frame: an H2OFrame
+    :param x_metric: metric present in the leaderboard
+    :param y_metric: metric present in the leaderboard
+    :param optimum: location of the optimum in XY plane
+    :param title: title used for the plot
+    :param color_col: categorical column in the leaderboard that should be used for coloring the points
+    :param figsize: figure size; passed directly to matplotlib
+    :param colormap: colormap to use
+    :return: object that contains the resulting figure (can be accessed using ``result.figure()``)
+
+    :examples:
+    
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> from h2o.grid import H2OGridSearch
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
+    >>>
+    >>> # Set the response
+    >>> response = "quality"
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = df.split_frame([0.8])
+    >>>
+    >>> # Train an H2OAutoML
+    >>> aml = H2OAutoML(max_models=10)
+    >>> aml.train(y=response, training_frame=train)
+    >>>
+    >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+    >>>                'max_depth': [3, 5, 9]}
+    >>> grid = H2OGridSearch(model=H2OGradientBoostingEstimator,
+    >>>                      hyper_params=gbm_params1)
+    >>> grid.train(y=response, training_frame=train)
+    >>>
+    >>> combined_leaderboard = h2o.make_leaderboard([aml, grid], test, extra_columns="ALL")
+    >>>
+    >>> # Create the Pareto front
+    >>> pf = h2o.explanation.pareto_front(combined_leaderboard, "predict_time_per_row_ms", "rmse", optimum="bottom left")
+    >>> pf.figure() # get the Pareto front plot
+    >>> pf # H2OFrame containing the Pareto front subset of the leaderboard
+    """
+    plt = get_matplotlib_pyplot(False, True)
+    from matplotlib.lines import Line2D
+    if isinstance(frame, h2o.H2OFrame):
+        leaderboard = frame
+    else:
+        try:  # Maybe it's pandas or other datastructure coercible to H2OFrame
+            leaderboard = h2o.H2OFrame(frame)
+        except Exception:
+            raise ValueError("`frame` parameter has to be either H2OAutoML, H2OGrid, list of models or coercible to H2OFrame!")
+
+    if x_metric not in leaderboard.names:
+        raise ValueError("x_metric {} is not in the leaderboard!".format(x_metric))
+    if y_metric not in leaderboard.names:
+        raise ValueError("y_metric {} is not in the leaderboard!".format(y_metric))
+
+    assert optimum.lower() in ("top left", "top right", "bottom left", "bottom right"), "Optimum has to be one of \"top left\", \"top right\", \"bottom left\", \"bottom right\"."
+    top = "top" in optimum.lower()
+    left = "left" in optimum.lower()
+
+    x = np.array(leaderboard[x_metric].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
+    y = np.array(leaderboard[y_metric].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
+
+    pf = _calculate_pareto_front(x, y, top=top, left=left)
+
+    cols = None
+    fig = plt.figure(figsize=figsize)
+    if color_col in leaderboard.columns:
+        color_col_vals = np.array(leaderboard[color_col].as_data_frame(use_pandas=False, header=False)).reshape(-1)
+        colors = plt.get_cmap(colormap, len(set(color_col_vals)))(list(range(len(set(color_col_vals)))))
+        color_col_to_color = dict(zip(set(color_col_vals), colors))
+        cols = np.array([color_col_to_color[a] for a in color_col_vals])
+        plt.legend(handles=[Line2D([0], [0], marker='o', color="w", label=a, markerfacecolor=color_col_to_color[a], markersize=10)
+                            for a in color_col_to_color.keys()])
+    plt.scatter(x, y, c=cols, alpha=0.5)
+    plt.plot(x[pf], y[pf], c="k")
+    plt.scatter(x[pf], y[pf], c=cols[pf] if cols is not None else None, s=100, zorder=100)
+    plt.xlabel(_pretty_metric_name(x_metric))
+    plt.ylabel(_pretty_metric_name(y_metric))
+    plt.grid(True)
+
+    if title is not None:
+        plt.title(title)
+    else:
+        plt.title("Pareto Front")
+
+    leaderboard_pareto_subset = leaderboard[sorted(list(pf)), :]
+
+    return decorate_plot_result(res=leaderboard_pareto_subset, figure=fig)
+
+
 def _preprocess_scoring_history(model, scoring_history, training_metric=None):
     empty_columns = [all(row[col_idx] == "" for row in scoring_history.cell_values)
                      for col_idx in range(len(scoring_history.col_header))]
@@ -2748,9 +2890,9 @@ def _get_tree_models(
 
 def _get_leaderboard(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
-        frame,  # type: h2o.H2OFrame
+        frame,  # type: Optional[h2o.H2OFrame]
         row_index=None,  # type: Optional[int]
-        top_n=20  # type: int
+        top_n=20  # type: Union[float, int]
 ):
     # type: (...) -> h2o.H2OFrame
     """
@@ -2762,7 +2904,8 @@ def _get_leaderboard(
     :param top_n: show just top n models in the leaderboard
     :returns: H2OFrame
     """
-    leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.make_leaderboard(models, frame, extra_columns="ALL")
+    leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.make_leaderboard(models, frame,
+                                                                                       extra_columns="ALL" if frame is not None else None)
     leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
     if row_index is not None:
         model_ids = [m[0] for m in
