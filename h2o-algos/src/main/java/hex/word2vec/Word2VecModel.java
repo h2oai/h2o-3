@@ -31,13 +31,14 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   @Override
-  public double[] score0(Chunk[] cs, int foo, double data[], double preds[]) {
-    throw H2O.unimpl();
+  protected boolean isScoringSupported() {
+    return false;
   }
 
   @Override
   protected double[] score0(double data[], double preds[]) {
-    throw H2O.unimpl();
+    checkScoringSupported();
+    return new double[0];
   }
 
   @Override
