@@ -3461,7 +3461,8 @@ setMethod("show", "H2OParetoFront", function(object) {
 #'                    seed = 42)
 #'
 #' combined_leaderboard <- h2o.make_leaderboard(list(aml, aml2), test, extra_columns = "ALL")
-#' pf_combined <- h2o.pareto_front(combined_leaderboard, x_metric = "predict_time_per_row_ms", y_metric = "rmse", optimum = "bottom left")
+#' pf_combined <- h2o.pareto_front(combined_leaderboard, x_metric = "predict_time_per_row_ms",
+#'                                 y_metric = "rmse", optimum = "bottom left")
 #' plot(pf_combined)
 #' pf_combined@pareto_front
 #' }

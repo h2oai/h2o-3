@@ -6203,10 +6203,17 @@ h2o.make_leaderboard <- function(object,
   model_ids <- unlist(.get_models(object))
   extra_cols <- paste0(extra_columns, collapse = "\", \"")
   scoring_data <- match.arg(scoring_data)
+  if (missing(leaderboard_frame) || is.null(leaderboard_frame)) {
+    leaderboard_frame_key <- NULL
+  } else {
+    # make sure the frame has assigned a key in R, this is necessary when subsetting h2o frame but not evaluating the subset
+    if (is.null(h2o.keyof(leaderboard_frame))) head(leaderboard_frame, n = 1)
+    leaderboard_frame_key <- h2o.keyof(leaderboard_frame)
+  }
 
   as.data.frame(.newExpr("makeLeaderboard",
                          model_ids,
-                         paste0("\"", (if (missing(leaderboard_frame) || is.null(leaderboard_frame)) NULL else h2o.keyof(leaderboard_frame)), "\""),
+                         paste0("\"", leaderboard_frame_key, "\""),
                          paste0("\"", sort_metric, "\""),
                          paste0("[\"", extra_cols, "\"]"),
                          paste0("\"", scoring_data, "\"")
