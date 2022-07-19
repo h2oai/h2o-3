@@ -32,7 +32,7 @@ import sys
 
 from sklearn.base import ClassifierMixin, RegressorMixin
 
-from h2o.utils.mixin import register_module
+from h2o.utils.mixin import register_submodule
 from .. import automl
 from .. import estimators
 from .. import transforms
@@ -52,12 +52,7 @@ def _register_submodule(name=None):
     :param name: the name of the submodule or None if no submodule is used
     :return: the module name for the (newly) registered submodule
     """
-    mod_name = __name__
-    if name:
-        mod_name = '.'.join([mod_name, name])
-        mod = register_module(mod_name)
-        setattr(module, name, mod)
-    return mod_name
+    return register_submodule(module, name) if name else __name__ 
 
 
 def _get_custom_params(cls):

@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.utils.compatibility import *  # NOQA
 
 import atexit
+from collections import defaultdict
 import os
 import re
 import sys
@@ -29,15 +30,14 @@ import requests
 from requests.auth import AuthBase
 
 from h2o.backend import H2OCluster, H2OLocalServer
+from h2o.display import print2
 from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
+from h2o.model.metrics import make_metrics
 from h2o.schemas import H2OMetadataV3, H2OErrorV3, H2OModelBuilderErrorV3, define_classes_from_schema
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.metaclass import CallableString, backwards_compatibility, h2o_meta
-from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
+from h2o.utils.shared_utils import stringify_list, stringify_dict
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
-from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
-                                    H2OMultinomialModelMetrics, H2OOrdinalModelMetrics, H2OAutoEncoderModelMetrics, 
-                                    H2OBinomialUpliftModelMetrics)
 
 __all__ = ("H2OConnection", "H2OConnectionConf", )
 
@@ -45,6 +45,26 @@ if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
     print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
+
+
+_session_hooks_ = defaultdict(list)
+
+
+def apply_session_hooks(event='open'):
+    handler = 'on_{}'.format(event)
+    if handler not in _session_hooks_:
+        return
+    for h in _session_hooks_[handler]:
+        try:
+            h()
+        except Exception:
+            pass
+        
+
+def register_session_hook(event='open', hook=None):
+    assert hook is not None
+    handler = 'on_{}'.format(event)
+    _session_hooks_[handler].append(hook)
 
 
 class H2OConnectionConf(object):
@@ -391,7 +411,8 @@ class H2OConnection(h2o_meta()):
             # create a weakref to prevent the atexit callback from keeping hard ref
             # to the connection even after manual close.
             conn_ref = ref(conn)
-
+            apply_session_hooks('open')
+                
             def exit_close():
                 con = conn_ref()
                 if con and con.connected:
@@ -531,6 +552,7 @@ class H2OConnection(h2o_meta()):
                 self._log_end_exception(e)
             self._session_id = None
         self._stage = -1
+        apply_session_hooks('close')
 
     @property
     def connected(self):
@@ -885,13 +907,10 @@ class H2OResponse(dict):
         if schema == "H2OErrorV3": return H2OErrorV3.make(keyvals)
         if schema == "H2OModelBuilderErrorV3": return H2OModelBuilderErrorV3.make(keyvals)
         if schema == "TwoDimTableV3": return H2OTwoDimTable.make(keyvals)
-        if schema == "ModelMetricsRegressionV3": return H2ORegressionModelMetrics.make(keyvals)
-        if schema == "ModelMetricsClusteringV3": return H2OClusteringModelMetrics.make(keyvals)
-        if schema == "ModelMetricsBinomialV3": return H2OBinomialModelMetrics.make(keyvals)
-        if schema == "ModelMetricsBinomialUpliftV3": return H2OBinomialUpliftModelMetrics.make(keyvals)
-        if schema == "ModelMetricsMultinomialV3": return H2OMultinomialModelMetrics.make(keyvals)
-        if schema == "ModelMetricsOrdinalV3": return H2OOrdinalModelMetrics.make(keyvals)
-        if schema == "ModelMetricsAutoEncoderV3": return H2OAutoEncoderModelMetrics.make(keyvals)
+        if schema and schema.startswith("ModelMetrics"):
+            metrics = make_metrics(schema, keyvals)
+            if metrics is not None:
+                return metrics
         return super(H2OResponse, cls).__new__(cls, keyvals)
 
     # def __getattr__(self, key):

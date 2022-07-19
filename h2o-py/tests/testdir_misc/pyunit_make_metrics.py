@@ -12,7 +12,7 @@ sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators import H2OGradientBoostingEstimator
-from h2o.model.metrics_base import H2OBinomialModelMetrics
+from h2o.model import H2OBinomialModelMetrics
 from h2o.estimators import H2OUpliftRandomForestEstimator
 
 base_metric_methods = ['aic', 'auc', 'gini', 'logloss', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'mse',

@@ -5,10 +5,11 @@ import tempfile
 sys.path.insert(1, "../../")
 
 import h2o
+from h2o.display import H2OTableDisplay, capture_output
 from h2o.estimators import H2OGenericEstimator, H2OGradientBoostingEstimator, \
     H2ORandomForestEstimator, H2OStackedEnsembleEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import Capturing, compare_output, compare_params
+from tests.testdir_generic_model import compare_output, compare_params
 
 
 def stackedensemble_mojo_model_test():
@@ -30,9 +31,9 @@ def stackedensemble_mojo_model_test():
                                      validation_frame=test,
                                      base_models=[gbm.model_id, rf.model_id])
     se.train(x=x, y=y, training_frame=train)
-    print(se)
-    with Capturing() as original_output:
+    with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (original_output, _):
         se.show()
+    print(original_output.getvalue())
 
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = se.download_mojo(original_model_filename)

@@ -2,18 +2,19 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-import traceback
 
 import h2o
 from h2o.base import Keyed
+from h2o.display import H2ODisplay, StringIO, display, format_to_html, format_to_multiline, format_user_tips, print2 as print
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.model.extensions import has_extension
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, get_matplotlib_cm, get_mplot3d_axes, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas, can_use_numpy
+from h2o.utils.threading import local_context, local_env
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
 
 
@@ -22,7 +23,7 @@ from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
 )
-class ModelBase(h2o_meta(Keyed)):
+class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     """Base class for all models."""
 
     _options_ = {}    # dict of options declared in implementation
@@ -45,7 +46,6 @@ class ModelBase(h2o_meta(Keyed)):
         self._start_time = None
         self._end_time = None
         self._run_time = None
-
 
     @property
     def key(self):
@@ -138,13 +138,6 @@ class ModelBase(h2o_meta(Keyed)):
     def run_time(self):
         """Model training time in milliseconds."""
         return self._run_time
-
-    def __repr__(self):
-        # PUBDEV-2278: using <method>? from IPython caused everything to dump
-        stk = traceback.extract_stack()
-        if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
-            self.show()
-        return ""
 
     def predict_leaf_node_assignment(self, test_data, type="Path"):
         """
@@ -580,55 +573,7 @@ class ModelBase(h2o_meta(Keyed)):
         if "cross_validation_metrics_summary" in model and model["cross_validation_metrics_summary"] is not None:
             return model["cross_validation_metrics_summary"]
         print("No cross-validation metrics summary for this model")
-
-    def summary(self):
-        """Print a detailed summary of the model."""
-        model = self._model_json["output"]
-        if "model_summary" in model and model["model_summary"] is not None:
-            return model["model_summary"]
-        print("No model summary for this model")
-
-    def show_summary(self):
-        summary = self.summary()
-        if summary is not None:
-            print(summary)
-
-    def show(self):
-        """Print innards of model, without regards to type."""
-        if self._future:
-            self._job.poll_once()
-            return
-        if self._model_json is None:
-            print("No model trained yet")
-            return
-        if self.model_id is None:
-            print("This H2OEstimator has been removed.")
-            return
-        model = self._model_json["output"]
-        print("Model Details")
-        print("=============")
-
-        print(self.__class__.__name__, ": ", self._model_json["algo_full_name"])
-        print("Model Key: ", self._id)
-        print()
-
-        self.show_summary()
-
-        # training metrics
-        tm = model["training_metrics"]
-        if tm is not None: tm.show()
-        vm = model["validation_metrics"]
-        if vm is not None: vm.show()
-        xm = model["cross_validation_metrics"]
-        if xm is not None: xm.show()
-        xms = model["cross_validation_metrics_summary"]
-        if xms is not None: xms.show()
-
-        if "scoring_history" in model and model["scoring_history"]:
-            model["scoring_history"].show()
-        if "variable_importances" in model and model["variable_importances"]:
-            model["variable_importances"].show()
-
+        
     def varimp(self, use_pandas=False):
         """
         Pretty print the variable importances, or return them in a list.
@@ -944,8 +889,6 @@ class ModelBase(h2o_meta(Keyed)):
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm):
-            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)) and not(is_type(v, h2o.model.metrics_base.H2OMultinomialModelMetrics)):
-                raise H2OValueError("auc() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average AUC value, default is Weighted One-to-Rest AUC.")
             m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -1004,7 +947,8 @@ class ModelBase(h2o_meta(Keyed)):
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): 
-            if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics) and not is_type(v, h2o.model.metrics_base.H2OMultinomialModelMetrics):
+            if v is not None and not is_type(v, h2o.model.metrics.binomial.H2OBinomialModelMetrics) and not is_type(v,
+                                                                                                                    h2o.model.metrics.multinomial.H2OMultinomialModelMetrics):
                 raise H2OValueError("aucpr() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average PR AUC value, default is Weighted One-to-Rest PR AUC.")
             m[k] = None if v is None else v.aucpr()
         return list(m.values())[0] if len(m) == 1 else m
@@ -1282,14 +1226,14 @@ class ModelBase(h2o_meta(Keyed)):
         to_fig = num_1dpdp + num_2dpdp
         if plot and to_fig > 0:     # plot 1d pdp for now
             plt = get_matplotlib_pyplot(server)
-            cm = _get_matplotlib_cm("Partial dependency plots")
+            cm = get_matplotlib_cm("Partial dependency plots")
             if not plt: 
                 return decorate_plot_result(res=pps, figure=RAISE_ON_FIGURE_ACCESS)
             import matplotlib.gridspec as gridspec
             fig = plt.figure(figsize=figsize)
             gxs = gridspec.GridSpec(to_fig, 1)
             if num_2dpdp > 0: # 2d pdp requested
-                axes_3d = _get_mplot3d_pyplot("2D partial plots")
+                axes_3d = get_mplot3d_axes("2D partial plots")
             fig_plotted = False  # indicated number of figures plotted
             data_index = 0
             target = None
@@ -1840,21 +1784,109 @@ class ModelBase(h2o_meta(Keyed)):
             )
             return varimp
 
-def _get_mplot3d_pyplot(function_name):
-    try:
-        # noinspection PyUnresolvedReferences
-        from mpl_toolkits.mplot3d import Axes3D
-        return Axes3D
-    except ImportError:
-        print("`mpl_toolkits.mplot3d` library is required for function {0}!".format(function_name))
-        return None
+    # --------------------------------
+    # ModelBase representation methods
+    # --------------------------------
+    
+    def _str_items(self, verbosity=None):
+        verbosity = verbosity or 'medium'  # default verbosity when printing model
+        # edge cases
+        if self._future:
+            self._job.poll_once()
+            return
+        if self._model_json is None:
+            return "No model available"
+        if self.key is None:
+            return "This model (key={}) has been removed".format(self.key)
 
+        items = []
+        if verbosity in ['full']:
+            items.extend([
+                "Model Details",
+                "============="
+            ])
+        items.extend([
+            "%s : %s" % (self.__class__.__name__, self._model_json["algo_full_name"]),
+            "Model Key: %s" % self.key,
+        ])
+        if verbosity in ['medium', 'full']:
+            summary = self.get_summary()
+            if summary is not None:
+                items.extend(["", summary])
+            
+        if verbosity in ['full']:
+            model = self._model_json["output"]
+            tm = model["training_metrics"]
+            if tm is not None: items.append(tm)
+            vm = model["validation_metrics"]
+            if vm is not None: items.append(vm)
+            xm = model["cross_validation_metrics"]
+            if xm is not None: items.append(xm)
+            xms = model["cross_validation_metrics_summary"]
+            if xms is not None: items.append(xms)
 
-def _get_matplotlib_cm(function_name):
-    try:
-        from matplotlib import cm
-        return cm
-    except ImportError:
-        print('matplotlib library is required for 3D plots for function {0}'.format(function_name))
-        return None
+            if "scoring_history" in model and model["scoring_history"]:
+                items.append(model["scoring_history"])
+            if "variable_importances" in model and model["variable_importances"]:
+                items.append(model["variable_importances"])
+            
+        return items
+    
+    def _str_usage(self, verbosity=None, fmt=None):
+        verbosity = verbosity or 'medium'  # default verbosity when printing model
+        if not self._model_json or verbosity == 'short':
+            return ""
+        lines = []
+        if verbosity != 'full':
+            lines.append("Use `model.show()` for more details.")
+        lines.append("Use `model.explain()` to inspect the model.")
+        lines.extend(self._str_usage_custom())
+        return format_user_tips(format_to_multiline(lines), fmt=fmt) if lines else ""
+    
+    def _str_usage_custom(self):
+        """
+        Specific models can override this function to add model-specific user tips
+        :return: a list of strings, each describing a user tip for this model.
+        """
+        return []
+
+    def _str_(self, verbosity=None):
+        items = self._str_items(verbosity)
+        if isinstance(items, list):
+            return format_to_multiline(items)
+        return items
+
+    def _str_pretty_(self, verbosity=None):
+        return self._str_(verbosity)+self._str_usage(verbosity, 'pretty')
+    
+    def _str_html_(self, verbosity=None):
+        items = self._str_items(verbosity)
+        html = format_to_html(items) if isinstance(items, list) else items
+        usage = self._str_usage(verbosity, 'html')
+        return html+usage
+
+    def _summary(self):
+        model = self._model_json["output"]
+        if "model_summary" in model and model["model_summary"] is not None:
+            return model["model_summary"]
+
+    def summary(self):
+        """Deprecated. Please use ``get_summary`` instead"""
+        return self.get_summary()
+    
+    def get_summary(self):
+        """Return a detailed summary of the model."""
+        return self._summary() or "No summary for this model"
+    
+    def show_summary(self):
+        """Print a detailed summary of the model."""
+        summary = self.get_summary()
+        if summary is not None:
+            display(summary)
+            
+    def show(self, verbosity=None, fmt=None):
+        verbosity = verbosity or 'full'  # default verbosity for showing model
+        return display(self, fmt=fmt, verbosity=verbosity)
+
+    # FIXME: find a way to get rid of this awful habit that consists in doing [if data is present return data else print("no data")]
     

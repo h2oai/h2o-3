@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
-from .model_base import ModelBase
+from h2o.model import ModelBase
 from h2o.utils.metaclass import deprecated_params_order
 
 _old_sig = ['train', 'valid', 'metric']
