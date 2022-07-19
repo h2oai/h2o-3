@@ -580,6 +580,42 @@ If one of these is missing, that means those particular scoring metrics were not
    :scale: 90%
    :align: center
 
+Pareto Front Plot
+-----------------
+
+Pareto front plot shows a Pareto front for any given dataframe, but it can be also used with AutoMLs and Grids.
+Pareto front is used to determine an optimal subset with regards to multiple criteria, currently our implementation
+supports 2 criteria/metrics.
+The ``pareto_front`` function returns a subset of the input frame/leaderboard and a plot depicting the Pareto front
+as shown below.
+
+.. tabs::
+   .. code-tab:: r R
+
+        pf <- h2o.pareto_front(aml)
+        plot(pf)
+        pf@pareto_front # to retrieve the Pareto front subset of the leaderboard
+
+        combined_leaderboard <- h2o.make_leaderboard(list(aml, grid, single_model), test, extra_columns = "ALL")
+        pf_combined <- h2o.pareto_front(combined_leaderboard, x_metric = "predict_time_per_row_ms", y_metric = "rmse", optimum = "bottom left")
+        plot(pf_combined)
+        pf_combined@pareto_front # to retrieve the Pareto front subset of the leaderboard
+
+   .. code-tab:: python
+
+        pf = aml.pareto_front()
+        pf.figure() # get the Pareto front plot
+        pf # H2OFrame containing the Pareto front subset of the leaderboard
+
+        combined_leaderboard = h2o.make_leaderboard([aml, grid, single_model], test, extra_columns="ALL")
+        pf = h2o.explanation.pareto_front(combined_leaderboard, x_metric="predict_time_per_row_ms", y_metric="rmse", optimum="bottom left")
+        pf.figure() # get the Pareto front plot
+        pf # H2OFrame containing the Pareto front subset of the leaderboard
+
+.. figure:: images/explain_pareto_front.png
+   :alt: H2O AutoML Pareto Front Plot
+   :scale: 90%
+   :align: center
 
 
 Additional Information

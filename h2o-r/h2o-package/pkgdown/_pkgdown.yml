@@ -238,6 +238,7 @@ reference:
       - h2o.num_iterations
       - h2o.num_valid_substrings
       - h2o.openLog
+      - h2o.pareto_front
       - h2o.parseRaw
       - h2o.parseSetup
       - h2o.partialPlot

@@ -3,6 +3,10 @@ from __future__ import print_function
 import os
 import sys
 
+import pandas as pd
+
+from h2o.grid import H2OGridSearch
+
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import matplotlib
 matplotlib.use("Agg")  # remove warning from python2 (missing TKinter)
@@ -703,6 +707,96 @@ def test_explanation_timeseries():
     assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
 
 
+def test_explanation_automl_pareto_front():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    aml = H2OAutoML(seed=1234, max_models=5)
+    aml.train(y=y, training_frame=train)
+
+    assert isinstance(aml.pareto_front(train).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(aml.pareto_front(None, "mse", "rmse").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+def test_explanation_grid_pareto_front():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    gbm_params1 = {'learn_rate': [0.01, 0.1],
+                   'max_depth': [3, 5, 9]}
+
+    # Train and validate a cartesian grid of GBMs
+    grid = H2OGridSearch(model=H2OGradientBoostingEstimator,
+                         grid_id='gbm_grid1',
+                         hyper_params=gbm_params1)
+    grid.train(y=y, training_frame=train, seed=1)
+
+    assert isinstance(grid.pareto_front(train).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(grid.pareto_front(train, "mse", "rmse").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+def test_explanation_some_dataframe_pareto_front():
+    import pandas as pd
+    df = pd.DataFrame({"A": [1, 2, 3, 4, 5], "b": [4, 1, 3, 5, 2], "c": [5, 4, 3, 2, 1]})
+    h2o_df = h2o.H2OFrame(df)
+
+    assert isinstance(h2o.explanation.pareto_front(df, "A", "c").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(h2o.explanation.pareto_front(h2o_df, "A", "c").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+def test_pareto_front_corner_cases():
+    df = pd.DataFrame(dict(
+        name=("top left", "left", "left", "bottom left", "bottom", "bottom", "bottom right", "right", "right", "top right", "top", "top", "inner"),
+        x   =(         0,      0,      0,             0,      0.3,      0.6,              1,       1,       1,           1,   0.7,   0.4,    0.5),
+        y   =(         1,    0.8,    0.2,             0,        0,        0,              0,    0.35,    0.65,           1,     1,     1,    0.5)
+    ))
+
+    tl = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=True, left=True)
+    tr = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=True, left=False)
+    bl = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=False, left=True)
+    br = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=False, left=False)
+
+    assert tl.shape == (1,)
+    assert tr.shape == (1,)
+    assert bl.shape == (1,)
+    assert br.shape == (1,)
+
+    assert (df.loc[list(tl), "name"] == "top left").all()
+    assert (df.loc[list(tr), "name"] == "top right").all()
+    assert (df.loc[list(bl), "name"] == "bottom left").all()
+    assert (df.loc[list(br), "name"] == "bottom right").all()
+
+    df = pd.DataFrame(dict(
+        name=("top left", "top left", "bottom left", "bottom left", "bottom left", "bottom right", "bottom right", "bottom right", "top right", "top right", "top right", "top left", "inner"),
+        x   =(       0.1,          0,             0,           0.1,           0.3,      0.6,                  0.9,              1,           1,         0.9,         0.7,        0.4,    0.5),
+        y   =(       0.9,        0.8,           0.2,           0.1,             0,        0,                  0.1,           0.35,        0.65,         0.9,           1,          1,    0.5)
+    ))
+
+    tl = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=True, left=True)
+    tr = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=True, left=False)
+    bl = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=False, left=True)
+    br = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=False, left=False)
+
+    assert tl.shape == (3,)
+    assert tr.shape == (3,)
+    assert bl.shape == (3,)
+    assert br.shape == (3,)
+
+    assert (df.loc[list(tl), "name"] == "top left").all()
+    assert (df.loc[list(tr), "name"] == "top right").all()
+    assert (df.loc[list(bl), "name"] == "bottom left").all()
+    assert (df.loc[list(br), "name"] == "bottom right").all()
+
+
 pyunit_utils.run_tests([
     test_get_xy,
     test_varimp,
@@ -717,4 +811,8 @@ pyunit_utils.run_tests([
     test_explanation_list_of_models_multinomial_classification,
     test_learning_curve_for_algos_not_present_in_automl,
     test_explanation_timeseries,
+    test_explanation_automl_pareto_front,
+    test_explanation_grid_pareto_front,
+    test_explanation_some_dataframe_pareto_front,
+    test_pareto_front_corner_cases
     ])
