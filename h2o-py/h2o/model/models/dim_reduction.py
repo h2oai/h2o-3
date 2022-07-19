@@ -3,18 +3,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import h2o
 # noinspection PyUnresolvedReferences
+from h2o.model import ModelBase
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import can_use_pandas
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
-from .metrics_base import *  # NOQA
-from .model_base import ModelBase
 
 
 class H2ODimReductionModel(ModelBase):
     """
     Dimension reduction model, such as PCA or GLRM.
     """
-
 
     def varimp(self, use_pandas=False):
         """
@@ -39,18 +37,15 @@ class H2ODimReductionModel(ModelBase):
         o = self._model_json["output"]
         return o["model_summary"]["number_of_iterations"][0]
 
-
     def objective(self):
         """Get the final value of the objective function."""
         o = self._model_json["output"]
         return o["model_summary"]["final_objective_value"][0]
 
-
     def final_step(self):
         """Get the final step size for the model."""
         o = self._model_json["output"]
         return o["model_summary"]["final_step_size"][0]
-
 
     def archetypes(self):
         """The archetypes (Y) of the GLRM model."""
@@ -60,7 +55,6 @@ class H2ODimReductionModel(ModelBase):
         for yidx, yval in enumerate(yvals):
             archetypes.append(list(yvals[yidx])[1:])
         return archetypes
-
 
     def reconstruct(self, test_data, reverse_transform=False):
         """
@@ -77,7 +71,6 @@ class H2ODimReductionModel(ModelBase):
                     data={"reconstruct_train": True, "reverse_transform": reverse_transform})
         return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
 
-
     def proj_archetypes(self, test_data, reverse_transform=False):
         """
         Convert archetypes of the model into original feature space.
@@ -92,7 +85,6 @@ class H2ODimReductionModel(ModelBase):
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                     data={"project_archetypes": True, "reverse_transform": reverse_transform})
         return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
-
 
     def screeplot(self, type="barplot", server=False, save_plot_path=None):
         """

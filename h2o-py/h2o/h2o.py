@@ -2314,7 +2314,6 @@ def import_mojo(mojo_path, model_id=None):
     if mojo_path is None:
         raise TypeError("MOJO path may not be None")
     mojo_estimator = H2OGenericEstimator.from_file(mojo_path, model_id)
-    print(mojo_estimator)
     return mojo_estimator
 
 
@@ -2342,7 +2341,6 @@ def upload_mojo(mojo_path, model_id=None):
     frame_key = response["destination_frame"]
     mojo_estimator = H2OGenericEstimator(model_key=get_frame(frame_key), model_id=model_id)
     mojo_estimator.train()
-    print(mojo_estimator)
     return mojo_estimator
 
 

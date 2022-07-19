@@ -7,8 +7,7 @@ from collections import OrderedDict
 
 import h2o
 from h2o.expr import ExprNode
-from .model_base import ModelBase
-from .metrics_base import *  # NOQA
+from h2o.model import ModelBase
 
 
 class H2OWordEmbeddingModel(ModelBase):

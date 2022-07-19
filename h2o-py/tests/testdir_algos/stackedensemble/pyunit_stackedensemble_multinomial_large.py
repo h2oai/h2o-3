@@ -5,6 +5,9 @@ from __future__ import print_function
 import h2o
 
 import sys
+
+import h2o.model.metrics.multinomial
+
 sys.path.insert(1,"../../../")  # allow us to run this standalone
 
 from h2o.estimators.random_forest import H2ORandomForestEstimator
@@ -151,11 +154,11 @@ def stackedensemble_multinomial_test():
 
     # Evaluate ensemble performance
     perf_stack_train = stack.model_performance()
-    assert isinstance(perf_stack_train, h2o.model.metrics_base.H2OMultinomialModelMetrics)
+    assert isinstance(perf_stack_train, h2o.model.metrics.multinomial.H2OMultinomialModelMetrics)
     perf_stack_valid = stack.model_performance(valid=True)
-    assert isinstance(perf_stack_valid, h2o.model.metrics_base.H2OMultinomialModelMetrics)
+    assert isinstance(perf_stack_valid, h2o.model.metrics.multinomial.H2OMultinomialModelMetrics)
     perf_stack_test = stack.model_performance(test_data=test)
-    assert isinstance(perf_stack_test, h2o.model.metrics_base.H2OMultinomialModelMetrics)
+    assert isinstance(perf_stack_test, h2o.model.metrics.multinomial.H2OMultinomialModelMetrics)
 
 
     # Check that stack perf is better (smaller) than the best (smaller) base learner perf:

@@ -2,8 +2,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.exceptions import H2OValueError
+from h2o.model import ModelBase
 from h2o.model.extensions import has_extension
-from h2o.model.model_base import ModelBase
 # noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import _colmean
@@ -11,8 +11,6 @@ from h2o.utils.typechecks import assert_is_type
 
 
 class H2ORegressionModel(ModelBase):
-    def _make_model(self):
-        return H2ORegressionModel()
 
     def plot(self, timestep="AUTO", metric="AUTO", save_plot_path=None, **kwargs):
         """

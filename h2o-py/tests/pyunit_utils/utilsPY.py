@@ -54,12 +54,7 @@ sys.path.insert(1, "../../")
 
 import h2o
 from h2o.utils.compatibility import PY2
-from h2o.model.binomial import H2OBinomialModel
-from h2o.model.clustering import H2OClusteringModel
-from h2o.model.multinomial import H2OMultinomialModel
-from h2o.model.ordinal import H2OOrdinalModel
-from h2o.model.regression import H2ORegressionModel
-from h2o.model.anomaly_detection import H2OAnomalyDetectionModel
+from h2o.model import H2OBinomialModel, H2OClusteringModel, H2OMultinomialModel, H2OOrdinalModel, H2ORegressionModel, H2OAnomalyDetectionModel
 from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
     H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
     H2ORandomForestEstimator, H2OPrincipalComponentAnalysisEstimator

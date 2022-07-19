@@ -6,6 +6,14 @@
 """Shared utilities used by various classes, all placed here to avoid circular imports.
 
 This file INTENTIONALLY has NO module dependencies!
+
+TODO: clean up this file that turned into a waste bin over the years:
+- split this into more specific modules.
+- utility modules should have a specific name to limit the scope of the garbage we put in (like waste sorting).
+- utility modules should if possible be placed under appropriate parent module 
+  (e.g. model/mojo related utility functions should go under h2o.model)
+- utility functions used ONLY in tests should go to test utilities! no reason to export those to end users!
+- same for model_utils.py nearby
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 from .compatibility import *  # NOQA
@@ -34,6 +42,11 @@ _id_ctr = 0
 _id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 
 __all__ = ('mojo_predict_csv', 'mojo_predict_pandas')
+
+
+class List(list):
+    """a list accepting attributes"""
+    pass
 
 
 def _py_tmp_key(append):
@@ -347,16 +360,6 @@ def get_human_readable_time(time_ms):
         res = " %d ms" % millis
 
     return res.strip()
-
-
-def print2(msg, flush=False, end="\n"):
-    """
-    This function exists here ONLY because Sphinx.ext.autodoc gets into a bad state when seeing the print()
-    function. When in that state, autodoc doesn't display any errors or warnings, but instead completely
-    ignores the "bysource" member-order option.
-    """
-    print(msg, end=end)
-    if flush: sys.stdout.flush()
 
 
 def normalize_slice(s, total):

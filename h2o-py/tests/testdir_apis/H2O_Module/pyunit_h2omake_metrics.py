@@ -5,7 +5,8 @@ from tests import pyunit_utils
 import h2o
 from h2o.estimators import H2OGradientBoostingEstimator
 from h2o.utils.typechecks import assert_is_type
-from h2o.model.metrics_base import H2OMultinomialModelMetrics
+from h2o.model import H2OMultinomialModelMetrics
+
 
 def h2omake_metrics_mutlinomial():
     """

@@ -4,9 +4,11 @@ import sys
 sys.path.insert(1,"../../")
 
 import h2o
+from h2o.display import H2OTableDisplay, capture_output
 from h2o.estimators import H2OGeneralizedLinearEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import compare_output, Capturing, compare_params
+from tests.testdir_generic_model import compare_output, compare_params
+
 
 def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
 
@@ -14,20 +16,20 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     glm = H2OGeneralizedLinearEstimator(nfolds = 2, family = family, max_iterations=2) # alpha = 1, lambda_ = 1, bad values, use default
     glm.train(x = x, y = y, training_frame=airlines, validation_frame=airlines, )
-    print(glm)
-    with Capturing() as original_output:
+    with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (original_output, _):
         glm.show()
+    print(original_output.getvalue())
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = glm.download_mojo(original_model_filename)
 
     generic_mojo_model_from_file = H2OGenericEstimator.from_file(original_model_filename)
     assert generic_mojo_model_from_file is not None
-    print(generic_mojo_model_from_file)
-    compare_params(glm, generic_mojo_model_from_file)
-    with Capturing() as generic_output:
+    with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (generic_output, _):
         generic_mojo_model_from_file.show()
+    print(generic_output.getvalue())
+    compare_params(glm, generic_mojo_model_from_file)
 
-    output_test(str(original_output), str(generic_output), strip_part, algo_name, generic_algo_name)
+    output_test(original_output.getvalue(), generic_output.getvalue(), strip_part, algo_name, generic_algo_name)
     predictions = generic_mojo_model_from_file.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
@@ -39,6 +41,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo");
     generic_mojo_filename = generic_mojo_model_from_file.download_mojo(path=generic_mojo_filename)
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
+
 
 def mojo_model_test_binomial():
     test(["Origin", "Dest"], "IsDepDelayed", compare_output, 'GLM Model: summary', 'ModelMetricsBinomialGLM: glm',
@@ -60,13 +63,10 @@ def mojo_model_test_ordinal():
          'ModelMetricsOrdinalGLM: glm',
          'ModelMetricsOrdinalGLMGeneric: generic', 'ordinal')
     
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(mojo_model_test_binomial)
-    pyunit_utils.standalone_test(mojo_model_test_multinomial)
-    pyunit_utils.standalone_test(mojo_model_test_regression)
-    pyunit_utils.standalone_test(mojo_model_test_ordinal)
-else:
-    mojo_model_test_binomial()
-    mojo_model_test_multinomial()
-    mojo_model_test_regression()
-    mojo_model_test_ordinal()
+
+pyunit_utils.run_tests([
+    mojo_model_test_binomial,
+    mojo_model_test_multinomial,
+    mojo_model_test_regression,
+    mojo_model_test_ordinal
+])

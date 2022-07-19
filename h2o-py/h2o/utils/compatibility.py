@@ -66,7 +66,8 @@ from future.utils import PY2, PY3, with_metaclass
 __all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",
            "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
            "apply", "cmp", "coerce", "execfile", "file", "long", "raw_input", "reduce", "reload", "unicode", "xrange",
-           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", "repr2", "PList")
+           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", 
+           "str_type", "repr2", 'str2', "bytes2", "PList", 'get_builtin', 'set_builtin')
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -127,9 +128,9 @@ xrange = _disabled_function("xrange")
 StandardError = _disabled_function("StandardError")
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Miscellaneous
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 if True:
     from future.builtins.misc import (chr, input, open, next, round, super)
 
@@ -163,13 +164,70 @@ def repr2(x):
     return s
 
 
+if PY2:
+    str_type = (str, _native_unicode)
+    
+    class str2(_native_unicode):
+        """
+        same goal as str in Py3, but handles both Py2 types 
+        and converts str (byte arrays) to proper unicode string even when the str contains non-ascii chars.
+        """
+        def __new__(cls, o, *args, **kwargs):
+            if isinstance(o, str):
+                try:
+                    return super(str2, cls).__new__(cls, o, *args, **kwargs)
+                except UnicodeDecodeError:
+                    return super(str2, cls).__new__(cls, o.decode('utf8'), *args, **kwargs)
+            else:
+                return super(str2, cls).__new__(cls, o, *args, **kwargs)
+            
+    class bytes2(bytes):
+        """
+        same goal as bytes in Py3, but handles both Py2 types 
+        and converts unicode string to proper bytes if the string contains non-ascii chars.
+        """
+        def __new__(cls, s, *args, **kwargs):
+            if isinstance(s, _native_unicode):
+                try:
+                    return super(bytes2, cls).__new__(cls, s, *args, **kwargs)
+                except UnicodeEncodeError:
+                    return super(bytes2, cls).__new__(cls, s.encode('utf8'), *args, **kwargs)
+            else:
+                return super(bytes2, cls).__new__(cls, s, *args, **kwargs)
+            
+else:
+    str_type = str2 = str
+    bytes2 = bytes
+
+
 def _is_py2_unicode(s):
-    return PY2 and type(s) is _native_unicode
+    return PY2 and isinstance(s, _native_unicode)
+    
+
+def get_builtin(fn_name):
+    if PY2:
+        import future.builtins
+        import __builtin__
+        return getattr(future.builtins, fn_name, getattr(__builtin__, fn_name, None))
+    else:
+        import builtins
+        return getattr(builtins, fn_name, None)
+    
+
+def set_builtin(name, value):
+    if PY2:
+        import __builtin__
+        setattr(__builtin__, name, value)
+    else:
+        import builtins
+        setattr(builtins, name, value)
     
 
 class PList(list):
     """
-    Wrapper for printable lists ensuring that the list is printed/represented the same way in Py2 and Py3
+    Wrapper for printable lists ensuring that the list is printed/represented the same way in Py2 and Py3.
+    Use with caution: in PY2, this will work only if all items in the list are ascii-compatible.
+    Mainly aimed for usage in docstrings or warnings where list items are defined statically.
     """
     
     def __init__(self, arr):
@@ -181,3 +239,4 @@ class PList(list):
     def __repr__(self):
         return repr([str(it) if _is_py2_unicode(it) else it for it in self])
     
+
