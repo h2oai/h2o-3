@@ -12,6 +12,8 @@ import water.util.TwoDimTable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import static water.fvec.Vec.T_NUM;
 import static water.fvec.Vec.T_STR;
 
@@ -39,6 +41,14 @@ public class GLMUtils {
     return gamColIndices;
   }
 
+  public static void removePredictors(GLMModel.GLMParameters parms, Frame train) {
+    List<String> nonPredictors = Arrays.stream(parms.getNonPredictors()).collect(Collectors.toList());
+    String[] colNames = parms.train().names();
+    List<String> removeCols = Arrays.stream(colNames).filter(x -> !nonPredictors.contains(x)).collect(Collectors.toList());
+    for (String removeC : removeCols)
+      train.remove(removeC);
+  }
+  
   public static Frame expandedCatCS(Frame beta_constraints, GLMModel.GLMParameters parms) {
     byte[] csByteType = new byte[]{T_STR, T_NUM, T_NUM};
     String[] bsColNames = beta_constraints.names();

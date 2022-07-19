@@ -107,6 +107,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  dispersion_epsilon=0.0001,  # type: float
                  max_iterations_dispersion=1000000,  # type: int
+                 build_null_model=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -371,6 +372,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                estimation loop using maximum likelihood
                Defaults to ``1000000``.
         :type max_iterations_dispersion: int
+        :param build_null_model: If set, will build a model with only the intercept.  Default to false.
+               Defaults to ``False``.
+        :type build_null_model: bool
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -444,6 +448,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.auc_type = auc_type
         self.dispersion_epsilon = dispersion_epsilon
         self.max_iterations_dispersion = max_iterations_dispersion
+        self.build_null_model = build_null_model
 
     @property
     def training_frame(self):
@@ -2213,6 +2218,20 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def max_iterations_dispersion(self, max_iterations_dispersion):
         assert_is_type(max_iterations_dispersion, None, int)
         self._parms["max_iterations_dispersion"] = max_iterations_dispersion
+
+    @property
+    def build_null_model(self):
+        """
+        If set, will build a model with only the intercept.  Default to false.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("build_null_model")
+
+    @build_null_model.setter
+    def build_null_model(self, build_null_model):
+        assert_is_type(build_null_model, None, bool)
+        self._parms["build_null_model"] = build_null_model
 
     Lambda = deprecated_property('Lambda', lambda_)
 
