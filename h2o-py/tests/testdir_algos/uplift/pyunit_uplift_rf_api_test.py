@@ -5,6 +5,7 @@ sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
 from tests import pyunit_utils, assert_equals, assert_not_equal
 from h2o.estimators import H2OUpliftRandomForestEstimator
+from h2o.exceptions import H2OResponseError
 
 
 def uplift_random_forest_api_smoke():
@@ -46,6 +47,12 @@ def uplift_random_forest_api_smoke():
     assert_equals(perf.thresholds_and_metric_scores(), uplift_model.thresholds_and_metric_scores())
     assert_equals(perf.auuc_table(), uplift_model.auuc_table())
     assert_equals(perf.qini(), uplift_model.qini())
+
+    try:
+        uplift_model.partial_plot(train_h2o, cols=['feature_8'])
+        assert False, "Call of partial_plot should raise an exception"
+    except H2OResponseError as e:
+        assert "Partial dependence plots are not implemented for uplift models" in str(e)
 
 
 if __name__ == "__main__":
