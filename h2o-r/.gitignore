@@ -5,7 +5,8 @@ h2o-package/inst/branch.txt
 h2o-package/inst/source_code_repository_info.txt
 h2o-package/NAMESPACE
 
-R/
+R/README.md
+R/src/contrib/
 results/
 
 buildnum.txt
