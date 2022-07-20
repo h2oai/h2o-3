@@ -116,8 +116,6 @@ Common Parameters
 
 -  `weights_column <algo-params/weights_column.html>`__: Specifies a column with observation weights. Giving some observation a weight of ``0`` is equivalent to excluding it from the dataset; giving an observation a relative weight of ``2`` is equivalent to repeating that row twice. Negative weights are not allowed.
 
--  `seed <algo-params/seed.html>`__: Seed for random numbers; passed through to the metalearner algorithm. Defaults to ``-1`` (time-based random number).
-
 - **score_training_samples**: Specify the number of training set samples for scoring. The value must be :math:`\geq` 0. To use all training samples, enter ``0``. This value defaults to ``10000``.
 
 -  **keep_levelone_frame**: Keep the level one data frame that's constructed for the metalearning step. Defaults to ``False``.
@@ -137,6 +135,8 @@ Hyperparameters
 '''''''''''''''
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__:  Maximum allowed runtime in seconds for the metalearner model training. Use ``0`` (default) to disable the time limit. 
+
+-  `seed <algo-params/seed.html>`__: Seed for random numbers; passed through to the metalearner algorithm. Defaults to ``-1`` (time-based random number).
 
 You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.
 
