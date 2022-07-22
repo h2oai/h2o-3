@@ -246,7 +246,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
     Frame fr = getFromDKV("key", s.frame_id.key());
     Log.info("ExportFiles processing (" + s.path + ")");
 
-    if (s.format.equals(ExportFileFormat.parquet)) {
+    if (ExportFileFormat.parquet.equals(s.format)) { // format is optional (can be null, eg. from Flow)
       Log.warn("Format is 'parquet', csv parameter values: separator, header, quote_header will be ignored!");
       Log.warn("Format is 'parquet', H2O itself determines the optimal number of files (1 file per chunk). Parts parameter value will be ignored!");
       if (s.parallel) {
