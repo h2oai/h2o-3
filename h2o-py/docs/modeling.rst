@@ -49,6 +49,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OIsotonicRegressionEstimator`
+-------------------------------------
+.. autoclass:: h2o.estimators.isotonicregression.H2OIsotonicRegressionEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OModelSelectionEstimator`
 ---------------------------------
 .. autoclass:: h2o.estimators.model_selection.H2OModelSelectionEstimator
