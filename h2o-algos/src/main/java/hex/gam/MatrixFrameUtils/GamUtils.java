@@ -413,12 +413,12 @@ public class GamUtils {
       if (ignored_cols.contains(parms._gam_columns_sorted[colIdx]))
         train.remove(parms._gam_columns_sorted[colIdx]);
     }
-    if (offsetVec != null)
-      train.add(parms._offset_column, offsetVec);
     if (foldColumn != null)
       train.add(foldColumn, foldVec);
     if (weightsVec != null)
       train.add(parms._weights_column, weightsVec);
+    if (offsetVec != null)
+      train.add(parms._offset_column, offsetVec);
     if (responseVec != null)
       train.add(parms._response_column, responseVec);
     return train;
