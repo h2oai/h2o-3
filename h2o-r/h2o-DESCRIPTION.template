@@ -82,6 +82,7 @@ Collate:
          'targetencoder.R'
          'import.R'
          'isolationforest.R'
+         'isotonicregression.R'
          'extendedisolationforest.R'
          'parse.R'
          'export.R'
