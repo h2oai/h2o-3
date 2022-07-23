@@ -514,10 +514,10 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     adptedF.add(csAugmentedColumns.names(), csAugmentedColumns.removeAll());
     Scope.track(csAugmentedColumns);
     
-    if (offsetV != null)
-      adptedF.add(parms._offset_column, offsetV);
     if (weightV != null)
       adptedF.add(parms._weights_column, weightV);
+    if (offsetV != null)
+      adptedF.add(parms._offset_column, offsetV);
     if (respV != null)
       adptedF.add(parms._response_column, respV);
     return adptedF;
@@ -551,10 +551,10 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     valid.add(csAugmentedColumns.names(), csAugmentedColumns.removeAll());
     Scope.track(csAugmentedColumns);
 
-    if (offsetV != null)
-      valid.add(parms._offset_column, offsetV);
     if (weightV != null)
       valid.add(parms._weights_column, weightV);
+    if (offsetV != null)
+      valid.add(parms._offset_column, offsetV);
     if (respV != null)
       valid.add(parms._response_column, respV);
     return valid;
