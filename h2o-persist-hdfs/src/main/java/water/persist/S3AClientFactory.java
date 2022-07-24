@@ -25,7 +25,7 @@ public class S3AClientFactory implements S3ClientFactory {
                         "it is " + (fs != null ? fs.getClass().getName() : "undefined") + ".");
             }
         } catch (IOException e) {
-            throw new RuntimeException();
+            throw new RuntimeException(e);
         }
     }
 
