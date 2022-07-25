@@ -23,7 +23,6 @@ def test_s3_model_save():
         s3_dir = scheme + "://test.0xdata.com/h2o-hadoop-tests/test-save_model/" + scheme + "/exported." + \
                   timestamp + "." + unique_suffix
         s3_model_path = h2o.save_model(gbm, s3_dir)
-        predicted_original = gbm.predict(prostate)
 
         key = "h2o-hadoop-tests/test-save_model/" + scheme + "/exported." + timestamp + "." + \
                   unique_suffix + "/" + gbm.model_id
