@@ -87,7 +87,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "generate_scoring_history",
             "auc_type",
             "dispersion_epsilon",
-            "max_iterations_dispersion"
+            "max_iterations_dispersion",
+            "build_null_model"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -198,6 +199,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help="Include constant term in the model", level = Level.expert)
     public boolean intercept;
+    
+    @API(help="If set, will build a model with only the intercept.  Default to false.", level = Level.expert)
+    public boolean build_null_model;
 
     @API(help="If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned", level = Level.critical)
     public boolean HGLM;

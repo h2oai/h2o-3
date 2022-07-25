@@ -135,6 +135,7 @@
 #'        dispersion parameter estimation loop using maximum likelihood Defaults to 0.0001.
 #' @param max_iterations_dispersion control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood
 #'        Defaults to 1000000.
+#' @param build_null_model \code{Logical}. If set, will build a model with only the intercept.  Default to false. Defaults to FALSE.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -248,7 +249,8 @@ h2o.glm <- function(x,
                     generate_scoring_history = FALSE,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                     dispersion_epsilon = 0.0001,
-                    max_iterations_dispersion = 1000000)
+                    max_iterations_dispersion = 1000000,
+                    build_null_model = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -415,6 +417,8 @@ h2o.glm <- function(x,
     parms$dispersion_epsilon <- dispersion_epsilon
   if (!missing(max_iterations_dispersion))
     parms$max_iterations_dispersion <- max_iterations_dispersion
+  if (!missing(build_null_model))
+    parms$build_null_model <- build_null_model
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -511,6 +515,7 @@ h2o.glm <- function(x,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     dispersion_epsilon = 0.0001,
                                     max_iterations_dispersion = 1000000,
+                                    build_null_model = FALSE,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -682,6 +687,8 @@ h2o.glm <- function(x,
     parms$dispersion_epsilon <- dispersion_epsilon
   if (!missing(max_iterations_dispersion))
     parms$max_iterations_dispersion <- max_iterations_dispersion
+  if (!missing(build_null_model))
+    parms$build_null_model <- build_null_model
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

@@ -315,7 +315,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMType _glmType = GLMType.glm;
     public boolean _generate_scoring_history = false; // if true, will generate scoring history but will slow algo down
     public DispersionMethod _dispersion_factor_method = DispersionMethod.pearson;
-    public double _init_dispersion_factor=1.0;
+    public double _init_dispersion_factor = 1.0;
+    public boolean _build_null_model = false;
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
