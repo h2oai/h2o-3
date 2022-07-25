@@ -931,6 +931,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
     if (expensive) {
+      if (_parms._build_null_model) {
+        if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
+          error("build_null_model", " is only supported for tweedie, gamma and negativebinomial familes");
+        else
+          removePredictors(_parms, _train);
+      }
       if (_parms._max_iterations == 0)
         error("_max_iterations", H2O.technote(2, "if specified, must be >= 1."));
       if (error_count() > 0) return;
