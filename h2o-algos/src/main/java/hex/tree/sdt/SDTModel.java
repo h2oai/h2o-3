@@ -8,6 +8,10 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
 
     private static final Logger LOG = Logger.getLogger(SDTModel.class);
 
+    @Override
+    protected String[] makeScoringNames(){
+        return new String[]{"predict"};
+    }
 
     public SDTModel(Key<SDTModel> selfKey, SDTModel.SDTParameters parms,
                     SDTModel.SDTOutput output) {
@@ -80,7 +84,7 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
 
         public SDTParameters() {
             super();
-            _maxDepth = 100;
+            _maxDepth = 20;
             _limitNumSamplesForSplit = 10;
         }
 

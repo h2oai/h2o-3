@@ -79,9 +79,9 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2OSdtEstimator`
-----------------------
-.. autoclass:: h2o.estimators.sdt.H2OSdtEstimator
+:mod:`H2OSingleDecisionTreeEstimator`
+-------------------------------------
+.. autoclass:: h2o.estimators.single_decision_tree.H2OSingleDecisionTreeEstimator
     :show-inheritance:
     :members:
 

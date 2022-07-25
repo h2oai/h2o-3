@@ -27,6 +27,7 @@ class H2OSdtEstimator(H2OEstimator):
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 response_column=None,  # type: Optional[str]
                  max_depth=0,  # type: int
                  ):
         """
@@ -46,6 +47,9 @@ class H2OSdtEstimator(H2OEstimator):
                Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
+        :param response_column: Response variable column.
+               Defaults to ``None``.
+        :type response_column: str, optional
         :param max_depth: Max depth of tree.
                Defaults to ``0``.
         :type max_depth: int
@@ -57,6 +61,7 @@ class H2OSdtEstimator(H2OEstimator):
         self.ignored_columns = ignored_columns
         self.ignore_const_cols = ignore_const_cols
         self.categorical_encoding = categorical_encoding
+        self.response_column = response_column
         self.max_depth = max_depth
 
     @property
@@ -114,6 +119,20 @@ class H2OSdtEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+    @property
+    def response_column(self):
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
+        return self._parms.get("response_column")
+
+    @response_column.setter
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
 
     @property
     def max_depth(self):
