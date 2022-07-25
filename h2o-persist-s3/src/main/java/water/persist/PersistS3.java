@@ -2,7 +2,6 @@ package water.persist;
 
 import com.amazonaws.*;
 import com.amazonaws.auth.*;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -190,6 +189,19 @@ public final class PersistS3 extends Persist {
   }
 
   @Override
+  public PersistEntry[] list(String path) {
+    final String[] bk = decodePath(path);
+    ObjectListing objects = getClient().listObjects(bk[0], bk[1]);
+    final String key = bk[1].endsWith("/") ? bk[1].substring(0, bk[1].length() - 1) : bk[1];
+    PersistEntry[] entries = objects.getObjectSummaries().stream()
+            .filter(s -> s.getKey().equals(key) || s.getKey().startsWith(key + "/"))
+            .map(s -> new PersistEntry(s.getKey(), s.getSize(), s.getLastModified().getTime()))
+            .toArray(PersistEntry[]::new);
+    Arrays.sort(entries);
+    return entries;
+  }
+
+  @Override
   public InputStream open(String path) {
     String[] bk = decodePath(path);
     GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
@@ -268,6 +280,11 @@ public final class PersistS3 extends Persist {
       }
       callback.run();
     }
+  }
+
+  @Override
+  public boolean mkdirs(String path) {
+    return true; // S3 doesn't really have concept of directories - for our use case we can just ignore it
   }
 
   public static Key loadKey(ObjectListing listing, S3ObjectSummary obj) throws IOException {

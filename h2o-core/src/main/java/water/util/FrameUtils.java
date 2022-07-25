@@ -10,6 +10,7 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.persist.Persist;
 import water.persist.PersistManager;
 
 import java.io.*;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.ServiceLoader;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -497,7 +497,7 @@ public class FrameUtils {
 
       @Override
       public void releaseCache(ChunkExportTask task, int cid) {
-        Key ck = Vec.chunkKey(_vecKey, cid);
+        Key<?> ck = Vec.chunkKey(_vecKey, cid);
         DKV.remove(ck);
       }
     }
@@ -531,7 +531,7 @@ public class FrameUtils {
      * Trivial CSV file size estimator. Uses the first line of each non-empty chunk to estimate the size of the chunk.
      * The total estimated size is the total of the estimated chunk sizes.
      */
-    class EstimateSizeTask extends MRTask<EstimateSizeTask> {
+    static class EstimateSizeTask extends MRTask<EstimateSizeTask> {
       // IN
       private final Frame.CSVStreamParams _parms;
       // OUT
@@ -547,7 +547,7 @@ public class FrameUtils {
         if (cs[0]._len == 0) return;
         try (Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, _parms)) {
           _nNonEmpty++;
-          _size += is.getCurrentRowSize() * cs[0]._len;
+          _size += (long) is.getCurrentRowSize() * cs[0]._len;
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
