@@ -175,13 +175,13 @@ public class SDTTest extends TestUtil {
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p._maxDepth = 1;
+        p._maxDepth = 3;
         p._response_column = "label";
 
         DRFModel.DRFParameters p1 =
                 new DRFModel.DRFParameters();
         p1._ntrees = 1;
-        p1._max_depth = 1;
+        p1._max_depth = 3;
         p1._response_column = "label";
         p1._train = train._key;
         p1._seed = 0xDECAF;
@@ -216,8 +216,8 @@ public class SDTTest extends TestUtil {
     @Test
     public void testHIGGSDataset() {
         Scope.enter();
-        Frame train = Scope.track(parseTestFile("smalldata/yuliia/HIGGS_train.csv"));
-        Frame test = Scope.track(parseTestFile("smalldata/yuliia/HIGGS_test.csv"));
+        Frame train = Scope.track(parseTestFile("smalldata/yuliia/HIGGS_train_limited1.csv"));
+        Frame test = Scope.track(parseTestFile("smalldata/yuliia/HIGGS_test_limited1.csv"));
 
         SDTModel.SDTParameters p =
                 new SDTModel.SDTParameters();
