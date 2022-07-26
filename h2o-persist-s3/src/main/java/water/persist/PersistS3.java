@@ -33,15 +33,15 @@ public final class PersistS3 extends Persist {
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
 
   private static final Object _lock = new Object();
-  private static volatile AmazonS3 _s3;
+  private static volatile S3ClientFactory _s3Factory;
 
   // for unit testing
-  static void setClient(AmazonS3 s3) {
-    _s3 = s3;
+  static void setClientFactory(S3ClientFactory factory) {
+    _s3Factory = factory;
   }
 
-  public static AmazonS3 getClient() {
-    if (_s3 == null) {
+  static AmazonS3 getClient() {
+    if (_s3Factory == null) {
       String factoryClassName = System.getProperty(S3_CLIENT_FACTORY_CLASS);
       if (H2O.ARGS.configure_s3_using_s3a) {
         if (factoryClassName == null) {
@@ -51,22 +51,35 @@ public final class PersistS3 extends Persist {
                   factoryClassName + ". The system property will take precedence.");
       }
       synchronized (_lock) {
-        if (_s3 == null) {
+        if (_s3Factory == null) {
           if (StringUtils.isNullOrEmpty(factoryClassName)) {
-            _s3 = makeDefaultClient();
+            _s3Factory = new DefaultS3ClientFactory();
           } else {
             try {
-              S3ClientFactory factory = ReflectionUtils.newInstance(factoryClassName, S3ClientFactory.class);
-              _s3 = factory.newClientInstance();
+              _s3Factory = ReflectionUtils.newInstance(factoryClassName, S3ClientFactory.class);
             } catch (Exception e) {
               throw new RuntimeException("Unable to instantiate S3 client factory for class " + factoryClassName + ".", e);
             }
           }
-          assert _s3 != null;
+          assert _s3Factory != null;
         }
       }
     }
-    return _s3;
+    return _s3Factory.getOrMakeClient();
+  }
+
+  private static final class DefaultS3ClientFactory implements S3ClientFactory {
+    private final AmazonS3 _s3;
+
+    public DefaultS3ClientFactory() {
+      _s3 = makeDefaultClient();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public AmazonS3 getOrMakeClient() {
+      return _s3;
+    }
   }
 
   static AmazonS3 makeDefaultClient() {

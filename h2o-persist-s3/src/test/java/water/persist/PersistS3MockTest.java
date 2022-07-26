@@ -40,12 +40,18 @@ public class PersistS3MockTest {
 
     @Before
     public void injectClient() {
-        PersistS3.setClient(s3);
+        PersistS3.setClientFactory(new S3ClientFactory() {
+            @Override
+            @SuppressWarnings("unchecked")
+            public AmazonS3 getOrMakeClient() {
+                return s3;
+            }
+        });
     }
 
     @After
     public void removeClient() {
-        PersistS3.setClient(null);
+        PersistS3.setClientFactory(null);
     }
 
     @Test
