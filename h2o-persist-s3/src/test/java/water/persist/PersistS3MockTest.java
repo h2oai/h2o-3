@@ -43,7 +43,7 @@ public class PersistS3MockTest {
         PersistS3.setClientFactory(new S3ClientFactory() {
             @Override
             @SuppressWarnings("unchecked")
-            public AmazonS3 getOrMakeClient() {
+            public AmazonS3 getOrMakeClient(String bucket) {
                 return s3;
             }
         });

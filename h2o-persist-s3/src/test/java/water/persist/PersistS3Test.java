@@ -14,14 +14,12 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.ArrayUtils;
 import water.util.FileUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -255,7 +253,7 @@ public class PersistS3Test extends TestUtil {
       assumeTrue(accessKey != null);
       assumeTrue(secretKey != null);
 
-      final AmazonS3 defaultClient = PersistS3.getClient(); // Create a default client
+      final AmazonS3 defaultClient = PersistS3.getClient((String)null); // Create a default client
       assertNotNull(defaultClient);
 
       final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKey, secretKey, null);

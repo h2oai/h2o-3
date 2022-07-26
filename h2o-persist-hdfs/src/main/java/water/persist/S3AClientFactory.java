@@ -15,9 +15,10 @@ public class S3AClientFactory implements S3ClientFactory {
             SYSTEM_PROP_PREFIX + "persist.s3a.factoryPrototypeUri", "s3a://www.h2o.ai/");
 
     @Override
-    public <T> T getOrMakeClient() {
+    public <T> T getOrMakeClient(String bucket) {
         try {
-            FileSystem fs = FileSystem.get(URI.create(S3A_FACTORY_PROTOTYPE_URI), PersistHdfs.CONF);
+            String path = bucket != null ? "s3a://" + bucket + "/" : S3A_FACTORY_PROTOTYPE_URI;
+            FileSystem fs = getFileSystem(URI.create(path));
             if (fs instanceof S3AFileSystem) {
                 return ReflectionUtils.getFieldValue(fs, "s3"); 
             } else {
@@ -29,4 +30,8 @@ public class S3AClientFactory implements S3ClientFactory {
         }
     }
 
+    protected FileSystem getFileSystem(URI uri) throws IOException {
+        return FileSystem.get(uri, PersistHdfs.CONF);
+    }
+    
 }
