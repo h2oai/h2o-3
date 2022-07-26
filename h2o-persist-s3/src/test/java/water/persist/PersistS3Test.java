@@ -93,8 +93,11 @@ public class PersistS3Test extends TestUtil {
 
   @Test
   public void testExists() {
+    assertTrue(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines/"));
+    assertTrue(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines"));
     assertTrue(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
     assertFalse(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines/invalid.file"));
+    assertFalse(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airli"));
   }
 
   @Test

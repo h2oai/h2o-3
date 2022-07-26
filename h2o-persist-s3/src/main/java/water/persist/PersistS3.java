@@ -183,9 +183,7 @@ public final class PersistS3 extends Persist {
 
   @Override
   public boolean exists(String path) {
-    String[] bk = decodePath(path);
-    ObjectListing objects = getClient().listObjects(bk[0], bk[1]);
-    return !objects.getObjectSummaries().isEmpty();
+    return list(path).length >= 1;
   }
 
   @Override
