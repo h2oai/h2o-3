@@ -617,6 +617,12 @@ public class TestUtil extends Iced {
     return frame;
   }
 
+  public static void assertExists(String fname) {
+    NFSFileVec v = makeNfsFileVec(fname);
+    assertNotNull("File '" + fname + "' was not found", v);
+    v.remove();
+  }
+  
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
       File file = FileUtils.locateFile(fname);

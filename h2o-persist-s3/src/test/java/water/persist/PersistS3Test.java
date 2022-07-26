@@ -14,12 +14,14 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 import water.util.FileUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -66,6 +68,7 @@ public class PersistS3Test extends TestUtil {
   public void testS3Import() throws Exception {
     Scope.enter();
     try {
+      assertExists("smalldata/airlines/AirlinesTrain.csv.zip");
       Key k = H2O.getPM().anyURIToKey(new URI("s3://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
       Frame fr = DKV.getGet(k);
       FileVec v = (FileVec) fr.anyVec();
@@ -90,8 +93,24 @@ public class PersistS3Test extends TestUtil {
 
   @Test
   public void testExists() {
+    assertTrue(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines/"));
+    assertTrue(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines"));
     assertTrue(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
     assertFalse(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines/invalid.file"));
+    assertFalse(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airli"));
+  }
+
+  @Test
+  public void testList() {
+    Persist.PersistEntry[] entriesNoSlash = new PersistS3().list("s3://h2o-public-test-data/smalldata/airlines");
+    assertEquals(entriesNoSlash.length, 100, 80); // at least 20 entries at the time of making of this test
+    Persist.PersistEntry[] entriesSlash = new PersistS3().list("s3://h2o-public-test-data/smalldata/airlines/");
+    assertArrayEquals(entriesNoSlash, entriesSlash);
+    Persist.PersistEntry[] entriesPrefix = new PersistS3().list("s3://h2o-public-test-data/smalldata/airlin");
+    assertEquals(entriesPrefix.length, 0);
+    Persist.PersistEntry[] entriesOneFile = new PersistS3().list("s3://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip");
+    assertEquals(entriesOneFile.length, 1);
+    assertEquals(entriesOneFile[0]._name, "smalldata/airlines/AirlinesTrain.csv.zip");
   }
 
   @Test
