@@ -15,7 +15,7 @@ public class S3AClientFactory implements S3ClientFactory {
             SYSTEM_PROP_PREFIX + "persist.s3a.factoryPrototypeUri", "s3a://www.h2o.ai/");
 
     @Override
-    public <T> T newClientInstance() {
+    public <T> T getOrMakeClient() {
         try {
             FileSystem fs = FileSystem.get(URI.create(S3A_FACTORY_PROTOTYPE_URI), PersistHdfs.CONF);
             if (fs instanceof S3AFileSystem) {
