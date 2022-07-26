@@ -15,6 +15,11 @@ testModelSelectionResultFrameModelID <- function() {
     mode="maxr")
   resultFrameMaxr <- h2o.result(maxrModel)
   bestModelIDsMaxr <- maxrModel@model$best_model_ids
+  maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
+  mode="maxrsweep")
+  resultFrameMaxrsweep <- h2o.result(maxrsweepModel)
+  bestModelIDsMaxrsweep <- maxrsweepModel@model$best_model_ids
+
   for (ind in c(1:numModel)) {
     glmModelAllsubsets <- h2o.getModel(resultFrameAllsubsets[ind, 2])
     predFrameAllsubsets <- h2o.predict(glmModelAllsubsets, bhexFV)
@@ -27,8 +32,13 @@ testModelSelectionResultFrameModelID <- function() {
     glmModel2Maxr <- h2o.getModel(bestModelIDsMaxr[[ind]]$name)
     predFrame2Maxr <- h2o.predict(glmModel2Maxr, bhexFV)
     compareFrames(predFrameAllsubsets, predFrame2Maxr, prob=1, tolerance = 1e-6)
-    compareFrames(predFrameAllsubsets, predFrameAllsubsets, prob=1, tolerance = 1e-6)
+    
+    glmModelMaxrsweep <- h2o.getModel(resultFrameMaxrsweep[ind, 2])
+    predFrameMaxrsweep <- h2o.predict(glmModelMaxrsweep, bhexFV)
+    glmModel2Maxrsweep <- h2o.getModel(bestModelIDsMaxrsweep[[ind]]$name)
+    predFrame2Maxrsweep <- h2o.predict(glmModel2Maxrsweep, bhexFV)
+    compareFrames(predFrameAllsubsets, predFrame2Maxrsweep, prob=1, tolerance = 1e-6)
   }
 }
 
-doTest("ModelSelection with allsubsets, maxr: test result frame and model id", testModelSelectionResultFrameModelID)
+doTest("ModelSelection with allsubsets, maxr, maxrsweep: test result frame and model id", testModelSelectionResultFrameModelID)

@@ -17,18 +17,29 @@ def test_modelselection_gaussian_coefs():
     coefs_norm_allsubsets = allsubsets_model.coef_norm()
     maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
     maxrsweep_model.train(training_frame=d, x=my_x, y=my_y)
+    maxrsweep_model_glm = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep", build_glm_model=False)
+    maxrsweep_model_glm.train(training_frame=d, x=my_x, y=my_y)
     maxr_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxr")
     maxr_model.train(training_frame=d, x=my_x, y=my_y)
     # make sure results returned by maxr and maxrsweep are the same
     pyunit_utils.compare_frames_local(maxr_model.result()[2:4], maxrsweep_model.result()[2:4], prob=1.0, tol=1e-6)
+    pyunit_utils.compare_frames_local(maxr_model.result()[2:4], maxrsweep_model_glm.result()[1:3], prob=1.0, tol=1e-6)
     coefs_maxr = maxr_model.coef()
     coefs_norm_maxr = maxr_model.coef_norm()
+    coefs_maxrsweep = maxrsweep_model.coef()
+    coefs_norm_maxrsweep = maxrsweep_model.coef_norm()
+    coefs_maxrsweep_glm = maxrsweep_model_glm.coef()
+    coefs_norm_maxrsweep_glm = maxrsweep_model_glm.coef_norm()  
     
     for ind in list(range(len(coefs_allsubsets))):
         one_coef_allsubsets = coefs_allsubsets[ind]
         one_coef_norm_allsubsets = coefs_norm_allsubsets[ind]
         one_coef_maxr = coefs_maxr[ind]
         one_coef_norm_maxr = coefs_norm_maxr[ind]
+        one_coef_maxrsweep = coefs_maxrsweep[ind]
+        one_coef_norm_maxrsweep = coefs_norm_maxrsweep[ind]
+        one_coef_maxrsweep_glm = coefs_maxrsweep_glm[ind]
+        one_coef_norm_maxrsweep_glm = coefs_norm_maxrsweep_glm[ind]
         # coefficients obtained from accessing model_id, generate model and access the model coeffs
         one_model = h2o.get_model(allsubsets_model._model_json["output"]["best_model_ids"][ind]['name'])
         model_coef = one_model.coef()
@@ -44,7 +55,11 @@ def test_modelselection_gaussian_coefs():
         pyunit_utils.assertCoefDictEqual(one_model_coef, model_coef, 1e-6)
         pyunit_utils.assertCoefDictEqual(one_model_coef_norm, model_coef_norm, 1e-6)
         pyunit_utils.assertCoefDictEqual(one_model_coef, one_coef_maxr, 1e-6)
+        pyunit_utils.assertCoefDictEqual(one_model_coef, one_coef_maxrsweep, 1e-6)
         pyunit_utils.assertCoefDictEqual(one_model_coef_norm, one_coef_norm_maxr, 1e-6)
+        pyunit_utils.assertCoefDictEqual(one_model_coef_norm, one_coef_norm_maxrsweep, 1e-6)
+        pyunit_utils.assertCoefDictEqual(one_model_coef_norm, one_coef_norm_maxrsweep_glm, 1e-6)
+        pyunit_utils.assertCoefDictEqual(one_model_coef_norm, one_coef_norm_maxrsweep_glm, 1e-6)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_modelselection_gaussian_coefs)

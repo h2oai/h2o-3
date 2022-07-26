@@ -24,7 +24,18 @@ testModelSelectionCoeffs <- function() {
   print(coeffsMaxr)
   coeffsNormMaxr <- h2o.coef_norm(maxrModel) # list of standardized coefficients from model built from each predictor size
   print(coeffsNormMaxr)
-  for (index in seq(1,length(coeffsNormAllsubsets))) {
+  
+   maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
+     mode="maxrsweep")
+   resultMaxrsweep <- h2o.result(maxrsweepModel) # H2OFrame containing best model_ids, best_r2_value, predictor subsets
+   print(resultMaxrsweep)
+   coeffsMaxrsweep <- h2o.coef(maxrsweepModel) # list of coefficients from model built from each predictor size
+   print(coeffsMaxrsweep)
+   coeffsNormMaxrsweep <- h2o.coef_norm(maxrsweepModel) # list of standardized coefficients from model built from each predictor size
+   print(coeffsNormMaxrsweep)
+
+    
+  for (index in seq(numModel)) {
     oneModelCoeffAllsubsets <- h2o.coef(allsubsetsModel, index)
     oneModelCoeffNormAllsubsets <- h2o.coef_norm(allsubsetsModel, index)
     expect_equal(coeffsAllsubsets[[index]], oneModelCoeffAllsubsets, tolerance=1e-6)
@@ -37,7 +48,15 @@ testModelSelectionCoeffs <- function() {
     coefsMaxr <- coeffsNormMaxr[[index]]
     coefsAllsubsets <- coeffsNormAllsubsets[[index]]
     expect_equal(coefsMaxr[order(coefsMaxr)], coefsAllsubsets[order(coefsAllsubsets)], tolerance=1e-6)
+    
+    oneModelCoeffMaxrsweep <- h2o.coef(maxrsweepModel, index)
+    oneModelCoeffNormMaxrsweep <- h2o.coef_norm(maxrsweepModel, index)
+    expect_equal(coeffsMaxrsweep[[index]], oneModelCoeffMaxrsweep, tolerance=1e-6)
+    expect_equal(coeffsNormMaxrsweep[[index]], oneModelCoeffNormMaxrsweep, tolerance=1e-6)
+    coefsMaxrsweep <- coeffsNormMaxrsweep[[index]]
+    coefsAllsubsets <- coeffsNormAllsubsets[[index]]
+    expect_equal(coefsMaxrsweep[order(coefsMaxrsweep)], coefsAllsubsets[order(coefsAllsubsets)], tolerance=1e-6)
   }
 }
 
-doTest("ModelSelection with allsubsets, maxr: test h2o.coef() and h2o.coef_norm()", testModelSelectionCoeffs)
+doTest("ModelSelection with allsubsets, maxr, maxrsweep: test h2o.coef() and h2o.coef_norm()", testModelSelectionCoeffs)

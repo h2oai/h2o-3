@@ -17,9 +17,12 @@ def test_gaussian_result_frame_model_id():
     maxr_model.train(training_frame=d, x=my_x, y=my_y)
     maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
     maxrsweep_model.train(training_frame=d, x=my_x, y=my_y)
+    maxrsweep_model_glm = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep", build_glm_model=False)
+    maxrsweep_model_glm.train(training_frame=d, x=my_x, y=my_y)
 
     # make sure results returned by maxr and maxrsweep are the same
     pyunit_utils.compare_frames_local(maxr_model.result()[2:4], maxrsweep_model.result()[2:4], prob=1.0, tol=1e-6)
+    pyunit_utils.compare_frames_local(maxr_model.result()[2:4], maxrsweep_model_glm.result()[1:3], prob=1.0, tol=1e-6)
     
     allsubsets_model = modelSelection(seed=12345, max_predictor_number=7, mode="allsubsets")
     allsubsets_model.train(training_frame=d, x=my_x, y=my_y)

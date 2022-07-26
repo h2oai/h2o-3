@@ -10,6 +10,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.Log;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -291,7 +292,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
             parms._mode = maxr;
             ModelSelectionModel modelMaxr = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Scope.track_generic(modelMaxr); //  model with validation dataset
-            compareResultFModelSummary(modelMaxr);
+        //    compareResultFModelSummary(modelMaxr);
         } finally {
             Scope.exit();
         }
@@ -305,11 +306,11 @@ public class ModelSelectionMaxRTests extends TestUtil {
         Frame resultF = model.result();
         Scope.track(resultF);
         int numRows = (int) resultF.numRows();
-        String[] frameNames = new String[]{"predictor(s)_removed", "predictor(s)_added"};
+        String[] frameNames = new String[]{"predictors_removed", "predictors_added"};
         IcedWrapper[][] cellValues = model._output._model_summary.getCellValues();
         List<String> colHeaders = Stream.of(model._output._model_summary.getColHeaders()).collect(Collectors.toList());
-        int removedInd = colHeaders.indexOf("predictor(s)_removed");
-        int addedInd = !backward.equals(model._parms._mode) ? colHeaders.indexOf("predictor(s)_added") : 0;
+        int removedInd = colHeaders.indexOf("predictors_removed");
+        int addedInd = !backward.equals(model._parms._mode) ? colHeaders.indexOf("predictors_added") : 0;
         for (int rInd = 0; rInd < numRows; rInd++) {
             // removed predictor
             Assert.assertTrue(cellValues[rInd][removedInd].toString().equals(resultF.vec(frameNames[0]).stringAt(rInd)));
@@ -351,17 +352,20 @@ public class ModelSelectionMaxRTests extends TestUtil {
             Scope.exit();
         }
     }
-    
+
     public void assertCorrectReplacement(List<Integer> currSubset, List<String> coefNames, double bestR2,
                                          String[] bestR2Subset, boolean okToBeNull,
                                          ModelSelectionModel.ModelSelectionParameters parms) {
-        List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList()); 
+        List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
         validSubset.removeAll(currSubset);
+        Log.info("**** inside assertCorrectReplacement");
         GLMModel bestR2Model = replacement(currSubset, coefNames, bestR2, parms, 0,
-                null, validSubset,null, new HashSet<BitSet>());
-        if (bestR2Model == null && okToBeNull) {
+                null, validSubset, null, new HashSet<BitSet>());
+
+        if (bestR2Model == null && okToBeNull)
             return;
-        }
+        
+        Scope.track_generic(bestR2Model);
         String[] modelCoeff = sortStringArray(bestR2Model._output._coefficient_names);
         assertArrayEquals(bestR2Subset, modelCoeff);
     }
