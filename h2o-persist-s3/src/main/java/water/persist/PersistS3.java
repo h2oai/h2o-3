@@ -40,7 +40,7 @@ public final class PersistS3 extends Persist {
     _s3Factory = factory;
   }
 
-  static AmazonS3 getClient() {
+  static AmazonS3 getClient(String bucket) {
     if (_s3Factory == null) {
       String factoryClassName = System.getProperty(S3_CLIENT_FACTORY_CLASS);
       if (H2O.ARGS.configure_s3_using_s3a) {
@@ -65,7 +65,11 @@ public final class PersistS3 extends Persist {
         }
       }
     }
-    return _s3Factory.getOrMakeClient();
+    return _s3Factory.getOrMakeClient(bucket);
+  }
+
+  private static AmazonS3 getClient(String[] decodedParts) {
+    return getClient(decodedParts[0]);
   }
 
   private static final class DefaultS3ClientFactory implements S3ClientFactory {
@@ -77,7 +81,7 @@ public final class PersistS3 extends Persist {
 
     @Override
     @SuppressWarnings("unchecked")
-    public AmazonS3 getOrMakeClient() {
+    public AmazonS3 getOrMakeClient(String bucket) {
       return _s3;
     }
   }
@@ -191,7 +195,7 @@ public final class PersistS3 extends Persist {
    */
   URL generatePresignedUrl(String path, Date expiration) {
     final String[] bk = decodePath(path);
-    return getClient().generatePresignedUrl(bk[0], bk[1], expiration, HttpMethod.GET);
+    return getClient(bk).generatePresignedUrl(bk[0], bk[1], expiration, HttpMethod.GET);
   }
 
   @Override
@@ -202,7 +206,7 @@ public final class PersistS3 extends Persist {
   @Override
   public PersistEntry[] list(String path) {
     final String[] bk = decodePath(path);
-    ObjectListing objects = getClient().listObjects(bk[0], bk[1]);
+    ObjectListing objects = getClient(bk).listObjects(bk[0], bk[1]);
     final String key = bk[1].endsWith("/") ? bk[1].substring(0, bk[1].length() - 1) : bk[1];
     PersistEntry[] entries = objects.getObjectSummaries().stream()
             .filter(s -> s.getKey().equals(key) || s.getKey().startsWith(key + "/"))
@@ -216,7 +220,7 @@ public final class PersistS3 extends Persist {
   public InputStream open(String path) {
     String[] bk = decodePath(path);
     GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
-    S3Object s3obj = getClient().getObject(r);
+    S3Object s3obj = getClient(bk).getObject(r);
     return s3obj.getObjectContent();
   }
 
@@ -230,7 +234,7 @@ public final class PersistS3 extends Persist {
     } catch (IOException e) {
       throw new RuntimeException("Failed to create temporary file for S3 object upload", e);
     }
-    Runnable callback = new PutObjectCallback(getClient(), tmpFile, true, bk[0], bk[1]);
+    Runnable callback = new PutObjectCallback(getClient(bk), tmpFile, true, bk[0], bk[1]);
     try {
       return new CallbackFileOutputStream(tmpFile, callback);
     } catch (FileNotFoundException e) {
@@ -326,9 +330,9 @@ public final class PersistS3 extends Persist {
   public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     LOG.info("ImportS3 processing (" + path + ")");
     // List of processed files
-    AmazonS3 s3 = getClient();
-    String [] parts = decodePath(path);
-    ObjectListing currentList = s3.listObjects(parts[0], parts[1]);
+    String[] bk = decodePath(path);
+    AmazonS3 s3 = getClient(bk);
+    ObjectListing currentList = s3.listObjects(bk[0], bk[1]);
     processListing(currentList, pattern, files, fails, true);
     while(currentList.isTruncated()){
       currentList = s3.listNextBatchOfObjects(currentList);
@@ -462,14 +466,7 @@ public final class PersistS3 extends Persist {
     String[] bk = decodeKey(k);
     GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
     r.setRange(offset, offset + length - 1); // Range is *inclusive* according to docs???
-    return getClient().getObject(r);
-  }
-
-  // Gets the object metadata associated with given key.
-  private static ObjectMetadata getObjectMetadataForKey(Key k) {
-    String[] bk = decodeKey(k);
-    assert (bk.length == 2);
-    return getClient().getObjectMetadata(bk[0], bk[1]);
+    return getClient(bk).getObject(r);
   }
 
   /** S3 socket timeout property name */
@@ -538,18 +535,17 @@ public final class PersistS3 extends Persist {
 
   @Override
   public Key uriToKey(URI uri) throws IOException {
-    AmazonS3 s3 = getClient();
-    // Decompose URI into bucket, key
-    String [] parts = decodePath(uri.toString());
+    String[] bk = decodePath(uri.toString());
+    AmazonS3 s3 = getClient(bk);
     try {
-      ObjectMetadata om = s3.getObjectMetadata(parts[0], parts[1]);
+      ObjectMetadata om = s3.getObjectMetadata(bk[0], bk[1]);
       // Voila: create S3 specific key pointing to the file
-      return S3FileVec.make(encodePath(parts[0], parts[1]), om.getContentLength());
+      return S3FileVec.make(encodePath(bk[0], bk[1]), om.getContentLength());
     } catch (AmazonServiceException e) {
       if (e.getErrorCode().contains("404")) {
         throw new IOException(e);
       } else {
-        LOG.error("AWS failed for " + Arrays.toString(parts) + ": " + e.getMessage());
+        LOG.error("AWS failed for " + Arrays.toString(bk) + ": " + e.getMessage());
         throw e;
       }
     }
@@ -566,7 +562,7 @@ public final class PersistS3 extends Persist {
     public boolean containsKey(String k) { return Arrays.binarySearch(_cache,k) >= 0;}
     protected String [] update(){
       LOG.debug("Renewing S3 bucket cache.");
-      List<Bucket> l = getClient().listBuckets();
+      List<Bucket> l = getClient((String) null).listBuckets();
       String [] cache = new String[l.size()];
       int i = 0;
       for (Bucket b : l) cache[i++] = b.getName();
@@ -604,7 +600,7 @@ public final class PersistS3 extends Persist {
     @Override
     protected String [] update(){
       LOG.debug("Renewing S3 cache.");
-      AmazonS3 s3 = getClient();
+      AmazonS3 s3 = getClient(_bucket);
       ObjectListing currentList = s3.listObjects(_bucket,"");
       ArrayList<String> res = new ArrayList<>();
       processListing(currentList, null, res, null, false);
@@ -629,7 +625,7 @@ public final class PersistS3 extends Persist {
     String [] parts = decodePath(filter);
     if(parts[1] != null) { // bucket and key prefix
       if(_keyCaches.get(parts[0]) == null) {
-        if(!getClient().doesBucketExist(parts[0]))
+        if(!getClient(parts[0]).doesBucketExist(parts[0]))
           return new ArrayList<>();
         _keyCaches.put(parts[0], new KeyCache(parts[0]));
       }
