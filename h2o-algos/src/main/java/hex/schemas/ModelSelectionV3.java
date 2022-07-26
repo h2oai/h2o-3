@@ -184,7 +184,9 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 help = "Mode: Used to choose model selection algorithms to use.  Options include "
                         + "'allsubsets' for all subsets, "
                         + "'maxr' for MaxR calling GLM to build all models, "
-                        + "'maxrsweep' for using sweep in MaxR, "
+                        + "'maxrsweep' for using both maxrsweepsmall and maxrsweepful for speedups,  "
+                        + "'maxrsweepfull' for using the full data matrix, "
+                        + "'maxrsweepsmall' for using working with the predictor subset and not the full data matrix, "
                         + "'backward' for backward selection"
         )
         public ModelSelectionModel.ModelSelectionParameters.Mode mode;

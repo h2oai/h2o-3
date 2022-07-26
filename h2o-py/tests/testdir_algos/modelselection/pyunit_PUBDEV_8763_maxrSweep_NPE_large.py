@@ -10,7 +10,7 @@ def test_maxrsweep_NPE():
     predictors = train.names
     predictors.remove(response)
     npred = 100
-    maxrsweep_model = H2OModelSelectionEstimator(mode="maxrsweep", max_predictor_number=npred, intercept=True)
+    maxrsweep_model = H2OModelSelectionEstimator(mode="maxrsweepsmall", max_predictor_number=npred, intercept=True)
     maxrsweep_model.train(x=predictors, y=response, training_frame=train)
     bestPredictorSubsets = maxrsweep_model.get_best_model_predictors()
     assert len(bestPredictorSubsets) == npred, "Expected number of predictors: {0}, Actual: " \

@@ -115,8 +115,10 @@
 #' @param min_predictor_number For mode = 'backward' only.  Minimum number of predictors to be considered when building GLM models starting
 #'        with all predictors to be included.  Defaults to 1. Defaults to 1.
 #' @param mode Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all subsets, 'maxr'
-#'        for MaxR calling GLM to build all models, 'maxrsweep' for using sweep in MaxR, 'backward' for backward
-#'        selection Must be one of: "allsubsets", "maxr", "maxrsweep", "backward". Defaults to maxr.
+#'        for MaxR calling GLM to build all models, 'maxrsweep' for using both maxrsweepsmall and maxrsweepful for
+#'        speedups,  'maxrsweepfull' for using the full data matrix, 'maxrsweepsmall' for using working with the
+#'        predictor subset and not the full data matrix, 'backward' for backward selection Must be one of: "allsubsets",
+#'        "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward". Defaults to maxr.
 #' @param p_values_threshold For mode='backward' only.  If specified, will stop the model building process when all coefficientsp-values
 #'        drop below this threshold  Defaults to 0.
 #' @examples
@@ -184,7 +186,7 @@ h2o.modelSelection <- function(x,
                                nparallelism = 0,
                                max_predictor_number = 1,
                                min_predictor_number = 1,
-                               mode = c("allsubsets", "maxr", "maxrsweep", "backward"),
+                               mode = c("allsubsets", "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward"),
                                p_values_threshold = 0)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -372,7 +374,7 @@ h2o.modelSelection <- function(x,
                                                nparallelism = 0,
                                                max_predictor_number = 1,
                                                min_predictor_number = 1,
-                                               mode = c("allsubsets", "maxr", "maxrsweep", "backward"),
+                                               mode = c("allsubsets", "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward"),
                                                p_values_threshold = 0,
                                                segment_columns = NULL,
                                                segment_models_id = NULL,

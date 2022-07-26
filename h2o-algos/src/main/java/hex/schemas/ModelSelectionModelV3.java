@@ -11,10 +11,14 @@ public class ModelSelectionModelV3 extends ModelSchemaV3<ModelSelectionModel, Mo
     public static final class ModelSelectionModelOutputV3 extends ModelOutputSchemaV3<ModelSelectionModel.ModelSelectionModelOutput,
             ModelSelectionModelOutputV3> {
         
-        @API(help="Best predictor subset names for each subset size.")
+        @API(help="Best coefficient subset names for each subset size.")
         String[][] best_model_predictors; // store for each predictor number, the best model predictors
         
-        @API(help="R2 values of all possible predictor subsets.  Only for mode='allsubsets' or 'maxr'.")
+        @API(help="Names of predictors in the best predictor subset")
+        String[][] best_predictors_subset;
+        
+        @API(help="R2 values of all possible predictor subsets.  Only for model='allsubsets' or 'maxr'.")
+
         double[] best_r2_values;  // store the best R2 values of the best models with fix number of predictors
         
         @API(help="at each predictor subset size, the predictor added is collected in this array.  Not for mode = " +

@@ -13,13 +13,19 @@ def test_modelselection_gaussian():
     d = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     my_y = "GLEASON"
     my_x = ["AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
-    model_maxrsweep = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweep")
+    model_maxrsweep = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweepsmall")
     model_maxrsweep.train(training_frame=d, x=my_x, y=my_y)
+    model_maxrfull = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweepfull")
+    model_maxrfull.train(training_frame=d, x=my_x, y=my_y)
+    model_maxrhybrid = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweephybrid")
+    model_maxrhybrid.train(training_frame=d, x=my_x, y=my_y)
     model_maxr = modelSelection(seed=12345, max_predictor_number=3, mode="maxr")
     model_maxr.train(training_frame=d, x=my_x, y=my_y)
 
     # make sure results returned by maxr and maxrsweep are the same
     pyunit_utils.compare_frames_local(model_maxr.result()[2:4], model_maxrsweep.result()[2:4], prob=1.0, tol=1e-6)
+    pyunit_utils.compare_frames_local(model_maxr.result()[2:4], model_maxrfull.result()[2:4], prob=1.0, tol=1e-6)
+    pyunit_utils.compare_frames_local(model_maxr.result()[2:4], model_maxrhybrid.result()[2:4], prob=1.0, tol=1e-6)
     
     model_allsubsets = modelSelection(seed=12345, max_predictor_number=3, mode="allsubsets")
     model_allsubsets.train(training_frame=d, x=my_x, y=my_y)

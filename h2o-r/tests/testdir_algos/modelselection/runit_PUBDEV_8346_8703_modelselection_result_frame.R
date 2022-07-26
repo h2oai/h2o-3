@@ -18,7 +18,7 @@ testModelSelectionResultFrame <- function() {
   resultFrameMaxr <- h2o.result(maxrModel)
  
    maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
-   mode="maxrsweep")
+   mode="maxrsweepsmall")
    bestR2Maxrsweep <- h2o.get_best_r2_values(maxrsweepModel)
    resultFrameMaxrsweep <- h2o.result(maxrsweepModel) 
   

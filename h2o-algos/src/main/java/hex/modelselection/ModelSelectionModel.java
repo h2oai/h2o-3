@@ -83,11 +83,15 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public double _obj_reg = -1.0;
         public double[] _lambda = new double[]{0.0};
         public boolean _use_all_factor_levels = false;
+        public int _max_predictor_subset = 65;  // for maxrsweep mode only, 
         
         public enum Mode {
             allsubsets, // use combinatorial, exponential runtime
             maxr, // use sequential replacement but calls GLM to build all models
-            maxrsweep, // use sequential replacement but use sweep to generate GLM coefficients
+            maxrsweephybrid, // use both the maxrsweepsmall and maxrsweepfull
+            maxrsweepfull, // use cpm with all predictors
+            maxrsweepsmall, // use sequential replacement, use sweep to generate GLM coefficients, small cpm
+            maxrsweep,
             backward // use backward selection
         }
         @Override
@@ -154,6 +158,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         double[][] _coef_p_values;
         double[][] _z_values;
         public ModelSelectionParameters.Mode _mode;
+        String[][] _best_predictors_subset; // predictor names for subset of each size
         
         public ModelSelectionModelOutput(hex.modelselection.ModelSelection b, DataInfo dinfo) {
             super(b, dinfo._adaptedFrame);
@@ -192,6 +197,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         private Frame generateResultFrame() {
             int numRows = _best_model_predictors.length;
             String[] modelNames = new String[numRows];
+            String[] coefNames = new String[numRows];
             String[] predNames = new String[numRows];
             String[] modelIds = Stream.of(_best_model_ids).map(Key::toString).toArray(String[]::new);
             String[] zvalues = new String[numRows];
@@ -201,13 +207,14 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
             boolean backwardMode = _z_values!=null;
             // generate model names and predictor names
             for (int index=0; index < numRows; index++) {
-                int numPred = _best_model_predictors[index].length;
+                int numPred = _best_predictors_subset[index].length;
                 modelNames[index] = "best "+numPred+" predictor(s) model";
-                predNames[index] = backwardMode ? String.join(", ", _coefficient_names[index])
+                coefNames[index] = backwardMode ? String.join(", ", _coefficient_names[index])
                         :String.join(", ", _best_model_predictors[index]);
                 predAddedNames[index] = backwardMode ? "" : String.join(", ", _predictors_added_per_step[index]);
                 predRemovedNames[index] = _predictors_removed_per_step[index] == null ? "" : 
                         String.join(", ", _predictors_removed_per_step[index]);
+                predNames[index] = String.join(", ", _best_predictors_subset[index]);
                 if (backwardMode) {
                     zvalues[index] = joinDouble(_z_values[index]);
                     pvalues[index] = joinDouble(_coef_p_values[index]);
@@ -230,22 +237,24 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
                 predAdded = Vec.makeVec(predAddedNames, vg.addVec());
             }
             predRemoved = Vec.makeVec(predRemovedNames, vg.addVec());
+            Vec coefN = Vec.makeVec(coefNames, vg.addVec());
             Vec predN = Vec.makeVec(predNames, vg.addVec());
             
             if (backwardMode) {
-                String[] colNames = new String[]{"model_name", "model_id", "z_values", "p_values", "coefficient_names",
-                        "predictor(s)_removed"};
-                return new Frame(Key.<Frame>make(), colNames, new Vec[]{modNames, modelIDV, zval, pval, predN, predRemoved});
+                String[] colNames = new String[]{"model_name", "model_id", "z_values", "p_values",
+                        "coefficient_names", "predictor_names", "predictor(s)_removed"};
+                return new Frame(Key.<Frame>make(), colNames, new Vec[]{modNames, modelIDV, zval, pval, coefN, predN, predRemoved});
             } else {
-                String[] colNames = new String[]{"model_name", "model_id", "best_r2_value", "predictor_names",
+                String[] colNames = new String[]{"model_name", "model_id", "best_r2_value", "coefficient_names", "predictor_names",
                         "predictor(s)_removed", "predictor(s)_added"};
-                return new Frame(Key.<Frame>make(), colNames, new Vec[]{modNames, modelIDV, r2, predN, predRemoved, predAdded});
+                return new Frame(Key.<Frame>make(), colNames, new Vec[]{modNames, modelIDV, r2, coefN, predN, predRemoved, predAdded});
             }
         }
         
         public void shrinkArrays(int numModelsBuilt) {
             if (_best_model_predictors.length > numModelsBuilt) {
                 _best_model_predictors = shrinkStringArray(_best_model_predictors, numModelsBuilt);
+                _best_predictors_subset = shrinkStringArray(_best_predictors_subset, numModelsBuilt);
                 _coefficient_names = shrinkStringArray(_coefficient_names, numModelsBuilt);
                 _z_values = shrinkDoubleArray(_z_values, numModelsBuilt);
                 _coef_p_values = shrinkDoubleArray(_coef_p_values, numModelsBuilt);
@@ -256,12 +265,12 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         
         public void generateSummary() {
             int numModels = _best_r2_values.length;
-            String[] names = new String[]{"best_r2_value", "predictor_names", "predictor(s)_removed", "predictor(s)_added"};
-            String[] types = new String[]{"double", "String", "String", "String"};
-            String[] formats = new String[]{"%d", "%s", "%s", "%s"};
+            String[] names = new String[]{"best_r2_value", "coefficient names", "predictor_names", "predictor(s)_removed", "predictor(s)_added"};
+            String[] types = new String[]{"double", "String", "String", "String", "String"};
+            String[] formats = new String[]{"%d", "%s", "%s", "%s", "%s"};
             String[] rowHeaders = new String[numModels];
             for (int index=1; index<=numModels; index++)
-                rowHeaders[index-1] = "with "+index+" predictors";
+                rowHeaders[index-1] = "with "+_best_predictors_subset[index-1].length+" predictors";
             
             _model_summary = new TwoDimTable("ModelSelection Model Summary", "summary", 
                     rowHeaders, names, types, formats, "");
@@ -269,6 +278,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
                 int colInd = 0;
                 _model_summary.set(rIndex, colInd++, _best_r2_values[rIndex]);
                 _model_summary.set(rIndex, colInd++, String.join(", ", _best_model_predictors[rIndex]));
+                _model_summary.set(rIndex, colInd, String.join(", ", _best_predictors_subset[rIndex]));
                 if (_predictors_removed_per_step[rIndex] != null)
                     _model_summary.set(rIndex, colInd++, String.join(", ", _predictors_removed_per_step[rIndex]));
                 else
@@ -278,12 +288,12 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         }
         
         public void generateSummary(int numModels) {
-            String[] names = new String[]{"coefficient_names", "z_values", "p_values", "predictor(s)_removed"};
+            String[] names = new String[]{"coefficient_names", "predictor names", "z_values", "p_values", "predictor(s)_removed"};
             String[] types = new String[]{"string", "string", "string", "string"};
             String[] formats = new String[]{"%s", "%s", "%s", "%s"};
             String[] rowHeaders = new String[numModels];
             for (int index=0; index < numModels; index++) {
-                rowHeaders[index] = "with "+_best_model_predictors[index].length+" predictors";
+                rowHeaders[index] = "with "+_best_predictors_subset[index].length+" predictors";
             }
             _model_summary = new TwoDimTable("ModelSlection Model Summary", "summary", 
                     rowHeaders, names, types, formats, "");
@@ -292,6 +302,8 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
                 String pValue = joinDouble(_coef_p_values[rIndex]);
                 String zValue = joinDouble(_z_values[rIndex]);
                 String coeffNames = String.join(", ", _coefficient_names[rIndex]);
+                String predNames = String.join(", ", _best_predictors_subset[rIndex]);
+                _model_summary.set(rIndex, colInd++, predNames);
                 _model_summary.set(rIndex, colInd++, coeffNames);
                 _model_summary.set(rIndex, colInd++, zValue);
                 _model_summary.set(rIndex, colInd++, pValue);
@@ -339,6 +351,9 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
             _coefficient_names[index] = model._output.coefficientNames().clone(); // all coefficients
             ArrayList<String> coeffNames = new ArrayList<>(Arrays.asList(model._output.coefficientNames()));
             _best_model_predictors[index] = coeffNames.toArray(new String[0]); // without intercept
+            List<String> predNames = Stream.of(model.names()).collect(Collectors.toList());
+            predNames.remove(model._parms._response_column);
+            _best_predictors_subset[index] = predNames.stream().toArray(String[]::new);
         }
 
         /***

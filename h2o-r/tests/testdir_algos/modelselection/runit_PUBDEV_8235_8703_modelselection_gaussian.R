@@ -13,7 +13,7 @@ testModelSelection <- function() {
   bestPredictorNamesAllsubsets <- h2o.get_best_model_predictors(allsubsetsModel)
   maxrModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=2, mode="maxr")
   bestR2ValueMaxr <- h2o.get_best_r2_values(maxrModel)
-  maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=2, mode="maxrsweep")
+  maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=2, mode="maxrsweepsmall")
   bestR2ValueMaxrsweep <- h2o.get_best_r2_values(maxrModel)
   # check and make sure two predictor model found has the highest R2 value
   pred2List <- list(c("AGE","RACE"), c("AGE","CAPSULE"), c("AGE","DCAPS"), c("AGE", "PSA"), c("AGE","VOL"),c("AGE", "DPROS"),
