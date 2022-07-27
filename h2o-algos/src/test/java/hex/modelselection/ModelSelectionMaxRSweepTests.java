@@ -16,7 +16,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
+import static hex.modelselection.ModelSelectionMaxRTests.compareResultFModelSummary;
 import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.maxr;
 import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.maxrsweep;
 import static hex.modelselection.ModelSelectionUtils.*;
@@ -455,63 +457,6 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             Scope.exit();
         }
     }
-
-/*    *//**
-     * This test will test both applySweep2LastPred, oneSweepWSweepVector and mapBasicVector2Multiple
-     *//*
-    @Test
-    public void testApplySweep2LastPred() {
-        final double[][] allCPM = new double[][]{{10.0000000,  1.2775780, -2.3233446,  5.5573236, -2.6207931,
-                -0.8321198, -2.275524}, {1.2775780,  6.9109954, -0.6907638,  1.6104894, -0.2288084,  1.0167696,
-                -4.049839}, {-2.3233446, -0.6907638,  2.9167538, -0.9018913, -0.8793179, -1.6471318,  2.448738},
-                {5.5573236,  1.6104894, -0.9018913, 11.4569287, -1.9699385, -2.2898801, -2.018988}, {-2.6207931,
-                -0.2288084, -0.8793179, -1.9699385,  6.9525541, -0.2876347,  2.896199}, {-0.8321198,  1.0167696,
-                -1.6471318, -2.2898801, -0.2876347, 11.3756280, -8.946720}, {-2.2755243, -4.0498392,  2.4487380,
-                -2.0189880,  2.8961986, -8.9467197, 10.464016}};
-        int[][] predInd2CPMIndices = new int[][]{{0, 1, 2}, {3, 4}, {5}};
-        // without intercept
-        // original pred 0, 1, add 2
-        assertCorrectSweepVectorApplication(allCPM, predInd2CPMIndices, new int[]{0,1,2,3,4}, new int[]{0,1},
-                2, false);
-        // original pred 1, 2, add 0
-        assertCorrectSweepVectorApplication(allCPM, predInd2CPMIndices, new int[]{0,1,2}, new int[]{1,2}, 0,
-                false);
-        // original pred 2, add 0
-        assertCorrectSweepVectorApplication(allCPM, predInd2CPMIndices, new int[]{0}, new int[]{2},
-                0, false);
-        
-        // with intercept
-        predInd2CPMIndices = new int[][]{{0,1,2}, {3,4}};
-        // original pred 0, add 1
-        // original pred 1, add 0
-
-    }
-
-    public static void assertCorrectSweepVectorApplication(double[][] allCPM, int[][] pred2CPMMap, int[] sweepIndices, 
-                                                           int[] predIndices, int newPredInd, boolean hasIntercept) {
-        // manually generated correct swept cpm
-        int[] allPred = new int[predIndices.length+1];
-        System.arraycopy(predIndices, 0, allPred, 0, predIndices.length);
-        allPred[predIndices.length] = newPredInd;
-        double[][] correctSweptCPM = extractPredSubsetsCPM(allCPM, allPred, pred2CPMMap, hasIntercept);
-        sweepCPM(correctSweptCPM, sweepIndices, false);
-        
-        // swept cpm generated from sweep vectors
-        double[][] prevCPM = extractPredSubsetsCPM(allCPM, predIndices, pred2CPMMap, hasIntercept);
-        SweepVector[][] sweepVectors = sweepCPM(prevCPM, sweepIndices, true);
-        double[][] subsetCPM = addNewPred2CPM(allCPM, prevCPM, allPred, pred2CPMMap, hasIntercept);
-        int newPredCPMLength = pred2CPMMap[newPredInd].length;
-        if (newPredCPMLength == 1) {
-            applySweep2LastPred(sweepVectors, subsetCPM, newPredCPMLength);
-        } else {
-            SweepVector[][] newSweepVec = mapBasicVector2Multiple(sweepVectors, newPredCPMLength);
-            applySweep2LastPred(newSweepVec, subsetCPM, newPredCPMLength);
-        }
-        int dim = correctSweptCPM.length;
-        for (int index=0; index<dim; index++)
-            assertArrayEquals("expected and extracted predInd2CPMIndices arrays are not equal",
-                    correctSweptCPM[index], subsetCPM[index], 1e-6);
-    }*/
     
     @Test
     public void testAddNewPred2CPM() {
@@ -693,6 +638,33 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             Scope.track(resultMaxR);
             TestUtil.assertIdenticalUpToRelTolerance(new Frame(resultFrameSweep.vec(2)), new Frame(resultMaxR.vec(2)), 1e-6);
             TestUtil.assertIdenticalUpToRelTolerance(new Frame(resultFrameSweep.vec(3)), new Frame(resultMaxR.vec(3)), 0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Test and make sure the added and removed predictors are captured in both the result frame and the model summary.
+     * In particular, I want to make sure that they agree.  The correctness of the added/removed predictors are tested
+     * in Python unit test and won't be repeated here.
+     */
+    @Test
+    public void testAddedRemovedCols() {
+        Scope.enter();
+        try {
+            Frame train = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"),
+                    gaussian));
+            DKV.put(train);
+            ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
+            parms._response_column = "C21";
+            parms._family = gaussian;
+            parms._max_predictor_number = 3;
+            parms._seed=12345;
+            parms._train = train._key;
+            parms._mode = maxrsweep;
+            ModelSelectionModel modelMaxrsweep = new hex.modelselection.ModelSelection(parms).trainModel().get();
+            Scope.track_generic(modelMaxrsweep); //  model with validation dataset
+            compareResultFModelSummary(modelMaxrsweep);
         } finally {
             Scope.exit();
         }

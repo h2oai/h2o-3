@@ -23,6 +23,8 @@ import static hex.modelselection.ModelSelectionUtils.*;
 public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelectionModel, hex.modelselection.ModelSelectionModel.ModelSelectionParameters, hex.modelselection.ModelSelectionModel.ModelSelectionModelOutput> {
     public String[][] _bestModelPredictors; // store for each predictor number, the best model predictors
     public double[] _bestR2Values;  // store the best R2 values of the best models with fix number of predictors
+    public String[][] _predictorsAdd;
+    public String[][] _predictorsRemoved;
     DataInfo _dinfo;
     String[] _coefNames;
     int[][] _predictorIndex2CPMIndices;    // map predictor indices to the corresponding Gram matrix indices
@@ -111,6 +113,9 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         if (!backward.equals(_parms._mode)) {
             _bestR2Values = new double[_parms._max_predictor_number];
             _bestModelPredictors = new String[_parms._max_predictor_number][];
+            if (!backward.equals(_parms._mode))
+                _predictorsAdd = new String[_parms._max_predictor_number][];
+            _predictorsRemoved = new String[_parms._max_predictor_number][];
         }
     }
 
@@ -174,6 +179,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 int numModelBuilt = 0;
                 model = new hex.modelselection.ModelSelectionModel(dest(), _parms, new hex.modelselection.ModelSelectionModel.ModelSelectionModelOutput(ModelSelection.this, _dinfo));
                 model.write_lock(_job);
+                model._output._mode = _parms._mode;
                 if (backward.equals(_parms._mode)) {
                     model._output._best_model_ids = new Key[_numPredictors];
                     model._output._coef_p_values = new double[_numPredictors][];
@@ -186,6 +192,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     model._output._best_model_predictors = new String[_parms._max_predictor_number][];
                     model._output._coefficient_names = new String[_parms._max_predictor_number][];
                 }
+                model._output._predictors_removed_per_step = new String[_numPredictors][];
+                model._output._predictors_added_per_step = new String[_numPredictors][];
                 // build glm model with num_predictors and find one with best R2
                 if (allsubsets.equals(_parms._mode))
                     buildAllSubsetsModels(model);

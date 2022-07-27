@@ -528,7 +528,31 @@ h2o.modelSelection <- function(x,
 #' @export   
 h2o.get_best_r2_values<- function(model) {
   if( is(model, "H2OModel") && (model@algorithm=='modelselection'))
-    return(return(model@model$best_r2_values))
+    return(model@model$best_r2_values)
+}
+
+#' Extracts the predictor added to model at each step.
+#'
+#' @param model is a H2OModel with algorithm name of modelselection
+#' @export   
+h2o.get_predictors_added_per_step<- function(model) {
+  if( is(model, "H2OModel") && (model@algorithm=='modelselection')) {
+    if (model@allparameters$mode != 'backard') {
+      return(model@model$predictors_added_per_step)
+    } else {
+      stop("h2o.get_predictors_added_per_step can not be called with model = backward")
+    }
+  }
+}
+
+#' Extracts the predictor removed to model at each step.
+#'
+#' @param model is a H2OModel with algorithm name of modelselection
+#' @export   
+h2o.get_predictors_removed_per_step<- function(model) {
+  if( is(model, "H2OModel") && (model@algorithm=='modelselection')) {
+    return(model@model$predictors_removed_per_step)
+  }
 }
 
 #' Extracts the subset of predictor names that yield the best R2 value for each predictor subset size.
