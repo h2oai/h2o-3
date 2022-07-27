@@ -456,7 +456,7 @@ public class PersistS3Test extends TestUtil {
       assertNotNull(icedS3Credentials);
 
       assertEquals(persistS3CredentialsV3.secret_access_key, icedS3Credentials._secretAccessKey);
-      assertEquals(persistS3CredentialsV3.secret_key_id, icedS3Credentials._secretKeyId);
+      assertEquals(persistS3CredentialsV3.secret_key_id, icedS3Credentials._accessKeyId);
       assertEquals(persistS3CredentialsV3.session_token, icedS3Credentials._sessionToken);
     } finally {
       DKV.remove(Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY));
