@@ -1,5 +1,6 @@
 package water.persist;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.s3a.S3AFileSystem;
@@ -18,7 +19,7 @@ public class S3AClientFactoryTest {
     @Test
     public void getOrMakeClient_noBucket() {
         TestedS3AClientFactory factory = new TestedS3AClientFactory();
-        assertNull(factory.getOrMakeClient(null));
+        assertNull(factory.getOrMakeClient(null, null));
         assertNotNull(factory._fs);
         assertEquals(URI.create("s3a://www.h2o.ai/"), factory._fs.getUri());
     }
@@ -26,7 +27,7 @@ public class S3AClientFactoryTest {
     @Test
     public void getOrMakeClient_customDefaultBucket() {
         TestedS3AClientFactory factory = new TestedS3AClientFactory();
-        assertNull(factory.getOrMakeClient(null));
+        assertNull(factory.getOrMakeClient(null, null));
         assertNotNull(factory._fs);
         assertEquals(URI.create("s3a://www.h2o.ai/"), factory._fs.getUri());
     }
@@ -34,7 +35,7 @@ public class S3AClientFactoryTest {
     @Test
     public void getOrMakeClient() {
         TestedS3AClientFactory factory = new TestedS3AClientFactory();
-        assertNull(factory.getOrMakeClient("mybucket"));
+        assertNull(factory.getOrMakeClient("mybucket", null));
         assertNotNull(factory._fs);
         assertEquals(URI.create("s3a://mybucket/"), factory._fs.getUri());
     }
@@ -43,7 +44,7 @@ public class S3AClientFactoryTest {
     private static class TestedS3AClientFactory extends S3AClientFactory {
         private FileSystem _fs;
         @Override
-        protected FileSystem getFileSystem(URI uri) {
+        protected FileSystem getFileSystem(URI uri, Configuration conf) {
             _fs = new DummyFileSystem(uri);
             return _fs;
         }
