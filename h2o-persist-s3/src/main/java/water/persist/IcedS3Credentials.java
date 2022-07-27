@@ -1,11 +1,12 @@
 package water.persist;
 
+import com.amazonaws.auth.AWSCredentials;
 import water.Iced;
 
 /**
  * Amazon S3 Credentials wrapper
  */
-public class IcedS3Credentials extends Iced {
+public class IcedS3Credentials extends Iced<IcedS3Credentials> {
 
     public static final String S3_CREDENTIALS_DKV_KEY = "S3_CREDENTIALS_KEY";
     final String _secretKeyId;
@@ -24,6 +25,10 @@ public class IcedS3Credentials extends Iced {
         _sessionToken = sessionToken;
     }
 
+    public IcedS3Credentials(final AWSCredentials credentials) {
+        this(credentials.getAWSAccessKeyId(), credentials.getAWSSecretKey(), null);
+    }
+    
     public boolean isAWSSessionTokenAuth() {
         return _sessionToken != null && _secretAccessKey != null && _secretKeyId != null;
     }

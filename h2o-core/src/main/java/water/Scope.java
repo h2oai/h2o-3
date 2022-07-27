@@ -70,6 +70,8 @@ public class Scope {
   }
 
   static public <T extends Keyed<T>> T track_generic(T keyed) {
+    if (keyed == null)
+      return null;
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
     track_impl(scope, keyed._key);
