@@ -1,13 +1,12 @@
 package water.persist;
 
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Rule;
-import org.junit.Test;
+import org.apache.hadoop.conf.Configuration;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import water.*;
@@ -51,6 +50,11 @@ public class PersistS3Test extends TestUtil {
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
 
+  @Before
+  public void resetClientFactory() {
+    PersistS3.setClientFactory(null);
+  }
+  
   private static class XORTask extends MRTask<XORTask> {
     long _res = 0;
 
@@ -253,7 +257,7 @@ public class PersistS3Test extends TestUtil {
       assumeTrue(accessKey != null);
       assumeTrue(secretKey != null);
 
-      final AmazonS3 defaultClient = PersistS3.getClient((String)null); // Create a default client
+      final AmazonS3 defaultClient = PersistS3.getClient(null, H2O.ARGS, null); // Create a default client
       assertNotNull(defaultClient);
 
       final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKey, secretKey, null);
@@ -481,9 +485,9 @@ public class PersistS3Test extends TestUtil {
   @Test
   public void testCustomCredentialsProvider() {
     AWSCredentialsProvider[] defaultProviders =
-            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(null);
+            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(H2O.ARGS, null);
     AWSCredentialsProvider[] extendedProviders = 
-            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(CustomCredentialsProvider.class.getName());
+            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(H2O.ARGS, CustomCredentialsProvider.class.getName());
     assertEquals(defaultProviders.length + 1, extendedProviders.length);
     assertTrue(extendedProviders[0] instanceof CustomCredentialsProvider);
   }
@@ -491,9 +495,9 @@ public class PersistS3Test extends TestUtil {
   @Test
   public void testCustomCredentialsProvider_ignoreInvalid() {
     AWSCredentialsProvider[] defaultProviders =
-            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(null);
+            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(H2O.ARGS, null);
     AWSCredentialsProvider[] extendedProviders =
-            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain("no.such.class");
+            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(H2O.ARGS, "no.such.class");
     assertEquals(defaultProviders.length, extendedProviders.length);
   }
 
@@ -588,7 +592,7 @@ public class PersistS3Test extends TestUtil {
 
   @Test
   public void testCredentialsProviderContainsAwsDefault() {
-    AWSCredentialsProvider[] providers = PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain();
+    AWSCredentialsProvider[] providers = PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(H2O.ARGS);
     List<String> providerClasses = Arrays.stream(providers)
             .map(Object::getClass).map(Class::getName)
             .collect(Collectors.toList());
@@ -596,6 +600,27 @@ public class PersistS3Test extends TestUtil {
             "water.persist.PersistS3$H2ODynamicCredentialsProvider", 
             "water.persist.PersistS3$H2OArgCredentialsProvider", 
             "com.amazonaws.auth.DefaultAWSCredentialsProviderChain"), providerClasses);
+  }
+
+  @Test
+  public void testConfigureS3UsingS3A() {
+    AWSCredentials credentials = new PersistS3.H2OAWSCredentialsProviderChain().getCredentials();
+    assertNotNull(credentials);
+    Configuration conf = s3aConfiguration(credentials);
+
+    H2O.OptArgs args = new H2O.OptArgs();
+    args.configure_s3_using_s3a = true;
+
+    AmazonS3 client = PersistS3.getClient("test.0xdata.com", args, conf);
+    assertNotNull(client);
+    assertTrue(PersistS3.getS3ClientFactory() instanceof S3AClientFactory);
+  }
+
+  private static Configuration s3aConfiguration(AWSCredentials credentials) {
+    Configuration conf = new Configuration();
+    conf.set("fs.s3a.access.key", credentials.getAWSAccessKeyId());
+    conf.set("fs.s3a.secret.key", credentials.getAWSSecretKey());
+    return conf;
   }
 
   private static void checkEnv() {

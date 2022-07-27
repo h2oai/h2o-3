@@ -39,11 +39,14 @@ public final class PersistS3 extends Persist {
   static void setClientFactory(S3ClientFactory factory) {
     _s3Factory = factory;
   }
+  static S3ClientFactory getS3ClientFactory() {
+    return _s3Factory;
+  }
 
-  static AmazonS3 getClient(String bucket) {
+  static AmazonS3 getClient(String bucket, H2O.OptArgs args, Object configuration) {
     if (_s3Factory == null) {
       String factoryClassName = System.getProperty(S3_CLIENT_FACTORY_CLASS);
-      if (H2O.ARGS.configure_s3_using_s3a) {
+      if (args.configure_s3_using_s3a) {
         if (factoryClassName == null) {
           factoryClassName = S3_CLIENT_FACTORY_CLASS_DEFAULT;
         } else
@@ -53,7 +56,7 @@ public final class PersistS3 extends Persist {
       synchronized (_lock) {
         if (_s3Factory == null) {
           if (StringUtils.isNullOrEmpty(factoryClassName)) {
-            _s3Factory = new DefaultS3ClientFactory();
+            _s3Factory = new DefaultS3ClientFactory(args);
           } else {
             try {
               _s3Factory = ReflectionUtils.newInstance(factoryClassName, S3ClientFactory.class);
@@ -65,7 +68,11 @@ public final class PersistS3 extends Persist {
         }
       }
     }
-    return _s3Factory.getOrMakeClient(bucket);
+    return _s3Factory.getOrMakeClient(bucket, configuration);
+  }
+
+  private static AmazonS3 getClient(String bucket) {
+    return getClient(bucket, H2O.ARGS, null);
   }
 
   private static AmazonS3 getClient(String[] decodedParts) {
@@ -75,20 +82,20 @@ public final class PersistS3 extends Persist {
   private static final class DefaultS3ClientFactory implements S3ClientFactory {
     private final AmazonS3 _s3;
 
-    public DefaultS3ClientFactory() {
-      _s3 = makeDefaultClient();
+    public DefaultS3ClientFactory(H2O.OptArgs args) {
+      _s3 = makeDefaultClient(args);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public AmazonS3 getOrMakeClient(String bucket) {
+    public AmazonS3 getOrMakeClient(String bucket, Object configration) {
       return _s3;
     }
   }
 
-  static AmazonS3 makeDefaultClient() {
+  static AmazonS3 makeDefaultClient(H2O.OptArgs args) {
     try {
-      H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
+      H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain(args);
       c.setReuseLastProvider(false);
       ClientConfiguration cc = s3ClientCfg();
       return configureClient(new AmazonS3Client(c, cc));
@@ -103,16 +110,20 @@ public final class PersistS3 extends Persist {
    * credentials provider.
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
+    @SuppressWarnings("unused")
     public H2OAWSCredentialsProviderChain() {
-      super(constructProviderChain());
+      this(H2O.ARGS);
     }
-    static AWSCredentialsProvider[] constructProviderChain() {
-      return constructProviderChain(System.getProperty(S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS));
+    private H2OAWSCredentialsProviderChain(H2O.OptArgs args) {
+      super(constructProviderChain(args));
     }
-    static AWSCredentialsProvider[] constructProviderChain(String customProviderClassName) {
+    static AWSCredentialsProvider[] constructProviderChain(H2O.OptArgs args) {
+      return constructProviderChain(args, System.getProperty(S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS));
+    }
+    static AWSCredentialsProvider[] constructProviderChain(H2O.OptArgs args, String customProviderClassName) {
       AWSCredentialsProvider[] defaultProviders = new AWSCredentialsProvider[]{
               new H2ODynamicCredentialsProvider(),
-              new H2OArgCredentialsProvider(),
+              new H2OArgCredentialsProvider(args),
               new DefaultAWSCredentialsProviderChain() // use constructor instead of getInstance to be compatible with older versions on Hadoop
       };
       if (customProviderClassName == null) {
@@ -163,9 +174,19 @@ public final class PersistS3 extends Persist {
 
     // Default location of the AWS credentials file
     public static final String DEFAULT_CREDENTIALS_LOCATION = "AwsCredentials.properties";
-    
+
+    private final String _credentialsPath;
+
+    public H2OArgCredentialsProvider() {
+      this(H2O.ARGS);
+    }
+
+    public H2OArgCredentialsProvider(H2O.OptArgs args) {
+      _credentialsPath = args.aws_credentials != null ? args.aws_credentials : DEFAULT_CREDENTIALS_LOCATION;
+    }
+
     @Override public AWSCredentials getCredentials() {
-      File credentials = new File(H2O.ARGS.aws_credentials != null ? H2O.ARGS.aws_credentials : DEFAULT_CREDENTIALS_LOCATION);
+      File credentials = new File(_credentialsPath);
       try {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {

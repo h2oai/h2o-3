@@ -1,5 +1,6 @@
 package water.persist;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import water.util.ReflectionUtils;
@@ -15,10 +16,14 @@ public class S3AClientFactory implements S3ClientFactory {
             SYSTEM_PROP_PREFIX + "persist.s3a.factoryPrototypeUri", "s3a://www.h2o.ai/");
 
     @Override
-    public <T> T getOrMakeClient(String bucket) {
+    public <T> T getOrMakeClient(String bucket, Object configuration) {
+        if (configuration != null && !(configuration instanceof Configuration)) {
+            throw new IllegalArgumentException("Configuration not instance of org.apache.hadoop.conf.Configuration");
+        }
+        Configuration hadoopConf = configuration != null ? (Configuration) configuration : PersistHdfs.CONF;
         try {
             String path = bucket != null ? "s3a://" + bucket + "/" : S3A_FACTORY_PROTOTYPE_URI;
-            FileSystem fs = getFileSystem(URI.create(path));
+            FileSystem fs = getFileSystem(URI.create(path), hadoopConf);
             if (fs instanceof S3AFileSystem) {
                 return ReflectionUtils.getFieldValue(fs, "s3"); 
             } else {
@@ -30,8 +35,8 @@ public class S3AClientFactory implements S3ClientFactory {
         }
     }
 
-    protected FileSystem getFileSystem(URI uri) throws IOException {
-        return FileSystem.get(uri, PersistHdfs.CONF);
+    protected FileSystem getFileSystem(URI uri, Configuration conf) throws IOException {
+        return FileSystem.get(uri, conf);
     }
     
 }
