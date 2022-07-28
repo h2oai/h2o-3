@@ -3,17 +3,15 @@ package water.persist;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.s3a.S3AFileSystem;
+import water.H2O;
 import water.util.ReflectionUtils;
 
 import java.io.IOException;
 import java.net.URI;
 
-import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
-
 public class S3AClientFactory implements S3ClientFactory {
 
-    public final static String S3A_FACTORY_PROTOTYPE_URI = System.getProperty(
-            SYSTEM_PROP_PREFIX + "persist.s3a.factoryPrototypeUri", "s3a://www.h2o.ai/");
+    private static final String PROP_S3A_FACTORY_PROTOTYPE_URI = "persist.s3a.factoryPrototypeUri";
 
     @Override
     public <T> T getOrMakeClient(String bucket, Object configuration) {
@@ -22,7 +20,7 @@ public class S3AClientFactory implements S3ClientFactory {
         }
         Configuration hadoopConf = configuration != null ? (Configuration) configuration : PersistHdfs.CONF;
         try {
-            String path = bucket != null ? "s3a://" + bucket + "/" : S3A_FACTORY_PROTOTYPE_URI;
+            String path = bucket != null ? "s3a://" + bucket + "/" : getDefaultPrototypeUri();
             FileSystem fs = getFileSystem(URI.create(path), hadoopConf);
             if (fs instanceof S3AFileSystem) {
                 return ReflectionUtils.getFieldValue(fs, "s3"); 
@@ -33,6 +31,10 @@ public class S3AClientFactory implements S3ClientFactory {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String getDefaultPrototypeUri() {
+        return H2O.getSysProperty(PROP_S3A_FACTORY_PROTOTYPE_URI, "s3a://www.h2o.ai/");
     }
 
     protected FileSystem getFileSystem(URI uri, Configuration conf) throws IOException {
