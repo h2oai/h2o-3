@@ -176,7 +176,7 @@ ext {
     //
     junitVersion  = '4.12'
     jets3tVersion = '0.7.1'
-    awsJavaSdkVersion = '1.12.127'
+    awsJavaSdkVersion = '1.12.268'
 
     //
     // Optional H2O modules which can be included h2o.jar assembly
