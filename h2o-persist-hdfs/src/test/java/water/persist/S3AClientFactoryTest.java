@@ -6,7 +6,9 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.apache.hadoop.util.Progressable;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,6 +17,9 @@ import java.net.URI;
 import static org.junit.Assert.*;
 
 public class S3AClientFactoryTest {
+
+    @Rule
+    public final RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties();
 
     @Test
     public void getOrMakeClient_noBucket() {
@@ -26,10 +31,11 @@ public class S3AClientFactoryTest {
 
     @Test
     public void getOrMakeClient_customDefaultBucket() {
+        System.setProperty("sys.ai.h2o.persist.s3a.factoryPrototypeUri", "customScheme://custom-bucket/");
         TestedS3AClientFactory factory = new TestedS3AClientFactory();
         assertNull(factory.getOrMakeClient(null, null));
         assertNotNull(factory._fs);
-        assertEquals(URI.create("s3a://www.h2o.ai/"), factory._fs.getUri());
+        assertEquals(URI.create("customScheme://custom-bucket/"), factory._fs.getUri());
     }
 
     @Test
