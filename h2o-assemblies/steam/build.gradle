@@ -46,6 +46,10 @@ dependencies {
     }
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
     api "org.apache.commons:commons-compress:1.21"
+    // FasterXML force version
+    api "org.codehaus.jackson:jackson-mapper-asl:1.9.13"
+    // Google OAuth force version
+    api "com.google.oauth-client:google-oauth-client:1.33.3"
 }
 
 shadowJar {
