@@ -1282,25 +1282,37 @@ public class FriedmanPopescusHTest extends TestUtil {
     
     @Test 
     public void testUniqueRowsWithCounts() {
-        String[] strings0 = new String[] { "a", "a", "b", "a", "c", "b" };
-        String[] strings1 = new String[] { "z", "z", "y", "z", "w", "y" };
-        long[] nums0 = new long[] { 0, 0, 1, 2, 1, 1 };
-        long[] nums1 = new long[] { 2, 2, 3, 2, 4, 3 };
-
-        Frame frame = new TestFrameBuilder()
-                .withName("frameName")
+        Frame inputFrame = new TestFrameBuilder()
+                .withName("inputFrame")
                 .withColNames("Str_0", "Str_1", "Num_0", "Num_1")
                 .withVecTypes(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
-                .withDataForCol(0, strings0)
-                .withDataForCol(1, strings1)
-                .withDataForCol(2, nums0)
-                .withDataForCol(3, nums1)
-                .withChunkLayout(1, 1, 2, 1)
+                .withDataForCol(0, ar("a", "a", "b", "a", "c", "b"))
+                .withDataForCol(1, ar("z", "z", "y", "z", "w", "y"))
+                .withDataForCol(2, ard(0, 0, 1, 2, 1, 1))
+                .withDataForCol(3, ard(2, 2, 3, 2, 4, 3))
+                .withChunkLayout(1, 1, 3, 1)
                 .build();
 
-        Frame result = FriedmanPopescusH.uniqueRowsWithCounts(frame);
+        Frame reference = new TestFrameBuilder()
+                .withName("referenceFrame")
+                .withColNames("Str_0", "Str_1", "Num_0", "Num_1", "nrows")
+                .withVecTypes(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                .withDataForCol(0, ar("a", "a", "b", "c"))
+                .withDataForCol(1, ar("z", "z", "y", "w"))
+                .withDataForCol(2, ard(0, 2, 1, 1))
+                .withDataForCol(3, ard(2, 2, 3, 4))
+                .withDataForCol(4, ard(2, 1, 2, 1))
+                .build();
+
+        Frame result = FriedmanPopescusH.uniqueRowsWithCounts(inputFrame);
+
+        System.out.println("inputFrame = " + inputFrame.toTwoDimTable(0, 10, false));
+        System.out.println("reference = " + reference.toTwoDimTable(0, 10, false));
+        System.out.println("result = " + result.toTwoDimTable(0, 10, false));
+
         scope.track(result);
-        assertEquals(result.numRows(), frame.numRows() - 1);
+        assertEquals(result.numRows(), inputFrame.numRows() - 2); // 2 Rows are equal and should be removed in results
+        assertFrameEquals(reference, result, 0);
     }
     
     /*
