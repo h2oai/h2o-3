@@ -87,12 +87,24 @@ public class SQLManagerTest {
   @Test
   public void testConnectionPoolSizeTwoNodes() {
     int maxConnectionsPerNode = SQLManager.ConnectionPoolProvider.getMaxConnectionsPerNode(2, (short) 10, 10);
-    int expectedConnectionsPerNode = Integer.valueOf(
+    int expectedConnectionsPerNode = Integer.parseInt(
         System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max")
     ) / 2;
     Assert.assertEquals(expectedConnectionsPerNode, maxConnectionsPerNode);
   }
 
+  @Test
+  public void testGetMaxConnectionsTotal() {
+    System.setProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max", "-10");
+    Assert.assertEquals(77, SQLManager.ConnectionPoolProvider.getMaxConnectionsTotal(77));
+    System.setProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max", "42");
+    Assert.assertEquals(42, SQLManager.ConnectionPoolProvider.getMaxConnectionsTotal(66));
+    System.setProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max", "89");
+    Assert.assertEquals(88, SQLManager.ConnectionPoolProvider.getMaxConnectionsTotal(88));
+    System.getProperties().remove(H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.connections.max");
+    Assert.assertEquals(99, SQLManager.ConnectionPoolProvider.getMaxConnectionsTotal(99));
+  }
+  
   /**
    * Test generated SQL based on database type
    */
