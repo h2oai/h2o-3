@@ -468,17 +468,24 @@ public class SQLManager {
     }
 
     private static int getMaxConnectionsTotal() {
-      int maxConnections = MAX_CONNECTIONS;
+      return getMaxConnectionsTotal(MAX_CONNECTIONS);
+    }
+
+    static int getMaxConnectionsTotal(final int allowedMaxConnections) {
+      int maxConnections = allowedMaxConnections;
       final String userDefinedMaxConnections = System.getProperty(MAX_USR_CONNECTIONS_KEY);
-      try {
-        Integer userMaxConnections = Integer.valueOf(userDefinedMaxConnections);
-        if (userMaxConnections > 0 && userMaxConnections < MAX_CONNECTIONS) {
-          maxConnections = userMaxConnections;
+      if (userDefinedMaxConnections != null) {
+        try {
+          final int userMaxConnections = Integer.parseInt(userDefinedMaxConnections);
+          if (userMaxConnections > 0 && userMaxConnections < allowedMaxConnections) {
+            maxConnections = userMaxConnections;
+          }
+        } catch (NumberFormatException e) {
+          Log.warn("Unable to parse maximal number of connections: " + userDefinedMaxConnections
+                  + ". Falling back to default settings (" + allowedMaxConnections + ").", e);
         }
-      } catch (NumberFormatException e) {
-        Log.info("Unable to parse maximal number of connections: " + userDefinedMaxConnections
-                + ". Falling back to default settings (" + MAX_CONNECTIONS + ").", e);
       }
+      Log.info("SQL import will be limited be maximum of " + maxConnections + " connections.");
       return maxConnections;
     }
 
