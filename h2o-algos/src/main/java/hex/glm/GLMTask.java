@@ -20,6 +20,7 @@ import water.util.MathUtils;
 import water.util.MathUtils.BasicStats;
 import java.util.Arrays;
 
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.pearson;
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
 import static hex.glm.GLMUtils.updateGradGam;
 import static hex.glm.GLMUtils.updateGradGamMultinomial;
@@ -3144,22 +3145,22 @@ public abstract class GLMTask  {
       _likelihood += git._likelihood;
       super.reduce(git);
     }
-
-
   }
 
-
-  public static class ComputeSETsk extends FrameTask2<ComputeSETsk> {
-//    final double [] _betaOld;
+  public static class ComputeSEorDEVIANCETsk extends FrameTask2<ComputeSEorDEVIANCETsk> {
     final double [] _betaNew;
     double _sumsqe;
     double _wsum;
+    GLMParameters _parms;
+    GLMModel _model;
 
-    public ComputeSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, /*, double [] betaOld,*/ double [] betaNew, GLMParameters parms) {
+    public ComputeSEorDEVIANCETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, double [] betaNew, GLMParameters parms,
+                                  GLMModel model) {
       super(cmp, dinfo, jobKey);
-//      _betaOld = betaOld;
       _glmf = new GLMWeightsFun(parms);
       _betaNew = betaNew;
+      _parms = parms;
+      _model = model;
     }
 
     transient double _sparseOffsetOld = 0;
@@ -3168,7 +3169,6 @@ public abstract class GLMTask  {
     transient GLMWeights _glmw;
     @Override public void chunkInit(){
       if(_sparse) {
-//        _sparseOffsetOld = GLM.sparseOffset(_betaNew, _dinfo);
         _sparseOffsetNew = GLM.sparseOffset(_betaNew, _dinfo);
       }
       _glmw = new GLMWeights();
@@ -3178,23 +3178,24 @@ public abstract class GLMTask  {
     protected void processRow(Row r) {
       double z = r.response(0) - r.offset;
       double w = r.weight;
-      if(_glmf._family != Family.gaussian) {
-//        double etaOld = r.innerProduct(_betaOld) + _sparseOffsetOld;
-        double etaOld = r.innerProduct(_betaNew) + _sparseOffsetNew;
-        _glmf.computeWeights(r.response(0),etaOld,r.offset,r.weight,_glmw);
-        z = _glmw.z;
-        w = _glmw.w;
-      }
-      double eta = _glmf._family.equals(Family.tweedie)?r.innerProduct(_betaNew) + _sparseOffsetNew+r.offset:r.innerProduct(_betaNew) + _sparseOffsetNew;
-      double xmu = _glmf._family.equals(Family.tweedie)?_glmf.linkInv(eta):0;
-      _sumsqe += _glmf._family.equals(Family.tweedie)?
-              ((r.response(0)-xmu)*(r.response(0)-xmu))*r.weight/Math.pow(xmu, _glmf._var_power):
-              w*(eta - z)*(eta - z);
 
-      _wsum += Math.sqrt(w);
+      double eta = _glmf._family.equals(Family.tweedie)?r.innerProduct(_betaNew) + _sparseOffsetNew+r.offset
+              :r.innerProduct(_betaNew) + _sparseOffsetNew;
+      double xmu = _glmf.linkInv(eta);
+      double diff = r.response(0)-xmu;
+      if (pearson.equals(_parms._dispersion_parameter_method)) {
+        _sumsqe += diff * diff * r.weight / _parms.variance(xmu); // same as w*(eta-z)*(eta-z) except for tweedie family
+      } else {   // deviance option
+        double d = _model.deviance(r.weight, z, xmu);
+        if (!Double.isNaN(d)) {
+          _sumsqe += d;
+        }
+      }
+      _wsum += w;
     }
+    
     @Override
-    public void reduce(ComputeSETsk c){_sumsqe += c._sumsqe; _wsum += c._wsum;}
+    public void reduce(ComputeSEorDEVIANCETsk c){_sumsqe += c._sumsqe; _wsum += c._wsum;}
   }
 
   /***

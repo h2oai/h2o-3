@@ -22,7 +22,10 @@ import water.parser.ParseDataset;
 import water.util.ArrayUtils;
 import water.util.VecUtils;
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.deviance;
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.pearson;
 import static hex.glm.GLMModel.GLMParameters.Family.binomial;
 import static org.junit.Assert.*;
 

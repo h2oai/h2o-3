@@ -25,10 +25,11 @@ import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.deviance;
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.pearson;
 import static org.junit.Assert.*;
 
 /**
@@ -82,7 +83,6 @@ public class GLMBasicTestRegression extends TestUtil {
     v.remove();
     DKV.put(_airlinesMM._key,_airlinesMM);
   }
-
 
   @Test
   public void testSingleCatNoIcpt(){

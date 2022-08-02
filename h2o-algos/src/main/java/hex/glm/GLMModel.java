@@ -700,7 +700,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       Family(Link link){defaultLink = link;}
     }
     
-    public enum DispersionMethod {pearson, ml} // methods used to estimate dispersion parameter, ML = maximum likelhood
+    public enum DispersionMethod {pearson, ml, deviance} // methods used to estimate dispersion parameter, ML = maximum likelhood
     public static enum GLMType {glm, gam, hglm} // special functions are performed depending on GLMType.  Internal use
     public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit, ologlog}
 
