@@ -10,15 +10,15 @@ def test_gamma_null_model():
     Y = 'resp'
     x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
     model = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True, 
-                                          dispersion_factor_method="ml")
+                                          dispersion_parameter_method="ml")
     model.train(training_frame=training_data, x=x, y=Y)
     coeffs = model.coef()
     model_null_ml = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True, 
-                                                  dispersion_factor_method="ml", build_null_model=True)
+                                                  dispersion_parameter_method="ml", build_null_model=True)
     model_null_ml.train(training_frame=training_data, x=x, y=Y)
     coeffs_null_ml = model_null_ml.coef()
     model_null_p = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True,
-                                               dispersion_factor_method="pearson", build_null_model=True)
+                                               dispersion_parameter_method="pearson", build_null_model=True)
     model_null_p.train(training_frame=training_data, x=x, y=Y)
     coeffs_null_p = model_null_p.coef()
 

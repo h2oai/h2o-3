@@ -52,8 +52,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "missing_values_handling",
             "plug_values",
             "compute_p_values",
-            "dispersion_factor_method",
-            "init_dispersion_factor",
+            "dispersion_parameter_method",
+            "init_dispersion_parameter",
             "remove_collinear_columns",
             "intercept",
             "non_negative",
@@ -88,7 +88,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "auc_type",
             "dispersion_epsilon",
             "max_iterations_dispersion",
-            "build_null_model"
+            "build_null_model",
+            "fix_dispersion_parameter"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -181,9 +182,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "inverse", "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
     public GLMParameters.Link link;
     
-    @API(help="Method used to estimate the dispersion factor for Tweedie, Gamma and Negative Binomial only.",
+    @API(help="Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only.",
             level = Level.secondary, values={"pearson", "ml"})
-    public GLMParameters.DispersionMethod dispersion_factor_method;
+    public GLMParameters.DispersionMethod dispersion_parameter_method;
     
     @API(help = "Link function array for random component in HGLM.", values = {"[identity]", "[family_default]"},level = Level.secondary, gridable=true)   
     public GLMParameters.Link[] rand_link; // link function for random components
@@ -203,14 +204,21 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="If set, will build a model with only the intercept.  Default to false.", level = Level.expert)
     public boolean build_null_model;
 
+    @API(help="Only used for Tweedie, Gamma and Negative Binomial GLM.  If set, will use the dispsersion parameter" +
+            " in init_dispersion_parameter as the standard error and use it to calculate the p-values. Default to" +
+            " false.", level=Level.expert)
+    public boolean fix_dispersion_parameter;
+    
+    @API(help="Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion " +
+            "parameter.  If fix_dispersion_parameter is set, this value will be used in the calculation of p-values." +
+            "Default to 1.0.", level=Level.expert)
+    public double init_dispersion_parameter;
+
     @API(help="If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned", level = Level.critical)
     public boolean HGLM;
     
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
-
-    @API(help = "Initial value of disperion factor to be estimated using either pearson or ml.  Default to 1.0.", level = Level.expert)
-    public double init_dispersion_factor;
 
     @API(help = "Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all coefficients to zero)." +
     " Default indicates: if the number of observations is greater than the number of variables, then lambda_min_ratio" +

@@ -72,8 +72,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip", "plug_values"]
                  plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  compute_p_values=False,  # type: bool
-                 dispersion_factor_method="pearson",  # type: Literal["pearson", "ml"]
-                 init_dispersion_factor=1.0,  # type: float
+                 dispersion_parameter_method="pearson",  # type: Literal["pearson", "ml"]
+                 init_dispersion_parameter=1.0,  # type: float
                  remove_collinear_columns=False,  # type: bool
                  intercept=True,  # type: bool
                  non_negative=False,  # type: bool
@@ -108,6 +108,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  dispersion_epsilon=0.0001,  # type: float
                  max_iterations_dispersion=1000000,  # type: int
                  build_null_model=False,  # type: bool
+                 fix_dispersion_parameter=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -237,14 +238,15 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                regularization
                Defaults to ``False``.
         :type compute_p_values: bool
-        :param dispersion_factor_method: Method used to estimate the dispersion factor for Tweedie, Gamma and Negative
-               Binomial only.
+        :param dispersion_parameter_method: Method used to estimate the dispersion parameter for Tweedie, Gamma and
+               Negative Binomial only.
                Defaults to ``"pearson"``.
-        :type dispersion_factor_method: Literal["pearson", "ml"]
-        :param init_dispersion_factor: Initial value of disperion factor to be estimated using either pearson or ml.
-               Default to 1.0.
+        :type dispersion_parameter_method: Literal["pearson", "ml"]
+        :param init_dispersion_parameter: Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial
+               value of dispersion parameter.  If fix_dispersion_parameter is set, this value will be used in the
+               calculation of p-values.Default to 1.0.
                Defaults to ``1.0``.
-        :type init_dispersion_factor: float
+        :type init_dispersion_parameter: float
         :param remove_collinear_columns: In case of linearly dependent columns, remove some of the dependent columns
                Defaults to ``False``.
         :type remove_collinear_columns: bool
@@ -375,6 +377,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param build_null_model: If set, will build a model with only the intercept.  Default to false.
                Defaults to ``False``.
         :type build_null_model: bool
+        :param fix_dispersion_parameter: Only used for Tweedie, Gamma and Negative Binomial GLM.  If set, will use the
+               dispsersion parameter in init_dispersion_parameter as the standard error and use it to calculate the
+               p-values. Default to false.
+               Defaults to ``False``.
+        :type fix_dispersion_parameter: bool
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -413,8 +420,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.missing_values_handling = missing_values_handling
         self.plug_values = plug_values
         self.compute_p_values = compute_p_values
-        self.dispersion_factor_method = dispersion_factor_method
-        self.init_dispersion_factor = init_dispersion_factor
+        self.dispersion_parameter_method = dispersion_parameter_method
+        self.init_dispersion_parameter = init_dispersion_parameter
         self.remove_collinear_columns = remove_collinear_columns
         self.intercept = intercept
         self.non_negative = non_negative
@@ -449,6 +456,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.dispersion_epsilon = dispersion_epsilon
         self.max_iterations_dispersion = max_iterations_dispersion
         self.build_null_model = build_null_model
+        self.fix_dispersion_parameter = fix_dispersion_parameter
 
     @property
     def training_frame(self):
@@ -1392,32 +1400,33 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["compute_p_values"] = compute_p_values
 
     @property
-    def dispersion_factor_method(self):
+    def dispersion_parameter_method(self):
         """
-        Method used to estimate the dispersion factor for Tweedie, Gamma and Negative Binomial only.
+        Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only.
 
         Type: ``Literal["pearson", "ml"]``, defaults to ``"pearson"``.
         """
-        return self._parms.get("dispersion_factor_method")
+        return self._parms.get("dispersion_parameter_method")
 
-    @dispersion_factor_method.setter
-    def dispersion_factor_method(self, dispersion_factor_method):
-        assert_is_type(dispersion_factor_method, None, Enum("pearson", "ml"))
-        self._parms["dispersion_factor_method"] = dispersion_factor_method
+    @dispersion_parameter_method.setter
+    def dispersion_parameter_method(self, dispersion_parameter_method):
+        assert_is_type(dispersion_parameter_method, None, Enum("pearson", "ml"))
+        self._parms["dispersion_parameter_method"] = dispersion_parameter_method
 
     @property
-    def init_dispersion_factor(self):
+    def init_dispersion_parameter(self):
         """
-        Initial value of disperion factor to be estimated using either pearson or ml.  Default to 1.0.
+        Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion parameter.  If
+        fix_dispersion_parameter is set, this value will be used in the calculation of p-values.Default to 1.0.
 
         Type: ``float``, defaults to ``1.0``.
         """
-        return self._parms.get("init_dispersion_factor")
+        return self._parms.get("init_dispersion_parameter")
 
-    @init_dispersion_factor.setter
-    def init_dispersion_factor(self, init_dispersion_factor):
-        assert_is_type(init_dispersion_factor, None, numeric)
-        self._parms["init_dispersion_factor"] = init_dispersion_factor
+    @init_dispersion_parameter.setter
+    def init_dispersion_parameter(self, init_dispersion_parameter):
+        assert_is_type(init_dispersion_parameter, None, numeric)
+        self._parms["init_dispersion_parameter"] = init_dispersion_parameter
 
     @property
     def remove_collinear_columns(self):
@@ -2232,6 +2241,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def build_null_model(self, build_null_model):
         assert_is_type(build_null_model, None, bool)
         self._parms["build_null_model"] = build_null_model
+
+    @property
+    def fix_dispersion_parameter(self):
+        """
+        Only used for Tweedie, Gamma and Negative Binomial GLM.  If set, will use the dispsersion parameter in
+        init_dispersion_parameter as the standard error and use it to calculate the p-values. Default to false.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("fix_dispersion_parameter")
+
+    @fix_dispersion_parameter.setter
+    def fix_dispersion_parameter(self, fix_dispersion_parameter):
+        assert_is_type(fix_dispersion_parameter, None, bool)
+        self._parms["fix_dispersion_parameter"] = fix_dispersion_parameter
 
     Lambda = deprecated_property('Lambda', lambda_)
 
