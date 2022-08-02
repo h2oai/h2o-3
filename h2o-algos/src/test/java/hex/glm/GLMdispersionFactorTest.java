@@ -25,7 +25,7 @@ public class GLMdispersionFactorTest extends TestUtil {
                 9, gamma, "resp", 0.034);
 
     }
-    
+
     @Test
     public void testGammaNullModel() {
         assertCorrectNullModel("smalldata/glm_test/gamma_dispersion_0p5_10KRows.csv",
@@ -48,7 +48,7 @@ public class GLMdispersionFactorTest extends TestUtil {
             params._response_column = response;
             params._train = train._key;
             params._compute_p_values = true;
-            params._dispersion_factor_method = ml;
+            params._dispersion_parameter_method = ml;
             params._family = family;
             params._lambda = new double[]{0.0};
             params._build_null_model = true;
@@ -58,13 +58,44 @@ public class GLMdispersionFactorTest extends TestUtil {
             assert mlCoeff.length==1 : "GLM model should only contain one element which is just the intercept.";
             assert glmML.coefficients().keySet().contains("Intercept"); // the one coefficient is for intercept
 
-            params._dispersion_factor_method = pearson;
+            params._dispersion_parameter_method = pearson;
             GLMModel glmPearson = new GLM(params).trainModel().get();
             Scope.track_generic(glmPearson);
             double[] pearsonCoeff = glmPearson.beta();
             assert pearsonCoeff.length==1 : "GLM model should only contain one element which is just the intercept.";
             assert glmPearson.coefficients().keySet().contains("Intercept");
             TestUtil.equalTwoArrays(mlCoeff, pearsonCoeff, 1e-6);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    public static void assertCorrectFixedDispersionFactor(String filename, double trueDispersionFactor,
+                                                     GLMModel.GLMParameters.Family family, String response, double eps) {
+        Scope.enter();
+        try {
+            final Frame train = parseAndTrackTestFile(filename);
+            GLMParameters params = new GLMParameters(family);
+            params._response_column = response;
+            params._train = train._key;
+            params._compute_p_values = true;
+            params._dispersion_parameter_method = ml;
+            params._fix_dispersion_parameter = true;
+            params._init_dispersion_parameter = trueDispersionFactor;
+            params._family = family;
+            params._lambda = new double[]{0.0};
+            GLMModel glmML = new GLM(params).trainModel().get();
+            Scope.track_generic(glmML);
+
+            params._dispersion_parameter_method = pearson;
+            GLMModel glmPearson = new GLM(params).trainModel().get();
+            Scope.track_generic(glmPearson);
+            assert Math.abs(glmML._output.dispersion()-trueDispersionFactor)<eps:
+                    "Fixed dispersion: " + trueDispersionFactor + " H2O dispersion: " + glmML._output.dispersion() +
+                            ".  H2O dispersion parameter should equal to the fixed dispersion";
+            assert Math.abs(glmPearson._output.dispersion()-trueDispersionFactor)<eps:
+                    "Fixed dispersion: " + trueDispersionFactor + " H2O dispersion: " + glmML._output.dispersion() +
+                            ".  H2O dispersion parameter should equal to the fixed dispersion";
         } finally {
             Scope.exit();
         }
@@ -79,13 +110,13 @@ public class GLMdispersionFactorTest extends TestUtil {
             params._response_column = response;
             params._train = train._key;
             params._compute_p_values = true;
-            params._dispersion_factor_method = ml;
+            params._dispersion_parameter_method = ml;
             params._family = family;
             params._lambda = new double[]{0.0};
             GLMModel glmML = new GLM(params).trainModel().get();
             Scope.track_generic(glmML);
             
-            params._dispersion_factor_method = pearson;
+            params._dispersion_parameter_method = pearson;
             GLMModel glmPearson = new GLM(params).trainModel().get();
             Scope.track_generic(glmPearson);
             assert Math.abs(glmML._output.dispersion()-trueDispersionFactor)<eps:

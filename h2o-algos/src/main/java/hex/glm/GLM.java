@@ -999,18 +999,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 " does not work with " + _parms._family + " family.");
       }
       // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
-      if (ml.equals(_parms._dispersion_factor_method) && !gamma.equals(_parms._family))
-        error("dispersion_factor_mode", " ml can only be used for family gamma.");
+      if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family))
+        error("dispersion_parameter_mode", " ml can only be used for family gamma.");
       
-      if (ml.equals(_parms._dispersion_factor_method)) {
+      if (ml.equals(_parms._dispersion_parameter_method)) {
         if (_parms._max_iterations_dispersion <= 0)
           error("max_iterations_dispersion", " must > 0.");
         if (_parms._dispersion_epsilon < 0)
           error("dispersion_epsilon", " must >= 0.");
       }
       
-      if (_parms._init_dispersion_factor <= 0)
-        error("init_dispersion_factor", " must exceed 0.0.");
+      if (_parms._fix_dispersion_parameter)
+        if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
+          error("fix_dispersion_parameter", " is only supported for gamma, tweedie, " +
+                  "negativebinomial families.");
+      
+      if (_parms._init_dispersion_parameter <= 0)
+        error("init_dispersion_parameter", " must exceed 0.0.");
 
       boolean standardizeQ = _parms._HGLM?false:_parms._standardize;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, standardizeQ ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
@@ -1810,15 +1815,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     /**
      * This method will generate a training frame according to HGLM doc, build a gamma GLM model with dispersion
-     * factor set to 1 if enabled and calcluate the p-value if enabled.  It will return the GLM model.
-     *
-     * @param returnFrame
-     * @param constXYWeight
-     * @param devHvColIdx
-     * @param startRowIndex
-     * @param numRows
-     * @param computePValues
-     * @return
+     * parameter set to 1 if enabled and calcluate the p-value if enabled.  It will return the GLM model.
      */
     public GLMModel buildGammaGLM(Frame returnFrame, Frame constXYWeight, int[] devHvColIdx, long startRowIndex,
                                   long numRows, boolean computePValues) {
@@ -2322,13 +2319,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       if (_parms._compute_p_values) { // compute p-values
-        double se = _parms._init_dispersion_factor;
+        double se = _parms._init_dispersion_parameter;
         boolean seEst = false;
         double[] beta = _state.beta();
-        Log.info("estimating dispersion factor using method: " + _parms._dispersion_factor_method);
-        if (_parms._family != binomial && _parms._family != Family.poisson) {
+        Log.info("estimating dispersion parameter using method: " + _parms._dispersion_parameter_method);
+        if (_parms._family != binomial && _parms._family != Family.poisson && !_parms._fix_dispersion_parameter) {
           seEst = true;
-          if (pearson.equals(_parms._dispersion_factor_method)) {
+          if (pearson.equals(_parms._dispersion_parameter_method)) {
             if (_parms._useDispersion1) {
               se = 1;
             } else {
@@ -2336,7 +2333,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       _parms).doAll(_state.activeData()._adaptedFrame);
               se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate using pearson
             }
-          } else if (ml.equals(_parms._dispersion_factor_method)) {
+          } else if (ml.equals(_parms._dispersion_parameter_method)) {
             ComputeMLSETsk mlCT = new ComputeMLSETsk(null, _state.activeData(), _job._key, beta,
                     _parms).doAll(_state.activeData()._adaptedFrame);
             if (gamma.equals(_parms._family)) {
@@ -2372,7 +2369,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     /***
-     * Estimate dispersion factor using maximum likelihood.  I followed section IV of the doc in 
+     * Estimate dispersion parameter using maximum likelihood.  I followed section IV of the doc in 
      * https://h2oai.atlassian.net/browse/PUBDEV-8683 . 
      */
     public double estimateMLSE(GLMTask.ComputeMLSETsk mlCT, double alpha, double[] beta) {

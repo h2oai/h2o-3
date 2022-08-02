@@ -12,11 +12,11 @@ def test_max_iterations_dispersion():
     x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
 
     model_short = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True,
-                                                  dispersion_factor_method="ml",max_iterations_dispersion=1)
+                                                  dispersion_parameter_method="ml",max_iterations_dispersion=1)
     model_short.train(training_frame=training_data, x=x, y=Y)
 
     model_long = H2OGeneralizedLinearEstimator(family='gamma', lambda_=0, compute_p_values=True,
-                                                dispersion_factor_method="ml",max_iterations_dispersion=1000000)
+                                                dispersion_parameter_method="ml",max_iterations_dispersion=1000000)
     model_long.train(training_frame=training_data, x=x, y=Y)
     true_dispersion=9
     # check model with more iterations should generate dispersion parameters closer to the true dispersion value
