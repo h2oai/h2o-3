@@ -36,7 +36,7 @@ task createVersionFiles() {
 task verifyDependencies(type: Exec) {
     commandLine getOsSpecificCommandLine([
             pythonexe, "scripts/verify_requirements.py",
-            "--metayaml", "conda/h2o/meta.yaml",
+            "--metayaml", "conda/h2o-main/meta.yaml",
             "--kind", "build"
     ])
 }
@@ -44,7 +44,7 @@ task verifyDependencies(type: Exec) {
 task verifyTestDependencies(type: Exec) {
     commandLine getOsSpecificCommandLine([
             pythonexe, "scripts/verify_requirements.py",
-            "--metayaml", "conda/h2o/meta.yaml",
+            "--metayaml", "conda/h2o-main/meta.yaml",
             "--kind", "test"
     ])
 }
