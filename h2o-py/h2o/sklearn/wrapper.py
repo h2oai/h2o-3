@@ -773,13 +773,14 @@ class H2OEstimatorScoreSupport(BaseEstimatorMixin):
             return delegate.score(_to_numpy(X), y=(_vector_to_1d_array(y)), sample_weight=sample_weight)
 
         # delegate to default sklearn scoring methods
-        scoring_frame = X if y is None else X.concat(y)
-        if hasattr(self._estimator, 'model_performance') and self.is_classifier():
-            # sklearn default classification metric is accuracy
-            return self._estimator.model_performance(scoring_frame).accuracy()
-        elif hasattr(self._estimator, 'model_performance') and self.is_regressor():
-            # sklearn default regression metric is r2
-            return self._estimator.model_performance(scoring_frame).r2()
+        if sample_weight is None and hasattr(self._estimator, 'model_performance'):
+            scoring_frame = X if y is None else X.concat(y)
+            if self.is_classifier():
+                # sklearn default classification metric is accuracy
+                return self._estimator.model_performance(scoring_frame).accuracy()
+            elif self.is_regressor():
+                # sklearn default regression metric is r2
+                return self._estimator.model_performance(scoring_frame).r2()
         else:
             parent = super(H2OEstimatorScoreSupport, self)
             if hasattr(parent, 'score') and callable(parent.score):
