@@ -306,6 +306,8 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
 
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    Frame adaptFrm = removeSpecialColumns(frame);
+
     int nclasses = this._output._nclasses > 2 ? this._output._nclasses : 1;
     SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
     for (int i = 0; i < this._parms._ntrees; i++) {
@@ -314,7 +316,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       }
     }
     
-    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
+    return FriedmanPopescusH.h(adaptFrm, vars, this._parms._learn_rate, sharedTreeSubgraphs);
   }
 
 }
