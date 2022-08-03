@@ -250,7 +250,7 @@ These parameters can be specified as follows:
 
 With this hyperparameter specification, there will be 16 GAM models built.
 
-- **spline_orders**: Order of I-splines used for GAM predictors. If specified, must be the same size as ``gam_columns``. For example, ``spline_orders=3`` means a polynomial of order 3 will be used in the splines. Values for ``bs=0`` or ``bs=1`` will be ignored.
+- **spline_orders**: Order of I-splines/monotone splines used for GAM predictors. For example, ``spline_orders=3`` means a polynomial of order 3 will be used in the splines. If specified, must be the same size as ``gam_columns``. Values for ``bs=0`` or ``bs=1`` will be ignored.
 
 -  **num_knots**: An array that specifies the number of knots for each predictor specified in ``gam_columns``.
 
