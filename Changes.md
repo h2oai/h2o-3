@@ -2,6 +2,20 @@
 
 ## H2O
 
+### Zumbo (3.36.1.4) - 8/3/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/4/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8773]](https://h2oai.atlassian.net/browse/PUBDEV-8773) - Disabled `partial_plot` for Uplift DRF temporarily.
+- [[PUBDEV-8766]](https://h2oai.atlassian.net/browse/PUBDEV-8766) - Added support for predicting with Autoencoder when using eigen encoding.
+- [[PUBDEV-8757]](https://h2oai.atlassian.net/browse/PUBDEV-8757) - Fixed XGBoost failure with enabled cross validation in external cluster mode by explicitly starting external XGBoost before cross validation.
+
+#### Security
+
+- [[PUBDEV-8788]](https://h2oai.atlassian.net/browse/PUBDEV-8788) - Addressed security vulnerabilities CVE-2021-22573 and CVE-2019-10172 in Steam assembly.
+
 ### Zumbo (3.36.1.3) - 7/8/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/3/index.html</a>
