@@ -302,7 +302,7 @@ class BuildConfig {
 
   private static List<String> detectPythonTestChanges(changes) {
     changes.findAll { change ->
-      change.startsWith('h2o-py/') && change.contains("pyunit_")
+      change.startsWith('h2o-py/') && change.contains("pyunit_") && change.lastIndexOf("pyunit_") > change.lastIndexOf("/")
     }.collect {
       it.replaceFirst(".*pyunit_", "pyunit_") // Extract only filename from path
     }
