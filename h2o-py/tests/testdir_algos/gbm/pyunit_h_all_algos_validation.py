@@ -12,8 +12,12 @@ def test_model(model, x, target, train_frame, train_frame_clean, test_frame_miss
     # Scenario where user train model and ignore some cols but using the same frame for H statistic
     first, second, third = model.h(train_frame, ['DPROS', 'DCAPS']), model.h(train_frame, ['DPROS', 'GLEASON']), model.h(train_frame, ['DCAPS', 'GLEASON'])
 
+    print("H stats identical frame", first, second, third)
+
     # Here we call with frame that contain only the cols used for training
     first_clean, second_clean, third_clean = model.h(train_frame_clean, ['DPROS', 'DCAPS']), model.h(train_frame_clean, ['DPROS', 'GLEASON']), model.h(train_frame_clean, ['DCAPS', 'GLEASON'])
+
+    print("H stats clean frame", first_clean, second_clean, third_clean)
 
     # Both H statistics must me the same, user provide everything and we pick only what we need
     assert_equals(first_clean, first, "H stats should be the same for both datasets")
@@ -32,7 +36,7 @@ def test_model(model, x, target, train_frame, train_frame_clean, test_frame_miss
 def h_stats_same_data_but_missing_or_additional_columns():
     x = ['DPROS', 'DCAPS', 'GLEASON']
     target = "CAPSULE"
-    params = {"ntrees": 100, "learn_rate": 0.1, "max_depth": 2, "min_rows": 1, "seed": 1234}
+    params = {"ntrees": 10, "learn_rate": 0.1, "max_depth": 2, "min_rows": 1, "seed": 1234}
 
     train_frame = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_train.csv"))
     train_frame[target] = train_frame[target].asfactor()
@@ -41,7 +45,7 @@ def h_stats_same_data_but_missing_or_additional_columns():
     train_frame_clean[target] = train_frame_clean[target].asfactor()
 
     train_frame_missing = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_train.csv"), skipped_columns=[1, 2, 3, 5, 6]) # skip DPROS
-    train_frame_missing[target] = train_frame_missing[target].asfactor()    
+    train_frame_missing[target] = train_frame_missing[target].asfactor()
 
     gbm_h2o = H2OGradientBoostingEstimator(**params)
     xgb_h2o = H2OXGBoostEstimator(**params)
