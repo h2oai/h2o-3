@@ -11,6 +11,7 @@ def test_model_empty_col(model, target, train_frame_empty_col):
 
     try:
         h_stat = model.h(train_frame_empty_col, ['DCAPS', 'GLEASON'])
+        print("h_stat", h_stat)
         assert h_stat is not None
     except:
         assert False, "Should work"
@@ -20,7 +21,7 @@ def test_model_empty_col(model, target, train_frame_empty_col):
 
 def h_stats_data_with_empty_col():
     target = "CAPSULE"
-    params = {"ntrees":100, "learn_rate":0.1, "max_depth":2, "min_rows":1, "seed":1234}
+    params = {"ntrees": 10, "learn_rate": 0.1, "max_depth": 2, "min_rows": 1, "seed": 1234}
 
     train_frame_empty_col = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_train.csv"))
     train_frame_empty_col["DPROS"] = math.nan
