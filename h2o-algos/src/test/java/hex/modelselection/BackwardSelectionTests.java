@@ -48,7 +48,7 @@ public class BackwardSelectionTests extends TestUtil {
             final IcedWrapper[][] modelSummary = summary.getCellValues();
             final int numRow = modelSummary.length;
             final int numCol= modelSummary[0].length;
-            final String[] frameNames = new String[]{"coefficient_names", "z_values", "p_values", "predictor(s) removed"};
+            final String[] frameNames = new String[]{"coefficient_names", "z_values", "p_values", "predictor(s)_removed"};
             for (int rInd = 0; rInd < numRow; rInd++)
                 for (int cInd = 0; cInd < numCol; cInd++) {
                     String cellValue = String.valueOf(modelSummary[rInd][cInd]);
