@@ -299,8 +299,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param in_training_checkpoints_dir: In-training checkpoints
                Defaults to ``None``.
         :type in_training_checkpoints_dir: str, optional
-        :param in_training_checkpoints_tree_interval: Checkpoint the model after every so many trees. Default is 1 when
-               in_training_checkpoints_dir is not null.
+        :param in_training_checkpoints_tree_interval: Checkpoint the model after every so many trees. Parameter is used
+               only when in_training_checkpoints_dir is defined
                Defaults to ``1``.
         :type in_training_checkpoints_tree_interval: int
         :param monotone_constraints: A mapping representing monotonic constraints. Use +1 to enforce an increasing
@@ -2098,7 +2098,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def in_training_checkpoints_tree_interval(self):
         """
-        Checkpoint the model after every so many trees. Default is 1 when in_training_checkpoints_dir is not null.
+        Checkpoint the model after every so many trees. Parameter is used only when in_training_checkpoints_dir is
+        defined
 
         Type: ``int``, defaults to ``1``.
         """

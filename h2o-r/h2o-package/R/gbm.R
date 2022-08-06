@@ -98,8 +98,8 @@
 #' @param custom_distribution_func Reference to custom distribution, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param in_training_checkpoints_dir In-training checkpoints
-#' @param in_training_checkpoints_tree_interval Checkpoint the model after every so many trees. Default is 1 when in_training_checkpoints_dir is not null.
-#'        Defaults to 1.
+#' @param in_training_checkpoints_tree_interval Checkpoint the model after every so many trees. Parameter is used only when in_training_checkpoints_dir is
+#'        defined Defaults to 1.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
