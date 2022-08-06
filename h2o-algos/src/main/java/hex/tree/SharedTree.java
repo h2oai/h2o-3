@@ -44,7 +44,6 @@ public abstract class SharedTree<
 
   protected int _mtry;
   protected int _mtry_per_tree;
-  protected int _ntreesInCheckpoint;
   
   protected GlobalInteractionConstraints _ics;
 
@@ -146,7 +145,6 @@ public abstract class SharedTree<
       if( cv != null ) {          // Look for prior model
         SharedTreeModel<M, P, O> checkpointModel = CheckpointUtils.getAndValidateCheckpointModel(this, SharedTreeModel.SharedTreeParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
         // Compute number of trees to build for this checkpoint
-        _ntreesInCheckpoint = checkpointModel._output._ntrees;
         _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
       }
     }
