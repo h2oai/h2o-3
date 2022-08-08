@@ -96,6 +96,7 @@ public class CalibrationHelper {
             Key<Job> jobKey = j != null ? j._key : null;
             Key<Frame> calibInputKey = Key.make();
             Frame calibOutput = null;
+            Frame toUnlock = null;
             try {
                 Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(1)});
                 calibOutput = output.calibrationModel().score(calibInput);
@@ -103,11 +104,14 @@ public class CalibrationHelper {
                 Vec[] calPredictions = calibOutput.remove(new int[]{1, 2});
                 // append calibrated probabilities to the prediction frame
                 predictFr.write_lock(jobKey);
+                toUnlock = predictFr;
                 for (int i = 0; i < calPredictions.length; i++)
                     predictFr.add("cal_" + predictFr.name(1 + i), calPredictions[i]);
                 return predictFr.update(jobKey);
             } finally {
-                predictFr.unlock(jobKey);
+                if (toUnlock != null) {
+                    predictFr.unlock(jobKey);
+                }
                 DKV.remove(calibInputKey);
                 if (calibOutput != null)
                     calibOutput.remove();
