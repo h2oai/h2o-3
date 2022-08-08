@@ -2,14 +2,24 @@ import h2o
 import os
 
 from h2o.persist import set_s3_credentials
+from h2o.persist import remove_s3_credentials
 
 from tests import pyunit_utils
 from pandas.testing import assert_frame_equal
 
 
 def test_import_parquet_from_s3():
-    access_key_id = os.environ['AWS_ACCESS_KEY_ID']
-    secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+    try:
+        test_import_parquet_from_s3_impl()
+    finally:
+        remove_s3_credentials()
+
+
+def test_import_parquet_from_s3_impl():
+    aws_creds_prefix = os.environ['AWS_CREDS_PREFIX'] if 'AWS_CREDS_PREFIX' in os.environ else ''
+    access_key_id = os.environ[aws_creds_prefix + 'AWS_ACCESS_KEY_ID']
+    secret_access_key = os.environ[aws_creds_prefix + "AWS_SECRET_ACCESS_KEY"]
+
     assert access_key_id is not None
     assert secret_access_key is not None
     set_s3_credentials(access_key_id, secret_access_key)
