@@ -19,6 +19,7 @@ dependencies {
     testImplementation project(":h2o-test-support")
     testImplementation "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
     testRuntimeOnly project(":${defaultWebserverModule}")
+    testRuntimeOnly project(":h2o-persist-s3")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
