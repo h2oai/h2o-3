@@ -4,14 +4,14 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper;
 import hex.glm.GLMModel;
-import hex.tree.PlattScalingHelper;
+import hex.tree.CalibrationHelper;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class XGBoostOutput extends Model.Output implements Model.GetNTrees, PlattScalingHelper.OutputWithCalibration {
+public class XGBoostOutput extends Model.Output implements Model.GetNTrees, CalibrationHelper.OutputWithCalibration {
   public XGBoostOutput(XGBoost b) {
     super(b);
     _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};

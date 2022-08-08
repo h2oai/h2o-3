@@ -11,7 +11,7 @@ import water.fvec.Vec;
 
 import static hex.ModelCategory.Binomial;
 
-public class PlattScalingHelper {
+public class CalibrationHelper {
     
     public interface ModelBuilderWithCalibration<M extends Model<M , P, O>, P extends Model.Parameters, O extends Model.Output> {
         ModelBuilder getModelBuilder();
