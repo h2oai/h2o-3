@@ -3,7 +3,6 @@ package water.persist;
 import water.DKV;
 import water.Key;
 import water.api.Handler;
-import water.parser.BufferedString;
 
 import java.util.Objects;
 
@@ -15,6 +14,11 @@ public class PersistS3Handler extends Handler {
         final IcedS3Credentials icedS3Credentials = new IcedS3Credentials(s3Credentials.secret_key_id, s3Credentials.secret_access_key,
                 s3Credentials.session_token);
         DKV.put(Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY), icedS3Credentials);
+        return s3Credentials;
+    }
+
+    public PersistS3CredentialsV3 removeS3Credentials(final int version, final PersistS3CredentialsV3 s3Credentials){
+        DKV.remove(Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY));
         return s3Credentials;
     }
 

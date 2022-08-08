@@ -51,7 +51,13 @@ private List<String> getChanges(final String h2o3Root) {
     def result
     try {
         final String mergeBaseSHA = sh(script: "cd ${h2o3Root} && git merge-base HEAD origin/master", returnStdout: true).trim()
-        result = sh(script: "cd ${h2o3Root} && git diff --name-only ${mergeBaseSHA}", returnStdout: true).trim().tokenize('\n')
+        output = sh(script: "cd ${h2o3Root} && git diff --name-status ${mergeBaseSHA}", returnStdout: true)
+        result = output
+                .trim()
+                .tokenize('\n')
+                .collectEntries {
+                    it.tokenize('\t').reverse()
+                }
     } catch (Exception ignore) {
         result = null
     }

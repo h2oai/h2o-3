@@ -287,7 +287,7 @@ class BuildConfig {
 
     changesMap[COMPONENT_ANY] = true
 
-    for (change in changes) {
+    for (change in changes.keySet()) {
       if (change.startsWith('h2o-py/') || change == 'h2o-bindings/bin/gen_python.py') {
         changesMap[COMPONENT_PY] = true
       } else if (change.startsWith('h2o-r/') ||  change == 'h2o-bindings/bin/gen_R.py') {
@@ -301,10 +301,14 @@ class BuildConfig {
   }
 
   private static List<String> detectPythonTestChanges(changes) {
-    changes.findAll { change ->
-      change.startsWith('h2o-py/') && change.contains("pyunit_") && change.lastIndexOf("pyunit_") > change.lastIndexOf("/")
+    changes.findAll { changeEntry ->
+      def changeType = changeEntry.value
+      def change = changeEntry.key
+      changeType != "D" && // was not deleted
+              change.startsWith('h2o-py/') && change.contains("pyunit_") &&
+              change.lastIndexOf("pyunit_") > change.lastIndexOf("/")
     }.collect {
-      it.replaceFirst(".*pyunit_", "pyunit_") // Extract only filename from path
+      it.key.replaceFirst(".*pyunit_", "pyunit_") // Extract only filename from path
     }
   }
 

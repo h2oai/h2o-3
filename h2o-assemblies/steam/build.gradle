@@ -44,6 +44,10 @@ dependencies {
     api("org.apache.hadoop:hadoop-aws:3.3.3") {
         exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
     }
+    // aws-java-sdk-dynamodb is required for S3A support, S3A import throws NoClassDefFoundError (AmazonDynamoDBException)
+    api("com.amazonaws:aws-java-sdk-dynamodb:${awsJavaSdkVersion}") {
+        transitive = false
+    }
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
     api "org.apache.commons:commons-compress:1.21"
     // Force specific Parquet version to avoid dependency on vulnerable FasterXML jackson-mapper-asl
@@ -75,4 +79,5 @@ shadowJar {
     resource = "META-INF/license/h2o-depenencies-licenses.xml"
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer)
+  zip64 true
 }

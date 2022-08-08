@@ -600,6 +600,39 @@ public class PersistS3Test extends TestUtil {
     assertTrue(PersistS3.getS3ClientFactory() instanceof S3AClientFactory);
   }
 
+  @Test
+  public void testConfigureS3UsingS3AAppliesCustomSecurityProviders() {
+    // this test is about things you don't see: in `testConfigureS3UsingS3A` we need to populate Configuration
+    // with fs.s3a.access.key/fs.s3a.secret.key, however, if we provide PersistHdfs.CONF it already has injected
+    // the credentials providers
+    H2O.OptArgs args = new H2O.OptArgs();
+    args.configure_s3_using_s3a = true;
+
+    assertNull(PersistHdfs.CONF.get("fs.s3a.access.key"));
+    assertNull(PersistHdfs.CONF.get("fs.s3a.secret.key"));
+    assertNull(PersistHdfs.CONF.get("hadoop.security.credential.provider.path"));
+    assertFalse(PersistHdfs.CONF.get("fs.s3a.security.credential.provider.path").isEmpty());
+
+    if (System.getenv(AWS_ACCESS_KEY_PROPERTY_NAME) == null) {
+      // now derive a new configuration without any providers...
+      Configuration noProviderConf = new Configuration(PersistHdfs.CONF);
+      noProviderConf.set("fs.s3a.security.credential.provider.path", "");
+
+      // and show it won't work without it (proves we are taking the credentials using the providers in the next test)
+      try {
+        PersistS3.getClient("test.0xdata.com", args, noProviderConf);
+        fail();
+      } catch (Exception e) {
+        assertTrue(e.getMessage().contains("No AWS Credentials provided"));
+      }
+    }
+
+    // test the default configuration
+    AmazonS3 client = PersistS3.getClient("test.0xdata.com", args, PersistHdfs.CONF);
+    assertNotNull(client);
+    assertTrue(PersistS3.getS3ClientFactory() instanceof S3AClientFactory);
+  }
+
   private static Configuration s3aConfiguration(AWSCredentials credentials) {
     Configuration conf = new Configuration();
     conf.set("fs.s3a.access.key", credentials.getAWSAccessKeyId());
@@ -617,5 +650,5 @@ public class PersistS3Test extends TestUtil {
   private AWSCredentials getCredentials() {
     return new PersistS3.H2OAWSCredentialsProviderChain().getCredentials();
   }
-  
+
 }
