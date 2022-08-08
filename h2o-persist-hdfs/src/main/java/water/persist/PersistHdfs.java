@@ -11,7 +11,6 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.hadoop.hdfs.util.ByteArrayManager;
 import water.*;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
@@ -25,6 +24,11 @@ import static water.fvec.FileVec.getPathForKey;
  * HDFS persistence layer.
  */
 public final class PersistHdfs extends Persist {
+
+  private static final String[] _customS3ASecurityProviders = {
+          "hex://water.persist.H2OCredentialProviderFactory"
+  };
+
   /** Globally shared HDFS configuration. */
   public static final Configuration CONF;
   /** Root path of HDFS */
@@ -38,9 +42,7 @@ public final class PersistHdfs extends Persist {
    * We already have another filter that takes care of on zero-length files (underscore files are typically empty anyway
    * eg.: _SUCCESS)
    */
-  private static final PathFilter HIDDEN_FILE_FILTER = new PathFilter() {
-    public boolean accept(Path p) { return ! p.getName().startsWith("."); }
-  };
+  private static final PathFilter HIDDEN_FILE_FILTER = p -> ! p.getName().startsWith(".");
 
   // Global HDFS initialization
   static {
@@ -74,6 +76,8 @@ public final class PersistHdfs extends Persist {
         Log.debug("Cannot find HADOOP_CONF_DIR or YARN_CONF_DIR - default HDFS properties are NOT loaded!");
       }
     }
+    // inject our custom S3 credentials providers for use with S3A
+    injectS3ASecurityCredentialProviders(conf);
     // add manually passed configuration
     configureFromProperties(conf, H2O.ARGS.hadoop_properties);
     CONF = conf;
@@ -84,6 +88,20 @@ public final class PersistHdfs extends Persist {
       String propertyValue = props.getProperty((String) propertyKey);
       conf.set((String) propertyKey, propertyValue);
     }
+  }
+
+  static void injectS3ASecurityCredentialProviders(Configuration conf) {
+    final Collection<String> providers = conf.getStringCollection("fs.s3a.security.credential.provider.path");
+    String[] merged = new String[providers.size() + _customS3ASecurityProviders.length];
+    int i = 0;
+    for (String provider : providers) {
+      merged[i++] = provider;
+    }
+    for (String provider : _customS3ASecurityProviders) {
+      merged[i++] = provider;
+    }
+    assert i == merged.length;
+    conf.setStrings("fs.s3a.security.credential.provider.path", merged);
   }
 
   // Loading HDFS files
