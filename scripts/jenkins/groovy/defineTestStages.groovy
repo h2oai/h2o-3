@@ -236,6 +236,11 @@ def call(final pipelineContext) {
       imageSpecifier: "mojocompat",
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
+    [
+      stageName: 'Py3.7 S3 Persist', target: 'test-py-persist-s3', pythonVersion: '3.7', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      awsCredsPrefix: 'H2O_'
+    ],
   ]
 
   def BENCHMARK_STAGES = [
@@ -840,6 +845,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           imageSpecifier = c['imageSpecifier']
           healthCheckSuppressed = c['healthCheckSuppressed']
           addToDockerGroup = c['addToDockerGroup']
+          awsCredsPrefix = c['awsCredsPrefix']
         }
       }
     ]

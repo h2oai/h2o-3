@@ -74,6 +74,9 @@ lookup-steam-assembly-tests: init-lookup
 	find h2o-py/tests -name '*s3*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 	cat tests/pyunitSmokeTestList >>h2o-py/tests/.lookup.txt
 
+lookup-persist-s3-tests: init-lookup
+	find h2o-py/tests/testdir_persist -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+
 test-py-smoke:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
 
@@ -85,6 +88,9 @@ test-py-smoke-steam: lookup-steam-assembly-tests
 
 test-py-changed:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitChangedTestList --numclouds 1 --jvm.xmx 3g
+
+test-py-persist-s3: lookup-persist-s3-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 1 --jvm.xmx 3g
 
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
