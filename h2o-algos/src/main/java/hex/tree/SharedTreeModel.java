@@ -87,8 +87,10 @@ public abstract class SharedTreeModel<
       return _sample_rate < 1 || _sample_rate_per_class != null;
     }
 
-    public boolean _calibrate_model = false; // Use Platt Scaling
+    // Platt scaling (by default)
+    public boolean _calibrate_model;
     public Key<Frame> _calibration_frame;
+    public CalibrationHelper.CalibrationMethod _calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
@@ -125,6 +127,12 @@ public abstract class SharedTreeModel<
     @Override
     public boolean calibrateModel() {
       return _calibrate_model;
+    }
+
+    @Override
+    public CalibrationHelper.CalibrationMethod getCalibrationMethod() {
+      return _calibration_method == CalibrationHelper.CalibrationMethod.AUTO ?
+              CalibrationHelper.CalibrationMethod.PlattScaling : _calibration_method;
     }
 
     @Override
@@ -200,7 +208,7 @@ public abstract class SharedTreeModel<
       return _variable_importances;
     }
 
-    public GLMModel _calib_model;
+    public Model<?, ?, ?> _calib_model;
 
     public SharedTreeOutput( SharedTree b) {
       super(b);
@@ -283,7 +291,7 @@ public abstract class SharedTreeModel<
     }
 
     @Override
-    public GLMModel calibrationModel() {
+    public Model<?, ?, ?> calibrationModel() {
       return _calib_model;
     }
 

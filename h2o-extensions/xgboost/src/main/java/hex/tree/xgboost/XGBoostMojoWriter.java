@@ -1,5 +1,6 @@
 package hex.tree.xgboost;
 
+import hex.Model;
 import hex.ModelMojoWriter;
 import hex.glm.GLMModel;
 
@@ -39,9 +40,12 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
     writeblob("feature_map", model.model_info().getFeatureMap().getBytes(Charset.forName("UTF-8")));
     writekv("use_java_scoring_by_default", true);
     if (model._output._calib_model != null) {
-      GLMModel calibModel = model._output._calib_model;
-      double[] beta = calibModel.beta();
-      assert beta.length == model._output.nclasses();
+      Model<?, ?, ?> calibModel = model._output._calib_model;
+      if (!(calibModel instanceof GLMModel)) {
+        throw new UnsupportedOperationException("MOJO is not (yet) support for calibration model " + calibModel);
+      }
+      double[] beta = ((GLMModel) calibModel).beta();
+      assert beta.length == model._output.nclasses(); // n-1 coefficients + 1 intercept
       writekv("calib_method", "platt");
       writekv("calib_glm_beta", beta);
     }

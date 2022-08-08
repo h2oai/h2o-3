@@ -12,9 +12,13 @@ import water.fvec.Vec;
 import static hex.ModelCategory.Binomial;
 
 public class CalibrationHelper {
-    
+
+    public enum CalibrationMethod {
+        AUTO, PlattScaling, IsotonicRegression
+    }
+
     public interface ModelBuilderWithCalibration<M extends Model<M , P, O>, P extends Model.Parameters, O extends Model.Output> {
-        ModelBuilder getModelBuilder();
+        ModelBuilder<M, P, O> getModelBuilder();
         Frame getCalibrationFrame();
         void setCalibrationFrame(Frame f);
     }
@@ -23,13 +27,14 @@ public class CalibrationHelper {
         Model.Parameters getParams();
         Frame getCalibrationFrame();
         boolean calibrateModel();
+        CalibrationMethod getCalibrationMethod();
     }
 
     public interface OutputWithCalibration {
         ModelCategory getModelCategory();
-        GLMModel calibrationModel();
+        Model<?, ?, ?> calibrationModel();
     }
-    
+
     public static void initCalibration(ModelBuilderWithCalibration builder, ParamsWithCalibration parms, boolean expensive) {
         // Calibration
         Frame cf = parms.getCalibrationFrame();  // User-given calibration set
@@ -45,9 +50,10 @@ public class CalibrationHelper {
             if (cf == null)
                 builder.getModelBuilder().error("_calibrate_model", "Calibration frame was not specified.");
         }
+        assert parms.getCalibrationMethod() != CalibrationMethod.AUTO;
     }
-    
-    public static <M extends Model<M , P, O>, P extends Model.Parameters, O extends Model.Output> GLMModel buildCalibrationModel(
+
+    public static <M extends Model<M , P, O>, P extends Model.Parameters, O extends Model.Output> Model<?, ?, ?> buildCalibrationModel(
         ModelBuilderWithCalibration<M, P, O> builder, ParamsWithCalibration parms, Job job, M model
     ) {
         Key<Frame> calibInputKey = Key.make();
@@ -65,7 +71,7 @@ public class CalibrationHelper {
             DKV.put(calibInput);
 
             Key<Model> calibModelKey = Key.make();
-            Job calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
+            Job<?> calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
             GLM calibBuilder = ModelBuilder.make("GLM", calibJob, calibModelKey);
             calibBuilder._parms._intercept = true;
             calibBuilder._parms._response_column = "response";

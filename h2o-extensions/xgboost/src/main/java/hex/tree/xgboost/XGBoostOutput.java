@@ -3,7 +3,6 @@ package hex.tree.xgboost;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper;
-import hex.glm.GLMModel;
 import hex.tree.CalibrationHelper;
 import water.util.TwoDimTable;
 
@@ -46,7 +45,7 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Cali
   public XgbVarImp _varimp;
   public TwoDimTable _native_parameters;
 
-  public GLMModel _calib_model;
+  public Model<?, ?, ?> _calib_model;
 
   @Override
   public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
@@ -69,7 +68,7 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Cali
   }
 
   @Override
-  public GLMModel calibrationModel() {
+  public Model<?, ?, ?> calibrationModel() {
     return _calib_model;
   }
 }

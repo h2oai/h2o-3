@@ -1,5 +1,6 @@
 package hex.tree;
 
+import hex.Model;
 import hex.ModelMojoWriter;
 import hex.glm.GLMModel;
 import water.DKV;
@@ -31,8 +32,11 @@ public abstract class SharedTreeMojoWriter<
     writekv("n_trees", model._output._ntrees);
     writekv("n_trees_per_class", ntreesPerClass);
     if (model._output._calib_model != null) {
-      GLMModel calibModel = model._output._calib_model;
-      double[] beta = calibModel.beta();
+      Model<?, ?, ?> calibModel = model._output._calib_model;
+      if (!(calibModel instanceof GLMModel)) {
+        throw new UnsupportedOperationException("MOJO is not (yet) support for calibration model " + calibModel);
+      }
+      double[] beta = ((GLMModel) calibModel).beta();
       assert beta.length == nclasses; // n-1 coefficients + 1 intercept
       writekv("calib_method", "platt");
       writekv("calib_glm_beta", beta);

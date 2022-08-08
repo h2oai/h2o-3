@@ -129,9 +129,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _reg_alpha = 0;
     public float _scale_pos_weight = 1;
 
-    // Platt scaling
+    // Platt scaling (by default)
     public boolean _calibrate_model;
     public Key<Frame> _calibration_frame;
+    public CalibrationHelper.CalibrationMethod _calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
 
     // Dart specific (booster == dart)
     public DartSampleType _sample_type = DartSampleType.uniform;
@@ -201,6 +202,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     @Override
     public boolean calibrateModel() {
       return _calibrate_model;
+    }
+
+    @Override
+    public CalibrationHelper.CalibrationMethod getCalibrationMethod() {
+      return _calibration_method == CalibrationHelper.CalibrationMethod.AUTO ? 
+              CalibrationHelper.CalibrationMethod.PlattScaling : _calibration_method;
     }
 
     @Override
