@@ -3,7 +3,6 @@ package hex.isotonic;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.coxph.CoxPHModel;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
