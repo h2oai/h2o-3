@@ -5,8 +5,12 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import hex.isotonic.IsotonicRegression;
+import hex.isotonic.IsotonicRegressionModel;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 
 import static hex.ModelCategory.Binomial;
@@ -14,7 +18,17 @@ import static hex.ModelCategory.Binomial;
 public class CalibrationHelper {
 
     public enum CalibrationMethod {
-        AUTO, PlattScaling, IsotonicRegression
+        AUTO(-1), PlattScaling(1), IsotonicRegression(2);
+
+        private final int _calibVecIdx;
+
+        CalibrationMethod(int calibVecIdx) {
+            _calibVecIdx = calibVecIdx;
+        }
+
+        private int getCalibratedVecIdx() {
+            return _calibVecIdx;
+        }
     }
 
     public interface ModelBuilderWithCalibration<M extends Model<M , P, O>, P extends Model.Parameters, O extends Model.Output> {
@@ -33,6 +47,10 @@ public class CalibrationHelper {
     public interface OutputWithCalibration {
         ModelCategory getModelCategory();
         Model<?, ?, ?> calibrationModel();
+        default CalibrationMethod getCalibrationMethod() {
+            return calibrationModel() instanceof IsotonicRegressionModel ?
+                    CalibrationMethod.IsotonicRegression : CalibrationMethod.PlattScaling;
+        }
     }
 
     public static void initCalibration(ModelBuilderWithCalibration builder, ParamsWithCalibration parms, boolean expensive) {
@@ -63,30 +81,57 @@ public class CalibrationHelper {
             Frame calib = builder.getCalibrationFrame();
             Vec calibWeights = parms.getParams()._weights_column != null ? calib.vec(parms.getParams()._weights_column) : null;
             Frame calibPredict = Scope.track(model.score(calib, null, job, false));
+            int calibVecIdx = parms.getCalibrationMethod().getCalibratedVecIdx();
             Frame calibInput = new Frame(calibInputKey,
-                new String[]{"p", "response"}, new Vec[]{calibPredict.vec(1), calib.vec(parms.getParams()._response_column)});
+                new String[]{"p", "response"}, new Vec[]{calibPredict.vec(calibVecIdx), calib.vec(parms.getParams()._response_column)});
             if (calibWeights != null) {
                 calibInput.add("weights", calibWeights);
             }
             DKV.put(calibInput);
 
-            Key<Model> calibModelKey = Key.make();
-            Job<?> calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
-            GLM calibBuilder = ModelBuilder.make("GLM", calibJob, calibModelKey);
-            calibBuilder._parms._intercept = true;
-            calibBuilder._parms._response_column = "response";
-            calibBuilder._parms._train = calibInput._key;
-            calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
-            calibBuilder._parms._lambda = new double[] {0.0};
-            if (calibWeights != null) {
-                calibBuilder._parms._weights_column = "weights";
+            final ModelBuilder<?, ?, ?> calibrationModelBuilder;
+            switch (parms.getCalibrationMethod()) {
+                case PlattScaling:
+                    calibrationModelBuilder = makePlattScalingModelBuilder(calibInput, calibWeights != null);
+                    break;
+                case IsotonicRegression:
+                    calibrationModelBuilder = makeIsotonicRegressionModelBuilder(calibInput, calibWeights != null);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported calibration method: " + parms.getCalibrationMethod());
             }
-
-            return calibBuilder.trainModel().get();
+            return calibrationModelBuilder.trainModel().get();
         } finally {
             Scope.exit();
             DKV.remove(calibInputKey);
         }
+    }
+
+    static ModelBuilder<?, ?, ?> makePlattScalingModelBuilder(Frame calibInput, boolean hasWeights) {
+        Key<Model> calibModelKey = Key.make();
+        Job<?> calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
+        GLM calibBuilder = ModelBuilder.make("GLM", calibJob, calibModelKey);
+        calibBuilder._parms._intercept = true;
+        calibBuilder._parms._response_column = "response";
+        calibBuilder._parms._train = calibInput._key;
+        calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
+        calibBuilder._parms._lambda = new double[] {0.0};
+        if (hasWeights) {
+            calibBuilder._parms._weights_column = "weights";
+        }
+        return calibBuilder;
+    }
+
+    static ModelBuilder<?, ?, ?> makeIsotonicRegressionModelBuilder(Frame calibInput, boolean hasWeights) {
+        Key<Model> calibModelKey = Key.make();
+        Job<?> calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("isotonicregression"), "Isotonic Regression Calibration");
+        IsotonicRegression calibBuilder = ModelBuilder.make("isotonicregression", calibJob, calibModelKey);
+        calibBuilder._parms._response_column = "response";
+        calibBuilder._parms._train = calibInput._key;
+        if (hasWeights) {
+            calibBuilder._parms._weights_column = "weights";
+        }
+        return calibBuilder;
     }
 
     public static Frame postProcessPredictions(Frame predictFr, Job j, OutputWithCalibration output) {
@@ -98,10 +143,21 @@ public class CalibrationHelper {
             Frame calibOutput = null;
             Frame toUnlock = null;
             try {
-                Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(1)});
-                calibOutput = output.calibrationModel().score(calibInput);
-                assert calibOutput._names.length == 3;
-                Vec[] calPredictions = calibOutput.remove(new int[]{1, 2});
+                final Model<?, ?, ?> calibModel = output.calibrationModel();
+                final int calibVecIdx = output.getCalibrationMethod().getCalibratedVecIdx();
+                final Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(calibVecIdx)});
+                calibOutput = calibModel.score(calibInput);
+                final Vec[] calPredictions;
+                if (calibModel instanceof GLMModel) {
+                    assert calibOutput._names.length == 3;
+                    calPredictions = calibOutput.remove(new int[]{1, 2});
+                } else if (calibModel instanceof IsotonicRegressionModel) {
+                    assert calibOutput._names.length == 1;
+                    Vec p1 = calibOutput.remove(0);
+                    Vec p0 = new P0Task().doAll(Vec.T_NUM, p1).outputFrame().lastVec();
+                    calPredictions = new Vec[]{p0, p1};
+                } else 
+                    throw new UnsupportedOperationException("Unsupported calibration model: " + calibModel);
                 // append calibrated probabilities to the prediction frame
                 predictFr.write_lock(jobKey);
                 toUnlock = predictFr;
@@ -120,4 +176,19 @@ public class CalibrationHelper {
             throw H2O.unimpl("Calibration is only supported for binomial models");
         }
     }
+
+    private static class P0Task extends MRTask<P0Task> {
+        @Override
+        public void map(Chunk c, NewChunk nc) {
+            for (int i = 0; i < c._len; i++) {
+                if (c.isNA(i))
+                    nc.addNA();
+                else {
+                    double p1 = c.atd(i);
+                    nc.addNum(1.0 - p1);
+                }
+            }
+        }
+    }
+
 }
