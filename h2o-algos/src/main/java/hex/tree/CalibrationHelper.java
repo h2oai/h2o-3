@@ -42,6 +42,7 @@ public class CalibrationHelper {
         Frame getCalibrationFrame();
         boolean calibrateModel();
         CalibrationMethod getCalibrationMethod();
+        void setCalibrationMethod(CalibrationMethod calibrationMethod);
     }
 
     public interface OutputWithCalibration {
@@ -68,12 +69,13 @@ public class CalibrationHelper {
             if (cf == null)
                 builder.getModelBuilder().error("_calibrate_model", "Calibration frame was not specified.");
         }
-        assert parms.getCalibrationMethod() != CalibrationMethod.AUTO;
     }
 
     public static <M extends Model<M , P, O>, P extends Model.Parameters, O extends Model.Output> Model<?, ?, ?> buildCalibrationModel(
         ModelBuilderWithCalibration<M, P, O> builder, ParamsWithCalibration parms, Job job, M model
     ) {
+        final CalibrationMethod calibrationMethod = parms.getCalibrationMethod() == CalibrationMethod.AUTO ?
+                CalibrationMethod.PlattScaling : parms.getCalibrationMethod();
         Key<Frame> calibInputKey = Key.make();
         try {
             Scope.enter();
@@ -81,7 +83,7 @@ public class CalibrationHelper {
             Frame calib = builder.getCalibrationFrame();
             Vec calibWeights = parms.getParams()._weights_column != null ? calib.vec(parms.getParams()._weights_column) : null;
             Frame calibPredict = Scope.track(model.score(calib, null, job, false));
-            int calibVecIdx = parms.getCalibrationMethod().getCalibratedVecIdx();
+            int calibVecIdx = calibrationMethod.getCalibratedVecIdx();
             Frame calibInput = new Frame(calibInputKey,
                 new String[]{"p", "response"}, new Vec[]{calibPredict.vec(calibVecIdx), calib.vec(parms.getParams()._response_column)});
             if (calibWeights != null) {
@@ -90,7 +92,7 @@ public class CalibrationHelper {
             DKV.put(calibInput);
 
             final ModelBuilder<?, ?, ?> calibrationModelBuilder;
-            switch (parms.getCalibrationMethod()) {
+            switch (calibrationMethod) {
                 case PlattScaling:
                     calibrationModelBuilder = makePlattScalingModelBuilder(calibInput, calibWeights != null);
                     break;
@@ -98,7 +100,7 @@ public class CalibrationHelper {
                     calibrationModelBuilder = makeIsotonicRegressionModelBuilder(calibInput, calibWeights != null);
                     break;
                 default:
-                    throw new UnsupportedOperationException("Unsupported calibration method: " + parms.getCalibrationMethod());
+                    throw new UnsupportedOperationException("Unsupported calibration method: " + calibrationMethod);
             }
             return calibrationModelBuilder.trainModel().get();
         } finally {

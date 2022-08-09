@@ -131,8 +131,12 @@ public abstract class SharedTreeModel<
 
     @Override
     public CalibrationHelper.CalibrationMethod getCalibrationMethod() {
-      return _calibration_method == CalibrationHelper.CalibrationMethod.AUTO ?
-              CalibrationHelper.CalibrationMethod.PlattScaling : _calibration_method;
+      return _calibration_method;
+    }
+
+    @Override
+    public void setCalibrationMethod(CalibrationHelper.CalibrationMethod calibrationMethod) {
+      _calibration_method = calibrationMethod;
     }
 
     @Override

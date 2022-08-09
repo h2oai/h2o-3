@@ -206,8 +206,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     @Override
     public CalibrationHelper.CalibrationMethod getCalibrationMethod() {
-      return _calibration_method == CalibrationHelper.CalibrationMethod.AUTO ? 
-              CalibrationHelper.CalibrationMethod.PlattScaling : _calibration_method;
+      return _calibration_method;
+    }
+
+    @Override
+    public void setCalibrationMethod(CalibrationHelper.CalibrationMethod calibrationMethod) {
+      _calibration_method = calibrationMethod;
     }
 
     @Override
@@ -245,6 +249,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     EffectiveParametersUtils.initFoldAssignment(_parms);
     _parms._backend = getActualBackend(_parms, true);
     _parms._tree_method = getActualTreeMethod(_parms);
+    EffectiveParametersUtils.initCalibrationMethod(_parms);
   }
 
   public static XGBoostParameters.TreeMethod getActualTreeMethod(XGBoostParameters p) {
