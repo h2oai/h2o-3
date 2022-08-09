@@ -85,6 +85,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  calibrate_model=False,  # type: bool
                  calibration_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 calibration_method="auto",  # type: Literal["auto", "platt_scaling", "isotonic_regression"]
                  custom_metric_func=None,  # type: Optional[str]
                  custom_distribution_func=None,  # type: Optional[str]
                  export_checkpoints_dir=None,  # type: Optional[str]
@@ -274,13 +275,16 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
-        :param calibrate_model: Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide
-               more accurate estimates of class probabilities.
+        :param calibrate_model: Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
+               probabilities. Calibration can provide more accurate estimates of class probabilities.
                Defaults to ``False``.
         :type calibrate_model: bool
-        :param calibration_frame: Calibration frame for Platt Scaling
+        :param calibration_frame: Data for model calibration
                Defaults to ``None``.
         :type calibration_frame: Union[None, str, H2OFrame], optional
+        :param calibration_method: Calibration method to use
+               Defaults to ``"auto"``.
+        :type calibration_method: Literal["auto", "platt_scaling", "isotonic_regression"]
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                Defaults to ``None``.
         :type custom_metric_func: str, optional
@@ -364,6 +368,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self.categorical_encoding = categorical_encoding
         self.calibrate_model = calibrate_model
         self.calibration_frame = calibration_frame
+        self.calibration_method = calibration_method
         self.custom_metric_func = custom_metric_func
         self.custom_distribution_func = custom_distribution_func
         self.export_checkpoints_dir = export_checkpoints_dir
@@ -1872,8 +1877,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def calibrate_model(self):
         """
-        Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
-        of class probabilities.
+        Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class probabilities. Calibration can
+        provide more accurate estimates of class probabilities.
 
         Type: ``bool``, defaults to ``False``.
 
@@ -1913,7 +1918,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def calibration_frame(self):
         """
-        Calibration frame for Platt Scaling
+        Data for model calibration
 
         Type: ``Union[None, str, H2OFrame]``.
 
@@ -1948,6 +1953,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
         self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
+
+    @property
+    def calibration_method(self):
+        """
+        Calibration method to use
+
+        Type: ``Literal["auto", "platt_scaling", "isotonic_regression"]``, defaults to ``"auto"``.
+        """
+        return self._parms.get("calibration_method")
+
+    @calibration_method.setter
+    def calibration_method(self, calibration_method):
+        assert_is_type(calibration_method, None, Enum("auto", "platt_scaling", "isotonic_regression"))
+        self._parms["calibration_method"] = calibration_method
 
     @property
     def custom_metric_func(self):

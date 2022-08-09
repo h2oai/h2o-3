@@ -90,9 +90,10 @@
 #' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
-#'        accurate estimates of class probabilities. Defaults to FALSE.
-#' @param calibration_frame Calibration frame for Platt Scaling
+#' @param calibrate_model \code{Logical}. Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
+#'        probabilities. Calibration can provide more accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Data for model calibration
+#' @param calibration_method Calibration method to use Must be one of: "AUTO", "PlattScaling", "IsotonicRegression". Defaults to AUTO.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param custom_distribution_func Reference to custom distribution, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
@@ -173,6 +174,7 @@ h2o.gbm <- function(x,
                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                     calibrate_model = FALSE,
                     calibration_frame = NULL,
+                    calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                     custom_metric_func = NULL,
                     custom_distribution_func = NULL,
                     export_checkpoints_dir = NULL,
@@ -308,6 +310,8 @@ h2o.gbm <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(custom_distribution_func))
@@ -379,6 +383,7 @@ h2o.gbm <- function(x,
                                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                     calibrate_model = FALSE,
                                     calibration_frame = NULL,
+                                    calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                                     custom_metric_func = NULL,
                                     custom_distribution_func = NULL,
                                     export_checkpoints_dir = NULL,
@@ -518,6 +523,8 @@ h2o.gbm <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(custom_distribution_func))

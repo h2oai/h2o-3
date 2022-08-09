@@ -62,6 +62,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "categorical_encoding",
       "calibrate_model",
       "calibration_frame",
+      "calibration_method",
       "custom_metric_func",
       "custom_distribution_func",      
       "export_checkpoints_dir",
