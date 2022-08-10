@@ -3178,20 +3178,27 @@ public abstract class GLMTask  {
     protected void processRow(Row r) {
       double z = r.response(0) - r.offset;
       double w = r.weight;
-
-      double eta = _glmf._family.equals(Family.tweedie)?r.innerProduct(_betaNew) + _sparseOffsetNew+r.offset
-              :r.innerProduct(_betaNew) + _sparseOffsetNew;
-      double xmu = _glmf.linkInv(eta);
-      double diff = r.response(0)-xmu;
       if (pearson.equals(_parms._dispersion_parameter_method)) {
-        _sumsqe += diff * diff * r.weight / _parms.variance(xmu); // same as w*(eta-z)*(eta-z) except for tweedie family
-      } else {   // deviance option
-        double d = _model.deviance(r.weight, z, xmu);
+        if (_glmf._family != Family.gaussian) {
+          double etaOld = r.innerProduct(_betaNew) + _sparseOffsetNew;
+          _glmf.computeWeights(r.response(0), etaOld, r.offset, r.weight, _glmw);
+          z = _glmw.z;
+          w = _glmw.w;
+        }
+        double eta = _glmf._family.equals(Family.tweedie) ? r.innerProduct(_betaNew) + _sparseOffsetNew + r.offset : r.innerProduct(_betaNew) + _sparseOffsetNew;
+        double xmu = _glmf._family.equals(Family.tweedie) ? _glmf.linkInv(eta) : 0;
+
+        _sumsqe += _glmf._family.equals(Family.tweedie) ?
+                ((r.response(0) - xmu) * (r.response(0) - xmu)) * r.weight / Math.pow(xmu, _glmf._var_power) :
+                w * (eta - z) * (eta - z);
+      } else {  // deviance option
+        double eta = _glmf._family.equals(Family.tweedie) ? r.innerProduct(_betaNew) + _sparseOffsetNew + r.offset : r.innerProduct(_betaNew) + _sparseOffsetNew;
+        double d = _model.deviance(r.weight, z, _glmf.linkInv(eta));
         if (!Double.isNaN(d)) {
           _sumsqe += d;
         }
       }
-      _wsum += w;
+      _wsum += Math.sqrt(w);
     }
     
     @Override
