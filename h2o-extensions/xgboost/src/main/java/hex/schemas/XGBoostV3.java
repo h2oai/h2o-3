@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.tree.CalibrationHelper;
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.api.API;
@@ -60,9 +61,10 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "save_matrix_directory",
         "build_tree_one_node",
 
-        //platt scaling
+        //model calibration
         "calibrate_model",
         "calibration_frame",
+        "calibration_method",
 
         //lightgbm only
         "max_bins",
@@ -151,11 +153,14 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help = "Directory where to save matrices passed to XGBoost library. Useful for debugging.", level = API.Level.expert)
     public String save_matrix_directory;
 
-    @API(help="Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates of class probabilities.", level = API.Level.expert)
+    @API(help="Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class probabilities. Calibration can provide more accurate estimates of class probabilities.", level = API.Level.expert)
     public boolean calibrate_model;
 
-    @API(help="Calibration frame for Platt Scaling", level = API.Level.expert, direction = API.Direction.INOUT)
+    @API(help="Data for model calibration", level = API.Level.expert, direction = API.Direction.INOUT)
     public KeyV3.FrameKeyV3 calibration_frame;
+
+    @API(help="Calibration method to use", values = {"AUTO", "PlattScaling", "IsotonicRegression"}, level = API.Level.expert, direction = API.Direction.INOUT)
+    public CalibrationHelper.CalibrationMethod calibration_method;
 
     @API(help = "For tree_method=hist only: maximum number of bins", level = API.Level.expert, gridable = true)
     public int max_bins;

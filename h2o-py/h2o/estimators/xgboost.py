@@ -82,6 +82,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  build_tree_one_node=False,  # type: bool
                  calibrate_model=False,  # type: bool
                  calibration_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 calibration_method="auto",  # type: Literal["auto", "platt_scaling", "isotonic_regression"]
                  max_bins=256,  # type: int
                  max_leaves=0,  # type: int
                  sample_type="uniform",  # type: Literal["uniform", "weighted"]
@@ -269,13 +270,16 @@ class H2OXGBoostEstimator(H2OEstimator):
                datasets.
                Defaults to ``False``.
         :type build_tree_one_node: bool
-        :param calibrate_model: Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide
-               more accurate estimates of class probabilities.
+        :param calibrate_model: Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
+               probabilities. Calibration can provide more accurate estimates of class probabilities.
                Defaults to ``False``.
         :type calibrate_model: bool
-        :param calibration_frame: Calibration frame for Platt Scaling
+        :param calibration_frame: Data for model calibration
                Defaults to ``None``.
         :type calibration_frame: Union[None, str, H2OFrame], optional
+        :param calibration_method: Calibration method to use
+               Defaults to ``"auto"``.
+        :type calibration_method: Literal["auto", "platt_scaling", "isotonic_regression"]
         :param max_bins: For tree_method=hist only: maximum number of bins
                Defaults to ``256``.
         :type max_bins: int
@@ -386,6 +390,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         self.build_tree_one_node = build_tree_one_node
         self.calibrate_model = calibrate_model
         self.calibration_frame = calibration_frame
+        self.calibration_method = calibration_method
         self.max_bins = max_bins
         self.max_leaves = max_leaves
         self.sample_type = sample_type
@@ -1890,8 +1895,8 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def calibrate_model(self):
         """
-        Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
-        of class probabilities.
+        Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class probabilities. Calibration can
+        provide more accurate estimates of class probabilities.
 
         Type: ``bool``, defaults to ``False``.
         """
@@ -1905,7 +1910,7 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def calibration_frame(self):
         """
-        Calibration frame for Platt Scaling
+        Data for model calibration
 
         Type: ``Union[None, str, H2OFrame]``.
         """
@@ -1914,6 +1919,20 @@ class H2OXGBoostEstimator(H2OEstimator):
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
         self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
+
+    @property
+    def calibration_method(self):
+        """
+        Calibration method to use
+
+        Type: ``Literal["auto", "platt_scaling", "isotonic_regression"]``, defaults to ``"auto"``.
+        """
+        return self._parms.get("calibration_method")
+
+    @calibration_method.setter
+    def calibration_method(self, calibration_method):
+        assert_is_type(calibration_method, None, Enum("auto", "platt_scaling", "isotonic_regression"))
+        self._parms["calibration_method"] = calibration_method
 
     @property
     def max_bins(self):

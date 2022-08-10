@@ -8,7 +8,7 @@ import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
-import hex.tree.PlattScalingHelper;
+import hex.tree.CalibrationHelper;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.exec.LocalXGBoostExecutor;
 import hex.tree.xgboost.exec.RemoteXGBoostExecutor;
@@ -41,7 +41,7 @@ import static water.H2O.technote;
  * Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> 
-    implements PlattScalingHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
+    implements CalibrationHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
   private static final Logger LOG = Logger.getLogger(XGBoost.class);
   
@@ -278,7 +278,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         !_parms._build_tree_one_node)
       error("_tree_method", "exact is not supported in distributed environment, set build_tree_one_node to true to use exact");
 
-    PlattScalingHelper.initCalibration(this, _parms, expensive);
+    CalibrationHelper.initCalibration(this, _parms, expensive);
   }
 
   private void checkPositiveRate(String paramName, double rateValue) {
@@ -743,7 +743,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       // Model Calibration (only for the final model, not CV models)
       if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
-        model._output._calib_model = PlattScalingHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model);
+        model._output._calib_model = CalibrationHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model);
         model.update(_job);
       }
 

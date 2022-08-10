@@ -44,7 +44,7 @@ public abstract class SharedTreeModel<
 
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
-  public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees, PlattScalingHelper.ParamsWithCalibration {
+  public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees, CalibrationHelper.ParamsWithCalibration {
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
@@ -87,8 +87,10 @@ public abstract class SharedTreeModel<
       return _sample_rate < 1 || _sample_rate_per_class != null;
     }
 
-    public boolean _calibrate_model = false; // Use Platt Scaling
+    // Platt scaling (by default)
+    public boolean _calibrate_model;
     public Key<Frame> _calibration_frame;
+    public CalibrationHelper.CalibrationMethod _calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
@@ -128,6 +130,16 @@ public abstract class SharedTreeModel<
     }
 
     @Override
+    public CalibrationHelper.CalibrationMethod getCalibrationMethod() {
+      return _calibration_method;
+    }
+
+    @Override
+    public void setCalibrationMethod(CalibrationHelper.CalibrationMethod calibrationMethod) {
+      _calibration_method = calibrationMethod;
+    }
+
+    @Override
     public Parameters getParams() {
       return this;
     }
@@ -154,7 +166,7 @@ public abstract class SharedTreeModel<
     }
   }
 
-  public abstract static class SharedTreeOutput extends Model.Output implements Model.GetNTrees, PlattScalingHelper.OutputWithCalibration {
+  public abstract static class SharedTreeOutput extends Model.Output implements Model.GetNTrees, CalibrationHelper.OutputWithCalibration {
     /** InitF value (for zero trees)
      *  f0 = mean(yi) for gaussian
      *  f0 = log(yi/1-yi) for bernoulli
@@ -200,7 +212,7 @@ public abstract class SharedTreeModel<
       return _variable_importances;
     }
 
-    public GLMModel _calib_model;
+    public Model<?, ?, ?> _calib_model;
 
     public SharedTreeOutput( SharedTree b) {
       super(b);
@@ -283,7 +295,7 @@ public abstract class SharedTreeModel<
     }
 
     @Override
-    public GLMModel calibrationModel() {
+    public Model<?, ?, ?> calibrationModel() {
       return _calib_model;
     }
 
@@ -725,7 +737,7 @@ public abstract class SharedTreeModel<
 
   @Override
   protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
-    return PlattScalingHelper.postProcessPredictions(predictFr, j, _output);
+    return CalibrationHelper.postProcessPredictions(predictFr, j, _output);
   }
 
   protected double[] score0Incremental(Score.ScoreIncInfo sii, Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds) {

@@ -4,7 +4,10 @@ import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.ModelMetricsRegression;
+import water.Job;
 import water.Key;
+import water.fvec.Frame;
+import water.udf.CFuncRef;
 
 import java.util.Arrays;
 
@@ -14,6 +17,11 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
     public IsotonicRegressionModel(Key<IsotonicRegressionModel> selfKey, 
                                    IsotonicRegressionParameters parms, IsotonicRegressionOutput output) {
         super(selfKey, parms, output);
+    }
+
+    @Override
+    protected Model<IsotonicRegressionModel, IsotonicRegressionParameters, IsotonicRegressionOutput>.BigScore makeBigScoreTask(String[][] domains, String[] names, Frame adaptFrm, boolean computeMetrics, boolean makePrediction, Job j, CFuncRef customMetricFunc) {
+        return super.makeBigScoreTask(domains, names, adaptFrm, computeMetrics, makePrediction, j, customMetricFunc);
     }
 
     public static class IsotonicRegressionParameters extends Model.Parameters {
@@ -51,6 +59,12 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
         public ModelCategory getModelCategory() {
             return ModelCategory.Regression;
         }
+
+        @Override
+        public String[] classNames() {
+            return null;
+        }
+
     }
 
     @Override
@@ -86,6 +100,16 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
     static double interpolate(double x, double xLo, double xHi, double yLo, double yHi) {
         final double slope = (yHi - yLo) / (xHi - xLo);
         return yLo + slope * (x - xLo);
+    }
+
+    @Override
+    protected String[] makeScoringNames() {
+        return new String[]{"predict"};
+    }
+
+    @Override
+    protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
+        return new String[1][];
     }
 
 }

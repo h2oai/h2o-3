@@ -80,9 +80,10 @@
 #' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 #'        Defaults to FALSE.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
-#'        accurate estimates of class probabilities. Defaults to FALSE.
-#' @param calibration_frame Calibration frame for Platt Scaling
+#' @param calibrate_model \code{Logical}. Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
+#'        probabilities. Calibration can provide more accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Data for model calibration
+#' @param calibration_method Calibration method to use Must be one of: "AUTO", "PlattScaling", "IsotonicRegression". Defaults to AUTO.
 #' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
 #' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
 #' @param sample_type For booster=dart only: sample_type Must be one of: "uniform", "weighted". Defaults to uniform.
@@ -184,6 +185,7 @@ h2o.xgboost <- function(x,
                         build_tree_one_node = FALSE,
                         calibrate_model = FALSE,
                         calibration_frame = NULL,
+                        calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                         max_bins = 256,
                         max_leaves = 0,
                         sample_type = c("uniform", "weighted"),
@@ -324,6 +326,8 @@ h2o.xgboost <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(max_bins))
     parms$max_bins <- max_bins
   if (!missing(max_leaves))
@@ -415,6 +419,7 @@ h2o.xgboost <- function(x,
                                         build_tree_one_node = FALSE,
                                         calibrate_model = FALSE,
                                         calibration_frame = NULL,
+                                        calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                                         max_bins = 256,
                                         max_leaves = 0,
                                         sample_type = c("uniform", "weighted"),
@@ -559,6 +564,8 @@ h2o.xgboost <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(max_bins))
     parms$max_bins <- max_bins
   if (!missing(max_leaves))

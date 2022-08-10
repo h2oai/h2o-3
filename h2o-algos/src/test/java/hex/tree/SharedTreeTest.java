@@ -1,15 +1,16 @@
 package hex.tree;
 
+import hex.Model;
 import hex.ModelBuilder;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.drf.DRFModel;
-import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import water.Keyed;
 import water.Scope;
 import water.TestUtil;
 import water.Weaver;
@@ -17,7 +18,6 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -147,7 +147,7 @@ public class SharedTreeTest extends TestUtil  {
   /**
    * PUBDEV-8276
    */
-  @Test()
+  @Test
   public void testWeightColumnIsMissing(){
     SharedTreeModel model = null;
     Frame frame = new TestFrameBuilder()
@@ -169,6 +169,63 @@ public class SharedTreeTest extends TestUtil  {
     } finally {
       if (frame != null) frame.remove();
       if (model != null) model.remove();
+    }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public <T extends Keyed<T>> void testActualCalibrationMethodIsRecorded(){
+    try {
+      Scope.enter();
+      Frame frame = new TestFrameBuilder()
+              .withColNames("F1", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ard(Double.NaN, 0, Double.NaN, 0, Double.NaN, 0))
+              .withDataForCol(1, ar("A", "B", "A", "B", "A", "B")).build();
+      _parms._train = frame._key;
+      _parms._response_column = "Response";
+      _parms._ntrees = 1;
+      _parms._seed = 42;
+      _parms._min_rows = 1;
+      _parms._calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
+      T model = (T) ModelBuilder.make(_parms).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+      assertEquals(
+              CalibrationHelper.CalibrationMethod.PlattScaling, 
+              ((SharedTreeModel.SharedTreeParameters) ((Model<?, ?, ?>) model )._parms)._calibration_method
+      );
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public <T extends Keyed<T>> void testIsotonicRegressionCanBeUsedForCalibration(){
+    try {
+      Scope.enter();
+      Frame frame = new TestFrameBuilder()
+              .withColNames("F1", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ard(Double.NaN, 0, Double.NaN, 0, Double.NaN, 0))
+              .withDataForCol(1, ar("A", "B", "A", "B", "A", "B")).build();
+      _parms._train = frame._key;
+      _parms._response_column = "Response";
+      _parms._ntrees = 1;
+      _parms._seed = 42;
+      _parms._min_rows = 1;
+      _parms._calibrate_model = true;
+      _parms._calibration_frame = frame._key;
+      _parms._calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
+      T model = (T) ModelBuilder.make(_parms).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+      Frame scored = ((Model<?, ?, ?>) model).score(frame);
+      Scope.track(scored);
+      assertArrayEquals(new String[]{"predict", "A", "B", "cal_A", "cal_B"}, scored.names());
+    } finally {
+      Scope.exit();
     }
   }
 

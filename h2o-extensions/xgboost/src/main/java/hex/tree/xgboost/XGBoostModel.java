@@ -12,8 +12,7 @@ import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.FriedmanPopescusH;
-import hex.tree.PlattScalingHelper;
-import hex.tree.SharedTreeModel;
+import hex.tree.CalibrationHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import hex.util.EffectiveParametersUtils;
@@ -48,7 +47,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   public XGBoostModelInfo model_info() { return model_info; }
 
-  public static class XGBoostParameters extends Model.Parameters implements Model.GetNTrees, PlattScalingHelper.ParamsWithCalibration {
+  public static class XGBoostParameters extends Model.Parameters implements Model.GetNTrees, CalibrationHelper.ParamsWithCalibration {
     public enum TreeMethod {
       auto, exact, approx, hist
     }
@@ -130,9 +129,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _reg_alpha = 0;
     public float _scale_pos_weight = 1;
 
-    // Platt scaling
+    // Platt scaling (by default)
     public boolean _calibrate_model;
     public Key<Frame> _calibration_frame;
+    public CalibrationHelper.CalibrationMethod _calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
 
     // Dart specific (booster == dart)
     public DartSampleType _sample_type = DartSampleType.uniform;
@@ -205,6 +205,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     @Override
+    public CalibrationHelper.CalibrationMethod getCalibrationMethod() {
+      return _calibration_method;
+    }
+
+    @Override
+    public void setCalibrationMethod(CalibrationHelper.CalibrationMethod calibrationMethod) {
+      _calibration_method = calibrationMethod;
+    }
+
+    @Override
     public Parameters getParams() {
       return this;
     }
@@ -239,6 +249,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     EffectiveParametersUtils.initFoldAssignment(_parms);
     _parms._backend = getActualBackend(_parms, true);
     _parms._tree_method = getActualTreeMethod(_parms);
+    EffectiveParametersUtils.initCalibrationMethod(_parms);
   }
 
   public static XGBoostParameters.TreeMethod getActualTreeMethod(XGBoostParameters p) {
@@ -607,7 +618,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
-    return PlattScalingHelper.postProcessPredictions(predictFr, j, _output);
+    return CalibrationHelper.postProcessPredictions(predictFr, j, _output);
   }
 
   @Override

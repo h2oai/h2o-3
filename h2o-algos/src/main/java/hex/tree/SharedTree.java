@@ -31,7 +31,7 @@ public abstract class SharedTree<
     P extends SharedTreeModel.SharedTreeParameters, 
     O extends SharedTreeModel.SharedTreeOutput> 
     extends ModelBuilder<M,P,O> 
-    implements PlattScalingHelper.ModelBuilderWithCalibration<M, P, O> {
+    implements CalibrationHelper.ModelBuilderWithCalibration<M, P, O> {
 
   private static final Logger LOG = Logger.getLogger(SharedTree.class);
 
@@ -176,7 +176,7 @@ public abstract class SharedTree<
     if( _train != null )
       _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
 
-    PlattScalingHelper.initCalibration(this, _parms, expensive);
+    CalibrationHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
     _parms._use_best_cv_iteration = isSupervised() && H2O.getSysBoolProperty(
@@ -523,7 +523,7 @@ public abstract class SharedTree<
   private void postProcessModel() {
     // Model Calibration (only for the final model, not CV models)
     if (_parms.calibrateModel() && (!_parms._is_cv_model)) {
-      _model._output._calib_model = PlattScalingHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model);
+      _model._output._calib_model = CalibrationHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model);
       _model.update(_job);
     }
   }
