@@ -70,6 +70,7 @@ def syncData(subdir) {
   boolean needMoreData = true
   String lastKey = ""
   while (needMoreData) {
+      lastKey = java.net.URLEncoder.encode(lastKey, "UTF-8")
       def remoteFiles = new XmlSlurper().parseText(new URL("https://h2o-public-test-data.s3.amazonaws.com/?marker=$lastKey").getText())
       if (!remoteFiles.Contents) {
         break
