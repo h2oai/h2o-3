@@ -130,6 +130,7 @@ public class CalibrationHelper {
         IsotonicRegression calibBuilder = ModelBuilder.make("isotonicregression", calibJob, calibModelKey);
         calibBuilder._parms._response_column = "response";
         calibBuilder._parms._train = calibInput._key;
+        calibBuilder._parms._out_of_bounds = IsotonicRegressionModel.OutOfBoundsHandling.Clip;
         if (hasWeights) {
             calibBuilder._parms._weights_column = "weights";
         }

@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.isotonic.IsotonicRegression;
 import hex.isotonic.IsotonicRegressionModel;
+import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
 
 public class IsotonicRegressionV3 extends ModelBuilderSchema<IsotonicRegression, IsotonicRegressionV3, IsotonicRegressionV3.IsotonicRegressionParametersV3> {
@@ -14,7 +15,12 @@ public class IsotonicRegressionV3 extends ModelBuilderSchema<IsotonicRegression,
                 "response_column",
                 "ignored_columns",
                 "weights_column",
+                "out_of_bounds",
         };
+
+        @API(help="Method for Handling Ties.", values = {"NA", "clip"}, direction = API.Direction.INOUT)
+        public IsotonicRegressionModel.OutOfBoundsHandling out_of_bounds;
+
     }
 
 }

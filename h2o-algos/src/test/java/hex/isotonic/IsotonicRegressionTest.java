@@ -77,5 +77,47 @@ public class IsotonicRegressionTest extends TestUtil {
             Scope.exit();
         }
     }
-    
+
+    @Test
+    public void testClipping() {
+        try {
+            double[] xs = {0.1, 0.2, 0.3};
+            double[] ys = {0, 0, 1};
+            Scope.enter();
+            Frame train = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+                    .withColNames("x", "y")
+                    .withDataForCol(0, xs)
+                    .withDataForCol(1, ys)
+                    .build();
+            // first with default (no clipping)
+            {
+                IsotonicRegressionModel.IsotonicRegressionParameters parms = new IsotonicRegressionModel.IsotonicRegressionParameters();
+                parms._train = train._key;
+                parms._response_column = "y";
+                IsotonicRegressionModel ir = new IsotonicRegression(parms).trainModel().get();
+                assertNotNull(ir);
+                Scope.track_generic(ir);
+                assertArrayEquals(new double[]{Double.NaN}, ir.score0(new double[]{0.05}, new double[1]), 0);
+                assertArrayEquals(new double[]{Double.NaN}, ir.score0(new double[]{0.35}, new double[1]), 0);
+                assertArrayEquals(new double[]{0.5}, ir.score0(new double[]{0.25}, new double[1]), 0);
+            }
+            // now with clipping enabled
+            {
+                IsotonicRegressionModel.IsotonicRegressionParameters parms = new IsotonicRegressionModel.IsotonicRegressionParameters();
+                parms._train = train._key;
+                parms._response_column = "y";
+                parms._out_of_bounds = IsotonicRegressionModel.OutOfBoundsHandling.Clip;
+                IsotonicRegressionModel ir = new IsotonicRegression(parms).trainModel().get();
+                assertNotNull(ir);
+                Scope.track_generic(ir);
+                assertArrayEquals(new double[]{0.0}, ir.score0(new double[]{0.05}, new double[1]), 0);
+                assertArrayEquals(new double[]{1.0}, ir.score0(new double[]{0.35}, new double[1]), 0);
+                assertArrayEquals(new double[]{0.5}, ir.score0(new double[]{0.25}, new double[1]), 0);
+            }
+        } finally {
+            Scope.exit();
+        }
+    }
+
 }

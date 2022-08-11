@@ -21,6 +21,7 @@
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
+#' @param out_of_bounds Method for Handling Ties. Must be one of: "NA", "clip". Defaults to NA.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -40,7 +41,8 @@ h2o.isotonicregression <- function(x,
                                    y,
                                    training_frame,
                                    model_id = NULL,
-                                   weights_column = NULL)
+                                   weights_column = NULL,
+                                   out_of_bounds = c("NA", "clip"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -67,6 +69,8 @@ h2o.isotonicregression <- function(x,
     parms$model_id <- model_id
   if (!missing(weights_column))
     parms$weights_column <- weights_column
+  if (!missing(out_of_bounds))
+    parms$out_of_bounds <- out_of_bounds
 
   # Error check and build model
   model <- .h2o.modelJob('isotonicregression', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -76,6 +80,7 @@ h2o.isotonicregression <- function(x,
                                                    y,
                                                    training_frame,
                                                    weights_column = NULL,
+                                                   out_of_bounds = c("NA", "clip"),
                                                    segment_columns = NULL,
                                                    segment_models_id = NULL,
                                                    parallelism = 1)
@@ -107,6 +112,8 @@ h2o.isotonicregression <- function(x,
 
   if (!missing(weights_column))
     parms$weights_column <- weights_column
+  if (!missing(out_of_bounds))
+    parms$out_of_bounds <- out_of_bounds
 
   # Build segment-models specific parameters
   segment_parms <- list()
