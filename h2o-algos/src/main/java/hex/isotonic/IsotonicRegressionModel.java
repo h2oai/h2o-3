@@ -24,6 +24,10 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
         return super.makeBigScoreTask(domains, names, adaptFrm, computeMetrics, makePrediction, j, customMetricFunc);
     }
 
+    public enum OutOfBoundsHandling {
+        NA, Clip
+    }
+
     public static class IsotonicRegressionParameters extends Model.Parameters {
         public String algoName() {
             return "IsotonicRegression";
@@ -41,6 +45,9 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
         public long progressUnits() {
             return 1;
         }
+
+        public OutOfBoundsHandling _out_of_bounds = OutOfBoundsHandling.NA;
+
     }
 
     public static class IsotonicRegressionOutput extends Model.Output {
@@ -74,7 +81,7 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        final double x = data[0];
+        final double x = _parms._out_of_bounds == OutOfBoundsHandling.Clip ? clip(data[0]) : data[0];
         if (Double.isNaN(x) || x < _output._min_x || x > _output._max_x) {
             preds[0] = Double.NaN;
             return preds;
@@ -95,6 +102,21 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
         }
         preds[0] = y;
         return preds;
+    }
+
+    private double clip(double x) {
+        return clip(x, _output._min_x, _output._max_x);
+    }
+
+    static double clip(double x, double min, double max) {
+        final double clipped;
+        if (Double.isNaN(x))
+            clipped = Double.NaN;
+        else if (x < min)
+            clipped = min;
+        else
+            clipped = Math.min(x, max);
+        return clipped;
     }
 
     static double interpolate(double x, double xLo, double xHi, double yLo, double yHi) {
