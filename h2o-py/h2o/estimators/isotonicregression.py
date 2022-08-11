@@ -27,6 +27,7 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
                  weights_column=None,  # type: Optional[str]
+                 out_of_bounds="na",  # type: Literal["na", "clip"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -50,6 +51,9 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
                that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
                Defaults to ``None``.
         :type weights_column: str, optional
+        :param out_of_bounds: Method for Handling Ties.
+               Defaults to ``"na"``.
+        :type out_of_bounds: Literal["na", "clip"]
         """
         super(H2OIsotonicRegressionEstimator, self).__init__()
         self._parms = {}
@@ -58,6 +62,7 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
         self.response_column = response_column
         self.ignored_columns = ignored_columns
         self.weights_column = weights_column
+        self.out_of_bounds = out_of_bounds
 
     @property
     def training_frame(self):
@@ -119,5 +124,19 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
     def weights_column(self, weights_column):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
+
+    @property
+    def out_of_bounds(self):
+        """
+        Method for Handling Ties.
+
+        Type: ``Literal["na", "clip"]``, defaults to ``"na"``.
+        """
+        return self._parms.get("out_of_bounds")
+
+    @out_of_bounds.setter
+    def out_of_bounds(self, out_of_bounds):
+        assert_is_type(out_of_bounds, None, Enum("na", "clip"))
+        self._parms["out_of_bounds"] = out_of_bounds
 
 
