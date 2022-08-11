@@ -35,7 +35,7 @@ def calibration_test():
     isotonic_train = calib[["Angaus", "Weights"]]
     isotonic_train = isotonic_train.cbind(preds_calib["p1"])
 
-    h2o_iso_reg = H2OIsotonicRegressionEstimator()
+    h2o_iso_reg = H2OIsotonicRegressionEstimator(out_of_bounds="clip")
     h2o_iso_reg.train(training_frame=isotonic_train, x="p1", y="Angaus", weights_column="Weights")
     print(h2o_iso_reg)
 
