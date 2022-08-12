@@ -1,9 +1,11 @@
 package hex.genmodel;
 
+import hex.genmodel.algos.isotonic.IsotonicCalibrator;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.utils.StringEscapeUtils;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -75,6 +77,21 @@ public abstract class AbstractMojoWriter {
 
   protected final void writekv(String key, float[] value) throws IOException {
     writekv(key, Arrays.toString(value));
+  }
+
+  protected final void write(IsotonicCalibrator calibrator) throws IOException {
+    writekv("calib_min_x", calibrator._min_x);
+    writekv("calib_max_x", calibrator._max_x);
+    writeblob("calib/thresholds_x", calibrator._thresholds_x);
+    writeblob("calib/thresholds_y", calibrator._thresholds_y);
+  }
+
+  private void writeblob(String filename, double[] doubles) throws IOException {
+    ByteBuffer bb = ByteBuffer.wrap(new byte[4 + doubles.length * 8]);
+    bb.putInt(doubles.length);
+    for (double val : doubles)
+      bb.putDouble(val);
+    writeblob(filename, bb.array());
   }
 
   /**
