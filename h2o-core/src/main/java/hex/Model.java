@@ -2804,6 +2804,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         double[] predictions = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
         // Compare predictions, counting mis-predicts
+        final int compVecLen = _output.isBinomialClassifier() ? 3 : pvecs.length; // POJO doesn't have calibrated probs
         for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= options._fraction) continue;
           num_total++;
@@ -2812,7 +2813,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           for (int col = 0; col < features.length; col++) // Build feature set
             features[col] = dvecs[col].at(row);
           genmodel.score0(features, predictions);            // POJO predictions
-          for (int col = _output.isClassifier() ? 1 : 0; col < pvecs.length; col++) { // Compare predictions
+          for (int col = _output.isClassifier() ? 1 : 0; col < compVecLen; col++) { // Compare predictions
             double d = pvecs[col].at(row);                  // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
             if (!MathUtils.compare(predictions[col], d, options._abs_epsilon, rel_epsilon)) {
@@ -2890,6 +2891,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
+        final int compVecLen = i == 0 && _output.isBinomialClassifier() ? 3 : pvecs.length; // POJO doesn't have calibrated probs
         for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= options._fraction) continue;
 
@@ -2958,7 +2960,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double[] actual_preds = new double[pvecs.length];
           String[] decisionPath = null;
           int[] nodeIds = null;
-          for (int col = 0; col < pvecs.length; col++) { // Compare predictions
+          for (int col = 0; col < compVecLen; col++) { // Compare predictions
             double d = pvecs[col].at(row); // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
             double d2 = Double.NaN;
@@ -2977,7 +2979,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 break;
               case Binomial:
                 BinomialModelPrediction bmp = (BinomialModelPrediction) p;
-                d2 = (col == 0) ? bmp.labelIndex : bmp.classProbabilities[col - 1];
+                d2 = (col == 0) ?
+                        bmp.labelIndex
+                        :
+                        col > bmp.classProbabilities.length && bmp.calibratedClassProbabilities != null ?
+                                bmp.calibratedClassProbabilities[col - bmp.classProbabilities.length - 1]
+                                :
+                                bmp.classProbabilities[col - 1];
                 decisionPath = bmp.leafNodeAssignments;
                 nodeIds = bmp.leafNodeAssignmentIds;
                 break;
@@ -3021,7 +3029,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
           // Verify the correctness of the prediction
           num_total++;
-          for (int col = genmodel.isClassifier() ? 1 : 0; col < pvecs.length; col++) {
+          for (int col = genmodel.isClassifier() ? 1 : 0; col < compVecLen; col++) {
             if (!MathUtils.compare(actual_preds[col], expected_preds[col], options._abs_epsilon, rel_epsilon)) {
               num_errors++;
               if (num_errors < 20) {

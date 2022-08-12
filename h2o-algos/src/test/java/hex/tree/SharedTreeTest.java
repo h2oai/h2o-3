@@ -224,6 +224,7 @@ public class SharedTreeTest extends TestUtil  {
       Frame scored = ((Model<?, ?, ?>) model).score(frame);
       Scope.track(scored);
       assertArrayEquals(new String[]{"predict", "A", "B", "cal_A", "cal_B"}, scored.names());
+      assertTrue(((Model<?, ?, ?>) model).testJavaScoring(frame, scored, 1e-8));
     } finally {
       Scope.exit();
     }
