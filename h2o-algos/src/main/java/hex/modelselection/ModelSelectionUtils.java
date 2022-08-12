@@ -548,20 +548,18 @@ public class ModelSelectionUtils {
     }
     
     public static String[][] shrinkStringArray(String[][] array, int numModels) {
-        int arrLen = array.length-1;
-        int offset = numModels-1;
+        int offset = array.length - numModels;
         String[][] newArray =new String[numModels][];
         for (int index=0; index < numModels; index++)
-            newArray[offset-index] = array[arrLen-index].clone();
+            newArray[index] = array[offset+index].clone();
         return newArray;
     }
     
     public static double[][] shrinkDoubleArray(double[][] array, int numModels) {
-        int arrLen = array.length-1;
-        int offset = numModels-1;
+        int offset = array.length-numModels;
         double[][] newArray =new double[numModels][];
         for (int index=0; index < numModels; index++)
-            newArray[offset-index] = array[arrLen-index].clone();
+            newArray[index] = array[offset+index].clone();
         return newArray;
     }
 

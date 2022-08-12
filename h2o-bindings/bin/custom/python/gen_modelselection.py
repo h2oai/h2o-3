@@ -85,6 +85,25 @@ def class_extensions():
         :return: a list of best r2 values
         """
         return self._model_json["output"]["best_r2_values"]
+    
+    def get_predictors_added_per_step(self):
+        """
+        Get list of predictors added at each step of the model building process
+
+        :return: a list of predictors added at each step
+        """ 
+        if not(self.get_params()["mode"] == "backward"):
+            return self._model_json["output"]["predictors_added_per_step"]
+        else:
+            print("backward mode does not have list predictor_added_per_step")
+
+    def get_predictors_removed_per_step(self):
+        """
+        Get list of predictors removed at each step of the model building process
+
+        :return: a list of predictors removed at each step
+        """
+        return self._model_json["output"]["predictors_removed_per_step"]           
 
     def get_best_model_predictors(self):
         """

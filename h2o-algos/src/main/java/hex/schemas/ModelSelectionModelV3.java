@@ -14,8 +14,15 @@ public class ModelSelectionModelV3 extends ModelSchemaV3<ModelSelectionModel, Mo
         @API(help="Best predictor subset names for each subset size.")
         String[][] best_model_predictors; // store for each predictor number, the best model predictors
         
-        @API(help="R2 values of all possible predictor subsets.  Only for model='allsubsets' or 'maxr'.")
+        @API(help="R2 values of all possible predictor subsets.  Only for mode='allsubsets' or 'maxr'.")
         double[] best_r2_values;  // store the best R2 values of the best models with fix number of predictors
+        
+        @API(help="at each predictor subset size, the predictor added is collected in this array.  Not for mode = " +
+                "'backward'.")
+        String[][] predictors_added_per_step;
+
+        @API(help="at each predictor subset size, the predictor removed is collected in this array.")
+        String[][] predictors_removed_per_step;
 
         @API(help="p-values of chosen predictor subsets at each subset size. Only for model='backward'.")
         double[][] coef_p_values;
