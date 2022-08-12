@@ -217,7 +217,7 @@ public class SharedTreeTest extends TestUtil  {
       _parms._min_rows = 1;
       _parms._calibrate_model = true;
       _parms._calibration_frame = frame._key;
-      _parms._calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
+      _parms._calibration_method = CalibrationHelper.CalibrationMethod.IsotonicRegression;
       T model = (T) ModelBuilder.make(_parms).trainModel().get();
       assertNotNull(model);
       Scope.track_generic(model);
