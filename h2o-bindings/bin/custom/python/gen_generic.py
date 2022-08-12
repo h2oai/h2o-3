@@ -1,5 +1,5 @@
 supervised_learning = False
-options = dict(requires_training_frame=False)
+options = dict(requires_training_frame=False, model_extensions=['h2o.model.extensions.PredictContributions', ])
 
 
 def class_extensions():

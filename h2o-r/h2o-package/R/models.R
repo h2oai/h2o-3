@@ -903,6 +903,7 @@ predict_contributions.H2OModel <- function(object, newdata, output_format = c("o
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
+    .check_model_suitability_for_calculation_of_contributions(object)
     params <- list(predict_contributions = TRUE, top_n=top_n, bottom_n=bottom_n, compare_abs=compare_abs)
     params$predict_contributions_output_format <- match.arg(output_format)
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))

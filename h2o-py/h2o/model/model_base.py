@@ -234,16 +234,14 @@ class ModelBase(h2o_meta(Keyed)):
         >>> # Compute SHAP and pick the top two highest and top two lowest
         >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
         """
-        assert_is_type(output_format, None, Enum("Original", "Compact"))
-        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                           data={"predict_contributions": True,
-                                 "predict_contributions_output_format": output_format,
-                                 "top_n": top_n,
-                                 "bottom_n": bottom_n,
-                                 "compare_abs": compare_abs}), "contributions")
-        j.poll()
-        return h2o.get_frame(j.dest_key)
+        if has_extension(self, 'PredictContributions'):
+            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs)
+        warn_msg = "WARNING: This model doesn't support calculation of feature contributions."
+        if has_extension(self, 'StandardCoef'):
+            warn_msg += " When features are independent, you can use the coef() method to get coefficients"
+            warn_msg += " for non-standardized data or coef_norm() to get coefficients for standardized data."
+            warn_msg += " You can plot standardized coefficient magnitudes by calling std_coef_plot() on the model."
+        print(warn_msg)
 
     def feature_frequencies(self, test_data):
         """

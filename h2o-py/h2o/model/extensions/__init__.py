@@ -10,6 +10,7 @@ from .std_coef import StandardCoef
 from .trees import Trees
 from .supervised_trees import SupervisedTrees
 from .varimp import VariableImportance
+from .predict_contributions import PredictContributions
 
 module = sys.modules[__name__]
 
@@ -47,5 +48,6 @@ __all__ = [  # mainly useful here for the generated documentation
     'StandardCoef', 
     'Trees',
     'SupervisedTrees', 
-    'VariableImportance'
+    'VariableImportance',
+    'PredictContributions'
 ]

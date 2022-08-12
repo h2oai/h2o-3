@@ -100,10 +100,10 @@ explanation_test_automl_regression <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml, train), "This model doesn't support calculation of feature contributions.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "This model doesn't support calculation of feature contributions.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -155,10 +155,10 @@ explanation_test_list_of_models_regression <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(models, train), "This model doesn't support calculation of feature contributions.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "This model doesn't support calculation of feature contributions.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
@@ -256,10 +256,10 @@ explanation_test_automl_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml, train), "This model doesn't support calculation of feature contributions.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "This model doesn't support calculation of feature contributions.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -285,10 +285,10 @@ explanation_test_automl_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml@leaderboard[-1,]))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml@leaderboard[-1,], train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml@leaderboard[-1,], train), "This model doesn't support calculation of feature contributions.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml@leaderboard[-1,], train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml@leaderboard[-1,], train, 1), "This model doesn't support calculation of feature contributions.")
 
   # test partial dependences
   expect_ggplot(h2o.pd_multi_plot(aml@leaderboard[-1,], train, cols_to_test[[1]]))
@@ -327,10 +327,10 @@ explanation_test_list_of_models_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(models, train), "This model doesn't support calculation of feature contributions.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "This model doesn't support calculation of feature contributions.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
@@ -419,10 +419,10 @@ explanation_test_automl_multinomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml, train), "This model doesn't support calculation of feature contributions.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "This model doesn't support calculation of feature contributions.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -473,10 +473,10 @@ explanation_test_list_of_models_multinomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(models, train), "This model doesn't support calculation of feature contributions.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "This model doesn't support calculation of feature contributions.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
