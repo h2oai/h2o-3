@@ -2331,7 +2331,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             } else {
               ComputeSEorDEVIANCETsk ct = new ComputeSEorDEVIANCETsk(null, _state.activeData(), _job._key, beta,
                       _parms, _model).doAll(_state.activeData()._adaptedFrame);
-              se = ct._sumsqe / (ct._wsum - 1 - _state.activeData().fullN());  // dispersion parameter estimate
+              se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // dispersion parameter estimate
             }
           } else if (ml.equals(_parms._dispersion_parameter_method)) {
             ComputeMLSETsk mlCT = new ComputeMLSETsk(null, _state.activeData(), _job._key, beta,
