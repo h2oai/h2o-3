@@ -159,7 +159,7 @@ public abstract class SharedTree<
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (_parms._r2_stopping!=Double.MAX_VALUE) warn("_r2_stopping", "_r2_stopping is no longer supported - please use stopping_rounds, stopping_metric and stopping_tolerance instead.");
     if (_parms._score_tree_interval < 0) error ("_score_tree_interval", "_score_tree_interval must be >= 0.");
-    if (_parms._in_training_checkpoints_tree_interval <= 0) error ("_in_training_checkpoints_tree_interval", "_in_training_checkpoints_tree_interval must be >= 0.");
+    if (_parms._in_training_checkpoints_tree_interval <= 0) error ("_in_training_checkpoints_tree_interval", "_in_training_checkpoints_tree_interval must be > 0.");
     validateRowSampleRate();
     if (_parms._min_split_improvement < 0)
       error("_min_split_improvement", "min_split_improvement must be >= 0, but is " + _parms._min_split_improvement + ".");
@@ -196,6 +196,11 @@ public abstract class SharedTree<
     }
     if (_parms._build_tree_one_node) {
       warn("_build_tree_one_node", "Single-node tree building is not supported in this version of H2O.");
+    }
+    if (!StringUtils.isNullOrEmpty(_parms._in_training_checkpoints_dir)) {
+      if (!H2O.getPM().isWritableDirectory(_parms._in_training_checkpoints_dir)) {
+        error("_in_training_checkpoints_dir", "In training checkpoints directory path must point to a writable path.");
+      }
     }
   }
 
