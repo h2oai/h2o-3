@@ -90,6 +90,20 @@ learn more:
 
 -  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git.
 
+Use Cases
+~~~~~~~~~
+
+H2O can handle a wide range of practical use cases due to its robust catalogue of supported algorithms, wrappers, and machine learning tools. Several example problems H2O can handle are:
+
+- determining outliers in housing price based on number of bedrooms, number of bathrooms, access to waterfront, etc. through `anomaly detection <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/anomaly-detection>`__
+- revealing natural customer `segments <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/segmentation>`__ in retail data to determine which groups are purchasing which products
+- linking multiple records to the same person with `probabilistic matching <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/probabilistic-matching-engine>`__
+- upsampling the minority class for credit card fraud data to handle `imbalanced data <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/imbalanced-data>`__
+- `detecting drift <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/drift-detection>`__ on avocado sales pre-2018 and 2018+ to determine if a model is still relevant for new data
+
+To further explore the capabilities of H2O, check out some of our best practice `tutorials <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices>`__.
+
+
 New User Quick Start
 ~~~~~~~~~~~~~~~~~~~~
 
