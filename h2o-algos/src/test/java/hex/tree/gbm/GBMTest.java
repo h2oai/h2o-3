@@ -5185,7 +5185,6 @@ public class GBMTest extends TestUtil {
       // prepare training data
       String response = "CAPSULE";
       Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
-      Scope.track(train);
       train.toCategoricalCol(response);
 
       // Common model parameters
@@ -5196,16 +5195,15 @@ public class GBMTest extends TestUtil {
 
       // Train referential model
       parms._ntrees = 3;
-      GBMModel modelReference = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
-      Scope.track_generic(modelReference);
+      GBMModel modelReference = Scope.track_generic(new GBM(parms).trainModel().get());
       Frame scoreReference = modelReference.score(train);
       Scope.track(scoreReference);
 
       // Train another model and do in-training checkpoints
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder("gbm_checkpoints").getAbsolutePath();
       parms._ntrees = 6;
-      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
-      Scope.track_generic(gbm);
+      GBMModel gbm = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      assertNotNull(gbm);
 
       // Load in-training checkpoint with the same trees as reference has
       Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.3");
@@ -5229,7 +5227,6 @@ public class GBMTest extends TestUtil {
     try {
       String response = "CAPSULE";
       Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
-      Scope.track(train);
       train.toCategoricalCol(response);
 
       GBMModel.GBMParameters parms = makeGBMParameters();
@@ -5239,7 +5236,7 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 4;
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
 
-      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      GBMModel gbm = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
 
       File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
       assertTrue(checkpointsDirectory.exists());
@@ -5261,7 +5258,6 @@ public class GBMTest extends TestUtil {
     try {
       String response = "CAPSULE";
       Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
-      Scope.track(train);
       train.toCategoricalCol(response);
 
       GBMModel.GBMParameters parms = makeGBMParameters();
@@ -5272,7 +5268,7 @@ public class GBMTest extends TestUtil {
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
       parms._in_training_checkpoints_tree_interval = 3;
 
-      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm_checkpoint_interval")).trainModel().get());
+      GBMModel gbm = Scope.track_generic(new GBM(parms, Key.make("gbm_checkpoint_interval")).trainModel().get());
 
       File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
       assertTrue(checkpointsDirectory.exists());
@@ -5298,7 +5294,6 @@ public class GBMTest extends TestUtil {
     try {
       String response = "CAPSULE";
       Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
-      Scope.track(train);
       train.toCategoricalCol(response);
 
       GBMModel.GBMParameters parms = makeGBMParameters();
@@ -5308,7 +5303,7 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 4;
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
 
-      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      GBMModel gbm = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
 
       File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
       assertTrue(checkpointsDirectory.exists());
@@ -5330,7 +5325,8 @@ public class GBMTest extends TestUtil {
       // Export checkpoint to the different folder
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
       parms._checkpoint = checkpoint._key;
-      GBMModel gbmRestart = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      GBMModel gbmRestart = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      assertNotNull(gbmRestart);
 
       checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
       assertTrue(checkpointsDirectory.exists());
@@ -5357,7 +5353,6 @@ public class GBMTest extends TestUtil {
     try {
       String response = "CAPSULE";
       Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
-      Scope.track(train);
       train.toCategoricalCol(response);
 
       GBMModel.GBMParameters parms = makeGBMParameters();
@@ -5368,7 +5363,7 @@ public class GBMTest extends TestUtil {
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
       parms._in_training_checkpoints_tree_interval = 2;
 
-      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      GBMModel gbm = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
 
       File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
       assertTrue(checkpointsDirectory.exists());
@@ -5392,7 +5387,8 @@ public class GBMTest extends TestUtil {
       // Export checkpoints to the different folder
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
       parms._checkpoint = checkpoint._key;
-      GBMModel gbmRestart = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      GBMModel gbmRestart = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      assertNotNull(gbmRestart);
 
       checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
       assertTrue(checkpointsDirectory.exists());
@@ -5423,7 +5419,6 @@ public class GBMTest extends TestUtil {
     try {
       String response = "CAPSULE";
       Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
-      Scope.track(train);
       train.toCategoricalCol(response);
 
       GBMModel.GBMParameters parms = makeGBMParameters();
@@ -5434,7 +5429,7 @@ public class GBMTest extends TestUtil {
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
       parms._in_training_checkpoints_tree_interval = 3;
 
-      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      GBMModel gbm = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
 
       File checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
       assertTrue(checkpointsDirectory.exists());
@@ -5463,7 +5458,8 @@ public class GBMTest extends TestUtil {
 
       // Change the interval of checkpoints
       parms._in_training_checkpoints_tree_interval = 2;
-      GBMModel gbmRestart = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      GBMModel gbmRestart = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      assertNotNull(gbmRestart);
 
       checkpointsDirectory = new File(parms._in_training_checkpoints_dir);
       assertTrue(checkpointsDirectory.exists());
@@ -5495,7 +5491,6 @@ public class GBMTest extends TestUtil {
       // prepare training data
       String response = "CAPSULE";
       Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
-      Scope.track(train);
       train.toCategoricalCol(response);
 
       // Common model parameters
@@ -5506,16 +5501,15 @@ public class GBMTest extends TestUtil {
 
       // Train referential model
       parms._ntrees = 6;
-      GBMModel modelReference = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
-      Scope.track_generic(modelReference);
+      GBMModel modelReference = Scope.track_generic(new GBM(parms).trainModel().get());
       Frame scoreReference = modelReference.score(train);
       Scope.track(scoreReference);
 
       // Train another model and do in-training checkpoints
       parms._in_training_checkpoints_dir = temporaryFolder.newFolder("gbm_checkpoints").getAbsolutePath();
       parms._ntrees = 4;
-      GBMModel gbmWithCheckpoints = (GBMModel) Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
-      Scope.track_generic(gbmWithCheckpoints);
+      GBMModel gbmWithCheckpoints = Scope.track_generic(new GBM(parms, Key.make("gbm")).trainModel().get());
+      assertNotNull(gbmWithCheckpoints);
 
       // Load in-training checkpoint with 2. trees and use it as checkpoint for another training
       Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.2");
@@ -5525,8 +5519,7 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 6;
       parms._checkpoint = checkpoint._key;
       parms._in_training_checkpoints_dir = null;
-      GBMModel gbmFinal = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
-      Scope.track_generic(gbmFinal);
+      GBMModel gbmFinal = Scope.track_generic(new GBM(parms).trainModel().get());
       Frame scoreFinal = gbmFinal.score(train);
       Scope.track(scoreFinal);
 
