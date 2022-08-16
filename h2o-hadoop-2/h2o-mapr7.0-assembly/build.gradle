@@ -1,5 +1,5 @@
 ext {
-  hadoopVersion = 'mapr6.2'
+  hadoopVersion = 'mapr7.0'
   jetty9version = '9.4.44.v20210927'
   hadoopMavenArtifactVersion = '2.7.6.200-eep-810'
   hdfsDependency = 'hadoop-hdfs'
