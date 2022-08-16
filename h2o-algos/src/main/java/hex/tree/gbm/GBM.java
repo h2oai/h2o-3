@@ -921,13 +921,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     protected void doInTrainingCheckpoint() {
       try {
         String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + _model._output._ntrees;
-        Key keybackup = _model._key;
-        _model.setInputParms(_parms);
-        _model._key = Key.make(_model._key + "." +  _model._output._ntrees);
-        _model._output.changeModelMetricsKey(_model._key);
-        _model.exportBinaryModel(modelFile, true);
-        _model._key = keybackup;
-        _model._output.changeModelMetricsKey(_model._key);
+        GBMModel modelClone = _model.clone();
+        modelClone.setInputParms(_parms);
+        modelClone._key = Key.make(_model._key + "." +  _model._output._ntrees);
+        modelClone._output.changeModelMetricsKey(modelClone._key);
+        modelClone.exportBinaryModel(modelFile, true);
       } catch (IOException e) {
         throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
       }
