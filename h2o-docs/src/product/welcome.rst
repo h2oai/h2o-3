@@ -93,7 +93,7 @@ learn more:
 Use Cases
 ~~~~~~~~~
 
-H2O can handle a wide range of practical use cases due to its robust catalogue of supported algorithms, wrappers, and machine learning tools. Several example problems H2O can handle are:
+H2O can handle a wide range of practical use cases due to its robust catalogue of supported algorithms, wrappers, and machine learning tools. Several example problems H2O can handle are: 
 
 - determining outliers in housing price based on number of bedrooms, number of bathrooms, access to waterfront, etc. through `anomaly detection <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/anomaly-detection>`__
 - revealing natural customer `segments <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/segmentation>`__ in retail data to determine which groups are purchasing which products
