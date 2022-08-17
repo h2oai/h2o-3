@@ -2,7 +2,7 @@ from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
-from tests import pyunit_utils
+from tests import pyunit_utils, assert_equals
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def bernoulli_gbm():
@@ -15,7 +15,10 @@ def bernoulli_gbm():
                                          distribution="bernoulli")
   gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
   h = gbm_h2o.h(prostate_train, ['DPROS','DCAPS'])
-  assert abs(h - 0.17301172318867106) < 1e-5
+
+  #  Prediction has changed since PUBDEV-8768.
+  #  Because previous implementation took also CAPSULE into input which is a bug.
+  assert_equals(0.03924324673367584, h, delta=1e-5)
 
 
 if __name__ == "__main__":
