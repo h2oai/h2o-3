@@ -380,7 +380,7 @@ Examples
 
       # Check the variables that were added during this process:
       h2o.get_predictors_added_per_step(allsubsetsModel)
-      [,1]     
+           [,1]     
       [1,] "CAPSULE"
       [2,] "PSA"    
       [3,] "DCAPS"  
@@ -389,16 +389,23 @@ Examples
       [6,] "RACE"   
       [7,] "VOL"
 
-      # Check the variables that were removed during this process:
-      h2o.get_predictors_removed_per_step(allsubsetsModel)
-      [,1]
-      [1,] ""  
-      [2,] ""  
-      [3,] ""  
-      [4,] ""  
-      [5,] ""  
-      [6,] ""  
-      [7,] "" 
+      # To find out which variables get removed, build a new model with ``mode = "backward``
+      # using the above training information:
+      bwModel = h2o.modelSelection(x = predictors, 
+                                   y = response, 
+                                   training_frame = prostate, 
+                                   seed = 12345, 
+                                   max_predictor_number = 7, 
+                                   mode = "backward")
+      h2o.get_predictors_removed_per_step(bwModel)
+           [,1]
+      [1,] "CAPSULE"  
+      [2,] "PSA"  
+      [3,] "DCAPS"  
+      [4,] "DPROS"  
+      [5,] "AGE"  
+      [6,] "RACE"  
+      [7,] "VOL" 
 
    .. code-tab:: python
 
@@ -468,7 +475,11 @@ Examples
       print(coeff_norm3)
       # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.37198951914000183, ‘DCAPS’: 0.1490515817762952, ‘PSA’: 0.25778793491797924}
 
-      # Using the above training information, build a model using mode = "backward":
+      # Check the variables that were added during this process:
+      maxrModel.get_predictors_added_per_step()
+      [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
+
+      # Using the above training information, build a model using ``mode = "backward"``:
       bwModel = H2OModelSelectionEstimator(max_predictor_number=3, 
                                            seed=12345, 
                                            mode="backward")
@@ -480,15 +491,9 @@ Examples
       with 2 predictors CAPSULE, PSA, Intercept         7.825700947986458, 5.733056921838707, 86.91622746127426                      5.144662722557474E-14, 2.023486352710146E-8, 1.7241718600984578E-251
       with 3 predictors CAPSULE, DCAPS, PSA, Intercept  7.275417885570092, 2.964750742738588, 4.992785143892783, 30.274880599946904  2.0273323955515335E-12, 0.0032224082063575395, 9.124834372427609E-7, 7.417923313036E-103
 
-      # Check the variables that were added during this process:
-      maxrModel.get_predictors_added_per_step()
-      [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
-
       # Check the variables that were removed during this process:
-      maxrModel.get_predictors_removed_per_step()
-      [[''], [''], [''], [''], [''], [''], ['']]
-
-
+      bwModel.get_predictors_removed_per_step()
+      [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
 
 
 References
