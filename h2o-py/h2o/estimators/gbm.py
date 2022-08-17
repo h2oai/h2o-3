@@ -296,7 +296,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param export_checkpoints_dir: Automatically export generated models to this directory.
                Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
-        :param in_training_checkpoints_dir: In-training checkpoints
+        :param in_training_checkpoints_dir: Create checkpoints into defined directory while training process is still
+               running. In case of cluster shutdown, this checkpoint can be used to restart training.
                Defaults to ``None``.
         :type in_training_checkpoints_dir: str, optional
         :param in_training_checkpoints_tree_interval: Checkpoint the model after every so many trees. Parameter is used
@@ -2084,7 +2085,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def in_training_checkpoints_dir(self):
         """
-        In-training checkpoints
+        Create checkpoints into defined directory while training process is still running. In case of cluster shutdown,
+        this checkpoint can be used to restart training.
 
         Type: ``str``.
         """
