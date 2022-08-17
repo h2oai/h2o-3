@@ -51,8 +51,7 @@ import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
-import static hex.glm.GLMModel.GLMParameters.DispersionMethod.ml;
-import static hex.glm.GLMModel.GLMParameters.DispersionMethod.pearson;
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.*;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.*;
 import static hex.glm.GLMUtils.*;
@@ -2325,13 +2324,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info("estimating dispersion parameter using method: " + _parms._dispersion_parameter_method);
         if (_parms._family != binomial && _parms._family != Family.poisson && !_parms._fix_dispersion_parameter) {
           seEst = true;
-          if (pearson.equals(_parms._dispersion_parameter_method)) {
+          if (pearson.equals(_parms._dispersion_parameter_method) || 
+                  deviance.equals(_parms._dispersion_parameter_method)) {
             if (_parms._useDispersion1) {
               se = 1;
             } else {
-              ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta,
-                      _parms).doAll(_state.activeData()._adaptedFrame);
-              se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate using pearson
+              ComputeSEorDEVIANCETsk ct = new ComputeSEorDEVIANCETsk(null, _state.activeData(), _job._key, beta,
+                      _parms, _model).doAll(_state.activeData()._adaptedFrame);
+              se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // dispersion parameter estimate
             }
           } else if (ml.equals(_parms._dispersion_parameter_method)) {
             ComputeMLSETsk mlCT = new ComputeMLSETsk(null, _state.activeData(), _job._key, beta,

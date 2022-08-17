@@ -72,7 +72,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip", "plug_values"]
                  plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  compute_p_values=False,  # type: bool
-                 dispersion_parameter_method="pearson",  # type: Literal["pearson", "ml"]
+                 dispersion_parameter_method="pearson",  # type: Literal["deviance", "pearson", "ml"]
                  init_dispersion_parameter=1.0,  # type: float
                  remove_collinear_columns=False,  # type: bool
                  intercept=True,  # type: bool
@@ -241,7 +241,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param dispersion_parameter_method: Method used to estimate the dispersion parameter for Tweedie, Gamma and
                Negative Binomial only.
                Defaults to ``"pearson"``.
-        :type dispersion_parameter_method: Literal["pearson", "ml"]
+        :type dispersion_parameter_method: Literal["deviance", "pearson", "ml"]
         :param init_dispersion_parameter: Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial
                value of dispersion parameter.  If fix_dispersion_parameter is set, this value will be used in the
                calculation of p-values.Default to 1.0.
@@ -1404,13 +1404,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only.
 
-        Type: ``Literal["pearson", "ml"]``, defaults to ``"pearson"``.
+        Type: ``Literal["deviance", "pearson", "ml"]``, defaults to ``"pearson"``.
         """
         return self._parms.get("dispersion_parameter_method")
 
     @dispersion_parameter_method.setter
     def dispersion_parameter_method(self, dispersion_parameter_method):
-        assert_is_type(dispersion_parameter_method, None, Enum("pearson", "ml"))
+        assert_is_type(dispersion_parameter_method, None, Enum("deviance", "pearson", "ml"))
         self._parms["dispersion_parameter_method"] = dispersion_parameter_method
 
     @property

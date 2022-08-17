@@ -183,7 +183,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public GLMParameters.Link link;
     
     @API(help="Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only.",
-            level = Level.secondary, values={"pearson", "ml"})
+            level = Level.secondary, values={"deviance", "pearson", "ml"})
     public GLMParameters.DispersionMethod dispersion_parameter_method;
     
     @API(help = "Link function array for random component in HGLM.", values = {"[identity]", "[family_default]"},level = Level.secondary, gridable=true)   

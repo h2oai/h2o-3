@@ -71,7 +71,7 @@
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
 #' @param dispersion_parameter_method Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only. Must be one
-#'        of: "pearson", "ml". Defaults to pearson.
+#'        of: "deviance", "pearson", "ml". Defaults to pearson.
 #' @param init_dispersion_parameter Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion parameter.  If
 #'        fix_dispersion_parameter is set, this value will be used in the calculation of p-values.Default to 1.0.
 #'        Defaults to 1.
@@ -221,7 +221,7 @@ h2o.glm <- function(x,
                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                     plug_values = NULL,
                     compute_p_values = FALSE,
-                    dispersion_parameter_method = c("pearson", "ml"),
+                    dispersion_parameter_method = c("deviance", "pearson", "ml"),
                     init_dispersion_parameter = 1,
                     remove_collinear_columns = FALSE,
                     intercept = TRUE,
@@ -489,7 +489,7 @@ h2o.glm <- function(x,
                                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                                     plug_values = NULL,
                                     compute_p_values = FALSE,
-                                    dispersion_parameter_method = c("pearson", "ml"),
+                                    dispersion_parameter_method = c("deviance", "pearson", "ml"),
                                     init_dispersion_parameter = 1,
                                     remove_collinear_columns = FALSE,
                                     intercept = TRUE,
