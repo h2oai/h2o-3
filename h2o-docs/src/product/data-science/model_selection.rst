@@ -378,6 +378,28 @@ Examples
       Intercept   CAPSULE     DCAPS       PSA
       6.3842105 0.3719895 0.1490516 0.2577879
 
+      # Check the variables that were added during this process:
+      h2o.get_predictors_added_per_step(allsubsetsModel)
+      [,1]     
+      [1,] "CAPSULE"
+      [2,] "PSA"    
+      [3,] "DCAPS"  
+      [4,] "DPROS"  
+      [5,] "AGE"    
+      [6,] "RACE"   
+      [7,] "VOL"
+
+      # Check the variables that were removed during this process:
+      h2o.get_predictors_removed_per_step(allsubsetsModel)
+      [,1]
+      [1,] ""  
+      [2,] ""  
+      [3,] ""  
+      [4,] ""  
+      [5,] ""  
+      [6,] ""  
+      [7,] "" 
+
    .. code-tab:: python
 
       import h2o
@@ -457,6 +479,14 @@ Examples
       with 1 predictors CAPSULE, Intercept              9.899643676508614, 92.43746760936982                                         1.070331637158796E-20, 1.3321139829486397E-261
       with 2 predictors CAPSULE, PSA, Intercept         7.825700947986458, 5.733056921838707, 86.91622746127426                      5.144662722557474E-14, 2.023486352710146E-8, 1.7241718600984578E-251
       with 3 predictors CAPSULE, DCAPS, PSA, Intercept  7.275417885570092, 2.964750742738588, 4.992785143892783, 30.274880599946904  2.0273323955515335E-12, 0.0032224082063575395, 9.124834372427609E-7, 7.417923313036E-103
+
+      # Check the variables that were added during this process:
+      maxrModel.get_predictors_added_per_step()
+      [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
+
+      # Check the variables that were removed during this process:
+      maxrModel.get_predictors_removed_per_step()
+      [[''], [''], [''], [''], [''], [''], ['']]
 
 
 
