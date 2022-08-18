@@ -957,6 +957,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+
+    for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
+      Vec col = adaptFrm.vec(colId);
+      if (col.isBad()) {
+        throw new UnsupportedOperationException(
+                "Calculating of H statistics error: row " + adaptFrm.name(colId) + " is missing.");
+      }
+    }
+
     int nclasses = this._output.nclasses() > 2 ? this._output.nclasses() : 1;
     SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
     for (int i = 0; i < this._parms._ntrees; i++) {
@@ -967,7 +978,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     }
 
-    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
+    return FriedmanPopescusH.h(adaptFrm, vars, this._parms._learn_rate, sharedTreeSubgraphs);
   }
 
 
