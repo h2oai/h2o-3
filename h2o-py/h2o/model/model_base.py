@@ -672,6 +672,19 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """Pretty print the coefficents table (includes normalized coefficients)."""
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
+    def get_variable_inflation_factors(self):
+        if self.algo == 'glm':
+            if self.parms['generate_variable_inflation_factors']:
+                tbl = self._model_json["output"]["coefficients_table"]
+                if tbl is None:
+                    return None
+                return {name: vif for name, vif in zip(tbl["names"], tbl["variable_inflation_factor"])}
+            else:
+                raise ValueError("variable inflation factors are generated only when "
+                                 "generate_variable_inflation_factors is enabled.")
+        else:
+            raise ValueError("variable inflation factors are only found in GLM models for numerical predictors.")
+        
     def coef(self):
         """
         Return the coefficients which can be applied to the non-standardized data.
@@ -710,7 +723,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                                  "compute_p_values=True.")
         else:
             raise ValueError("p-values, z-values and std_error are only found in GLM.")
-            
+        
     def _fillMultinomialDict(self, standardize=False):
         if self.algo == 'gam':
             tbl = self._model_json["output"]["coefficients_table"]

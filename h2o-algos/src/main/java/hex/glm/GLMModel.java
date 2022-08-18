@@ -23,13 +23,20 @@ import water.util.*;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
+import static hex.glm.GLMUtils.genGLMParameters;
 import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
 import static hex.schemas.GLMModelV3.calculateVarimpBase;
 import static hex.util.DistributionUtils.distributionToFamily;
 import static hex.util.DistributionUtils.familyToDistribution;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -94,6 +101,34 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   
   public void setVcov(double[][] inv) {_output._vcov = inv;}
 
+  /***
+   * This method will calculate the variable inflation factor of each numerical predictor using the following
+   * procedure:
+   * 1. For each numerical predictor, choose it as the response variable and leave all the other predictors as the
+   * predictors;
+   * 2. Build a GLM model and obtained the R2 of the model;
+   * 3. the variable inflation factor for that predictor is calculated as 1.0/(1.0-R2).
+   * 
+   * All the variable inflation factors for all valid predictors are saved in a double array.  No variable inflation
+   * factors are generated for non-numerical predictors.
+   * 
+   */
+  public void buildVariableInflationFactors(GLMParameters parms, String[] validPredictors) {
+    // set variable inflation factors to NaN to start with
+    _output._variable_inflation_factors = IntStream.range(0, validPredictors.length).mapToDouble(x -> Double.NaN).boxed().
+            collect(Collectors.toList()).stream().mapToDouble(Double::doubleValue).toArray();
+    GLMParameters[] allParams = genGLMParameters(parms, validPredictors);
+    GLM[] glmBuilder = Stream.of(allParams).map(x -> new GLM(x)).collect(Collectors.toList()).stream().toArray(GLM[]::new);
+    GLM[] glmResults = ModelBuilderHelper.trainModelsParallel(glmBuilder, parms._nparallelism);
+    Double[] r2 = Arrays.stream(glmResults).mapToDouble(x ->x.get().r2()).boxed().collect(Collectors.toList()).stream()
+            .toArray(Double[]::new);
+    for (GLM glm : glmResults)
+      glm.get().remove();
+    _output._variable_inflation_factors = IntStream.range(0, validPredictors.length)
+            .mapToDouble(x -> 1.0 / (1.0 - r2[x])).boxed().collect(Collectors.toList()).stream()
+            .mapToDouble(Double::doubleValue).toArray();
+  }
+  
   public static class RegularizationPath extends Iced {
     public double []   _lambdas;
     public double[] _alphas;
@@ -318,6 +353,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _init_dispersion_parameter = 1.0;
     public boolean _fix_dispersion_parameter = false;
     public boolean _build_null_model = false;
+    public boolean _generate_variable_inflation_factors = false; // if enabled, will generate variable_inflation_factors for numeric predictors
+    public int _nparallelism = 0;
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -1217,11 +1254,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     double[] _global_beta;
     double[] _ubeta;  // HGLM:  random coefficients
     private double[] _zvalues;
+    double[] _variable_inflation_factors;
+    String[] _vif_predictor_names; // predictor names corresponding to the variableInflationFactors
     double [][] _vcov;
     private double _dispersion;
     private boolean _dispersionEstimated;
     public int[] _activeColsPerClass;
     public boolean hasPValues(){return _zvalues != null;}
+    public boolean hasVIF() { return _vif_predictor_names != null; }
     public double [] stdErr(){
       double [] res = _zvalues.clone();
       for(int i = 0; i < res.length; ++i)
@@ -1231,6 +1271,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     
     public double[] getZValues() {
       return _zvalues;
+    }
+    public double[] getVariableInflationFactors() { return _variable_inflation_factors; }
+    public String[] getVIFPredictorNames() { return _vif_predictor_names; }
+    public Map<String, Double> getVIFAndNames() { 
+      if (_variable_inflation_factors != null)
+        return IntStream.range(0, _vif_predictor_names.length).boxed().collect(toMap(s ->_vif_predictor_names[s], s -> _variable_inflation_factors[s]));
+      else
+        return null;
     }
 
     @Override
@@ -1253,6 +1301,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       for(int i = 0; i < res.length; ++i)
         res[i] = 2*rd.cumulativeProbability(-Math.abs(res[i]));
       return res;
+    }
+    public double[] variableInflationFactors() {
+      return _variable_inflation_factors; // predictor orders the same as in coefficientNames
     }
     double[][] _global_beta_multinomial;
     final int _nclasses;

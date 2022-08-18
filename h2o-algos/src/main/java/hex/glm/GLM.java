@@ -45,6 +45,7 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.ComputationState.extractSubRange;
@@ -55,6 +56,7 @@ import static hex.glm.GLMModel.GLMParameters.DispersionMethod.*;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.*;
 import static hex.glm.GLMUtils.*;
+import static hex.modelselection.ModelSelectionUtils.extractPredictorNames;
 import static water.fvec.Vec.T_NUM;
 
 /**
@@ -531,7 +533,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   DataInfo _dinfo;
-
+  String[] _validPredictors;  // valid predictors are numerical columns only
   private transient DataInfo _validDinfo;
   // time per iteration in ms
 
@@ -930,6 +932,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
     if (expensive) {
+      if (_parms._nparallelism == 0)
+        _parms._nparallelism = H2O.NUMCPUS;
       if (_parms._build_null_model) {
         if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
           error("build_null_model", " is only supported for tweedie, gamma and negativebinomial familes");
@@ -1023,6 +1027,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _parms.makeImputer(), 
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
 
+      if (_parms._generate_variable_inflation_factors) {
+        String[] predictorNames = extractPredictorNames(_parms, _dinfo, null);
+        // only calculate VIF for numerical columns
+        _validPredictors = Stream.of(predictorNames).filter(x -> _parms.train().vec(x).isNumeric()).
+                collect(Collectors.toList()).stream().toArray(String[]::new);
+        if (_validPredictors == null || _validPredictors.length == 0)
+          error("generate_variable_inflation_factors", " cannot be enabled for GLM models with " +
+                  "only non-numerical predictors.");
+      }
       // for multiclass and fractional binomial we have one beta per class 
       // for binomial and regression we have just one set of beta coefficients
       int nBetas = fractionalbinomial.equals(_parms._family) ? 2 :
@@ -3030,12 +3043,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (!_parms._HGLM)  // no need to do for HGLM
         scoreAndUpdateModel();
+      if (_parms._generate_variable_inflation_factors) {
+        _model._output._vif_predictor_names = _validPredictors.clone();
+        _model.buildVariableInflationFactors(_parms, _validPredictors);
+      }// build variable inflation factors for numerical predictors
       TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
               (null != _parms._valid), false, _model._output.getModelCategory(), false);
       _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
               scoring_history_early_stop);
       _model._output._varimp = _model._output.calculateVarimp();
       _model._output._variable_importances = calcVarImp(_model._output._varimp);
+      
       _model.update(_job._key);
 /*      if (_vcov != null) {
         _model.setVcov(_vcov);

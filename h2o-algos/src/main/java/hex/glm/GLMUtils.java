@@ -9,11 +9,10 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static water.fvec.Vec.T_NUM;
 import static water.fvec.Vec.T_STR;
 
@@ -39,6 +38,24 @@ public class GLMUtils {
       }
     }
     return gamColIndices;
+  }
+  
+  public static GLMModel.GLMParameters[] genGLMParameters(GLMModel.GLMParameters parms, String[] validPreds) {
+    int numPreds = validPreds.length;
+    if (numPreds > 0) {
+      GLMModel.GLMParameters[] params = new GLMModel.GLMParameters[numPreds];
+      for (int index=0; index < numPreds; index++) {
+        params[index] = new GLMModel.GLMParameters(gaussian);
+        params[index]._response_column = validPreds[index];
+        params[index]._train = parms.train()._key;
+        params[index]._lambda = new double[]{0.0};
+        params[index]._alpha = new double[]{0.0};
+        params[index]._compute_p_values = true;
+      }
+      return params;
+    } else {
+      return null;
+    }
   }
 
   public static void removePredictors(GLMModel.GLMParameters parms, Frame train) {

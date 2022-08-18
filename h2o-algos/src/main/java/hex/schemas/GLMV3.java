@@ -89,7 +89,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "dispersion_epsilon",
             "max_iterations_dispersion",
             "build_null_model",
-            "fix_dispersion_parameter"
+            "fix_dispersion_parameter",
+            "generate_variable_inflation_factors",
+            "nparallelism"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -197,9 +199,17 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "if true, will return likelihood function value for HGLM.") // not gridable
     public boolean calc_like;
+    
+    @API(help="if true, will generate variable inflation factors for numerical predictors.  Default to false.", 
+            level = Level.expert)
+    public boolean generate_variable_inflation_factors;
 
     @API(help="Include constant term in the model", level = Level.expert)
     public boolean intercept;
+
+    @API(help = "number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability",
+            level = API.Level.secondary, gridable = true)
+    public int nparallelism;
     
     @API(help="If set, will build a model with only the intercept.  Default to false.", level = Level.expert)
     public boolean build_null_model;
