@@ -8,7 +8,7 @@ public abstract class ModelBuilderListener<D extends Iced> extends Iced<D> {
    *
    * @param model Model built
    */
-  abstract void onModelSuccess(Model model);
+  public abstract void onModelSuccess(Model model);
 
   /**
    * Callback for failed model builds
@@ -16,7 +16,6 @@ public abstract class ModelBuilderListener<D extends Iced> extends Iced<D> {
    * @param cause      An instance of {@link Throwable} - cause of failure
    * @param parameters An instance of Model.Parameters used in the attempt to build the model
    */
-  abstract void onModelFailure(Throwable cause, Model.Parameters parameters);
-
-
+  public abstract void onModelFailure(Throwable cause, Model.Parameters parameters);
+  
 }

@@ -626,7 +626,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
       Frame workingFrame = fr;
       int teColumnIdx = fr.find(columnToEncode);
       int foldColIdx;
-      if (_outOfFold== NO_FOLD) {
+      if (_outOfFold == NO_FOLD) {
         foldColIdx = fr.find(_foldColumn);
       } else {
         workingFrame = new Frame(fr);
@@ -648,7 +648,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
               maxFoldValue
       );
       Scope.track(joinedFrame);
-      if (_outOfFold!= NO_FOLD) {
+      if (_outOfFold != NO_FOLD) {
         joinedFrame.remove(foldColIdx);
       }
 

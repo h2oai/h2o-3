@@ -1907,7 +1907,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public Frame transform(Frame fr) {
-    throw new UnsupportedOperationException("this model doesn't support constant frame results");
+    throw new UnsupportedOperationException("this model doesn't support frame transformation");
   }
 
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
