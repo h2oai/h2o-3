@@ -31,6 +31,7 @@ import time # needed to randomly generate time
 import threading
 import urllib.request, urllib.error, urllib.parse
 import uuid # call uuid.uuid4() to generate unique uuid numbers
+import numbers
 
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without string support, only unicode)
@@ -4554,8 +4555,16 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
 
 
-def assert_equals(expected, actual, message=""):
-    assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+def assert_equals(expected, actual, message="", delta=0):
+    if isinstance(expected, numbers.Number) and isinstance(actual, numbers.Number) and delta != 0:
+        if math.isfinite(expected) and math.isfinite(actual):
+            assert abs(expected - actual) <= delta, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+        elif math.isnan(expected) and math.isfinite(actual) or math.isfinite(expected) and math.isnan(actual):
+            assert False, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+        elif math.isinf(expected) and math.isfinite(actual) or math.isfinite(expected) and math.isinf(actual):
+            assert False, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+    else:
+        assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
 
 
 def assert_not_equal(expected, actual, message=""):

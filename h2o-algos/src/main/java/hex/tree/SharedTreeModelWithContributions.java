@@ -31,7 +31,7 @@ public abstract class SharedTreeModelWithContributions<
     return scoreContributions(frame, destination_key, null);
   }
 
-  private Frame removeSpecialColumns(Frame frame) {
+  protected Frame removeSpecialColumns(Frame frame) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
     // remove non-feature columns
