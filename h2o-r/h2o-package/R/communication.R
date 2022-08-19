@@ -507,58 +507,75 @@
     stopifnot(is.character(method))
     if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
   }
-  rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
+  
+  number_of_tries <- getOption("rest_call_retry_count", 1)
+  retry_interval <- getOption("rest_call_retry_interval", 5) # seconds
+    
+  repeat {
+    rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                    parms = parms, method = method, fileUploadInfo = fileUploadInfo, parms_as_payload=parms_as_payload, ...)
+    number_of_tries <- number_of_tries - 1
+    stopError <- NULL  
 
-  if (rv$curlError) {
-    errorMessage <- rv$curlErrorMessage
-    if (!use.package("curl", version = "4.3.0", use = !getOption("prefer_RCurl", FALSE))){
-      curlVersion <- as.numeric(strsplit(RCurl::curlVersion()$version, ".", fixed = TRUE)[[1]])
-      # curl 7.68.0 introduces socketpair, RCurl does not always release the sockets which leads to errors
-      if (curlVersion[[1]] >= 7 && curlVersion[[2]] >= 68) {
-        errorMessage <- paste(
-          errorMessage,
-          "\nThis can be caused by issues with some versions of curl library together with RCurl package.",
-          "Installing R package `curl` version 4.3.0 and above could help.",
-          "Otherwise, using curl system library versions below 7.68.0 or compiled with --disable-socketpair could help,",
-          "in case you cannot use curl R package."
-        )
+    if (rv$curlError) { 
+      errorMessage <- rv$curlErrorMessage
+      if (!use.package("curl", version = "4.3.0", use = !getOption("prefer_RCurl", FALSE))){
+        curlVersion <- as.numeric(strsplit(RCurl::curlVersion()$version, ".", fixed = TRUE)[[1]])
+        # curl 7.68.0 introduces socketpair, RCurl does not always release the sockets which leads to errors
+        if (curlVersion[[1]] >= 7 && curlVersion[[2]] >= 68) {
+          errorMessage <- paste(
+            errorMessage,
+            "\nThis can be caused by issues with some versions of curl library together with RCurl package.",
+            "Installing R package `curl` version 4.3.0 and above could help.",
+            "Otherwise, using curl system library versions below 7.68.0 or compiled with --disable-socketpair could help,",
+            "in case you cannot use curl R package."
+          )
+        }
+      }
+      stopError <- sprintf("Unexpected CURL error: %s", errorMessage)
+    } else if (rv$httpStatusCode != 200) {
+      cat("\n")
+      cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
+      cat("\n")
+    
+      #Check if payload is a raw vector(binary data) and convert to character for error printing. Otherwise return
+      #normal payload
+      if (is.raw(rv$payload)) {
+        jsonObject = jsonlite::fromJSON(rawToChar(rv$payload), simplifyDataFrame=FALSE)
+      } else {
+        jsonObject = jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE)
+      }
+    
+      exceptionType = jsonObject$exception_type
+      if (! is.null(exceptionType)) {
+        cat(sprintf("%s\n", exceptionType))
+      }
+    
+      stacktrace = jsonObject$stacktrace
+      if (! is.null(stacktrace)) {
+        print(jsonObject$stacktrace)
+        cat("\n")
+      }
+    
+      msg = jsonObject$msg
+      if (!is.null(msg)) {
+        stopError <- msg
+      } else {
+        stopError <- "Unexpected HTTP Status code"
       }
     }
-    stop(sprintf("Unexpected CURL error: %s", errorMessage))
-  } else if (rv$httpStatusCode != 200) {
-    cat("\n")
-    cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
-    cat("\n")
 
-    #Check if payload is a raw vector(binary data) and convert to character for error printing. Otherwise return
-    #normal payload
-    if(is.raw(rv$payload)){
-      jsonObject = jsonlite::fromJSON(rawToChar(rv$payload), simplifyDataFrame=FALSE)
-    }else{
-      jsonObject = jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE)
-    }
-
-    exceptionType = jsonObject$exception_type
-    if (! is.null(exceptionType)) {
-      cat(sprintf("%s\n", exceptionType))
-    }
-
-    stacktrace = jsonObject$stacktrace
-    if (! is.null(stacktrace)) {
-      print(jsonObject$stacktrace)
-      cat("\n")
-    }
-
-    msg = jsonObject$msg
-    if (! is.null(msg)) {
-      stop(msg)
+    if (is.null(stopError)) {
+      return(rv$payload)
+    } else if (number_of_tries <= 0) {
+      stop(stopError)
     } else {
-      stop("Unexpected HTTP Status code")
-    }
+      cat("\n")
+      cat(sprintf("Error occurred, retrying in %d seconds", retry_interval))
+      cat("\n")
+      Sys.sleep(retry_interval)
+    } 
   }
-
-  rv$payload
 }
 
 #' Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster.
@@ -1045,21 +1062,39 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
-.h2o.__checkConnectionHealth <- function() {
-  rv <- .h2o.doGET(urlSuffix = .h2o.__CLOUD)
-  conn = h2o.getConnection()
-  if (rv$curlError) {
-    ip = conn@ip
-    port = conn@port
-    stop(sprintf("H2O connection has been severed. Cannot connect to instance at %s\n", h2o.getBaseURL(conn)),
-         rv$curlErrorMessage)
-  }
+.h2o.__checkConnectionHealth <- function() { 
+  number_of_tries <- getOption("rest_call_retry_count", 1)
+  retry_interval <- getOption("rest_call_retry_interval", 5) # seconds
+    
+  repeat {
+    rv <- .h2o.doGET(urlSuffix = .h2o.__CLOUD)
+    conn = h2o.getConnection()
+    stopError <- NULL 
+      
+    if (rv$curlError) {
+      ip = conn@ip
+      port = conn@port
+      stopError <- sprintf("H2O connection has been severed. Cannot connect to instance at %s\n", h2o.getBaseURL(conn)),
+                           rv$curlErrorMessage)
+    }
 
-  if (rv$httpStatusCode != 200L) {
-    ip = conn@ip
-    port = conn@port
-    stop(sprintf("H2O connection has been severed. Instance unhealthy at %s\n", h2o.getBaseURL(conn)),
-         sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
+    if (rv$httpStatusCode != 200L) {
+      ip = conn@ip
+      port = conn@port
+      stopError <- paste(sprintf("H2O connection has been severed. Instance unhealthy at %s\n", h2o.getBaseURL(conn)),
+                         sprintf("H2O returned HTTP status %d (%s)", rv$httpStatusCode, rv$httpStatusMessage))
+    }
+
+    if (is.null(stopError)) {
+      break
+    } else if (number_of_tries <= 0) {
+      stop(stopError)
+    } else {
+      cat("\n")
+      cat(sprintf("Error occurred, retrying in %d seconds", retry_interval))
+      cat("\n")
+      Sys.sleep(retry_interval)
+    }
   }
 
   cloudStatus <- .h2o.fromJSON(jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE))
