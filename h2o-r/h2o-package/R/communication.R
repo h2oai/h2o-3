@@ -534,9 +534,9 @@
       }
       stopError <- sprintf("Unexpected CURL error: %s", errorMessage)
     } else if (rv$httpStatusCode != 200) {
-      cat("\n")
-      cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
-      cat("\n")
+      warning("\n")
+      warning(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
+      warning("\n")
     
       #Check if payload is a raw vector(binary data) and convert to character for error printing. Otherwise return
       #normal payload
@@ -547,14 +547,14 @@
       }
     
       exceptionType = jsonObject$exception_type
-      if (! is.null(exceptionType)) {
-        cat(sprintf("%s\n", exceptionType))
+      if (! is.null(exceptionType)) { 
+        warning(sprintf("%s\n", exceptionType))
       }
     
       stacktrace = jsonObject$stacktrace
       if (! is.null(stacktrace)) {
-        print(jsonObject$stacktrace)
-        cat("\n")
+        warning(jsonObject$stacktrace)
+        warning("\n")
       }
     
       msg = jsonObject$msg
@@ -569,10 +569,10 @@
       return(rv$payload)
     } else if (number_of_tries <= 0) {
       stop(stopError)
-    } else {
-      cat("\n")
-      cat(sprintf("Error occurred, retrying in %d seconds", retry_interval))
-      cat("\n")
+    } else { 
+      warning("\n")
+      warning(sprintf("Error occurred, retrying in %d seconds", retry_interval))
+      warning("\n")
       Sys.sleep(retry_interval)
     } 
   }
@@ -1090,9 +1090,9 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
     } else if (number_of_tries <= 0) {
       stop(stopError)
     } else {
-      cat("\n")
-      cat(sprintf("Error occurred, retrying in %d seconds", retry_interval))
-      cat("\n")
+      warning("\n")
+      warning(sprintf("Error occurred, retrying in %d seconds", retry_interval))
+      warning("\n")
       Sys.sleep(retry_interval)
     }
   }
