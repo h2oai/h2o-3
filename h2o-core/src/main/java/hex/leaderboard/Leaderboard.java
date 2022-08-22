@@ -311,7 +311,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    */
   public Model[] getModelsSortedByMetric(String metric) {
     if (getModelCount() == 0) return new Model[0];
-    return getModelsFromKeys(sortModels(metric));
+    return getModelsFromKeys(sortModelKeys(getModelKeys(), metric));
   }
 
   /**
@@ -523,8 +523,14 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     }
   }
 
+  public void ensureSorted() {
+    atomicUpdate(() -> {
+      updateModels(_model_keys);
+    }, null);
+  }
+
   private void updateModels(Key<Model>[] modelKeys) {
-    final Key<Model>[] sortedModelKeys = sortModelKeys(modelKeys);
+    final Key<Model>[] sortedModelKeys = sortModelKeys(modelKeys, _sort_metric);
     final Model[] sortedModels = getModelsFromKeys(sortedModelKeys);
     final IcedHashMap<String, double[]> metricValues = new IcedHashMap<>();
     for (String metric : _metrics) {
@@ -607,56 +613,42 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   }
 
   /**
-   * @return list of keys of models sorted by the given metric, fetched from the DKV
-   */
-  private Key<Model>[] sortModels(String metric) {
-    Key<Model>[] models = getModelKeys();
-    boolean decreasing = !isLossFunction(metric);
-    List<Key<Model>> newModelsSorted = ModelMetrics.sortModelsByMetric(metric, decreasing, Arrays.asList(models));
-    return newModelsSorted.toArray(new Key[0]);
-  }
-
-  /**
    * Sort by metric on the leaderboard/test set or default model metrics.
    */
-  private Key<Model>[] sortModelKeys(Key<Model>[] modelKeys) {
-    final List<Key<Model>> sortedModelKeys;
-    boolean sortDecreasing = !isLossFunction(_sort_metric);
-    final Frame leaderboardFrame = leaderboardFrame();
-    try {
-      if (leaderboardFrame == null) {
-        sortedModelKeys = ModelMetrics.sortModelsByMetric(_sort_metric, sortDecreasing, Arrays.asList(modelKeys));
-      } else {
-        sortedModelKeys = ModelMetrics.sortModelsByMetric(leaderboardFrame, _sort_metric, sortDecreasing, Arrays.asList(modelKeys));
-      }
-    } catch (H2OIllegalArgumentException e) {
-      log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
-      throw e;
+  private Key<Model>[] sortModelKeys(Key<Model>[] modelKeys, String sortMetric) {
+    boolean sortDecreasing = !isLossFunction(sortMetric);
+    Comparator<Key<Model>> cmp = Comparator.comparingDouble(mk -> getMetric(sortMetric, mk.get()));
+    if (sortDecreasing)
+      cmp = cmp.reversed();
+    modelKeys = modelKeys.clone();
+    Arrays.sort(modelKeys, cmp);
+    return modelKeys;
+  }
+
+  private double getMetric(String metric, Model model) {
+    // If leaderboard frame exists, get metrics from there
+    if (leaderboardFrame() != null) {
+      return ModelMetrics.getMetricFromModelMetric(
+              _leaderboard_model_metrics.get(ModelMetrics.buildKey(model, leaderboardFrame())),
+              metric
+      );
+    } else {
+      // otherwise use default model metrics
+      Key model_key = model._key;
+      long model_checksum = model.checksum();
+      ModelMetrics mm = getModelMetrics(model);
+      return ModelMetrics.getMetricFromModelMetric(
+              _leaderboard_model_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
+              metric
+      );
     }
-    return sortedModelKeys.toArray(new Key[0]);
   }
 
   private double[] getMetrics(String metric, Model[] models) {
     double[] metrics = new double[models.length];
     int i = 0;
-    Frame leaderboardFrame = leaderboardFrame();
     for (Model m : models) {
-      // If leaderboard frame exists, get metrics from there
-      if (leaderboardFrame != null) {
-        metrics[i++] = ModelMetrics.getMetricFromModelMetric(
-            _leaderboard_model_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)),
-            metric
-        );
-      } else {
-        // otherwise use default model metrics
-        Key model_key = m._key;
-        long model_checksum = m.checksum();
-        ModelMetrics mm = getModelMetrics(m);
-        metrics[i++] = ModelMetrics.getMetricFromModelMetric(
-            _leaderboard_model_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
-            metric
-        );
-      }
+        metrics[i++] = getMetric(metric, m);
     }
     return metrics;
   }

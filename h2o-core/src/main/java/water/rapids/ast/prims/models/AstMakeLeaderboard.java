@@ -91,8 +91,8 @@ public class AstMakeLeaderboard extends AstPrimitive {
                 .map(parameters -> parameters._nfolds)
                 .distinct()
                 .count() == 1;
-        final boolean allCV = Arrays.stream(models).allMatch(m -> ((Model) DKV.getGet(m))._parms._nfolds >= 2);
-        final boolean allHasValid = Arrays.stream(models).allMatch(m -> ((Model) DKV.getGet(m))._parms._valid != null);
+        final boolean allCV = Arrays.stream(models).allMatch(m -> ((Model) DKV.getGet(m))._output._cross_validation_metrics != null);
+        final boolean allHasValid = Arrays.stream(models).allMatch(m -> ((Model) DKV.getGet(m))._output._validation_metrics != null);
 
         boolean warnAboutTrain = false;
         boolean warnAboutValid = false;
@@ -139,6 +139,7 @@ public class AstMakeLeaderboard extends AstPrimitive {
         Leaderboard ldb = Leaderboard.getOrMake(projectName, logger, leaderboardFrame, sortMetric, Leaderboard.ScoreData.valueOf(scoringData));
         ldb.setExtensionsProvider(createLeaderboardExtensionProvider(leaderboardFrame));
         ldb.addModels(models);
+        ldb.ensureSorted();
         Frame leaderboard = ldb.toTwoDimTable(extensions).asFrame(Key.make());
         return new ValFrame(leaderboard);
     }
