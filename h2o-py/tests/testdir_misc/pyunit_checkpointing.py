@@ -45,7 +45,4 @@ def checkpointing_with_delete_test():
     assert checkpointed_gbm.checkpoint == gbm.model_id
 
 
-if __name__ == "__main__":
-    pyunit_utils.run_tests([checkpointing_test, checkpointing_with_delete_test])
-else:
-    checkpointing_test()
+pyunit_utils.run_tests([checkpointing_test, checkpointing_with_delete_test])
