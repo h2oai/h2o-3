@@ -924,6 +924,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         GBMModel modelClone = _model.clone();
         modelClone.setInputParms(_parms);
         modelClone._key = Key.make(_model._key + "." +  _model._output._ntrees);
+        modelClone._output = (GBMModel.GBMOutput) _model._output.clone();
         modelClone._output.changeModelMetricsKey(modelClone._key);
         modelClone.exportBinaryModel(modelFile, true);
       } catch (IOException e) {
