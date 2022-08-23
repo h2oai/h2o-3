@@ -64,7 +64,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
             assertNotNull(gbm);
 
             // Load in-training checkpoint with the same trees as reference has
-            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.3");
+            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.ntrees_3");
             Scope.track_generic(checkpoint);
             Frame scoreCheckpoint = checkpoint.score(train);
             Scope.track(scoreCheckpoint);
@@ -101,7 +101,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
             assertTrue(checkpointsDirectory.isDirectory());
 
             for (int tid = 1; tid < parms._ntrees; tid++) {
-                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + ".ntrees_" + tid);
                 assertTrue(checkpointFile.exists());
                 assertTrue(checkpointFile.isFile());
             }
@@ -133,7 +133,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
             assertTrue(checkpointsDirectory.isDirectory());
 
             for (int tid = 1; tid < parms._ntrees; tid++) {
-                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + ".ntrees_" + tid);
                 if (tid % parms._in_training_checkpoints_tree_interval != 0) {
                     assertFalse(checkpointFile.exists());
                     continue;
@@ -169,13 +169,13 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
 
             // There should be checkpoints for 1, 2, 3 trees
             for (int tid = 1; tid < parms._ntrees; tid++) {
-                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + ".ntrees_" + tid);
                 assertTrue(checkpointFile.exists());
                 assertTrue(checkpointFile.isFile());
             }
 
             // Load the last checkpoint and restart training
-            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.3");
+            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.ntrees_3");
             Scope.track_generic(checkpoint);
 
             parms._ntrees = 5;
@@ -192,7 +192,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
 
             // There should be checkpoints only for 4. tree and nothing else
             for (int tid = 1; tid < parms._ntrees; tid++) {
-                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + ".ntrees_" + tid);
                 if (tid < 4) {
                     assertFalse(checkpointFile.exists());
                     continue;
@@ -229,7 +229,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
 
             // There should be checkpoints for 2, 4, 6, 8
             for (int tid = 1; tid < parms._ntrees; tid++) {
-                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + ".ntrees_" + tid);
                 if (tid % parms._in_training_checkpoints_tree_interval != 0) {
                     assertFalse(checkpointFile.exists());
                     continue;
@@ -239,7 +239,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
             }
 
             int chooseCheckpointNumber = 4;
-            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm." + chooseCheckpointNumber);
+            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.ntrees_" + chooseCheckpointNumber);
             Scope.track_generic(checkpoint);
 
             // Export checkpoints to the different folder
@@ -254,7 +254,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
 
             // There should be checkpoints only for 6, 8
             for (int tid = 1; tid < parms._ntrees; tid++) {
-                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + ".ntrees_" + tid);
                 if (tid <= chooseCheckpointNumber) {
                     assertFalse(checkpointFile.exists());
                     continue;
@@ -295,7 +295,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
 
             // There should be checkpoints for 3, 6, 9
             for (int tid = 1; tid < parms._ntrees; tid++) {
-                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + ".ntrees_" + tid);
                 if (tid % parms._in_training_checkpoints_tree_interval != 0) {
                     assertFalse(checkpointFile.exists());
                     continue;
@@ -305,7 +305,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
             }
 
             int chooseCheckpointNumber = 3;
-            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm." + chooseCheckpointNumber);
+            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.ntrees_" + chooseCheckpointNumber);
             Scope.track_generic(checkpoint);
             Frame scoreCheckpoint = checkpoint.score(train);
             Scope.track(scoreCheckpoint);
@@ -325,7 +325,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
 
             // There should be checkpoints for 5, 7, 9
             for (int tid = 1; tid < parms._ntrees; tid++) {
-                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + "." + tid);
+                File checkpointFile = new File(parms._in_training_checkpoints_dir, gbm._key.toString() + ".ntrees_" + tid);
                 if (tid <= chooseCheckpointNumber) {
                     assertFalse(checkpointFile.exists());
                     continue;
@@ -370,7 +370,7 @@ public class GBMCheckpointInTrainingTest extends TestUtil {
             assertNotNull(gbmWithCheckpoints);
 
             // Load in-training checkpoint with 2. trees and use it as checkpoint for another training
-            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.2");
+            Model checkpoint = Model.importBinaryModel(parms._in_training_checkpoints_dir + "/gbm.ntrees_2");
             Scope.track_generic(checkpoint);
 
             // Train another model and do in-training checkpoints

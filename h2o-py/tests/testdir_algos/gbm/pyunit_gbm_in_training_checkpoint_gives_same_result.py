@@ -31,7 +31,7 @@ def test_gbm_in_training_checkpoint_gives_same_result():
     h2o.remove_all()  # Cannot use retained parameter because of categorical transformation
     print(h2o.ls())
 
-    gbm_checkpoint = h2o.load_model(os.path.join(path, "%s.2" % checkpoint_filename))
+    gbm_checkpoint = h2o.load_model(os.path.join(path, "%s.ntrees_2" % checkpoint_filename))
 
     prostate, predictors, response = prepare_dataset()
 

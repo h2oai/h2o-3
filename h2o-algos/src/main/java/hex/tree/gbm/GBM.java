@@ -920,7 +920,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     @Override
     protected void doInTrainingCheckpoint() {
       try {
-        String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + "." + _model._output._ntrees;
+        String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + ".ntrees_" + _model._output._ntrees;
         GBMModel modelClone = _model.clone();
         modelClone.setInputParms(_parms);
         modelClone._key = Key.make(_model._key + "." +  _model._output._ntrees);
