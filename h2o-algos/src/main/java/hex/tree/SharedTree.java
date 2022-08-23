@@ -508,7 +508,7 @@ public abstract class SharedTree<
         }
 
         boolean manualCheckpointsInterval = tid > 0 && tid % _parms._in_training_checkpoints_tree_interval == 0;
-        if (_parms._in_training_checkpoints_dir != null && manualCheckpointsInterval) {
+        if (!StringUtils.isNullOrEmpty(_parms._in_training_checkpoints_dir) && manualCheckpointsInterval) {
             doInTrainingCheckpoint();
         }
 
