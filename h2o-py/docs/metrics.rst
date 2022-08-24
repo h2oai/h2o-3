@@ -1,10 +1,10 @@
 Metrics in H2O
 ==============
 
-Single model
-++++++++++++
+H2O Model Metrics
++++++++++++++++++
 
-:mod:`H2O Model Metrics`
+:mod:`MetricsBase`
 -------------------------------
 .. automodule:: h2o.model.metrics_base
   :members:
@@ -75,11 +75,10 @@ Single model
     :undoc-members:
     :show-inheritance:
 
-Model grid
-++++++++++
 
-:mod:`H2O Grid Metrics`
--------------------------------
+H2O Grid Metrics
+++++++++++++++++
+
 .. automodule:: h2o.grid.metrics
   :members:
   :undoc-members:
