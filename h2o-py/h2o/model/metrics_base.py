@@ -26,7 +26,8 @@ class MetricsBase(h2o_meta(H2ODisplay)):
     The methods here are available across different model categories.
     
     .. note::
-        This class and its subclasses are used at runtime as mixins: their methods can (and should) be accessed directly from a trained model.
+        This class and its subclasses are used at runtime as mixins: their methods can (and should) be accessed directly 
+        from a metrics object, for example as a result of :func:`~h2o.model.ModelBase.model_performance`.
     """
     _on_mapping = OrderedDict(
         training_metrics='train',

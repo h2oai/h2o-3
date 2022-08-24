@@ -411,7 +411,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 
             If type is ``"auto"`` ("qini"), AUUC is calculated. 
         :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to ``-1``, which means 1000.
-        :returns: An object of class H2OModelMetrics.
+        :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
         """
         
         if test_data is None:
