@@ -1595,9 +1595,10 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
 }
 
 .check_model_suitability_for_calculation_of_contributions <- function(model) {
-    if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
-        err_msg <-  "This model doesn't support calculation of feature contributions."
-        if (.has_model_coefficients(model)) {
+    is_h2o_model <- .is_h2o_model(model)
+    if (!is_h2o_model || !.is_h2o_tree_model(model)) {
+        err_msg <-  "Calculation of feature contributions requires a tree-based model."
+        if (is_h2o_model && .has_model_coefficients(model)) {
             err_msg <- paste(err_msg, " When features are independent, you can use the h2o.coef() method to get coefficients")
             err_msg <- paste(err_msg, " for non-standardized data or h2o.coef_norm() to get coefficients for standardized data.")
             err_msg <- paste(err_msg, " You can plot standardized coefficient magnitudes by calling h2o.std_coef_plot() on the model.")
