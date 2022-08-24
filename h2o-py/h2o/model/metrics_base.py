@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 """
-Regression model.
 
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -12,7 +11,6 @@ from collections import OrderedDict
 from h2o.display import H2ODisplay, display, repr_def, format_to_html, format_to_multiline
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
-from h2o.utils.threading import local_context
 from h2o.utils.typechecks import is_type, numeric
 
 
@@ -26,6 +24,8 @@ class MetricsBase(h2o_meta(H2ODisplay)):
     A parent class to house common metrics available for the various Metrics types.
 
     The methods here are available across different model categories.
+    
+    *Note:* This class and its subclasses are used at runtime as mixins: their methods can (and should) be accessed directly from a trained model.
     """
     _on_mapping = OrderedDict(
         training_metrics='train',

@@ -1,3 +1,6 @@
+"""
+*Note:* Classes in this module are used at runtime as mixins: their methods can (and should) be accessed directly from a trained model.
+"""
 from .anomaly_detection import H2OAnomalyDetectionModelMetrics
 from .binomial import H2OBinomialModelMetrics
 from .clustering import H2OClusteringModelMetrics
