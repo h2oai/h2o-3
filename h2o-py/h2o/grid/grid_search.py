@@ -1573,6 +1573,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         :return: object that contains the resulting figure (can be accessed using ``result.figure()``)
 
         :examples:
+        
         >>> import h2o
         >>> from h2o.automl import H2OAutoML
         >>> from h2o.estimators import H2OGradientBoostingEstimator

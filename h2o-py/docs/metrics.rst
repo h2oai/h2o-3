@@ -9,6 +9,12 @@ Metrics in H2O
   :show-inheritance:
   :noindex:
 
+.. automodule:: h2o.model.metrics
+  :members:
+  :undoc-members:
+  :show-inheritance:
+  :noindex:
+
 :mod:`H2O Grid Metrics`
 -------------------------------
 .. automodule:: h2o.grid.metrics

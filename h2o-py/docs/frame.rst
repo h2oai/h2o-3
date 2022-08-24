@@ -15,9 +15,3 @@ Data Manipulation
     :undoc-members:
     :show-inheritance:
 
-:mod:`TargetEncoder`
---------------------
-.. autoclass:: h2o.targetencoder.TargetEncoder
-    :members:
-    :undoc-members:
-    :show-inheritance:
