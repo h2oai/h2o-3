@@ -15,7 +15,6 @@ from h2o.frame import H2OFrame
 from h2o.exceptions import H2OValueError, H2OJobCancelled
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
-from h2o.display import H2OTableDisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.mixin import assign, mixin
@@ -751,7 +750,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         :param train: Report the training metrics for the model.
         :param valid: Report the validation metrics for the model.
         :param xval: Report the validation metrics for the model.
-        :return: An object of class H2OModelMetrics.
+        :return: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
 
         :examples:
 
@@ -1573,6 +1572,7 @@ class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
         :return: object that contains the resulting figure (can be accessed using ``result.figure()``)
 
         :examples:
+        
         >>> import h2o
         >>> from h2o.automl import H2OAutoML
         >>> from h2o.estimators import H2OGradientBoostingEstimator

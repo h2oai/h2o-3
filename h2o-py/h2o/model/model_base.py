@@ -14,7 +14,6 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas, can_use_numpy
-from h2o.utils.threading import local_context, local_env
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
 
 
@@ -24,7 +23,9 @@ from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
     )
 )
 class ModelBase(h2o_meta(Keyed, H2ODisplay)):
-    """Base class for all models."""
+    """
+    Base class for all models.
+    """
 
     _options_ = {}    # dict of options declared in implementation
 
@@ -410,7 +411,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 
             If type is ``"auto"`` ("qini"), AUUC is calculated. 
         :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to ``-1``, which means 1000.
-        :returns: An object of class H2OModelMetrics.
+        :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
         """
         
         if test_data is None:

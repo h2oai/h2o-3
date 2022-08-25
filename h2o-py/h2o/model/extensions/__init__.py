@@ -1,5 +1,7 @@
 """
 A collection of mixins optionally added to the model if the feature is supported for the given model.
+.. note::
+    Classes in this module are used at runtime as mixins: their methods can (and should) be accessed directly from a trained model.
 """
 import sys
 
