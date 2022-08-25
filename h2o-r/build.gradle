@@ -110,7 +110,7 @@ task buildPackageDocumentation(type: Exec) {
         standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.out")
         errorOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPackageDocumentation.err")
     }
-    //commandLine getOsSpecificCommandLine(['R', "-q", "-e", "library(devtools); document('h2o-package');"])
+    commandLine getOsSpecificCommandLine(['R', "-q", "-e", "library(devtools); document('h2o-package');"])
 }
 
 task genPDF(type: Exec) {
