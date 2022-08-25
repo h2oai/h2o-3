@@ -10,7 +10,7 @@ from .std_coef import StandardCoef
 from .trees import Trees
 from .supervised_trees import SupervisedTrees
 from .varimp import VariableImportance
-from .predict_contributions import Contributions
+from .contributions import Contributions
 
 module = sys.modules[__name__]
 
