@@ -4,7 +4,7 @@ from h2o.job import H2OJob
 from h2o.utils.typechecks import assert_is_type, Enum
 
 
-class PredictContributions:
+class Contributions:
 
     def _predict_contributions(self, test_data, output_format, top_n, bottom_n, compare_abs):
         """

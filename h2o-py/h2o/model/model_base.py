@@ -234,7 +234,7 @@ class ModelBase(h2o_meta(Keyed)):
         >>> # Compute SHAP and pick the top two highest and top two lowest
         >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
         """
-        if has_extension(self, 'PredictContributions'):
+        if has_extension(self, 'Contributions'):
             return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs)
         warn_msg = "WARNING: This model doesn't support calculation of feature contributions."
         if has_extension(self, 'StandardCoef'):
