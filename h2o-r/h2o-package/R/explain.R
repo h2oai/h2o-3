@@ -1596,7 +1596,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
 
 .check_model_suitability_for_calculation_of_contributions <- function(model) {
     is_h2o_model <- .is_h2o_model(model)
-    if (!is_h2o_model || !.is_h2o_tree_model(model) || model@algorithm != "generic") {
+    if (!is_h2o_model || !(.is_h2o_tree_model(model) || model@algorithm == "generic")) {
         err_msg <-  "Calculation of feature contributions requires a tree-based model."
         if (is_h2o_model && .has_model_coefficients(model)) {
             err_msg <- paste(err_msg, " When features are independent, you can use the h2o.coef() method to get coefficients")
