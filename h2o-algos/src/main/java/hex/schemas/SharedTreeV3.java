@@ -97,5 +97,11 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="Check if response column is constant. If enabled, then an exception is thrown if the response column is a constant value." +
             "If disabled, then model will train regardless of the response column being a constant value or not.", level = API.Level.expert, direction = API.Direction.INOUT)
     public boolean check_constant_response;
+
+    @API(help="Create checkpoints into defined directory while training process is still running. In case of cluster shutdown, this checkpoint can be used to restart training.", level = API.Level.expert, gridable = false)
+    public String in_training_checkpoints_dir;
+
+    @API(help="Checkpoint the model after every so many trees. Parameter is used only when in_training_checkpoints_dir is defined", level = API.Level.expert, gridable = false)
+    public int in_training_checkpoints_tree_interval;
   }
 }

@@ -89,6 +89,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  custom_metric_func=None,  # type: Optional[str]
                  custom_distribution_func=None,  # type: Optional[str]
                  export_checkpoints_dir=None,  # type: Optional[str]
+                 in_training_checkpoints_dir=None,  # type: Optional[str]
+                 in_training_checkpoints_tree_interval=1,  # type: int
                  monotone_constraints=None,  # type: Optional[dict]
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
@@ -294,6 +296,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param export_checkpoints_dir: Automatically export generated models to this directory.
                Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
+        :param in_training_checkpoints_dir: Create checkpoints into defined directory while training process is still
+               running. In case of cluster shutdown, this checkpoint can be used to restart training.
+               Defaults to ``None``.
+        :type in_training_checkpoints_dir: str, optional
+        :param in_training_checkpoints_tree_interval: Checkpoint the model after every so many trees. Parameter is used
+               only when in_training_checkpoints_dir is defined
+               Defaults to ``1``.
+        :type in_training_checkpoints_tree_interval: int
         :param monotone_constraints: A mapping representing monotonic constraints. Use +1 to enforce an increasing
                constraint and -1 to specify a decreasing constraint.
                Defaults to ``None``.
@@ -372,6 +382,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self.custom_metric_func = custom_metric_func
         self.custom_distribution_func = custom_distribution_func
         self.export_checkpoints_dir = export_checkpoints_dir
+        self.in_training_checkpoints_dir = in_training_checkpoints_dir
+        self.in_training_checkpoints_tree_interval = in_training_checkpoints_tree_interval
         self.monotone_constraints = monotone_constraints
         self.check_constant_response = check_constant_response
         self.gainslift_bins = gainslift_bins
@@ -2069,6 +2081,36 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+    @property
+    def in_training_checkpoints_dir(self):
+        """
+        Create checkpoints into defined directory while training process is still running. In case of cluster shutdown,
+        this checkpoint can be used to restart training.
+
+        Type: ``str``.
+        """
+        return self._parms.get("in_training_checkpoints_dir")
+
+    @in_training_checkpoints_dir.setter
+    def in_training_checkpoints_dir(self, in_training_checkpoints_dir):
+        assert_is_type(in_training_checkpoints_dir, None, str)
+        self._parms["in_training_checkpoints_dir"] = in_training_checkpoints_dir
+
+    @property
+    def in_training_checkpoints_tree_interval(self):
+        """
+        Checkpoint the model after every so many trees. Parameter is used only when in_training_checkpoints_dir is
+        defined
+
+        Type: ``int``, defaults to ``1``.
+        """
+        return self._parms.get("in_training_checkpoints_tree_interval")
+
+    @in_training_checkpoints_tree_interval.setter
+    def in_training_checkpoints_tree_interval(self, in_training_checkpoints_tree_interval):
+        assert_is_type(in_training_checkpoints_tree_interval, None, int)
+        self._parms["in_training_checkpoints_tree_interval"] = in_training_checkpoints_tree_interval
 
     @property
     def monotone_constraints(self):

@@ -58,6 +58,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     catch (Throwable t) { }
   }
 
+  public final void setModelKey(Key modelKey) {
+    _modelKey = modelKey;
+  }
+
   public final ModelMetrics withModelAndFrame(Model model, Frame frame) {
     _modelKey = model == null ? null : model._key;
     _model_category = model == null ? null : model._output.getModelCategory();
