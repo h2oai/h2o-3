@@ -6,7 +6,7 @@ import traceback
 
 import h2o
 from h2o.base import Keyed
-from h2o.exceptions import H2OValueError
+from h2o.exceptions import H2OValueError, H2OTypeError
 from h2o.job import H2OJob
 from h2o.model.extensions import has_extension
 from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
@@ -236,12 +236,12 @@ class ModelBase(h2o_meta(Keyed)):
         """
         if has_extension(self, 'Contributions'):
             return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs)
-        warn_msg = "WARNING: This model doesn't support calculation of feature contributions."
+        err_msg = "This model doesn't support calculation of feature contributions."
         if has_extension(self, 'StandardCoef'):
-            warn_msg += " When features are independent, you can use the coef() method to get coefficients"
-            warn_msg += " for non-standardized data or coef_norm() to get coefficients for standardized data."
-            warn_msg += " You can plot standardized coefficient magnitudes by calling std_coef_plot() on the model."
-        print(warn_msg)
+            err_msg += " When features are independent, you can use the coef() method to get coefficients"
+            err_msg += " for non-standardized data or coef_norm() to get coefficients for standardized data."
+            err_msg += " You can plot standardized coefficient magnitudes by calling std_coef_plot() on the model."
+        raise H2OTypeError(message=err_msg)
 
     def feature_frequencies(self, test_data):
         """

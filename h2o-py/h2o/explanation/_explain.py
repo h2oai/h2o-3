@@ -668,10 +668,7 @@ def shap_summary_plot(
         random.shuffle(permutation)
 
     with no_progress():
-        raw_contributions = model.predict_contributions(frame)
-    if not raw_contributions:
-        return   
-    contributions = NumpyFrame(raw_contributions)
+        contributions = NumpyFrame(model.predict_contributions(frame))
     frame = NumpyFrame(frame)
     contribution_names = contributions.columns
 
@@ -795,10 +792,7 @@ def shap_explain_row_plot(
 
     row = frame[row_index, :]
     with no_progress():
-        raw_contributions = model.predict_contributions(row)
-    if not raw_contributions:
-        return   
-    contributions = NumpyFrame(raw_contributions)
+        contributions = NumpyFrame(model.predict_contributions(row))
     contribution_names = contributions.columns
     prediction = float(contributions.sum(axis=1))
     bias = float(contributions["BiasTerm"])
