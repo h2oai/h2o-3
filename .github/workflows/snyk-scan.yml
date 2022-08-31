@@ -7,6 +7,9 @@ on:
       - 'master'
       - 'rel-*'
 
+permissions:
+  contents: read
+
 jobs:
   snyk_scan_test:
     if: ${{ github.event_name == 'pull_request' }}
