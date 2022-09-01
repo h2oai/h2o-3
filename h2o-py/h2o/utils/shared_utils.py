@@ -401,7 +401,7 @@ h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
 
 
 def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, 
-                        verbose=False, setInvNumNA=False, predict_contributions=False):
+                        verbose=False, setInvNumNA=False, predict_contributions=False, predict_calibrated=False):
     """
     MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
 
@@ -415,6 +415,7 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
     :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
         (only for tree-based models).
+    :param predict_calibrated: if true, then return calibrated probabilities in addition to the predicted probabilities.
     :return: Pandas frame with predictions
     """
     tmp_dir = tempfile.mkdtemp()
@@ -429,14 +430,15 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
         mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path,
                          output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path,
                          classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA,
-                         predict_contributions=predict_contributions)
+                         predict_contributions=predict_contributions, predict_calibrated=predict_calibrated)
         return pandas.read_csv(prediction_csv_path)
     finally:
         shutil.rmtree(tmp_dir)
 
 
 def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, 
-                     java_options=None, verbose=False, setInvNumNA=False, predict_contributions=False, 
+                     java_options=None, verbose=False, setInvNumNA=False, 
+                     predict_contributions=False, predict_calibrated=False,
                      extra_cmd_args=None):
     """
     MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
@@ -453,6 +455,7 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
     :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
         (only for tree-based models).
+    :param predict_calibrated: if true, then return calibrated probabilities in addition to the predicted probabilities.
     :param extra_cmd_args: Optional, a list of additional arguments to append to genmodel.jar's command line. 
     :return: List of computed predictions
     """
@@ -517,6 +520,9 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
 
     if predict_contributions:
         cmd.append('--predictContributions')
+
+    if predict_calibrated:
+        cmd.append('--predictCalibrated')
 
     if extra_cmd_args:
         cmd += extra_cmd_args

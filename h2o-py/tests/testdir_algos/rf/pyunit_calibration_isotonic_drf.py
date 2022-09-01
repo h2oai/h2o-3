@@ -7,7 +7,7 @@ from h2o.estimators.isotonicregression import H2OIsotonicRegressionEstimator
 import numpy as np
 from pandas.testing import assert_frame_equal
 
- 
+
 def calibration_test():
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
     df["Angaus"] = df["Angaus"].asfactor()
@@ -45,6 +45,13 @@ def calibration_test():
     expected_preds["cal_p1"] = calibrated_p1
 
     assert_frame_equal(expected_preds.as_data_frame(), preds_train.as_data_frame())
+
+    assert pyunit_utils.test_java_scoring(model, train, preds_train, 1e-8)
+
+    # test MOJO
+    mojo = pyunit_utils.download_mojo(model)
+    mojo_prediction = h2o.mojo_predict_pandas(dataframe=train.as_data_frame(), predict_calibrated=True, **mojo)
+    assert_frame_equal(expected_preds.as_data_frame(), mojo_prediction)
 
 
 if __name__ == "__main__":
