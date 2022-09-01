@@ -60,6 +60,9 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
      */
     protected double[] _calib_glm_beta;
 
+    /**
+     * For calibrating using Isotonic Regression
+     */
     protected IsotonicCalibrator _isotonic_calibrator;
 
     protected String _genmodel_encoding;

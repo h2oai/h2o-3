@@ -46,7 +46,7 @@ def calibration_test():
 
     assert_frame_equal(expected_preds.as_data_frame(), preds_train.as_data_frame())
 
-    assert pyunit_utils.test_java_scoring(model, train, preds_train, 1e-8)
+    assert pyunit_utils.test_java_scoring(model, train, preds_train, 1e-6)
 
     # test MOJO
     mojo = pyunit_utils.download_mojo(model)
