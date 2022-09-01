@@ -702,7 +702,6 @@ public class ModelSelectionUtils {
         if (foldColumn != null && frameNames.contains(foldColumn))
             frameNames.remove(foldColumn);
         return frameNames.stream().toArray(String[]::new);
-        
     }
     
     public static int findMinZValue(GLMModel model, List<String> numPredNames, List<String> catPredNames, 

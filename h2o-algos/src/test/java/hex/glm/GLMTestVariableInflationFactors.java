@@ -102,6 +102,7 @@ public class GLMTestVariableInflationFactors extends TestUtil {
                 tParms._compute_p_values = true;
                 tParms._response_column = vifNames[index];
                 tParms._train = train._key;
+                tParms._ignored_columns = new String[]{response};
                 GLMModel tModel = new GLM(tParms).trainModel().get();
                 Scope.track_generic(tModel);
                 double vif = 1.0 / (1.0 - tModel.r2());

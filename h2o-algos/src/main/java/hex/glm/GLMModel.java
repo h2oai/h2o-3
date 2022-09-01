@@ -113,11 +113,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * factors are generated for non-numerical predictors.
    * 
    */
-  public void buildVariableInflationFactors(GLMParameters parms, String[] validPredictors) {
+  public void buildVariableInflationFactors(GLMParameters parms, String[] validPredictors, String[] predictorNames) {
     // set variable inflation factors to NaN to start with
     _output._variable_inflation_factors = IntStream.range(0, validPredictors.length).mapToDouble(x -> Double.NaN).boxed().
             collect(Collectors.toList()).stream().mapToDouble(Double::doubleValue).toArray();
-    GLMParameters[] allParams = genGLMParameters(parms, validPredictors);
+    GLMParameters[] allParams = genGLMParameters(parms, validPredictors, predictorNames);
     GLM[] glmBuilder = Stream.of(allParams).map(x -> new GLM(x)).collect(Collectors.toList()).stream().toArray(GLM[]::new);
     GLM[] glmResults = ModelBuilderHelper.trainModelsParallel(glmBuilder, parms._nparallelism);
     Double[] r2 = Arrays.stream(glmResults).mapToDouble(x ->x.get().r2()).boxed().collect(Collectors.toList()).stream()

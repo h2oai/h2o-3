@@ -534,6 +534,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   DataInfo _dinfo;
   String[] _validPredictors;  // valid predictors are numerical columns only
+  String[] _predictorNames;
   private transient DataInfo _validDinfo;
   // time per iteration in ms
 
@@ -1028,9 +1029,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
 
       if (_parms._generate_variable_inflation_factors) {
-        String[] predictorNames = extractPredictorNames(_parms, _dinfo, null);
+        _predictorNames = extractPredictorNames(_parms, _dinfo, _parms._fold_column);
         // only calculate VIF for numerical columns
-        _validPredictors = Stream.of(predictorNames).filter(x -> _parms.train().vec(x).isNumeric()).
+        _validPredictors = Stream.of(_predictorNames).filter(x -> _parms.train().vec(x).isNumeric()).
                 collect(Collectors.toList()).stream().toArray(String[]::new);
         if (_validPredictors == null || _validPredictors.length == 0)
           error("generate_variable_inflation_factors", " cannot be enabled for GLM models with " +
@@ -3045,7 +3046,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         scoreAndUpdateModel();
       if (_parms._generate_variable_inflation_factors) {
         _model._output._vif_predictor_names = _validPredictors.clone();
-        _model.buildVariableInflationFactors(_parms, _validPredictors);
+        _model.buildVariableInflationFactors(_parms, _validPredictors, _predictorNames);
       }// build variable inflation factors for numerical predictors
       TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
               (null != _parms._valid), false, _model._output.getModelCategory(), false);

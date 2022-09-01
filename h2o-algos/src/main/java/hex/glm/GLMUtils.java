@@ -11,6 +11,7 @@ import water.util.TwoDimTable;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static water.fvec.Vec.T_NUM;
@@ -40,10 +41,14 @@ public class GLMUtils {
     return gamColIndices;
   }
   
-  public static GLMModel.GLMParameters[] genGLMParameters(GLMModel.GLMParameters parms, String[] validPreds) {
+  public static GLMModel.GLMParameters[] genGLMParameters(GLMModel.GLMParameters parms, String[] validPreds,
+                                                          String[] predictorNames) {
     int numPreds = validPreds.length;
     if (numPreds > 0) {
       GLMModel.GLMParameters[] params = new GLMModel.GLMParameters[numPreds];
+      String[] frameNames = parms.train().names();
+      List<String> predList = Stream.of(predictorNames).collect(Collectors.toList());
+      String[] ignoredCols = Arrays.stream(frameNames).filter(x -> !predList.contains(x)).collect(Collectors.toList()).toArray(new String[0]);
       for (int index=0; index < numPreds; index++) {
         params[index] = new GLMModel.GLMParameters(gaussian);
         params[index]._response_column = validPreds[index];
@@ -51,6 +56,7 @@ public class GLMUtils {
         params[index]._lambda = new double[]{0.0};
         params[index]._alpha = new double[]{0.0};
         params[index]._compute_p_values = true;
+        params[index]._ignored_columns = ignoredCols;
       }
       return params;
     } else {
