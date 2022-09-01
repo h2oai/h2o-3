@@ -65,6 +65,11 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
    */
   protected double[] _calib_glm_beta;
 
+  /**
+   * For calibrating using Isotonic Regression
+   */
+  protected IsotonicCalibrator _isotonic_calibrator;
+
   public XGBoostMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
@@ -119,7 +124,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
 
   @Override
   public IsotonicCalibrator getIsotonicCalibrator() {
-    return null;
+    return _isotonic_calibrator;
   }
 
   @Override
