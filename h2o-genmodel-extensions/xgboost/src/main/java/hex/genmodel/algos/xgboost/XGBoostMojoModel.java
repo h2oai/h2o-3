@@ -7,6 +7,7 @@ import biz.k11i.xgboost.tree.RegTreeNode;
 import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.isotonic.IsotonicCalibrator;
 import hex.genmodel.algos.tree.*;
 
 import java.io.Closeable;
@@ -17,7 +18,7 @@ import static hex.genmodel.algos.tree.SharedTreeMojoModel.treeName;
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMojoModel, SharedTreeGraphConverter, PlattScalingMojoHelper.MojoModelWithCalibration, Closeable {
+public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMojoModel, SharedTreeGraphConverter, CalibrationMojoHelper.MojoModelWithCalibration, Closeable {
 
   private static final String SPACE = " ";
 
@@ -117,8 +118,13 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
   }
 
   @Override
+  public IsotonicCalibrator getIsotonicCalibrator() {
+    return null;
+  }
+
+  @Override
   public boolean calibrateClassProbabilities(double[] preds) {
-    return PlattScalingMojoHelper.calibrateClassProbabilities(this, preds);
+    return CalibrationMojoHelper.calibrateClassProbabilities(this, preds);
   }
 
   protected void constructSubgraph(final RegTreeNode[] xgBoostNodes, final RegTreeNodeStat[] nodeStats, 
