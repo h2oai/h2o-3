@@ -137,4 +137,9 @@ public class IsotonicRegression extends ModelBuilder<IsotonicRegressionModel,
         return summary;
     }
 
+    @Override
+    public boolean haveMojo() { 
+        return true; 
+    }
+
 }

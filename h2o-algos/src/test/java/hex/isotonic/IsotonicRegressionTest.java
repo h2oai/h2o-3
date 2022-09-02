@@ -1,5 +1,6 @@
 package hex.isotonic;
 
+import hex.genmodel.algos.isotonic.IsotonicRegressionMojoModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Scope;
@@ -55,7 +56,19 @@ public class IsotonicRegressionTest extends TestUtil {
             }
             Frame scored = ir.score(train);
             Scope.track(scored);
+            // check MOJO consistency using testJavaScoring...
             assertTrue(ir.testJavaScoring(train, scored, 1e-8));
+            // ...and explicitly using mojo API 
+            IsotonicRegressionMojoModel mojo = (IsotonicRegressionMojoModel) toMojo(
+                    ir, "randomIsotonic", true);
+            final double[] row = {Double.NaN};
+            final double[] preds = {Double.NaN};
+            for (int i = 0; i < N; i++) {
+                row[0] = xs[i];
+                double calib = mojo.score0(row, preds)[0];
+                assertEquals(calib, preds[0], 0);
+                assertEquals(scored.vec(0).at(i), calib, 0);
+            }
         } finally {
             Scope.exit();
         }
