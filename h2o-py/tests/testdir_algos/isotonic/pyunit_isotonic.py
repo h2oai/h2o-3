@@ -10,6 +10,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.datasets import make_regression
 from sklearn.isotonic import IsotonicRegression
+import h2o
 from h2o import H2OFrame
 from h2o.estimators.isotonicregression import H2OIsotonicRegressionEstimator
 
@@ -34,9 +35,15 @@ def test_isotonic_regression(y, X, w):
     assert iso_reg.X_min_ == output["min_x"]
     assert iso_reg.X_max_ == output["max_x"]
 
+    # test predict
     predicted = pd.DataFrame(iso_reg.predict(X), columns=["predict"])
     predicted_h2o = h2o_iso_reg.predict(train).as_data_frame(use_pandas=True)
     assert_frame_equal(predicted, predicted_h2o)
+
+    # test MOJO predict
+    mojo_iso_reg = pyunit_utils.download_mojo(h2o_iso_reg)
+    predicted_mojo = h2o.mojo_predict_pandas(dataframe=train.as_data_frame(), predict_calibrated=True, **mojo_iso_reg)
+    assert_frame_equal(predicted, predicted_mojo)
 
     # predict with out-of-bounds values (should produce NaNs)
     X_out_of_bounds = np.array([X.min() - 0.1, X.max() + 0.1])
