@@ -48,6 +48,8 @@ public class GLMUtils {
       GLMModel.GLMParameters[] params = new GLMModel.GLMParameters[numPreds];
       String[] frameNames = parms.train().names();
       List<String> predList = Stream.of(predictorNames).collect(Collectors.toList());
+      if (parms._weights_column != null)
+        predList.add(parms._weights_column);
       String[] ignoredCols = Arrays.stream(frameNames).filter(x -> !predList.contains(x)).collect(Collectors.toList()).toArray(new String[0]);
       for (int index=0; index < numPreds; index++) {
         params[index] = new GLMModel.GLMParameters(gaussian);
@@ -57,6 +59,7 @@ public class GLMUtils {
         params[index]._alpha = new double[]{0.0};
         params[index]._compute_p_values = true;
         params[index]._ignored_columns = ignoredCols;
+        params[index]._weights_column = parms._weights_column;
       }
       return params;
     } else {
