@@ -20,7 +20,8 @@ class H2OGenericEstimator(H2OEstimator):
 
     algo = "generic"
     supervised_learning = False
-    _options_ = {'requires_training_frame': False}
+    _options_ = {'model_extensions': ['h2o.model.extensions.Contributions'],
+                 'requires_training_frame': False}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
