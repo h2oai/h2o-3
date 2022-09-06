@@ -42,8 +42,10 @@ def test_isotonic_regression(y, X, w):
 
     # test MOJO predict
     mojo_iso_reg = pyunit_utils.download_mojo(h2o_iso_reg)
-    predicted_mojo = h2o.mojo_predict_pandas(dataframe=train.as_data_frame(), predict_calibrated=True, **mojo_iso_reg)
-    assert_frame_equal(predicted, predicted_mojo)
+    train_pd = train.as_data_frame()
+    predicted_mojo = h2o.mojo_predict_pandas(dataframe=train_pd, predict_calibrated=True, **mojo_iso_reg)
+    # note: MOJO predicts also for 0 weights, we need to exclude those from comparison
+    assert_frame_equal(predicted[train_pd["w"] != 0], predicted_mojo[train_pd["w"] != 0])
 
     # predict with out-of-bounds values (should produce NaNs)
     X_out_of_bounds = np.array([X.min() - 0.1, X.max() + 0.1])
