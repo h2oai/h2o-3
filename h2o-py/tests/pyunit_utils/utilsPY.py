@@ -4543,11 +4543,11 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
 
 def assert_equals(expected, actual, message="", delta=0):
     if isinstance(expected, numbers.Number) and isinstance(actual, numbers.Number) and delta != 0:
-        if math.isfinite(expected) and math.isfinite(actual):
+        if np.isfinite(expected) and np.isfinite(actual):
             assert abs(expected - actual) <= delta, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
-        elif math.isnan(expected) and math.isfinite(actual) or math.isfinite(expected) and math.isnan(actual):
+        elif np.isnan(expected) and np.isfinite(actual) or np.isfinite(expected) and np.isnan(actual):
             assert False, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
-        elif math.isinf(expected) and math.isfinite(actual) or math.isfinite(expected) and math.isinf(actual):
+        elif np.isinf(expected) and np.isfinite(actual) or np.isfinite(expected) and np.isinf(actual):
             assert False, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
     else:
         assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))

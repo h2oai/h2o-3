@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 from tests import assert_equals
-import math
+import numpy as np
 
 
 def should_fail(*args, **kvargs):
@@ -60,25 +60,25 @@ def test_assert_equals():
     should_pass("nan", "nan", delta=1e-3)
 
     # Traditionally, and per the IEEE floating-point specification, it does not equal itself.
-    should_fail(math.nan, math.nan)
+    should_fail(np.nan, np.nan)
 
     # Allow equality of nans when user specify delta
-    should_pass(math.nan, math.nan, delta=1e-4)
+    should_pass(np.nan, np.nan, delta=1e-4)
 
-    should_fail("nan", math.nan, delta=1e-3)
-    should_fail(math.nan, "nan", delta=1e-3)
-    should_fail("nan", math.nan)
-    should_fail(math.nan, "nan")
+    should_fail("nan", np.nan, delta=1e-3)
+    should_fail(np.nan, "nan", delta=1e-3)
+    should_fail("nan", np.nan)
+    should_fail(np.nan, "nan")
 
     should_pass("inf", "inf")
     should_pass("inf", "inf", delta=1e-3)
-    should_pass(math.inf, math.inf)
-    should_pass(math.inf, math.inf, delta=1e-4)
+    should_pass(np.inf, np.inf)
+    should_pass(np.inf, np.inf, delta=1e-4)
 
-    should_fail("inf", math.inf, delta=1e-3)
-    should_fail(math.inf, "inf", delta=1e-3)
-    should_fail("inf", math.inf)
-    should_fail(math.inf, "inf")
+    should_fail("inf", np.inf, delta=1e-3)
+    should_fail(np.inf, "inf", delta=1e-3)
+    should_fail("inf", np.inf)
+    should_fail(np.inf, "inf")
 
 
 # This test doesn't really need a connection to H2O cluster
