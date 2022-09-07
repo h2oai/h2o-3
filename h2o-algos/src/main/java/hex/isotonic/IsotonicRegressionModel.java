@@ -1,9 +1,6 @@
 package hex.isotonic;
 
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
-import hex.ModelMetricsRegression;
+import hex.*;
 import hex.genmodel.algos.isotonic.IsotonicCalibrator;
 import hex.genmodel.algos.isotonic.IsotonicRegressionUtils;
 import water.Job;
@@ -106,6 +103,16 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
                 _output._min_x, _output._max_x,
                 _output._thresholds_x, _output._thresholds_y
         );
+    }
+
+    @Override
+    public boolean haveMojo() {
+        return true;
+    }
+
+    @Override
+    public IsotonicRegressionMojoWriter getMojo() {
+        return new IsotonicRegressionMojoWriter(this);
     }
 
 }
