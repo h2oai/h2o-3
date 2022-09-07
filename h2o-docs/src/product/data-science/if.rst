@@ -10,6 +10,11 @@ Isolation Forest is similar in principle to Random Forest and is built on the ba
 
 Random partitioning produces noticeably shorter paths for anomalies. When a forest of random trees collectively produces shorter path lengths for particular samples, they are highly likely to be anomalies.
 
+MOJO Support
+''''''''''''
+
+Isolation Forest supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Tutorials and Blogs
 ~~~~~~~~~~~~~~~~~~~
 

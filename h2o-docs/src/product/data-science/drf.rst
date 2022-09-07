@@ -19,6 +19,11 @@ There was some code cleanup and refactoring to support the following features:
 
 DRF no longer has a special-cased histogram for classification (class DBinomHistogram has been superseded by DRealHistogram) since it was not applicable to cases with observation weights or for cross-validation.
 
+MOJO Support
+''''''''''''
+
+DRF supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 .. _xrt:
 
 Extremely Randomized Trees

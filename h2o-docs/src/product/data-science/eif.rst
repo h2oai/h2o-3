@@ -27,6 +27,11 @@ splitting for a given point :math:`x` is as follows:
 .. math::
     (x - p) * n ≤ 0
 
+MOJO Support
+''''''''''''
+
+Extended Isolation Forest supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Tutorials and Blogs
 ~~~~~~~~~~~~~~~~~~~
 

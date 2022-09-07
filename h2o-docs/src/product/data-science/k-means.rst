@@ -10,6 +10,11 @@ K-Means falls in the general category of clustering algorithms. Clustering is a 
 
 For more information, refer to `"A Fast Clustering Algorithm to Cluster Very Large Categorical Data Sets in Data Mining" <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.134.83&rep=rep1&type=pdf>`__ and `"Extensions to the k-Means Algorithm for Clustering Large Data Sets with Catgorical Values" <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.4028&rep=rep1&type=pdf>`__ by Zhexue Huang. 
 
+MOJO Support
+''''''''''''
+
+K-Means currently only supports exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
