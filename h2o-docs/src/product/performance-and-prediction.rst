@@ -1734,6 +1734,10 @@ Examples:
         # build the confusion matrix:
         gbm.confusion_matrix(train)
 
+.. note::
+    
+    Our confusion matrix returns an approximation of the actual histogram, so the table will not match the exact values. This is because we use an online version of the algorithm to calculate the histogram of the predictors for the confusion matrix. 
+
 Variable Importances
 ''''''''''''''''''''
 
