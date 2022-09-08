@@ -151,27 +151,27 @@ public class DispersionUtils {
                                       TweedieMLDispersionOnly tDispersion, GLMModel.GLMParameters parms) {
         double currObj = Double.NEGATIVE_INFINITY;
         double newObj;
-        double currSe = tDispersion._dispersionParameter;
-        double currNew;
-        double change = computeTsk._dLogLL/computeTsk._d2LogLL;
+        double dispersionCurr = tDispersion._dispersionParameter;
+        double dispersionNew;
+        double update = computeTsk._dLogLL/computeTsk._d2LogLL;
         for (int index=0; index < parms._max_iterations_dispersion; index++){
-            if (Double.isFinite(change)) {
-                currNew = currSe-change;
-                tDispersion.updateDispersionP(currNew);
+            if (Double.isFinite(update)) {
+                dispersionNew = dispersionCurr-update;
+                tDispersion.updateDispersionP(dispersionNew);
                 DispersionTask.ComputeMaxSumSeriesTsk computeTskNew = new DispersionTask.ComputeMaxSumSeriesTsk(tDispersion,
                         parms, false).doAll(tDispersion._infoFrame);
                 newObj = computeTskNew._logLL/computeTskNew._nobsLL;
                 if (newObj > currObj) {
                     currObj = newObj;
-                    change = 2*change;
+                    update = 2*update;
                 } else {
-                    return change;
+                    return update;
                 }
             } else {
                 return Double.NaN;
             }
         }
-        return change;
+        return update;
     }
     
     public static double[] makeZeros(double[] sourceCoeffs, double[] targetCoeffs) {
