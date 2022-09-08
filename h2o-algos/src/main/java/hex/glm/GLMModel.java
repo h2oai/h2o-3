@@ -122,8 +122,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   static String[] getVifPredictors(Frame train, GLMParameters parms, DataInfo dinfo) {
     String[] predictorNames = extractPredictorNames(parms, dinfo, parms._fold_column);
-    return Stream.of(predictorNames).filter(x -> train.vec(x).isNumeric()).
-            collect(Collectors.toList()).stream().toArray(String[]::new);
+    return Stream.of(predictorNames)
+            .filter(x -> train.find(x) >= 0 && train.vec(x).isNumeric())
+            .toArray(String[]::new);
   }
 
   public String[] buildVariableInflationFactors(GLMParameters parms, String[] validPredictors, String[] predictorNames) {
