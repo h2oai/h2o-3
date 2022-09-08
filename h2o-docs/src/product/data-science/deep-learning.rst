@@ -8,6 +8,11 @@ H2O’s Deep Learning is based on a multi-layer `feedforward artificial neural n
 
 A feedforward artificial neural network (ANN) model, also known as deep neural network (DNN) or multi-layer perceptron (MLP), is the most common type of Deep Neural Network and the only type that is supported natively in H2O-3. Several other types of DNNs are popular as well, such as Convolutional Neural Networks (CNNs) and Recurrent Neural Networks (RNNs). MLPs work well on transactional (tabular) data; however if you have image data, then CNNs are a great choice. If you have sequential data (e.g. text, audio, time-series), then RNNs are a good choice. 
 
+MOJO Support
+''''''''''''
+
+Deep Learning supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Quick Start and Additional Resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * `Deep Learning Booklet <http://h2o.ai/resources>`__

@@ -8,6 +8,11 @@ H2O's Rulefit algorithm combines tree ensembles and linear models to take advant
 
 The general algorithm fits a tree ensemble to the data, builds a rule ensemble by traversing each tree, evaluates the rules on the data to build a rule feature set, and fits a sparse linear model (LASSO) to the rule feature set joined with the original feature set.
 
+MOJO Support
+''''''''''''
+
+RuleFit supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Defining a RuleFit Model (Beta API)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

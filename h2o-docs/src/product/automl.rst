@@ -517,6 +517,11 @@ FAQ
 
   If you're using 3.34.0.1 or later, AutoML should use all the time that it's given using ``max_runtime_secs``.  However, if you're using an earlier version, then early stopping was enabled by default and you can stop early.  With early stopping, AutoML will stop once there's no longer "enough" incremental improvement.  The user can tweak the early stopping paramters to be more or less sensitive.  Set ``stopping_rounds`` higher if you want to slow down early stopping and let AutoML train more models before it stops. 
 
+-   **Does AutoML support MOJOs?**
+   
+    AutoML will always produce a model which has a `MOJO <save-and-load-model.html#supported-mojos>`__. Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
+
+
 
 Resources
 ---------
