@@ -20,12 +20,8 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
   }
 
   @Override
-  public void prepare(PipelineContext context) {
+  protected void doPrepare(PipelineContext context) {
     if (context != null) {
-      // to train the TE model, we use the train frame from context
-      if (_params._train == null) {
-        _params._train = context._params._train;
-      }
       if (_params._data_leakage_handling == KFold && context._params._fold_column != null) {
         _params._fold_column = context._params._fold_column;
       }
@@ -34,7 +30,7 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
   }
   
   @Override
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
+  protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     assert type != null;
     assert context != null || type == FrameType.Scoring;
     validateTransform();

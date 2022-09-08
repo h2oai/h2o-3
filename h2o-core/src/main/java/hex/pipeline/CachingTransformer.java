@@ -24,14 +24,12 @@ public class CachingTransformer<T extends DataTransformer> extends DelegateTrans
   }
 
   @Override
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
-    if (isCacheEnabled() && _cache.containsKey(fr.getKey())) {
+  protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+    if (isCacheEnabled() && _cache.containsKey(fr.getKey())) { 
+      // works only for simple transformations, not if it is type/context-sensitive
       return _cache.get(fr.getKey()).get();
     }
-    Frame transformed = super.transform(fr, type, context);
-    if (transformed.getKey() == null) {
-      //todo: create one
-    }
+    Frame transformed = super.doTransform(fr, type, context);
     _cache.put(fr.getKey(), transformed.getKey());
     return transformed;
   }

@@ -293,7 +293,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    *   4. unlock the n-folds models (they are changed here, so the unlocking happens here)
    */
   @Override
-  public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
+  protected void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
       setMaxRuntimeSecsForMainModel();
       double bestTestDev = Double.POSITIVE_INFINITY;
       double[] alphasAndLambdas = alignSubModelsAcrossCVModels(cvModelBuilders);

@@ -2,13 +2,14 @@ package hex.pipeline;
 
 import water.fvec.Frame;
 
-import java.util.function.BiFunction;
-
 public class TransformerChain extends DataTransformer<TransformerChain> {
   
-  interface Completer<R> extends BiFunction<Frame[], PipelineContext, R> {}
+  @FunctionalInterface
+  interface Completer<R> {
+    public R apply(Frame[] frames, PipelineContext context);
+  }
   
-  static abstract class UnaryCompleter<R> implements Completer<R> {
+  public static abstract class UnaryCompleter<R> implements Completer<R> {
     @Override
     public R apply(Frame[] frames, PipelineContext context) {
       assert frames.length == 1;
@@ -18,16 +19,32 @@ public class TransformerChain extends DataTransformer<TransformerChain> {
     public abstract R apply(Frame frame, PipelineContext context);
   }
   
+  public static class AsFramesCompleter implements Completer<Frame[]> {
+    @Override
+    public Frame[] apply(Frame[] frames, PipelineContext context) {
+      return frames;
+    }
+  } 
+  
+  public static class AsSingleFrameCompleter implements Completer<Frame> {
+
+    public Frame apply(Frame[] frames, PipelineContext context) {
+      assert frames.length == 1;
+      return frames[0];
+    }
+  }
+  
   private final DataTransformer[] _transformers;
   
   private int _index;
 
   public TransformerChain(DataTransformer[] transformers) {
+    assert transformers != null;
     _transformers = transformers;
   }
   
   @Override
-  public void prepare(PipelineContext context) {
+  protected void doPrepare(PipelineContext context) {
     reset();
     nextPrepare(context);
   }
@@ -40,11 +57,11 @@ public class TransformerChain extends DataTransformer<TransformerChain> {
   }
   
   @Override
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
-    return transform(new Frame[] { fr }, new FrameType[] { type }, context)[0];
+  protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+    return doTransform(new Frame[] { fr }, new FrameType[] { type }, context)[0];
   }
 
-  Frame[] transform(Frame[] frames, FrameType[] types, PipelineContext context) {
+  Frame[] doTransform(Frame[] frames, FrameType[] types, PipelineContext context) {
     return transform(frames, types, context, (f, c) -> f);
   }
 

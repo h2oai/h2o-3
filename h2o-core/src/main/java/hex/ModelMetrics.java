@@ -475,7 +475,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
      * @param m Model
      * @param f Scored Frame
      * @param adaptedFrame Adapted Frame
-     *@param preds Predictions of m on f (optional)  @return Filled Model Metrics object
+     * @param preds Predictions of m on f (optional)
+     * @return Filled Model Metrics object
      */
     public abstract ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds);
 

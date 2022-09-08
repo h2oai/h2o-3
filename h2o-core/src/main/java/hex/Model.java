@@ -1722,7 +1722,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // As soon as the test frame contains at least one original pre-encoding predictor,
         // then we consider the frame as valid for predictions, and we'll later fill missing columns with NA
         Set<String> required = new HashSet<>(Arrays.asList(origNames));
-        required.removeAll(Arrays.asList(response, weights, fold, treatment));
+        required.removeAll(Arrays.asList(parms.getNonPredictors()));
         for (String name : test.names()) {
           if (required.contains(name)) {
             match = true;
@@ -1986,8 +1986,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     try (Scope.Safe s = Scope.safe(fr)) {
       // Adapt frame, clean up the previous score warning messages
       _warningsP = new String[0];
-      computeMetrics = computeMetrics &&
-              (!_output.hasResponse() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad()));
+      computeMetrics = computeMetrics && canComputeMetricsForFrame(fr);
       Frame adaptFr = adaptFrameForScore(fr, computeMetrics);
 
       // Predict & Score
@@ -2074,6 +2073,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }.doAll(Vec.T_NUM, predictions).outputFrame(Key.<Frame>make(outputName), new String[]{"deviance"}, null);
+  }
+
+  protected boolean canComputeMetricsForFrame(Frame fr) {
+    return !isSupervised() || (fr.vec(_output.responseName()) != null && !fr.vec(_output.responseName()).isBad());
   }
 
   protected String[] makeScoringNames(){
@@ -2206,16 +2209,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return MetricBuilder
    */
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
+    final boolean computeMetrics = canComputeMetricsForFrame(adaptFrm);
     // Build up the names & domains.
-    //String[] names = makeScoringNames();
-    String[][] domains = new String[1][];
-    Vec response = adaptFrm.lastVec();
-    domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : response.domain();
-    if (_parms._distribution == DistributionFamily.quasibinomial) {
-      domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
-    }
-
+    String[] names = makeScoringNames();
+    String[][] domains = makeScoringDomains(adaptFrm, computeMetrics, names);
     // Score the dataset, building the class distribution & predictions
     BigScore bs = makeBigScoreTask(domains, null, adaptFrm, computeMetrics, false, null, CFuncRef.from(_parms._custom_metric_func)).doAll(adaptFrm);
     return bs._mb;
@@ -2239,7 +2236,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                     boolean computeMetrics, boolean makePreds, Job j, CFuncRef customMetricFunc) {
       super(customMetricFunc);
       _j = j;
-      _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
+      _domain = domain; 
+      _npredcols = ncols; 
+      _mean = mean; 
+      _computeMetrics = computeMetrics; 
+      _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
       _hasWeights = testHasWeights;

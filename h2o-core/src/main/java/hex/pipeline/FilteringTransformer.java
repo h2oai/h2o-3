@@ -10,7 +10,7 @@ public abstract class FilteringTransformer<T extends DataTransformer> extends Da
   boolean _filterEnabled = true;
   
   @Override
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
+  protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     if (_filterEnabled) {
       return filterRows(fr);
     }

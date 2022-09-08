@@ -1,6 +1,5 @@
 package hex.pipeline;
 
-import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -20,21 +19,22 @@ public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator>{
   }
 
   public KFoldColumnGenerator(String foldColumn, FoldAssignmentScheme scheme) {
+    super();
     _fold_column = foldColumn;
     _scheme = scheme;
   }
 
   @Override
-  public void prepare(PipelineContext context) {
+  protected void doPrepare(PipelineContext context) {
     assert context != null;
     assert context._params != null;
     if (_fold_column == null) _fold_column = context._params._fold_column;
-    Frame withFoldC = transform( context._params.train(), FrameType.Training, context);
-    context._params.setTrain(withFoldC.getKey());
+    Frame withFoldC = transform(context.getTrain(), FrameType.Training, context);
+    context.setTrain(withFoldC);
   }
 
   @Override
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
+  protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     if (type == FrameType.Training && fr.find(_fold_column) < 0) {
       assert context != null;
       assert context._params != null;

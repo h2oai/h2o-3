@@ -7,17 +7,18 @@ public abstract class DelegateTransformer<T extends DataTransformer> extends Dat
   T _transformer;
 
   public DelegateTransformer(T transformer) {
+    super();
     _transformer = transformer;
   }
 
   @Override
-  public void prepare(PipelineContext context) {
+  protected void doPrepare(PipelineContext context) {
     _transformer.prepare(context);
   }
 
   @Override
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
-    return _transformer.transform(fr, type, context);
+  protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+    return _transformer.doTransform(fr, type, context);
   }
 
 }

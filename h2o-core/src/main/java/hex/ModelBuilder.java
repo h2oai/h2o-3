@@ -661,8 +661,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
-      if (!cvModelBuilders[0].getName().equals("infogram")) // infogram does not support scoring
-        cv_mainModelScores(N, mbs, cvModelBuilders);
+      cv_mainModelScores(N, mbs, cvModelBuilders);
 
       _job.setReadyForView(true);
       DKV.put(_job);
@@ -825,7 +824,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 4: Run all the CV models and launch the main model
-  public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
+  protected void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
     makeCVModelBuilder(cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
@@ -834,9 +833,35 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return new CVModelBuilder(_job, modelBuilders, parallelization);
   }
   
+  protected ModelMetrics.MetricBuilder makeCVMetricBuilder(ModelBuilder<M, P, O> cvModelBuilder, Futures fs) {
+    Frame cvValid = cvModelBuilder.valid();
+    Frame preds = null;
+    try (Scope.Safe s = Scope.safe(cvValid)) {
+      ModelMetrics.MetricBuilder mb;
+      Frame adaptFr = new Frame(cvValid);
+      M cvModel = cvModelBuilder.dest().get();
+      cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
+      if (nclasses() == 2 /* need holdout predictions for gains/lift table */
+              || _parms._keep_cross_validation_predictions
+              || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
+        String predName = cvModelBuilder.getPredictionKey();
+        Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
+        preds = result.getPredictions();
+        Scope.untrack(preds);
+        result.makeModelMetrics(cvValid, adaptFr);
+        mb = result.getMetricBuilder();
+        DKV.put(cvModel);
+      } else {
+        mb = cvModel.scoreMetrics(adaptFr);
+      }
+      return mb;
+    } finally {
+      Scope.track(preds);
+    }
+  }
   
   // Step 5: Score the CV models
-  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
+  protected ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if (_job.stop_requested()) {
       Log.info("Skipping scoring of CV models");
       throw new Job.JobCancelledException(_job);
@@ -852,42 +877,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Log.info("Skipping scoring for last "+(N-i)+" out of "+N+" CV models");
         throw new Job.JobCancelledException(_job);
       }
-      Frame cvValid = cvModelBuilders[i].valid();
-      Frame preds = null;
-      try (Scope.Safe s = Scope.safe(cvValid)) {
-        Frame adaptFr = new Frame(cvValid);
-        if (makeCVMetrics(cvModelBuilders[i])) {
-          M cvModel = cvModelBuilders[i].dest().get();
-          cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
-          if (nclasses() == 2 /* need holdout predictions for gains/lift table */
-                  || _parms._keep_cross_validation_predictions
-                  || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
-            String predName = cvModelBuilders[i].getPredictionKey();
-            Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.from(_parms._custom_metric_func));
-            preds = result.getPredictions();
-            Scope.untrack(preds);
-            result.makeModelMetrics(cvValid, adaptFr);
-            mbs[i] = result.getMetricBuilder();
-            DKV.put(cvModel);
-          } else {
-            mbs[i] = cvModel.scoreMetrics(adaptFr);
-          }
-        }
-      } finally {
-        Scope.track(preds);
-      }
+      mbs[i] = makeCVMetricBuilder(cvModelBuilders[i], fs);
+      
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);
       weights[2*i  ].remove(fs);
       weights[2*i+1].remove(fs);
     }
-    
     fs.blockForPending();
     return mbs;
-  }
-
-  protected boolean makeCVMetrics(ModelBuilder<?, ?, ?> cvModelBuilder) {
-    return !cvModelBuilder.getName().equals("infogram");
   }
 
   private boolean useParallelMainModelBuilding(int nFolds) {
@@ -922,7 +920,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 7: Combine cross-validation scores; compute main model x-val scores; compute gains/lifts
-  public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder mbs[], ModelBuilder<M, P, O> cvModelBuilders[]) {
+  protected void cv_mainModelScores(int N, ModelMetrics.MetricBuilder[] mbs, ModelBuilder<M, P, O>[] cvModelBuilders) {
     //never skipping CV main scores: we managed to reach last step and this should not be an expensive one, so let's offer this model
     M mainModel = _result.get();
 
@@ -1008,7 +1006,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     DKV.put(mainModel);
   }
   
-  public void cv_makeAggregateModelMetrics(ModelMetrics.MetricBuilder[] mbs){
+  protected void cv_makeAggregateModelMetrics(ModelMetrics.MetricBuilder[] mbs){
     for (int i = 1; i < mbs.length; ++i) {
       mbs[0].reduceForCV(mbs[i]);
     }
@@ -1042,7 +1040,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  Also allow the cv models to be modified after all of them have been built.
    *  For example, the model might need to be told to not do early stopping. CV models might have their lambda value modified, etc.
    */
-  public void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) { }
+  protected void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) { }
 
   /** @return Whether n-fold cross-validation is done  */
   public boolean nFoldCV() {
@@ -1793,7 +1791,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       ModelPreprocessor preprocessor = key.get();
       encoded = isTraining ? preprocessor.processTrain(result, _parms) : preprocessor.processValid(result, _parms);
-      if (encoded != result) trackEncoded(encoded, scopeTrack);
+      if (encoded != result) trackFrame(encoded, scopeTrack);
       result = encoded;
     }
     if (!scopeTrack) Scope.untrack(result); // otherwise encoded frame is fully removed on CV model completion, raising exception when computing CV scores.
@@ -1808,11 +1806,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             getToEigenVec(), 
             _parms._max_categorical_levels
     );
-    if (encoded != fr) trackEncoded(encoded, scopeTrack);
+    if (encoded != fr) trackFrame(encoded, scopeTrack);
     return encoded;
   }
   
-  private void trackEncoded(Frame fr, boolean scopeTrack) {
+  protected void trackFrame(Frame fr, boolean scopeTrack) {
     assert fr._key != null;
     if (scopeTrack)
       Scope.track(fr);

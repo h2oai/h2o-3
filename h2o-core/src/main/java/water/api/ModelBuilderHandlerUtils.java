@@ -15,6 +15,7 @@ public class ModelBuilderHandlerUtils {
   ) {
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
     String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
+    if (schemaDir == null) return null; // this builder doesn't have any schema
 
     // Build a Model Schema and a ModelParameters Schema
     String schemaName = schemaDir + algoName + "V" + version;

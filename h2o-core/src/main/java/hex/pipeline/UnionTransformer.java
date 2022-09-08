@@ -18,7 +18,7 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
   }
 
   @Override
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
+  protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     Frame result = null;
     switch (_strategy) {
       case add:
@@ -29,7 +29,7 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
         break;
     }
     for (DataTransformer dt : _transformers) {
-      result.add(dt.transform(fr, type, context));
+      result.add(dt.doTransform(fr, type, context));
     }
     return result;
   }

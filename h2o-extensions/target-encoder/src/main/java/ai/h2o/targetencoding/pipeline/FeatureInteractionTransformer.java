@@ -23,10 +23,10 @@ public class FeatureInteractionTransformer extends FeatureTransformer<FeatureInt
   }
 
   @Override
-  public void prepare(PipelineContext context) {
+  protected void doPrepare(PipelineContext context) {
     assert context != null;
     assert context._params != null;
-    Frame train = context._params.train();
+    Frame train = new Frame(context.getTrain());
     // FIXME: InteractionSupport should be improved to not systematically modify frames in-place
     int interactionCol = InteractionSupport.addFeatureInteraction(train, _columns);
     _interaction_domain = train.vec(interactionCol).domain();
@@ -34,8 +34,8 @@ public class FeatureInteractionTransformer extends FeatureTransformer<FeatureInt
   }
 
   @Override
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
-    InteractionSupport.addFeatureInteraction(fr, _columns, _interaction_domain);  //FIXME: same as above. Also shoudl be able to specify the interaction column name.
+  protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+    InteractionSupport.addFeatureInteraction(fr, _columns, _interaction_domain);  //FIXME: same as above. Also should  be able to specify the interaction column name.
     return fr;
   }
 }
