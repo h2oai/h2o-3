@@ -119,7 +119,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             collect(Collectors.toList()).stream().mapToDouble(Double::doubleValue).toArray();
     GLMParameters[] allParams = genGLMParameters(parms, validPredictors, predictorNames);
     GLM[] glmBuilder = Stream.of(allParams).map(x -> new GLM(x)).collect(Collectors.toList()).stream().toArray(GLM[]::new);
-    GLM[] glmResults = ModelBuilderHelper.trainModelsParallel(glmBuilder, parms._nparallelism);
+    int parallelization = nVIFModelsInParallel(parms);
+    GLM[] glmResults = ModelBuilderHelper.trainModelsParallel(glmBuilder, parallelization);
     Double[] r2 = Arrays.stream(glmResults).mapToDouble(x ->x.get().r2()).boxed().collect(Collectors.toList()).stream()
             .toArray(Double[]::new);
     for (GLM glm : glmResults)
@@ -128,7 +129,31 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             .mapToDouble(x -> 1.0 / (1.0 - r2[x])).boxed().collect(Collectors.toList()).stream()
             .mapToDouble(Double::doubleValue).toArray();
   }
-  
+
+  static int nVIFModelsInParallel(GLMParameters parms) {
+    if (parms._is_cv_model) { // CV is already parallelized
+      return 1;
+    }
+    String userSpec = H2O.getSysProperty("glm.vif." + parms._train + ".nparallelism", null);
+    if (userSpec != null) {
+      try {
+        final int vifParallelization = Integer.parseInt(userSpec);
+        if (vifParallelization <= 0 || vifParallelization > H2O.ARGS.nthreads) {
+          Log.warn("Ignoring user-specified parallelization level for VIF calculation. " +
+                  "Value '" + userSpec + "' is out of range (0, nthreads].");
+        }
+        return vifParallelization;
+      } catch (Exception e) {
+        Log.err("Invalid user-specified parallelization level. Cannot parse value '" + userSpec + "' as a number.", e);
+      }
+    }
+    Frame train = parms.train();
+    if (train != null && train.byteSize() < 1e6) {
+      return H2O.ARGS.nthreads; // VIF is relatively lightweight, on small data run all concurrently
+    }
+    return 2; // same strategy as in CV of "big data" - run 2 models concurrently
+  }
+
   public static class RegularizationPath extends Iced {
     public double []   _lambdas;
     public double[] _alphas;
@@ -354,8 +379,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _fix_dispersion_parameter = false;
     public boolean _build_null_model = false;
     public boolean _generate_variable_inflation_factors = false; // if enabled, will generate variable_inflation_factors for numeric predictors
-    public int _nparallelism = 0;
-    
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
         if (!(Solver.IRLSM.equals(_solver) || Solver.AUTO.equals(_solver)))

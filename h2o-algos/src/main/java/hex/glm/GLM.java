@@ -933,8 +933,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
     if (expensive) {
-      if (_parms._nparallelism == 0)
-        _parms._nparallelism = H2O.NUMCPUS;
       if (_parms._build_null_model) {
         if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
           error("build_null_model", " is only supported for tweedie, gamma and negativebinomial familes");

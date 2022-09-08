@@ -90,8 +90,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_iterations_dispersion",
             "build_null_model",
             "fix_dispersion_parameter",
-            "generate_variable_inflation_factors",
-            "nparallelism"
+            "generate_variable_inflation_factors"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -207,10 +206,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Include constant term in the model", level = Level.expert)
     public boolean intercept;
 
-    @API(help = "number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability",
-            level = API.Level.secondary, gridable = true)
-    public int nparallelism;
-    
     @API(help="If set, will build a model with only the intercept.  Default to false.", level = Level.expert)
     public boolean build_null_model;
 

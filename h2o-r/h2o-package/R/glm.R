@@ -143,8 +143,6 @@
 #'        false. Defaults to FALSE.
 #' @param generate_variable_inflation_factors \code{Logical}. if true, will generate variable inflation factors for numerical predictors.  Default to false.
 #'        Defaults to FALSE.
-#' @param nparallelism number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability Defaults to
-#'        0.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -261,8 +259,7 @@ h2o.glm <- function(x,
                     max_iterations_dispersion = 1000000,
                     build_null_model = FALSE,
                     fix_dispersion_parameter = FALSE,
-                    generate_variable_inflation_factors = FALSE,
-                    nparallelism = 0)
+                    generate_variable_inflation_factors = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -435,8 +432,6 @@ h2o.glm <- function(x,
     parms$fix_dispersion_parameter <- fix_dispersion_parameter
   if (!missing(generate_variable_inflation_factors))
     parms$generate_variable_inflation_factors <- generate_variable_inflation_factors
-  if (!missing(nparallelism))
-    parms$nparallelism <- nparallelism
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -536,7 +531,6 @@ h2o.glm <- function(x,
                                     build_null_model = FALSE,
                                     fix_dispersion_parameter = FALSE,
                                     generate_variable_inflation_factors = FALSE,
-                                    nparallelism = 0,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -714,8 +708,6 @@ h2o.glm <- function(x,
     parms$fix_dispersion_parameter <- fix_dispersion_parameter
   if (!missing(generate_variable_inflation_factors))
     parms$generate_variable_inflation_factors <- generate_variable_inflation_factors
-  if (!missing(nparallelism))
-    parms$nparallelism <- nparallelism
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

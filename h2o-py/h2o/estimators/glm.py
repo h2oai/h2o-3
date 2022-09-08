@@ -110,7 +110,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  build_null_model=False,  # type: bool
                  fix_dispersion_parameter=False,  # type: bool
                  generate_variable_inflation_factors=False,  # type: bool
-                 nparallelism=0,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -388,10 +387,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                predictors.  Default to false.
                Defaults to ``False``.
         :type generate_variable_inflation_factors: bool
-        :param nparallelism: number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system
-               capability
-               Defaults to ``0``.
-        :type nparallelism: int
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -468,7 +463,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.build_null_model = build_null_model
         self.fix_dispersion_parameter = fix_dispersion_parameter
         self.generate_variable_inflation_factors = generate_variable_inflation_factors
-        self.nparallelism = nparallelism
 
     @property
     def training_frame(self):
@@ -2282,20 +2276,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def generate_variable_inflation_factors(self, generate_variable_inflation_factors):
         assert_is_type(generate_variable_inflation_factors, None, bool)
         self._parms["generate_variable_inflation_factors"] = generate_variable_inflation_factors
-
-    @property
-    def nparallelism(self):
-        """
-        number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability
-
-        Type: ``int``, defaults to ``0``.
-        """
-        return self._parms.get("nparallelism")
-
-    @nparallelism.setter
-    def nparallelism(self, nparallelism):
-        assert_is_type(nparallelism, None, int)
-        self._parms["nparallelism"] = nparallelism
 
     Lambda = deprecated_property('Lambda', lambda_)
 
