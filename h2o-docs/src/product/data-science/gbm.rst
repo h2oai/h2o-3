@@ -260,6 +260,10 @@ Defining a GBM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+-  `in_training_checkpoints_dir <algo-params/in_training_checkpoints_dir.html>`__: Create checkpoints into defined directory while training process is still running. In case of cluster shutdown, this checkpoint can be used to restart training.
+
+-  `in_training_checkpoints_tree_interval <algo-params/in_training_checkpoints_tree_interval.html>`__: Checkpoint the model after every so many trees. Parameter is used only when ``in_training_checkpoints_dir`` is defined. The default value is ``1`` and makes the checkpoint after each trained tree.
+
 -  `monotone_constraints <algo-params/monotone_constraints.html>`__: A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. Also note that this option can only be used when the distribution is ``gaussian``, ``bernoulli``, ``tweedie`` or ``quantile``. A Python demo is available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/H2O_tutorial_gbm_monotonicity.ipynb>`__.
 
 -  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. This option is defaults to true (enabled).
