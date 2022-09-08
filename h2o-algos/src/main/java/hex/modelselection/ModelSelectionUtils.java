@@ -78,7 +78,7 @@ public class ModelSelectionUtils {
      * @param predNames
      * @return
      */
-    public static Frame generateOneFrame(int[] predIndices, ModelSelectionModel.ModelSelectionParameters parms, String[] predNames,
+    public static Frame generateOneFrame(int[] predIndices, Model.Parameters parms, String[] predNames,
                                          String foldColumn) {
         final Frame predVecs = new Frame(Key.make());
         final Frame train = parms.train();
@@ -693,8 +693,8 @@ public class ModelSelectionUtils {
         return bestModel;
     }
 
-    public static String[] extractPredictorNames(ModelSelectionModel.ModelSelectionParameters parms, DataInfo dinfo, 
-                                            String foldColumn) {
+    public static String[] extractPredictorNames(Model.Parameters parms, DataInfo dinfo,
+                                                 String foldColumn) {
         List<String> frameNames = Arrays.stream(dinfo._adaptedFrame.names()).collect(Collectors.toList());
         String[] nonResponseCols = parms.getNonPredictors();
         for (String col : nonResponseCols)
@@ -702,7 +702,6 @@ public class ModelSelectionUtils {
         if (foldColumn != null && frameNames.contains(foldColumn))
             frameNames.remove(foldColumn);
         return frameNames.stream().toArray(String[]::new);
-        
     }
     
     public static int findMinZValue(GLMModel model, List<String> numPredNames, List<String> catPredNames, 

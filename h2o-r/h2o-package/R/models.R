@@ -2231,6 +2231,45 @@ h2o.coef_with_p_values <- function(object) {
 }
 
 #'
+#' Return the variable inflation factors associated with numerical predictors for GLM models.
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "cylinders"
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
+#' cars_glm <- h2o.glm(seed = 1234, 
+#'                     lambda=0.0,
+#'                     compute_p_values=TRUE,
+#'                     generate_variable_inflation_factors=TRUE,     
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = train, 
+#'                     validation_frame = valid)
+#' h2o.get_variable_inflation_factors(cars_glm)
+#' }
+#' @export
+h2o.get_variable_inflation_factors <- function(object) {
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+    if (object@parameters$generate_variable_inflation_factors) {
+      structure(object@model$variable_inflation_factors, names = object@model$vif_predictor_names)
+    } else {
+      stop("variable inflation factors are not found in model.  Make sure to set enable_variable_inflation_factors=TRUE.")
+    }
+  } else {
+    stop("variable inflation factors are only found in GLM models with numerical predictors.")
+  }
+}
+
+#'
 #' Return the coefficients that can be applied to the non-standardized data.
 #'
 #' Note: standardize = True by default. If set to False, then coef() returns the coefficients that are fit directly.

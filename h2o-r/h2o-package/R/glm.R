@@ -141,6 +141,8 @@
 #' @param fix_dispersion_parameter \code{Logical}. Only used for Tweedie, Gamma and Negative Binomial GLM.  If set, will use the dispsersion
 #'        parameter in init_dispersion_parameter as the standard error and use it to calculate the p-values. Default to
 #'        false. Defaults to FALSE.
+#' @param generate_variable_inflation_factors \code{Logical}. if true, will generate variable inflation factors for numerical predictors.  Default to false.
+#'        Defaults to FALSE.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -256,7 +258,8 @@ h2o.glm <- function(x,
                     dispersion_epsilon = 0.0001,
                     max_iterations_dispersion = 1000000,
                     build_null_model = FALSE,
-                    fix_dispersion_parameter = FALSE)
+                    fix_dispersion_parameter = FALSE,
+                    generate_variable_inflation_factors = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -427,6 +430,8 @@ h2o.glm <- function(x,
     parms$build_null_model <- build_null_model
   if (!missing(fix_dispersion_parameter))
     parms$fix_dispersion_parameter <- fix_dispersion_parameter
+  if (!missing(generate_variable_inflation_factors))
+    parms$generate_variable_inflation_factors <- generate_variable_inflation_factors
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -525,6 +530,7 @@ h2o.glm <- function(x,
                                     max_iterations_dispersion = 1000000,
                                     build_null_model = FALSE,
                                     fix_dispersion_parameter = FALSE,
+                                    generate_variable_inflation_factors = FALSE,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -700,6 +706,8 @@ h2o.glm <- function(x,
     parms$build_null_model <- build_null_model
   if (!missing(fix_dispersion_parameter))
     parms$fix_dispersion_parameter <- fix_dispersion_parameter
+  if (!missing(generate_variable_inflation_factors))
+    parms$generate_variable_inflation_factors <- generate_variable_inflation_factors
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

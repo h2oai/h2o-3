@@ -109,6 +109,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  max_iterations_dispersion=1000000,  # type: int
                  build_null_model=False,  # type: bool
                  fix_dispersion_parameter=False,  # type: bool
+                 generate_variable_inflation_factors=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -382,6 +383,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                p-values. Default to false.
                Defaults to ``False``.
         :type fix_dispersion_parameter: bool
+        :param generate_variable_inflation_factors: if true, will generate variable inflation factors for numerical
+               predictors.  Default to false.
+               Defaults to ``False``.
+        :type generate_variable_inflation_factors: bool
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -457,6 +462,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.max_iterations_dispersion = max_iterations_dispersion
         self.build_null_model = build_null_model
         self.fix_dispersion_parameter = fix_dispersion_parameter
+        self.generate_variable_inflation_factors = generate_variable_inflation_factors
 
     @property
     def training_frame(self):
@@ -2256,6 +2262,20 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def fix_dispersion_parameter(self, fix_dispersion_parameter):
         assert_is_type(fix_dispersion_parameter, None, bool)
         self._parms["fix_dispersion_parameter"] = fix_dispersion_parameter
+
+    @property
+    def generate_variable_inflation_factors(self):
+        """
+        if true, will generate variable inflation factors for numerical predictors.  Default to false.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("generate_variable_inflation_factors")
+
+    @generate_variable_inflation_factors.setter
+    def generate_variable_inflation_factors(self, generate_variable_inflation_factors):
+        assert_is_type(generate_variable_inflation_factors, None, bool)
+        self._parms["generate_variable_inflation_factors"] = generate_variable_inflation_factors
 
     Lambda = deprecated_property('Lambda', lambda_)
 
