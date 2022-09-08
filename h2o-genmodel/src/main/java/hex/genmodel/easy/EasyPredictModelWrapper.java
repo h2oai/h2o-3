@@ -16,7 +16,7 @@ import hex.genmodel.attributes.parameters.VariableImportancesHolder;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
-
+import hex.genmodel.utils.ArrayUtils;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
@@ -72,7 +72,8 @@ public class EasyPredictModelWrapper implements Serializable {
   private final boolean enableStagedProbabilities; // if set true, staged probabilities from tree agos are returned
   private final boolean enableContributions; // if set to true, will return prediction contributions (SHAP values) - for GBM & XGBoost
   private final int glrmIterNumber; // allow user to set GLRM mojo iteration number in constructing x.
-
+  protected int contributionCount = 5;
+  protected int[] top5Indices = new int[contributionCount];
   private final PredictContributions predictContributions;
 
   public boolean getEnableLeafAssignment() { return enableLeafAssignment; }
@@ -115,7 +116,7 @@ public class EasyPredictModelWrapper implements Serializable {
     private boolean enableLeafAssignment = false;  // default to false
     private boolean enableGLRMReconstrut = false;
     private boolean enableStagedProbabilities = false;
-    private boolean enableContributions = false;
+    private boolean enableContributions = true;
     private boolean useExternalEncoding = false;
     private int glrmIterNumber = 100; // default set to 100
 
@@ -411,7 +412,16 @@ public class EasyPredictModelWrapper implements Serializable {
    * See {@link #predict(RowData, ModelCategory)}
    */
   public AbstractPrediction predict(RowData data) throws PredictException {
-    return predict(data, m.getModelCategory());
+    String[] contributionNames;
+    String[] top5ContributionNames = new String[contributionCount];
+    AbstractPrediction pr = predict(data, m.getModelCategory());
+    contributionNames = this.getContributionNames();
+    for(int i=0;i<top5Indices.length;i++) {
+      top5ContributionNames[i] = contributionNames[top5Indices[i]];
+    }
+    pr.contributionNames = top5ContributionNames;
+    return pr;
+  
   }
 
   ErrorConsumer getErrorConsumer() {
@@ -645,6 +655,9 @@ public class EasyPredictModelWrapper implements Serializable {
   public BinomialModelPrediction predictBinomial(RowData data, double offset) throws PredictException {
 
     double[] preds = preamble(ModelCategory.Binomial, data, offset);
+    float[] contributionsArray;
+    int[] indicies;
+    float[] top5Contributions = new float[contributionCount];
 
     BinomialModelPrediction p = new BinomialModelPrediction();
     if (enableLeafAssignment) { // only get leaf node assignment if enabled
@@ -670,11 +683,22 @@ public class EasyPredictModelWrapper implements Serializable {
         p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
     }
     if (enableContributions) {
-      p.contributions = predictContributions(data);
+      contributionsArray = predictContributions(data);
+      // System.out.println(Arrays.toString(contributionsArray));
+
+      indicies = ArrayUtils.argSort(contributionsArray);
+      top5Indices = this.getTopValuesFromArray(indicies, contributionCount);
+      for(int i=0;i<top5Indices.length;i++) {
+        top5Contributions[i] = contributionsArray[top5Indices[i]];
+      }
+      p.contributions = top5Contributions;
     }
     return p;
   }
 
+  private int[] getTopValuesFromArray(int[] arr, int top) {
+    return arr.length > top ? Arrays.copyOfRange(arr, 0, top) : arr;
+  }
   /**
    * @deprecated Use {@link #predictTargetEncoding(RowData)} instead.
    */

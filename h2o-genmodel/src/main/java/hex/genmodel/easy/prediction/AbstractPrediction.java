@@ -7,4 +7,5 @@ package hex.genmodel.easy.prediction;
  * model category.
  */
 public abstract class AbstractPrediction implements java.io.Serializable {
+    public String[] contributionNames;
 }
