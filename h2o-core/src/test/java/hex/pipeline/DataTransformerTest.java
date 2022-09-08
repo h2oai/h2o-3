@@ -6,14 +6,16 @@ import water.Scope;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static water.TestUtil.*;
 
 @RunWith(H2ORunner.class)
@@ -61,6 +63,8 @@ public class DataTransformerTest {
   
   public static class FrameTrackerAsTransformer extends DataTransformer {
     
+    static final Logger logger = LoggerFactory.getLogger(FrameTrackerAsTransformer.class);
+    
     public static class Transformation {
       String frameId;
       FrameType type;
@@ -83,6 +87,7 @@ public class DataTransformerTest {
     @Override
     protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
       if (fr == null) return null;
+      logger.info(fr.getKey()+": columns="+Arrays.toString(fr.names()));
       transformations.add(new Transformation(fr.getKey().toString(), type, context._params._is_cv_model));
       return fr;
     }

@@ -439,6 +439,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     else computeCrossValidation();
     return _result.get();
   }
+  
+  final public M trainModelNested(TrainingFramesProvider framesProvider) {
+    setTrain(framesProvider.getTrain());
+    setValid(framesProvider.getValid());
+    if (error_count() > 0)
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+    startClock();
+    if( !nFoldCV() ) submitTrainModelTask().join();
+    else computeCrossValidation(framesProvider);
+    return _result.get();
+  }
 
   /**
    * Train a model as part of a larger job. The model will be built on a non-client node.
@@ -606,12 +617,50 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_updateOptimalParameters(_cvModelBuilders);
     }
   }
+  
+  
+  protected interface TrainingFramesProvider {
+    Frame getTrain();
+    
+    Frame getValid();
+    
+    Frame getTrain(Frame train, int cvIdx);
+    
+    Frame getValid(Frame valid, int cvIdx);
+  }
+  
+  class DefaultTrainingFramesProvider implements TrainingFramesProvider {
+
+    @Override
+    public Frame getTrain() {
+      return train();
+    }
+
+    @Override
+    public Frame getValid() {
+      return valid();
+    }
+
+    @Override
+    public Frame getTrain(Frame train, int cvIdx) {
+      return train;
+    }
+
+    @Override
+    public Frame getValid(Frame valid, int cvIdx) {
+      return valid;
+    }
+  } 
+
+  public void computeCrossValidation() {
+    computeCrossValidation(new DefaultTrainingFramesProvider());
+  }
 
   /**
    * Default naive (serial) implementation of N-fold cross-validation
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
-  public void computeCrossValidation() {
+  public void computeCrossValidation(TrainingFramesProvider framesProvider) {
     assert _job.isRunning();    // main Job is still running
     _job.setReadyForView(false); //wait until the main job starts to let the user inspect the main job
     final int N = nFoldWork();
@@ -627,7 +676,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final Vec[] weights = cv_makeWeights(N, foldAssignment);
 
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-      cvModelBuilders = cv_makeFramesAndBuilders(N, weights);
+      cvModelBuilders = cv_makeFramesAndBuilders(N, weights, framesProvider);
 
       // Step 4: Run all the CV models (and optionally train the main model in parallel to the CV training)
       final boolean buildMainModel;
@@ -692,7 +741,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 1: Assign each row to a fold
-  FoldAssignment cv_AssignFold(int N) {
+  protected FoldAssignment cv_AssignFold(int N) {
     assert(N>=2);
     Vec fold = train().vec(_parms._fold_column);
     if (fold != null) {
@@ -719,7 +768,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 2: Make 2*N binary weight vectors
-  Vec[] cv_makeWeights(final int N, FoldAssignment foldAssignment) {
+  protected Vec[] cv_makeWeights(final int N, FoldAssignment foldAssignment) {
     String origWeightsName = _parms._weights_column;
     Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
     Frame folds_and_weights = new Frame(foldAssignment.getAdaptedFold(), origWeight);
@@ -751,14 +800,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  private ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
+  protected ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights, TrainingFramesProvider framesProvider) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
     final String weightName = "__internal_cv_weights__";
-    if (train().find(weightName) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '" + weightName + "'.");
+    Frame train = framesProvider.getTrain();
+    if (train.find(weightName) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '" + weightName + "'.");
 
-    Frame cv_fr = new Frame(train().names(),train().vecs());
+    Frame cv_fr = new Frame(train.names(), train.vecs());
     if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
@@ -767,11 +817,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = new Frame(Key.make(identifier + "_train"), cv_fr.names(), cv_fr.vecs());
+      Frame cvTrain = framesProvider.getTrain(cv_fr, i);
+      cvTrain = new Frame(Key.make(identifier + "_train"), cvTrain.names(), cvTrain.vecs());
       cvTrain.write_lock(_job);
       cvTrain.add(weightName, weights[2*i]);
       cvTrain.update(_job);
-      Frame cvValid = new Frame(Key.make(identifier + "_valid"), cv_fr.names(), cv_fr.vecs());
+      Frame cvValid = framesProvider.getValid(cv_fr, i);
+      cvValid = new Frame(Key.make(identifier + "_valid"), cvValid.names(), cvValid.vecs());
       cvValid.write_lock(_job);
       cvValid.add(weightName, weights[2*i+1]);
       cvValid.update(_job);
@@ -906,7 +958,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 6: build the main model
-  private void buildMainModel(long max_runtime_millis) {
+  protected void buildMainModel(long max_runtime_millis) {
     if (_job.stop_requested()) {
       Log.info("Skipping main model");
       throw new Job.JobCancelledException(_job);

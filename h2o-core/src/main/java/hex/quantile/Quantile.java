@@ -367,7 +367,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
       parms._train = fr._key;
       parms._probs = new double[]{quantile};
-      QuantileModel kmm = new Quantile(parms).trainModelNested(null);
+      QuantileModel kmm = new Quantile(parms).trainModelNested((Frame)null);
       kmm.delete();
       return kmm._output._quantiles[0][0];
     } finally {

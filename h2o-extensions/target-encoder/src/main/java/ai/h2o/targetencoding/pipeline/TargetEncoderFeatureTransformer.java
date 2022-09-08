@@ -54,7 +54,7 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
   }
 
   private boolean useFoldTransform(Model.Parameters params) {
-    return params._is_cv_model && getModel()._parms._data_leakage_handling == KFold;
+    return params._cv_fold >= 0 && getModel()._parms._data_leakage_handling == KFold;
   }
   
 }

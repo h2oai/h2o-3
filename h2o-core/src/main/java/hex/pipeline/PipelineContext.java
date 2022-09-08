@@ -7,7 +7,7 @@ import water.Key;
 import water.Scope;
 import water.fvec.Frame;
 
-public class PipelineContext {
+public class PipelineContext implements Cloneable {
   
   @FunctionalInterface
   interface FrameTracker {

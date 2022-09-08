@@ -17,6 +17,16 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
   }
 
   @Override
+  public boolean havePojo() {
+    return false;
+  }
+
+  @Override
+  public boolean haveMojo() {
+    return false;
+  }
+
+  @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     throw new UnsupportedOperationException("PipelineModel.makeMetricBuilder should never be called!");
 //    assert _output.getFinalModel() != null;
