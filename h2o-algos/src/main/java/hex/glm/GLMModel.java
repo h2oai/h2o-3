@@ -23,7 +23,6 @@ import water.util.*;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -32,6 +31,7 @@ import java.util.stream.Stream;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
 import static hex.glm.GLMUtils.genGLMParameters;
+import static hex.modelselection.ModelSelectionUtils.extractPredictorNames;
 import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
 import static hex.schemas.GLMModelV3.calculateVarimpBase;
 import static hex.util.DistributionUtils.distributionToFamily;
@@ -113,7 +113,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * factors are generated for non-numerical predictors.
    * 
    */
-  public void buildVariableInflationFactors(GLMParameters parms, String[] validPredictors, String[] predictorNames) {
+  public String[] buildVariableInflationFactors(Frame train, DataInfo dinfo) {
+    String[] predictorNames = extractPredictorNames(_parms, dinfo, _parms._fold_column);
+    // only calculate VIF for numerical columns
+    String[] vifPredictors = getVifPredictors(train, _parms, dinfo);
+    return buildVariableInflationFactors(_parms, vifPredictors, predictorNames);
+  }
+
+  static String[] getVifPredictors(Frame train, GLMParameters parms, DataInfo dinfo) {
+    String[] predictorNames = extractPredictorNames(parms, dinfo, parms._fold_column);
+    return Stream.of(predictorNames).filter(x -> train.vec(x).isNumeric()).
+            collect(Collectors.toList()).stream().toArray(String[]::new);
+  }
+
+  public String[] buildVariableInflationFactors(GLMParameters parms, String[] validPredictors, String[] predictorNames) {
     // set variable inflation factors to NaN to start with
     _output._variable_inflation_factors = IntStream.range(0, validPredictors.length).mapToDouble(x -> Double.NaN).boxed().
             collect(Collectors.toList()).stream().mapToDouble(Double::doubleValue).toArray();
@@ -128,6 +141,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _output._variable_inflation_factors = IntStream.range(0, validPredictors.length)
             .mapToDouble(x -> 1.0 / (1.0 - r2[x])).boxed().collect(Collectors.toList()).stream()
             .mapToDouble(Double::doubleValue).toArray();
+    return validPredictors;
   }
 
   static int nVIFModelsInParallel(GLMParameters parms) {
