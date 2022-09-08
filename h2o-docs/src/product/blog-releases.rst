@@ -10,7 +10,7 @@ There's a new major release of H2O, and it's packed with new features and fixes!
 Distributed Uplift Random Forest
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`Distributed Uplift Random Forest (Uplift DRF) </data-science/upliftdrf.html>`__ is a classification tool for modeling uplift: the incremental impact of a treatment. This tool is very useful in marketing and medicine, and this machine learning approach is inspired by the A/B testing method.
+`Distributed Uplift Random Forest (Uplift DRF) </data-science/upliftdrf.html>`__ is a classification tool for modeling uplift: the incremental impact of a treatment. This tool is very useful in marketing and medicine, and this machine learning approach is inspired by the A/B testing method. 
 
 Demo
 ''''
