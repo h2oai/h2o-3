@@ -75,32 +75,30 @@ public class DispersionUtils {
         long timeLeft = parms._max_runtime_secs > 0 ? (long) (parms._max_runtime_secs * 1000 - modelBuiltTime)
                 : Long.MAX_VALUE;
         TweedieMLDispersionOnly tDispersion = new TweedieMLDispersionOnly(parms.train(), parms, model, beta, dinfo);
-        double seCurr = tDispersion._dispersionParameter;   // initial value of dispersion parameter
-        double seNew;
-        double change, se;
+        double dispersionCurr = tDispersion._dispersionParameter;   // initial value of dispersion parameter
+        double dispersionNew;
+        double change, dispersionTemp;
         double logLLCurr;
         double logLLNext;
-        List<Double> logValues = new ArrayList<>();
-        List<Double> seValues = new ArrayList<>();
-        List<Double> logDiff = new ArrayList<>();
-        List<Double> seDiff = new ArrayList<>();
+        List<Double> loglikelihoodList = new ArrayList<>();
+        List<Double> dispersionList = new ArrayList<>();
+        List<Double> llChangeList = new ArrayList<>();
 
         for (int index = 0; index < parms._max_iterations_dispersion; index++) {
-            tDispersion.updateDispersionP(seCurr);
+            tDispersion.updateDispersionP(dispersionCurr);
             DispersionTask.ComputeMaxSumSeriesTsk computeTask = new DispersionTask.ComputeMaxSumSeriesTsk(tDispersion,
                     parms, true);
             computeTask.doAll(tDispersion._infoFrame);
             logLLCurr = computeTask._logLL / computeTask._nobsLL;
 
             // record log values
-            logValues.add(logLLCurr);
-            seValues.add(seCurr);
-            if (logValues.size() > 1) {
-                logDiff.add(logValues.get(index) - logValues.get(index - 1));
-                seDiff.add(seValues.get(index)-seValues.get(index-1));
-                if ((Math.abs(logDiff.get(logDiff.size() - 1)) < parms._dispersion_epsilon)) {
+            loglikelihoodList.add(logLLCurr);
+            dispersionList.add(dispersionCurr);
+            if (loglikelihoodList.size() > 1) {
+                llChangeList.add(loglikelihoodList.get(index) - loglikelihoodList.get(index - 1));
+                if ((Math.abs(llChangeList.get(llChangeList.size() - 1)) < parms._dispersion_epsilon)) {
                     tDispersion.cleanUp();
-                    return seValues.get(index);
+                    return dispersionList.get(index);
                 }
             }
             // set new alpha
@@ -109,29 +107,29 @@ public class DispersionUtils {
                 change = dispersionLS(computeTask, tDispersion, parms);
 
                 if (!Double.isFinite(change))
-                    return seCurr;
-                se = seCurr-change;
+                    return dispersionCurr;
+                dispersionTemp = dispersionCurr-change;
             } else {
-                seNew = seCurr - change;
-                if (seNew < 0)
-                    seNew = seCurr*0.5;
-                tDispersion.updateDispersionP(seNew);
+                dispersionNew = dispersionCurr - change;
+                if (dispersionNew < 0)
+                    dispersionNew = dispersionCurr*0.5;
+                tDispersion.updateDispersionP(dispersionNew);
                 DispersionTask.ComputeMaxSumSeriesTsk computeTaskNew = new DispersionTask.ComputeMaxSumSeriesTsk(tDispersion,
                         parms, false);
                 computeTaskNew.doAll(tDispersion._infoFrame);
                 logLLNext = computeTaskNew._logLL / computeTaskNew._nobsLL;
                 
                 if (logLLNext > logLLCurr) { // there is improvement
-                    se = seNew;
+                    dispersionTemp = dispersionNew;
                 } else {    // heuristics to deal with when change has the wrong sign
-                    se = seCurr + parms._dispersion_learning_rate * change;
+                    dispersionTemp = dispersionCurr + parms._dispersion_learning_rate * change;
                 }
             }
             
-            if (se < 0)
-                seCurr *= 0.5;
+            if (dispersionTemp < 0)
+                dispersionCurr *= 0.5;
             else
-                seCurr = se;
+                dispersionCurr = dispersionTemp;
 
             if ((index % 100 == 0) && // check for additional stopping conditions for every 100th iterative steps
                     (job.stop_requested() ||  // user requested stop via stop_requested()
@@ -140,11 +138,11 @@ public class DispersionUtils {
                         "  Estimation process has not converged. Increase your max_runtime_secs if you have set " +
                         "maximum runtime for your model building process.");
                 tDispersion.cleanUp();
-                return seValues.get(logValues.indexOf(Collections.max(logValues)));
+                return dispersionList.get(loglikelihoodList.indexOf(Collections.max(loglikelihoodList)));
             }
         }
         tDispersion.cleanUp();
-        return seCurr;
+        return dispersionCurr;
     }
     
     public static double dispersionLS(DispersionTask.ComputeMaxSumSeriesTsk computeTsk,
