@@ -2536,7 +2536,7 @@ public class XGBoostTest extends TestUtil {
 
   private void assertJavaScoring(XGBoostModel model, Frame testFrame, Frame preds) {
     double relEpsilon = Boolean.parseBoolean(confJavaPredict) ? 
-            1e-7 // pure java predict 
+            1e-6 // pure java predict 
             : 
             getNativeRelEpsilon(model._parms._backend); // rel_epsilon based on backend
     assertTrue(model.testJavaScoring(testFrame, preds, relEpsilon));
@@ -2546,7 +2546,7 @@ public class XGBoostTest extends TestUtil {
     final double relEpsilon;
     switch (backend) {
       case cpu:
-        relEpsilon = 1e-7;
+        relEpsilon = 1e-6;
         break;
       case gpu:
         // As demonstrated in https://github.com/h2oai/h2o-3/pull/5373/files sigmoid transformation

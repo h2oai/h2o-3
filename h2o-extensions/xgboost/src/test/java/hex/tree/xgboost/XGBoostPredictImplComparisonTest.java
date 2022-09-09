@@ -111,7 +111,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
         } else if ("gblinear".equals(booster)) {
             return 1e-6;
         } else {
-            return null;
+            return 1e-6;
         }
     }
 
