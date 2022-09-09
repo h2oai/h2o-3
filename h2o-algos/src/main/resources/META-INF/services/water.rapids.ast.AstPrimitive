@@ -3,3 +3,4 @@ water.rapids.prims.tree.AstTreeUpdateWeights
 water.rapids.prims.rulefit.AstPredictRule
 water.rapids.prims.AstPredictedVsActualByVar
 water.rapids.prims.isotonic.AstPoolAdjacentViolators
+water.rapids.prims.AstSetCalibrationModel

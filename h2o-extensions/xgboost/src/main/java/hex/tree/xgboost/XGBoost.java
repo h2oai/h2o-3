@@ -743,7 +743,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       // Model Calibration (only for the final model, not CV models)
       if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
-        model._output._calib_model = CalibrationHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model);
+        model._output.setCalibrationModel(
+                CalibrationHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model)
+        );
         model.update(_job);
       }
 
