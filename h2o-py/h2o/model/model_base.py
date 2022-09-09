@@ -299,11 +299,9 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         >>> model.calibrate(h2o_iso_reg)
         >>> model.predict(train)
         """
-        from h2o.expr import ExprNode
-        from warnings import warn
-        result = ExprNode("set.calibration.model", self, calibration_model)._eval_driver('scalar')._cache._data
-        if result != "OK":
-            warn(result)
+        if has_extension(self, 'SupervisedTrees'):
+            return self._calibrate(calibration_model)
+        print("Only supervised tree-based models support model calibration")
 
     def is_cross_validated(self):
         """Return True if the model was cross-validated."""
