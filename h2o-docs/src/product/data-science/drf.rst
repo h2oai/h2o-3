@@ -113,12 +113,6 @@ Hyperparameters
 
 These parameters can be used in grid search.
 
--  `balance_classes <algo-params/balance_classes.html>`__: Oversample the minority classes to balance the class distribution. This option defaults to ``False`` (disabled), and can increase the data frame size. This option is only applicable for classification.
-
--  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
-
--  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts. The value can be less than ``1.0`` and defaults to ``5.0``. Note that this requires ``balance_classes=true``.
-
 -  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees (defaults to ``50``).
 
 -  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to ``0`` specifies no limit. This value defaults to ``20``. 
@@ -211,6 +205,12 @@ These parameters can be used in grid search.
   - If the distribution is ``huber``, the response column must be numeric.
   - If the distribution is ``gamma``, the response column must be numeric.
   - If the distribution is ``quantile``, the response column must be numeric.
+
+-  `balance_classes <algo-params/balance_classes.html>`__: Oversample the minority classes to balance the class distribution. This option defaults to ``False`` (disabled), and can increase the data frame size. This option is only applicable for classification.
+
+-  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
+
+-  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts. The value can be less than ``1.0`` and defaults to ``5.0``. Note that this requires ``balance_classes=true``.
 
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
