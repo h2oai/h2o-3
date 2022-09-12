@@ -260,7 +260,7 @@ Defining a GBM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
--  `in_training_checkpoints_dir <algo-params/in_training_checkpoints_dir.html>`__: Create checkpoints into defined directory while training process is still running. In case of cluster shutdown, this checkpoint can be used to restart training.
+-  `in_training_checkpoints_dir <algo-params/in_training_checkpoints_dir.html>`__: Create checkpoints in the defined directory while the training process is still running. In case of a cluster shutdown, this checkpoint can be used to restart training.
 
 -  `in_training_checkpoints_tree_interval <algo-params/in_training_checkpoints_tree_interval.html>`__: Checkpoint the model after every so many trees. Parameter is used only when ``in_training_checkpoints_dir`` is defined. The default value is ``1`` and makes the checkpoint after each trained tree.
 
