@@ -1008,10 +1008,10 @@ The variable inflation factor (VIF) quantifies the inflation of the variable. Va
 
 The VIF is constructed by:
 
-- setting a numerical predictor *x* as the response while using the remaining predictors except for *x*
-- building a GLM regression model
-- taking the :math:`R^2` of the ?????? where the VIF is :math:`\frac{1.0}{(1.0-R^2)}`
-- repeating this process for all remaining numerical predictors to retrieve their VIF
+- setting a numerical predictor *x* as the response while using the remaining predictors except for *x*,
+- building a GLM regression model,
+- calculating the VIF as :math:`\frac{1.0}{(1.0-R^2)}` where :math:`R^2` is taken from the GLM regression model built in the prior step, and
+- repeating this process for all remaining numerical predictors to retrieve their VIF.
 
 Modifying or Creating a Custom GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
