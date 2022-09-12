@@ -918,7 +918,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       predKeys[i] = Key.make(cvModelBuilders[i].getPredictionKey());
     }
     
-    cv_makeAggregateModelMetircs(mbs);
+    cv_makeAggregateModelMetrics(mbs);
     
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || mainModel.isDistributionHuber())) {
@@ -988,7 +988,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     DKV.put(mainModel);
   }
   
-  public void cv_makeAggregateModelMetircs(ModelMetrics.MetricBuilder[] mbs){
+  public void cv_makeAggregateModelMetrics(ModelMetrics.MetricBuilder[] mbs){
     for (int i = 1; i < mbs.length; ++i) {
       mbs[0].reduceForCV(mbs[i]);
     }
