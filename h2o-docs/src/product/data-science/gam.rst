@@ -21,7 +21,7 @@ Common Parameters
 -  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
 
    -  For a regression model, this column must be numeric (**Real** or **Int**).
-   -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset cannot contain more than two levels.
+   -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset must contain two levels.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
@@ -144,7 +144,7 @@ Common Parameters
 
 -  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to ``-1`` (unlimited). This default indicates that if the ``IRLSM`` solver is used, the value of ``max_active_predictors`` is set to ``5000``, otherwise it is set to ``100000000``.
 
--  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
+-  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. Interactions with and among gamified columns are not supported at this moment.
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
