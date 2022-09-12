@@ -96,6 +96,10 @@ Common Parameters
 
 -  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if ``lambda_search`` is enabled) Specify the number of lambdas to use in the search. When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, then the default value for ``nlambdas`` is ``100``. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When ``alpha=0``, the default value for ``nlamdas`` is set to ``30`` because fewer lambdas are needed for ridge regression. This value defaults to ``-1`` (disabled).
 
+-  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``False`` (disabled).
+
+-  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
+
 -  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (``lambda=0`` and no beta constraints). Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver required. This option defaults to ``False`` (disabled).
 
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (``lambda=0``). This option defaults to ``False`` (disabled).
@@ -103,6 +107,8 @@ Common Parameters
 -  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option defaults to ``True`` (enabled).
 
 -  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values. This option defaults to ``False`` (disabled).
+
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations (defaults to ``-1``, which means unlimited).
 
 -  `objective_epsilon <algo-params/objective_epsilon.html>`__: If the objective value is less than this threshold, then the model is converged. By default, this is set to ``-1`` (automatic), which means the following: if ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, the default value of ``objective_epsilon`` is set to ``.0001``.
 
@@ -186,13 +192,7 @@ These parameters can be used in grid search.
 
 -  `lambda <algo-params/lambda.html>`__: Specify the regularization strength.
 
--  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``False`` (disabled).
-
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
-
--  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
-
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations (defaults to ``-1``, which means unlimited).
 
 - **startval**: The initial starting values for fixed and randomized coefficients in GAM specified as a double array.
 
