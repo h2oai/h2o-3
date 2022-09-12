@@ -842,7 +842,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      if (!cvModelBuilders[i].getName().equals("infogram")) {
+      if (makeCVMetrics(cvModelBuilders[i])) {
         M cvModel = cvModelBuilders[i].dest().get();
         cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
         if (nclasses() == 2 /* need holdout predictions for gains/lift table */
@@ -868,6 +868,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     
     fs.blockForPending();
     return mbs;
+  }
+
+  protected boolean makeCVMetrics(ModelBuilder<?, ?, ?> cvModelBuilder) {
+    return !cvModelBuilder.getName().equals("infogram");
   }
 
   private boolean useParallelMainModelBuilding(int nFolds) {

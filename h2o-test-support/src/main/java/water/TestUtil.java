@@ -363,7 +363,7 @@ public class TestUtil extends Iced {
     return sortDir;
   }
 
-  private static class DKVCleaner extends MRTask<DKVCleaner> {
+  public static class DKVCleaner extends MRTask<DKVCleaner> {
     @Override
     public void setupLocal() {
       H2O.raw_clear();
