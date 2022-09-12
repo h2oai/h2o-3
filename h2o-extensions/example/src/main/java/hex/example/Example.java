@@ -71,7 +71,7 @@ public class Example extends ModelBuilder<ExampleModel, ExampleParameters, Examp
                 init(true);
 
                 // The model to be built
-                model = new ExampleModel(_job._result, _parms, new ExampleModel.ExampleOutput(Example.this));
+                model = new ExampleModel(dest(), _parms, new ExampleModel.ExampleOutput(Example.this));
                 model.delete_and_lock(_job);
 
                 // ---

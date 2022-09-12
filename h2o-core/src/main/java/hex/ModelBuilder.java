@@ -842,7 +842,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      if (!cvModelBuilders[i].getName().equals("infogram")) {
+      if (makeCVMetrics(cvModelBuilders[i])) {
         M cvModel = cvModelBuilders[i].dest().get();
         cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
         if (nclasses() == 2 /* need holdout predictions for gains/lift table */
@@ -868,6 +868,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     
     fs.blockForPending();
     return mbs;
+  }
+
+  protected boolean makeCVMetrics(ModelBuilder<?, ?, ?> cvModelBuilder) {
+    return !cvModelBuilder.getName().equals("infogram");
   }
 
   private boolean useParallelMainModelBuilding(int nFolds) {
@@ -918,7 +922,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       predKeys[i] = Key.make(cvModelBuilders[i].getPredictionKey());
     }
     
-    cv_makeAggregateModelMetircs(mbs);
+    cv_makeAggregateModelMetrics(mbs);
     
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || mainModel.isDistributionHuber())) {
@@ -988,7 +992,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     DKV.put(mainModel);
   }
   
-  public void cv_makeAggregateModelMetircs(ModelMetrics.MetricBuilder[] mbs){
+  public void cv_makeAggregateModelMetrics(ModelMetrics.MetricBuilder[] mbs){
     for (int i = 1; i < mbs.length; ++i) {
       mbs[0].reduceForCV(mbs[i]);
     }
