@@ -3,6 +3,8 @@ package hex.tree;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.isotonic.IsotonicRegression;
+import hex.isotonic.IsotonicRegressionModel;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
@@ -10,14 +12,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import water.Keyed;
-import water.Scope;
-import water.TestUtil;
-import water.Weaver;
+import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.rapids.Rapids;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -225,6 +225,60 @@ public class SharedTreeTest extends TestUtil  {
       Scope.track(scored);
       assertArrayEquals(new String[]{"predict", "A", "B", "cal_A", "cal_B"}, scored.names());
       assertTrue(((Model<?, ?, ?>) model).testJavaScoring(frame, scored, 1e-8));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public <T extends Keyed<T>> void testTrainedModelCanBeCalibratedManually() {
+    try {
+      Scope.enter();
+      Frame train = TestFrameCatalog.prostateCleaned();
+      _parms._train = train._key;
+      _parms._response_column = "CAPSULE";
+      _parms._seed = 42;
+
+      SharedTreeModel.SharedTreeParameters parmsCal = (SharedTreeModel.SharedTreeParameters) _parms.clone();
+      parmsCal._calibrate_model = true;
+      parmsCal._calibration_method = CalibrationHelper.CalibrationMethod.IsotonicRegression;
+      parmsCal._calibration_frame = train._key;
+      
+      T model = (T) ModelBuilder.make(_parms).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+
+      Frame scored = ((Model<?, ?, ?>) model).score(train);
+      scored.add("actual", train.vec("CAPSULE"));
+      DKV.put(scored);
+      Scope.track(scored);
+
+      IsotonicRegressionModel.IsotonicRegressionParameters irParms = new IsotonicRegressionModel.IsotonicRegressionParameters();
+      irParms._train = scored._key;
+      irParms._out_of_bounds = IsotonicRegressionModel.OutOfBoundsHandling.Clip;
+      irParms._ignored_columns = new String[]{"predict", "p0"};
+      irParms._response_column = "actual";
+      IsotonicRegressionModel calibrationModel = new IsotonicRegression(irParms).trainModel().get();
+      assertNotNull(calibrationModel);
+      Scope.track_generic(calibrationModel);
+
+      Rapids.exec(String.format("(set.calibration.model %s %s)", model._key, calibrationModel._key));
+      model = DKV.getGet(model._key); // get the updated instance from DKV, we might have a stale one
+
+      Frame scoredWithCalib = ((Model<?, ?, ?>) model).score(train);
+      Scope.track(scoredWithCalib);
+
+      assertArrayEquals(new String[]{"predict", "p0", "p1", "cal_p0", "cal_p1"}, scoredWithCalib.names());
+
+      T modelCal = (T) ModelBuilder.make(parmsCal).trainModel().get();
+      assertNotNull(modelCal);
+      Scope.track_generic(modelCal);
+
+      Frame scoredCal = ((Model<?, ?, ?>) model).score(train);
+      Scope.track_generic(scoredCal);
+
+      assertFrameEquals(scoredCal, scoredWithCalib, 0);
     } finally {
       Scope.exit();
     }

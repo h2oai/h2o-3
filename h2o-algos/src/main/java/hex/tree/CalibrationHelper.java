@@ -55,6 +55,7 @@ public class CalibrationHelper {
     public interface OutputWithCalibration {
         ModelCategory getModelCategory();
         Model<?, ?, ?> calibrationModel();
+        void setCalibrationModel(Model<?, ?, ?> model);
         default CalibrationMethod getCalibrationMethod() {
             assert isCalibrated();
             return calibrationModel() instanceof IsotonicRegressionModel ?
@@ -159,7 +160,9 @@ public class CalibrationHelper {
             try {
                 final Model<?, ?, ?> calibModel = output.calibrationModel();
                 final int calibVecIdx = output.getCalibrationMethod().getCalibratedVecIdx();
-                final Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(calibVecIdx)});
+                final String[] calibFeatureNames = calibModel._output.features();
+                assert calibFeatureNames.length == 1;
+                final Frame calibInput = new Frame(calibInputKey, calibFeatureNames, new Vec[]{predictFr.vec(calibVecIdx)});
                 calibOutput = calibModel.score(calibInput);
                 final Vec[] calPredictions;
                 if (calibModel instanceof GLMModel) {

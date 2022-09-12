@@ -539,7 +539,9 @@ public abstract class SharedTree<
   private void postProcessModel() {
     // Model Calibration (only for the final model, not CV models)
     if (_parms.calibrateModel() && (!_parms._is_cv_model)) {
-      _model._output._calib_model = CalibrationHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model);
+      _model._output.setCalibrationModel(
+              CalibrationHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model)
+      );
       _model.update(_job);
     }
   }

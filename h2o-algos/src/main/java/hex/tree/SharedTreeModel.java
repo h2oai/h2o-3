@@ -303,7 +303,12 @@ public abstract class SharedTreeModel<
       return _calib_model;
     }
 
-    public CompressedTree ctree( int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
+    @Override
+    public void setCalibrationModel(Model<?, ?, ?> model) {
+      _calib_model = model;
+    }
+
+    public CompressedTree ctree(int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
     public String toStringTree ( int tnum, int knum ) { return ctree(tnum,knum).toString(this); }
   }
 
