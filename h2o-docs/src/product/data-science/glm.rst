@@ -606,6 +606,105 @@ For **AUTO**:
 - X**: the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
 - X***: the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
 
+Dispersion Parameter Estimation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The density for the maximum likelihood function for Tweedie can be written as:
+
+.. math::
+   
+   f( y; \theta, \phi) = \alpha (y, \phi, p,) \exp \Big[ \frac{1}{\phi} \big\{ y \theta - k(\theta) \big\} \Big] \quad \text{Equation 1}
+
+where:
+
+- :math:`\alpha (y, \phi, p), k(\theta)` are suitable known functions
+- :math:`\phi` is the dispersion parameter and is positive
+- :math:`\theta = \begin{cases} \frac{\mu ^{1-p}}{1-p} & p \neq 1 \\ \log (\mu) & p = 1 \\\end{cases}`
+- :math:`k(\theta) = \begin{cases} \frac{\mu ^{2-p}}{2-p} & p \neq 2 \\ \log (\mu) & p=2 \\\end{cases}`
+- the value of :math:`\alpha (y,\phi)` depends on the value of :math:`p`
+
+If there are weights introduced to each data row, *equation 1* will become:
+
+.. math::
+   
+   f \Big( y; \theta, \frac{\phi}{w} \Big) = \alpha \Big( y, \frac{\phi}{w}, p \Big) \exp \Big[ \frac{w}{\phi} \big\{ y\theta - k(\theta) \big\} \Big]
+
+:math:`\alpha (y,\phi)` when :math:`1 < p < 2`
+''''''''''''''''''''''''''''''''''''''''''''''
+
+For :math:`Y=0`,
+
+.. math::
+   
+   P(Y=0) = \exp \Big\{-\frac{\mu^{2-p}}{\phi (2-p)} \Big\} \quad \text{Equation 2}
+
+For :math:`Y>0`,
+
+.. math::
+   
+   \alpha(y, \phi, p) = \frac{1}{y} W(y, \phi, p) \quad \text{Equation 3}
+
+with :math:`W(y, \phi, p) = \sum^{\infty}_{j=1} W_j` and
+
+.. math::
+   
+   W_j = \frac{y^{-ja}(p-1)^{aj}}{\phi^{j(1-\alpha)} (2-p)^j j!T(-ja)} \quad \text{Equation 4}
+
+where:
+
+- :math:`\lambda = \frac{\mu^{2-p}}{\phi (2-p)}`
+- :math:`\alpha = \frac{2-p}{1-p}`
+- :math:`\gamma = \phi (p-1)\mu^{p-1}`
+
+If weight is applied to each row, *equation 4* becomes:
+
+.. math::
+   
+   W_j = \frac{w^{j(1-\alpha)}y^{-ja}(p-1)^{aj}}{\phi^{j(1-a)}(2-p)^j j!T(-ja)} \quad \text{Equation 5}
+
+The :math:`W_j` terms are all positive. The following figure plots for :math:`\mu = 0.5, p=1.5, \phi =1. y=0.1`.
+
+.. figure:: ../images/dispersion_param_fig1.png 
+   :width: 600px
+
+:math:`\alpha (y,\phi)` when :math:`p < 2`
+'''''''''''''''''''''''''''''''''''''''''''''
+
+Here, you have
+
+.. math::
+   
+   \alpha(y, \phi, p) = \frac{1}{\pi y}V(y,\phi, p) \quad \text{Equation 6}
+
+and :math:`V = \sum^{\infty}_{k=1} V_k` where
+
+.. math::
+   
+   V_k = \frac{T(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{ak}}{T(1+k)(p-2)^ky^{ak}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 7}
+
+Note that :math:`0 < \alpha < 1` for :math:`p>2`. The :math:`V_k` terms are both positive and negative. This will limit the numerical accuracy that is obtained in summing it as shown in the following image. Again, if weights are applied to each row of the dataset, *equation 6* becomes:
+
+.. math::
+   
+   V_k = \frac{T(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{ak}}{T(1+k)w^{k(\alpha -1)}(p-2)^ky^{ak}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 8}
+
+In the following figure, we use :math:`\mu =0.5,p=2.5,\phi =1, y=0.1`.
+
+.. figure:: ../images/dispersion_param_fig2.png 
+   :width: 600px
+
+Warnings 
+''''''''
+
+**Accuracy and Limitation**
+
+While the Tweedie's probability density function contains an infinite series sum, when :math:`p` is close to 2, the response (:math:`y`) is large, and :math:`\phi` is small the number of terms that are needed to approximate the infinite sum grow without bound. This causes an increase in computation time without reaching the desired accuracy.
+
+**Multimodal Densities**
+
+As :math:`p` closes in on 1, the Tweedie density function becomes multimodal. This means that the optimization procedure will fail since it will not be able to find the global optimal point. It will instead arrive at a local optimal point.
+
+
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
 
@@ -1350,6 +1449,8 @@ References
 
 Breslow, N E. “Generalized Linear Models: Checking Assumptions and
 Strengthening Conclusions.” Statistica Applicata 8 (1996): 23-41.
+
+Peter K. Dunn, Gordon K. Symth, “Series evaluation of Tweedie exponential dispersion model densities”, Statistics and Computing, Volume 15 (2005), pages 267-280.
 
 `Jerome Friedman, Trevor Hastie, and Rob Tibshirani. Regularization Paths for Generalized Linear Models via Coordinate Descent. Journal of Statistical Software, 33(1), 2009. <http://core.ac.uk/download/pdf/6287975.pdf>`__
 
