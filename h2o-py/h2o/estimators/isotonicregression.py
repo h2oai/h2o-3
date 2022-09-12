@@ -24,10 +24,17 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
                  weights_column=None,  # type: Optional[str]
                  out_of_bounds="na",  # type: Literal["na", "clip"]
+                 nfolds=0,  # type: int
+                 keep_cross_validation_models=True,  # type: bool
+                 keep_cross_validation_predictions=False,  # type: bool
+                 keep_cross_validation_fold_assignment=False,  # type: bool
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
+                 fold_column=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -36,6 +43,9 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
         :type training_frame: Union[None, str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param response_column: Response variable column.
                Defaults to ``None``.
         :type response_column: str, optional
@@ -54,15 +64,41 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
         :param out_of_bounds: Method for Handling Ties.
                Defaults to ``"na"``.
         :type out_of_bounds: Literal["na", "clip"]
+        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
+               Defaults to ``0``.
+        :type nfolds: int
+        :param keep_cross_validation_models: Whether to keep the cross-validation models.
+               Defaults to ``True``.
+        :type keep_cross_validation_models: bool
+        :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
+               Defaults to ``False``.
+        :type keep_cross_validation_predictions: bool
+        :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
+               Defaults to ``False``.
+        :type keep_cross_validation_fold_assignment: bool
+        :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
+               'Stratified' option will stratify the folds based on the response variable, for classification problems.
+               Defaults to ``"auto"``.
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
+        :type fold_column: str, optional
         """
         super(H2OIsotonicRegressionEstimator, self).__init__()
         self._parms = {}
         self._id = self._parms['model_id'] = model_id
         self.training_frame = training_frame
+        self.validation_frame = validation_frame
         self.response_column = response_column
         self.ignored_columns = ignored_columns
         self.weights_column = weights_column
         self.out_of_bounds = out_of_bounds
+        self.nfolds = nfolds
+        self.keep_cross_validation_models = keep_cross_validation_models
+        self.keep_cross_validation_predictions = keep_cross_validation_predictions
+        self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
+        self.fold_assignment = fold_assignment
+        self.fold_column = fold_column
 
     @property
     def training_frame(self):
@@ -76,6 +112,19 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
     @training_frame.setter
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+
+    @property
+    def validation_frame(self):
+        """
+        Id of the validation data frame.
+
+        Type: ``Union[None, str, H2OFrame]``.
+        """
+        return self._parms.get("validation_frame")
+
+    @validation_frame.setter
+    def validation_frame(self, validation_frame):
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
     @property
     def response_column(self):
@@ -138,5 +187,90 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
     def out_of_bounds(self, out_of_bounds):
         assert_is_type(out_of_bounds, None, Enum("na", "clip"))
         self._parms["out_of_bounds"] = out_of_bounds
+
+    @property
+    def nfolds(self):
+        """
+        Number of folds for K-fold cross-validation (0 to disable or >= 2).
+
+        Type: ``int``, defaults to ``0``.
+        """
+        return self._parms.get("nfolds")
+
+    @nfolds.setter
+    def nfolds(self, nfolds):
+        assert_is_type(nfolds, None, int)
+        self._parms["nfolds"] = nfolds
+
+    @property
+    def keep_cross_validation_models(self):
+        """
+        Whether to keep the cross-validation models.
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("keep_cross_validation_models")
+
+    @keep_cross_validation_models.setter
+    def keep_cross_validation_models(self, keep_cross_validation_models):
+        assert_is_type(keep_cross_validation_models, None, bool)
+        self._parms["keep_cross_validation_models"] = keep_cross_validation_models
+
+    @property
+    def keep_cross_validation_predictions(self):
+        """
+        Whether to keep the predictions of the cross-validation models.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("keep_cross_validation_predictions")
+
+    @keep_cross_validation_predictions.setter
+    def keep_cross_validation_predictions(self, keep_cross_validation_predictions):
+        assert_is_type(keep_cross_validation_predictions, None, bool)
+        self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
+
+    @property
+    def keep_cross_validation_fold_assignment(self):
+        """
+        Whether to keep the cross-validation fold assignment.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("keep_cross_validation_fold_assignment")
+
+    @keep_cross_validation_fold_assignment.setter
+    def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
+        assert_is_type(keep_cross_validation_fold_assignment, None, bool)
+        self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
+
+    @property
+    def fold_assignment(self):
+        """
+        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
+        the folds based on the response variable, for classification problems.
+
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``, defaults to ``"auto"``.
+        """
+        return self._parms.get("fold_assignment")
+
+    @fold_assignment.setter
+    def fold_assignment(self, fold_assignment):
+        assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
+        self._parms["fold_assignment"] = fold_assignment
+
+    @property
+    def fold_column(self):
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
+        return self._parms.get("fold_column")
+
+    @fold_column.setter
+    def fold_column(self, fold_column):
+        assert_is_type(fold_column, None, str)
+        self._parms["fold_column"] = fold_column
 
 
