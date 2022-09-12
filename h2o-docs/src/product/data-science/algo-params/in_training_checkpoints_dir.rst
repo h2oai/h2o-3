@@ -97,6 +97,6 @@ Example
                                                           ntrees=10,
                                                           seed=1111,
                                                           checkpoint=checkpoint,
-                                                          in_training_checkpoints_dir=path_to_checkpoints)
+                                                          in_training_checkpoints_dir=checkpoints_dir)
         pros_gbm_restarted.train(x=predictors, y=response, training_frame=prostate)
         pros_gbm_restarted # this model is equal to pros_gbm

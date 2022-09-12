@@ -32,7 +32,7 @@ Example
         predictors <- c("ID", "AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
         response <- "CAPSULE"
         
-        # Specify directory for training checkpoints:
+        # specify directory for training checkpoints:
         checkpoints_dir <- "checkpoints"
         
         # train the model and provide checkpoints in training process:
@@ -69,7 +69,7 @@ Example
         predictors = ["ID", "AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"]
         response = "CAPSULE"
         
-        # Specify directory for training checkpoints:
+        # specify directory for training checkpoints:
         checkpoints_dir = tempfile.mkdtemp()
         
         # Build and train the model and provide checkpoints in training process:
