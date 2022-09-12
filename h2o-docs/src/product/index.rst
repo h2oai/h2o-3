@@ -19,6 +19,14 @@ Additional Resources:
 
 .. toctree::
    :maxdepth: 2
+   :caption: Recent Changes
+
+   Change Log <https://github.com/h2oai/h2o-3/blob/master/Changes.md>
+   blog-releases
+
+.. toctree::
+   :maxdepth: 2
+   :caption: User Guide
    
    welcome
 
@@ -163,9 +171,4 @@ Additional Resources:
 
    additional-resources
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Change log
-
-   Recent Changes <https://github.com/h2oai/h2o-3/blob/master/Changes.md>
 
