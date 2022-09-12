@@ -650,8 +650,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
-      if (!cvModelBuilders[0].getName().equals("infogram")) // infogram does not support scoring
-        cv_mainModelScores(N, mbs, cvModelBuilders);
+      cv_mainModelScores(N, mbs, cvModelBuilders);
 
       _job.setReadyForView(true);
       DKV.put(_job);
@@ -842,8 +841,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      if (!cvModelBuilders[i].getName().equals("infogram")) {
-        M cvModel = cvModelBuilders[i].dest().get();
+      M cvModel = cvModelBuilders[i].dest().get();
+      if (cvModel.isScoringSupported()) {
         cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
         if (nclasses() == 2 /* need holdout predictions for gains/lift table */
                 || _parms._keep_cross_validation_predictions
@@ -905,6 +904,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void cv_mainModelScores(int N, ModelMetrics.MetricBuilder mbs[], ModelBuilder<M, P, O> cvModelBuilders[]) {
     //never skipping CV main scores: we managed to reach last step and this should not be an expensive one, so let's offer this model
     M mainModel = _result.get();
+    if (!mainModel.isScoringSupported()) return;
 
     // Compute and put the cross-validation metrics into the main model
     Log.info("Computing "+N+"-fold cross-validation metrics.");

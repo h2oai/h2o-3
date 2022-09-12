@@ -1835,6 +1835,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return haveCategoricalPredictors;
 
   }
+  
+  protected boolean isScoringSupported() { return true; }
+  
+  protected void checkScoringSupported() {
+    if (!isScoringSupported()) throw H2O.unimpl("scoring is not supported by "+_parms.algoName());
+  }
 
 
   /**
@@ -1927,6 +1933,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return adaptFr;
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    checkScoringSupported();
     // Adapt frame, clean up the previous score warning messages
     _warningsP = new String[0];
     computeMetrics = computeMetrics &&
@@ -2298,6 +2305,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public double[] score0( Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+    checkScoringSupported();
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
@@ -2335,12 +2343,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   
   /**Override scoring logic for models that handle weight/offset**/
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset) {
+    checkScoringSupported();
     assert (offset == 0) : "Override this method for non-trivial offset!";
     return score0(data, preds);
   }
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
   public double score(double[] data){
+    checkScoringSupported();
     double[] pred = score0(data, new double[_output.nclasses()]);
     return _output.nclasses() == 1 ? pred[0] /* regression */ : ArrayUtils.maxIndex(pred) /*classification?*/; 
   }
