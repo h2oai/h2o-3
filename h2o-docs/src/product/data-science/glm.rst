@@ -229,6 +229,8 @@ Defining a GLM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+- **generate_variable_inflation_factors**: If ``True``, generates the variable inflation factors for numerical predictors. Defaults to ``False``.
+
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -999,6 +1001,17 @@ You can extract the columns in the Coefficients Table by specifying ``names``, `
 
 For an example, refer `here <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#examples>`__.
 
+Variable Inflation Factors
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The variable inflation factor (VIF) quantifies the inflation of the variable. Variables are inflated due to their correlation with other predictor variables within the model. For each predictor in a multiple regression model, there is a VIF. This process can be calculated with cross validation turned on. 
+
+The VIF is constructed by:
+
+- setting a numerical predictor *x* as the response while using the remaining predictors except for *x*
+- building a GLM regression model
+- taking the :math:`R^2` of the ?????? where the VIF is :math:`\frac{1.0}{(1.0-R^2)}`
+- repeating this process for all remaining numerical predictors to retrieve their VIF
 
 Modifying or Creating a Custom GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
