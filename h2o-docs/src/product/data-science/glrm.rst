@@ -58,6 +58,9 @@ Common Parameters
 
 Hyperparameters
 '''''''''''''''
+
+These parameters can be used in grid search.
+
 -  `k <algo-params/k.html>`__: *Required* Specify the rank of matrix approximation (defaults to ``1``).
 
 -  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data. One of: 

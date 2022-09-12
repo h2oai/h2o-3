@@ -53,6 +53,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data. One of: 
 
   - ``none`` (default)

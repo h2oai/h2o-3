@@ -68,6 +68,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  `max_iterations <algo-params/max_iterations.html>`__: A positive integer defining the maximum number of iterations during model training. The role this parameter plays in the stopping criteria of the model-fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to ``20``.
 
 Cox Proportional Hazards Model Results

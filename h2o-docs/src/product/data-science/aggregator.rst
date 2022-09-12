@@ -41,6 +41,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  **target_num_exemplars**: Specify a value for the targeted number of exemplars. This value defaults to ``5000``.
 
 -  **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g, ``0.5`` is +/- 50 percent). This value defaults to ``0.5``.

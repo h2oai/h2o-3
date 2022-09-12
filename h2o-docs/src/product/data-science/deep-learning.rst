@@ -112,6 +112,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  `balance_classes <algo-params/balance_classes.html>`__: (Applicable for classification only) Specify whether to oversample the minority classes to balance the class distribution. This option is disabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the ``max_after_balance_size`` parameter. This option defaults to ``False`` (disabled).
 
 -  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: (Applicable only for classification and when ``balance_classes`` is enabled) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. 

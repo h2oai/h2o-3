@@ -61,6 +61,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  `k <algo-params/k.html>`__: Specify the number of clusters (groups of data) in a dataset that are similar to one another. This value defaults to ``1``.
 
 -  `estimate_k <algo-params/estimate_k.html>`__: Specify whether to estimate the number of clusters (:math:`\leq` ``k``) iteratively (independent of ``seed``) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each ``k`` the estimate will go up to ``max_iteration``. This option defaults to ``False`` (disabled).

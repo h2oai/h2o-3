@@ -134,6 +134,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__:  Maximum allowed runtime in seconds for the metalearner model training. Use ``0`` (default) to disable the time limit. 
 
 -  `seed <algo-params/seed.html>`__: Seed for random numbers; passed through to the metalearner algorithm. Defaults to ``-1`` (time-based random number).

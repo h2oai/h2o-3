@@ -193,6 +193,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if ``family="tweedie"``) Specify the Tweedie variance power (defaults to ``0``).

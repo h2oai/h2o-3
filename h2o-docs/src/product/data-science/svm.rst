@@ -55,6 +55,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  **hyper_param**: Specify the penalty parameter C of the error term. This value defaults to ``1``.
 
 -  **gamma**: Specify the coefficient of the kernel (currently RBF gamma for gaussian kernel). This value defaults to ``-1`` which means :math:`\frac{1}{\text{#features}}`.

@@ -56,6 +56,8 @@ Common Parameters
 Hyperparameters
 '''''''''''''''
 
+These parameters can be used in grid search.
+
 -  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees. This value defaults to ``50``.
 
 -  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to ``0`` specifies no limit. This value defaults to ``8``.
