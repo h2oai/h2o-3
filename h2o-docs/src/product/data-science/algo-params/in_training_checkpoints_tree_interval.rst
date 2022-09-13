@@ -33,7 +33,7 @@ Example
         response <- "CAPSULE"
         
         # specify directory for training checkpoints:
-        checkpoints_dir <- "checkpoints"
+        checkpoints_dir <- "checkpoints-interval"
         
         # train the model and provide checkpoints in training process:
         pros_gbm <- h2o.gbm(x = predictors,
