@@ -48,6 +48,10 @@ Common Parameters
 
 -  `impute_missing <algo-params/impute_missing.html>`__: Specifies whether to impute missing entries with the column mean value. This value defaults to ``False`` (disabled).
 
+-  `compute_metrics <algo-params/compute_metrics.html>`__: Enable metrics computations on the training data. This option defaults to ``True`` (enabled).
+
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to ``-1`` (time-based random number).
+
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 Hyperparameters
@@ -66,10 +70,6 @@ These parameters can be used in grid search.
 -  `k <algo-params/k.html>`__: Specify the rank of matrix approximation. This can be a value from 1 to the minimum of (total number of rows, total number of columns) in the dataset. This value defaults to ``1``.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. The value must be between 1 and 1e6 and the default is ``1000``.
-
--  `compute_metrics <algo-params/compute_metrics.html>`__: Enable metrics computations on the training data. This option defaults to ``True`` (enabled).
-
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to ``-1`` (time-based random number).
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This value defaults to ``0`` (disabled).
 
