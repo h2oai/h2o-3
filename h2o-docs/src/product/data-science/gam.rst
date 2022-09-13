@@ -23,7 +23,7 @@ Common Parameters
    -  For a regression model, this column must be numeric (**Real** or **Int**).
    -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset must contain two levels.
 
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then no predictors will be used.
 
 -  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
