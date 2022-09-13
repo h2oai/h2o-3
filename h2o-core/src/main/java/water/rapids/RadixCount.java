@@ -22,20 +22,29 @@ class RadixCount extends MRTask<RadixCount> {
   private final boolean _isLeft; 
   private final int _id_maps[][];
   private final int _ascending;
+  final long _randomDigits;
 
-  RadixCount(boolean isLeft, BigInteger base, int shift, int col, int id_maps[][], int ascending) {
+  RadixCount(boolean isLeft, BigInteger base, int shift, int col, int id_maps[][], int ascending, long randomDigits) {
     _isLeft = isLeft;
     _base = base;
     _col = col;
     _shift = shift;
     _id_maps = id_maps;
     _ascending = ascending;
+    _randomDigits = randomDigits;
   }
 
   // make a unique deterministic key as a function of frame, column and node
-  // make it homed to the owning node
-  static Key getKey(boolean isLeft, int col, H2ONode node) {
-    return Key.make("__radix_order__MSBNodeCounts_col" + col + "_node" + node.index() + (isLeft ? "_LEFT" : "_RIGHT"));
+  // make it homed to the owning node.  Add current system time to make it not
+  // repeatable.  This can cause problem if sort is used in cross-validation
+
+  /***
+   * make a unique deterministic key as a function of frame, column and node make it homed to the owning node. 
+   * Add current system time to make it not repeatable.  This can cause problem if sort is used in cross-validation
+   */
+  static Key getKey(boolean isLeft, int col, long randomDigits, H2ONode node) {
+    return Key.make("__radix_order__MSBNodeCounts_col" + col + "_node" + node.index() + "_" + randomDigits + 
+            (isLeft ? "_LEFT" : "_RIGHT"));
     // Each node's contents is different so the node number needs to be in the key
     // TODO: need the biggestBit in here too, that the MSB is offset from
   }
@@ -99,7 +108,7 @@ class RadixCount extends MRTask<RadixCount> {
   }
 
   @Override protected void closeLocal() {
-    DKV.put(getKey(_isLeft, _col, H2O.SELF), _counts, _fs, true);
+    DKV.put(getKey(_isLeft, _col, _randomDigits, H2O.SELF), _counts, _fs, true);
     // just the MSB counts per chunk on this node.  Most of this spine will be empty here.  
     // TODO: could condense to just the chunks on this node but for now, leave sparse.
     // We'll use this sparse spine right now on this node and the reduce happens on _o and _x later
