@@ -23,6 +23,7 @@
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param out_of_bounds Method for Handling Ties. Must be one of: "NA", "clip". Defaults to NA.
+#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
@@ -53,6 +54,7 @@ h2o.isotonicregression <- function(x,
                                    validation_frame = NULL,
                                    weights_column = NULL,
                                    out_of_bounds = c("NA", "clip"),
+                                   custom_metric_func = NULL,
                                    nfolds = 0,
                                    keep_cross_validation_models = TRUE,
                                    keep_cross_validation_predictions = FALSE,
@@ -90,6 +92,8 @@ h2o.isotonicregression <- function(x,
     parms$weights_column <- weights_column
   if (!missing(out_of_bounds))
     parms$out_of_bounds <- out_of_bounds
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
   if (!missing(nfolds))
     parms$nfolds <- nfolds
   if (!missing(keep_cross_validation_models))
@@ -113,6 +117,7 @@ h2o.isotonicregression <- function(x,
                                                    validation_frame = NULL,
                                                    weights_column = NULL,
                                                    out_of_bounds = c("NA", "clip"),
+                                                   custom_metric_func = NULL,
                                                    nfolds = 0,
                                                    keep_cross_validation_models = TRUE,
                                                    keep_cross_validation_predictions = FALSE,
@@ -155,6 +160,8 @@ h2o.isotonicregression <- function(x,
     parms$weights_column <- weights_column
   if (!missing(out_of_bounds))
     parms$out_of_bounds <- out_of_bounds
+  if (!missing(custom_metric_func))
+    parms$custom_metric_func <- custom_metric_func
   if (!missing(nfolds))
     parms$nfolds <- nfolds
   if (!missing(keep_cross_validation_models))

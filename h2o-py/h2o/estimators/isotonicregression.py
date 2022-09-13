@@ -29,6 +29,7 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
                  ignored_columns=None,  # type: Optional[List[str]]
                  weights_column=None,  # type: Optional[str]
                  out_of_bounds="na",  # type: Literal["na", "clip"]
+                 custom_metric_func=None,  # type: Optional[str]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -64,6 +65,9 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
         :param out_of_bounds: Method for Handling Ties.
                Defaults to ``"na"``.
         :type out_of_bounds: Literal["na", "clip"]
+        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
+               Defaults to ``None``.
+        :type custom_metric_func: str, optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
                Defaults to ``0``.
         :type nfolds: int
@@ -93,6 +97,7 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
         self.ignored_columns = ignored_columns
         self.weights_column = weights_column
         self.out_of_bounds = out_of_bounds
+        self.custom_metric_func = custom_metric_func
         self.nfolds = nfolds
         self.keep_cross_validation_models = keep_cross_validation_models
         self.keep_cross_validation_predictions = keep_cross_validation_predictions
@@ -187,6 +192,20 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
     def out_of_bounds(self, out_of_bounds):
         assert_is_type(out_of_bounds, None, Enum("na", "clip"))
         self._parms["out_of_bounds"] = out_of_bounds
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
 
     @property
     def nfolds(self):

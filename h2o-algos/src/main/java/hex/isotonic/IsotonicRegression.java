@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.ModelMetrics;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
@@ -112,12 +113,12 @@ public class IsotonicRegression extends ModelBuilder<IsotonicRegressionModel,
                 _job.update(1);
                 model.update(_job);
 
-                model.score(_parms.train()).delete();
+                model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
                 model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
 
                 if (valid() != null) {
                     _job.update(0,"Scoring validation frame");
-                    model.score(_parms.valid()).delete();
+                    model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
                     model._output._validation_metrics = ModelMetrics.getFromDKV(model, _parms.valid());
                 }
 
