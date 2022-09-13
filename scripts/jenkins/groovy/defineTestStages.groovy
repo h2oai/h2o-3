@@ -181,7 +181,11 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
     [
-      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
+      stageName: 'Py2.7 Demo Notebooks', target: 'test-py-demos', pythonVersion: '2.7',
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Demo Notebooks (Py3 Only)', target: 'test-py3-only-demos', pythonVersion: '3.7',
       timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
