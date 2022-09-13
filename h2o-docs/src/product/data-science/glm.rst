@@ -621,11 +621,11 @@ The density for the maximum likelihood function for Tweedie can be written as:
 
 .. math::
    
-   f( y; \theta, \phi) = \alpha (y, \phi, p,) \exp \Big[ \frac{1}{\phi} \big\{ y \theta - k(\theta) \big\} \Big] \quad \text{Equation 1}
+   f( y; \theta, \phi) = a (y, \phi, p) \exp \Big[ \frac{1}{\phi} \big\{ y \theta - k(\theta) \big\} \Big] \quad \text{Equation 1}
 
 where:
 
-- :math:`\alpha (y, \phi, p), k(\theta)` are suitable known functions
+- :math:`a (y, \phi, p), k(\theta)` are suitable known functions
 - :math:`\phi` is the dispersion parameter and is positive
 - :math:`\theta = \begin{cases} \frac{\mu ^{1-p}}{1-p} & p \neq 1 \\ \log (\mu) & p = 1 \\\end{cases}`
 - :math:`k(\theta) = \begin{cases} \frac{\mu ^{2-p}}{2-p} & p \neq 2 \\ \log (\mu) & p=2 \\\end{cases}`
@@ -635,7 +635,7 @@ If there are weights introduced to each data row, *equation 1* will become:
 
 .. math::
    
-   f \Big( y; \theta, \frac{\phi}{w} \Big) = \alpha \Big( y, \frac{\phi}{w}, p \Big) \exp \Big[ \frac{w}{\phi} \big\{ y\theta - k(\theta) \big\} \Big]
+   f \Big( y; \theta, \frac{\phi}{w} \Big) = a \Big( y, \frac{\phi}{w}, p \Big) \exp \Big[ \frac{w}{\phi} \big\{ y\theta - k(\theta) \big\} \Big]
 
 :math:`\alpha (y,\phi)` when :math:`1 < p < 2`
 ''''''''''''''''''''''''''''''''''''''''''''''
@@ -650,19 +650,13 @@ For :math:`Y>0`,
 
 .. math::
    
-   \alpha(y, \phi, p) = \frac{1}{y} W(y, \phi, p) \quad \text{Equation 3}
+   a(y, \phi, p) = \frac{1}{y} W(y, \phi, p) \quad \text{Equation 3}
 
 with :math:`W(y, \phi, p) = \sum^{\infty}_{j=1} W_j` and
 
 .. math::
    
    W_j = \frac{y^{-ja}(p-1)^{aj}}{\phi^{j(1-\alpha)} (2-p)^j j!T(-ja)} \quad \text{Equation 4}
-
-where:
-
-- :math:`\lambda = \frac{\mu^{2-p}}{\phi (2-p)}`
-- :math:`\alpha = \frac{2-p}{1-p}`
-- :math:`\gamma = \phi (p-1)\mu^{p-1}`
 
 If weight is applied to each row, *equation 4* becomes:
 
@@ -675,14 +669,14 @@ The :math:`W_j` terms are all positive. The following figure plots for :math:`\m
 .. figure:: ../images/dispersion_param_fig1.png 
    :width: 600px
 
-:math:`\alpha (y,\phi)` when :math:`p < 2`
+:math:`\alpha (y,\phi)` when :math:`p > 2`
 '''''''''''''''''''''''''''''''''''''''''''''
 
 Here, you have
 
 .. math::
    
-   \alpha(y, \phi, p) = \frac{1}{\pi y}V(y,\phi, p) \quad \text{Equation 6}
+   a(y, \phi, p) = \frac{1}{\pi y}V(y,\phi, p) \quad \text{Equation 6}
 
 and :math:`V = \sum^{\infty}_{k=1} V_k` where
 
@@ -706,7 +700,7 @@ Warnings
 
 **Accuracy and Limitation**
 
-While the Tweedie's probability density function contains an infinite series sum, when :math:`p` is close to 2, the response (:math:`y`) is large, and :math:`\phi` is small the number of terms that are needed to approximate the infinite sum grow without bound. This causes an increase in computation time without reaching the desired accuracy.
+While the Tweedie's probability density function contains an infinite series sum, when :math:`p` is close to 2, the response (:math:`y`) is large, and :math:`\phi` is small the common number of terms that are needed to approximate the infinite sum grow without bound. This causes an increase in computation time without reaching the desired accuracy.
 
 **Multimodal Densities**
 
@@ -714,6 +708,58 @@ As :math:`p` closes in on 1, the Tweedie density function becomes multimodal. Th
 
 As a conservative condition, to ensure that the density is unimodal for most values of :math:`y,\phi`, we should have :math:`p>1.2`.
 
+Tweedie Dispersion Example
+''''''''''''''''''''''''''
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Import the training data:
+      training_data <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+
+      # Set the predictors and response:
+      predictors <- c('abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.')
+      response <- 'resp'
+
+      # Build and train the model:
+      model <- h2o.glm(x = predictors, 
+                       y = response, 
+                       training_frame = training_data, 
+                       family = 'gamma', 
+                       lambda = 0, 
+                       compute_p_values = TRUE, 
+                       dispersion_parameter_method = "ml", 
+                       init_dispersion_parameter = 1.1, 
+                       dispersion_epsilon = 1e-4, 
+                       max_iterations_dispersion = 100)
+
+      # Retrieve the estimated dispersion:
+      model@model$dispersion
+      [1] 8.96682
+
+
+   .. code-tab:: python
+
+      # Import the training data:
+      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+
+      # Set the predictors and response:
+      predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5.""]
+      response = "resp"
+
+      # Build and train the model:
+      model = H2OGeneralizedLinearEstimator(family="gamma", 
+                                            lambda_=0, 
+                                            compute_p_values=True, 
+                                            dispersion_parameter_method="ml", 
+                                            init_dispersion_parameter=1.1, 
+                                            dispersion_epsilon=1e-4, 
+                                            max_iterations_dispersion=100)
+      model.train(x=predictors, y=response, training_frame=training_data)
+
+      # Retrieve the estimated dispersion:
+      model._model_json["output"]["dispersion"]
+      8.966819788535565
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
