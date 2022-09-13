@@ -176,7 +176,7 @@ test-r-cmd-check:
 test-r-cmd-check-as-cran:
 	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE R CMD check --as-cran h2o_*.*.*.*.tar.gz
 	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE [ -f ../../../../scripts/validate_r_cmd_check_output.R ] && Rscript ../../../../scripts/validate_r_cmd_check_output.R
-	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE python ../../../../scripts/validate_r_cmd_check_output.py || true
+	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE python ../../../../scripts/validate_r_cmd_check_output.py
 	fuser -k 59999/tcp || /bin/true
 
 test-r-booklets:

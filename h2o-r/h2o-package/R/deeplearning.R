@@ -773,7 +773,7 @@ h2o.deeplearning <- function(x,
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate = h2o.importFile(path = prostate_path)
 #' prostate_dl = h2o.deeplearning(x = 3:9, training_frame = prostate, autoencoder = TRUE,
-#'                                hidden = c(10, 10), epochs = 5)
+#'                                hidden = c(10, 10), epochs = 5, seed = 1)
 #' prostate_anon = h2o.anomaly(prostate_dl, prostate)
 #' head(prostate_anon)
 #' prostate_anon_per_feature = h2o.anomaly(prostate_dl, prostate, per_feature = TRUE)
