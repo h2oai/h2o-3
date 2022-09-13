@@ -165,6 +165,10 @@ Defining a GLM Model
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove_collinear_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove_collinear_columns flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``. This option is disabled by default.
 
+- **dispersion_factor_method**: Method used to estimate the dispersion factor for Tweedie, Gamma, and Negative Binomial only. Can be one of ``"pearson"`` (default) or ``"ml"``. 
+
+- **init_dispersion_factor**: Initial value of disperion factor to be estimated using either ``"pearson"`` or ``"ml"``. Default to ``1.0``.
+
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (lambda=0). This option is disabled by default.
 
 -  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option is enabled by default. 
@@ -228,6 +232,10 @@ Defining a GLM Model
 -  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
+- **dispersion_epsilon**: If changes in dispersion parameter estimation is smaller than ``dispersion_epsilon``, will break out of the dispersion parameter estimation loop using maximum likelihood Defaults to ``0.0001``.
+
+- **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. Defaults to ``1000000``.
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
