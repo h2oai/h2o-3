@@ -287,7 +287,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
     public boolean compute_p_values; // _remove_collinear_columns
 
-    @API(help="If true, will fix tweedie variance power value to the value set in tweedie_variance_power",
+    @API(help="If true, will fix tweedie variance power value to the value set in tweedie_variance_power.",
             level=Level.secondary, direction=Direction.INPUT)
     public boolean fix_tweedie_variance_power;
 

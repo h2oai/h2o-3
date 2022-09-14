@@ -395,7 +395,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``False``.
         :type generate_variable_inflation_factors: bool
         :param fix_tweedie_variance_power: If true, will fix tweedie variance power value to the value set in
-               tweedie_variance_power
+               tweedie_variance_power.
                Defaults to ``True``.
         :type fix_tweedie_variance_power: bool
         :param dispersion_learning_rate: Dispersion learning rate is only valid for tweedie family dispersion parameter
@@ -2316,7 +2316,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def fix_tweedie_variance_power(self):
         """
-        If true, will fix tweedie variance power value to the value set in tweedie_variance_power
+        If true, will fix tweedie variance power value to the value set in tweedie_variance_power.
 
         Type: ``bool``, defaults to ``True``.
         """

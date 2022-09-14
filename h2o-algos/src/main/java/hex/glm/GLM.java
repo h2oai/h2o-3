@@ -1236,7 +1236,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
 
         if (_parms._fix_tweedie_variance_power && !_parms._fix_dispersion_parameter)
-        _tweedieDispersionOnly = true;
+          _tweedieDispersionOnly = true;
       
       if (_parms.hasCheckpoint()) {
         if (!Family.gaussian.equals(_parms._family))  // Gaussian it not iterative and therefore don't care
@@ -2428,57 +2428,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
       }
     }
-      
-    /***
-     * Estimate dispersion parameter using maximum likelihood.  I followed section IV of the doc in
-     * https://h2oai.atlassian.net/browse/PUBDEV-8683 . 
-     *//*
-    public double estimateGammaMLSE(ComputeGammaMLSETsk mlCT, double alpha, double[] beta) {
-      double constantValue = mlCT._wsum + mlCT._sumlnyiOui - mlCT._sumyiOverui;
-      DataInfo dinfo = _state.activeData();
-      Frame adaptedF = dinfo._adaptedFrame;
-      long currTime = System.currentTimeMillis();
-      long modelBuiltTime = currTime - _model._output._start_time;
-      long timeLeft = _parms._max_runtime_secs > 0 ? (long) (_parms._max_runtime_secs * 1000 - modelBuiltTime) : Long.MAX_VALUE;
-      
-      // stopping condition for while loop are:
-      // 1. magnitude of iterative change to se < EPS
-      // 2. there are more than MAXITERATIONS of updates
-      // 2. for every 100th iteration, we check for additional stopping condition:
-      //    a.  User requests stop via stop_requested;
-      //    b.  User sets max_runtime_sec and that time has been exceeded.
-      for (int index=0; index<_parms._max_iterations_dispersion; index++) {
-        GLMTask.ComputeDiTriGammaTsk ditrigammatsk = new GLMTask.ComputeDiTriGammaTsk(null, dinfo, _job._key, beta,
-                _parms, alpha).doAll(adaptedF);
-        double numerator = mlCT._wsum*Math.log(alpha)-ditrigammatsk._sumDigamma+constantValue; // equation 2 of doc
-        double denominator = mlCT._wsum/alpha - ditrigammatsk._sumTrigamma;  // equation 3 of doc
-        double change = numerator/denominator;
-        if (denominator == 0 || Double.isNaN(change))
-          return alpha;
-        if (Math.abs(change) < _parms._dispersion_epsilon) // stop if magnitude of iterative updates to se < EPS
-          return alpha-change;
-        else {
-          double se = alpha - change;
-          if (se < 0) // heuristic to prevent seInit <= 0
-            alpha *= 0.5;
-          else
-            alpha = se;
-        }
-
-        if ((index % 100 == 0) && // check for additional stopping conditions for every 100th iterative steps
-            (stop_requested() ||  // user requested stop via stop_requested()
-            (System.currentTimeMillis()-currTime) > timeLeft)) { // time taken to find dispersino exceeds GLM model building time
-          Log.warn("gamma dispersion parameter estimation was interrupted by user or due to time out.  Estimation " +
-                  "process has not converged. Increase your max_runtime_secs if you have set maximum runtime for your " +
-                  "model building process.");
-          return alpha;
-        }
-      }
-      Log.warn("gamma dispersion parameter estimation fails to converge within "+
-              _parms._max_iterations_dispersion+" iterations.  Increase max_iterations_dispersion or decrease " +
-              "dispersion_epsilon.");
-      return alpha;
-    }*/
 
     private long _lastScore = System.currentTimeMillis();
 

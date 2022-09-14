@@ -145,7 +145,7 @@
 #'        false. Defaults to FALSE.
 #' @param generate_variable_inflation_factors \code{Logical}. if true, will generate variable inflation factors for numerical predictors.  Default to false.
 #'        Defaults to FALSE.
-#' @param fix_tweedie_variance_power \code{Logical}. If true, will fix tweedie variance power value to the value set in tweedie_variance_power
+#' @param fix_tweedie_variance_power \code{Logical}. If true, will fix tweedie variance power value to the value set in tweedie_variance_power.
 #'        Defaults to TRUE.
 #' @param dispersion_learning_rate Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. It must be
 #'        > 0.  This controls how much the dispersion parameter estimate is to be changed when the calculated
