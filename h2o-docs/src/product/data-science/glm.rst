@@ -165,6 +165,10 @@ Defining a GLM Model
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove_collinear_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove_collinear_columns flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``. This option is disabled by default.
 
+- **dispersion_parameter_method**: Method used to estimate the dispersion factor for Tweedie, Gamma, and Negative Binomial only. Can be one of ``"pearson"`` (default), ``"deviance"``, or ``"ml"``. 
+
+- **init_dispersion_parameter**: Initial value of disperion factor to be estimated using either ``"pearson"`` or ``"ml"``. Default to ``1.0``.
+
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (lambda=0). This option is disabled by default.
 
 -  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option is enabled by default. 
@@ -229,7 +233,12 @@ Defining a GLM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+- **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, will break out of the dispersion parameter estimation loop using maximum likelihood Defaults to ``0.0001``.
+
+- **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. Defaults to ``1000000``.
+
 - **generate_variable_inflation_factors**: If ``True``, generates the variable inflation factors for numerical predictors. Defaults to ``False``.
+
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -607,6 +616,153 @@ For **AUTO**:
 - X*: the data is numeric (``Real`` or ``Int``) (family determined as ``gaussian``)
 - X**: the data is ``Enum`` with cardinality = 2 (family determined as ``binomial``)
 - X***: the data is ``Enum`` with cardinality > 2 (family determined as ``multinomial``)
+
+Dispersion Parameter Estimation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The density for the maximum likelihood function for Tweedie can be written as:
+
+.. math::
+   
+   f( y; \theta, \phi) = a (y, \phi, p) \exp \Big[ \frac{1}{\phi} \big\{ y \theta - k(\theta) \big\} \Big] \quad \text{Equation 1}
+
+where:
+
+- :math:`a (y, \phi, p), k(\theta)` are suitable known functions
+- :math:`\phi` is the dispersion parameter and is positive
+- :math:`\theta = \begin{cases} \frac{\mu ^{1-p}}{1-p} & p \neq 1 \\ \log (\mu) & p = 1 \\\end{cases}`
+- :math:`k(\theta) = \begin{cases} \frac{\mu ^{2-p}}{2-p} & p \neq 2 \\ \log (\mu) & p=2 \\\end{cases}`
+- the value of :math:`\alpha (y,\phi)` depends on the value of :math:`p`
+
+If there are weights introduced to each data row, *equation 1* will become:
+
+.. math::
+   
+   f \Big( y; \theta, \frac{\phi}{w} \Big) = a \Big( y, \frac{\phi}{w}, p \Big) \exp \Big[ \frac{w}{\phi} \big\{ y\theta - k(\theta) \big\} \Big]
+
+:math:`\alpha (y,\phi)` when :math:`1 < p < 2`
+''''''''''''''''''''''''''''''''''''''''''''''
+
+For :math:`Y=0`,
+
+.. math::
+   
+   P(Y=0) = \exp \Big\{-\frac{\mu^{2-p}}{\phi (2-p)} \Big\} \quad \text{Equation 2}
+
+For :math:`Y>0`,
+
+.. math::
+   
+   a(y, \phi, p) = \frac{1}{y} W(y, \phi, p) \quad \text{Equation 3}
+
+with :math:`W(y, \phi, p) = \sum^{\infty}_{j=1} W_j` and
+
+.. math::
+   
+   W_j = \frac{y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)} (2-p)^j j!T(-j\alpha)} \quad \text{Equation 4}
+
+If weight is applied to each row, *equation 4* becomes:
+
+.. math::
+   
+   W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2-p)^j j!T(-j \alpha)} \quad \text{Equation 5}
+
+The :math:`W_j` terms are all positive. The following figure plots for :math:`\mu = 0.5, p=1.5, \phi =1. y=0.1`.
+
+.. figure:: ../images/dispersion_param_fig1.png 
+   :width: 600px
+
+:math:`\alpha (y,\phi)` when :math:`p > 2`
+'''''''''''''''''''''''''''''''''''''''''''''
+
+Here, you have
+
+.. math::
+   
+   a(y, \phi, p) = \frac{1}{\pi y}V(y,\phi, p) \quad \text{Equation 6}
+
+and :math:`V = \sum^{\infty}_{k=1} V_k` where
+
+.. math::
+   
+   V_k = \frac{T(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{T(1+k)(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 7}
+
+Note that :math:`0 < \alpha < 1` for :math:`p>2`. The :math:`V_k` terms are both positive and negative. This will limit the numerical accuracy that is obtained in summing it as shown in the following image. Again, if weights are applied to each row of the dataset, *equation 6* becomes:
+
+.. math::
+   
+   V_k = \frac{T(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{T(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 8}
+
+In the following figure, we use :math:`\mu =0.5,p=2.5,\phi =1, y=0.1`.
+
+.. figure:: ../images/dispersion_param_fig2.png 
+   :width: 600px
+
+Warnings 
+''''''''
+
+**Accuracy and Limitation**
+
+While the Tweedie's probability density function contains an infinite series sum, when :math:`p` is close to 2, the response (:math:`y`) is large, and :math:`\phi` is small the common number of terms that are needed to approximate the infinite sum grow without bound. This causes an increase in computation time without reaching the desired accuracy.
+
+**Multimodal Densities**
+
+As :math:`p` closes in on 1, the Tweedie density function becomes multimodal. This means that the optimization procedure will fail since it will not be able to find the global optimal point. It will instead arrive at a local optimal point.
+
+As a conservative condition, to ensure that the density is unimodal for most values of :math:`y,\phi`, we should have :math:`p>1.2`.
+
+Tweedie Dispersion Example
+''''''''''''''''''''''''''
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Import the training data:
+      training_data <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+
+      # Set the predictors and response:
+      predictors <- c('abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.')
+      response <- 'resp'
+
+      # Build and train the model:
+      model <- h2o.glm(x = predictors, 
+                       y = response, 
+                       training_frame = training_data, 
+                       family = 'gamma', 
+                       lambda = 0, 
+                       compute_p_values = TRUE, 
+                       dispersion_parameter_method = "ml", 
+                       init_dispersion_parameter = 1.1, 
+                       dispersion_epsilon = 1e-4, 
+                       max_iterations_dispersion = 100)
+
+      # Retrieve the estimated dispersion:
+      model@model$dispersion
+      [1] 8.96682
+
+
+   .. code-tab:: python
+
+      # Import the training data:
+      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+
+      # Set the predictors and response:
+      predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5.""]
+      response = "resp"
+
+      # Build and train the model:
+      model = H2OGeneralizedLinearEstimator(family="gamma", 
+                                            lambda_=0, 
+                                            compute_p_values=True, 
+                                            dispersion_parameter_method="ml", 
+                                            init_dispersion_parameter=1.1, 
+                                            dispersion_epsilon=1e-4, 
+                                            max_iterations_dispersion=100)
+      model.train(x=predictors, y=response, training_frame=training_data)
+
+      # Retrieve the estimated dispersion:
+      model._model_json["output"]["dispersion"]
+      8.966819788535565
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
@@ -1363,6 +1519,8 @@ References
 
 Breslow, N E. “Generalized Linear Models: Checking Assumptions and
 Strengthening Conclusions.” Statistica Applicata 8 (1996): 23-41.
+
+Peter K. Dunn, Gordon K. Symth, “Series evaluation of Tweedie exponential dispersion model densities”, Statistics and Computing, Volume 15 (2005), pages 267-280.
 
 `Jerome Friedman, Trevor Hastie, and Rob Tibshirani. Regularization Paths for Generalized Linear Models via Coordinate Descent. Journal of Statistical Software, 33(1), 2009. <http://core.ac.uk/download/pdf/6287975.pdf>`__
 
