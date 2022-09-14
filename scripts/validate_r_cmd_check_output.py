@@ -40,6 +40,7 @@ class Check:
             r"^\* using option .*",
             r"^\* checking .* \.\.\. OK",
 
+            r"^\* checking extension type ... Package",
             r"^\* this is package",
             r"^\* checking CRAN incoming feasibility \.\.\.",
             r"^\*\* found \\donttest examples: .*",
@@ -70,6 +71,8 @@ class Check:
             r"^  installed size is .*Mb",
             r"^  sub-directories of 1Mb or more:",
             r"^    java  .*Mb",
+            r"^    R  .*Mb",
+            r"^    help  .*Mb",
             r"^NOTE: There were 2 notes.",
             #r"^Status: 1 WARNING, 1 NOTE",
             #r"^Status: 1 WARNING, .* NOTEs",

@@ -12,10 +12,18 @@ public class IsotonicRegressionV3 extends ModelBuilderSchema<IsotonicRegression,
         public static String[] fields = new String[]{
                 "model_id",
                 "training_frame",
+                "validation_frame",
                 "response_column",
                 "ignored_columns",
                 "weights_column",
                 "out_of_bounds",
+                "custom_metric_func",
+                "nfolds",
+                "keep_cross_validation_models",
+                "keep_cross_validation_predictions",
+                "keep_cross_validation_fold_assignment",
+                "fold_assignment",
+                "fold_column"
         };
 
         @API(help="Method for Handling Ties.", values = {"NA", "clip"}, direction = API.Direction.INOUT)

@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.ModelMetrics;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
@@ -72,6 +73,11 @@ public class IsotonicRegression extends ModelBuilder<IsotonicRegressionModel,
         return new IsotonicRegressionDriver();
     }
 
+    @Override
+    protected int nModelsInParallel(int folds) {
+        return 1; // PUBDEV-8830: Parallel CV fails for some reason (it is a race condition but where?)
+    }
+
     private class IsotonicRegressionDriver extends Driver {
         @Override
         public void computeImpl() {
@@ -82,7 +88,7 @@ public class IsotonicRegression extends ModelBuilder<IsotonicRegressionModel,
                 init(true);
 
                 // The model to be built
-                model = new IsotonicRegressionModel(_job._result, _parms, 
+                model = new IsotonicRegressionModel(dest(), _parms, 
                         new IsotonicRegressionModel.IsotonicRegressionOutput(IsotonicRegression.this));
                 model.delete_and_lock(_job);
 
@@ -107,8 +113,14 @@ public class IsotonicRegression extends ModelBuilder<IsotonicRegressionModel,
                 _job.update(1);
                 model.update(_job);
 
-                model.score(_parms.train()).delete();
+                model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
                 model._output._training_metrics = ModelMetrics.getFromDKV(model, _parms.train());
+
+                if (valid() != null) {
+                    _job.update(0,"Scoring validation frame");
+                    model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
+                    model._output._validation_metrics = ModelMetrics.getFromDKV(model, _parms.valid());
+                }
 
                 model._output._model_summary = generateSummary(model._output);
                 
