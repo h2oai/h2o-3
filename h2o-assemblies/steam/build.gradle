@@ -40,6 +40,7 @@ dependencies {
         exclude group: "org.apache.curator"
         exclude group: "org.apache.zookeeper"
         exclude group: "org.eclipse.jetty"
+        exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
     }
     api("org.apache.hadoop:hadoop-aws:3.3.3") {
         exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
