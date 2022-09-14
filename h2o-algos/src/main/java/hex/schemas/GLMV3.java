@@ -87,10 +87,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "generate_scoring_history",
             "auc_type",
             "dispersion_epsilon",
+            "tweedie_epsilon",
             "max_iterations_dispersion",
             "build_null_model",
             "fix_dispersion_parameter",
-            "generate_variable_inflation_factors"
+            "generate_variable_inflation_factors",
+            "fix_tweedie_variance_power",
+            "dispersion_learning_rate"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -109,6 +112,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "Tweedie variance power", level = Level.critical, gridable = true)
     public double tweedie_variance_power;
+
+    @API(help = "Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. " +
+            "It must be > 0.  This controls how much the dispersion parameter estimate is to be changed when the" +
+            " calculated loglikelihood actually decreases with the new dispersion.  In this case, instead of setting" +
+            " new dispersion = dispersion - change, we set new dispersion = dispersion + dispersion_learning_rate * change. " +
+            "Defaults to 0.5.", level = Level.expert, gridable = true)
+    public double dispersion_learning_rate;
 
     @API(help = "Tweedie link power", level = Level.critical, gridable = true)
     public double tweedie_link_power;
@@ -216,7 +226,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     
     @API(help="Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion " +
             "parameter.  If fix_dispersion_parameter is set, this value will be used in the calculation of p-values." +
-            "Default to 1.0.", level=Level.expert)
+            "Default to 1.0.", level=Level.expert, gridable=true)
     public double init_dispersion_parameter;
 
     @API(help="If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned", level = Level.critical)
@@ -277,13 +287,24 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
     public boolean compute_p_values; // _remove_collinear_columns
 
+    @API(help="If true, will fix tweedie variance power value to the value set in tweedie_variance_power.",
+            level=Level.secondary, direction=Direction.INPUT)
+    public boolean fix_tweedie_variance_power;
+
     @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
-    @API(help = "if changes in dispersion parameter estimation is smaller than dispersion_epsilon, will break out of the dispersion parameter estimation loop using maximum likelihood", level = API.Level.secondary, direction = API.Direction.INOUT)
+    @API(help = "If changes in dispersion parameter estimation or loglikelihood value is smaller than " +
+            "dispersion_epsilon, will break out of the dispersion parameter estimation loop using maximum " +
+            "likelihood.", level = API.Level.secondary, direction = API.Direction.INOUT)
     public double dispersion_epsilon;
+
+    @API(help = "In estimating tweedie dispersion parameter using maximum likelihood, this is used to choose the lower" +
+            " and upper indices in the approximating of the infinite series summation.", 
+            level = API.Level.secondary, direction = API.Direction.INOUT)
+    public double tweedie_epsilon;
     
-    @API(help = "control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood", level = API.Level.secondary, direction = API.Direction.INOUT)
+    @API(help = "Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood.", level = API.Level.secondary, direction = API.Direction.INOUT)
     public int max_iterations_dispersion;
 
     @API(help="If set to true, will generate scoring history for GLM.  This may significantly slow down the algo.", 

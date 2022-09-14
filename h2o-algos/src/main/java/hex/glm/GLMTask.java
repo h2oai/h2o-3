@@ -3209,13 +3209,13 @@ public abstract class GLMTask  {
   /***
    * This function will assist in the estimation of dispersion factors using maximum likelihood
    */
-  public static class ComputeMLSETsk extends FrameTask2<ComputeMLSETsk> {
+  public static class ComputeGammaMLSETsk extends FrameTask2<ComputeGammaMLSETsk> {
     final double [] _betaNew;
     double _sumlnyiOui;
     double _sumyiOverui;
     double _wsum;
 
-    public ComputeMLSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, double [] betaNew, GLMParameters parms) {
+    public ComputeGammaMLSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, double [] betaNew, GLMParameters parms) {
       super(cmp, dinfo, jobKey);
       _glmf = new GLMWeightsFun(parms);
       _betaNew = betaNew;
@@ -3246,7 +3246,7 @@ public abstract class GLMTask  {
       }
     }
     @Override
-    public void reduce(ComputeMLSETsk c){
+    public void reduce(ComputeGammaMLSETsk c){
       _sumlnyiOui += c._sumlnyiOui;
       _sumyiOverui += c._sumyiOverui;
       _wsum += c._wsum;}
