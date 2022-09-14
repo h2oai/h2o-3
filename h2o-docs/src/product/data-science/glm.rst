@@ -121,6 +121,8 @@ Common Parameters
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (``lambda=0`` and no beta constraints). Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
+- **dispersion_parameter_method**: Method used to estimate the dispersion factor for Tweedie, Gamma, and Negative Binomial only. Can be one of ``"pearson"`` (default), ``"deviance"``, or ``"ml"``. 
+
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (``lambda=0``). This option defaults to ``False`` (disabled).
 
 -  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option defaults to ``True`` (enabled). 
@@ -190,6 +192,16 @@ Common Parameters
     - ``"MACRO_OVO"``
     - ``"WEIGHTED_OVO"``
 
+- **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, will break out of the dispersion parameter estimation loop using maximum likelihood Defaults to ``0.0001``.
+
+- **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. Defaults to ``1000000``.
+
+- **build_null_model**: If set, will build a model with only the intercept.  Default to ``False``.
+
+- **fix_dispersion_parameter**: Only used for Tweedie, Gamma and Negative Binomial GLM. If set, will use the dispsersion parameter in ``init_dispersion_parameter`` as the standard error and use it to calculate the p-values. Default to ``False``.
+
+- **generate_variable_inflation_factors**: If ``True``, generates the variable inflation factors for numerical predictors. Defaults to ``False``.
+
 Hyperparameters
 '''''''''''''''
 
@@ -210,6 +222,8 @@ These parameters can be used in grid search.
 -  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values. One of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``.
 
 -  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
+
+- **init_dispersion_parameter**: Initial value of disperion factor to be estimated using either ``"pearson"`` or ``"ml"``. Default to ``1.0``.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations (defaults to ``-1``).
 
