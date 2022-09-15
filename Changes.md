@@ -2,6 +2,14 @@
 
 ## H2O
 
+### Zumbo (3.36.1.5) - 9/15/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/5/index.html</a>
+
+#### Security
+
+- Addressed security vulnerability CVE-2021-22569 in the `h2o.jar`.
+
 ### Zumbo (3.36.1.4) - 8/3/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/4/index.html</a>
