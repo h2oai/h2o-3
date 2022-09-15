@@ -1830,7 +1830,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     # --------------------------------
     
     def _str_items(self, verbosity=None):
-        verbosity = verbosity or 'medium'  # default verbosity when printing model
+        verbosity = verbosity or 'full'  # default verbosity when printing model
         # edge cases
         if self._future:
             self._job.poll_once()
@@ -1874,7 +1874,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         return items
     
     def _str_usage(self, verbosity=None, fmt=None):
-        verbosity = verbosity or 'medium'  # default verbosity when printing model
+        verbosity = verbosity or 'full'  # default verbosity when printing model
         if not self._model_json or verbosity == 'short':
             return ""
         lines = []
