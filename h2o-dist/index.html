@@ -436,65 +436,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">
         <script type="text/javascript" src="ZeroClipboard.min.js"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
-        <script src="//app-ab12.marketo.com/js/forms2/js/forms2.min.js"></script>
-        <form id="mktoForm_1016"></form>
 
-        <script></script>
-
-          <script type="text/javascript">
-            $(document).ready(function () {
-                  document.getElementById('download-zip').addEventListener('click', function(){setTimeout(function() {location.href='h2o-SUBST_PROJECT_VERSION.zip'}, 500)})
-                  var firstAdd=false;
-                  ZeroClipboard.config({moviePath:'ZeroClipboard.swf'});
-                  var clip = new ZeroClipboard($(".copy_button"));
-
-
-                  $(".copy_button").click(function(event){
-                    event.preventDefault();
-                    MktoForms2.loadForm("//app-ab12.marketo.com", "644-PKX-778", 1113, function (form){MktoForms2.lightbox(form).show();});
-
-                      MktoForms2.whenReady(function (form) {
-                          if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
-                          {
-                            $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
-                            $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
-                            $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Copied!</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
-                          }
-						  else{
-							$(".mktoModalMain .abc h1").html("Copied!");
-						  }
-                    });
-
-
-                  });
-                  $("#download-zip").click(function(event){
-                    event.preventDefault();
-                    MktoForms2.loadForm("//app-ab12.marketo.com", "644-PKX-778", 1113, function (form){MktoForms2.lightbox(form).show();});
-
-                      MktoForms2.whenReady(function (form) {
-                          if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
-                          {
-                            $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
-                            $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
-                            $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Downloading...</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
-                          }
-						  else{
-							$(".mktoModalMain .abc h1").html("Downloading...");
-						}
-                    });
-
-
-                  });
-
-                  clip.on( 'mouseover', function(client) {
-                    console.log('mouseover');
-                  } );
-
-                  clip.on('complete', function (client, args) {
-                      alert('clipDetail complete');
-                  });
-              });
-        </script>
         <style>
           .btn {
               float:right;
