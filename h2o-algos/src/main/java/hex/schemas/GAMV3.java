@@ -228,11 +228,14 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
-    @API(help = "Number of knots for gam predictors", level = Level.critical, gridable = true)
+    @API(help = "Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For " +
+            "monotone I-splines, mininum=2 and this implies one basis function only.", level = Level.critical, 
+            gridable = true)
     public int[] num_knots;
 
-    @API(help = "Order of I-splines used for gam predictors. If specified, must be the same size as gam_columns." +
-            "Values for bs=0 or 1 will be ignored.", level = Level.critical, gridable = true)
+    @API(help = "Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If specified, " +
+            "must be the same size as gam_columns.  Values for bs=0 or 1 will be ignored.", level = Level.critical,
+            gridable = true)
     public int[] spline_orders;
 
     @API(help = "Arrays of predictor column names for gam for smoothers using single or multiple predictors like " +

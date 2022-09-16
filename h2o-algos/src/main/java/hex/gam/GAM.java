@@ -339,9 +339,9 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         int numKnots = _parms._num_knots[index];
         if (_parms._bs[index] == 2) {
           if (_parms._num_knots[index] == 0)
-            _parms._num_knots[index] = 3;
-          else if (_parms._num_knots[index] < 3)
-            error("num_knots", " must >= 3 for I-splines.");
+            _parms._num_knots[index] = 2; // default will generate one basis function
+          else if (_parms._num_knots[index] < 2)
+            error("num_knots", " must >= 2 for I-splines.");
         }
         int naSum = 0;
         for (int innerIndex = 0; innerIndex < _parms._gam_columns[index].length; innerIndex++) {
