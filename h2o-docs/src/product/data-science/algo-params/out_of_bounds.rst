@@ -9,7 +9,7 @@
 Description
 ~~~~~~~~~~~
 
-Use this option to specify how should a trained model treat values of an X predictor that are outside of the bounds seen in training.
+Use this option to specify how a trained model should treat values of an X predictor that are outside of the bounds seen in training.
 
 Available options for ``out_of_bounds`` include the following:
 

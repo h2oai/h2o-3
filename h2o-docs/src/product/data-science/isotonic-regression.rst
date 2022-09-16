@@ -6,7 +6,7 @@ Introduction
 
 An Isotonic Regression is a method of solving univariate regression problems by fitting a free-form line to an ordered sequence of observations such that the fitted line is non-decreasing while minimizing the distance of the fitted line from the observations.
 
-H2O's Isotonic Regression implements a pool adjacent violators algorithm which uses an approach to parallelizing isotonic regression [:ref:`1<ref1>`].
+H2O's Isotonic Regression implements a pool adjacent violators algorithm which uses an approach to parallelizing isotonic regression [:ref:`1<ref5>`].
 
 MOJO Support
 ''''''''''''
@@ -46,7 +46,7 @@ Defining an Isotonic Regression Model
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  `out_of_bounds <algo-params/out_of_bounds.html>`__: Method handling values of X predictor that are outside of the bounds seen in training. This option is defaults to NA (output NA for values that our outside of the training range).
+-  `out_of_bounds <algo-params/out_of_bounds.html>`__: Method handling values of X predictor that are outside of the bounds seen in training. Must be one of ``clip`` or ``na`` (default). The default value prints "NA" for values outside of the training range.
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
@@ -91,6 +91,6 @@ Below are simple examples showing how to use Isotonic Regression in R and Python
 References
 ~~~~~~~~~~
 
-.. _ref1:
+.. _ref5:
 
 1. Kearsley, A.J., Tapia, R.A., Trosset, M.W. (1996). An Approach to Parallelizing Isotonic Regression. In: Fischer, H., Riedmüller, B., Schäffler, S. (eds) Applied Mathematics and Parallel Computing. Physica-Verlag HD. https://doi.org/10.1007/978-3-642-99789-1_10
