@@ -371,7 +371,7 @@ EOF
                                                     cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build/${artifact}
                                                     cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/${artifact}/conda
                                                     # Create conda package for current platform
-                                                    conda build h2o-${artifact} --output-folder "." --no-anaconda-upload --py ${pyVersion} --channel conda-forge
+                                                    conda build h2o-${artifact} --output-folder "." --no-anaconda-upload --py ${pyVersion} --channel anaconda
                                                     # Get name of the package
                                                     CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o-${artifact} --py ${pyVersion} --output-folder "." --output | tail -1)
                                                     PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
