@@ -9,6 +9,7 @@
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <link rel="stylesheet" href="primer.css">
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
     <style type="text/css">
       /* Reset */
@@ -434,66 +435,41 @@
         </div>
         <!-- Clipboard Icon !-->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">
-        <script type="text/javascript" src="ZeroClipboard.min.js"></script>
+        <script type="text/javascript" src="clipboard.min.js"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
-        <script src="//app-ab12.marketo.com/js/forms2/js/forms2.min.js"></script>
-        <form id="mktoForm_1016"></form>
-
-        <script></script>
 
           <script type="text/javascript">
-            $(document).ready(function () {
-                  document.getElementById('download-zip').addEventListener('click', function(){setTimeout(function() {location.href='h2o-SUBST_PROJECT_VERSION.zip'}, 500)})
-                  var firstAdd=false;
-                  ZeroClipboard.config({moviePath:'ZeroClipboard.swf'});
-                  var clip = new ZeroClipboard($(".copy_button"));
+          $(document).ready(function () {
+              var copyButtons = document.querySelectorAll('.copy_button');
+              for (var i = 0; i < copyButtons.length; i++) {
+                copyButtons[i].addEventListener('mouseleave', clearTooltip);
+                copyButtons[i].addEventListener('blur', clearTooltip);
+              }
 
+              function clearTooltip(e) {
+                e.currentTarget.setAttribute('class', 'btn copy_button');
+                e.currentTarget.removeAttribute('aria-label');
+              }
 
-                  $(".copy_button").click(function(event){
-                    event.preventDefault();
-                    MktoForms2.loadForm("//app-ab12.marketo.com", "644-PKX-778", 1113, function (form){MktoForms2.lightbox(form).show();});
+              function showTooltip(elem, msg) {
+                elem.setAttribute('class', 'btn copy_button tooltipped tooltipped-s');
+                elem.setAttribute('aria-label', msg);
+              }
 
-                      MktoForms2.whenReady(function (form) {
-                          if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
-                          {
-                            $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
-                            $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
-                            $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Copied!</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
-                          }
-						  else{
-							$(".mktoModalMain .abc h1").html("Copied!");
-						  }
-                    });
-
-
-                  });
-                  $("#download-zip").click(function(event){
-                    event.preventDefault();
-                    MktoForms2.loadForm("//app-ab12.marketo.com", "644-PKX-778", 1113, function (form){MktoForms2.lightbox(form).show();});
-
-                      MktoForms2.whenReady(function (form) {
-                          if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
-                          {
-                            $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
-                            $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
-                            $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Downloading...</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
-                          }
-						  else{
-							$(".mktoModalMain .abc h1").html("Downloading...");
-						}
-                    });
-
-
-                  });
-
-                  clip.on( 'mouseover', function(client) {
-                    console.log('mouseover');
-                  } );
-
-                  clip.on('complete', function (client, args) {
-                      alert('clipDetail complete');
-                  });
+              clipboardJS = new ClipboardJS('.copy_button');
+              clipboardJS.on('success', function(e) {
+                e.clearSelection();
+                console.info('Action:', e.action);
+                console.info('Text:', e.text);
+                console.info('Trigger:', e.trigger);
+                showTooltip(e.trigger, 'Copied!');
               });
+              clipboardJS.on('error', function(e) {
+                console.error('Action:', e.action);
+                console.error('Trigger:',e.trigger);
+                showTooltip(e.trigger, 'Copying not supported!');
+              });
+          })
         </script>
         <style>
           .btn {
@@ -525,10 +501,6 @@
 
           }
           .octicon-clippy{font-size:30px;}
-          .zeroclipboard-is-hover .octicon-clippy{
-            color:#4388db !important;
-          }
-
         </style>
         <div id="panels">
           <div id="quickstart-zip">
@@ -539,7 +511,7 @@
             <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
             <p>2. From your terminal, run:</p>
 
-            <button class="btn copy_button" id="btnCopy1" data-copied-hint="Copied!" data-clipboard-target='to_copy1'>
+            <button class="btn copy_button" id="btnCopy1" data-copied-hint="Copied!" data-clipboard-target='#to_copy1'>
               <span class="octicon octicon-clippy"></span>
             </button>
             <p class="terminal" id="to_copy1">
@@ -556,7 +528,7 @@
 
                 <p>1. Prerequisite:    Python 2.7.x, 3.5.x to 3.7.x</p>
                 <p>2. Install dependencies (prepending with `sudo` if needed):</p>
-                 <button class="btn copy_button" id="btnCopy8" data-copied-hint="Copied!" data-clipboard-target='to_copy8'>
+                 <button class="btn copy_button" id="btnCopy8" data-copied-hint="Copied!" data-clipboard-target='#to_copy8'>
               <span class="octicon octicon-clippy"></span>
             </button>
                 <p class="terminal" id="to_copy8">
@@ -565,7 +537,7 @@
                     pip install future
                 </p>
                 <p>At the command line, copy and paste these commands one line at a time:</p>
-                  <button class="btn copy_button" id="btnCopy2" data-copied-hint="Copied!" data-clipboard-target='to_copy2'>
+                  <button class="btn copy_button" id="btnCopy2" data-copied-hint="Copied!" data-clipboard-target='#to_copy2'>
                     <span class="octicon octicon-clippy"></span>
                   </button>
                 <p class="terminal" id="to_copy2">
@@ -577,7 +549,7 @@
 
                 <h2>Conda Installation</h2>
                 <p>Available at https://anaconda.org/h2oai/h2o/</p>
-                  <button class="btn copy_button" id="btnCopy9" data-copied-hint="Copied!" data-clipboard-target='to_copy8'>
+                  <button class="btn copy_button" id="btnCopy9" data-copied-hint="Copied!" data-clipboard-target='#to_copy8'>
                 <span class="octicon octicon-clippy"></span>
             </button>
             <p>To install this package with conda run:</p>
@@ -588,7 +560,7 @@
                 <h2>Use H<sub>2</sub>O directly from R</h2>
 
                 <p>Copy and paste these commands into R one line at a time:</p>
-                  <button class="btn copy_button" id="btnCopy3" data-copied-hint="Copied!" data-clipboard-target='to_copy3'>
+                  <button class="btn copy_button" id="btnCopy3" data-copied-hint="Copied!" data-clipboard-target='#to_copy3'>
                     <span class="octicon octicon-clippy"></span>
                   </button>
                 <p class="terminal" id="to_copy3"data-clipboard-target='to_copy3'>
@@ -613,12 +585,12 @@
           <div id="quickstart-hadoop" style="display:none">
             <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps</h2>
             <p>1. Download H<sub>2</sub>O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
-            <button class="btn copy_button" id="btnCopy4" data-copied-hint="Copied!" data-clipboard-target='to_copy4'>
+            <button class="btn copy_button" id="btnCopy4" data-copied-hint="Copied!" data-clipboard-target='#to_copy4'>
               <span class="octicon octicon-clippy"></span>
             </button>
             <p class="terminal" id="to_copy4"></p>
             <p>2. Unpack the zip file and launch a 6g instance of H<sub>2</sub>O: </p>
-             <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='to_copy7'>
+             <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='#to_copy7'>
               <span class="octicon octicon-clippy"></span>
             </button>
             <p class="terminal" id="to_copy7">
@@ -627,7 +599,7 @@
                 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g<br/>
             </p>
             <p>3. Point your browser to H2O (see "Open H2O Flow in your web browser" in the output below):</p>
-            <button class="btn copy_button" id="btnCopy5" data-copied-hint="Copied!" data-clipboard-target='to_copy5'>
+            <button class="btn copy_button" id="btnCopy5" data-copied-hint="Copied!" data-clipboard-target='#to_copy5'>
               <span class="octicon octicon-clippy"></span>
             </button>
             <p class="terminal" id="to_copy5">
@@ -654,7 +626,7 @@
               <h2>Gradle-style specification for Maven artifacts</h2>
 
               <p>See the <a href="https://github.com/h2oai/h2o-droplets">h2o-droplets github repository</a> for a working example.</p>
-              <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target='to_copy6'>
+              <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target='#to_copy6'>
               <span class="octicon octicon-clippy"></span>
             </button>
               <p class="terminal" id="to_copy6"/>
@@ -694,7 +666,7 @@ helm test basic-h2o
                 <p>1. Set-up kubernetes cluster and kubectl.</p>
                 <p>2. (Optional) Adjust the 'default' namespace in the following YAML, if required.</p>
     
-                <button class="btn copy_button" id="btnCopy10" data-copied-hint="Copied!" data-clipboard-target='btnCopy10'>
+                <button class="btn copy_button" id="btnCopy10" data-copied-hint="Copied!" data-clipboard-target='#btnCopy10'>
                     <span class="octicon octicon-clippy"></span>
                 </button>
             <pre>
