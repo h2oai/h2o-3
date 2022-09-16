@@ -18,6 +18,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/inde
 - [[PUBDEV-8733]](https://h2oai.atlassian.net/browse/PUBDEV-8733) - Fixed upload of big files in Sparkling Water deployment.
 - [[PUBDEV-8726]](https://h2oai.atlassian.net/browse/PUBDEV-8726) - Changed the error message that GLM does not support contributions.
 - [[PUBDEV-8722]](https://h2oai.atlassian.net/browse/PUBDEV-8722) - Fixed QuantilesGlobal histogram type failing in GBM when all columns were categorial.
+- [[PUBDEV-8698]](https://h2oai.atlassian.net/browse/PUBDEV-8698) - Added support for MapR 6.2 to fix the error caused by updating the cluster.
 - [[PUBDEV-8693]](https://h2oai.atlassian.net/browse/PUBDEV-8693) - Fixed large file upload in Python.
 - [[PUBDEV-8670]](https://h2oai.atlassian.net/browse/PUBDEV-8670) - Fixed inability to stop print out of model information in Python.
 - [[PUBDEV-8621]](https://h2oai.atlassian.net/browse/PUBDEV-8621) - Removed `-seed` variable hiding in GAM.
