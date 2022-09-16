@@ -11,7 +11,7 @@ H2O's Isotonic Regression implements a pool adjacent violators algorithm which u
 MOJO Support
 ''''''''''''
 
-Isotonic Regression models can be exported as MOJOs `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+Isotonic Regression models can be exported as `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
 Defining an Isotonic Regression Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
