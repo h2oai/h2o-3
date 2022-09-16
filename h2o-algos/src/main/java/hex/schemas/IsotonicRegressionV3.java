@@ -26,7 +26,7 @@ public class IsotonicRegressionV3 extends ModelBuilderSchema<IsotonicRegression,
                 "fold_column"
         };
 
-        @API(help="Method for Handling Ties.", values = {"NA", "clip"}, direction = API.Direction.INOUT)
+        @API(help="Method of handling values of X predictor that are outside of the bounds seen in training.", values = {"NA", "clip"}, direction = API.Direction.INOUT)
         public IsotonicRegressionModel.OutOfBoundsHandling out_of_bounds;
 
     }

@@ -22,7 +22,8 @@
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
-#' @param out_of_bounds Method for Handling Ties. Must be one of: "NA", "clip". Defaults to NA.
+#' @param out_of_bounds Method of handling values of X predictor that are outside of the bounds seen in training. Must be one of:
+#'        "NA", "clip". Defaults to NA.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
