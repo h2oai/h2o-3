@@ -70,6 +70,10 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
         
         private ContributionsPredictorDRF(DrfMojoModel model, TreeSHAPPredictor<double[]> treeSHAPPredictor) {
             super(model, treeSHAPPredictor);
+            if (model._binomial_double_trees) {
+                throw new UnsupportedOperationException(
+                        "Calculating contributions is currently not supported for model with binomial_double_trees parameter set.");
+            }
             if (ModelCategory.Regression.equals(model._category)) {
                 _featurePlusBiasRatio = 0;
                 _normalizer = model._ntree_groups;
@@ -90,4 +94,7 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
         }
     }
 
+    public boolean isBinomialDoubleTrees() {
+        return _binomial_double_trees;
+    }
 }
