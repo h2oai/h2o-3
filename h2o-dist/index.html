@@ -8,10 +8,8 @@
     </title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!--<link rel="stylesheet" href="primer.css">-->
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
-    <style type="text/css">
+    <style>
       /* Reset */
       html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video { margin: 0;    padding: 0;    border: 0;    font-size: 100%;    font: inherit;    vertical-align: baseline; } /* HTML5 display-role reset for older browsers */
       article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section { display: block; }
@@ -221,6 +219,29 @@
           color: #222;
           top: 5px;
           left: -1px;
+      }
+      
+      .copy_button.tooltipped:after {
+          content: 'Copied!';
+          display: block;
+          position: absolute;
+          background-color: #222;
+          color: #fff;
+          font-weight: normal;
+          border-radius: 3px;
+          top: 35px;
+          left: -20px;
+          padding: 5px 10px;
+      }
+      
+      .copy_button.tooltipped.tooltipped-s:after {
+          content: 'Copied!';
+      }
+
+      .copy_button.tooltipped.tooltipped-e:after {
+          content: 'Copying not supported!';
+          background-color: #9f1006;
+          left: -60px;
       }
       
       .pre {
@@ -496,64 +517,6 @@
           <span id = "quickstart-maven-tab">Use from Maven</span>
           <span id = "quickstart-kubernetes-tab">Kubernetes</span>
         </div>
-        <!-- Clipboard Icon !-->
-        <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">-->
-        <!--<script type="text/javascript" src="clipboard.min.js"></script>-->
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
-
-          <script type="text/javascript">
-          $(document).ready(function () {
-              let copyButtons = document.querySelectorAll('.copy_button');
-              for (let i = 0; i < copyButtons.length; i++) {
-                  copyButtons[i].addEventListener('click', copyToClipboard);
-                  copyButtons[i].addEventListener('mouseleave', clearTooltip);
-                  copyButtons[i].addEventListener('blur', clearTooltip);
-                  copyButtons[i].setAttribute('title', 'Copy');
-              }
-
-              function copyToClipboard(event) {
-                  const targetId = event.target.dataset.clipboardTarget;
-                  if (!targetId) {
-                      console.error('No targetId found');
-                      return;
-                  }
-                  const text = document.getElementById(targetId.replace('#',''))?.innerText;
-                  if (!text) {
-                      console.error(`No copyable element or text found for ID ${targetId}`);
-                      return;
-                  }
-                  navigator.clipboard.writeText(text).then(() => {
-                      showTooltip(event.target, 'Copied!');
-                  }, (error) => {
-                      showTooltip(event.target, 'Copying not supported!');
-                  });
-              }
-
-              function clearTooltip(e) {
-                e.currentTarget.setAttribute('class', 'btn copy_button');
-                e.currentTarget.removeAttribute('aria-label');
-              }
-
-              function showTooltip(elem, msg) {
-                elem.setAttribute('class', 'btn copy_button tooltipped tooltipped-s');
-                elem.setAttribute('aria-label', msg);
-              }
-
-              // // clipboardJS = new ClipboardJS('.copy_button');
-              // clipboardJS.on('success', function(e) {
-              //   e.clearSelection();
-              //   console.info('Action:', e.action);
-              //   console.info('Text:', e.text);
-              //   console.info('Trigger:', e.trigger);
-              //   showTooltip(e.trigger, 'Copied!');
-              // });
-              // clipboardJS.on('error', function(e) {
-              //   console.error('Action:', e.action);
-              //   console.error('Trigger:',e.trigger);
-              //   showTooltip(e.trigger, 'Copying not supported!');
-              // });
-          })
-        </script>
         <div id="panels">
           <div id="quickstart-zip">
             <div id="downloads">
@@ -563,7 +526,7 @@
             <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
             <p>2. From your terminal, run:</p>
 
-            <button class="btn copy_button" id="btnCopy1" data-copied-hint="Copied!" data-clipboard-target='#to_copy1'></button>
+            <button class="btn copy_button" id="btnCopy1" data-clipboard-target='#to_copy1'></button>
             <p class="terminal" id="to_copy1">
               cd ~/Downloads<br/>
               unzip h2o-SUBST_PROJECT_VERSION.zip<br/>
@@ -578,14 +541,14 @@
 
                 <p>1. Prerequisite:    Python 2.7.x, 3.5.x to 3.7.x</p>
                 <p>2. Install dependencies (prepending with `sudo` if needed):</p>
-                 <button class="btn copy_button" id="btnCopy8" data-copied-hint="Copied!" data-clipboard-target='#to_copy8'></button>
+                 <button class="btn copy_button" id="btnCopy8" data-clipboard-target='#to_copy8'></button>
                 <p class="terminal" id="to_copy8">
                     pip install requests<br/>
                     pip install tabulate<br/>
                     pip install future
                 </p>
                 <p>At the command line, copy and paste these commands one line at a time:</p>
-                  <button class="btn copy_button" id="btnCopy2" data-copied-hint="Copied!" data-clipboard-target='#to_copy2'></button>
+                  <button class="btn copy_button" id="btnCopy2" data-clipboard-target='#to_copy2'></button>
                 <p class="terminal" id="to_copy2">
                     <em># The following command removes the H<sub>2</sub>O module for Python.</em><br/>
                     pip uninstall h2o<br/>
@@ -596,7 +559,7 @@
                 <h2>Conda Installation</h2>
                 <p>Available at https://anaconda.org/h2oai/h2o/</p>
             <p>To install this package with conda run:</p>
-                <button class="btn copy_button" id="btnCopy9" data-copied-hint="Copied!" data-clipboard-target='#to_copy9'></button>
+                <button class="btn copy_button" id="btnCopy9" data-clipboard-target='#to_copy9'></button>
             <p class="terminal" id="to_copy9">conda install -c h2oai h2o</p>
             </div>
 
@@ -604,7 +567,7 @@
                 <h2>Use H<sub>2</sub>O directly from R</h2>
 
                 <p>Copy and paste these commands into R one line at a time:</p>
-                  <button class="btn copy_button" id="btnCopy3" data-copied-hint="Copied!" data-clipboard-target='#to_copy3'></button>
+                  <button class="btn copy_button" id="btnCopy3" data-clipboard-target='#to_copy3'></button>
                 <p class="terminal" id="to_copy3"data-clipboard-target='to_copy3'>
                     <em># The following two commands remove any previously installed H<sub>2</sub>O packages for R.</em><br/>
                     if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }<br/>
@@ -627,17 +590,17 @@
           <div id="quickstart-hadoop" style="display:none">
             <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps</h2>
             <p>1. Download H<sub>2</sub>O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
-            <button class="btn copy_button" id="btnCopy4" data-copied-hint="Copied!" data-clipboard-target='#to_copy4'></button>
+            <button class="btn copy_button" id="btnCopy4" data-clipboard-target='#to_copy4'></button>
             <p class="terminal" id="to_copy4"></p>
             <p>2. Unpack the zip file and launch a 6g instance of H<sub>2</sub>O: </p>
-             <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='#to_copy7'></button>
+             <button class="btn copy_button" id="btnCopy7" data-clipboard-target='#to_copy7'></button>
             <p class="terminal" id="to_copy7">
                 unzip h2o-SUBST_PROJECT_VERSION-*.zip<br/>
                 cd h2o-SUBST_PROJECT_VERSION-*<br/>
                 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g<br/>
             </p>
             <p>3. Point your browser to H2O (see "Open H2O Flow in your web browser" in the output below):</p>
-            <button class="btn copy_button" id="btnCopy5" data-copied-hint="Copied!" data-clipboard-target='#to_copy5'></button>
+            <button class="btn copy_button" id="btnCopy5" data-clipboard-target='#to_copy5'></button>
             <p class="terminal" id="to_copy5">
                 Determining driver host interface for mapper->driver callback...<br/>
                 [Possible callback IP address: 172.16.2.181]<br/>
@@ -662,7 +625,7 @@
               <h2>Gradle-style specification for Maven artifacts</h2>
 
               <p>See the <a href="https://github.com/h2oai/h2o-droplets">h2o-droplets github repository</a> for a working example.</p>
-              <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target='#to_copy6'></button>
+              <button class="btn copy_button" id="btnCopy6" data-clipboard-target='#to_copy6'></button>
               <p class="terminal" id="to_copy6"/>
 def h2oProjectVersion = "SUBST_PROJECT_VERSION"</br>
 </br>
@@ -686,7 +649,7 @@ dependencies {</br>
                 <h2>Setup H<sub>2</sub>O on Kubernetes using Helm</h2>
                     <p><a href="https://helm.sh/" target="_blank">Helm</a> can be used to deploy H2O into a kubernetes cluster. Helm requires the KUBECONFIG environment variable to be set up properly, or stating the kubeconfig destination explicitly. Please refer to Helm's documentation
                     for further information.</p>
-                <button class="btn copy_button" id="btnCopy11" data-copied-hint="Copied!" data-clipboard-target='#to_copy11'></button>
+                <button class="btn copy_button" id="btnCopy11" data-clipboard-target='#to_copy11'></button>
                 
                     <p class="terminal" id="to_copy11">
                         helm repo add h2o https://charts.h2o.ai<br/>
@@ -701,7 +664,7 @@ dependencies {</br>
                 <p>1. Set-up kubernetes cluster and kubectl.</p>
                 <p>2. (Optional) Adjust the 'default' namespace in the following YAML, if required.</p>
     
-                <button class="btn copy_button" id="btnCopy10" data-copied-hint="Copied!" data-clipboard-target='#to_copy10'></button>
+                <button class="btn copy_button" id="btnCopy10" data-clipboard-target='#to_copy10'></button>
                 <p class="terminal pre" id="to_copy10">
 apiVersion: apps/v1
 kind: StatefulSet
@@ -792,4 +755,47 @@ spec:
       </div>
     </div>
   </body>
+  <script type="text/javascript">
+      // $(document).ready(function () {
+      let copyButtons = document.querySelectorAll('.copy_button');
+      for (let i = 0; i < copyButtons.length; i++) {
+          copyButtons[i].addEventListener('click', copyToClipboard);
+          copyButtons[i].addEventListener('mouseleave', clearTooltip);
+          copyButtons[i].addEventListener('blur', clearTooltip);
+          copyButtons[i].setAttribute('aria-label', 'Copy');
+          copyButtons[i].setAttribute('title', 'Copy');
+      }
+
+      function copyToClipboard(event) {
+          const targetId = event.target.dataset.clipboardTarget;
+          if (!targetId) {
+              console.error('No targetId found');
+              return;
+          }
+          const text = document.getElementById(targetId.replace('#',''))?.innerText;
+          if (!text) {
+              console.error(`No copyable element or text found for ID ${targetId}`);
+              return;
+          }
+          navigator.clipboard.writeText(text).then(() => {
+              showTooltip(event.target, 'tooltipped-s');
+          }, (_error) => {
+              showTooltip(event.target, 'tooltipped-e');
+          });
+      }
+
+      function clearTooltip(e) {
+          const target = e.target;
+          setTimeout(() => {
+              target.setAttribute('class', 'btn copy_button');
+          }, 1000);
+      }
+
+      function showTooltip(elem, className) {
+          elem.setAttribute('class', `btn copy_button tooltipped ${className}`);
+      }
+
+      //  })
+  </script>
 </html>
+
