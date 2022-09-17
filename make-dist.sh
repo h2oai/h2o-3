@@ -10,10 +10,10 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 cdh5.9 cdh5.10 cdh5.13 cdh5.14 cdh5.15 cdh5.16 \
+ALL_HADOOP_VERSIONS="cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 cdh5.9 cdh5.10 cdh5.13 cdh5.14 cdh5.15 cdh5.16 \
 cdh6.0 cdh6.1 cdh6.2 cdh6.3 cdp7.0 cdp7.1 cdp7.2 \
 hdp2.2 hdp2.3 hdp2.4 hdp2.5 hdp2.6 hdp3.0 hdp3.1 \
-mapr4.0 mapr5.0 mapr5.1 mapr5.2 mapr6.0 mapr6.1 mapr6.2 \
+mapr4.0 mapr5.0 mapr5.1 mapr5.2 mapr6.0 mapr6.1 mapr6.2 mapr7.0 \
 iop4.2"
 
 function make_zip_common {
@@ -78,6 +78,7 @@ fi
 # Run some required gradle tasks to produce final build output.
 ./gradlew booklets
 ./gradlew $DO_RELEASE publish
+# TODO improve (gradle calls script which then calls gradle, that creates problems with gradle daemon)
 
 # Generate Py Docs
 (cd h2o-py && sphinx-build -b html docs/ docs/docs/)
@@ -118,8 +119,14 @@ cp -rp h2o-genmodel/build/docs/javadoc target/docs-website/h2o-genmodel
 # Create zip files and add them to target.
 make_zip
 
+if [ -z "${H2O_TARGET}" ]; then
+  HADOOP_VERSIONS_TO_PROCESS=$ALL_HADOOP_VERSIONS;
+else
+  HADOOP_VERSIONS_TO_PROCESS="${H2O_TARGET//,/ }"
+fi
+
 if [ -z "$DO_FAST" ]; then
-  for HADOOP_VERSION in $HADOOP_VERSIONS; do
+  for HADOOP_VERSION in $HADOOP_VERSIONS_TO_PROCESS; do
     make_hadoop_zip $HADOOP_VERSION
   done
 fi
