@@ -23,6 +23,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/inde
 - [[PUBDEV-8670]](https://h2oai.atlassian.net/browse/PUBDEV-8670) - Fixed inability to stop print out of model information in Python.
 - [[PUBDEV-8621]](https://h2oai.atlassian.net/browse/PUBDEV-8621) - Removed `-seed` variable hiding in GAM.
 - [[PUBDEV-8561]](https://h2oai.atlassian.net/browse/PUBDEV-8561) - Updated `h2o.upload_mojo` to also work for POJO.
+- [[PUBDEV-8220]](https://h2oai.atlassian.net/browse/PUBDEV-8220) - Added unsupported operation exception when trying to use SHAP summary plot when building DRF model with `binomial_double_trees`.
 - [[PUBDEV-7098]](https://h2oai.atlassian.net/browse/PUBDEV-7098) - Refactored the rendering logic in the Python client.
 - [[PUBDEV-3524]](https://h2oai.atlassian.net/browse/PUBDEV-3524) - Added xval argument to `h2o.confusionMatrix` in R.
 
@@ -64,6 +65,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/inde
 
 #### Docs
 
+- [[PUBDEV-8845]](https://h2oai.atlassian.net/browse/PUBDEV-8845) - Added documentation on Isotonic Regression.
 - [[PUBDEV-8829]](https://h2oai.atlassian.net/browse/PUBDEV-8829) - Added variable inflation factors to GLM section of the user guide.
 - [[PUBDEV-8827]](https://h2oai.atlassian.net/browse/PUBDEV-8827) - Added Tweedie dispersion parameter estimation to the GLM section of the user guide.
 - [[PUBDEV-8817]](https://h2oai.atlassian.net/browse/PUBDEV-8817) - Added confusion matrix calculation explanation to performance and prediction.
