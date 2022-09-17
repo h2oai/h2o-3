@@ -754,45 +754,45 @@ spec:
         </div>
       </div>
     </div>
+    <script type="text/javascript">
+        let copyButtons = document.querySelectorAll('.copy_button');
+        for (let i = 0; i < copyButtons.length; i++) {
+            copyButtons[i].addEventListener('click', copyToClipboard);
+            copyButtons[i].addEventListener('mouseleave', clearTooltip);
+            copyButtons[i].addEventListener('blur', clearTooltip);
+            copyButtons[i].setAttribute('aria-label', 'Copy');
+            copyButtons[i].setAttribute('title', 'Copy');
+        }
+
+        function copyToClipboard(event) {
+            const targetId = event.target.dataset.clipboardTarget;
+            if (!targetId) {
+                console.error('No targetId found');
+                return;
+            }
+            const text = document.getElementById(targetId.replace('#',''))?.innerText;
+            if (!text) {
+                console.error(`No copyable element or text found for ID ${targetId}`);
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                showTooltip(event.target, 'tooltipped-s');
+            }, (_error) => {
+                showTooltip(event.target, 'tooltipped-e');
+            });
+        }
+
+        function clearTooltip(e) {
+            const target = e.target;
+            setTimeout(() => {
+                target.setAttribute('class', 'btn copy_button');
+            }, 1000);
+        }
+
+        function showTooltip(elem, className) {
+            elem.setAttribute('class', `btn copy_button tooltipped ${className}`);
+        }
+    </script>
   </body>
-  <script type="text/javascript">
-      let copyButtons = document.querySelectorAll('.copy_button');
-      for (let i = 0; i < copyButtons.length; i++) {
-          copyButtons[i].addEventListener('click', copyToClipboard);
-          copyButtons[i].addEventListener('mouseleave', clearTooltip);
-          copyButtons[i].addEventListener('blur', clearTooltip);
-          copyButtons[i].setAttribute('aria-label', 'Copy');
-          copyButtons[i].setAttribute('title', 'Copy');
-      }
-
-      function copyToClipboard(event) {
-          const targetId = event.target.dataset.clipboardTarget;
-          if (!targetId) {
-              console.error('No targetId found');
-              return;
-          }
-          const text = document.getElementById(targetId.replace('#',''))?.innerText;
-          if (!text) {
-              console.error(`No copyable element or text found for ID ${targetId}`);
-              return;
-          }
-          navigator.clipboard.writeText(text).then(() => {
-              showTooltip(event.target, 'tooltipped-s');
-          }, (_error) => {
-              showTooltip(event.target, 'tooltipped-e');
-          });
-      }
-
-      function clearTooltip(e) {
-          const target = e.target;
-          setTimeout(() => {
-              target.setAttribute('class', 'btn copy_button');
-          }, 1000);
-      }
-
-      function showTooltip(elem, className) {
-          elem.setAttribute('class', `btn copy_button tooltipped ${className}`);
-      }
-  </script>
 </html>
 
