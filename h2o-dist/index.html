@@ -756,7 +756,6 @@ spec:
     </div>
   </body>
   <script type="text/javascript">
-      // $(document).ready(function () {
       let copyButtons = document.querySelectorAll('.copy_button');
       for (let i = 0; i < copyButtons.length; i++) {
           copyButtons[i].addEventListener('click', copyToClipboard);
@@ -794,8 +793,6 @@ spec:
       function showTooltip(elem, className) {
           elem.setAttribute('class', `btn copy_button tooltipped ${className}`);
       }
-
-      //  })
   </script>
 </html>
 
