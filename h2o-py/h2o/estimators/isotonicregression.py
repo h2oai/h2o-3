@@ -62,7 +62,7 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
                that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
                Defaults to ``None``.
         :type weights_column: str, optional
-        :param out_of_bounds: Method for Handling Ties.
+        :param out_of_bounds: Method of handling values of X predictor that are outside of the bounds seen in training.
                Defaults to ``"na"``.
         :type out_of_bounds: Literal["na", "clip"]
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
@@ -182,7 +182,7 @@ class H2OIsotonicRegressionEstimator(H2OEstimator):
     @property
     def out_of_bounds(self):
         """
-        Method for Handling Ties.
+        Method of handling values of X predictor that are outside of the bounds seen in training.
 
         Type: ``Literal["na", "clip"]``, defaults to ``"na"``.
         """

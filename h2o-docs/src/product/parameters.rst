@@ -110,6 +110,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/ntrees
    data-science/algo-params/objective_epsilon
    data-science/algo-params/offset_column
+   data-science/algo-params/out_of_bounds
    data-science/algo-params/pca_impl
    data-science/algo-params/pca_method
    data-science/algo-params/plug_values
