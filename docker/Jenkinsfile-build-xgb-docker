@@ -2,7 +2,7 @@
 
 final String NODE_LABEL = 'docker && !mr-0xc8 && (!micro || micro_21)'
 final String DOCKER_STASH = 'h2o-3-xgb-docker-stash'
-final STRING BUILD_TAG = '1'
+final String BUILD_TAG = '1'
 
 def pipelineContext = null
 
