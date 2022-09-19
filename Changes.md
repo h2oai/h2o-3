@@ -2,6 +2,78 @@
 
 ## H2O
 
+### Zygmund (3.38.0.1) - 9/19/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8811]](https://h2oai.atlassian.net/browse/PUBDEV-8811) - Fixed the sorting of `h2o.make_leaderboard`.
+- [[PUBDEV-8802]](https://h2oai.atlassian.net/browse/PUBDEV-8802) - Fixed H2O dependencies overriding Jetty implementation.
+- [[PUBDEV-8783]](https://h2oai.atlassian.net/browse/PUBDEV-8783) - Fixed Flow’s export Frame throwing an NPE because it doesn’t provide a file type.
+- [[PUBDEV-8765]](https://h2oai.atlassian.net/browse/PUBDEV-8765) - Fixed GLM ordinal generic metrics to provide missing information in the payload.
+- [[PUBDEV-8763]](https://h2oai.atlassian.net/browse/PUBDEV-8763) - Fixed “maxrsweep” NPE in ModelSelection thrown when the replacement step stopped too early.
+- [[PUBDEV-8758]](https://h2oai.atlassian.net/browse/PUBDEV-8758) - Fixed “maxrsweep” replacement bug in ModelSelection by updating the implementation method.
+- [[PUBDEV-8742]](https://h2oai.atlassian.net/browse/PUBDEV-8742) - Fixed  unnecessary transformations in the scikit-learn wrapper by using model performance API. 
+- [[PUBDEV-8733]](https://h2oai.atlassian.net/browse/PUBDEV-8733) - Fixed upload of big files in Sparkling Water deployment.
+- [[PUBDEV-8726]](https://h2oai.atlassian.net/browse/PUBDEV-8726) - Changed the error message that GLM does not support contributions.
+- [[PUBDEV-8722]](https://h2oai.atlassian.net/browse/PUBDEV-8722) - Fixed QuantilesGlobal histogram type failing in GBM when all columns were categorial.
+- [[PUBDEV-8698]](https://h2oai.atlassian.net/browse/PUBDEV-8698) - Added support for MapR 6.2 to fix the error caused by updating the cluster.
+- [[PUBDEV-8693]](https://h2oai.atlassian.net/browse/PUBDEV-8693) - Fixed large file upload in Python.
+- [[PUBDEV-8670]](https://h2oai.atlassian.net/browse/PUBDEV-8670) - Fixed inability to stop print out of model information in Python.
+- [[PUBDEV-8621]](https://h2oai.atlassian.net/browse/PUBDEV-8621) - Removed `-seed` variable hiding in GAM.
+- [[PUBDEV-8561]](https://h2oai.atlassian.net/browse/PUBDEV-8561) - Updated `h2o.upload_mojo` to also work for POJO.
+- [[PUBDEV-8220]](https://h2oai.atlassian.net/browse/PUBDEV-8220) - Added unsupported operation exception when trying to use SHAP summary plot when building DRF model with `binomial_double_trees`.
+- [[PUBDEV-7098]](https://h2oai.atlassian.net/browse/PUBDEV-7098) - Refactored the rendering logic in the Python client.
+- [[PUBDEV-3524]](https://h2oai.atlassian.net/browse/PUBDEV-3524) - Added xval argument to `h2o.confusionMatrix` in R.
+
+#### Improvement
+
+- [[PUBDEV-8825]](https://h2oai.atlassian.net/browse/PUBDEV-8825) - Added support for calibrating an already trained model manually.
+- [[PUBDEV-8801]](https://h2oai.atlassian.net/browse/PUBDEV-8801) - Added support for using Isotonic Regression for model calibration.
+- [[PUBDEV-8795]](https://h2oai.atlassian.net/browse/PUBDEV-8795) - Added ability to S3A allowing it to share the built-in AWS credential providers.
+- [[PUBDEV-8787]](https://h2oai.atlassian.net/browse/PUBDEV-8787) - Improved `configure_s3_using_s3a` allowing it to be usable in any deployment.
+- [[PUBDEV-8727]](https://h2oai.atlassian.net/browse/PUBDEV-8727) - Updated `train_segments` function in R to be independent of camel casing in the algorithm name.
+- [[PUBDEV-8721]](https://h2oai.atlassian.net/browse/PUBDEV-8721) -  Improved runtime for QuantilesGlobal histogram by using exact split-points for low-cardinality columns.
+- [[PUBDEV-8712]](https://h2oai.atlassian.net/browse/PUBDEV-8712) - Exposed the Sequential Walker for R/Python and added option to disable early stopping.
+- [[PUBDEV-8692]](https://h2oai.atlassian.net/browse/PUBDEV-8692) - Cleaned up Key API by removing replicas.
+- [[PUBDEV-8315]](https://h2oai.atlassian.net/browse/PUBDEV-8315) - Cleaned up the default output after training a model.
+- [[PUBDEV-8140]](https://h2oai.atlassian.net/browse/PUBDEV-8140) - Exposed calibrated probabilities in `mojo_predict_pandas`.
+
+#### New Feature
+
+- [[PUBDEV-8784]](https://h2oai.atlassian.net/browse/PUBDEV-8784) - Simplified the configuration of S3 for Frame exportation. 
+- [[PUBDEV-8725]](https://h2oai.atlassian.net/browse/PUBDEV-8725) - Added `train_segments` test for Isolation Forest.
+- [[PUBDEV-8713]](https://h2oai.atlassian.net/browse/PUBDEV-8713) - Added ability to `h2o.no_progress` in R allowing it to accept expressions.
+- [[PUBDEV-8685]](https://h2oai.atlassian.net/browse/PUBDEV-8685) - Implemented dispersion parameter estimation for GLM.
+- [[PUBDEV-8679]](https://h2oai.atlassian.net/browse/PUBDEV-8679) - Added ability to export H2O Frame to a Parquet.
+- [[PUBDEV-8589]](https://h2oai.atlassian.net/browse/PUBDEV-8589) - Added Pareto front plots to AutoML Explain.
+- [[PUBDEV-8574]](https://h2oai.atlassian.net/browse/PUBDEV-8574) - Added “deviance” method to dispersion for calculating p-values. 
+- [[PUBDEV-8572]](https://h2oai.atlassian.net/browse/PUBDEV-8572) - Implemented variable inflation factors for GLM.
+- [[PUBDEV-8470]](https://h2oai.atlassian.net/browse/PUBDEV-8470) - Implemented in-training checkpoints for GBM.
+- [[PUBDEV-7634]](https://h2oai.atlassian.net/browse/PUBDEV-7634) - Implemented support for interactions to MOJO for CoxPH.
+- [[PUBDEV-5280]](https://h2oai.atlassian.net/browse/PUBDEV-5280) - Added `h2o.make_leaderboard` function which scores and compares a set of models to AutoML.
+
+#### Task
+
+- [[PUBDEV-8834]](https://h2oai.atlassian.net/browse/PUBDEV-8834) - Secured XGBoost connections in multinode environments. 
+- [[PUBDEV-8786]](https://h2oai.atlassian.net/browse/PUBDEV-8786) - Added missing added predictor and deleted predictor to the result frame and model summary of ModelSelection.
+- [[PUBDEV-8775]](https://h2oai.atlassian.net/browse/PUBDEV-8775) - Added support allowing you to force GLM to build a null model where the model only returns the coefficients for the intercept.
+- [[PUBDEV-8774]](https://h2oai.atlassian.net/browse/PUBDEV-8774) - Added support allowing GLM `gamma` to fix the dispersion parameter to calculate p-values.
+- [[PUBDEV-8703]](https://h2oai.atlassian.net/browse/PUBDEV-8703) - Implemented “maxr” speedup for Modelselection by introducting “maxrsweep”.
+- [[PUBDEV-8683]](https://h2oai.atlassian.net/browse/PUBDEV-8683) - Implemented dispersion factor estimation using maximum likelihood for GLM gamma family.
+
+#### Docs
+
+- [[PUBDEV-8845]](https://h2oai.atlassian.net/browse/PUBDEV-8845) - Added documentation on Isotonic Regression.
+- [[PUBDEV-8829]](https://h2oai.atlassian.net/browse/PUBDEV-8829) - Added variable inflation factors to GLM section of the user guide.
+- [[PUBDEV-8827]](https://h2oai.atlassian.net/browse/PUBDEV-8827) - Added Tweedie dispersion parameter estimation to the GLM section of the user guide.
+- [[PUBDEV-8817]](https://h2oai.atlassian.net/browse/PUBDEV-8817) - Added confusion matrix calculation explanation to performance and prediction.
+- [[PUBDEV-8806]](https://h2oai.atlassian.net/browse/PUBDEV-8806) - Added `get_predictors_removed_per_step()` and `get_predictors_added_per_step()` examples to ModelSelection.
+- [[PUBDEV-8790]](https://h2oai.atlassian.net/browse/PUBDEV-8790) - Added use case section to the welcome page of the user guide.
+- [[PUBDEV-8720]](https://h2oai.atlassian.net/browse/PUBDEV-8720) - Added MOJO import/export information to each algorithm page.
+- [[PUBDEV-8632]](https://h2oai.atlassian.net/browse/PUBDEV-8632) - Added major release blogs to user guide and moved change log to top of the sidebar.
+
 ### Zumbo (3.36.1.5) - 9/15/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zumbo/5/index.html</a>
