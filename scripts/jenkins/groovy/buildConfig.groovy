@@ -219,8 +219,12 @@ class BuildConfig {
     return supportedXGBEnvironments
   }
 
-  String getXGBImageForEnvironment(final String osName, final xgbEnv) {
-    return "harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-${xgbEnv.targetName}:${osName}"
+  String getXGBImageForEnvironment(final String osName, final xgbEnv, final String buildTag) {
+    def suffix = ""
+    if (buildTag) {
+      suffix = '.' + buildTag.trim()
+    }
+    return "harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-${xgbEnv.targetName}:${osName}${suffix}"
   }
 
   String getStageImage(final stageConfig) {
