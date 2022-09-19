@@ -3,9 +3,9 @@
 set -e
 set -x
 
-virtualenv -p python3.5 /envs/h2o_env_python3.5
-chmod a+w -R /envs/h2o_env_python3.5
-source /envs/h2o_env_python3.5/bin/activate
+virtualenv -p python3.7 /envs/h2o_env_python3.7
+chmod a+w -R /envs/h2o_env_python3.7
+source /envs/h2o_env_python3.7/bin/activate
 pip install --upgrade pip
 pip install --upgrade setuptools
 wget https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/test-requirements.txt
