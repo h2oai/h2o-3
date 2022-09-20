@@ -74,8 +74,8 @@ parallel(pipelineContext.getBuildConfig().getSupportedXGBEnvironments().collectE
 
                             dir('docker') {
                                 sh """
-                                ls -l xgb_build/scripts/Setup.dist.patched
-                                docker context ls
+                                pwd
+                                ls -lR .
                                 docker build \
                                     ${noCache} \
                                     -t ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv, BUILD_TAG)} \
