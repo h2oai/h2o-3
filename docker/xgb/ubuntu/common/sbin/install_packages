@@ -7,7 +7,7 @@ apt-get install -y software-properties-common
 add-apt-repository -y ppa:deadsnakes/ppa
 apt-get update
 apt-get install -y \
-    wget gcc python3.7-dev git python-pip python-virtualenv \
+    wget gcc python3.5-dev git python-pip python-virtualenv \
     mariadb-client \
     unzip tar nodejs npm libkrb5-dev
 if [[ "$1" == *"16.04"* ]]
