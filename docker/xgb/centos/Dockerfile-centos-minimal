@@ -30,7 +30,7 @@ COPY xgb_build/scripts/install_python_source_centos /usr/sbin/
 RUN \
     chmod a+x /usr/sbin/install_python_source_centos && \
     sync && \
-    /usr/sbin/install_python_source_centos 3.7.0 /usr/src/Setup.dist.patched \
+    /usr/sbin/install_python_source_centos 3.7.0 /usr/src/Setup.dist.patched
     
 RUN \
     chmod +x /usr/sbin/create_jenkins_user && \
