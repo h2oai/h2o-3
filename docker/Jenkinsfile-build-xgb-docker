@@ -47,7 +47,7 @@ node (NODE_LABEL) {
                     }
                 }
             }
-            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb/**,docker/scripts/*,docker/jdk1.8.0_171.zip')
+            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb/**,docker/xgb_build/**,docker/scripts/*,docker/jdk1.8.0_171.zip')
             
             pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
         } catch (Exception e) {
