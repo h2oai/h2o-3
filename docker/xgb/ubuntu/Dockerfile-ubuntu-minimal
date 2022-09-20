@@ -25,10 +25,13 @@ ENV JAVA_VERSION '8'
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 
+# Install all Python 3.7
+COPY xgb_build/scripts/install_python_version_ubuntu /usr/sbin/
 RUN \
-    chmod +x /usr/sbin/install_python && \
+    pip3 install virtualenv && \
+    chmod a+x /usr/sbin/install_python_version_ubuntu && \
     sync && \
-    /usr/sbin/install_python
+    /usr/sbin/install_python_version_ubuntu 3.7
 
 RUN \
     chmod +x /usr/sbin/create_jenkins_user && \
