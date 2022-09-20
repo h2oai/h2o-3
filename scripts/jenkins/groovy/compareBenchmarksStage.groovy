@@ -320,6 +320,21 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ]
         ]    
     ]
+    // this is a starting point: we need to collect enough data to establish reasonable ranges first
+    // for the lower bound we just use 0, for the upper bound we use the upper bound of the regular 'gbm' benchmark
+    EXPECTED_VALUES['gbm-noscoring'] = new LinkedHashMap<String, LinkedHashMap<Serializable, LinkedHashMap<String, Integer>>>()
+    EXPECTED_VALUES['gbm'].each { dataset, cases ->
+        EXPECTED_VALUES['gbm-noscoring'][dataset] = [
+                50: [
+                        train_time_min: 0,
+                        train_time_max: cases[50].train_time_max
+                ],
+                200: [
+                        train_time_min: 0,
+                        train_time_max: cases[200].train_time_max
+                ]
+        ]
+    }
 
     def TESTED_COLUMNS = ['train_time']
 
