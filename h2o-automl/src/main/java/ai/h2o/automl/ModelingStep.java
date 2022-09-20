@@ -844,8 +844,10 @@ final LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toSt
                     if (res instanceof Model) {
                         models.addModel(res.getKey());
                     } else if (res instanceof ModelContainer) {
-                        models.addModels(((ModelContainer)res).getModelKeys());
+                        models.addModels(((ModelContainer) res).getModelKeys());
                         res.remove(false);
+                    } else if (res == null && jModels.stop_requested()) {
+                        // Do nothing - stop was requested before we managed to train any model
                     } else {
                         throw new H2OIllegalArgumentException("Can only convert jobs producing a single Model or ModelContainer.");
                     }
