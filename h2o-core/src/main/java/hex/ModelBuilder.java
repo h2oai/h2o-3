@@ -624,12 +624,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     
     Frame getValid();
     
-    Frame getTrain(Frame train, int cvIdx);
-    
-    Frame getValid(Frame valid, int cvIdx);
+    Frame[] getCVFrames(int cvIdx);
   }
   
-  class DefaultTrainingFramesProvider implements TrainingFramesProvider {
+  protected class DefaultTrainingFramesProvider implements TrainingFramesProvider {
+
+    protected Frame _cvBase;
+    {
+      _cvBase = new Frame(Key.make(_result.toString()+"_cv"), train().names(), train().vecs());
+      if ( _parms._weights_column != null ) _cvBase.remove( _parms._weights_column );
+    }
 
     @Override
     public Frame getTrain() {
@@ -641,14 +645,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       return valid();
     }
 
+    /**
+     * @param cvIdx
+     * @return a Frame array for the given CV index: [ cv_train, cv_valid ] 
+     */
     @Override
-    public Frame getTrain(Frame train, int cvIdx) {
-      return train;
-    }
-
-    @Override
-    public Frame getValid(Frame valid, int cvIdx) {
-      return valid;
+    public Frame[] getCVFrames(int cvIdx) {
+      return new Frame[] {_cvBase, _cvBase};
     }
   } 
 
@@ -808,22 +811,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Frame train = framesProvider.getTrain();
     if (train.find(weightName) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '" + weightName + "'.");
 
-    Frame cv_fr = new Frame(train.names(), train.vecs());
-    if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
-
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     List<Frame> cvFramesForFailedModels = new ArrayList<>();
     double cv_max_runtime_secs = maxRuntimeSecsPerModel(N, nModelsInParallel(N));
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = framesProvider.getTrain(cv_fr, i);
-      cvTrain = new Frame(Key.make(identifier + "_train"), cvTrain.names(), cvTrain.vecs());
+      Frame[] cvFrames = framesProvider.getCVFrames(i);
+      Frame cvTrain = new Frame(Key.make(identifier + "_train"), cvFrames[0].names(), cvFrames[0].vecs());
       cvTrain.write_lock(_job);
       cvTrain.add(weightName, weights[2*i]);
       cvTrain.update(_job);
-      Frame cvValid = framesProvider.getValid(cv_fr, i);
-      cvValid = new Frame(Key.make(identifier + "_valid"), cvValid.names(), cvValid.vecs());
+      Frame cvValid = new Frame(Key.make(identifier + "_valid"), cvFrames[1].names(), cvFrames[1].vecs());
       cvValid.write_lock(_job);
       cvValid.add(weightName, weights[2*i+1]);
       cvValid.update(_job);
@@ -2196,7 +2195,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return getClass().getSimpleName().toLowerCase();
   }
 
-  private void cleanUp() {
+  protected void cleanUp() {
     _workspace.cleanUp();
   }
 

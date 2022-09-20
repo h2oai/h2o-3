@@ -10,6 +10,7 @@ import hex.pipeline.PipelineModel.PipelineOutput;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import water.Key;
 import water.Keyed;
+import water.Scope;
 import water.fvec.Frame;
 
 
@@ -125,6 +126,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     output._transformers = _parms._transformers.clone();
     model.delete_and_lock(_job);
     try {
+      Scope.enter();
+      initWorkspace(true);
       output._estimator = chain.transform(
               new Frame[] { train(), valid() }, 
               new FrameType[]{FrameType.Training, FrameType.Validation}, 
@@ -139,13 +142,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                 _parms._estimator._offset_column = _parms._offset_column;
                 ModelBuilder mb = ModelBuilder.make(_parms._estimator);
                 mb._job = _job;
-                mb.trainModelNested(new TrainingFramesProvider() {
-                  Frame _cvTrain;
-                  {
-                    _cvTrain = new Frame(Key.make(train().getKey()+"_cv"), train().names(), train().vecs());
-                    if( _parms._weights_column!=null ) _cvTrain.remove( _parms._weights_column );
-                  }
-
+//                mb.init(true);
+                mb.trainModelNested(new DefaultTrainingFramesProvider() {
                   @Override
                   public Frame getTrain() {
                     return frames[0];
@@ -157,15 +155,13 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                   }
 
                   @Override
-                  public Frame getTrain(Frame train, int cvIdx) {
-                    // ignore passed train to apply transformation on original train
-                    return chain.transform(_cvTrain, FrameType.Training, newCVContext(context, cvIdx));
-                  }
-
-                  @Override
-                  public Frame getValid(Frame valid, int cvIdx) {
-                    // ignore passed valid
-                    return chain.transform(_cvTrain, FrameType.Validation, newCVContext(context, cvIdx));
+                  public Frame[] getCVFrames(int cvIdx) {
+                    PipelineContext cvContext = newCVContext(context, cvIdx, _cvBase);
+                    return chain.doTransform(
+                            new Frame[] {cvContext.getTrain(), cvContext.getValid()},
+                            new FrameType[] { FrameType.Training, FrameType.Validation },
+                            cvContext
+                    );
                   }
                 });
                 return mb.dest();
@@ -174,16 +170,19 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     } finally {
       model.update(_job);
       model.unlock(_job);
+      cleanUp();
+      Scope.exit();
     }
   }
   
-  private PipelineContext newCVContext(PipelineContext context, int cvIdx) {
+  private PipelineContext newCVContext(PipelineContext context, int cvIdx, Frame cvBase) {
       PipelineParameters params = (PipelineParameters) context._params.clone();
       params._is_cv_model = true;
       params._cv_fold = cvIdx;
       PipelineContext cvContext = new PipelineContext(params, context._tracker);
-      cvContext.setTrain(context.getTrain());
-      cvContext.setValid(context.getValid());
+      Frame baseFrame = new Frame(Key.make(cvBase.getKey()+"_"+(cvIdx+1)), cvBase.names(), cvBase.vecs());
+      cvContext.setTrain(baseFrame);
+      cvContext.setValid(baseFrame);
       return cvContext;
   }
   
@@ -194,7 +193,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
               @Override
               public void apply(Frame transformed, Frame frame, FrameType type, PipelineContext context, DataTransformer transformer) {
                 if (transformed == null) return;
-                boolean useScope = !_parms._is_cv_model;
+                boolean useScope = !context._params._is_cv_model;
                 trackFrame(transformed, useScope);
               }
             }

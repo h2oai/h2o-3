@@ -69,7 +69,7 @@ public class PipelineTest {
   }
   
   @Test 
-  public void test_simple_classifaction_pipeline_with_cv() {
+  public void test_simple_classification_pipeline_with_cv() {
     try {
       int nfolds = 3;
       Scope.enter();
