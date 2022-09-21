@@ -9,7 +9,7 @@ apt-get update
 apt-get install -y \
     wget gcc python3.5-dev git python3-pip python-virtualenv \
     mariadb-client \
-    unzip tar nodejs npm libkrb5-dev
+    unzip tar nodejs npm libkrb5-dev libffi-dev libssl-dev
 if [[ "$1" == *"16.04"* ]]
 then
   apt-get install -y libmariadb-client-lgpl-dev
