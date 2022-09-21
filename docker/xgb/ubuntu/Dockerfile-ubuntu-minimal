@@ -26,11 +26,16 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 
 # Install Python 3.7
+COPY xgb_build/scripts/install_python_version_ubuntu /usr/sbin/
 COPY xgb_build/scripts/install_python_source_ubuntu /usr/sbin/
 RUN \
+    chmod a+x /usr/sbin/install_python_version_ubuntu && \
     chmod a+x /usr/sbin/install_python_source_ubuntu && \
     sync && \
-    /usr/sbin/install_python_source_ubuntu 3.7.4
+    case ${FROM_IMAGE} in \
+     *16.04*) /usr/sbin/install_python_source_ubuntu 3.7.4;; \
+    *) /usr/sbin/install_python_version_ubuntu 3.7;; \
+    esac 
     
 RUN \
     chmod +x /usr/sbin/create_jenkins_user && \
