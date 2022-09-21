@@ -1,0 +1,23 @@
+#! /bin/bash
+
+set -ex
+
+VERSION_FULL=$1
+VERSION_SHORT=$(echo ${VERSION_FULL} | head -c 3)
+VERSION_NO_DOT=$(echo ${VERSION_SHORT} | tr -d .)
+
+cd /usr/src
+wget https://www.python.org/ftp/python/${VERSION_FULL}/Python-${VERSION_FULL}.tar.xz
+tar -xf Python-${VERSION_FULL}.tar.xz
+
+cd Python-${VERSION_FULL}
+./configure
+make
+make install
+ln -s /usr/local/python${VERSION_NO_DOT}/bin/*${VERSION_SHORT}* /usr/local/bin
+cd ..
+rm -rf Python-${VERSION_FULL}*
+virtualenv --python=python${VERSION_SHORT} /envs/xgb-env-py${VERSION_SHORT}
+source /envs/xgb-env-py${VERSION_SHORT}/bin/activate
+pip install pip wheel setuptools --upgrade
+deactivate
