@@ -62,7 +62,7 @@ public class TransformerChain extends DataTransformer<TransformerChain> {
   }
 
   Frame[] doTransform(Frame[] frames, FrameType[] types, PipelineContext context) {
-    return transform(frames, types, context, (f, c) -> f);
+    return transform(frames, types, context, (fs, c) -> fs);
   }
 
   <R> R transform(Frame fr, FrameType type, PipelineContext context, Completer<R> completer) {

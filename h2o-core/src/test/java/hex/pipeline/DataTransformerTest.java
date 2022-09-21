@@ -2,6 +2,7 @@ package hex.pipeline;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.Key;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
@@ -45,30 +46,50 @@ public class DataTransformerTest {
   }
   
   
-  public static class AddRandomColumnTransformer extends DataTransformer {
+  public static class AddRandomColumnTransformer extends DataTransformer<AddRandomColumnTransformer> {
     
-    private String name;
+    private final String colName;
+    private final long seed;
 
-    public AddRandomColumnTransformer(String name) {
-      this.name = name;
+    public AddRandomColumnTransformer(String colName) {
+      this(colName, 0);
+    }
+
+    public AddRandomColumnTransformer(String colName, long seed) {
+      this.colName = colName;
+      this.seed = seed;
     }
 
     @Override
     protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
       Frame tr = new Frame(fr);
-      tr.add(name, tr.anyVec().makeRand(2022));
+      tr.add(colName, tr.anyVec().makeRand(seed));
       return tr;
     }
   }
   
-  public static class FrameTrackerAsTransformer extends DataTransformer {
+  public static class RenameFrameTransformer extends DataTransformer<RenameFrameTransformer> {
+    
+    private final String frameName;
+
+    public RenameFrameTransformer(String frameName) {
+      this.frameName = frameName;
+    }
+
+    @Override
+    protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+      return new Frame(Key.make(frameName), fr.names(), fr.vecs());
+    }
+  }
+  
+  public static class FrameTrackerAsTransformer extends DataTransformer<FrameTrackerAsTransformer> {
     
     static final Logger logger = LoggerFactory.getLogger(FrameTrackerAsTransformer.class);
     
     public static class Transformation {
-      String frameId;
-      FrameType type;
-      boolean is_cv;
+      final String frameId;
+      final FrameType type;
+      final boolean is_cv;
 
       public Transformation(String frameId, FrameType type, boolean is_cv) {
         this.frameId = frameId;
@@ -88,7 +109,28 @@ public class DataTransformerTest {
     protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
       if (fr == null) return null;
       logger.info(fr.getKey()+": columns="+Arrays.toString(fr.names()));
-      transformations.add(new Transformation(fr.getKey().toString(), type, context._params._is_cv_model));
+      boolean is_cv = context != null && context._params._is_cv_model;
+      transformations.add(new Transformation(fr.getKey().toString(), type, is_cv));
+      return fr;
+    }
+  }
+  
+  @FunctionalInterface 
+  interface FrameChecker {
+    void check(Frame fr);
+  }
+  
+  public static class FrameCheckerAsTransformer extends DataTransformer<FrameTrackerAsTransformer> {
+
+    final FrameChecker checker;
+
+    public FrameCheckerAsTransformer(FrameChecker checker) {
+      this.checker = checker;
+    }
+
+    @Override
+    protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+      checker.check(fr);
       return fr;
     }
   }

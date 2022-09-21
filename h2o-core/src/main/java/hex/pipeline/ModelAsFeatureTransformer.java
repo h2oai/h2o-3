@@ -36,7 +36,8 @@ public class ModelAsFeatureTransformer<T extends ModelAsFeatureTransformer, M ex
   @Override
   protected void doPrepare(PipelineContext context) {
     if (_model != null) return;
-
+    
+    assert context != null;
     Key<Model> key = Key.make(_model_id == null ? "model_for_"+id() : _model_id); 
     // to train the model, we use the train frame from context by default
     if (_params._train == null) _params._train = context.getTrain().getKey();

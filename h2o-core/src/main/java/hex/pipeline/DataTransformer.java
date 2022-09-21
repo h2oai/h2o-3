@@ -81,7 +81,7 @@ public abstract class DataTransformer<T extends DataTransformer> extends Iced<T>
       Frame fr = frames[i];
       FrameType type = types[i];
       Frame trfr = fr == null ? null : transform(fr, type, context);
-      if (context._tracker != null) {
+      if (context != null && context._tracker != null) {
         context._tracker.apply(trfr, fr, type, context, this);
       } 
       transformed[i] = trfr;

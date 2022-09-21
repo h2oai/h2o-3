@@ -5,7 +5,7 @@ import water.fvec.Frame;
 public class UnionTransformer extends DataTransformer<UnionTransformer> {
   
   public enum UnionStrategy {
-    add, 
+    append, 
     replace
   }
   
@@ -21,7 +21,7 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
   protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     Frame result = null;
     switch (_strategy) {
-      case add:
+      case append:
         result = new Frame(fr);
         break;
       case replace:

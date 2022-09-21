@@ -15,8 +15,9 @@ public class PipelineContext implements Cloneable {
      * 
      * @param transformed
      * @param frame
+     * @param type
+     * @param context
      * @param transformer
-     * @return true iff the transformed frame is validated to be forwarded to next transformation.
      */
     void apply(Frame transformed, Frame frame, FrameType type, PipelineContext context, DataTransformer transformer);
   }
