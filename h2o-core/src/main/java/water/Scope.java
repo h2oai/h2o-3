@@ -70,11 +70,11 @@ public class Scope {
     return keep;
   }
 
-  /** Pop-scope (same as exit-scope) but return all keys that are tracked (and
-   *  would have been deleted). */
+  /**
+   * @return true iff we are inside a scope
+   */
   public static boolean isActive() {
-    Stack<Set<Key>> keys = _scope.get()._keys;
-    return keys.size() > 0;
+    return !_scope.get()._keys.empty();
   }
 
   static void track_internal( Key k ) {
