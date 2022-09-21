@@ -28,7 +28,6 @@ RUN java -version
 RUN apt-get -y install \
       python3-setuptools \
       python3-pip \
-      gdebi \
       python3-pandas \
       python3-numpy \
       python3-matplotlib \

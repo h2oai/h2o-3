@@ -32,6 +32,7 @@ import sys
 import traceback
 import time
 import socket
+import requests
 from collections import Counter
 import h2o
 import helper_functions
@@ -189,12 +190,25 @@ def _train_model(hyperparameters={}):
 def main():
     hyperparameters, resource_params = helper_functions._get_parameters()
     helper_functions._create_h2o_cluster(resource_params)
-    if resource_params["current_host"] == resource_params["hosts"][0]:
+    if resource_params["current_host"] == "algo-1":
+        time.sleep(10)
         _connect_to_cluster()
         _train_model(hyperparameters)
+        h2o.cluster().shutdown()
+    else:
+        time.sleep(10)
+        print("Wait till the algo-1 finish training")
+        while True:
+            try:
+                r = requests.get("http://algo-1:54321")
+                if r.status_code != 200:
+                    break
+                time.sleep(10)
+            except requests.exceptions.ConnectionError:
+                break
+        print("Finished")
 
 
 if __name__ == '__main__':
     main()
-    # A zero exit code causes the job to be marked a Succeeded.
     sys.exit(0)
