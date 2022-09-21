@@ -9,7 +9,7 @@ import numpy as np
 from tests import pyunit_utils
 
 
-def gam_train_metrics_recalculate(family):
+def gam_train_metrics_recalculate(family,bs):
     np.random.seed(1234)
     n_rows = 1000
 
@@ -28,7 +28,7 @@ def gam_train_metrics_recalculate(family):
                                                 gam_columns=["X3"],
                                                 weights_column="W",
                                                 lambda_=0,
-                                                bs=[2],
+                                                bs=bs,
                                                 tweedie_variance_power=1.5,
                                                 tweedie_link_power=0)
     h2o_model.train(x=["X1", "X2"], y="Y", training_frame=train)
@@ -45,20 +45,28 @@ def gam_train_metrics_recalculate(family):
 
 
 def gam_train_metrics_recalculate_poisson():
-    gam_train_metrics_recalculate("poisson")
-
+    gam_train_metrics_recalculate("poisson", [0])
+    gam_train_metrics_recalculate("poisson", [1])
+    gam_train_metrics_recalculate("poisson", [2])
+    gam_train_metrics_recalculate("poisson", [3])
 
 def gam_train_metrics_recalculate_tweedie():
-    gam_train_metrics_recalculate("tweedie")
-
+    gam_train_metrics_recalculate("tweedie", [0])
+    gam_train_metrics_recalculate("tweedie", [1])
+    gam_train_metrics_recalculate("tweedie", [2])
+    gam_train_metrics_recalculate("tweedie", [3])
 
 def gam_train_metrics_recalculate_gamma():
-    gam_train_metrics_recalculate("gamma")
-
+    gam_train_metrics_recalculate("gamma", [0])
+    gam_train_metrics_recalculate("gamma", [1])
+    gam_train_metrics_recalculate("gamma", [2])
+    gam_train_metrics_recalculate("gamma", [3])
 
 def gam_train_metrics_recalculate_gaussian():
-    gam_train_metrics_recalculate("gaussian")
-
+    gam_train_metrics_recalculate("gaussian", [0])
+    gam_train_metrics_recalculate("gaussian", [1])
+    gam_train_metrics_recalculate("gaussian", [2])
+    gam_train_metrics_recalculate("gaussian", [3])
 
 pyunit_utils.run_tests([
     gam_train_metrics_recalculate_poisson,

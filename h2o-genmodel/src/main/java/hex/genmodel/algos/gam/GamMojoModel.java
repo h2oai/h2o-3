@@ -3,6 +3,10 @@ package hex.genmodel.algos.gam;
 import static hex.genmodel.utils.DistributionFamily.*;
 
 public class GamMojoModel extends GamMojoModelBase {
+  public static final int CS_SPLINE_TYPE = 0;
+  public static final int IS_SPLINE_TYPE = 2;
+  public static final int MS_SPLINE_TYPE = 3;
+  public static final int TP_SPLINE_TYPE = 1;
   private boolean _classifier;
   
   GamMojoModel(String[] columns, String[][] domains, String responseColumn) {

@@ -7,12 +7,14 @@ import hex.gam.GamSplines.ThinPlatePolynomialWithKnots;
 import hex.gam.MatrixFrameUtils.GamUtils;
 import hex.gam.MatrixFrameUtils.GenCSSplineGamOneColumn;
 import hex.gam.MatrixFrameUtils.GenISplineGamOneColumn;
+import hex.gam.MatrixFrameUtils.GenMSplineGamOneColumn;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.gram.Gram;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
+import org.apache.commons.lang.NotImplementedException;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -31,12 +33,13 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
-import static hex.gam.GAMModel.adaptValidFrame;
+import static hex.gam.GAMModel.*;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.*;
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.*;
-import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
+import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.gam.MatrixFrameUtils.GenCSSplineGamOneColumn.generateZTransp;
+import static hex.genmodel.algos.gam.GamMojoModel.*;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
@@ -48,12 +51,13 @@ import static water.util.ArrayUtils.subtract;
 
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
-  private static final int MIN_ISPLINE_NUM_KNOTS = 2;
   private static final int MIN_CSPLINE_NUM_KNOTS = 3;
+  private static final int MIN_MorI_SPLINE_KNOTS = 2;
   private double[][][] _knots; // Knots for splines
   private int _thinPlateSmoothersWithKnotsNum = 0;
   private int _cubicSplineNum = 0;
   private int _iSplineNum = 0;
+  private int _mSplineNum = 0;
   double[][] _gamColMeansRaw; // store raw gam column means in gam_column_sorted order and only for thin plate smoothers
   public double[][] _oneOGamColStd;
   public double[] _penaltyScale;
@@ -117,16 +121,22 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     boolean allNull = _parms._knot_ids == null;
     int csInd = 0;
     int isInd = _cubicSplineNum;
-    int tpInd = _cubicSplineNum+_iSplineNum;
-    int gamIndex; // index into the sorted arrays with CS/I-splines front, TP back.
+    int msInd = _cubicSplineNum+_iSplineNum;
+    int tpInd = _cubicSplineNum+_iSplineNum+_mSplineNum;
+    int gamIndex=0; // index into the sorted arrays with CS/I-splines/M front, TP back.
     for (int outIndex = 0; outIndex < _parms._gam_columns.length; outIndex++) { // go through each gam_column group
       String tempKey = allNull ? null : _parms._knot_ids[outIndex]; // one knot_id for each smoother
-      if (_parms._bs[outIndex] == 1) // thin plate regression
+      if (_parms._bs[outIndex] == TP_SPLINE_TYPE) { // thin plate regression
         gamIndex = tpInd++;
-      else if (_parms._bs[outIndex] == 0)
+      } else if (_parms._bs[outIndex] == CS_SPLINE_TYPE) {
         gamIndex = csInd++;
-      else // I-spline
+      } else if (_parms._bs[outIndex] == IS_SPLINE_TYPE) {
         gamIndex = isInd++;
+      } else if (_parms._bs[outIndex] == MS_SPLINE_TYPE) { // m-spline
+        gamIndex = msInd++;
+      } else {
+        throw new NotImplementedException(SPLINENOTIMPL);
+      }
       knots[gamIndex] = new double[_parms._gam_columns[outIndex].length][];
       if (tempKey != null) {  // read knots location from Frame given by user      
         final Frame knotFrame = DKV.getGet(tempKey);
@@ -140,7 +150,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           knots[gamIndex][innerIndex] = new double[knotContent.length];
           System.arraycopy(knotCTranspose[innerIndex], 0, knots[gamIndex][innerIndex], 0,
                   knots[gamIndex][innerIndex].length);
-          if (knotCTranspose.length == 1 && (_parms._bs[outIndex] == 0 || _parms._bs[outIndex] == 2)) // only check for order to single smoothers
+          if (knotCTranspose.length == 1 && (_parms._bs[outIndex] == CS_SPLINE_TYPE ||
+                  _parms._bs[outIndex] == MS_SPLINE_TYPE || _parms._bs[outIndex] == IS_SPLINE_TYPE)) // only check for order to single smoothers
             failVerifyKnots(knots[gamIndex][innerIndex], outIndex);
         }
         _parms._num_knots[outIndex] = knotContent.length;
@@ -148,13 +159,20 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       } else {  // current column knot key is null, we will use default method to generate knots
         final Frame predictVec = new Frame(_parms._gam_columns[outIndex], 
                 _parms.train().vecs(_parms._gam_columns[outIndex]));
-        if (_parms._bs[outIndex] == 0 || _parms._bs[outIndex] == 2) {
+        if (_parms._bs[outIndex] == CS_SPLINE_TYPE || _parms._bs[outIndex] == IS_SPLINE_TYPE ||
+                _parms._bs[outIndex] == MS_SPLINE_TYPE) {
           knots[gamIndex][0] = generateKnotsOneColumn(predictVec, _parms._num_knots[outIndex]);
           failVerifyKnots(knots[gamIndex][0], outIndex);
         } else {  // generate knots for multi-predictor smoothers
           knots[gamIndex] = genKnotsMultiplePreds(predictVec, _parms, outIndex);
           failVerifyKnots(knots[gamIndex][0], outIndex);
         }
+      }
+      if (_parms._bs[outIndex] == MS_SPLINE_TYPE) {
+        int numBasis = _parms._spline_orders[outIndex] + _parms._num_knots[outIndex] - 2;
+        if (numBasis < 2)
+          error("spline_orders and num_knots", "M-spline for column "+
+                  _parms._gam_columns[outIndex][0]+" with spline_orders=1 must have more than 2 knots.");        
       }
     }
     return knots; // CS/I-splines come first, TP is at the back
@@ -217,68 +235,92 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   private void validateGAMParameters() {
     if (_parms._max_iterations == 0)
       error("_max_iterations", H2O.technote(2, "if specified, must be >= 1."));
-    if (_parms._family == GLMParameters.Family.AUTO) {
-      if (nclasses() == 1 & _parms._link != GLMParameters.Link.family_default && _parms._link != GLMParameters.Link.identity
-              && _parms._link != GLMParameters.Link.log && _parms._link != GLMParameters.Link.inverse && _parms._link != null) {
-        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default, identity, log or inverse."));
-      } else if (nclasses() == 2 & _parms._link != GLMParameters.Link.family_default && _parms._link != GLMParameters.Link.logit
-              && _parms._link != null) {
-        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or logit."));
-      } else if (nclasses() > 2 & _parms._link != GLMParameters.Link.family_default & _parms._link != GLMParameters.Link.multinomial
-              && _parms._link != null) {
-        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or multinomial."));
-      }
-    }
-    if (error_count() > 0)
-      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
     if (_parms._gam_columns == null) { // check _gam_columns contains valid columns
       error("_gam_columns", "must specify columns names to apply GAM to.  If you don't have any," +
               " use GLM.");
     } else { // check and make sure gam_columns column types are legal
+      checkGAMParamsLengths();
       if (_parms._bs == null)
-        setDefaultBSType(_parms);
-      if ((_parms._bs != null) && (_parms._gam_columns.length != _parms._bs.length))  // check length
-        error("gam colum number", "Number of gam columns implied from _bs and _gam_columns do not " +
-                "match.");
-      assertLegalGamColumnsNBSTypes();  // number of CS and TP smoothers determined.
+        setDefaultBSType(_parms); // default to cs spline and thin plate for higher dimension
+      assertValidGAMColumnsCountSplineTypes(); // also number of CS, TP, I-spline, M-splines smoothers determined.
     }
+    if (error_count() > 0)
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
     if (_parms._scale == null)
       setDefaultScale(_parms);
-    setGamPredSize(_parms, _cubicSplineNum+_iSplineNum);
+    setGamPredSize(_parms, _cubicSplineNum+_iSplineNum+_mSplineNum);
     if (_thinPlateSmoothersWithKnotsNum > 0)
       setThinPlateParameters(_parms, _thinPlateSmoothersWithKnotsNum); // set the m, M for thin plate regression smoothers
     checkOrChooseNumKnots(); // check valid num_knot assignment or choose num_knots
-    for (int index = 0; index < _parms._gam_columns.length; index++) {
-      Frame dataset = _parms.train();
-      String cname = _parms._gam_columns[index][0]; // only check the first gam_column
-      if (dataset.vec(cname).isInt() && ((dataset.vec(cname).max() - dataset.vec(cname).min() + 1) < _parms._num_knots[index]))
-        error("gam_columns", "column " + cname + " has cardinality lower than the number of knots and cannot be used as a gam" +
-                " column.");
-    }
-    if ((_parms._num_knots.length != _parms._gam_columns.length))
-      error("gam colum number", "Number of gam columns implied from _num_knots and _gam_columns do" +
-              " not match.");
-    if (_parms._knot_ids != null) { // check knots location specification
-      if (_parms._knot_ids.length != _parms._gam_columns.length)
-        error("gam colum number", "Number of gam columns implied from _num_knots and _knot_ids do" +
-                " not match.");
-    }
+    checkTrainRowNumKnots();
     _knots = generateKnotsFromKeys(); // generate knots and verify that they are given correctly
-    if (_parms._splines_non_negative == null) {
-      _parms._splines_non_negative = new boolean[_parms._gam_columns.length];
-      Arrays.fill(_parms._splines_non_negative, true);
-    }
-    sortGAMParameters(_parms, _cubicSplineNum, _iSplineNum); // move cubic spline to the front and thin plate to the back
+    sortGAMParameters(_parms, _cubicSplineNum, _iSplineNum, _mSplineNum); // move single predictor spline to front and thin plate to back
     checkThinPlateParams();
     if (_parms._saveZMatrix && ((_train.numCols() - 1 + _parms._num_knots.length) < 2))
       error("_saveZMatrix", "can only be enabled if the number of predictors plus" +
               " Gam columns in gam_columns exceeds 2");
     if ((_parms._lambda_search || !_parms._intercept || _parms._lambda == null || _parms._lambda[0] > 0))
       _parms._use_all_factor_levels = true;
-    if (_parms._link == null) {
-      _parms._link = GLMParameters.Link.family_default;
+    checkNFamilyNLinkAssignment();
+  }
+
+  /**
+   * Check and make sure the there are enough number of rows in the training dataset to accomodate the num_knot 
+   * settings.
+   */
+  public void checkTrainRowNumKnots() {
+    for (int index = 0; index < _parms._gam_columns.length; index++) {
+      Frame dataset = _parms.train();
+      String cname = _parms._gam_columns[index][0]; // only check the first gam_column
+      if (_parms._bs[index] < 0 && _parms._bs[index] > 3)
+        error("bs", " bs can only be 0, 1, 2 and 3 but is "+_parms._bs[index]);
+      if (dataset.vec(cname).isInt() && ((dataset.vec(cname).max() - dataset.vec(cname).min() + 1) < _parms._num_knots[index]))
+        error("gam_columns", "column " + cname + " has cardinality lower than the number of knots and cannot be used as a gam" +
+                " column.");
     }
+  }
+
+  /***
+   * Check and make sure if related parameters are defined, they must be of correct length.  Their length must
+   * equal to the number of gam columns specified which is the length of _parms._gam_columns.length.
+   */
+  public void checkGAMParamsLengths() {
+    if ((_parms._bs != null) && (_parms._gam_columns.length != _parms._bs.length))  // check length
+      error("bs", "Number of spline types in bs must match the number of gam column groups " +
+              "(gam_columns.length) specified in gam_columns");
+    if (_parms._knot_ids != null && (_parms._knot_ids.length != _parms._gam_columns.length)) // check knots location specification
+      error("knot_ids", "Number of knot_ids specified must match the number of gam column groups " +
+              "(gam_columns.length) specified in gam_columns");
+    if (_parms._num_knots != null && (_parms._num_knots.length != _parms._gam_columns.length))
+      error("num_knots", "Number of num_knots specified must match the number of gam column groups " +
+              "(gam_columns.length) specified in gam_columns");
+    if (_parms._scale != null && (_parms._scale.length != _parms._gam_columns.length))
+      error("scale", "Number of scale specified must match the number of gam column groups " +
+              "(gam_columns.length) specified in gam_columns");
+    if (_parms._splines_non_negative != null && (_parms._splines_non_negative.length != _parms._gam_columns.length))
+      error("splines_non_negative", "Number of splines_non_negative specified must match the number" +
+              " of gam column groups (gam_columns.length) specified in gam_columns");
+  }
+
+  /***
+   * check if _parms._family = AUTO, the correct link functions are assigned according to the response type.  If no
+   * family type is assigned, they will be assigned automatically according to the response type.
+   */
+  public void checkNFamilyNLinkAssignment() {
     if (_parms._family == GLMParameters.Family.AUTO) {
+      if (nclasses() == 1 & _parms._link != GLMParameters.Link.family_default && _parms._link != GLMParameters.Link.identity
+              && _parms._link != GLMParameters.Link.log && _parms._link != GLMParameters.Link.inverse && _parms._link != null) {
+        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to" +
+                " be family_default, identity, log or inverse."));
+      } else if (nclasses() == 2 & _parms._link != GLMParameters.Link.family_default && _parms._link != GLMParameters.Link.logit
+              && _parms._link != null) {
+        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to" +
+                " be family_default or logit."));
+      } else if (nclasses() > 2 & _parms._link != GLMParameters.Link.family_default & _parms._link != GLMParameters.Link.multinomial
+              && _parms._link != null) {
+        error("_family", H2O.technote(2, "AUTO for undelying response requires the link to" +
+                " be family_default or multinomial."));
+      }
       if (_nclass == 1) {
         _parms._family = GLMParameters.Family.gaussian;
       } else if (_nclass == 2) {
@@ -289,16 +331,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     }
     if (_parms._link == null || _parms._link.equals(GLMParameters.Link.family_default))
       _parms._link = _parms._family.defaultLink;
-    
+
     if ((_parms._family == GLMParameters.Family.multinomial || _parms._family == GLMParameters.Family.ordinal ||
             _parms._family == GLMParameters.Family.binomial)
             && response().get_type() != Vec.T_CAT) {
       error("_response_column", String.format("For given response family '%s', please provide a categorical" +
               " response column. Current response column type is '%s'.", _parms._family, response().get_type_str()));
-    }
-    
-    if (_parms._splines_non_negative != null && _parms._splines_non_negative.length != _parms._gam_columns.length) {
-      error("_spline_increasing", " must be of the same length as gam_columns.");
     }
   }
 
@@ -310,11 +348,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       return;
     
     _parms._num_knots_tp = new int[_thinPlateSmoothersWithKnotsNum];
-    System.arraycopy(_parms._num_knots_sorted, _cubicSplineNum+_iSplineNum, _parms._num_knots_tp, 0,
+    System.arraycopy(_parms._num_knots_sorted, _cubicSplineNum+_iSplineNum+_mSplineNum, _parms._num_knots_tp, 0,
             _thinPlateSmoothersWithKnotsNum);
     int tpIndex = 0;
     for (int index = 0; index < _parms._gam_columns.length; index++) {
-      if (_parms._bs_sorted[index] == 1) {
+      if (_parms._bs_sorted[index] == TP_SPLINE_TYPE) {
         if (_parms._num_knots_sorted[index] < _parms._M[tpIndex] + 1) {
           error("num_knots", "num_knots for gam column start with  " + _parms._gam_columns_sorted[index][0] +
                   " did not specify enough num_knots.  It should be equal or greater than " + (_parms._M[tpIndex] + 1) + ".");
@@ -327,7 +365,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   /**
    * set default num_knots to 10 for gam_columns where there is no knot_id specified for CS smoothers
    * for TP smoothers, default is set to be max of 10 or _M+2.
-   * for I-splines, default set to 3 which is minimum.
+   * for I-splines, default set to 2 which is minimum.
+   * for M-splines, default set to 2 which is minimum.
    */
   public void checkOrChooseNumKnots() {
     if (_parms._num_knots == null)
@@ -337,18 +376,21 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       Arrays.fill(_parms._spline_orders, 3);
     } else {
       for (int index=0; index<_parms._spline_orders.length; index++)
-        if (_parms._bs[index]==2 && _parms._spline_orders[index] < 1)
+        if ((_parms._bs[index] == IS_SPLINE_TYPE || _parms._bs[index] == MS_SPLINE_TYPE) && _parms._spline_orders[index] < 1)
           error("spline_orders", "GAM I-spline spline_orders must be >= 1");
     }
     int tpCount = 0;
     for (int index = 0; index < _parms._num_knots.length; index++) {  // set zero value _num_knots
       if (_parms._knot_ids == null || (_parms._knot_ids != null && _parms._knot_ids[index] == null)) {  // knots are not specified
         int numKnots = _parms._num_knots[index];
-        if (_parms._bs[index] == 2) {
-          if (_parms._num_knots[index] == 0)
-            _parms._num_knots[index] = MIN_ISPLINE_NUM_KNOTS; // default will generate one basis function
-          else if (_parms._num_knots[index] < MIN_ISPLINE_NUM_KNOTS)
-            error("num_knots", " must >= "+MIN_ISPLINE_NUM_KNOTS+" for I-splines.");
+        if (_parms._bs[index] == IS_SPLINE_TYPE || _parms._bs[index] == MS_SPLINE_TYPE) {
+          if (_parms._num_knots[index] == 0) {
+            _parms._num_knots[index] = MIN_MorI_SPLINE_KNOTS;
+            if (_parms._bs[index] == MS_SPLINE_TYPE && _parms._spline_orders[index] == 1)
+              _parms._num_knots[index] += 1;
+          } else if (_parms._num_knots[index] < MIN_MorI_SPLINE_KNOTS) {
+            error("num_knots", " must >= "+MIN_MorI_SPLINE_KNOTS+" for M or I-splines.");
+          }
         }
         int naSum = 0;
         for (int innerIndex = 0; innerIndex < _parms._gam_columns[index].length; innerIndex++) {
@@ -357,45 +399,58 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         long eligibleRows = _train.numRows()-naSum;
         if (_parms._num_knots[index] == 0) {  // set num_knots to default
           int defaultRows = 10;
-          if (_parms._bs[index] == 1) {
+          if (_parms._bs[index] == TP_SPLINE_TYPE) {
             defaultRows = Math.max(defaultRows, _parms._M[tpCount] + 2);
             tpCount++;
           }
-          if (_parms._bs[index] == 2)
-            defaultRows = MIN_ISPLINE_NUM_KNOTS;
+          if (_parms._bs[index] == IS_SPLINE_TYPE || _parms._bs[index] == MS_SPLINE_TYPE)
+            defaultRows = MIN_MorI_SPLINE_KNOTS;
           _parms._num_knots[index] = eligibleRows < defaultRows ? (int) eligibleRows : defaultRows;
         } else {  // num_knots assigned by user and check to make sure it is legal
           if (numKnots > eligibleRows) {
             error("num_knots", " number of knots specified in num_knots: "+numKnots+" for smoother" +
                     " with first predictor "+_parms._gam_columns[index][0]+".  Reduce _num_knots.");
           }
-          if (_parms._bs[index] == 0 && _parms._num_knots[index] < MIN_CSPLINE_NUM_KNOTS)
+          if (_parms._bs[index] == CS_SPLINE_TYPE && _parms._num_knots[index] < MIN_CSPLINE_NUM_KNOTS)
             error("num_knots", " number of knots specified in num_knots "+numKnots+
                     " for cs splines must be >= " + MIN_CSPLINE_NUM_KNOTS + ".");
+
+          if ((_parms._bs[index] == IS_SPLINE_TYPE || _parms._bs[index] == MS_SPLINE_TYPE) 
+                  && _parms._num_knots[index] < MIN_MorI_SPLINE_KNOTS)
+            error("num_knots", " number of knots specified "+numKnots+" for M or I-splines must be" +
+                    " >= "+MIN_MorI_SPLINE_KNOTS);
         }
       }
     }
   }
   
-  // Check and make sure correct BS type is assigned to the various gam_columns specified.  In addition, the number
-  // of CS and TP smoothers are counted here as well.
-  public void assertLegalGamColumnsNBSTypes() {
+
+
+  /**
+   * Check and make sure correct BS type is assigned to the various gam_columns specified.  Make sure the gam columns
+   * specified are actually found in the training dataset.  In addition, the number of CS and TP smoothers are 
+   * counted here as well.
+   */
+  public void assertValidGAMColumnsCountSplineTypes() {
     Frame dataset = _parms.train();
     List<String> cNames = Arrays.asList(dataset.names());
     for (int index = 0; index < _parms._gam_columns.length; index++) {
       if (_parms._bs != null) { // check and make sure the correct bs type is chosen
         if (_parms._gam_columns[index].length > 1 && _parms._bs[index] != 1)
-          error("bs", "Smoother with multiple predictors can only use bs = 1");
-        if (_parms._bs[index] == 1)
+          error("bs", "Smoother with multiple predictors can only use with thin plate spines, i.e., " +
+                  "bs = 1");
+        if (_parms._bs[index] == TP_SPLINE_TYPE)
           _thinPlateSmoothersWithKnotsNum++; // record number of thin plate
-        if (_parms._bs[index] == 0)
+        if (_parms._bs[index] == CS_SPLINE_TYPE)
           _cubicSplineNum++;
-        if (_parms._bs[index] == 2) {
+        if (_parms._bs[index] == IS_SPLINE_TYPE) {
           if (multinomial.equals(_parms._family) || ordinal.equals(_parms._family))
             error("family", "multinomial and ordinal families cannot be used with I-splines.");
           _iSplineNum++;
         }
-
+        if (_parms._bs[index] == MS_SPLINE_TYPE)
+          _mSplineNum++;
+        
         for (int innerIndex = 0; innerIndex < _parms._gam_columns[index].length; innerIndex++) {
           String cname = _parms._gam_columns[index][innerIndex];
           if (!cNames.contains(cname))
@@ -550,7 +605,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         double[][] starT = generateStarT(_knots, polyBasisDegree, rawColMeans, oneOverColStd, 
                 _parms._standardize_tp_gam_cols); // generate T* in 3.2.3
         double[][] qmat = generateQR(starT);
-        double[][] penaltyMat = distanceMeasure.generatePenalty(qmat);  // penalty matrix 3.1.1
+        double[][] penaltyMat = distanceMeasure.generatePenalty();  // penalty matrix 3.1.1
         double[][] zCST = generateOrthogonalComplement(qmat, starT, _numKnotsMM, _parms._seed);
         copy2DArray(zCST, _zTransposeCS[_thinPlateGamColIndex]);
         ThinPlatePolynomialWithKnots thinPlatePoly = new ThinPlatePolynomialWithKnots(_numPred,
@@ -636,6 +691,63 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         copy2DArray(oneGAMCol._penaltyMat, _penaltyMatCenter[_gamColIndex]);
       }
     }
+
+    public class MSplineSmoother extends RecursiveAction {
+      final Frame _predictVec;
+      final int _numKnots;  // not counting knot duplication here
+      final int _order;
+      final double[] _knots;  // not counting knot duplication here
+      final boolean _savePenaltyMat;
+      final String[] _newGAMColNames;
+      final int _gamColIndex; // gam column order from user input
+      final int _singlePredSplineInd; // gam column index after moving tp to the back
+      final int _splineType;
+
+      public MSplineSmoother(Frame gamPred, GAMParameters parms, int gamColIndex, String[] gamColNames, double[] knots,
+                             int singlePredInd) {
+        _predictVec = gamPred;
+        _numKnots = parms._num_knots_sorted[gamColIndex];
+        _knots = knots;
+        _order = parms._spline_orders_sorted[gamColIndex];
+        _savePenaltyMat = parms._savePenaltyMat;
+        _newGAMColNames = gamColNames;
+        _gamColIndex = gamColIndex;
+        _singlePredSplineInd = singlePredInd;
+        _splineType = parms._bs_sorted[gamColIndex];
+      }
+
+      @Override
+      protected void compute() {
+        // generate GAM basis functions
+        int order = _parms._spline_orders_sorted[_gamColIndex];
+        int numBasis = _knots.length+order-2;
+        int numBasisM1 = numBasis-1;
+        int totKnots = numBasis + order;
+        GenMSplineGamOneColumn oneGAMCol = new GenMSplineGamOneColumn(_parms, _knots, _gamColIndex, _predictVec,
+                numBasis, totKnots);
+        oneGAMCol.doAll(oneGAMCol._numBasis, Vec.T_NUM, _predictVec);
+        if (_savePenaltyMat) {
+          copy2DArray(oneGAMCol._penaltyMat, _penaltyMat[_gamColIndex]);
+          _penaltyScale[_gamColIndex] = oneGAMCol._s_scale;
+        }
+        // extract generated gam columns
+        Frame oneGamifiedColCenter = oneGAMCol.outputFrame(Key.make(), _newGAMColNames, null);
+        for (int index=0; index<numBasis; index++)
+          _gamColMeans[_gamColIndex][index] = oneGamifiedColCenter.vec(index).mean();
+        oneGamifiedColCenter = oneGAMCol.centralizeFrame(oneGamifiedColCenter, 
+                _predictVec.name(0)+"_"+_splineType+"_center", _parms);
+        copy2DArray(oneGAMCol._ZTransp, _zTranspose[_gamColIndex]); // copy transpose(Z)
+        DKV.put(oneGamifiedColCenter);
+        _gamFrameKeysCenter[_gamColIndex] = oneGamifiedColCenter._key;
+        System.arraycopy(oneGamifiedColCenter.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
+                numBasisM1);
+        double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(oneGAMCol._ZTransp,
+                oneGAMCol._penaltyMat), ArrayUtils.transpose(oneGAMCol._ZTransp));  // transform penalty as zt*S*z
+        copy2DArray(transformedPenalty, _penaltyMatCenter[_gamColIndex]);
+        System.arraycopy(oneGamifiedColCenter.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
+                numBasisM1);
+      }
+    }
     
     public class CubicSplineSmoother extends RecursiveAction {
       final Frame _predictVec;
@@ -697,24 +809,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       Frame trainFrame = _parms.train();
       for (int index = 0; index < numGamFrame; index++) { // generate smoothers/splines
         final Frame predictVec = prepareGamVec(index, _parms, trainFrame);// extract predictors from frame
-        // numKnots for I-spline will be the number of basis
-        final int numKnots = _parms._bs_sorted[index] == 2 ? 
+        // numKnots for M or I-spline will be the number of basis
+        final int numKnots = _parms._bs_sorted[index] == IS_SPLINE_TYPE || _parms._bs_sorted[index] == MS_SPLINE_TYPE ? 
                 _parms._num_knots_sorted[index] + _parms._spline_orders_sorted[index] - 2 : 
                 _parms._num_knots_sorted[index];
         final int numKnotsM1 = numKnots - 1;
-        if (_parms._bs_sorted[index] == 0 || _parms._bs_sorted[index] == 2) {  // for CS or I-spline smoothers
-          _gamColNames[index] = generateGamColNames(index, _parms);
-          _gamColMeans[index] = new double[numKnots];
-          if (_parms._bs_sorted[index] == 0) { // cs spline
-            _gamColNamesCenter[index] = new String[numKnotsM1];
-            generateGamColumn[index] = new CubicSplineSmoother(predictVec, _parms, index, _gamColNames[index],
-                    _knots[index][0], singlePredictorSmootherInd++);
-          } else { // I-splines
-            _gamColNamesCenter[index] = new String[numKnots];
-            generateGamColumn[index] = new ISplineSmoother(predictVec, _parms, index, _gamColNames[index],
-                    _knots[index][0], singlePredictorSmootherInd++);
-          }
-        }  else {  // TP splines with knots
+        if (_parms._bs_sorted[index] == TP_SPLINE_TYPE) {  // for TP splines
           final int kPlusM = _parms._num_knots_sorted[index]+_parms._M[thinPlateInd];
           _gamColNames[index] = new String[kPlusM];
           _gamColNamesCenter[index] = new String[numKnotsM1];
@@ -722,8 +822,25 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           _allPolyBasisList[thinPlateInd] = new int[_parms._M[thinPlateInd]][_parms._gamPredSize[index]];
           _gamColMeansRaw[thinPlateInd] = new double[_parms._gamPredSize[index]];
           _oneOGamColStd[thinPlateInd] = new double[_parms._gamPredSize[index]];
-          generateGamColumn[index] = new ThinPlateRegressionSmootherWithKnots(predictVec, _parms, index, _knots[index], 
+          generateGamColumn[index] = new ThinPlateRegressionSmootherWithKnots(predictVec, _parms, index, _knots[index],
                   thinPlateInd++);
+        }  else {  // for single predictor GAM columns
+          _gamColNames[index] = generateGamColNames(index, _parms);
+          _gamColMeans[index] = new double[numKnots];
+          if (_parms._bs_sorted[index] == CS_SPLINE_TYPE) { // cs spline
+            _gamColNamesCenter[index] = new String[numKnotsM1];
+            generateGamColumn[index] = new CubicSplineSmoother(predictVec, _parms, index, _gamColNames[index],
+                    _knots[index][0], singlePredictorSmootherInd++);
+          } else if (_parms._bs_sorted[index] == IS_SPLINE_TYPE){ // I-splines
+            _gamColNamesCenter[index] = new String[numKnots];
+            generateGamColumn[index] = new ISplineSmoother(predictVec, _parms, index, _gamColNames[index],
+                    _knots[index][0], singlePredictorSmootherInd++);
+          } else if (_parms._bs_sorted[index] == MS_SPLINE_TYPE){  // M-spline here
+            _gamColNamesCenter[index] = new String[numKnotsM1];
+            generateGamColumn[index] = new MSplineSmoother(predictVec, _parms, index, _gamColNames[index], 
+                  _knots[index][0], singlePredictorSmootherInd++);
+          } else 
+            throw new NotImplementedException(SPLINENOTIMPL);
         }
       }
       ForkJoinTask.invokeAll(generateGamColumn);
@@ -759,7 +876,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       List<Double> upperBList = new ArrayList<>();
       List<Double> lowerBList = new ArrayList<>();
       for (int index=0; index<numGamCols; index++) {
-        if (_parms._bs_sorted[index] == 2) { // I-splines
+        if (_parms._bs_sorted[index] == IS_SPLINE_TYPE) { // I-splines
           int numCols = _gamColNamesCenter[index].length;
           iSplineColNames.addAll(Stream.of(_gamColNamesCenter[index]).collect(Collectors.toList()));
           if (_parms._splines_non_negative_sorted[index]) { // monotonically increasing
@@ -808,10 +925,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (error_count() > 0)   // if something goes wrong during gam transformation, let's throw a fit again!
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
       
-      if (valid() != null)  // transform the validation frame if present
-        _valid = rebalance(adaptValidFrame(_parms.valid(), _valid,  _parms, _gamColNamesCenter, _binvD,
-                _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd, _cubicSplineNum), 
-                false, _result+".temporary.valid");
+      if (valid() != null) { // transform the validation frame if present
+        int[] singleGamColsCount = new int[]{_cubicSplineNum, _iSplineNum, _mSplineNum};
+        _valid = rebalance(adaptValidFrame(_parms.valid(), _valid, _parms, _gamColNamesCenter, _binvD,
+                        _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd, singleGamColsCount),
+                false, _result + ".temporary.valid");
+      }
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
       Frame newValidFrame = _valid == null ? null : new Frame(_valid);
       if (newValidFrame != null) {
@@ -925,8 +1044,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       GLMParameters glmParam = copyGAMParams2GLMParams(parms, trainData, validFrame);  // copy parameter from GAM to GLM
       int numGamCols = _parms._gam_columns.length;
       for (int find = 0; find < numGamCols; find++) {
-        if ((_parms._scale != null) && (_parms._scale[find] != 1.0))
-          _penaltyMatCenter[find] = ArrayUtils.mult(_penaltyMatCenter[find], _parms._scale[find]);
+        if ((_parms._scale_sorted != null) && (_parms._scale_sorted[find] != 1.0))
+          _penaltyMatCenter[find] = ArrayUtils.mult(_penaltyMatCenter[find], _parms._scale_sorted[find]);
       }
       glmParam._glmType = gam;
       if (_foldColumn == null) {
@@ -952,6 +1071,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._output._knots = _knots;
       model._output._numKnots = _numKnots;
       model._cubicSplineNum = _cubicSplineNum;
+      model._mSplineNum = _mSplineNum;
       model._iSplineNum = _iSplineNum;
       model._thinPlateSmoothersWithKnotsNum = _thinPlateSmoothersWithKnotsNum;
       model._output._gamColMeansRaw = _gamColMeansRaw;

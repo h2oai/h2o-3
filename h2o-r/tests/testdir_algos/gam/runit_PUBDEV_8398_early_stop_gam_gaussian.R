@@ -18,8 +18,10 @@ test.model.gam.early.stop <- function() {
     splits = h2o.splitFrame(data, ratios=c(0.8), seed=12345)
     train = splits[[1]]
     valid = splits[[2]]
-    gam_early_stop <- h2o.gam(y = "C21", x = c(1:20), gam_columns = c("C11", "C12", "C13"), training_frame = train, validation_frame = valid,
-    family = "gaussian", stopping_rounds=3, stopping_metric="rmse", stopping_tolerance=0.1, score_each_iteration = TRUE, bs=c(2,1,0))
+    gam_early_stop <- h2o.gam(y = "C21", x = c(1:20), gam_columns = c("C11", "C12", "C13", "C14"), 
+                              training_frame = train, validation_frame = valid, family = "gaussian", 
+                              stopping_rounds = 3, stopping_metric = "rmse", stopping_tolerance = 0.1, 
+                              score_each_iteration = TRUE, bs = c(2,1,0,3))
     expect_true(length(gam_early_stop@model$glm_scoring_history) > 0, "Early stop is not working")
 }
 

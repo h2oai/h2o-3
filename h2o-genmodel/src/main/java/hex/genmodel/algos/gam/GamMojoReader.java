@@ -6,6 +6,8 @@ import hex.genmodel.utils.DistributionFamily;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static hex.genmodel.algos.gam.GamMojoModel.IS_SPLINE_TYPE;
+import static hex.genmodel.algos.gam.GamMojoModel.MS_SPLINE_TYPE;
 import static hex.genmodel.utils.ArrayUtils.subtract;
 import static hex.genmodel.utils.DistributionFamily.ordinal;
 
@@ -53,14 +55,30 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     _model._numTPCol = readkv("num_TP_col");
     _model._numCSCol = readkv("num_CS_col");
     _model._numISCol = readkv("num_IS_col");
-    if (_model._numISCol > 0) {
+    _model._numMSCol = readkv("num_MS_col");
+    if (_model._numISCol > 0 || _model._numMSCol > 0) {
       _model._spline_orders = readkv("spline_orders");
       _model._spline_orders_sorted = readkv("spline_orders_sorted");
-      _model._numBasisSize = new int[_model._numISCol];
-      int isCounter = 0;
-      for (int index=0; index<_model._numISCol; index++)
-        _model._numBasisSize[isCounter++] = _model._num_knots_sorted[index+_model._numCSCol]+
-                _model._spline_orders_sorted[index+_model._numCSCol]-2;
+      if (_model._numISCol > 0) {
+        _model._numBasisSize = new int[_model._numISCol];
+        int isCounter = 0;
+        int offset = _model._numCSCol;
+        for (int index = 0; index < _model._numISCol; index++) {
+          int trueIndex = index+offset;
+          _model._numBasisSize[isCounter++] = _model._num_knots_sorted[trueIndex] +
+                  _model._spline_orders_sorted[trueIndex] - 2;
+        }
+      }
+      if (_model._numMSCol > 0) {
+        _model._numMSBasisSize = new int[_model._numMSCol];
+        int msCounter = 0;
+        int offset = _model._numISCol+_model._numCSCol;
+        for (int index=0; index<_model._numMSCol; index++) {
+          int trueIndex = offset + index;
+          _model._numMSBasisSize[msCounter++] = _model._num_knots_sorted[trueIndex]+
+                  _model._spline_orders_sorted[trueIndex]-2;
+        }
+      }
     }
     _model._totFeatureSize = readkv("total feature size");
     _model._names_no_centering = readStringArrays(_model._totFeatureSize, "_names_no_centering");
@@ -92,17 +110,25 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     int[] numKnotsM1 = subtract(_model._num_knots_sorted, 1);
     int numKnotsLen = numKnotsM1.length;
     int isCounter=0;
+    int msCounter = 0;
     int[] zSecondDim = new int[numKnotsLen];
+    int[] zThirdDim = new int[numKnotsLen];
     for (int index=0; index<numKnotsLen; index++) {
-      if (_model._bs_sorted[index] == 2) {
+      if (_model._bs_sorted[index] == IS_SPLINE_TYPE) {
         numKnotsM1[index] = _model._numBasisSize[isCounter++];
         zSecondDim[index] = 0;
+        zThirdDim[index] = 0;
+      } else if (_model._bs_sorted[index] == MS_SPLINE_TYPE) {
+        numKnotsM1[index] = _model._numMSBasisSize[msCounter++]-1;
+        zSecondDim[index] = numKnotsM1[index];
+        zThirdDim[index] = numKnotsM1[index]+1;
       } else {
         zSecondDim[index] = numKnotsM1[index];
+        zThirdDim[index] = _model._num_knots_sorted[index];
       }
     }
     _model._gamColNamesCenter = read2DStringArrays(numKnotsM1, "gamColNamesCenter");
-    _model._zTranspose = read3DArray("zTranspose", _model._num_gam_columns, zSecondDim, _model._num_knots_sorted);
+    _model._zTranspose = read3DArray("zTranspose", _model._num_gam_columns, zSecondDim, zThirdDim);
     _model._knots = read3DArray("knots", _model._num_gam_columns, _model._gamPredSize, _model._num_knots_sorted);
     if (_model._numCSCol > 0) {
       int[] numKnotsM2 = subtract(_model._num_knots_sorted, 2);

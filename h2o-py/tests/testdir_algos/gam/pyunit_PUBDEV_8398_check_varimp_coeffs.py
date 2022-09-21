@@ -28,10 +28,15 @@ def test_gam_coeffs_varimp():
 
 
 def buildModelCoeffVarimpCheck(train_data, y, gamX, family):
-    numKnots = [5,6,7]
+    numKnots = [5, 6, 7]
+    spline_orders = [10, -1, 10]
     x=["C1","C2"]
-    numPCoeffs = len(train_data["C1"].categories())+len(train_data["C2"].categories())+13+15+5+1
-    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [1,1,1], bs=[2,0,2],
+    numPCoeffs = len(train_data["C1"].categories())+len(train_data["C2"].categories())
+    numPCoeffs += numKnots[0]+spline_orders[0]-2    # due to I-spline
+    numPCoeffs += numKnots[1]-1                     # due to CS spline
+    numPCoeffs += numKnots[2]+spline_orders[2]-2-1  # due to M-splines, minus 1 due to centering
+    numPCoeffs += 1  # intercept term
+    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [1,1,1], bs=[2,0,3],
                                                 spline_orders=[10,-1,10],num_knots=numKnots)
     h2o_model.train(x=x, y=y, training_frame=train_data)
     h2oCoeffs = h2o_model.coef()

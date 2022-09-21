@@ -24,15 +24,15 @@ def test_GAM_coeffs_check():
     names = h2o_data.names
     myX = names.remove(myY)
     # build the GAM model
-    h2o_model = H2OGeneralizedAdditiveEstimator(family='binomial', bs=[0, 1, 2, 2, 2], seed=9, spline_orders = [1,1,3,1,2], 
-                                                gam_columns=["C11", "C12", "C13", "C14", "C15"], )
+    h2o_model = H2OGeneralizedAdditiveEstimator(family='binomial', bs=[0, 1, 2, 3, 2], seed=9, spline_orders = [1, 1, 3, 1, 2], 
+                                                num_knots=[3, 10, 3, 3, 3], gam_columns=["C11", "C12", "C13", "C14", "C15"])
     h2o_model.train(x=myX, y=myY, training_frame=h2o_data)
     # check and make sure coefficients regarding I-spline parameters are the same from coefficients that are centered
-    # and non-centered.
-    gam_is_coef_names = ["C13_is_0", "C13_is_1", "C13_is_2", "C14_is_0", "C15_is_0", "C15_is_1"]
+    # and non-centered., "C13_is_2"
+    gam_is_coef_names = ["C13_is_0", "C13_is_1", "C13_is_2", "C15_is_0", "C15_is_1", "C15_is_2"]
     model_coef = h2o_model.coef()
     gam_coef_table = h2o_model._model_json["output"]["coefficients_table_no_centering"]._cell_values
-    table_len = len(gam_coef_table);
+    table_len = len(gam_coef_table)
     for cName in gam_is_coef_names:
         for index in range(0, table_len):
             if gam_coef_table[index][0] == cName:

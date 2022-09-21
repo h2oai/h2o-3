@@ -14,15 +14,18 @@ def test_gam_modelMetrics():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
     h2o_data["C21"] = h2o_data["C21"].asfactor()
-    buildModelMetricsCheck(h2o_data, myY, ["C11", "C12", "C13"], 'binomial')
 
+    bs = [1,2,3]
+    buildModelMetricsCheck(h2o_data, myY, ["C11", "C12", "C13"], 'binomial', bs)
+    
     print("Checking modelmetrics for gaussian")
     h2o_data = h2o.import_file(
     path=pyunit_utils.locate("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
-    buildModelMetricsCheck(h2o_data, myY, ["C11", "C12", "C13"], 'gaussian')
+    bs = [0,3,1]
+    buildModelMetricsCheck(h2o_data, myY, ["C11", "C12", "C13"], 'gaussian', bs)
 
     print("Checking modelmetrics for multinomial")
     h2o_data = h2o.import_file(
@@ -31,15 +34,16 @@ def test_gam_modelMetrics():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
-    buildModelMetricsCheck(h2o_data, myY, ["C6", "C7", "C8"], 'multinomial')
+    bs = [3,1,0]
+    buildModelMetricsCheck(h2o_data, myY, ["C6", "C7", "C8"], 'multinomial', bs)
     
     print("gam modelmetrics test completed successfully")    
     
-def buildModelMetricsCheck(train_data, y, gamX, family):
+def buildModelMetricsCheck(train_data, y, gamX, family, bs):
     numKnots = [5,6,7]
     x=["C1","C2"]
     h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [1,1,1], num_knots=numKnots, 
-                                                standardize=True, Lambda=[0], alpha=[0], max_iterations=3)
+                                                standardize=True, lambda_=[0], alpha=[0], max_iterations=3, bs=bs)
     h2o_model.train(x=x, y=y, training_frame=train_data)
     if family=='binomial':
         h2o_model.auc()
