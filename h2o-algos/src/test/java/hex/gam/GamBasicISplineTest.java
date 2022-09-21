@@ -1,8 +1,8 @@
 package hex.gam;
 
-import hex.gam.GamSplines.NBSplinesTypeI;
 import hex.gam.GamSplines.NBSplinesTypeIDerivative;
 import hex.genmodel.algos.gam.ISplines;
+import hex.genmodel.algos.gam.NBSplinesTypeI;
 import hex.genmodel.algos.gam.NBSplinesTypeII;
 import jsr166y.ThreadLocalRandom;
 import org.junit.Test;
@@ -14,16 +14,14 @@ import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
-
 import java.util.stream.DoubleStream;
-
-import static hex.gam.GamSplines.NBSplinesTypeI.extractNBSplineCoeffs;
-import static hex.gam.GamSplines.NBSplinesTypeI.formBasis;
-import static hex.gam.GamSplines.NBSplinesTypeIDerivative.formDerivatives;
 import static hex.gam.GamSplines.NBSplinesUtils.integratePolynomial;
-import static hex.gam.GamSplines.NBSplinesUtils.polynomialProduct;
 import static hex.genmodel.algos.gam.GamUtilsISplines.extractKnots;
 import static hex.genmodel.algos.gam.GamUtilsISplines.fillKnots;
+import static hex.gam.GamSplines.NBSplinesTypeIDerivative.form1stOrderDerivatives;
+import static hex.genmodel.algos.gam.GamUtilsISplines.*;
+import static hex.genmodel.algos.gam.NBSplinesTypeI.extractNBSplineCoeffs;
+import static hex.genmodel.algos.gam.NBSplinesTypeI.formBasisDeriv;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -237,7 +235,7 @@ public class GamBasicISplineTest extends TestUtil {
                 null, null, null, null, {4/0.3},{-4/0.2}}, {null, null, null, null, null, null, {2/0.06},{-2/0.03}},
                 {null, null, null, null, null, null, null, {4/0.1},{-4/0.4}}, {null, null, null, null, null, null, 
                 null, null, {5/0.4}}};
-        NBSplinesTypeIDerivative[] allDerivatives = formDerivatives(numBasis, order, knotsWithDuplicates);
+        NBSplinesTypeIDerivative[] allDerivatives = form1stOrderDerivatives(numBasis, order, knotsWithDuplicates);
         assertCorrectDerivativeCoeffs(allDerivatives, manualCoefs);
         
         order = 3;
@@ -251,7 +249,7 @@ public class GamBasicISplineTest extends TestUtil {
                 30/0.7}}, {null, null, null, null, null, null, null, null,{-60/0.5, 120/0.5},{30/0.5+7.5*3/0.5, 
                 -30/0.5-12.5*3/0.5}}, {null, null, null, null, null, null, null, null, null, {-7.5*3/0.4, 12.5*3/0.4}}};
         knotsWithDuplicates = fillKnots(knots, order);
-        allDerivatives = formDerivatives(numBasis, order, knotsWithDuplicates);
+        allDerivatives = form1stOrderDerivatives(numBasis, order, knotsWithDuplicates);
         assertCorrectDerivativeCoeffs(allDerivatives, manualCoefs);
     }
 
@@ -403,7 +401,7 @@ public class GamBasicISplineTest extends TestUtil {
         NBSplinesTypeI[] nbsplines = new NBSplinesTypeI[numBasis];
         for (int index = 0; index < numBasis; index++) {
             double[] knotsCurrent = extractKnots(index, order, fullKnots);
-            nbsplines[index] = formBasis(knotsCurrent, order, index, 0, fullKnots.length - 1);
+            nbsplines[index] = formBasisDeriv(knotsCurrent, order, index, fullKnots.length - 1);
         }
         return nbsplines;
     }

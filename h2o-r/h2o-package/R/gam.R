@@ -124,13 +124,16 @@
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param num_knots Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For monotone
 #'        I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of polynomial basis + 2.
-#' @param spline_orders Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If specified, must be the
-#'        same size as gam_columns.  Values for bs=0 or 1 will be ignored.
+#' @param spline_orders Order of I-splines or NBSplineTypeI M-splines used for gam predictors. If specified, must be the same size as
+#'        gam_columns.  For I-splines, the spline_orders will be the same as the polynomials used to generate the
+#'        splines.  For M-splines, the polynomials used to generate the splines will be spline_order-1.  Values for bs=0
+#'        or 1 will be ignored.
 #' @param knot_ids Array storing frame keys of knots.  One for each gam column set specified in gam_columns
 #' @param standardize_tp_gam_cols \code{Logical}. standardize tp (thin plate) predictor columns Defaults to FALSE.
 #' @param scale_tp_penalty_mat \code{Logical}. Scale penalty matrix for tp (thin plate) smoothers as in R Defaults to FALSE.
 #' @param bs Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for monotone
-#'        splines.  If specified, must be the same size as gam_columns
+#'        I-splines, 3 for NBSplineTypeI M-splines (refer to doc here: https://h2oai.atlassian.net/browse/PUBDEV-8835).
+#'        If specified, must be the same size as gam_columns
 #' @param scale Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
 #' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",

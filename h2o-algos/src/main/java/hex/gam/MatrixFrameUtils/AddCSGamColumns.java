@@ -8,6 +8,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 
+import static hex.genmodel.algos.gam.GamMojoModel.CS_SPLINE_TYPE;
 import static hex.genmodel.algos.gam.GamUtilsCubicRegression.*;
 
 /**
@@ -39,7 +40,7 @@ public class AddCSGamColumns extends MRTask<AddCSGamColumns> {
     _gamFrame = gamColFrames; // contain predictor columns, response column
     int countCSGam = 0;
     for (int ind = 0; ind < numTotGamCols; ind++) {
-      if (bsSorted[ind] == 0) {
+      if (bsSorted[ind] == CS_SPLINE_TYPE) {
         _vmax[countCSGam] = gamColFrames.vec(countCSGam).max();
         _vmin[countCSGam] = gamColFrames.vec(countCSGam).min();
         _ztransp[countCSGam] = ztransp[ind];

@@ -20,7 +20,7 @@ def test_gam_transformed_frame_serialization():
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
     h2o_model = H2OGeneralizedAdditiveEstimator(family="multinomial", gam_columns=["C6", "C7", "C8"],
-                                                keep_gam_cols=True, scale=[2, 1, 0], num_knots=[5, 5, 5])
+                                                keep_gam_cols=True, scale=[2, 1, 0], num_knots=[5, 5, 5], bs=[0, 1, 3])
     h2o_model.train(x=myX, y=myY, training_frame=h2o_data)
     gam_frame = h2o.get_frame(h2o_model._model_json["output"]["gam_transformed_center_key"])
     tmpdir = tempfile.mkdtemp()

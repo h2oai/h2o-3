@@ -6,7 +6,7 @@ import static hex.genmodel.algos.gam.GamUtilsISplines.*;
 public class NBSplinesTypeII implements Serializable {
     public final int _order;   // order of splines
     private final int _nKnots;   // number of knots of multiplicity 1
-    private final double[] _knots;
+    private final double[] _knots;  // whole knots with duplication
     public final int _totBasisFuncs;
     public final BSplineBasis[] _basisFuncs;
 
@@ -48,7 +48,7 @@ public class NBSplinesTypeII implements Serializable {
     public static class BSplineBasis implements Serializable {
         public double[] _knots;     // knots over which basis function is non-zero, include possible duplicates
         private double[] _numerator;
-        private double[] _oneOverdenominator;
+        private double[] _oneOverDenominator;
         private BSplineBasis _first;  // first part of basis function
         private BSplineBasis _second;
 
@@ -67,15 +67,15 @@ public class NBSplinesTypeII implements Serializable {
             }
 
             _numerator = formNumerator(order, _knots);
-            _oneOverdenominator = formDenominator(order, _knots);
+            _oneOverDenominator = formDenominatorNSpline(order, _knots);
         }
 
         public static double evaluate(double value, BSplineBasis root) {
             if (value < root._knots[0] || value >= root._knots[root._knots.length - 1])
                 return 0;   // value outside current basis function non-zero range
             if (root._first != null) {
-                return (value - root._numerator[0]) * root._oneOverdenominator[0] * evaluate(value, root._first)
-                        + (root._numerator[1] - value) * root._oneOverdenominator[1] * evaluate(value, root._second);
+                return (value - root._numerator[0]) * root._oneOverDenominator[0] * evaluate(value, root._first)
+                        + (root._numerator[1] - value) * root._oneOverDenominator[1] * evaluate(value, root._second);
             } else {    // arrive at order==1 with null children
                 return 1;
             }

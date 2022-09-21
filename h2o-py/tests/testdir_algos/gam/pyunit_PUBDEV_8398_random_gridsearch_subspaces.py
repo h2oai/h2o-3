@@ -22,15 +22,15 @@ class test_random_gam_gridsearch_specific:
                         'subspaces': [{'scale': [[1, 1, 1], [2, 2, 2]],
                                          'num_knots': [[5, 5, 5], [5, 6, 7]],
                                          'gam_columns': [["C16", "C17", "C18"]],
-                                       'bs':[[2,2,2],[0,0,0],[2,0,2]]},
+                                       'bs':[[2,3,2],[0,0,0],[3,0,2]]},
                                         {'scale': [[1, 1], [2, 2]],
                                          'num_knots': [[5, 5], [6, 6]],
                                          'gam_columns': [["C16", "C17"], ["C17", "C18"]],
-                                         'bs': [[2,2],[0,2]]},
+                                         'bs': [[2,3],[0,3]]},
                                         {'scale': [[1, 1], [2, 2]],
                                          'num_knots': [[5, 5], [6, 6]],
                                          'gam_columns': [["C16", "C17"], ["C17", "C18"]],
-                                         'bs': [[2,2],[0,0]]}]}
+                                         'bs': [[2,3],[0,3]]}]}
     manual_gam_models = []
     num_grid_models = 0
     expected_grid_models = 40

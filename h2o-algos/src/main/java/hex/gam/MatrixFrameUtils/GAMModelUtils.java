@@ -8,7 +8,8 @@ import water.util.Log;
 import water.util.TwoDimTable;
 
 import static hex.ModelMetrics.calcVarImp;
-import static hex.gam.GAMModel.GAMParameters;
+import static hex.gam.GAMModel.*;
+import static hex.genmodel.algos.gam.GamMojoModel.*;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
@@ -59,9 +60,10 @@ public class GAMModelUtils {
     int numGam = parms._gam_columns.length;
     int gamifiedColCount = 0;
     for (int index = 0; index < numGam; index++) {
-      if (parms._bs_sorted[index]==0) { // cubic spline, I-spline coeff length stays the same because no centering
+      if (parms._bs_sorted[index]==CS_SPLINE_TYPE || parms._bs_sorted[index]==IS_SPLINE_TYPE || 
+              parms._bs_sorted[index]==MS_SPLINE_TYPE) { // cubic spline
         gamifiedColCount++;
-      } else if (parms._bs_sorted[index] == 1){ // for thin-plate
+      } else if (parms._bs_sorted[index] == TP_SPLINE_TYPE) {
         gamifiedColCount += (1+parms._M[tpCount++]);
       }
     }

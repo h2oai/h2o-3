@@ -10,7 +10,7 @@ import tempfile
 from tests import pyunit_utils
 
 
-def import_gam_mojo_regression(family):
+def import_gam_mojo_regression(family, bs):
     np.random.seed(1234)
     n_rows = 10
 
@@ -30,6 +30,7 @@ def import_gam_mojo_regression(family):
                                                 weights_column="W",
                                                 lambda_=0,
                                                 tweedie_variance_power=1.5,
+                                                bs = bs,
                                                 tweedie_link_power=0)
     h2o_model.train(x=["X1", "X2"], y="Y", training_frame=train)
     print(h2o_model)
@@ -71,20 +72,16 @@ def import_gam_mojo_regression(family):
 
 
 def import_gam_mojo_poisson():
-    import_gam_mojo_regression("poisson")
-
+    import_gam_mojo_regression("poisson", [3])
 
 def import_gam_mojo_tweedie():
-    import_gam_mojo_regression("tweedie")
-
+    import_gam_mojo_regression("tweedie", [1])
 
 def import_gam_mojo_gamma():
-    import_gam_mojo_regression("gamma")
-
+    import_gam_mojo_regression("gamma", [2])
 
 def import_gam_mojo_gaussian():
-    import_gam_mojo_regression("gaussian")
-
+    import_gam_mojo_regression("gaussian", [0])
 
 pyunit_utils.run_tests([
     import_gam_mojo_poisson,

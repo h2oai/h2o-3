@@ -13,6 +13,7 @@ import hex.genmodel.utils.LinkFunctionType;
 
 import java.util.Map;
 
+import static hex.genmodel.algos.gam.GamMojoModel.*;
 import static hex.genmodel.algos.gam.GamUtilsThinPlateRegression.*;
 import static hex.genmodel.utils.ArrayUtils.multArray;
 import static hex.genmodel.utils.ArrayUtils.nanArray;
@@ -47,7 +48,8 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   int[] _num_knots;
   int[] _num_knots_sorted;
   int[] _num_knots_sorted_minus1;
-  int[] _numBasisSize;  // number of basis function sizes
+  int[] _numBasisSize;  // number of basis function sizes for I-spline
+  int[] _numMSBasisSize; // number of basis function sizes for M-spline
   int[] _num_knots_TP;
   double[][][] _knots;
   double[][][] _binvD;
@@ -68,6 +70,7 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   int _numTPCol;
   int _numCSCol;
   int _numISCol;
+  int _numMSCol;
   // following arrays are pre-allocated to avoid repeated memory allocation per row of scoring
   int[] _tpDistzCSSize;
   boolean[] _dEven;
@@ -76,6 +79,7 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
   double[][] _oneOGamColStd;
   boolean _standardize;
   ISplines[] _iSplineBasis;
+  MSplines[] _mSplineBasis;
   
   GamMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -98,21 +102,34 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
       for (int ind = 0; ind < _numCSCol; ind++)
         _hj[ind] = ArrayUtils.eleDiff(_knots[ind][0]);
     }
+    int offset = _numCSCol;
     if (_numISCol > 0) {
       _numBasisSize = new int[_numISCol];
       _iSplineBasis = new ISplines[_numISCol];
       for (int ind=0; ind<_numISCol;ind++) {
-        int absIndex = ind + _numCSCol;
+        int absIndex = ind + offset;
         _numBasisSize[ind] = _num_knots_sorted[absIndex]+_spline_orders_sorted[absIndex]-2;
         _iSplineBasis[ind] = new ISplines(_spline_orders_sorted[absIndex], _knots[absIndex][0]);
       }
     }
+    
+    offset += _numISCol;
+    if (_numMSCol > 0) {
+      _numMSBasisSize = new int[_numMSCol];
+      _mSplineBasis = new MSplines[_numMSCol];
+      for (int ind=0; ind<_numMSCol; ind++) {
+        int absIndex = ind + offset;
+        _numMSBasisSize[ind] = _num_knots_sorted[absIndex]+_spline_orders_sorted[absIndex]-2;
+        _mSplineBasis[ind] = new MSplines(_spline_orders_sorted[absIndex], _knots[absIndex][0]);
+      }
+    }
+    offset += _numMSCol;
     if (_numTPCol > 0) {
       _tpDistzCSSize = new int[_numTPCol];
       _dEven = new boolean[_numTPCol];
       _constantTerms = new double[_numTPCol];
       for (int index = 0; index < _numTPCol; index++) {
-        int absIndex = index+ _numCSCol+_numISCol;
+        int absIndex = index+ offset;
         _tpDistzCSSize[index] = _num_knots_sorted[absIndex]-_M[index];
         _dEven[index] = (_d[absIndex] % 2) == 0;
         _constantTerms[index] = calTPConstantTerm(_m[index], _d[absIndex], _dEven[index]);
@@ -217,6 +234,23 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     System.arraycopy(basisVals, 0, dataWithGamifiedColumns, dataIndEnd, _numBasisSize[csCounter]); // copy expanded gam to rawData
     return dataIndEnd;
   }
+
+  int addMSGamification(final RowData rowData, int cind, int csCounter, int dataIndEnd, double[] dataWithGamifiedColumns) {
+    Object dataObject = rowData.get(_gam_columns_sorted[cind][0]); // read predictor column
+    double gamColData = Double.NaN;
+    if (dataObject == null)  // NaN, skip column gamification
+      return dataIndEnd;
+    else // can only test this with Python/R client
+      gamColData = (dataObject instanceof String) ? Double.parseDouble((String) dataObject) : (double) dataObject;
+
+    double[] basisVals = new double[_numMSBasisSize[csCounter]];
+    _mSplineBasis[csCounter].gamifyVal(basisVals, gamColData);
+    int centerBasisLen = basisVals.length-1;
+    double[] basisValsCenter = new double[centerBasisLen];
+    multArray(basisVals, _zTranspose[csCounter], basisValsCenter);
+    System.arraycopy(basisValsCenter, 0, dataWithGamifiedColumns, dataIndEnd, centerBasisLen); // copy expanded gam to rawData
+    return dataIndEnd;
+  }
   
   // this method will add to each data row the expanded gam columns with centering
   double[] addExpandGamCols(double[] rawData, final RowData rowData) { // add all expanded gam columns here
@@ -228,15 +262,19 @@ public abstract class GamMojoModelBase extends MojoModel implements ConverterFac
     System.arraycopy(rawData, 0, dataWithGamifiedColumns, 0, dataIndEnd);
     int tpCounter = 0;
     int isCounter = 0;
+    int msCounter = 0;
     for (int cind = 0; cind < _num_gam_columns; cind++) { // go through all gam_columns, CS and TP
-      if (_bs_sorted[cind] == 0) { // to generate basis function values for cubic regression spline
+      if (_bs_sorted[cind] == CS_SPLINE_TYPE) { // to generate basis function values for cubic regression spline
         dataIndEnd = addCSGamification(rowData, cind, dataIndEnd, dataWithGamifiedColumns);
-      } else if (_bs_sorted[cind] == 1) { // tp regression
+      } else if (_bs_sorted[cind] == TP_SPLINE_TYPE) { // tp regression
         addTPGamification(rowData, cind, tpCounter, dataIndEnd, dataWithGamifiedColumns);
         tpCounter++;
-      } else if (_bs_sorted[cind]==2) { // perform I-spline gamification
+      } else if (_bs_sorted[cind] == IS_SPLINE_TYPE) { // perform I-spline gamification
         addISGamification(rowData, cind, isCounter, dataIndEnd, dataWithGamifiedColumns);
         isCounter++;
+      } else if (_bs_sorted[cind] == MS_SPLINE_TYPE) {
+        addMSGamification(rowData, cind, msCounter, dataIndEnd, dataWithGamifiedColumns);
+        msCounter++;
       } else {
         throw new IllegalArgumentException("spline type not implemented!");
       }

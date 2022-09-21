@@ -234,10 +234,11 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "polynomial basis + 2.", 
             level = Level.critical, gridable = true)
     public int[] num_knots;
-
-    @API(help = "Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If specified, " +
-            "must be the same size as gam_columns.  Values for bs=0 or 1 will be ignored.", level = Level.critical,
-            gridable = true)
+    
+    @API(help = "Order of I-splines or NBSplineTypeI M-splines used for gam predictors. If specified, must be the " +
+            "same size as gam_columns.  For I-splines, the spline_orders will be the same as the polynomials used to " +
+            "generate the splines.  For M-splines, the polynomials used to generate the splines will be " +
+            "spline_order-1.  Values for bs=0 or 1 will be ignored.", level = Level.critical, gridable = true)
     public int[] spline_orders;
 
     @API(help = "Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing (and monotonically " +
@@ -255,8 +256,9 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     public double[] scale;
 
     @API(help = "Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for" +
-            " monotone splines.  If specified, must be the same size as gam_columns",
-            level = Level.critical, gridable = true)
+            " monotone I-splines, 3 for NBSplineTypeI M-splines (refer to doc " +
+            "here: https://h2oai.atlassian.net/browse/PUBDEV-8835).  If specified, must be the same size as " +
+            "gam_columns", level = Level.critical, gridable = true)
     public int[] bs;
 
     @API(help="Save keys of model matrix", level = Level.secondary, direction = Direction.INPUT)

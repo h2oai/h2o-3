@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class GAMISplineTest extends TestUtil {
+public class GamISplineTest extends TestUtil {
 
     /***
      * This test is used to make sure that the gamification is performed properly for validation dataset and brand new
@@ -87,7 +87,7 @@ public class GAMISplineTest extends TestUtil {
             final GAMModel gam = new GAM(params).trainModel().get();
             Scope.track_generic(gam);
             Frame validGamified = adaptValidFrame(test, test, params, gam._output._gamColNames, null,
-                    gam._output._zTranspose, gam._output._knots, null, null, null, null, 0);
+                    gam._output._zTranspose, gam._output._knots, null, null, null, null, new int[]{0,3,0});
             DKV.put(validGamified);
             Scope.track(validGamified);
             Frame trainGamified = DKV.getGet(gam._output._gamTransformedTrainCenter);
@@ -99,9 +99,8 @@ public class GAMISplineTest extends TestUtil {
     }
 
     /**
-     * This test will check the penalty matrix calculation for order = 2, 3, 4.  The manually derived penalty matrix
-     * will be centralized by multiplying with z-matrix as Z'*p*Z.  In addition, I will make sure of the following
-     * items that have been tested before to arrive at the manually derived matrix:
+     * This test will check the penalty matrix calculation for order = 2, 3, 4.  In addition, I will make sure of the
+     * following items that have been tested before to arrive at the manually derived matrix:
      * 1. derivative of coefficients;
      * 2. polynomial multiplications;
      * 3. integration of polynomials;
@@ -184,17 +183,17 @@ public class GAMISplineTest extends TestUtil {
                             Arrays.asList("c_0", "c_1")), binomial);
             assertCorrectGamification(allGamifiedColumns, tpc0c1);
             Frame isc2 = extractGamifiedColumns(train, new String[][]{{"c_2"}}, new int[]{2}, new double[]{0.001},
-                    new int[]{2}, new int[]{5}, ignoredCols(colNames, Arrays.asList("c_2")), binomial);
+                    new int[]{3}, new int[]{5}, ignoredCols(colNames, Arrays.asList("c_2")), binomial);
             assertCorrectGamification(allGamifiedColumns, isc2);            
             Frame isc3 = extractGamifiedColumns(train, new String[][]{{"c_3"}}, new int[]{3}, new double[]{0.001},
-                    new int[]{2}, new int[]{6}, ignoredCols(colNames, Arrays.asList("c_3")), binomial);
+                    new int[]{3}, new int[]{6}, ignoredCols(colNames, Arrays.asList("c_3")), binomial);
             assertCorrectGamification(allGamifiedColumns, isc3);
             Frame tpc4c5c6 = extractGamifiedColumns(train, new String[][]{{"c_4", "c_5", "c_6"}}, null,
                     new double[]{0.001}, new int[]{1}, new int[]{12}, ignoredCols(colNames, Arrays.asList("c_4", "c_5",
                             "c_6")), binomial);
             assertCorrectGamification(allGamifiedColumns, tpc4c5c6);
             Frame isc7 = extractGamifiedColumns(train, new String[][]{{"c_7"}}, new int[]{4}, new double[]{0.001},
-                    new int[]{2}, new int[]{6}, ignoredCols(colNames, Arrays.asList("c_7")), binomial);
+                    new int[]{3}, new int[]{6}, ignoredCols(colNames, Arrays.asList("c_7")), binomial);
             assertCorrectGamification(allGamifiedColumns, isc7);
             Frame tpc7c8c9 = extractGamifiedColumns(train, new String[][]{{"c_7", "c_8", "c_9"}}, null,
                     new double[]{0.001}, new int[]{1}, new int[]{13}, ignoredCols(colNames, Arrays.asList("c_7", "c_8",
