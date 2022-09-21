@@ -9,6 +9,7 @@ import hex.pipeline.PipelineModel.PipelineParameters;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -16,6 +17,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.dummy.DummyModel;
 import water.test.dummy.DummyModelParameters;
+import water.util.FrameUtils;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.ar;
@@ -63,6 +65,10 @@ public class PipelineTest {
       assertArrayEquals(emodel._output._names, new String[] {"one", "two", "foo", "bar", "target"});
       
       assertEquals(1, tracker.transformations.size());
+      
+      Frame predictions = Scope.track(pmodel.score(fr));
+      assertNotNull(predictions);
+      TestUtil.printOutFrameAsTable(predictions);
     } finally {
       Scope.exit();
     }
@@ -108,6 +114,10 @@ public class PipelineTest {
       assertArrayEquals(emodel._output._names, new String[] {"one", "two", "foo", "bar", "target"});
       
       assertEquals(2*nfolds+1, tracker.transformations.size()); // nfolds * 2 [train+valid] + 1 [final model, train only]
+      
+      Frame predictions = Scope.track(pmodel.score(fr));
+      assertNotNull(predictions);
+      TestUtil.printOutFrameAsTable(predictions);
     } finally {
       Scope.exit();
     }

@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelMetrics;
 import hex.pipeline.DataTransformer.FrameType;
+import hex.pipeline.PipelineContext.CompositeFrameTracker;
 import hex.pipeline.TransformerChain.UnaryCompleter;
 import water.*;
 import water.fvec.Frame;
@@ -69,16 +70,25 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
 
   private Frame doScore(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     if (fr == null) return null;
-    PipelineContext context = new PipelineContext(_parms); // todo: also need to track frames+vecs here
-    return new TransformerChain(_output._transformers).transform(fr, FrameType.Scoring, context, new UnaryCompleter<Frame>() {
-      @Override
-      public Frame apply(Frame frame, PipelineContext context) {
-        if (_output._estimator == null) {
-          return new Frame(Key.make(destination_key), frame.names(), frame.vecs());
+    try (Scope.Safe s = Scope.safe(fr)) {
+      PipelineContext context = newContext(fr);
+      return new TransformerChain(_output._transformers).transform(fr, FrameType.Scoring, context, new UnaryCompleter<Frame>() {
+        @Override
+        public Frame apply(Frame frame, PipelineContext context) {
+          if (_output._estimator == null) {
+            return new Frame(Key.make(destination_key), frame.names(), frame.vecs());
+          }
+          return _output._estimator.get().score(frame, destination_key, j, computeMetrics, customMetricFunc);
         }
-        return _output._estimator.get().score(frame, destination_key, j, computeMetrics, customMetricFunc);
-      }
-    });
+      });
+    }
+  }
+  
+  private PipelineContext newContext(Frame fr) {
+    return new PipelineContext(_parms, new CompositeFrameTracker(
+            new PipelineContext.ConsistentKeyTracker(fr),
+            new PipelineContext.ScopeTracker()
+    ));
   }
 
   @Override

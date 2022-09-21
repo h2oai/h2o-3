@@ -86,7 +86,6 @@ public class PipelineContext implements Cloneable {
   }
   
   public static class ScopeTracker implements FrameTracker {
-    
     @Override
     public void apply(Frame transformed, Frame frame, FrameType type, PipelineContext context, DataTransformer transformer) {
       if (transformed == null) return;

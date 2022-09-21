@@ -36,7 +36,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     }
     super.init(expensive);
   }
-  
+
   protected void earlyValidateParams() {
     if (_parms._categorical_encoding != Model.Parameters.CategoricalEncodingScheme.AUTO) {
       // we need to ensure that no transformation occurs before the transformers in the pipeline
@@ -72,7 +72,6 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     return _parms._estimator == null ? null : ModelBuilder.make(_parms._estimator.algoName(), null, null);
   }
   
-  //TODO: probably disable parallelization for CV
   
   public class PipelineDriver extends Driver {
     @Override
@@ -115,18 +114,19 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   @Override
   public void computeCrossValidation() {
     assert _parms._estimator != null; // no CV if pipeline used as a pure transformer (see params validation)
-    init(false);
-    PipelineContext context = newContext();
-    TransformerChain chain = newChain(context);
-//    super.computeCrossValidation();
-    setTrain(context.getTrain());
-    setValid(context.getValid());
-    PipelineOutput output = new PipelineOutput(Pipeline.this);
-    PipelineModel model = new PipelineModel(dest(), _parms, output);
-    output._transformers = _parms._transformers.clone();
-    model.delete_and_lock(_job);
+    PipelineModel model = null;
     try {
       Scope.enter();
+      init(false);
+      PipelineContext context = newContext();
+      TransformerChain chain = newChain(context);
+  //    super.computeCrossValidation();
+      setTrain(context.getTrain());
+      setValid(context.getValid());
+      PipelineOutput output = new PipelineOutput(Pipeline.this);
+      model = new PipelineModel(dest(), _parms, output);
+      output._transformers = _parms._transformers.clone();
+      model.delete_and_lock(_job);
       initWorkspace(true);
       output._estimator = chain.transform(
               new Frame[] { train(), valid() }, 
@@ -157,6 +157,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                   @Override
                   public Frame[] getCVFrames(int cvIdx) {
                     PipelineContext cvContext = newCVContext(context, cvIdx, _cvBase);
+                    //TODO: need to disable parallelization for CV: chain.transform is not thread safe (index incr)
                     return chain.doTransform(
                             new Frame[] {cvContext.getTrain(), cvContext.getValid()},
                             new FrameType[] { FrameType.Training, FrameType.Validation },
@@ -168,8 +169,10 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
               }
       );
     } finally {
-      model.update(_job);
-      model.unlock(_job);
+      if (model != null) {
+        model.update(_job);
+        model.unlock(_job);
+      }
       cleanUp();
       Scope.exit();
     }
