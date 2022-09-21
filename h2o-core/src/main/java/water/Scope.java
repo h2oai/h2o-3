@@ -21,34 +21,49 @@ import java.util.*;
 
 public class Scope {
   // Thread-based Key lifetime tracking
-  static private final ThreadLocal<Scope> _scope = new ThreadLocal<Scope>() {
+  private static final ThreadLocal<Scope> _scope = new ThreadLocal<Scope>() {
     @Override protected Scope initialValue() { return new Scope(); }
   };
-  private final Stack<HashSet<Key>> _keys = new Stack<>();
+  private final Stack<Set<Key>> _keys = new Stack<>();
+  
+  private final Stack<Set<Key>> _protectedKeys = new Stack<>();
   
   /** debugging purpose */
-  static public Scope current() {
+  public static Scope current() {
     return _scope.get();
   }
 
   /** Enter a new Scope */
-  static public void enter() { _scope.get()._keys.push(new HashSet<Key>()); }
+  public static void enter() { 
+    Scope scope = _scope.get();
+    scope._keys.push(new HashSet<>()); 
+    Set<Key> outerProtected = scope._protectedKeys.empty() ? Collections.emptySet() : scope._protectedKeys.peek(); 
+    scope._protectedKeys.push(new HashSet<>(outerProtected)); //inherit protected keys from outer scope
+  }
 
-  /** Exit the inner-most Scope, remove all Keys created since the matching
+  /** Exit the innermost Scope, remove all Keys created since the matching
    *  enter call except for the listed Keys.
    *  @return Returns the list of kept keys. */
-  static public Key[] exit(Key... keep) {
-    List<Key> keylist = new ArrayList<>();
-    if( keep != null )
-      for( Key k : keep ) if (k != null) keylist.add(k);
-    Object[] arrkeep = keylist.toArray();
+  public static Key[] exit(Key... keep) {
+    Set<Key> keepKeys = new HashSet<>();
+    if (keep != null) {
+      for (Key k : keep) {
+        if (k != null) keepKeys.add(k);
+      }
+    }
+    Scope scope = _scope.get();
+    keepKeys.addAll(scope._protectedKeys.pop());
+    Key[] arrkeep = keepKeys.toArray(new Key[0]);
     Arrays.sort(arrkeep);
-    Stack<HashSet<Key>> keys = _scope.get()._keys;
-    if (keys.size() > 0) {
+    Stack<Set<Key>> removeKeys = scope._keys;
+    if (!removeKeys.empty()) {
       Futures fs = new Futures();
-      for (Key key : keys.pop()) {
-        int found = Arrays.binarySearch(arrkeep, key);
-        if (arrkeep.length == 0 || found < 0) Keyed.remove(key, fs, true);
+      for (Key key : removeKeys.pop()) {
+        boolean remove = arrkeep.length == 0 || Arrays.binarySearch(arrkeep, key) < 0;
+        if (remove) {
+          boolean cascade = !(key.get() instanceof Frame); //Frames are handled differently as we're explicitly also tracking their Vec keys...
+          Keyed.remove(key, fs, cascade);
+        }
       }
       fs.blockForPending();
     }
@@ -57,8 +72,8 @@ public class Scope {
 
   /** Pop-scope (same as exit-scope) but return all keys that are tracked (and
    *  would have been deleted). */
-  static public boolean isActive() {
-    Stack<HashSet<Key>> keys = _scope.get()._keys;
+  public static boolean isActive() {
+    Stack<Set<Key>> keys = _scope.get()._keys;
     return keys.size() > 0;
   }
 
@@ -69,7 +84,7 @@ public class Scope {
     track_impl(scope, k);
   }
 
-  static public <T extends Keyed<T>> T track_generic(T keyed) {
+  public static <T extends Keyed<T>> T track_generic(T keyed) {
     if (keyed == null)
       return null;
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
@@ -78,7 +93,7 @@ public class Scope {
     return keyed;
   }
 
-  static public Vec track( Vec vec ) {
+  public static Vec track( Vec vec ) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
     track_impl(scope, vec._key);
@@ -93,6 +108,7 @@ public class Scope {
     Scope scope = _scope.get();
     assert scope != null;
     for (Frame fr : frames) {
+      if (fr == null) continue;
       track_impl(scope, fr._key);
       for (Vec vec : fr.vecs())
         track_impl(scope, vec._key);
@@ -100,29 +116,29 @@ public class Scope {
     return frames[0];
   }
 
-  static private void track_impl(Scope scope, Key key) {
+  private static void track_impl(Scope scope, Key key) {
     if (key == null) return;
-    // key size is 0 when tracked in the past, but no scope now
-    if (scope._keys.size() > 0 && !scope._keys.peek().contains(key))
-      scope._keys.peek().add(key);            // Track key
+    if (scope._keys.empty()) return;
+    scope._keys.peek().add(key);            // Track key
   }
-  static public <K extends Keyed> void untrack(Key<K>... keys) {
+  
+  public static <K extends Keyed> void untrack(Key<K>... keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
-    if (scope._keys.size() == 0) return; // Tracked in the past, but no scope now
-    HashSet<Key> xkeys = scope._keys.peek();
+    if (scope._keys.empty()) return;     // Tracked in the past, but no scope now
+    Set<Key> xkeys = scope._keys.peek();
     for (Key key : keys) xkeys.remove(key); // Untrack key
   }
 
-  static public <K extends Keyed> void untrack(Iterable<Key<K>> keys) {
+  public static <K extends Keyed> void untrack(Iterable<Key<K>> keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
-    if (scope._keys.size() == 0) return; // Tracked in the past, but no scope now
-    HashSet<Key> xkeys = scope._keys.peek();
+    if (scope._keys.empty()) return;     // Tracked in the past, but no scope now
+    Set<Key> xkeys = scope._keys.peek();
     for (Key key : keys) xkeys.remove(key); // Untrack key
   }
   
-  static public void untrack(Frame... frames) {
+  public static void untrack(Frame... frames) {
     Scope scope = _scope.get();
     if (scope == null || scope._keys.empty()) return;
     Set<Key> xkeys = scope._keys.peek();
@@ -130,6 +146,30 @@ public class Scope {
       xkeys.remove(fr._key);
       xkeys.removeAll(Arrays.asList(fr.keys()));
     }
+  }
+
+  /**
+   * Protects the listed frames and their vecs inside this scope and inner scopes so that they can't be removed, 
+   * for example if an unprotected frame shares some Vecs.
+   * @param frames
+   * @return the first protected frame.
+   */
+  public static Frame protect(Frame... frames) {
+    Scope scope = _scope.get();
+    assert scope != null;
+    for (Frame fr : frames) {
+      if (fr == null) continue;
+      protect_impl(scope, fr._key);
+      for (Vec vec : fr.vecs())
+        protect_impl(scope, vec._key);
+    }
+    return frames[0];
+  }
+  
+  private static void protect_impl(Scope scope, Key key) {
+    if (key == null) return;
+    if (scope._protectedKeys.empty()) return;
+    scope._protectedKeys.peek().add(key);            // Track key
   }
 
 }

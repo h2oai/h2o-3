@@ -74,7 +74,7 @@ public class Frame extends Lockable<Frame> {
    * Given a temp Frame and a base Frame from which it was created, delete the
    * Vecs that aren't found in the base Frame and then delete the temp Frame.
    *
-   * TODO: Really should use Scope but Scope does not.
+   * @deprecated Use {@link Scope#protect(Frame...)} instead.
    */
   public static void deleteTempFrameAndItsNonSharedVecs(Frame tempFrame, Frame baseFrame) {
     Key[] keys = tempFrame.keys();
@@ -824,9 +824,10 @@ public class Frame extends Lockable<Frame> {
     setNames(new String[0]);
     _keys = makeVecKeys(0);
 
-    // Bulk dumb local remove - no JMM, no ordering, no safety.
-    Vec.bulk_remove(keys, v.nChunks());
-
+    if (cascade) { // removing the vecs from mem only if cascading (default behaviour)
+      // Bulk dumb local remove - no JMM, no ordering, no safety.
+      Vec.bulk_remove(keys, v.nChunks());
+    }
     return fs;
   }
 

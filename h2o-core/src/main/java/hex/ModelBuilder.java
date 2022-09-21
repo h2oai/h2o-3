@@ -609,10 +609,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     assert _job.isRunning();    // main Job is still running
     _job.setReadyForView(false); //wait until the main job starts to let the user inspect the main job
     final int N = nFoldWork();
-    init(false);
     ModelBuilder<M, P, O>[] cvModelBuilders = null;
     try {
       Scope.enter();
+      init(false);
 
       // Step 1: Assign each row to a fold
       final FoldAssignment foldAssignment = cv_AssignFold(N);
@@ -828,6 +828,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return new CVModelBuilder(_job, modelBuilders, parallelization);
   }
   
+  
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if (_job.stop_requested()) {
@@ -846,25 +847,30 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         throw new Job.JobCancelledException();
       }
       Frame cvValid = cvModelBuilders[i].valid();
-      Frame adaptFr = new Frame(cvValid);
-      if (makeCVMetrics(cvModelBuilders[i])) {
-        M cvModel = cvModelBuilders[i].dest().get();
-        cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
-        if (nclasses() == 2 /* need holdout predictions for gains/lift table */
-                || _parms._keep_cross_validation_predictions
-                || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
-          String predName = cvModelBuilders[i].getPredictionKey();
-          Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.from(_parms._custom_metric_func));
-          result.makeModelMetrics(cvValid, adaptFr);
-          mbs[i] = result.getMetricBuilder();
-          DKV.put(cvModel);
-        } else {
-          mbs[i] = cvModel.scoreMetrics(adaptFr);
+      try {
+        Scope.enter();
+        Scope.protect(cvValid);
+        Frame adaptFr = new Frame(cvValid);
+        if (makeCVMetrics(cvModelBuilders[i])) {
+          M cvModel = cvModelBuilders[i].dest().get();
+          cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
+          if (nclasses() == 2 /* need holdout predictions for gains/lift table */
+                  || _parms._keep_cross_validation_predictions
+                  || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
+            String predName = cvModelBuilders[i].getPredictionKey();
+            Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.from(_parms._custom_metric_func));
+            Scope.untrack(result.getPredictions());
+            result.makeModelMetrics(cvValid, adaptFr);
+            mbs[i] = result.getMetricBuilder();
+            DKV.put(cvModel);
+          } else {
+            mbs[i] = cvModel.scoreMetrics(adaptFr);
+          }
         }
+      } finally {
+        // free resources as early as possible
+        Scope.exit();
       }
-      // free resources as early as possible
-      Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
-      DKV.remove(adaptFr._key,fs);
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);
       weights[2*i  ].remove(fs);
@@ -1416,6 +1422,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_train", "Missing training frame: "+_parms._train); 
       return;
     }
+    Scope.protect(_parms.train(), _parms.valid());
     setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
     if (expensive) {
       _parms.getOrMakeRealSeed();

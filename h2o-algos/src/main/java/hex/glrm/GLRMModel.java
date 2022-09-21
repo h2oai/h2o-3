@@ -234,19 +234,24 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     } else if (_output._representation_key.toString().contains(fr.getKey().toString())) {
       return DKV.get(_output._representation_key).get();
     } else {  // new frame, need to generate the new X-factor before returning it
-      List<Frame> tmpFrames = new ArrayList<>();
-      Frame adaptFr = adaptFrameForScore(fr, true, tmpFrames);
-      _output._x_factor_key = Key.make("GLRMLoading_"+fr._key);
-      GLRMGenX gs = new GLRMGenX(this, _parms._k);
-      gs.doAll(gs._k, Vec.T_NUM, adaptFr);
-      String[] loadingFrmNames = new String[gs._k];
-      for (int index = 1; index <= gs._k; index++)
-        loadingFrmNames[index - 1] = "Arch" + index;
-      String[][] loadingFrmDomains = new String[gs._k][];
-      Frame xFrame = gs.outputFrame(_output._x_factor_key, loadingFrmNames, loadingFrmDomains);
-      DKV.put(xFrame);
-      for (Frame tmp : tmpFrames) Frame.deleteTempFrameAndItsNonSharedVecs(tmp, fr);
-      return xFrame;
+      try {
+        Scope.enter();
+        Scope.protect(fr);
+        Frame adaptFr = adaptFrameForScore(fr, true);
+        _output._x_factor_key = Key.make("GLRMLoading_"+fr._key);
+        GLRMGenX gs = new GLRMGenX(this, _parms._k);
+        gs.doAll(gs._k, Vec.T_NUM, adaptFr);
+        String[] loadingFrmNames = new String[gs._k];
+        for (int index = 1; index <= gs._k; index++)
+          loadingFrmNames[index-1] = "Arch"+index;
+        String[][] loadingFrmDomains = new String[gs._k][];
+        Frame xFrame = gs.outputFrame(_output._x_factor_key, loadingFrmNames, loadingFrmDomains);
+        DKV.put(xFrame);
+        Scope.untrack(xFrame);
+        return xFrame;
+      } finally {
+        Scope.exit();
+      }
     }
   }
   

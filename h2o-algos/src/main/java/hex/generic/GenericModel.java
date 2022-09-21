@@ -116,12 +116,12 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     @Override
-    protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics, List<Frame> tmpFrames) {
+    protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics) {
         if (hasBehavior(ModelBehavior.USE_MOJO_PREDICT)) {
             // We do not need to adapt the frame in any way, MOJO will handle it itself
             return fr;
         } else
-            return super.adaptFrameForScore(fr, computeMetrics, tmpFrames);
+            return super.adaptFrameForScore(fr, computeMetrics);
     }
 
     @Override
