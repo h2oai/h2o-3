@@ -92,6 +92,28 @@ test-py-changed:
 test-py-persist-s3: lookup-persist-s3-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 1 --jvm.xmx 3g
 
+build-h2o-persist-drive:
+	@echo "+--Building H2O Persit Drive--+"
+	@echo
+	cd h2o-persist-drive && ../gradlew clean build
+
+bootstrap-persist-drive-env:
+	mkdir -p h2o-persist-drive/build/graal && cd h2o-persist-drive/build/graal && ../../bootstrap.sh
+
+test-py-persist-drive:
+	export NO_GCE_CHECK=True \
+	 && export JAVA_HOME="$$PWD/h2o-persist-drive/build/graal/graalvm" \
+	 && cd h2o-persist-drive/tests/ \
+	 && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --jvm.xmx 3g \
+	                         --jvm.cp "$(shell pwd)/$(wildcard h2o-persist-drive/build/libs/h2o-persist-drive*.jar)" \
+	                         --jvm.opt "--add-opens=java.base/java.lang=ALL-UNNAMED" \
+	                         --jvm.opt "-Dsys.ai.h2o.persist.drive.venv=../../build/graal/venv/bin/graalpython"
+
+test-py-persist-drive-jenkins:
+	@$(MAKE) -f $(THIS_FILE) build-h2o-persist-drive
+	@$(MAKE) -f $(THIS_FILE) bootstrap-persist-drive-env
+	@$(MAKE) -f $(THIS_FILE) test-py-persist-drive
+
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
 	 && python h2o.init_test.py \
@@ -314,6 +336,7 @@ test-package-java:
 		h2o-persist-s3/build/libs/h2o-persist-s3-*.jar \
 		h2o-persist-http/src/ \
 		h2o-persist-http/build/libs/h2o-persist-http-*.jar \
+		h2o-persist-drive/ \
 		h2o-security/src/ \
 		h2o-security/build/libs/h2o-security-*.jar \
 		h2o-extensions/xgboost/src/ \
