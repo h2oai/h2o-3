@@ -19,7 +19,7 @@ testGAMWeightOffset <- function() {
                lambda = 0,alpha = 0,offset_column = "offset",weights_column="weight", training_frame = hdd, objective_epsilon=0, seed=12345)
 	gam_with_weight_offset <- h2o.gam(x = myX,y = "Claims",family = "tweedie",tweedie_variance_power = 1.7,tweedie_link_power = 0,
 	                           lambda = 0,alpha = 0,offset_column = "offset",weights_column="weight", training_frame = hdd, 
-	                           gam_columns=c("Holders"), bs=c(2), objective_epsilon=0, seed=12345)
+	                           gam_columns=c("Holders"), bs=c(2), objective_epsilon=0, seed=12345, num_knots=c(3))
 	print("Compare metrics") # expect GAM metrics better
 	expect_true(gam_with_weight_offset@model$training_metrics@metrics$MSE <= glm_with_weight_offset@model$training_metrics@metrics$MSE)
 }
