@@ -142,6 +142,7 @@ class H2OFrame(Keyed):
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
         tmp_file = os.fdopen(tmp_handle, 'w', **H2OFrame.__fdopen_kwargs)
         # create a new csv writer object thingy
+        # changing quoting=csv.quoting=csv.QUOTE_MINIMAL to quoting=csv.QUOTE_MINIMAL changes the number of invalid values in resulting value_counts
         csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(column_names)
         if data_to_write and isinstance(data_to_write[0], dict):
@@ -149,7 +150,11 @@ class H2OFrame(Keyed):
                 csv_writer.writerow([row.get(k, None) for k in col_header])
         else:
             csv_writer.writerows(data_to_write)
-        tmp_file.close()  # close the streams
+        tmp_file.close() # close the streams
+        # this produces proper value counts:
+        # import pandas as pd
+        # df = pd.read_csv(tmp_path)
+        # print(df.value_counts())
         self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings, skipped_columns)
         os.remove(tmp_path)  # delete the tmp file
 
