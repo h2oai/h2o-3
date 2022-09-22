@@ -138,14 +138,15 @@ public class Scope {
     for (Key key : keys) xkeys.remove(key); // Untrack key
   }
   
-  public static void untrack(Frame... frames) {
+  public static Frame untrack(Frame... frames) {
     Scope scope = _scope.get();
-    if (scope == null || scope._keys.empty()) return;
+    if (scope == null || scope._keys.empty()) return frames[0];
     Set<Key> xkeys = scope._keys.peek();
     for (Frame fr : frames) {
       xkeys.remove(fr._key);
       xkeys.removeAll(Arrays.asList(fr.keys()));
     }
+    return frames[0];
   }
 
   /**
@@ -155,6 +156,7 @@ public class Scope {
    * @return the first protected frame.
    */
   public static Frame protect(Frame... frames) {
+    if (frames.length == 0) return null;
     Scope scope = _scope.get();
     assert scope != null;
     for (Frame fr : frames) {
@@ -170,6 +172,28 @@ public class Scope {
     if (key == null) return;
     if (scope._protectedKeys.empty()) return;
     scope._protectedKeys.peek().add(key);            // Track key
+  }
+
+  /**
+   * Enters a new scope and protects the passed frames in that scope.
+   * To be used as a resource in a try block: the new "safe" scope will then be auto-exited.
+   */
+  public static Safe safe(Frame... protectedFrames) {
+    Safe scope = new Safe();
+    Scope.protect(protectedFrames);
+    return scope;
+  }
+
+  public static class Safe implements AutoCloseable {
+    
+    private Safe() {
+      Scope.enter();
+    }
+    
+    @Override
+    public void close() {
+      Scope.exit();
+    }
   }
 
 }

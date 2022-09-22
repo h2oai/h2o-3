@@ -234,9 +234,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     } else if (_output._representation_key.toString().contains(fr.getKey().toString())) {
       return DKV.get(_output._representation_key).get();
     } else {  // new frame, need to generate the new X-factor before returning it
-      try {
-        Scope.enter();
-        Scope.protect(fr);
+      try (Scope.Safe s = Scope.safe(fr)) {
         Frame adaptFr = adaptFrameForScore(fr, true);
         _output._x_factor_key = Key.make("GLRMLoading_"+fr._key);
         GLRMGenX gs = new GLRMGenX(this, _parms._k);
@@ -249,8 +247,6 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
         DKV.put(xFrame);
         Scope.untrack(xFrame);
         return xFrame;
-      } finally {
-        Scope.exit();
       }
     }
   }

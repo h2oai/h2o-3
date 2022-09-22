@@ -1980,9 +1980,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return adaptFr;
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    try {
-      Scope.enter();
-      Scope.protect(fr);
+    try (Scope.Safe s = Scope.safe(fr)) {
       // Adapt frame, clean up the previous score warning messages
       _warningsP = new String[0];
       computeMetrics = computeMetrics &&
@@ -2008,8 +2006,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       Scope.untrack(output);
       return output;
-    } finally {
-      Scope.exit();
     }
   }
   

@@ -847,9 +847,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         throw new Job.JobCancelledException();
       }
       Frame cvValid = cvModelBuilders[i].valid();
-      try {
-        Scope.enter();
-        Scope.protect(cvValid);
+      try (Scope.Safe s = Scope.safe(cvValid)) {
         Frame adaptFr = new Frame(cvValid);
         if (makeCVMetrics(cvModelBuilders[i])) {
           M cvModel = cvModelBuilders[i].dest().get();
@@ -867,9 +865,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             mbs[i] = cvModel.scoreMetrics(adaptFr);
           }
         }
-      } finally {
-        // free resources as early as possible
-        Scope.exit();
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);

@@ -2,6 +2,7 @@ package water;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.Scope.Safe;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -158,7 +159,59 @@ public class ScopeTest extends TestUtil {
       }
     }
   }
-  
+
+
+  @Test
+  public void testProtectFrameNestedScopeAsResources() {
+    Frame ori = dummyFrame(); //outside scope as it's tracked by default in TestFrameBuilder
+    try (Safe l1 = Scope.safe()) {
+      Scope.track(ori);
+
+      Frame fr_l2 = null;
+      Vec addedVec_l2 = null;
+      try (Safe l2 = Scope.safe(ori)) {
+        fr_l2 = new Frame(Key.make(), ori.names(), ori.vecs());
+        addedVec_l2 = fr_l2.anyVec().makeZero();
+        fr_l2.add("added_l2", addedVec_l2);
+        DKV.put(Scope.track(fr_l2));
+        assertNotNull(DKV.get(fr_l2.getKey()));
+        for (Key vecK : fr_l2.keys()) {
+          assertNotNull(DKV.get(vecK));
+        }
+
+        Frame fr_l3 = null;
+        Vec addedVec_l3 = null;
+        try (Safe l3 = Scope.safe()) {
+          fr_l3 = new Frame(Key.make(), fr_l2.names(), fr_l2.vecs());
+          addedVec_l3 = fr_l3.anyVec().makeZero();
+          fr_l3.add("added_l3", addedVec_l3);
+          DKV.put(Scope.track(fr_l3));
+          assertNotNull(DKV.get(fr_l3.getKey()));
+          for (Key vK : fr_l3.keys()) {
+            assertNotNull(DKV.get(vK));
+          }
+        }
+        assertNull(DKV.get(fr_l3.getKey()));
+        assertNull(DKV.get(addedVec_l3.getKey()));
+        assertNull(DKV.get(addedVec_l2.getKey())); // we didn't protect fr_l2, so its vecs are also not in the nested scope.
+        for (Key vK : fr_l3.keys()) {
+          if (vK.equals(addedVec_l2.getKey())) continue;
+          if (vK.equals(addedVec_l3.getKey())) continue;
+          assertNotNull(DKV.get(vK)); // other vecs are protected from the outermost scope
+        }
+      }
+      assertNull(DKV.get(fr_l2.getKey()));
+      assertNotNull(DKV.get(ori.getKey())); // original frame still protected at level 2
+      for (Key vecK : ori.keys()) {
+        assertNotNull(DKV.get(vecK));
+      }
+    } finally {
+      assertNull(DKV.get(ori.getKey()));  // original frame not protected anymore at level 1
+      for (Key vecK : ori.keys()) {
+        assertNull(DKV.get(vecK));
+      }
+    }
+  }
   
 
   private static final class DummyKeyed extends Keyed<DummyKeyed> {
