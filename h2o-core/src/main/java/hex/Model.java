@@ -616,6 +616,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               } else if (c.getComponentType() == Long.TYPE){
                 long[] arr = (long[]) f.get(this);
                 xs = xs * P + (long) Arrays.hashCode(arr);
+              } else if (c.getComponentType() == Boolean.TYPE){
+                boolean[] arr = (boolean[]) f.get(this);
+                xs = xs * P + (long) Arrays.hashCode(arr);
               } else {
                 Object[] arr = (Object[]) f.get(this);
                 xs = xs * P + (long) Arrays.deepHashCode(arr);
@@ -626,7 +629,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
           } catch (ClassCastException t) {
-            throw H2O.fail(); //no support yet for int[][] etc.
+            throw H2O.fail("Failed to calculate checksum for the parameter object", t); //no support yet for int[][] etc.
           }
         } else {
           try {
