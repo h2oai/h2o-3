@@ -135,7 +135,7 @@ public class ScopeTest extends TestUtil {
         }
         assertNull(DKV.get(fr_l3.getKey()));
         assertNull(DKV.get(addedVec_l3.getKey()));
-        assertNull(DKV.get(addedVec_l2.getKey())); // we didn't protect fr_l2, so it's vecs also are not in the nested scope.
+        assertNull(DKV.get(addedVec_l2.getKey())); // we didn't protect fr_l2, so its vecs are also not in the nested scope.
         for (Key vK : fr_l3.keys()) {
           if (vK.equals(addedVec_l2.getKey())) continue;
           if (vK.equals(addedVec_l3.getKey())) continue;
