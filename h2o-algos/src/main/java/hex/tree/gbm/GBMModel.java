@@ -307,7 +307,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
 
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
-    Frame adaptFrm = removeSpecialColumns(frame);
+    Frame adaptFrm = makeCompatibleWithTrainingFrame(frame);
 
     for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
       Vec col = adaptFrm.vec(colId);

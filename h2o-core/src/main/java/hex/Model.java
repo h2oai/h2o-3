@@ -3456,4 +3456,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public boolean isDistributionHuber() {
     return _parms._distribution == DistributionFamily.huber;
   }
+
+  /**
+   * Currently used in {@link Contributions} and {@link FriedmanPopescusHCollector} MLI methods to remove 
+   * thresh cols from input frame (Ignored, missing, special,...)
+   *
+   * @param frame input frame with anything in it.
+   * @return frame that is compatible (in terms of column names, types,...) with frame used for training
+   */
+  protected Frame makeCompatibleWithTrainingFrame(Frame frame) {
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    // remove non-feature columns
+    adaptFrm.remove(_parms._response_column);
+    adaptFrm.remove(_parms._fold_column);
+    adaptFrm.remove(_parms._weights_column);
+    adaptFrm.remove(_parms._offset_column);
+    return adaptFrm;
+  }
 }

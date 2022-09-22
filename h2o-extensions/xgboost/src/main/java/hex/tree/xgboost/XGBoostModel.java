@@ -957,8 +957,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
-    Frame adaptFrm = new Frame(frame);
-    adaptTestForTrain(adaptFrm, true, false);
+    Frame adaptFrm = makeCompatibleWithTrainingFrame(frame);
 
     for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
       Vec col = adaptFrm.vec(colId);

@@ -31,17 +31,6 @@ public abstract class SharedTreeModelWithContributions<
     return scoreContributions(frame, destination_key, null);
   }
 
-  protected Frame removeSpecialColumns(Frame frame) {
-    Frame adaptFrm = new Frame(frame);
-    adaptTestForTrain(adaptFrm, true, false);
-    // remove non-feature columns
-    adaptFrm.remove(_parms._response_column);
-    adaptFrm.remove(_parms._fold_column);
-    adaptFrm.remove(_parms._weights_column);
-    adaptFrm.remove(_parms._offset_column);
-    return adaptFrm;
-  }
-
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
     if (_output.nclasses() > 2) {
@@ -49,7 +38,7 @@ public abstract class SharedTreeModelWithContributions<
               "Calculating contributions is currently not supported for multinomial models.");
     }
 
-    Frame adaptFrm = removeSpecialColumns(frame);
+    Frame adaptFrm = makeCompatibleWithTrainingFrame(frame);
 
     final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
     
@@ -73,7 +62,7 @@ public abstract class SharedTreeModelWithContributions<
       return scoreContributions(frame, destination_key, j);
     }
 
-    Frame adaptFrm = removeSpecialColumns(frame);
+    Frame adaptFrm = makeCompatibleWithTrainingFrame(frame);
     final String[] contribNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
 
     final ContributionComposer contributionComposer = new ContributionComposer();
