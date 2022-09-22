@@ -8,7 +8,9 @@ import water.fvec.Frame;
 import water.jdbc.SQLManager;
 import water.jdbc.SqlFetchMode;
 
-import static org.junit.Assert.assertEquals;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static org.junit.Assert.assertTrue;
 
 public class ImportSQLTest extends TestUtil{
