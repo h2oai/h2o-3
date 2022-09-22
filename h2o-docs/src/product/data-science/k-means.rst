@@ -65,7 +65,7 @@ Defining a K-Means Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `init <algo-params/init.html>`__: Specify the initialization mode. The options are Random, Furthest (default), PlusPlus, or User.
+-  `init <algo-params/init1.html>`__: Specify the initialization mode. The options are Random, Furthest (default), PlusPlus, or User.
 
  - Random initialization randomly samples the k-specified value of the rows of the training data as cluster centers.
  - PlusPlus initialization chooses one initial center at random and weights the random selection of subsequent centers so that points furthest from the first center are more likely to be chosen.
