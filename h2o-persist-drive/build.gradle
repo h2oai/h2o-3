@@ -10,7 +10,6 @@ sourceCompatibility = 17
 targetCompatibility = 17
 
 compileJava {
-  options.debug = true
   options.encoding = "UTF-8"
 }
 

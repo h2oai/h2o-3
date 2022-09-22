@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -ex
+
 wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.2.0/graalvm-ce-java17-linux-amd64-22.2.0.tar.gz
 tar xfz graalvm-ce-java17-linux-amd64-22.2.0.tar.gz
 GRAALVM_HOME="$PWD/$(ls -d graalvm-* | grep -F -v .tar.gz | tail -1)"
