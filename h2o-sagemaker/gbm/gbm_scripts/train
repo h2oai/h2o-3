@@ -190,13 +190,12 @@ def _train_model(hyperparameters={}):
 def main():
     hyperparameters, resource_params = helper_functions._get_parameters()
     helper_functions._create_h2o_cluster(resource_params)
+    time.sleep(20)
     if resource_params["current_host"] == "algo-1":
-        time.sleep(10)
         _connect_to_cluster()
         _train_model(hyperparameters)
         h2o.cluster().shutdown()
     else:
-        time.sleep(10)
         print("Wait till the algo-1 finish training")
         while True:
             try:
