@@ -16,8 +16,10 @@ test.model.gam.IOOB <- function() {
                          standardize = TRUE,
                          alpha = .5,
                          lambda_search = TRUE,
+                         num_knots = c(3,3,3,3),
                          model_id = "GAM_Model")
     print("coefficient length is ")
+    browser()
     print(length(att_model@model$coefficients))
     expect_true(length(att_model@model$coefficients) == 27)
 }
