@@ -33,7 +33,8 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 public class PersistManager {
 
   public static final int MAX_BACKENDS = 8;
-
+  public static final int VALUE_DRIVE = MAX_BACKENDS;
+  
   /** Property which enable HDFS as default fallback persistent layer. For example,
    * if swift fs is regirestered properly under HDFS and user specifies swift based URI, the persist
    * layer forwards the request through HDFS API. */
@@ -119,8 +120,8 @@ public class PersistManager {
   }
 
   public PersistManager(URI iceRoot) {
-    I = new Persist[MAX_BACKENDS];
-    stats = new PersistStatsEntry[MAX_BACKENDS];
+    I = new Persist[MAX_BACKENDS + 1];
+    stats = new PersistStatsEntry[I.length];
     for (int i = 0; i < stats.length; i++) {
       stats[i] = new PersistStatsEntry();
     }
@@ -197,6 +198,15 @@ public class PersistManager {
       Log.info("GCS subsystem successfully initialized");
     } catch (Throwable ignore) {
       Log.info("GCS subsystem not available");
+    }
+
+    try {
+      Class<?> klass = Class.forName("water.persist.PersistDrive");
+      java.lang.reflect.Constructor<?> constructor = klass.getConstructor();
+      I[VALUE_DRIVE] = (Persist) constructor.newInstance();
+      Log.info("Drive subsystem successfully initialized");
+    } catch (Throwable ignore) {
+      Log.info("Drive subsystem not available");
     }
   }
 
@@ -303,6 +313,8 @@ public class PersistManager {
       return I[Value.S3].calcTypeaheadMatches(filter, limit);
     } else if(s.startsWith("gs://")) {
       return I[Value.GCS].calcTypeaheadMatches(filter, limit);
+    } else if(s.startsWith("drive://")) {
+      return I[VALUE_DRIVE].calcTypeaheadMatches(filter, limit);
     } else if (s.startsWith("hdfs:")
                || s.startsWith("s3n:")
                || s.startsWith("s3a:")
@@ -418,6 +430,9 @@ public class PersistManager {
     } else if ("gs".equals(scheme)) {
       if (I[Value.GCS] == null) throw new H2OIllegalArgumentException("GCS support is not configured");
       I[Value.GCS].importFiles(path, pattern, files, keys, fails, dels);
+    } else if ("drive".equals(scheme)) {
+      if (I[VALUE_DRIVE] == null) throw new H2OIllegalArgumentException("Drive support is not configured");
+      I[VALUE_DRIVE].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("hdfs".equals(scheme) ||
         "s3n:".equals(scheme) ||
         "s3a:".equals(scheme) ||

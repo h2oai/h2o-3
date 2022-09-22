@@ -2190,6 +2190,8 @@ def usage():
     print("")
     print("    --jvm.opts       Additional JVM options.")
     print("")
+    print("    --jvm.opt        Additional JVM option - can be added more than once.")
+    print("")
     print("    --restLog        If set, enable REST API logging. Logs will be available at <resultsDir>/rest.log.")
     print("                     Please note, that enablig REST API logging will increase the execution time and that")
     print("                     the log file might be large (> 2GB).")
@@ -2516,6 +2518,16 @@ def parse_args(argv):
             if i >= len(argv):
                 usage()
             g_jvm_opts = argv[i]
+        elif s == '--jvm.opt':
+            i += 1
+            if i >= len(argv):
+                usage()
+            if g_jvm_opts is None:
+                g_jvm_opts = argv[i]
+            elif isinstance(g_jvm_opts, list):
+                g_jvm_opts += argv[i]
+            else:
+                g_jvm_opts = [g_jvm_opts, argv[i]]
         elif s == '--restLog':
             g_rest_log = True
         else:
