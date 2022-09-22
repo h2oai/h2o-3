@@ -17,7 +17,7 @@ make install
 ln -s /usr/local/python${VERSION_NO_DOT}/bin/*${VERSION_SHORT}* /usr/local/bin
 cd ..
 rm -rf Python-${VERSION_FULL}*
-virtualenv --python=python${VERSION_SHORT} /envs/xgb-env-py${VERSION_SHORT}
-source /envs/xgb-env-py${VERSION_SHORT}/bin/activate
+virtualenv --python=python${VERSION_SHORT} /envs/h2o_env_python${VERSION_SHORT}
+source /envs/h2o_env_pythony${VERSION_SHORT}/bin/activate
 pip install pip wheel setuptools --upgrade
 deactivate
