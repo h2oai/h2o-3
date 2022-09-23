@@ -61,7 +61,7 @@ Additional Requirements
 
 -  **Conda 2.7, 3.5, or 3.6 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
 
--  **Spark**: Version 3.3, 3.2, 3.1, 3.0, 2.4, 2.3, or 2.2. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
+-  **Spark**: Version 3.3, 3.2, 3.1, 3.0, 2.4, or 2.3. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
 New Users
@@ -271,9 +271,9 @@ Getting Started with Sparkling Water
 
 -  `Download Sparkling Water <http://www.h2o.ai/download/>`_: Go here to download Sparkling Water.
 
--  Sparkling Water Documentation for: `3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/index.html>`__, `3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/index.html>`__, `3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/index.html>`__, `3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/index.html>`__, `2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/index.html>`__, `2.3 <https://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html>`__, `2.2 <https://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/index.html>`__. Read this documentation first to get started with Sparkling Water.
+-  Sparkling Water Documentation for: `3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/index.html>`__, `3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/index.html>`__, `3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/index.html>`__, `3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/index.html>`__, `2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/index.html>`__, or `2.3 <https://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html>`__. Read this documentation first to get started with Sparkling Water.
 
--  Launch on Hadoop and Import from HDFS (`3.3 <http://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/devel/integ_tests.html>`__, `3.2 <http://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/devel/integ_tests.html>`__, `3.1 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__, `3.0 <http://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/devel/integ_tests.html>`__, `2.4 <http://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/devel/integ_tests.html>`__, `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/integ_tests.html>`__, or `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__): Go here to learn how to start Sparkling Water on Hadoop.
+-  Launch on Hadoop and Import from HDFS (`3.3 <http://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/devel/integ_tests.html>`__, `3.2 <http://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/devel/integ_tests.html>`__, `3.1 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__, `3.0 <http://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/devel/integ_tests.html>`__, `2.4 <http://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/devel/integ_tests.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/integ_tests.html>`__): Go here to learn how to start Sparkling Water on Hadoop.
 
 -  `Sparkling Water Tutorials <https://github.com/h2oai/sparkling-water/tree/master/examples>`_: Go here for demos and examples.
 
@@ -285,7 +285,7 @@ Getting Started with Sparkling Water
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
--  Sparkling Water FAQ for `3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/FAQ.html>`__, `3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/FAQ.html>`__, `3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/FAQ.html>`__, `3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/FAQ.html>`__, `2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/FAQ.html>`__, `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/FAQ.html>`__, or `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/FAQ.html>`__. This FAQ provides answers to many common questions about Sparkling Water.
+-  Sparkling Water FAQ for `3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/FAQ.html>`__, `3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/FAQ.html>`__, `3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/FAQ.html>`__, `3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/FAQ.html>`__, `2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/FAQ.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/FAQ.html>`__. This FAQ provides answers to many common questions about Sparkling Water.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
@@ -310,9 +310,9 @@ Sparkling Water Meetup Slide Decks
 PySparkling
 ~~~~~~~~~~~~
 
-PySparkling documentation is available for `3.3 <http://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/pysparkling.html>`__, `3.2 <http://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/pysparkling.html>`__, `3.1 <http://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/pysparkling.html>`__, `3.0 <http://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/pysparkling.html>`__, `2.4 <http://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/pysparkling.html>`__, `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/pysparkling.html>`__, and `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/pysparkling.html>`__
+PySparkling documentation is available for `3.3 <http://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/pysparkling.html>`__, `3.2 <http://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/pysparkling.html>`__, `3.1 <http://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/pysparkling.html>`__, `3.0 <http://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/pysparkling.html>`__, `2.4 <http://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/pysparkling.html>`__, and `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/pysparkling.html>`__.
 
-**Note**: PySparkling requires Sparkling Water 2.2 or later. We recommended Sparkling Water 3.3. 
+**Note**: PySparkling requires Sparkling Water 2.3 or later. We recommended Sparkling Water 3.3. 
 
 PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. PySparkling can also be installed from the PyPi repository. Follow the instructions on the `Download page <http://h2o.ai/download>`__ for Sparkling Water.
 
