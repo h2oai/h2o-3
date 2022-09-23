@@ -183,6 +183,9 @@ test-r-cmd-check-as-cran:
 	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE python ../../../../scripts/validate_r_cmd_check_output.py
 	fuser -k 59999/tcp || /bin/true
 
+test-r-revdep-check:
+	cd h2o-r/h2o-package && OPENBLAS_MAIN_FREE=1 R -e 'chooseCRANmirror(ind=1); install.packages(c("remotes", "BiocManager")); BiocManager::install(version = "3.15"); remotes::install_github("https://github.com/r-lib/revdepcheck"); revdepcheck::revdep_check(quiet=FALSE, timeout = as.difftime(120, units = "mins"), num_workers = 8, bioc = TRUE)'
+
 test-r-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.deeplearning.vignette.R
