@@ -28,7 +28,7 @@ class SortCombine extends DTask<SortCombine> {
   private boolean[] _stringCols;
   private boolean[] _intCols;
   final SingleThreadRadixOrder.OXHeader _leftSortedOXHeader;
-  final long _randomDigits;
+  final long _mergeId;
   
   // around the cluster.
   static class FFSB extends Iced<FFSB> {
@@ -50,9 +50,9 @@ class SortCombine extends DTask<SortCombine> {
     }
   }
   
-  SortCombine(FFSB leftSB, SingleThreadRadixOrder.OXHeader leftSortedOXHeader, long randomDigits) {
+  SortCombine(FFSB leftSB, SingleThreadRadixOrder.OXHeader leftSortedOXHeader, long mergeId) {
     _leftSB = leftSB;
-    _randomDigits = randomDigits;
+    _mergeId = mergeId;
     int columnsInResult = _leftSB._frame.numCols();
     _stringCols = MemoryManager.mallocZ(columnsInResult);
     _intCols = MemoryManager.mallocZ(columnsInResult);
@@ -72,7 +72,7 @@ class SortCombine extends DTask<SortCombine> {
   public void compute2() {
     _timings = MemoryManager.malloc8d(20);
     long t0 = System.nanoTime();
-    _leftKO = new KeyOrder(_leftSortedOXHeader, _randomDigits);
+    _leftKO = new KeyOrder(_leftSortedOXHeader, _mergeId);
     _leftKO.initKeyOrder(_leftSB._msb,/*left=*/true);
     final long leftN = _leftSortedOXHeader._numRows; // store number of rows in left frame for the MSB
     assert leftN >= 1;
@@ -93,7 +93,7 @@ class SortCombine extends DTask<SortCombine> {
     
     setPerNodeNumsToFetch();  // find out the number of rows to fetch from H2O nodes, number of rows to fetch per chunk
     
-    if (_numRowsInResult > 0) createChunksInDKV(_randomDigits);
+    if (_numRowsInResult > 0) createChunksInDKV(_mergeId);
     tryComplete();
   }
 
@@ -121,20 +121,20 @@ class SortCombine extends DTask<SortCombine> {
     private final transient byte _key[/*n2GB*/][/*i mod 2GB * _keySize*/];
     private final transient long _order[/*n2GB*/][/*i mod 2GB * _keySize*/];
     private final transient long _perNodeNumRowsToFetch[];
-    final long _randomDigits;
+    final long _mergeId;
 
-    KeyOrder(SingleThreadRadixOrder.OXHeader sortedOXHeader, long randomDigits) {
+    KeyOrder(SingleThreadRadixOrder.OXHeader sortedOXHeader, long mergeId) {
       _batchSize = sortedOXHeader._batchSize;
       final int nBatch = sortedOXHeader._nBatch;
       _key = new byte[nBatch][];
       _order = new long[nBatch][];
       _perNodeNumRowsToFetch = new long[H2O.CLOUD.size()];
-      _randomDigits = randomDigits;
+      _mergeId = mergeId;
     }
 
     void initKeyOrder(int msb, boolean isLeft) {
       for (int b = 0; b < _key.length; b++) {
-        Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(isLeft, msb, b, _randomDigits));
+        Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(isLeft, msb, b, _mergeId));
         SplitByMSBLocal.OXbatch ox = v.get(); //mem version (obtained from remote) of the Values gets turned into POJO version
         v.freeMem(); //only keep the POJO version of the Value
         _key[b] = ox._x;
@@ -162,7 +162,7 @@ class SortCombine extends DTask<SortCombine> {
     }
   }
   
-  private void createChunksInDKV(long randomDigits) {
+  private void createChunksInDKV(long mergeId) {
     long t0 = System.nanoTime(), t1;
     // Create the chunks for the final frame from this MSB.
     final int batchSizeUUID = _retBatchSize;
@@ -206,7 +206,7 @@ class SortCombine extends DTask<SortCombine> {
       _timings[10] += ((t1 = System.nanoTime()) - t0) / 1e9;
       t0 = t1;
       // compress all chunks and store them
-      chunksCompressAndStore(b, numColsInResult, frameLikeChunks, frameLikeChunks4Strings, frameLikeChunksLongs, randomDigits);
+      chunksCompressAndStore(b, numColsInResult, frameLikeChunks, frameLikeChunks4Strings, frameLikeChunksLongs, mergeId);
       if (nbatch > 1) {
         cleanUpMemory(grrrsLeftPerChunk, b);  // clean up memory used by grrrsLeftperChunk
       }
@@ -309,7 +309,7 @@ class SortCombine extends DTask<SortCombine> {
   // compress all chunks and store them
   private void chunksCompressAndStore(final int b, final int numColsInResult, final double[][][] frameLikeChunks,
                                       BufferedString[][][] frameLikeChunks4String, final long[][][] frameLikeChunksLong, 
-                                      long randomDigits) {
+                                      long mergeId) {
     // compress all chunks and store them
     Futures fs = new Futures();
     for (int col = 0; col < numColsInResult; col++) {
@@ -318,7 +318,7 @@ class SortCombine extends DTask<SortCombine> {
         for (int index = 0; index < frameLikeChunks4String[col][b].length; index++)
           nc.addStr(frameLikeChunks4String[col][b][index]);
         Chunk ck = nc.compress();
-        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, randomDigits), ck, fs, true);
+        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, mergeId), ck, fs, true);
         frameLikeChunks4String[col][b] = null; //free mem as early as possible (it's now in the store)
       } else if (_intCols[col]) {
         NewChunk nc = new NewChunk(null, -1);
@@ -327,11 +327,11 @@ class SortCombine extends DTask<SortCombine> {
           else nc.addNum(l, 0);
         }
         Chunk ck = nc.compress();
-        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, randomDigits), ck, fs, true);
+        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, mergeId), ck, fs, true);
         frameLikeChunksLong[col][b] = null; //free mem as early as possible (it's now in the store)
       } else {
         Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
-        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, randomDigits), ck, fs, true);
+        DKV.put(BinaryMerge.getKeyForMSBComboPerCol(_leftSB._msb, -1, col, b, mergeId), ck, fs, true);
         frameLikeChunks[col][b] = null; //free mem as early as possible (it's now in the store)
       }
     }

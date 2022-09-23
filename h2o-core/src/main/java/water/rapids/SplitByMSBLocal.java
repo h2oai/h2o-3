@@ -26,11 +26,11 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   private transient long _o[][][];  // transient ok because there is no reduce here between nodes, and important to save shipping back to caller.
   private transient byte _x[][][];
   private long _numRowsOnThisNode;
-  final long _randomDigits;
+  final long _mergeId;
 
   static Hashtable<Key,SplitByMSBLocal> MOVESHASH = new Hashtable<>();
   SplitByMSBLocal(boolean isLeft, BigInteger base[], int shift, int keySize, int batchSize, int bytesUsed[], int[] col,
-                  Key linkTwoMRTask, int[][] id_maps, int[] ascending, long randomDigits) {
+                  Key linkTwoMRTask, int[][] id_maps, int[] ascending, long mergeId) {
     _isLeft = isLeft;
     // we only currently use the shift (in bits) for the first column for the
     // MSB (which we don't know from bytesUsed[0]). Otherwise we use the
@@ -41,12 +41,12 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     _linkTwoMRTask = linkTwoMRTask;
     _id_maps = id_maps;
     _ascending = ascending;
-    _randomDigits = randomDigits;
+    _mergeId = mergeId;
   }
 
   @Override protected void setupLocal() {
 
-    Key k = RadixCount.getKey(_isLeft, _col[0], _randomDigits, H2O.SELF);
+    Key k = RadixCount.getKey(_isLeft, _col[0], _mergeId, H2O.SELF);
     _counts = ((RadixCount.Long2DArray) DKV.getGet(k))._val;   // get the sparse spine for this node, created and DKV-put above
     DKV.remove(k);
     // First cumulate MSB count histograms across the chunks in this node
@@ -200,15 +200,15 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     return H2O.CLOUD._memary[MSBvalue % H2O.CLOUD.size()];   // spread it around more.
   }
 
-  static Key getNodeOXbatchKey(boolean isLeft, int MSBvalue, int node, int batch, long randomDigits) {
+  static Key getNodeOXbatchKey(boolean isLeft, int MSBvalue, int node, int batch, long mergeId) {
     return Key.make("__radix_order__NodeOXbatch_MSB" + MSBvalue + "_node" + node + "_batch" + batch +  "_"
-                    + randomDigits + (isLeft ? "_LEFT" : "_RIGHT"),
+                    + mergeId + (isLeft ? "_LEFT" : "_RIGHT"),
             Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
-  static Key getSortedOXbatchKey(boolean isLeft, int MSBvalue, int batch, long randomDigits) {
+  static Key getSortedOXbatchKey(boolean isLeft, int MSBvalue, int batch, long mergeId) {
     return Key.make("__radix_order__SortedOXbatch_MSB" + MSBvalue + "_batch" + batch + "_"
-                    + randomDigits + (isLeft ? "_LEFT" : "_RIGHT"),
+                    + mergeId + (isLeft ? "_LEFT" : "_RIGHT"),
             Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
@@ -219,8 +219,8 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     final byte[/*batchSize or lastSize*/] _x;
   }
 
-  static Key getMSBNodeHeaderKey(boolean isLeft, int MSBvalue, int node, long randomDigits) {
-    return Key.make("__radix_order__OXNodeHeader_MSB" + MSBvalue + "_node" + node + "_" + randomDigits
+  static Key getMSBNodeHeaderKey(boolean isLeft, int MSBvalue, int node, long mergeId) {
+    return Key.make("__radix_order__OXNodeHeader_MSB" + MSBvalue + "_node" + node + "_" + mergeId
                     + (isLeft ? "_LEFT" : "_RIGHT"),
             Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
@@ -314,10 +314,10 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       MSBNodeHeader msbh = new MSBNodeHeader(msbNodeChunkCounts);
       // Need dontCache==true, so data does not remain both locally and on remote.
       // Use private Futures so can block independent of MRTask Futures.
-      DKV.put(getMSBNodeHeaderKey(_isLeft, _msb, H2O.SELF.index(), _randomDigits), msbh, _myfs, true);
+      DKV.put(getMSBNodeHeaderKey(_isLeft, _msb, H2O.SELF.index(), _mergeId), msbh, _myfs, true);
       for (int b=0;b<_o[_msb].length; b++) {
         OXbatch ox = new OXbatch(_o[_msb][b], _x[_msb][b]);   // this does not copy in Java, just references
-        DKV.put(getNodeOXbatchKey(_isLeft, _msb, H2O.SELF.index(), b, _randomDigits), ox, _myfs, true);
+        DKV.put(getNodeOXbatchKey(_isLeft, _msb, H2O.SELF.index(), b, _mergeId), ox, _myfs, true);
       }
       tryComplete();
     }
