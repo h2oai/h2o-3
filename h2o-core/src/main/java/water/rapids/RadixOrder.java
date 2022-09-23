@@ -27,8 +27,9 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
   final int _bytesUsed[];
   final BigInteger _base[];
   final int[] _ascending;  // 0 to sort ASC, 1 to sort DESC
+  final long _mergeId;
 
-  RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][], int[] ascending) {
+  RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][], int[] ascending, long mergeId) {
     _DF = DF;
     _isLeft = isLeft;
     _whichCols = whichCols;
@@ -40,6 +41,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     _isInt = new boolean[_whichCols.length];
     _isCategorical = new boolean[_whichCols.length];
     _ascending = ascending;
+    _mergeId =  mergeId;
   }
 
   @Override
@@ -57,7 +59,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     Log.debug("Time to use rollup stats to determine biggestBit: " + ((t1=System.nanoTime()) - t0) / 1e9+" seconds."); t0=t1;
 
     if( _whichCols.length > 0 )
-      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _id_maps, _ascending[0]).doAll(_DF.vec(_whichCols[0]));
+      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _id_maps, _ascending[0], _mergeId).doAll(_DF.vec(_whichCols[0]));
     Log.debug("Time of MSB count MRTask left local on each node (no reduce): " + ((t1=System.nanoTime()) - t0) / 1e9+" seconds."); t0=t1;
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
@@ -71,7 +73,8 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
     Key linkTwoMRTask = Key.make();
     if( _whichCols.length > 0 )
-      new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps, _ascending).doAll(_DF.vecs(_whichCols)); // postLocal needs DKV.put()
+      new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, 
+              _id_maps, _ascending, _mergeId).doAll(_DF.vecs(_whichCols)); // postLocal needs DKV.put()
     Log.debug("SplitByMSBLocal MRTask (all local per node, no network) took : " + ((t1=System.nanoTime()) - t0) / 1e9+" seconds."); t0=t1;
 
     if( _whichCols.length > 0 )
@@ -82,7 +85,8 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     RPC[] radixOrders = new RPC[256];
     Log.info("Sending SingleThreadRadixOrder async RPC calls ... ");
     for (int i = 0; i < 256; i++)
-      radixOrders[i] = new RPC<>(SplitByMSBLocal.ownerOfMSB(i), new SingleThreadRadixOrder(_DF, _isLeft, batchSize, keySize, /*nGroup,*/ i)).call();
+      radixOrders[i] = new RPC<>(SplitByMSBLocal.ownerOfMSB(i), new SingleThreadRadixOrder(_DF, _isLeft, batchSize,
+              keySize, /*nGroup,*/ i, _mergeId)).call();
     Log.debug("took : " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
 
     Log.info("Waiting for RPC SingleThreadRadixOrder to finish ... ");
