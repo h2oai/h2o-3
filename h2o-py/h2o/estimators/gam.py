@@ -322,11 +322,13 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                Defaults to ``None``.
         :type custom_metric_func: str, optional
-        :param num_knots: Number of knots for gam predictors
+        :param num_knots: Number of knots for gam predictors.  If specified, must specify one for each gam predictor.
+               For monotone I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of
+               polynomial basis + 2.
                Defaults to ``None``.
         :type num_knots: List[int], optional
-        :param spline_orders: Order of I-splines used for gam predictors. If specified, must be the same size as
-               gam_columns.Values for bs=0 or 1 will be ignored.
+        :param spline_orders: Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If
+               specified, must be the same size as gam_columns.  Values for bs=0 or 1 will be ignored.
                Defaults to ``None``.
         :type spline_orders: List[int], optional
         :param knot_ids: Array storing frame keys of knots.  One for each gam column set specified in gam_columns
@@ -1245,7 +1247,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def num_knots(self):
         """
-        Number of knots for gam predictors
+        Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For monotone
+        I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of polynomial basis + 2.
 
         Type: ``List[int]``.
         """
@@ -1259,8 +1262,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def spline_orders(self):
         """
-        Order of I-splines used for gam predictors. If specified, must be the same size as gam_columns.Values for bs=0
-        or 1 will be ignored.
+        Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If specified, must be the
+        same size as gam_columns.  Values for bs=0 or 1 will be ignored.
 
         Type: ``List[int]``.
         """

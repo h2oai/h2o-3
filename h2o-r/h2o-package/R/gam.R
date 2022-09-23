@@ -118,9 +118,10 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
-#' @param num_knots Number of knots for gam predictors
-#' @param spline_orders Order of I-splines used for gam predictors. If specified, must be the same size as gam_columns.Values for bs=0
-#'        or 1 will be ignored.
+#' @param num_knots Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For monotone
+#'        I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of polynomial basis + 2.
+#' @param spline_orders Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If specified, must be the
+#'        same size as gam_columns.  Values for bs=0 or 1 will be ignored.
 #' @param knot_ids Array storing frame keys of knots.  One for each gam column set specified in gam_columns
 #' @param standardize_tp_gam_cols \code{Logical}. standardize tp (thin plate) predictor columns Defaults to FALSE.
 #' @param scale_tp_penalty_mat \code{Logical}. Scale penalty matrix for tp (thin plate) smoothers as in R Defaults to FALSE.
