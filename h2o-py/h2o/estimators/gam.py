@@ -67,6 +67,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  compute_p_values=False,  # type: bool
                  remove_collinear_columns=False,  # type: bool
+                 splines_non_negative=None,  # type: Optional[List[bool]]
                  intercept=True,  # type: bool
                  non_negative=False,  # type: bool
                  max_iterations=-1,  # type: int
@@ -219,6 +220,12 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param remove_collinear_columns: In case of linearly dependent columns, remove some of the dependent columns
                Defaults to ``False``.
         :type remove_collinear_columns: bool
+        :param splines_non_negative: Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing
+               (and monotonically non-decreasing) and False if the I-splines are monotonically decreasing (and
+               monotonically non-increasing).  If specified, must be the same size as gam_columns.  Values for other
+               spline types will be ignored.  Default to true.
+               Defaults to ``None``.
+        :type splines_non_negative: List[bool], optional
         :param intercept: Include constant term in the model
                Defaults to ``True``.
         :type intercept: bool
@@ -391,6 +398,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self.plug_values = plug_values
         self.compute_p_values = compute_p_values
         self.remove_collinear_columns = remove_collinear_columns
+        self.splines_non_negative = splines_non_negative
         self.intercept = intercept
         self.non_negative = non_negative
         self.max_iterations = max_iterations
@@ -859,6 +867,23 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def remove_collinear_columns(self, remove_collinear_columns):
         assert_is_type(remove_collinear_columns, None, bool)
         self._parms["remove_collinear_columns"] = remove_collinear_columns
+
+    @property
+    def splines_non_negative(self):
+        """
+        Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing (and monotonically non-
+        decreasing) and False if the I-splines are monotonically decreasing (and monotonically non-increasing).  If
+        specified, must be the same size as gam_columns.  Values for other spline types will be ignored.  Default to
+        true.
+
+        Type: ``List[bool]``.
+        """
+        return self._parms.get("splines_non_negative")
+
+    @splines_non_negative.setter
+    def splines_non_negative(self, splines_non_negative):
+        assert_is_type(splines_non_negative, None, [bool])
+        self._parms["splines_non_negative"] = splines_non_negative
 
     @property
     def intercept(self):

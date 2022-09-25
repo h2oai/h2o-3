@@ -68,6 +68,10 @@
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
+#' @param splines_non_negative Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing (and monotonically non-
+#'        decreasing) and False if the I-splines are monotonically decreasing (and monotonically non-increasing).  If
+#'        specified, must be the same size as gam_columns.  Values for other spline types will be ignored.  Default to
+#'        true.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations Defaults to -1.
@@ -176,6 +180,7 @@ h2o.gam <- function(x,
                     plug_values = NULL,
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
+                    splines_non_negative = NULL,
                     intercept = TRUE,
                     non_negative = FALSE,
                     max_iterations = -1,
@@ -301,6 +306,8 @@ h2o.gam <- function(x,
     parms$compute_p_values <- compute_p_values
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
+  if (!missing(splines_non_negative))
+    parms$splines_non_negative <- splines_non_negative
   if (!missing(intercept))
     parms$intercept <- intercept
   if (!missing(non_negative))
@@ -426,6 +433,7 @@ h2o.gam <- function(x,
                                     plug_values = NULL,
                                     compute_p_values = FALSE,
                                     remove_collinear_columns = FALSE,
+                                    splines_non_negative = NULL,
                                     intercept = TRUE,
                                     non_negative = FALSE,
                                     max_iterations = -1,
@@ -556,6 +564,8 @@ h2o.gam <- function(x,
     parms$compute_p_values <- compute_p_values
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
+  if (!missing(splines_non_negative))
+    parms$splines_non_negative <- splines_non_negative
   if (!missing(intercept))
     parms$intercept <- intercept
   if (!missing(non_negative))

@@ -45,6 +45,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "plug_values",
             "compute_p_values",
             "remove_collinear_columns",
+            "splines_non_negative",
             "intercept",
             "non_negative",
             "max_iterations",
@@ -238,6 +239,12 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "must be the same size as gam_columns.  Values for bs=0 or 1 will be ignored.", level = Level.critical,
             gridable = true)
     public int[] spline_orders;
+
+    @API(help = "Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing (and monotonically " +
+            "non-decreasing) and False if the I-splines are monotonically decreasing (and monotonically non-increasing)." +
+            "  If specified, must be the same size as gam_columns.  Values for other spline types " +
+            "will be ignored.  Default to true.", level = Level.critical, gridable = true)
+    public boolean[] splines_non_negative;
 
     @API(help = "Arrays of predictor column names for gam for smoothers using single or multiple predictors like " +
             "{{'c1'},{'c2','c3'},{'c4'},...}", required = true, level = Level.critical, gridable = true)
