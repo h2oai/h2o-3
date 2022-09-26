@@ -184,7 +184,7 @@ test-r-cmd-check-as-cran:
 	fuser -k 59999/tcp || /bin/true
 
 test-r-revdep-check:
-	cd h2o-r/h2o-package && OPENBLAS_MAIN_FREE=1 R -e 'chooseCRANmirror(ind=1); install.packages(c("remotes", "BiocManager")); BiocManager::install(version = "3.15"); remotes::install_github("https://github.com/r-lib/revdepcheck"); revdepcheck::revdep_check(quiet=FALSE, timeout = as.difftime(120, units = "mins"), num_workers = 8, bioc = TRUE)'
+	cd h2o-r/h2o-package && OPENBLAS_MAIN_FREE=1 R -e 'chooseCRANmirror(ind=1); install.packages(c("remotes", "BiocManager")); BiocManager::install(version = "3.12"); remotes::install_github("https://github.com/r-lib/revdepcheck"); revdepcheck::revdep_check(quiet=FALSE, timeout = as.difftime(120, units = "mins"), num_workers = 8, bioc = TRUE)'
 
 test-r-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
