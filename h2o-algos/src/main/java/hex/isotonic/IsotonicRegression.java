@@ -73,11 +73,6 @@ public class IsotonicRegression extends ModelBuilder<IsotonicRegressionModel,
         return new IsotonicRegressionDriver();
     }
 
-    @Override
-    protected int nModelsInParallel(int folds) {
-        return 1; // PUBDEV-8830: Parallel CV fails for some reason (it is a race condition but where?)
-    }
-
     private class IsotonicRegressionDriver extends Driver {
         @Override
         public void computeImpl() {
