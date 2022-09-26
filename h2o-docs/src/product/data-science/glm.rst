@@ -1169,6 +1169,60 @@ The VIF is constructed by:
 - calculating the VIF as :math:`\frac{1.0}{(1.0-R^2)}` where :math:`R^2` is taken from the GLM regression model built in the prior step, and
 - repeating this process for all remaining numerical predictors to retrieve their VIF.
 
+Variable Inflation Factor Example
+'''''''''''''''''''''''''''''''''
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Import the training data:
+      training_data <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+
+      # Set the predictors and response:
+      predictors <- c('abs.C1.','abs.C2.','abs.C3.','abs.C4.','abs.C5.')
+      response <- 'resp'
+
+      # Build and train the model:
+      vif_glm <- h2o.glm(x = predictors, 
+                         y = response, 
+                         training_frame = training_data, 
+                         family = 'gamma', 
+                         lambda = 0, 
+                         generate_variable_inflation_factors = TRUE, 
+                         fold_assignment = 'modulo', 
+                         nfolds = 3, 
+                         keep_cross_validation_models = TRUE)
+
+      # Retrieve the variable inflation factors:
+      h2o.get_variable_inflation_factors(vif_glm)
+       abs.C1.  abs.C2.  abs.C3.  abs.C4.  abs.C5. 
+      1.000334 1.000173 1.000785 1.000539 1.000535 
+
+   .. code-tab:: python
+
+      # Import the GLM estimator:
+      from h2o.estimators import H2OGeneralizedLinearEstimator
+
+      # Import the training data:
+      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+
+      # Set the predictors and response:
+      predictors = ["abs.C1.","abs.C2.","abs.C3.","abs.C4.","abs.C5.""]
+      response = "resp"
+
+      # Build and train the model:
+      vif_glm = H2OGeneralizedLinearEstimator(family="gamma", 
+                                              lambda_=0, 
+                                              generate_variable_inflation_factors=True, 
+                                              fold_assignment="modulo", 
+                                              nfolds=3, 
+                                              keep_cross_validation_models=True)
+      vif_glm.train(x=predictors, y=response, training_frame=training_data)
+
+      # Retrieve the variable inflation factors:
+      vif_glm.get_variable_inflation_factors()
+      {'Intercept': nan, 'abs.C1.': 1.0003341467438167, 'abs.C2.': 1.0001734204183244, 'abs.C3.': 1.0007846189027745, 'abs.C4.': 1.0005388379729434, 'abs.C5.': 1.0005349427184604}
+
 Modifying or Creating a Custom GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
