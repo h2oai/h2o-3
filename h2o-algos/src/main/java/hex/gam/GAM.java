@@ -27,6 +27,9 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 import static hex.gam.GAMModel.adaptValidFrame;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.*;
@@ -261,6 +264,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 " not match.");
     }
     _knots = generateKnotsFromKeys(); // generate knots and verify that they are given correctly
+    if (_parms._splines_non_negative == null) {
+      _parms._splines_non_negative = new boolean[_parms._gam_columns.length];
+      Arrays.fill(_parms._splines_non_negative, true);
+    }
     sortGAMParameters(_parms, _cubicSplineNum, _iSplineNum); // move cubic spline to the front and thin plate to the back
     checkThinPlateParams();
     if (_parms._saveZMatrix && ((_train.numCols() - 1 + _parms._num_knots.length) < 2))
@@ -288,6 +295,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
             && response().get_type() != Vec.T_CAT) {
       error("_response_column", String.format("For given response family '%s', please provide a categorical" +
               " response column. Current response column type is '%s'.", _parms._family, response().get_type_str()));
+    }
+    
+    if (_parms._splines_non_negative != null && _parms._splines_non_negative.length != _parms._gam_columns.length) {
+      error("_spline_increasing", " must be of the same length as gam_columns.");
     }
   }
 
@@ -716,7 +727,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
       }
       ForkJoinTask.invokeAll(generateGamColumn);
-      if (_iSplineNum > 0 && !_parms._betaConstraintsOff) { // set up coefficient constraints >= 0 for I-splines
+      if (_iSplineNum > 0 && !_parms._betaConstraintsOff) { // set up coefficient constraints >= 0 or <= 0 for I-splines
         Frame constraintF = genConstraints();
         Scope.track(constraintF);
         if (_parms._beta_constraints != null) {
@@ -736,28 +747,35 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     }
 
     /**
-     * For all gamified columns with I-spline, put in beta constraints to make sure the coefficients are non-negative.
-     * @return
+     * For all gamified columns with I-spline, put in beta constraints to make sure the coefficients are non-negative
+     * or non-positive.  This will ensure contribution from I-splines are either monontonically increasing or 
+     * decreasing.
      */
     public Frame genConstraints() {
       int numGamCols = _parms._gam_columns.length;
       String[] colNames = new String[]{"names", "lower_bounds", "upper_bounds"};
       Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
-      List<String> gamColNames = new ArrayList<>();
-      
+      List<String> iSplineColNames = new ArrayList<>();
+      List<Double> upperBList = new ArrayList<>();
+      List<Double> lowerBList = new ArrayList<>();
       for (int index=0; index<numGamCols; index++) {
-        if (_parms._bs_sorted[index] == 2)   // I-splines
-          gamColNames.addAll(Arrays.asList(_gamColNamesCenter[index]));
-      }
-      int numConstraints = gamColNames.size();
-      if (numConstraints > 0) {
-        String[] constraintNames = gamColNames.stream().toArray(String[]::new);
-        double[] lowerBounds = new double[numConstraints];
-        double[] upperBounds = new double[numConstraints];
-        for (int index = 0; index < numConstraints; index++) {
-          upperBounds[index] = Double.MAX_VALUE;
-          lowerBounds[index] = 0.0;
+        if (_parms._bs_sorted[index] == 2) { // I-splines
+          int numCols = _gamColNamesCenter[index].length;
+          iSplineColNames.addAll(Stream.of(_gamColNamesCenter[index]).collect(Collectors.toList()));
+          if (_parms._splines_non_negative_sorted[index]) { // monotonically increasing
+            upperBList.addAll(DoubleStream.generate(()->Double.POSITIVE_INFINITY ).limit(numCols).boxed().collect(Collectors.toList()));
+            lowerBList.addAll(DoubleStream.generate(()->0.0).limit(numCols).boxed().collect(Collectors.toList()));
+          } else {  // monotonically decreasing
+            upperBList.addAll(DoubleStream.generate(()->0.0).limit(numCols).boxed().collect(Collectors.toList()));
+            lowerBList.addAll(DoubleStream.generate(()->Double.NEGATIVE_INFINITY).limit(numCols).boxed().collect(Collectors.toList()));
+          }
         }
+      }
+      int numConstraints = iSplineColNames.size();
+      if (numConstraints > 0) {
+        String[] constraintNames = iSplineColNames.stream().toArray(String[]::new);
+        double[] lowerBounds = lowerBList.stream().mapToDouble(Double::doubleValue).toArray();
+        double[] upperBounds = upperBList.stream().mapToDouble(Double::doubleValue).toArray();
         Vec gamNames = Scope.track(Vec.makeVec(constraintNames, vg.addVec()));
         Vec lowBounds = Scope.track(Vec.makeVec(lowerBounds, vg.addVec()));
         Vec upBounds = Scope.track(Vec.makeVec(upperBounds, vg.addVec()));
