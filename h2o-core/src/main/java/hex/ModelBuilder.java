@@ -1417,7 +1417,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_train", "Missing training frame: "+_parms._train); 
       return;
     }
-    Scope.protect(_parms.train(), _parms.valid());
+    if (expensive) Scope.protect(_parms.train(), _parms.valid());
     setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
     if (expensive) {
       _parms.getOrMakeRealSeed();
