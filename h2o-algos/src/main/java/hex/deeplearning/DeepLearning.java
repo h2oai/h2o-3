@@ -366,7 +366,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           }
         }
       } finally {
-        Scope.exit(keep.toArray(new Key[keep.size()]));
+        Scope.untrack(keep);
       }
     }
 

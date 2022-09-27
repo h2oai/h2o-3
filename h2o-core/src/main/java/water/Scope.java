@@ -2,6 +2,8 @@ package water;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 
 import java.util.*;
 
@@ -20,6 +22,9 @@ import java.util.*;
  */
 
 public class Scope {
+  
+  private static final Logger log = LoggerFactory.getLogger(Scope.class);
+  
   // Thread-based Key lifetime tracking
   private static final ThreadLocal<Scope> _scope = new ThreadLocal<Scope>() {
     @Override protected Scope initialValue() { return new Scope(); }
@@ -45,25 +50,24 @@ public class Scope {
    *  enter call except for the listed Keys.
    *  @return Returns the list of kept keys. */
   public static Key[] exit(Key... keep) {
+    Scope scope = _scope.get();
+    assert !(scope._keys.empty() || scope._protectedKeys.empty()): "Scope in inconsistent state: Scope.exit() called without a matching Scope.enter()";
     Set<Key> keepKeys = new HashSet<>();
     if (keep != null) {
       for (Key k : keep) {
         if (k != null) keepKeys.add(k);
       }
     }
-    Scope scope = _scope.get();
     keepKeys.addAll(scope._protectedKeys.pop());
     Key[] arrkeep = keepKeys.toArray(new Key[0]);
     Arrays.sort(arrkeep);
-    Stack<Set<Key>> removeKeys = scope._keys;
-    if (!removeKeys.empty()) {
-      Futures fs = new Futures();
-      for (Key key : removeKeys.pop()) {
-        boolean remove = arrkeep.length == 0 || Arrays.binarySearch(arrkeep, key) < 0;
-        if (remove) {
-          boolean cascade = !(key.get() instanceof Frame); //Frames are handled differently as we're explicitly also tracking their Vec keys...
-          Keyed.remove(key, fs, cascade);
-        }
+    Set<Key> removeKeys = scope._keys.pop();
+    Futures fs = new Futures();
+    for (Key key : removeKeys) {
+      boolean remove = arrkeep.length == 0 || Arrays.binarySearch(arrkeep, key) < 0;
+      if (remove) {
+        boolean cascade = !(key.get() instanceof Frame); //Frames are handled differently as we're explicitly also tracking their Vec keys...
+        Keyed.remove(key, fs, cascade);
       }
       fs.blockForPending();
     }
@@ -77,7 +81,7 @@ public class Scope {
     return !_scope.get()._keys.empty();
   }
 
-  static void track_internal( Key k ) {
+  static void track_internal(Key k) {
     if( k.user_allowed() || !k.isVec() ) return; // Not tracked
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     if (scope == null) return;
@@ -122,7 +126,7 @@ public class Scope {
     scope._keys.peek().add(key);            // Track key
   }
   
-  public static <K extends Keyed> void untrack(Key<K>... keys) {
+  public static <K extends Key> void untrack(K... keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
     if (scope._keys.empty()) return;     // Tracked in the past, but no scope now
@@ -130,7 +134,7 @@ public class Scope {
     for (Key key : keys) xkeys.remove(key); // Untrack key
   }
 
-  public static <K extends Keyed> void untrack(Iterable<Key<K>> keys) {
+  public static <K extends Key> void untrack(Iterable<K> keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
     if (scope._keys.empty()) return;     // Tracked in the past, but no scope now
