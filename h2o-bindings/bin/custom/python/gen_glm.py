@@ -950,5 +950,18 @@ examples = dict(
 ...                  training_frame=train,
 ...                  validation_frame=valid)
 >>> boston_glm.mse()
-""" 
+""",
+    generate_variable_inflation_factors="""
+>>> training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+>>> predictors = ['abs.C1.','abs.C2.','abs.C3.','abs.C4.','abs.C5.']
+>>> response = 'resp'
+>>> vif_glm = H2OGeneralizedLinearEstimator(family="gamma",
+...                                         lambda_=0,
+...                                         generate_variable_inflation_factors=True,
+...                                         fold_assignment="modulo",
+...                                         nfolds=3,
+...                                         keep_cross_validation_models=True)
+>>> vif_glm.train(x=predictors, y=response, training_frame=training_data)
+>>> vif_glm.get_variable_inflation_factors()
+"""
 )
