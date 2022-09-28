@@ -11,7 +11,7 @@ LABEL "description"="H2O is an Open Source, Distributed, Fast & Scalable Machine
 
 # Install OpenJDK 11 (to use JVM with "UseContainerSupport" flags)
 # Install libgomp - to enable XGBoost multithreading
-RUN microdnf install java-11-openjdk \
+RUN microdnf install java-11-openjdk-headless \
     && microdnf install libgomp
 RUN microdnf clean all
 
