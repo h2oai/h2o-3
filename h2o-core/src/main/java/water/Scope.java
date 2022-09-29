@@ -66,7 +66,8 @@ public class Scope {
     for (Key key : removeKeys) {
       boolean remove = arrkeep.length == 0 || Arrays.binarySearch(arrkeep, key) < 0;
       if (remove) {
-        boolean cascade = !(key.get() instanceof Frame); //Frames are handled differently as we're explicitly also tracking their Vec keys...
+        Value v = DKV.get(key);
+        boolean cascade = !(v == null || v.isFrame()); //Frames are handled differently as we're explicitly also tracking their Vec keys...
         Keyed.remove(key, fs, cascade);
       }
       fs.blockForPending();

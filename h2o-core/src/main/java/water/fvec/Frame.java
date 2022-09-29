@@ -827,8 +827,16 @@ public class Frame extends Lockable<Frame> {
     if (cascade) { // removing the vecs from mem only if cascading (default behaviour)
       // Bulk dumb local remove - no JMM, no ordering, no safety.
       Vec.bulk_remove(keys, v.nChunks());
+//    } else {
+//      Log.info(Arrays.toString(Thread.currentThread().getStackTrace()));
+//      Log.info("Keeping the following Vecs after removing frame", this, "\n -> \n", Arrays.toString(keys));
     }
     return fs;
+  }
+
+  @Override
+  public Frame delete_and_lock(Key<Job> job_key) {
+    return super.delete_and_lock(job_key, true); // for Frames, remove dependencies (Vecs) by default when forcing internal delete
   }
 
   /**

@@ -10,14 +10,16 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMTask.*;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -27,10 +29,11 @@ import java.util.concurrent.ExecutionException;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static org.junit.Assert.*;
+import static water.TestUtil.parseTestFile;
 
-public class GLMTest  extends TestUtil {
-
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class GLMTest {
 
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
@@ -121,7 +124,7 @@ public class GLMTest  extends TestUtil {
     testCoeffs(Family.gaussian, "smalldata/glm_test/gaussian_20cols_10000Rows.csv", "C21");
   }
   
-  public void testCoeffs(Family family, String fileName, String responseColumn) {
+  private void testCoeffs(Family family, String fileName, String responseColumn) {
     try {
       Scope.enter();
       Frame train = parseTestFile(fileName);
@@ -1694,7 +1697,8 @@ public class GLMTest  extends TestUtil {
    * @throws ExecutionException
    * @throws InterruptedException
    */
-  @Test public void testProstate() throws InterruptedException, ExecutionException {
+  @Test 
+  public void testProstate() throws InterruptedException, ExecutionException {
     GLMModel model = null, model2 = null, model3 = null, model4 = null;
     Frame fr = parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv");
     try{
@@ -1799,7 +1803,8 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Test public void testQuasibinomial(){
+  @Test 
+  public void testQuasibinomial(){
     GLMParameters params = new GLMParameters(Family.quasibinomial);
     GLM glm = new GLM(params);
     params.validate(glm);
@@ -1849,7 +1854,9 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
-  @Test public void testSynthetic() throws Exception {
+  
+  @Test 
+  public void testSynthetic() throws Exception {
     GLMModel model = null;
     Frame fr = parseTestFile("smalldata/glm_test/glm_test2.csv");
     Frame score = null;
@@ -1929,7 +1936,8 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Test public void testXval(){
+  @Test
+  public void testXval(){
     GLMModel model = null;
     Frame fr = parseTestFile("smalldata/glm_test/prostate_cat_replaced.csv");
     try{
@@ -1956,7 +1964,8 @@ public class GLMTest  extends TestUtil {
   /**
    * Test that lambda search gets (almost) the same result as running the model for each lambda separately.
    */
-  @Test public void testCustomLambdaSearch(){
+  @Test 
+  public void testCustomLambdaSearch(){
     Key pros = Key.make("prostate");
     Frame f = parseTestFile(pros, "smalldata/glm_test/prostate_cat_replaced.csv");
 
@@ -2022,9 +2031,6 @@ public class GLMTest  extends TestUtil {
     f.delete();
   }
 
-
-
-
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).
    * Should be able to obtain good model (~100 predictors, ~1 explained deviance) with up to 250 active predictors.
@@ -2033,7 +2039,8 @@ public class GLMTest  extends TestUtil {
    * Test runs glm with gaussian on arcene dataset and verifies it gets all lambda while limiting maximum actove predictors to reasonably small number.
    * Compares the objective value to expected one.
    */
-  @Test public void testArcene() throws InterruptedException, ExecutionException{
+  @Test 
+  public void testArcene() throws InterruptedException, ExecutionException{
     Key parsed = Key.make("arcene_parsed");
     Key<GLMModel> modelKey = Key.make("arcene_model");
     GLMModel model = null;
@@ -2101,7 +2108,8 @@ public class GLMTest  extends TestUtil {
   /** Test large GLM POJO model generation.
    *  Make a 10K predictor model, emit, javac, and score with it.
    */
-  @Test public void testBigPOJO() {
+  @Test 
+  public void testBigPOJO() {
     GLMModel model = null;
     Frame fr = parseTestFile(Key.make("arcene_parsed"), "smalldata/glm_test/arcene.csv"), res=null;
     try{
@@ -2127,7 +2135,8 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Test public void testAbalone() {
+  @Test 
+  public void testAbalone() {
     Scope.enter();
     GLMModel model = null;
     try {
@@ -2167,6 +2176,7 @@ public class GLMTest  extends TestUtil {
     m.delete();
     fr.delete();
   }
+  
   @Test
   public void testDeviances() {
     for (Family fam : Family.values()) {
@@ -2380,7 +2390,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
       FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\n AGE, -.5, .5");
-      betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
+      betaConstraints = Scope.track(ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey));
       glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
       Scope.track_generic(model);
