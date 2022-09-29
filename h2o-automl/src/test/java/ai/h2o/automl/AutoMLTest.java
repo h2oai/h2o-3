@@ -264,7 +264,7 @@ public class AutoMLTest extends water.TestUtil {
     try {
       Scope.enter();
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      Frame fr = Scope.track_generic(parseTestFile("./smalldata/logreg/prostate_train.csv"));
+      Frame fr = Scope.track(parseTestFile("./smalldata/logreg/prostate_train.csv"));
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 //      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost, Algo.DeepLearning, Algo.DRF, Algo.GLM};

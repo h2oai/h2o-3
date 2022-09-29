@@ -275,7 +275,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       for (int index = 1; index <= gs._k; index++)
         loadingFrmNames[index - 1] = "Arch" + index;
       String[][] loadingFrmDomains = new String[gs._k][];
-      DKV.put(gs.outputFrame(_output._x_factor_key, loadingFrmNames, loadingFrmDomains));
+      Scope.untrack(gs.outputFrame(_output._x_factor_key, loadingFrmNames, loadingFrmDomains));
       loadingFrm = DKV.get(_output._x_factor_key).get();
     }
 
