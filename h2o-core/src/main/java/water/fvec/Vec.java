@@ -1672,29 +1672,29 @@ public class Vec extends Keyed<Vec> {
       // efficient!) to make the new copy use the old copies arrays where
       // possible.
       long[][] local_espcs = local ._espcs;
-      long[][] remote_espcs= remote._espcs;
       // Spin attempting to move the larger remote value into the local cache
       while( true ) {
         // Is the remote stale, and the local value already larger?  Can happen
         // if the local is racily updated by another thread, after this thread
         // reads the remote value (which then gets invalidated, and updated to
         // a new larger value).
-        if( local_espcs.length >= remote_espcs.length ) return local;
+        if( local_espcs.length >= remote._espcs.length ) return local;
+        final long[][] remote_espcs = remote._espcs.clone(); // Shallow clone
         // Use my (local, older, more heavily shared) ESPCs where possible.
         // I.e., the standard remote read will create new copies of all ESPC
         // arrays, but the *local* copies are heavily shared.  All copies are
         // equal, but using the same shared copies cuts down on copies.
-        System.arraycopy(local._espcs, 0, remote._espcs, 0, local._espcs.length);
+        System.arraycopy(local._espcs, 0, remote_espcs, 0, local._espcs.length);
         // Here 'remote' is larger than 'local' (but with a shared common prefix).
         // Attempt to update local cache with the larger value
-        ESPC res = ESPCS.putIfMatch(kespc,remote,local);  // Update local copy with larger
+        ESPC newRemote = new ESPC(kespc, remote_espcs);
+        ESPC res = ESPCS.putIfMatch(kespc,newRemote,local);  // Update local copy with larger
         // if res==local, then update succeeded, table has 'remote' (the larger object).
-        if( res == local ) return remote;
+        if( res == local ) return newRemote;
         // if res!=local, then update failed, and returned 'res' is probably
         // larger than either remote or local
         local = res;
-        local_espcs = res._espcs;
-        assert remote_espcs== remote._espcs; // unchanging final field
+        local_espcs = local._espcs;
       }
     }
 
