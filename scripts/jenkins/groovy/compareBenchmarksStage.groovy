@@ -39,7 +39,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 475,
-                    'train_time_max': 500
+                    'train_time_max': 510
                 ]
             ],
             'higgs': [
@@ -138,7 +138,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'higgs': [
                 COORDINATE_DESCENT: [
-                    'train_time_min': 60,
+                    'train_time_min': 55,
                     'train_time_max': 65
                 ],
                 IRLSM: [
