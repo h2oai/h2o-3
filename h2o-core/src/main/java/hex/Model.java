@@ -3136,11 +3136,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   static <T extends Lockable<T>> int deleteAll(Key<T>[] keys) {
     int c = 0;
     for (Key k : keys) {
-      T t = DKV.getGet(k);
-      if (t != null) {
-        t.delete(); //delete all subparts
-        c++;
-      }
+      if (Keyed.remove(k)) c++;
     }
     return c;
   }
