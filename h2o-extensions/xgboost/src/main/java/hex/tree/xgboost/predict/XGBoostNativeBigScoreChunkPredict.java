@@ -93,10 +93,11 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
       booster = BoosterHelper.loadModel(_modelInfo._boosterBytes);
       booster.setParams(_boosterParms.get());
       int treeLimit = 0;
-      if (_parms._booster == XGBoostModel.XGBoostParameters.Booster.dart) {
-        // DART with treeLimit=0 returns non-deterministic random predictions
-        treeLimit = _parms._ntrees;
-      }
+      // setting up treeLimit for DART leads to segfault in native code 
+      // if (_parms._booster == XGBoostModel.XGBoostParameters.Booster.dart) {
+      //   // DART with treeLimit=0 returns non-deterministic random predictions
+      //   treeLimit = _parms._ntrees;
+      // }
 
       // Predict
       float[][] preds;
