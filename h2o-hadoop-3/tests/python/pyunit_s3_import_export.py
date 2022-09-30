@@ -8,6 +8,7 @@ import h2o
 import uuid
 from pandas.util.testing import assert_frame_equal
 import boto3
+import warnings
 
 
 def s3_import_export():
@@ -32,9 +33,12 @@ def s3_import_export():
                                                 })
         s3_frame = h2o.import_file(s3_path)
         assert_frame_equal(local_frame.as_data_frame(), s3_frame.as_data_frame())
-        
-        s3.Object(bucket_name='test.0xdata.com', key="h2o-hadoop-tests/test-export/" + scheme + "/exported." + \
-                                                     timestamp + "." + unique_suffix + ".csv.zip").delete()
+
+        try:
+            s3.Object(bucket_name='test.0xdata.com', key="h2o-hadoop-tests/test-export/" + scheme + "/exported." + \
+                                                         timestamp + "." + unique_suffix + ".csv.zip").delete()
+        except:
+            warnings.warn("Object not deleted, perform manual clean-up in h2o-hadoop-tests/test-export/")
 
 
 if __name__ == "__main__":
