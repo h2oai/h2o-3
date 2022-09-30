@@ -19,8 +19,8 @@ public class ScopeTracker extends ExternalResource implements Serializable {
     Scope.exit();
   }
 
-  public final void track(Frame... frames) {
-    Scope.track(frames);
+  public final void track(Frame frame) { // no varargs (no use in tests) as the Java compiler is misleading: when calling `track(fr)` it prefers the signature with generic to the signature with Frame varargs.
+    Scope.track(frame);
   }
 
   @SuppressWarnings("unchecked")

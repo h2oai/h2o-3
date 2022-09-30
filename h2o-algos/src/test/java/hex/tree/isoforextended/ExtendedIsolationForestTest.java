@@ -67,7 +67,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             assertNotNull(model);
 
             Frame out = model.score(train);
-            Scope.track_generic(out);
+            Scope.track(out);
             assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
             assertEquals(train.numRows(), out.numRows());
 
@@ -270,7 +270,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.track_generic(model);
 
             Frame out = model.score(train);
-            Scope.track_generic(out);
+            Scope.track(out);
             assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
             assertEquals(train.numRows(), out.numRows());
             model.testJavaScoring(train, out, 1e-3);
@@ -309,7 +309,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             assertNotNull(model);
 
             Frame out = model.score(train);
-            Scope.track_generic(out);
+            Scope.track(out);
             assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
             assertEquals(train.numRows(), out.numRows());
         } finally {
