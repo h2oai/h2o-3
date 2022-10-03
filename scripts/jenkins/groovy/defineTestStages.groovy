@@ -772,7 +772,7 @@ def call(final pipelineContext) {
     xgbEnvs.each {xgbEnv ->
       final def stageDefinition = [
         stageName: "XGB on ${xgbEnv.name}", target: "test-xgb-smoke-${xgbEnv.targetName}-jenkins",
-        timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+        timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_ANY,
         additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_JAVA], pythonVersion: '3.7',
         image: pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv, xgbImageBuildTag),
         nodeLabel: xgbEnv.nodeLabel
