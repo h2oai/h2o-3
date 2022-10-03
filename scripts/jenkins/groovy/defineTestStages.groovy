@@ -74,6 +74,11 @@ def call(final pipelineContext) {
   // for Python, mainly test with latest supported version
   def PR_STAGES = [
     [
+      stageName: 'Py3.7 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.7', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_MAIN]
+    ],
+    [
       stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_MINIMAL]
