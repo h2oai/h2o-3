@@ -275,7 +275,7 @@ class H2OCloudNode(object):
 
     def __init__(self, is_client, allow_clients,
                  cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
-                 xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts, flatfile, strict_port=True):
+                 xmx, cp, output_dir, test_ssl, login_config, jvm_opts, flatfile, strict_port=True):
         """
         Create a node in a cloud.
 
@@ -290,7 +290,7 @@ class H2OCloudNode(object):
         :param xmx: Java memory parameter.
         :param cp: Java classpath parameter.
         :param output_dir: The directory where we can create an output file for this process.
-        :param ldap_config_path: path to LDAP config, if none, no LDAP will be used.
+        :param login_config: tuple (login type, path to login config), if None, no login will be used.
         :param jvm_opts: str with additional JVM options.
         :param flatfile: path to flatfile (optional) 
         :param strict_port: interpret port as exact specification, otherwise as a base port (optional, default is strict)
@@ -309,7 +309,7 @@ class H2OCloudNode(object):
         self.xmx = xmx
         self.cp = cp
         self.output_dir = output_dir
-        self.ldap_config_path = ldap_config_path
+        self.login_config = login_config
         self.jvm_opts = jvm_opts
         self.flatfile = flatfile
 
@@ -372,10 +372,11 @@ class H2OCloudNode(object):
         if self.allow_clients:
             cmd += ["-allow_clients"]
 
-        if self.ldap_config_path is not None:
+        if self.login_config is not None:
+            login_type, login_config_path = self.login_config
             cmd.append('-login_conf')
-            cmd.append(self.ldap_config_path)
-            cmd.append('-ldap_login')
+            cmd.append(login_config_path)
+            cmd.append('-' + login_type + '_login')
 
         # If the jacoco flag was included, then modify cmd to generate coverage
         # data using the jacoco agent
@@ -553,7 +554,7 @@ class H2OCloud(object):
     """
 
     def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl,
-                 ldap_config_path, jvm_opts=None, strict_port=True):
+                 login_config, jvm_opts=None, strict_port=True):
         """
         Create a cluster.
         See node definition above for argument descriptions.
@@ -569,7 +570,7 @@ class H2OCloud(object):
         self.cp = cp
         self.output_dir = output_dir
         self.test_ssl = test_ssl
-        self.ldap_config_path = ldap_config_path
+        self.login_config = login_config
         self.jvm_opts = jvm_opts
         self.strict_port = strict_port
 
@@ -606,7 +607,7 @@ class H2OCloud(object):
                                 self.h2o_jar,
                                 "127.0.0.1", self.base_port,
                                 self.xmx, self.cp, self.output_dir,
-                                self.test_ssl, self.ldap_config_path, self.jvm_opts,
+                                self.test_ssl, self.login_config, self.jvm_opts,
                                 self.flatfile, strict_port=self.strict_port)
             if is_client:
                 self.client_nodes.append(node)
@@ -947,10 +948,10 @@ class Test(object):
             cmd += ['--https']
         if g_rest_log:
             cmd += ['--restLog']
-        if g_ldap_username:
-            cmd += ['--username', g_ldap_username]
-        if g_ldap_password:
-            cmd += ['--password', g_ldap_password]
+        if g_username:
+            cmd += ['--username', g_username]
+        if g_password:
+            cmd += ['--password', g_password]
         if g_kerb_principal:
             cmd += ['--kerbPrincipal', g_kerb_principal]
 
@@ -995,10 +996,10 @@ class Test(object):
         if g_jacoco_include:
             # When using JaCoCo we don't want the test to return an error if a cluster reports as unhealthy
             cmd += ["--forceConnect"]
-        if g_ldap_username:
-            cmd += ['--ldapUsername', g_ldap_username]
-        if g_ldap_password:
-            cmd += ['--ldapPassword', g_ldap_password]
+        if g_username:
+            cmd += ['--ldapUsername', g_username]
+        if g_password:
+            cmd += ['--ldapPassword', g_password]
         if g_kerb_principal:
             cmd += ['--kerbPrincipal', g_kerb_principal]
         return cmd
@@ -1047,7 +1048,7 @@ class TestRunner(object):
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
-                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl, ldap_config_path, jvm_opts):
+                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl, login_config, jvm_opts):
         """
         Create a runner.
 
@@ -1073,7 +1074,7 @@ class TestRunner(object):
         :param hadoop_namenode
         :param on_hadoop
         :param perf
-        :param ldap_config_path: path to LDAP config which should be used, or null if no LDAP is required
+        :param login_config: tuple (login type, path to login config), or None if no login is required
         :param jvm_opts: str with additional JVM options
         :return The runner object.
         """
@@ -1125,7 +1126,7 @@ class TestRunner(object):
         self.perf_file = None
         self.exclude_list = []
 
-        self.ldap_config_path = ldap_config_path
+        self.login_config = login_config
         self.jvm_opts = jvm_opts
 
         if use_cloud:
@@ -1142,7 +1143,7 @@ class TestRunner(object):
         else:
             for i in range(self.num_clouds):
                 cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx, cp,
-                                 self.output_dir, self.test_ssl, self.ldap_config_path, self.jvm_opts)
+                                 self.output_dir, self.test_ssl, self.login_config, self.jvm_opts)
                 self.clouds.append(cloud)
 
     @staticmethod
@@ -1944,8 +1945,8 @@ class TestRunner(object):
         proto = g_use_proto if g_use_proto else "http://"
         try:
             auth = None
-            if g_ldap_password is not None and g_ldap_username is not None:
-                auth = (g_ldap_username, g_ldap_password)
+            if g_password is not None and g_username is not None:
+                auth = (g_username, g_password)
             elif g_kerb_principal is not None:
                 from h2o.auth import SpnegoAuth
                 auth = SpnegoAuth(service_principal=g_kerb_principal)
@@ -2040,9 +2041,9 @@ g_job_name = None
 g_py3 = False
 g_pycoverage = False
 g_test_ssl = False
-g_ldap_config = None
-g_ldap_username = None
-g_ldap_password = None
+g_login_config = None
+g_username = None
+g_password = None
 g_kerb_principal = None
 g_rest_log = False
 g_jvm_opts = None
@@ -2180,11 +2181,13 @@ def usage():
     print("")
     print("    --test.ssl       Runs all the nodes with SSL enabled.")
     print("")
-    print("    --ldap.username  Username for LDAP.")
+    print("    --username       Username for LDAP/Hash Login.")
     print("")
-    print("    --ldap.password  Password for LDAP.")
+    print("    --password       Password for LDAP/Hash Login.")
     print("")
     print("    --ldap.config    Path to LDAP config. If set, all nodes will be started with LDAP support.")
+    print("")
+    print("    --hash.config    Path to Hash File config. If set, all nodes will be started with Hash Login support.")
     print("")
     print("    --kerb.principal  Kerberos service principal.")
     print("")
@@ -2312,10 +2315,10 @@ def parse_args(argv):
     global g_pycoverage
     global g_use_xml2
     global g_test_ssl
-    global g_ldap_username
-    global g_ldap_password
+    global g_username
+    global g_password
     global g_kerb_principal
-    global g_ldap_config
+    global g_login_config
     global g_rest_log
     global g_jvm_opts
 
@@ -2495,17 +2498,22 @@ def parse_args(argv):
             i += 1
             if i >= len(argv):
                 usage()
-            g_ldap_config = argv[i]
-        elif s == '--ldap.username':
+            g_login_config = ("ldap", argv[i])
+        elif s == '--ldap.username' or s == "--username":
             i += 1
             if i >= len(argv):
                 usage()
-            g_ldap_username = argv[i]
-        elif s == '--ldap.password':
+            g_username = argv[i]
+        elif s == '--ldap.password' or s == "--password":
             i += 1
             if i >= len(argv):
                 usage()
-            g_ldap_password = argv[i]
+            g_password = argv[i]
+        elif s == '--hash.config':
+            i += 1
+            if i >= len(argv):
+                usage()
+            g_login_config = ("hash", argv[i])
         elif s == '--kerb.principal':
             i += 1
             if i >= len(argv):
@@ -2692,7 +2700,7 @@ def main(argv):
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx, g_jvm_cp,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
                           testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf, g_test_ssl,
-                          g_ldap_config, g_jvm_opts)
+                          g_login_config, g_jvm_opts)
 
     # Build test list.
     if g_exclude_list_file is not None:
