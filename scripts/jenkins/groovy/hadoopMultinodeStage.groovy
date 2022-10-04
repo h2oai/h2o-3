@@ -111,6 +111,7 @@ private GString startH2OScript(final config, final branch, final buildId) {
             HIVE_JDBC_JAR=\$(find /usr/hdp/current/hive-client/lib/ | grep -E 'jdbc.*standalone.*jar')
             export HADOOP_CLASSPATH=\$HIVE_JDBC_JAR
             hadoop jar h2o-hadoop-*/h2o-${config.distribution}${config.version}-assembly/build/libs/h2odriver.jar \\
+                -Dyarn.timeline-service.enabled=false \\
                 -libjars \$HIVE_JDBC_JAR \\
                 -jobname multinode_${branch}_${buildId} \\
                 -disable_flow -ea ${krbArgs} \\
