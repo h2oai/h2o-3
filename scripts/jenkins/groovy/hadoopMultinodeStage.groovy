@@ -48,7 +48,7 @@ def call(final pipelineContext, final stageConfig) {
     
         def h2oFolder = stageConfig.stageDir + '/h2o-3'
         dir(h2oFolder) {
-            retryWithTimeout(60, 3) {
+            retryWithTimeout(180, 3) {
                 echo "###### Checkout H2O-3 ######"
                 checkout scm
             }
