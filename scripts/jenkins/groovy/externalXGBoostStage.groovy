@@ -76,7 +76,7 @@ private GString downloadConfigsScript(Map config) {
 }
 
 private GString startH2OScript(final config, final branch, final buildId, final clusterName) {
-    def cloudingDir = config.cloudingDir + branch + "-ext-xgb-" + clusterName
+    def cloudingDir = config.cloudingDir + "-" + branch + "-ext-xgb-" + clusterName + "-" + buildId
     def notifyFile = "h2o_notify_${clusterName}"
     def driverLogFile = "h2odriver_${clusterName}.log"
     def xgbArgs = ""
