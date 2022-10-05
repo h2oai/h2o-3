@@ -323,7 +323,7 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), pythonVersion: '3.7',
       healthCheckSuppressed: true
     ],
     [
@@ -332,7 +332,7 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark-xgb-gpu', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
+      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(), pythonVersion: '3.7',
       healthCheckSuppressed: true
     ],
     [
@@ -340,7 +340,7 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark-xgb-vanilla', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       customData: [algorithm: 'xgb-vanilla'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), pythonVersion: '3.7',
       healthCheckSuppressed: true
     ],
     [
@@ -348,7 +348,7 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark-dmlc-r-xgboost', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb-dmlc'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(), pythonVersion: '3.7',
       healthCheckSuppressed: true
     ],
     [ 
