@@ -12,9 +12,12 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.Keyed;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -22,16 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parseTestFile;
 
-public class LeaderboardTest extends water.TestUtil {
-
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class LeaderboardTest {
 
   private static final Key<AutoML> dummy = Key.make();
-
+  
   @Test
   public void test_toTwoDimTable_with_empty_models_and_without_sort_metric() {
     Leaderboard lb = null;

@@ -19,6 +19,7 @@ import water.TestUtil;
 import water.Value;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.junit.rules.PriorityTestRule;
 import water.util.Log;
 
 import java.util.*;
@@ -72,6 +73,19 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         // add rules defined in TestUtil
         rules.addAll(new TestClass(DefaultRulesBlueprint.class)
                 .getAnnotatedFieldValues(DefaultRulesBlueprint.INSTANCE, Rule.class, TestRule.class));
+        rules.sort(new Comparator<TestRule>() {
+          /** 
+           * sort rules from lower (or no priority) to higher priority rules 
+           * so that the latter ones can be "applied" last and therefore "evaluated" first (=outermost rules) 
+           * **/
+          @Override
+          public int compare(TestRule lhs, TestRule rhs) {
+            int lp = 0, rp = 0;
+            if (lhs instanceof PriorityTestRule) lp = ((PriorityTestRule)lhs).priority();
+            if (rhs instanceof PriorityTestRule) rp = ((PriorityTestRule)rhs).priority();
+            return lp - rp;
+          }
+        });
         return rules;
     }
 

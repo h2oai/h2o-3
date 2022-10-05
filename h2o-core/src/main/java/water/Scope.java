@@ -6,6 +6,8 @@ import water.logging.Logger;
 import water.logging.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /** A "scope" for tracking Key lifetimes; an experimental API.
  *
@@ -37,7 +39,21 @@ public class Scope {
   public static Scope current() {
     return _scope.get();
   }
-
+  
+  /** for testing purpose */
+  public static int currentLevel() {
+    Scope scope = current();
+    assert scope._keys.size() == scope._protectedKeys.size();
+    return scope._keys.size();
+  }
+  
+  /** for testing purpose */
+  public static void reset() {
+    Scope scope = _scope.get();
+    scope._keys.clear();
+    scope._protectedKeys.clear();
+  }
+  
   /** Enter a new Scope */
   public static void enter() { 
     Scope scope = _scope.get();
@@ -98,6 +114,11 @@ public class Scope {
     return keyed;
   }
 
+  /**
+   * Track a single Vec.
+   * @param vec
+   * @return
+   */
   public static Vec track( Vec vec ) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
@@ -106,8 +127,13 @@ public class Scope {
   }
 
   /**
-   * Track one or more {@link Frame}s, and return the first one. The tracked
-   * frames will be removed from DKV when {@link Scope#exit(Key[])} is called.
+   * Track one or more {@link Frame}s, as well as all their Vecs independently.
+   * The tracked frames and vecs will be removed from DKV when {@link Scope#exit(Key[])} is called, 
+   * but for {@link Frame}s, they will be removed without their Vecs as those are tracked independently, 
+   * and we want to be able to {@link #untrack(Key[])} them (or spare them at {@link #exit(Key[])} 
+   * without them being removed together with the {@link Frame} to which they're attached.
+   * @param frames
+   * @return the first Frame passed as param
    */
   public static Frame track(Frame... frames) {
     Scope scope = _scope.get();
@@ -126,7 +152,13 @@ public class Scope {
     if (scope._keys.empty()) return;
     scope._keys.peek().add(key);            // Track key
   }
-  
+
+  /**
+   * Untrack the specified keys.
+   * Note that if a key corresponds to a {@Frame}, then only the frame key is untracked, not its vecs.
+   * Use {@link #untrack(Frame...)} is you need a behaviour symmetrical to {@link #track(Frame...)}.
+   * @param keys
+   */
   public static <K extends Key> void untrack(K... keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
@@ -135,6 +167,12 @@ public class Scope {
     for (Key key : keys) xkeys.remove(key); // Untrack key
   }
 
+  /**
+   * Untrack the specified keys.
+   * Note that if a key corresponds to a {@Frame}, then only the frame key is untracked, not its vecs.
+   * Use {@link #untrack(Frame...)} is you need a behaviour symmetrical to {@link #track(Frame...)}.
+   * @param keys
+   */
   public static <K extends Key> void untrack(Iterable<K> keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread
@@ -142,7 +180,12 @@ public class Scope {
     Set<Key> xkeys = scope._keys.peek();
     for (Key key : keys) xkeys.remove(key); // Untrack key
   }
-  
+
+  /**
+   * 
+   * @param frames
+   * @return the first Frame passed as a param.
+   */
   public static Frame untrack(Frame... frames) {
     Scope scope = _scope.get();
     if (scope == null || scope._keys.empty()) return frames[0];
@@ -199,6 +242,21 @@ public class Scope {
     public void close() {
       Scope.exit();
     }
+  }
+
+
+  /**
+   * @return a read-only view of tracked keys
+   */
+  List<Set<Key>> keys() {
+    return Collections.unmodifiableList(_keys.stream().map(Collections::unmodifiableSet).collect(Collectors.toList()));
+  }
+
+  /**
+   * @return a read-only view of protected keys
+   */
+  List<Set<Key>> protectedKeys() {
+    return Collections.unmodifiableList(_protectedKeys.stream().map(Collections::unmodifiableSet).collect(Collectors.toList()));
   }
 
 }

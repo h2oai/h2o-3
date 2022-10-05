@@ -74,7 +74,7 @@ public class Frame extends Lockable<Frame> {
    * Given a temp Frame and a base Frame from which it was created, delete the
    * Vecs that aren't found in the base Frame and then delete the temp Frame.
    *
-   * @deprecated Use {@link Scope#protect(Frame...)} or a {@link Scope#safe(Frame...)} instead.
+   * For most use cases with short-lived temp frames, use {@link Scope#protect(Frame...)} or a {@link Scope#safe(Frame...)} instead.
    */
   public static void deleteTempFrameAndItsNonSharedVecs(Frame tempFrame, Frame baseFrame) {
     Key[] keys = tempFrame.keys();
