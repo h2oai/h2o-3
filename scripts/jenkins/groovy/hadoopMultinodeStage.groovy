@@ -65,20 +65,11 @@ def call(final pipelineContext, final stageConfig) {
 
 private GString downloadConfigsScript(Map config) {
     def apiBase = "http://${config.configSource}.0xdata.loc:8080/api/v1/clusters/${config.hdpName}/services"
-    def krbScript = ""
-    if (config.krb) {
-        krbScript = """
-            curl -u \$ADMIN_USERNAME:\$ADMIN_PASSWORD ${apiBase}/KERBEROS/components/KERBEROS_CLIENT?format=client_config_tar > krb_config.tar
-            tar xvvf krb_config.tar
-            echo "\$KRB_PASSWORD" | kinit \$KRB_USERNAME
-        """
-    }
-    def extraInit = ""
-    if (config.nameNode == "mr-0xg5") {
-        extraInit = """
-            export HDP_VERSION=2.4.2.0-258
-        """
-    }
+    def krbScript = """
+        curl -u \$ADMIN_USERNAME:\$ADMIN_PASSWORD ${apiBase}/KERBEROS/components/KERBEROS_CLIENT?format=client_config_tar > krb_config.tar
+        tar xvvf krb_config.tar
+        echo "\$KRB_PASSWORD" | kinit \$KRB_USERNAME
+    """
     return """
         echo "Downloading hadoop configuration from ${apiBase}"
         cd \$HADOOP_CONF_DIR
@@ -90,7 +81,7 @@ private GString downloadConfigsScript(Map config) {
         tar xvvf yarn_config.tar
         ${krbScript}
         rm *.tar
-        ${extraInit}
+        export HDP_VERSION=${config.versionExact}
         cd -
     """
 }
