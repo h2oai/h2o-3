@@ -9,7 +9,7 @@ class FrameReloadTest(unittest.TestCase):
     def test_frame_reload(self):
         name_node = utils.hadoop_namenode()
         work_dir = utils.get_workdir()
-        dataset = "/datasets/mnist/train.csv.gz"
+        dataset = "/datasets/bigdata/laptop/mnist/train.csv.gz"
         
         saver_cluster_name = "saver-py" 
         try:

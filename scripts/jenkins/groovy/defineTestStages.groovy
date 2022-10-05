@@ -553,7 +553,7 @@ def call(final pipelineContext) {
       ], 
       pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
-      executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
+      executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopClusterStage.groovy',
       image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, false)
     ]
     def standaloneStage = evaluate(stageTemplate.inspect())
@@ -626,7 +626,7 @@ def call(final pipelineContext) {
                     bundledS3FileSystems: 's3a,s3n'
             ], pythonVersion: '2.7',
             customDockerArgs: [ '--privileged' ],
-            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
+            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopClusterStage.groovy',
             image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, true)
     ]
     def standaloneStage = evaluate(stageTemplate.inspect())
@@ -680,63 +680,54 @@ def call(final pipelineContext) {
     KERBEROS_STAGES += [ standaloneStage, standaloneKeytabStage, standaloneDriverKeytabStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
-  final MULTINODE_CLUSTERS_CONFIGS = [
-      [ distribution: "hdp", version: "2.2",
-        nameNode: "mr-0xd4", configSource: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
-        hiveHost: "mr-0xd9.0xdata.loc",
-        nodes: 4, xmx: "16G", extramem: "100",
-        cloudingDir: "/user/jenkins/hadoop_multinode_tests"
-      ],
-      [ distribution: "hdp", version: "2.4",
-        nameNode: "mr-0xg5", configSource: "mr-0xg5", hdpName: "steam2", krb: true,
-        hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
-        nodes: 4, xmx: "10G", extramem: "100",
-        cloudingDir: "/user/jenkins/hadoop_multinode_tests"
-      ]
+  final HADOOP_CLUSTER_CONFIG = [
+          distribution: "hdp", version: "2.4", versionExact: "2.4.2.0-258",
+          nameNode: "mr-0xg5", configSource: "mr-0xg5", hdpName: "steam2",
+          hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
+          nodes: 4, xmx: "10G", extramem: "100",
+          cloudingDir: "/user/jenkins/hadoop_multinode_tests"
   ]
-  def HADOOP_MULTINODE_STAGES = []
-  for (config in MULTINODE_CLUSTERS_CONFIGS) {
-    def image = pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(config.distribution, config.version, config.krb)
-    def stage = [
-            stageName: "TEST MULTINODE ${config.krb?"KRB ":""} ${config.distribution}${config.version}-${config.nameNode}",
-            target: "test-hadoop-multinode", timeoutValue: 60,
-            component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-            additionalTestPackages: [
-                    pipelineContext.getBuildConfig().COMPONENT_PY,
-                    pipelineContext.getBuildConfig().COMPONENT_R
-            ],
-            customData: config, pythonVersion: '2.7',
-            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopMultinodeStage.groovy',
-            image: image
+  def hadoopClusterStage = [
+          stageName: "TEST Hadoop Multinode on ${HADOOP_CLUSTER_CONFIG.nameNode}",
+          target: "test-hadoop-multinode", timeoutValue: 60,
+          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+          additionalTestPackages: [
+                  pipelineContext.getBuildConfig().COMPONENT_PY,
+                  pipelineContext.getBuildConfig().COMPONENT_R
+          ],
+          customData: HADOOP_CLUSTER_CONFIG, pythonVersion: '2.7',
+          executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopMultinodeStage.groovy',
+          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
+                  HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
+          )
     ]
-    HADOOP_MULTINODE_STAGES += [ stage ]
-  }
+  def HADOOP_MULTINODE_STAGES = [ hadoopClusterStage ]
   HADOOP_MULTINODE_STAGES += [
       [
-          stageName: "TEST External XGBoost on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+          stageName: "TEST External XGBoost on ${HADOOP_CLUSTER_CONFIG.nameNode}",
           target: "test-steam-websocket", timeoutValue: 30,
           component: pipelineContext.getBuildConfig().COMPONENT_ANY,
           additionalTestPackages: [
                   pipelineContext.getBuildConfig().COMPONENT_PY
           ],
-          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
+          customData: HADOOP_CLUSTER_CONFIG, pythonVersion: '3.6',
           executionScript: 'h2o-3/scripts/jenkins/groovy/externalXGBoostStage.groovy',
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
-                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+                  HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
           )
       ],
       [
-          stageName: "TEST Fault Tolerance on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+          stageName: "TEST Fault Tolerance on ${HADOOP_CLUSTER_CONFIG.nameNode}",
           target: "test-hadoop-fault-tolerance", timeoutValue: 45,
           component: pipelineContext.getBuildConfig().COMPONENT_ANY,
           additionalTestPackages: [
                   pipelineContext.getBuildConfig().COMPONENT_PY,
                   pipelineContext.getBuildConfig().COMPONENT_R
           ],
-          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
+          customData: HADOOP_CLUSTER_CONFIG, pythonVersion: '3.6',
           executionScript: 'h2o-3/scripts/jenkins/groovy/faultToleranceStage.groovy',
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
-                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+                  HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
           )
       ]
   ]

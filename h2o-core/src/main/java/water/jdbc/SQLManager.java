@@ -238,6 +238,7 @@ public class SQLManager {
         }
 
       } catch (SQLException ex) {
+        Log.err(ex);
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect and read from SQL database with connection_url: " + _connection_url, ex);
       } finally {
         // release resources in a finally{} block in reverse-order of their creation

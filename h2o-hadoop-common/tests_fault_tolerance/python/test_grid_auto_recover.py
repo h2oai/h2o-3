@@ -50,7 +50,7 @@ class GridAutoRecoveryTest(unittest.TestCase):
 
     def test_auto_recovery(self):
         name_node = pyunit_utils.hadoop_namenode()
-        dataset = "/datasets/iris_wheader.csv"
+        dataset = "/datasets/smalldata/iris/iris_wheader.csv"
 
         ntrees_opts = [100, 120, 130, 140]
         learn_rate_opts = [0.01, 0.02, 0.03, 0.04]

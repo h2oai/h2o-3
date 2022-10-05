@@ -26,7 +26,8 @@ if not os.path.exists(results_dir):
 h2o_jarfile = os.getenv('H2O_JARFILE', '../../build/h2o.jar')
 h2o_java_version = os.getenv('H2O_JAVA_VERSION', '1.8')
 h2o_jvm_cp = os.getenv('H2O_BINDINGS_EXTRA_CLASSPATH', '')
-h2o_jvm_opts = ["-Dsys.ai.h2o.ext.rest.toggle.XGBoost=true", "-Dsys.ai.h2o.ext.core.toggle.XGBoost=true"]
+h2o_jvm_opts = ["-Dsys.ai.h2o.ext.rest.toggle.XGBoost=true", "-Dsys.ai.h2o.ext.core.toggle.XGBoost=true", 
+                "-Dsys.ai.h2o.ext.core.toggle.KrbStandalone=false"]
 if h2o_java_version != '1.8':
     h2o_jvm_opts += ["--add-opens=java.base/java.lang=ALL-UNNAMED"]
 

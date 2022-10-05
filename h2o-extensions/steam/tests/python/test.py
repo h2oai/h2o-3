@@ -52,7 +52,7 @@ def test():
     
     # load data
     name_node = pyunit_utils.hadoop_namenode()
-    train = h2o.import_file("hdfs://" + name_node + "/datasets/chicagoCensus.csv")
+    train = h2o.import_file("hdfs://" + name_node + "/datasets/smalldata/chicago/chicagoCensus.csv")
     x = list(range(0, train.ncol-1))
     y = train.ncol-1
     train = train[~train[y].isna(), :]
