@@ -827,9 +827,6 @@ public class Frame extends Lockable<Frame> {
     if (cascade) { // removing the vecs from mem only if cascading (default behaviour)
       // Bulk dumb local remove - no JMM, no ordering, no safety.
       Vec.bulk_remove(keys, v.nChunks());
-//    } else {
-//      Log.info(Arrays.toString(Thread.currentThread().getStackTrace()));
-//      Log.info("Keeping the following Vecs after removing frame", this, "\n -> \n", Arrays.toString(keys));
     }
     return fs;
   }
