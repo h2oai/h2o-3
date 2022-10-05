@@ -91,11 +91,8 @@ private GString startH2OScript(final config, final branch, final buildId) {
     def xmx = config.xmx
     def extraMem = config.extramem
     def cloudingDir = config.cloudingDir + "-" + branch
-    def krbArgs = ""
-    if (config.krb) {
-        krbArgs = "-hiveHost ${config.hiveHost}:10000 -hivePrincipal ${config.hivePrincipal} -refreshTokens"
-        krbArgs += " -internal_secure_connections -allow_insecure_xgboost"
-    }
+    def krbArgs = "-hiveHost ${config.hiveHost}:10000 -hivePrincipal ${config.hivePrincipal} " +
+            "-refreshTokens -internal_secure_connections -allow_insecure_xgboost"
     return """
             rm -fv h2o_one_node h2odriver.log
             hdfs dfs -rm -r -f ${cloudingDir}
