@@ -338,7 +338,7 @@ class BuildConfig {
     return getSmokeHadoopImageImpl(distribution, version, krbSuffix)
   }
 
-  String getHadoopEdgeNodeImage(final distribution, final version, final useKrb) {
+  String getHadoopEdgeNodeImage(final distribution, final version, final useKrb = true) {
     def suffix = "-0xd-edge"
     if (useKrb) {
       suffix = '-krb' + suffix
