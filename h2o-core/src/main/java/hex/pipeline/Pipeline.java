@@ -8,9 +8,7 @@ import hex.pipeline.PipelineContext.CompositeFrameTracker;
 import hex.pipeline.PipelineContext.ConsistentKeyTracker;
 import hex.pipeline.PipelineModel.PipelineOutput;
 import hex.pipeline.PipelineModel.PipelineParameters;
-import water.Key;
-import water.Keyed;
-import water.Scope;
+import water.*;
 import water.fvec.Frame;
 
 
@@ -78,8 +76,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     public void computeImpl() {
       init(true);
       PipelineOutput output = new PipelineOutput(Pipeline.this);
-      PipelineModel model = new PipelineModel(dest(), _parms, output);
       output._transformers = _parms._transformers.clone();
+      PipelineModel model = new PipelineModel(dest(), _parms, output);
       model.delete_and_lock(_job);
       try {
         PipelineContext context = newContext();
@@ -120,13 +118,13 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       init(false);
       PipelineContext context = newContext();
       TransformerChain chain = newChain(context);
-  //    super.computeCrossValidation();
       setTrain(context.getTrain());
       setValid(context.getValid());
       PipelineOutput output = new PipelineOutput(Pipeline.this);
-      model = new PipelineModel(dest(), _parms, output);
       output._transformers = _parms._transformers.clone();
+      model = new PipelineModel(dest(), _parms, output);
       model.delete_and_lock(_job);
+      Scope.protect(train(), valid());
       initWorkspace(true);
       output._estimator = chain.transform(
               new Frame[] { train(), valid() }, 
