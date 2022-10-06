@@ -2167,7 +2167,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     void cleanUp() {
-      FrameUtils.cleanUp(_toDelete);
+      // converting Workspace-tracked keys to Scope-tracked keys
+      // much safer than strictly removing everything as frame like training/validation frames are protected in Scope.
+      Key[] tracked = _toDelete.keySet().toArray(new Key[0]);
+      for (Key k: tracked) {
+        Value v = DKV.get(k);
+        if (v==null) continue;
+        if (v.isFrame()) Scope.track(v.get(Frame.class));
+        else if (v.isVec()) Scope.track(v.get(Vec.class));
+        else Scope.track_generic(v.get(Keyed.class));
+      }
     }
   }
 
