@@ -401,7 +401,7 @@ class H2OFrame(Keyed, H2ODisplay):
         :examples:
 
         >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> print(iris.frame_id)
+        >>> iris.frame_id
         """
         return self._frame()._ex._cache._id
 
