@@ -96,7 +96,9 @@ class Check:
             r"^\* checking Rd cross-references ... NOTE",
             r"^Package unavailable to check Rd xrefs*",
             r"^Status: 3 NOTEs",
-            r"^Status: 4 NOTEs"
+            r"^Status: 4 NOTEs",
+            r"^\* checking for future file timestamps ... NOTE",
+            r"^unable to verify current time",
             ]
 
         s = f.readline()

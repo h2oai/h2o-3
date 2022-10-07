@@ -121,7 +121,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
                Defaults to ``0``.
         :type stopping_rounds: int
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               regression and anomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client.
                Defaults to ``"auto"``.
         :type stopping_metric: Literal["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
@@ -620,7 +620,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
