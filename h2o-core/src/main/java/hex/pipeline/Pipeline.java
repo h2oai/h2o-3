@@ -154,7 +154,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
 
                   @Override
                   public Frame[] getCVFrames(int cvIdx) {
-                    PipelineContext cvContext = newCVContext(context, cvIdx, _cvBase);
+                    PipelineContext cvContext = newCVContext(context, cvIdx, getCVBase());
                     //TODO: need to disable parallelization for CV: chain.transform is not thread safe (index incr)
                     return chain.doTransform(
                             new Frame[] {cvContext.getTrain(), cvContext.getValid()},

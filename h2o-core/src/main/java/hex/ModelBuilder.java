@@ -629,12 +629,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   
   protected class DefaultTrainingFramesProvider implements TrainingFramesProvider {
 
-    protected Frame _cvBase;
-    {
-      _cvBase = new Frame(Key.make(_result.toString()+"_cv"), train().names(), train().vecs());
-      if ( _parms._weights_column != null ) _cvBase.remove( _parms._weights_column );
-    }
-
+    private Frame _cvBase; // must always be accessed through lazy getter `getCVBase()`
+    
     @Override
     public Frame getTrain() {
       return train();
@@ -651,7 +647,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
      */
     @Override
     public Frame[] getCVFrames(int cvIdx) {
-      return new Frame[] {_cvBase, _cvBase};
+      Frame cvBase = getCVBase();
+      return new Frame[] {cvBase, cvBase};
+    }
+    
+    protected Frame getCVBase() {
+      if (_cvBase == null) {
+        _cvBase = new Frame(Key.make(_result.toString()+"_cv"), train().names(), train().vecs());
+        if ( _parms._weights_column != null ) _cvBase.remove( _parms._weights_column );
+      }
+      return _cvBase;
     }
   } 
 

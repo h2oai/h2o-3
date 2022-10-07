@@ -491,9 +491,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     eventLog().info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.get().format(_runCountdown.start_time()))
             .setNamedValue("start_epoch", _runCountdown.start_time(), EventLogEntry.epochFormat.get());
     try {
+      Scope.enter();
       learn();
     } finally {
       stop();
+      Scope.exit();
     }
   }
   
