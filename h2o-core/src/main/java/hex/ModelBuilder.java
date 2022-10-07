@@ -2167,6 +2167,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     void cleanUp() {
+      if (_toDelete == null) return;
       // converting Workspace-tracked keys to Scope-tracked keys
       // much safer than strictly removing everything as frame like training/validation frames are protected in Scope.
       Key[] tracked = _toDelete.keySet().toArray(new Key[0]);
