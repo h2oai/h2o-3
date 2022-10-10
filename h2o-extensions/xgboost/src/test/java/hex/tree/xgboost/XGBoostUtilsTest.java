@@ -1,5 +1,6 @@
 package hex.tree.xgboost;
 
+import hex.CustomMetric;
 import hex.DataInfo;
 import hex.tree.xgboost.matrix.SparseMatrix;
 import hex.tree.xgboost.matrix.SparseMatrixDimensions;

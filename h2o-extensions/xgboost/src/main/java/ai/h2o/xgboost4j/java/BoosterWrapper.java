@@ -30,6 +30,10 @@ public class BoosterWrapper {
         booster.update(dtrain, iter);
     }
 
+    public String evalTrain(DMatrix dtrain, int iter) throws XGBoostError {
+        return booster.evalSet(new DMatrix[]{dtrain}, new String[]{"train"}, iter);
+    }
+
     public void saveRabitCheckpoint() throws XGBoostError {
         booster.saveRabitCheckpoint();
     }

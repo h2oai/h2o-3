@@ -1,8 +1,10 @@
 package hex.tree.xgboost.exec;
 
+import hex.CustomMetric;
 import hex.DataInfo;
 import hex.genmodel.utils.IOUtils;
 import hex.tree.xgboost.BoosterParms;
+import hex.tree.xgboost.EvalMetric;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.matrix.FrameMatrixLoader;
 import hex.tree.xgboost.matrix.MatrixLoader;
@@ -38,6 +40,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
 
     private XGBoostSetupTask setupTask;
     private XGBoostUpdateTask updateTask;
+    private EvalMetric evalMetric;
     
     /**
      * Used when executing from a remote model
@@ -129,8 +132,22 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
 
     @Override
     public void update(int treeId) {
+        evalMetric = null; // invalidate cached eval metric
         updateTask = new XGBoostUpdateTask(setupTask, treeId);
         updateTask.run();
+    }
+
+    @Override
+    public EvalMetric getEvalMetricTrain() {
+        if (evalMetric != null) { // re-use cached value, this is important for early stopping when final scoring is done without prior boosting iteration
+            return evalMetric;
+        }
+        if  (updateTask == null) {
+            throw new IllegalStateException(
+                    "Custom metric can only be retrieved immediately after running update iteration.");
+        }
+        evalMetric = updateTask.getEvalMetric();
+        return evalMetric;
     }
 
     @Override

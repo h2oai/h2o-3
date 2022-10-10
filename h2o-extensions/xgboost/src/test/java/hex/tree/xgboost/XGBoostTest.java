@@ -18,6 +18,7 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.FeatureInteraction;
 import hex.FeatureInteractions;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.schemas.XGBoostV3;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
@@ -2931,6 +2932,109 @@ public class XGBoostTest extends TestUtil {
   public void checkRunningWithClusterPrestartInCI() {
     Assume.assumeTrue(isCI());
     assertTrue(hex.tree.xgboost.XGBoost.prestartExternalClusterForCV());
+  }
+
+  @Test
+  public void testEvalMetric() {
+    Scope.enter();
+    try {
+      String response = "RainTomorrow";
+      Frame df = loadWeather(response);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+      parms._train = df._key;
+      parms._response_column = response;
+      parms._eval_metric = "logloss";
+      parms._score_each_iteration = true;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      LOG.info(model);
+
+      TwoDimTable scoringHistory = model._output._scoring_history;
+      int h2oLoglossIdx = ArrayUtils.find(scoringHistory.getColHeaders(), "Training LogLoss");
+      assertTrue(h2oLoglossIdx > 0);
+      int xgbLoglossIdx = ArrayUtils.find(scoringHistory.getColHeaders(), "Training Custom");
+      assertTrue(xgbLoglossIdx > 0);
+
+      assertEquals(1 /*null model*/ + parms._ntrees, scoringHistory.getRowDim());
+      for (int i = 0; i < scoringHistory.getRowDim(); i++) {
+        double h2oValue = (Double) scoringHistory.get(i, h2oLoglossIdx);
+        double xgbValue = (Double) scoringHistory.get(i, xgbLoglossIdx);
+        assertEquals(h2oValue, xgbValue, 1e-5);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testEarlyStoppingOnEvalMetric() {
+    Scope.enter();
+    try {
+      String response = "RainTomorrow";
+      Frame df = loadWeather(response);
+
+      final int ntrees = 100;
+
+      XGBoostModel.XGBoostParameters basicParms = new XGBoostModel.XGBoostParameters();
+      basicParms._ntrees = ntrees;
+      basicParms._max_depth = 3;
+      basicParms._train = df._key;
+      basicParms._response_column = response;
+      basicParms._stopping_rounds = 3;
+      basicParms._stopping_tolerance = 1e-1;
+      basicParms._score_each_iteration = true;
+
+      XGBoostModel.XGBoostParameters parms = (XGBoostModel.XGBoostParameters) basicParms.clone();
+      parms._eval_metric = "logloss";
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.custom;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      LOG.info(model);
+
+      TwoDimTable scoringHistory = model._output._scoring_history;
+      // 1.  Check that we actually stopped early - for ntrees = 100, in the interval of [5, 95]
+      assertEquals(ntrees / 2.0, scoringHistory.getRowDim(), (ntrees / 2.0) * 0.9);
+
+      // 2. Check that we stopped at the right time
+      int shouldStopIter = -1;
+      for (int i = 1; i < ntrees; i++) {
+        ScoreKeeper[] sks = Arrays.copyOf(model._output.scoreKeepers(), i);
+        boolean shouldStop = ScoreKeeper.stopEarly(sks, 3, ScoreKeeper.ProblemType.classification, ScoreKeeper.StoppingMetric.logloss, 1e-1, "model", true);
+        if (shouldStop) {
+          shouldStopIter = i;
+          break;
+        }
+      }
+      assertNotEquals(-1, shouldStopIter);
+      assertEquals(shouldStopIter, model._output._ntrees + 1);
+
+      XGBoostModel.XGBoostParameters parmsH2O = (XGBoostModel.XGBoostParameters) basicParms.clone();
+      parmsH2O._eval_metric = null;
+      parmsH2O._stopping_metric = ScoreKeeper.StoppingMetric.logloss;
+
+      XGBoostModel modelH2O = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      assertNotNull(modelH2O);
+      Scope.track_generic(modelH2O);
+      LOG.info(modelH2O);
+
+      assertEquals(modelH2O._output._ntrees, model._output._ntrees);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testToCustomMetric() {
+    EvalMetric em = new EvalMetric("anything", Math.E);
+    CustomMetric cm = hex.tree.xgboost.XGBoost.toCustomMetric(em);
+    assertEquals("anything", cm.name);
+    assertEquals(Math.E, cm.value, 0);
+    assertNull(hex.tree.xgboost.XGBoost.toCustomMetric(null));
   }
 
 }
