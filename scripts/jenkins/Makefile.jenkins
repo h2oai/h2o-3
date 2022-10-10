@@ -74,11 +74,17 @@ lookup-steam-assembly-tests: init-lookup
 	find h2o-py/tests -name '*s3*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 	cat tests/pyunitSmokeTestList >>h2o-py/tests/.lookup.txt
 
+lookup-main-assembly-tests:
+	find h2o-assemblies/main/tests -name '*.py' -exec basename {} \; > h2o-assemblies/main/tests/.lookup.txt
+
 lookup-persist-s3-tests: init-lookup
 	find h2o-py/tests/testdir_persist -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
 test-py-smoke:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
+
+test-py-smoke-main: lookup-main-assembly-tests
+	export NO_GCE_CHECK=True && cd h2o-assemblies/main/tests/ && ../../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 1 --jvm.xmx 3g --h2ojar ../build/libs/main.jar --username jenkins_user --password jenkins_pwd42 --hash.config "$$PWD/python/realm.properties" --jvm.opts "-Dai.h2o.form_auth"
 
 test-py-smoke-minimal:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g --h2ojar ../../h2o-assemblies/minimal/build/libs/minimal.jar 
@@ -91,6 +97,28 @@ test-py-changed:
 
 test-py-persist-s3: lookup-persist-s3-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 1 --jvm.xmx 3g
+
+build-h2o-persist-drive:
+	@echo "+--Building H2O Persit Drive--+"
+	@echo
+	cd h2o-persist-drive && ../gradlew clean build
+
+bootstrap-persist-drive-env:
+	mkdir -p h2o-persist-drive/build/graal && cd h2o-persist-drive/build/graal && ../../bootstrap.sh
+
+test-py-persist-drive:
+	export NO_GCE_CHECK=True \
+	 && export JAVA_HOME="$$PWD/h2o-persist-drive/build/graal/graalvm" \
+	 && cd h2o-persist-drive/tests/ \
+	 && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --jvm.xmx 3g \
+	                         --jvm.cp "$(shell pwd)/$(wildcard h2o-persist-drive/build/libs/h2o-persist-drive*.jar)" \
+	                         --jvm.opt "--add-opens=java.base/java.lang=ALL-UNNAMED" \
+	                         --jvm.opt "-Dsys.ai.h2o.persist.drive.venv=../../build/graal/venv/bin/graalpython"
+
+test-py-persist-drive-jenkins:
+	@$(MAKE) -f $(THIS_FILE) build-h2o-persist-drive
+	@$(MAKE) -f $(THIS_FILE) bootstrap-persist-drive-env
+	@$(MAKE) -f $(THIS_FILE) test-py-persist-drive
 
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
@@ -105,6 +133,10 @@ test-py-booklets:
 
 test-py-demos:
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+
+test-py3-only-demos:
+	test "$$CI" != "true" || pip install scikit-learn==1.0.2
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 1 --baseport 56789 --jvm.xmx 10g --testlist py3demos
 
 test-pyunit-demos:
 	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
@@ -176,7 +208,7 @@ test-r-cmd-check:
 test-r-cmd-check-as-cran:
 	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE R CMD check --as-cran h2o_*.*.*.*.tar.gz
 	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE [ -f ../../../../scripts/validate_r_cmd_check_output.R ] && Rscript ../../../../scripts/validate_r_cmd_check_output.R
-	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE python ../../../../scripts/validate_r_cmd_check_output.py || true
+	cd h2o-r/R/src/contrib && OPENBLAS_MAIN_FREE=1 H2O_R_CMD_CHECK_DOC_EXAMPLES_IP=127.0.0.1 H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT=59999 _R_CHECK_FORCE_SUGGESTS_=FALSE python ../../../../scripts/validate_r_cmd_check_output.py
 	fuser -k 59999/tcp || /bin/true
 
 test-r-booklets:
@@ -256,6 +288,12 @@ test-package-gradle:
 	    -x h2o-bindings/* \
 	    -@
 
+test-package-main:
+	zip -q -r test-package-main \
+	    h2o-assemblies/main/build/libs/main.jar \
+	    h2o-assemblies/main/tests/python/ \
+		tests/leakCheckKeywords
+
 test-package-minimal:
 	zip -q -r test-package-minimal \
 	    h2o-assemblies/minimal/build/libs/minimal.jar \
@@ -310,6 +348,7 @@ test-package-java:
 		h2o-persist-s3/build/libs/h2o-persist-s3-*.jar \
 		h2o-persist-http/src/ \
 		h2o-persist-http/build/libs/h2o-persist-http-*.jar \
+		h2o-persist-drive/ \
 		h2o-security/src/ \
 		h2o-security/build/libs/h2o-security-*.jar \
 		h2o-extensions/xgboost/src/ \

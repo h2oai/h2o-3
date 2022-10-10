@@ -1,0 +1,10 @@
+dependencies {
+    api project(":h2o-jetty-9")
+}
+
+if ("${jetty9version}".toString() != "9.4.11.v20180605") {
+    throw new IllegalStateException(
+            "This module expects Jetty version 9.4.11.v20180605, configured version is ${jetty9version}. " +
+            "Please locate Response class (modified from Jetty 9.4.11), upgrade it to your version, port our custom changes." +
+            "Once you've done that you can modify this check.")
+}

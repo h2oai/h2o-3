@@ -438,6 +438,15 @@ class ModelMetricsHandler extends Handler {
     return s;
   }
 
+  private Model.Contributions getModelContributionsObject(ModelMetricsList params) {
+    Model model = params._model;
+    if (! (model instanceof Model.Contributions)) {
+      String errorMessage = "Model type " + model._parms.algoName() + " doesn't support calculating Feature Contributions.";
+      throw new H2OIllegalArgumentException(errorMessage);
+    }
+    return (Model.Contributions) model;
+  }
+  
   /**
    * Score a frame with the given model and return a Job that output a frame with predictions.
    * Do *not* calculate ModelMetrics.
@@ -475,10 +484,7 @@ class ModelMetricsHandler extends Handler {
       @Override
       public void compute2() {
         if (s.predict_contributions) {
-          if (! (parms._model instanceof Model.Contributions)) {
-            throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
-          }
-          Model.Contributions mc = (Model.Contributions) parms._model;
+          Model.Contributions mc = getModelContributionsObject(parms);
           Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ?
                   Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
           Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions();
@@ -601,10 +607,7 @@ class ModelMetricsHandler extends Handler {
           parms._predictions_name = "staged_proba_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
         predictions = ((Model.StagedPredictions) parms._model).scoreStagedPredictions(parms._frame, Key.<Frame>make(parms._predictions_name));
       } else if(s.predict_contributions) {
-        if (! (parms._model instanceof Model.Contributions)) {
-          throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
-        }
-        Model.Contributions mc = (Model.Contributions) parms._model;
+        Model.Contributions mc = getModelContributionsObject(parms);
         if (null == parms._predictions_name)
           parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
         Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ? 

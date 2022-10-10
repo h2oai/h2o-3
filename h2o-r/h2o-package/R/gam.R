@@ -68,6 +68,10 @@
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
+#' @param splines_non_negative Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing (and monotonically non-
+#'        decreasing) and False if the I-splines are monotonically decreasing (and monotonically non-increasing).  If
+#'        specified, must be the same size as gam_columns.  Values for other spline types will be ignored.  Default to
+#'        true.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations Defaults to -1.
@@ -103,11 +107,11 @@
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR",
+#'        "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing". Defaults to
+#'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
@@ -118,9 +122,10 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
-#' @param num_knots Number of knots for gam predictors
-#' @param spline_orders Order of I-splines used for gam predictors. If specified, must be the same size as gam_columns.Values for bs=0
-#'        or 1 will be ignored.
+#' @param num_knots Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For monotone
+#'        I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of polynomial basis + 2.
+#' @param spline_orders Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If specified, must be the
+#'        same size as gam_columns.  Values for bs=0 or 1 will be ignored.
 #' @param knot_ids Array storing frame keys of knots.  One for each gam column set specified in gam_columns
 #' @param standardize_tp_gam_cols \code{Logical}. standardize tp (thin plate) predictor columns Defaults to FALSE.
 #' @param scale_tp_penalty_mat \code{Logical}. Scale penalty matrix for tp (thin plate) smoothers as in R Defaults to FALSE.
@@ -175,6 +180,7 @@ h2o.gam <- function(x,
                     plug_values = NULL,
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
+                    splines_non_negative = NULL,
                     intercept = TRUE,
                     non_negative = FALSE,
                     max_iterations = -1,
@@ -300,6 +306,8 @@ h2o.gam <- function(x,
     parms$compute_p_values <- compute_p_values
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
+  if (!missing(splines_non_negative))
+    parms$splines_non_negative <- splines_non_negative
   if (!missing(intercept))
     parms$intercept <- intercept
   if (!missing(non_negative))
@@ -425,6 +433,7 @@ h2o.gam <- function(x,
                                     plug_values = NULL,
                                     compute_p_values = FALSE,
                                     remove_collinear_columns = FALSE,
+                                    splines_non_negative = NULL,
                                     intercept = TRUE,
                                     non_negative = FALSE,
                                     max_iterations = -1,
@@ -555,6 +564,8 @@ h2o.gam <- function(x,
     parms$compute_p_values <- compute_p_values
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
+  if (!missing(splines_non_negative))
+    parms$splines_non_negative <- splines_non_negative
   if (!missing(intercept))
     parms$intercept <- intercept
   if (!missing(non_negative))

@@ -1,15 +1,12 @@
 package hex.isotonic;
 
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
-import hex.ModelMetricsRegression;
+import hex.*;
+import hex.genmodel.algos.isotonic.IsotonicCalibrator;
+import hex.genmodel.algos.isotonic.IsotonicRegressionUtils;
 import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
-
-import java.util.Arrays;
 
 public class IsotonicRegressionModel extends Model<IsotonicRegressionModel, 
         IsotonicRegressionModel.IsotonicRegressionParameters, IsotonicRegressionModel.IsotonicRegressionOutput> {
@@ -82,46 +79,13 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
     @Override
     protected double[] score0(double[] data, double[] preds) {
         final double x = _parms._out_of_bounds == OutOfBoundsHandling.Clip ? clip(data[0]) : data[0];
-        if (Double.isNaN(x) || x < _output._min_x || x > _output._max_x) {
-            preds[0] = Double.NaN;
-            return preds;
-        }
-        final int pos = Arrays.binarySearch(_output._thresholds_x, x);
-        final double y;
-        if (pos >= 0) {
-            y = _output._thresholds_y[pos];
-        } else {
-            final int lo = -pos - 2;
-            final int hi = lo + 1;
-            assert lo >= 0;
-            assert hi < _output._thresholds_x.length;
-            assert x > _output._thresholds_x[lo];
-            assert x < _output._thresholds_x[hi];
-            y = interpolate(x, _output._thresholds_x[lo], _output._thresholds_x[hi],
-                    _output._thresholds_y[lo], _output._thresholds_y[hi]);
-        }
-        preds[0] = y;
+        preds[0] = IsotonicRegressionUtils.score(x, 
+                _output._min_x, _output._max_x, _output._thresholds_x, _output._thresholds_y);
         return preds;
     }
 
     private double clip(double x) {
-        return clip(x, _output._min_x, _output._max_x);
-    }
-
-    static double clip(double x, double min, double max) {
-        final double clipped;
-        if (Double.isNaN(x))
-            clipped = Double.NaN;
-        else if (x < min)
-            clipped = min;
-        else
-            clipped = Math.min(x, max);
-        return clipped;
-    }
-
-    static double interpolate(double x, double xLo, double xHi, double yLo, double yHi) {
-        final double slope = (yHi - yLo) / (xHi - xLo);
-        return yLo + slope * (x - xLo);
+        return IsotonicRegressionUtils.clip(x, _output._min_x, _output._max_x);
     }
 
     @Override
@@ -132,6 +96,23 @@ public class IsotonicRegressionModel extends Model<IsotonicRegressionModel,
     @Override
     protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
         return new String[1][];
+    }
+
+    public IsotonicCalibrator toIsotonicCalibrator() {
+        return new IsotonicCalibrator(
+                _output._min_x, _output._max_x,
+                _output._thresholds_x, _output._thresholds_y
+        );
+    }
+
+    @Override
+    public boolean haveMojo() {
+        return true;
+    }
+
+    @Override
+    public IsotonicRegressionMojoWriter getMojo() {
+        return new IsotonicRegressionMojoWriter(this);
     }
 
 }

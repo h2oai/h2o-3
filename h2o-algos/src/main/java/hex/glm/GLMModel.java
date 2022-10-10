@@ -23,13 +23,20 @@ import water.util.*;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
+import static hex.glm.GLMUtils.genGLMParameters;
+import static hex.modelselection.ModelSelectionUtils.extractPredictorNames;
 import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
 import static hex.schemas.GLMModelV3.calculateVarimpBase;
 import static hex.util.DistributionUtils.distributionToFamily;
 import static hex.util.DistributionUtils.familyToDistribution;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -93,6 +100,74 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
   
   public void setVcov(double[][] inv) {_output._vcov = inv;}
+
+  /***
+   * This method will calculate the variable inflation factor of each numerical predictor using the following
+   * procedure:
+   * 1. For each numerical predictor, choose it as the response variable and leave all the other predictors as the
+   * predictors;
+   * 2. Build a GLM model and obtained the R2 of the model;
+   * 3. the variable inflation factor for that predictor is calculated as 1.0/(1.0-R2).
+   * 
+   * All the variable inflation factors for all valid predictors are saved in a double array.  No variable inflation
+   * factors are generated for non-numerical predictors.
+   * 
+   */
+  public String[] buildVariableInflationFactors(Frame train, DataInfo dinfo) {
+    String[] predictorNames = extractPredictorNames(_parms, dinfo, _parms._fold_column);
+    // only calculate VIF for numerical columns
+    String[] vifPredictors = getVifPredictors(train, _parms, dinfo);
+    return buildVariableInflationFactors(_parms, vifPredictors, predictorNames);
+  }
+
+  static String[] getVifPredictors(Frame train, GLMParameters parms, DataInfo dinfo) {
+    String[] predictorNames = extractPredictorNames(parms, dinfo, parms._fold_column);
+    return Stream.of(predictorNames)
+            .filter(x -> train.find(x) >= 0 && train.vec(x).isNumeric())
+            .toArray(String[]::new);
+  }
+
+  public String[] buildVariableInflationFactors(GLMParameters parms, String[] validPredictors, String[] predictorNames) {
+    // set variable inflation factors to NaN to start with
+    _output._variable_inflation_factors = IntStream.range(0, validPredictors.length).mapToDouble(x -> Double.NaN).boxed().
+            collect(Collectors.toList()).stream().mapToDouble(Double::doubleValue).toArray();
+    GLMParameters[] allParams = genGLMParameters(parms, validPredictors, predictorNames);
+    GLM[] glmBuilder = Stream.of(allParams).map(x -> new GLM(x)).collect(Collectors.toList()).stream().toArray(GLM[]::new);
+    int parallelization = nVIFModelsInParallel(parms);
+    GLM[] glmResults = ModelBuilderHelper.trainModelsParallel(glmBuilder, parallelization);
+    Double[] r2 = Arrays.stream(glmResults).mapToDouble(x ->x.get().r2()).boxed().collect(Collectors.toList()).stream()
+            .toArray(Double[]::new);
+    for (GLM glm : glmResults)
+      glm.get().remove();
+    _output._variable_inflation_factors = IntStream.range(0, validPredictors.length)
+            .mapToDouble(x -> 1.0 / (1.0 - r2[x])).boxed().collect(Collectors.toList()).stream()
+            .mapToDouble(Double::doubleValue).toArray();
+    return validPredictors;
+  }
+
+  static int nVIFModelsInParallel(GLMParameters parms) {
+    if (parms._is_cv_model) { // CV is already parallelized
+      return 1;
+    }
+    String userSpec = H2O.getSysProperty("glm.vif." + parms._train + ".nparallelism", null);
+    if (userSpec != null) {
+      try {
+        final int vifParallelization = Integer.parseInt(userSpec);
+        if (vifParallelization <= 0 || vifParallelization > H2O.ARGS.nthreads) {
+          Log.warn("Ignoring user-specified parallelization level for VIF calculation. " +
+                  "Value '" + userSpec + "' is out of range (0, nthreads].");
+        }
+        return vifParallelization;
+      } catch (Exception e) {
+        Log.err("Invalid user-specified parallelization level. Cannot parse value '" + userSpec + "' as a number.", e);
+      }
+    }
+    Frame train = parms.train();
+    if (train != null && train.byteSize() < 1e6) {
+      return H2O.ARGS.nthreads; // VIF is relatively lightweight, on small data run all concurrently
+    }
+    return 2; // same strategy as in CV of "big data" - run 2 models concurrently
+  }
 
   public static class RegularizationPath extends Iced {
     public double []   _lambdas;
@@ -296,8 +371,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _dispersion_epsilon = 1e-4;
-    public int _max_iterations_dispersion = 1000000;
+    public double _dispersion_epsilon = 1e-4; // 1e-4 for gamma, 1e-4 for tweedie
+    public int _max_iterations_dispersion = 3000;
     public double _objective_epsilon = -1;  // -1 to set to default
     public double _gradient_epsilon = -1;   // -1 to set to default
     public double _obj_reg = -1;
@@ -318,6 +393,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _init_dispersion_parameter = 1.0;
     public boolean _fix_dispersion_parameter = false;
     public boolean _build_null_model = false;
+    public boolean _generate_variable_inflation_factors = false; // if enabled, will generate variable_inflation_factors for numeric predictors
+    public double _tweedie_epsilon = 8e-17; // paper suggests 8e-17
+    public boolean _fix_tweedie_variance_power = true;
+    public int _max_series_index = 5000;
+    public boolean _debugTDispersionOnly = false;  // debug only and will slow down model building
+    public double _dispersion_learning_rate = 0.5;
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -1217,11 +1298,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     double[] _global_beta;
     double[] _ubeta;  // HGLM:  random coefficients
     private double[] _zvalues;
+    double[] _variable_inflation_factors;
+    String[] _vif_predictor_names; // predictor names corresponding to the variableInflationFactors
     double [][] _vcov;
     private double _dispersion;
     private boolean _dispersionEstimated;
     public int[] _activeColsPerClass;
     public boolean hasPValues(){return _zvalues != null;}
+    public boolean hasVIF() { return _vif_predictor_names != null; }
     public double [] stdErr(){
       double [] res = _zvalues.clone();
       for(int i = 0; i < res.length; ++i)
@@ -1231,6 +1315,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     
     public double[] getZValues() {
       return _zvalues;
+    }
+    public double[] getVariableInflationFactors() { return _variable_inflation_factors; }
+    public String[] getVIFPredictorNames() { return _vif_predictor_names; }
+    public Map<String, Double> getVIFAndNames() { 
+      if (_variable_inflation_factors != null)
+        return IntStream.range(0, _vif_predictor_names.length).boxed().collect(toMap(s ->_vif_predictor_names[s], s -> _variable_inflation_factors[s]));
+      else
+        return null;
     }
 
     @Override
@@ -1253,6 +1345,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       for(int i = 0; i < res.length; ++i)
         res[i] = 2*rd.cumulativeProbability(-Math.abs(res[i]));
       return res;
+    }
+    public double[] variableInflationFactors() {
+      return _variable_inflation_factors; // predictor orders the same as in coefficientNames
     }
     double[][] _global_beta_multinomial;
     final int _nclasses;

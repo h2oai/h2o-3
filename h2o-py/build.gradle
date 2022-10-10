@@ -133,8 +133,11 @@ task pythonVersion(type: Exec) {
 }
 
 
-task cleanUpSmokeTest(type: Delete) {
+task cleanUpTestResults(type: Delete) {
     delete file("${testsPath}/results")
+    doLast {
+        mkdir file("${testsPath}/results")
+    }
 }
 
 task cleanCoverageData(type: Delete) {
@@ -152,7 +155,7 @@ task cleanBuild(type: Delete) {
 //
 // Define the dependencies
 //
-clean.dependsOn cleanBuild, cleanUpSmokeTest, cleanCoverageData
+clean.dependsOn cleanBuild, cleanUpTestResults, cleanCoverageData
 buildDist.dependsOn buildClientDist // to have a predictable order of these 2 
 copyH2OJar.dependsOn ":h2o-assemblies:main:copyJar"
 build.dependsOn copyMainDist

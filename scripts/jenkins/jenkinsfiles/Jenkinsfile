@@ -62,16 +62,21 @@ try {
                   """
                   scmEnv = [
                     GIT_BRANCH: env.ghprbSourceBranch,
+                    GIT_TARGET: env.ghprbTargetBranch,
                     GIT_COMMIT: env.ghprbActualCommit,
                     GIT_URL: 'https://github.com/h2oai/h2o-3'
                   ]
                   env.BUILDING_FORK = true
                 } else {
                   // building regular PR
-                  scmEnv = checkout scm
+                  def prScmEnv = checkout scm
+                  scmEnv = [
+                    GIT_TARGET: env.CHANGE_TARGET
+                  ] + prScmEnv
                 }
               }
             }
+            echo "$scmEnv"
 
             if (pipelineContext == null) {
               def initPipelineContext = load('h2o-3/scripts/jenkins/groovy/initPipelineContext.groovy')

@@ -57,11 +57,11 @@
 #'        exceeds this Defaults to 1.797693135e+308.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR",
+#'        "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing". Defaults to
+#'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -97,6 +97,10 @@
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param custom_distribution_func Reference to custom distribution, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param in_training_checkpoints_dir Create checkpoints into defined directory while training process is still running. In case of cluster
+#'        shutdown, this checkpoint can be used to restart training.
+#' @param in_training_checkpoints_tree_interval Checkpoint the model after every so many trees. Parameter is used only when in_training_checkpoints_dir is
+#'        defined Defaults to 1.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
@@ -178,6 +182,8 @@ h2o.gbm <- function(x,
                     custom_metric_func = NULL,
                     custom_distribution_func = NULL,
                     export_checkpoints_dir = NULL,
+                    in_training_checkpoints_dir = NULL,
+                    in_training_checkpoints_tree_interval = 1,
                     monotone_constraints = NULL,
                     check_constant_response = TRUE,
                     gainslift_bins = -1,
@@ -318,6 +324,10 @@ h2o.gbm <- function(x,
     parms$custom_distribution_func <- custom_distribution_func
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(in_training_checkpoints_dir))
+    parms$in_training_checkpoints_dir <- in_training_checkpoints_dir
+  if (!missing(in_training_checkpoints_tree_interval))
+    parms$in_training_checkpoints_tree_interval <- in_training_checkpoints_tree_interval
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))
@@ -387,6 +397,8 @@ h2o.gbm <- function(x,
                                     custom_metric_func = NULL,
                                     custom_distribution_func = NULL,
                                     export_checkpoints_dir = NULL,
+                                    in_training_checkpoints_dir = NULL,
+                                    in_training_checkpoints_tree_interval = 1,
                                     monotone_constraints = NULL,
                                     check_constant_response = TRUE,
                                     gainslift_bins = -1,
@@ -531,6 +543,10 @@ h2o.gbm <- function(x,
     parms$custom_distribution_func <- custom_distribution_func
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(in_training_checkpoints_dir))
+    parms$in_training_checkpoints_dir <- in_training_checkpoints_dir
+  if (!missing(in_training_checkpoints_tree_interval))
+    parms$in_training_checkpoints_tree_interval <- in_training_checkpoints_tree_interval
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))

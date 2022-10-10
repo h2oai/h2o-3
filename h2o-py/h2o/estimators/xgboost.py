@@ -27,7 +27,8 @@ class H2OXGBoostEstimator(H2OEstimator):
                                       'h2o.model.extensions.FeatureInteraction',
                                       'h2o.model.extensions.Trees',
                                       'h2o.model.extensions.SupervisedTrees',
-                                      'h2o.model.extensions.HStatistic'],
+                                      'h2o.model.extensions.HStatistic',
+                                      'h2o.model.extensions.Contributions'],
                  'verbose': True}
 
     def __init__(self,
@@ -161,7 +162,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                Defaults to ``0``.
         :type stopping_rounds: int
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               regression and anomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client.
                Defaults to ``"auto"``.
         :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
@@ -836,7 +837,7 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 

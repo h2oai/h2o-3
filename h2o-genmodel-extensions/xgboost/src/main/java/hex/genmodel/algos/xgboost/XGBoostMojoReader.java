@@ -26,13 +26,22 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     if (exists("feature_map")) {
       _model._featureMap = new String(readblob("feature_map"), StandardCharsets.UTF_8);
     }
+
     // Calibration
     String calibMethod = readkv("calib_method");
     if (calibMethod != null) {
-      if (!"platt".equals(calibMethod))
-        throw new IllegalStateException("Unknown calibration method: " + calibMethod);
-      _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
+      switch (calibMethod) {
+        case "platt":
+          _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
+          break;
+        case "isotonic":
+          _model._isotonic_calibrator = readIsotonicCalibrator();
+          break;
+        default:
+          throw new IllegalStateException("Unknown calibration method: " + calibMethod);
+      }
     }
+
     _model._hasOffset = readkv("has_offset", false);
     _model.postReadInit();
   }

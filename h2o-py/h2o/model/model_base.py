@@ -5,8 +5,8 @@ import os
 
 import h2o
 from h2o.base import Keyed
-from h2o.display import H2ODisplay, StringIO, display, format_to_html, format_to_multiline, format_user_tips, print2 as print
-from h2o.exceptions import H2OValueError
+from h2o.display import H2ODisplay, display, format_to_html, format_to_multiline, format_user_tips, print2 as print
+from h2o.exceptions import H2OValueError, H2OTypeError
 from h2o.job import H2OJob
 from h2o.model.extensions import has_extension
 from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, get_matplotlib_cm, get_mplot3d_axes, RAISE_ON_FIGURE_ACCESS
@@ -14,7 +14,6 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas, can_use_numpy
-from h2o.utils.threading import local_context, local_env
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
 
 
@@ -24,7 +23,9 @@ from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
     )
 )
 class ModelBase(h2o_meta(Keyed, H2ODisplay)):
-    """Base class for all models."""
+    """
+    Base class for all models.
+    """
 
     _options_ = {}    # dict of options declared in implementation
 
@@ -227,16 +228,14 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         >>> # Compute SHAP and pick the top two highest and top two lowest
         >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
         """
-        assert_is_type(output_format, None, Enum("Original", "Compact"))
-        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                           data={"predict_contributions": True,
-                                 "predict_contributions_output_format": output_format,
-                                 "top_n": top_n,
-                                 "bottom_n": bottom_n,
-                                 "compare_abs": compare_abs}), "contributions")
-        j.poll()
-        return h2o.get_frame(j.dest_key)
+        if has_extension(self, 'Contributions'):
+            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs)
+        err_msg = "This model doesn't support calculation of feature contributions."
+        if has_extension(self, 'StandardCoef'):
+            err_msg += " When features are independent, you can use the coef() method to get coefficients"
+            err_msg += " for non-standardized data or coef_norm() to get coefficients for standardized data."
+            err_msg += " You can plot standardized coefficient magnitudes by calling std_coef_plot() on the model."
+        raise H2OTypeError(message=err_msg)
 
     def feature_frequencies(self, test_data):
         """
@@ -285,6 +284,35 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                    self._model_json["algo"] + " prediction")
         j.poll()
         return h2o.get_frame(j.dest_key)
+
+    def calibrate(self, calibration_model):
+        """
+        Calibrate a trained model with a supplied calibration model.
+
+        Only tree-based models can be calibrated.
+
+        :param calibration_model: a GLM model (for Platt Scaling) or Isotonic Regression model trained with the purpose
+            of calibrating output of this model.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> from h2o.estimators.isotonicregression import H2OIsotonicRegressionEstimator
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
+        >>> df["Angaus"] = df["Angaus"].asfactor()
+        >>> train, calib = df.split_frame(ratios=[.8], destination_frames=["eco_train", "eco_calib"], seed=42)
+        >>> model = H2OGradientBoostingEstimator()
+        >>> model.train(x=list(range(2, train.ncol)), y="Angaus", training_frame=train)
+        >>> isotonic_train = calib[["Angaus"]]
+        >>> isotonic_train = isotonic_train.cbind(model.predict(calib)["p1"])
+        >>> h2o_iso_reg = H2OIsotonicRegressionEstimator(out_of_bounds="clip")
+        >>> h2o_iso_reg.train(training_frame=isotonic_train, x="p1", y="Angaus")
+        >>> model.calibrate(h2o_iso_reg)
+        >>> model.predict(train)
+        """
+        if has_extension(self, 'SupervisedTrees'):
+            return self._calibrate(calibration_model)
+        print("Only supervised tree-based models support model calibration")
 
     def is_cross_validated(self):
         """Return True if the model was cross-validated."""
@@ -421,7 +449,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 
             If type is ``"auto"`` ("qini"), AUUC is calculated. 
         :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to ``-1``, which means 1000.
-        :returns: An object of class H2OModelMetrics.
+        :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
         """
         
         if test_data is None:
@@ -682,6 +710,19 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """Pretty print the coefficents table (includes normalized coefficients)."""
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
+    def get_variable_inflation_factors(self):
+        if self.algo == 'glm':
+            if self.parms['generate_variable_inflation_factors']:
+                tbl = self._model_json["output"]["coefficients_table"]
+                if tbl is None:
+                    return None
+                return {name: vif for name, vif in zip(tbl["names"], tbl["variable_inflation_factor"])}
+            else:
+                raise ValueError("variable inflation factors are generated only when "
+                                 "generate_variable_inflation_factors is enabled.")
+        else:
+            raise ValueError("variable inflation factors are only found in GLM models for numerical predictors.")
+        
     def coef(self):
         """
         Return the coefficients which can be applied to the non-standardized data.
@@ -720,7 +761,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                                  "compute_p_values=True.")
         else:
             raise ValueError("p-values, z-values and std_error are only found in GLM.")
-            
+        
     def _fillMultinomialDict(self, standardize=False):
         if self.algo == 'gam':
             tbl = self._model_json["output"]["coefficients_table"]
@@ -1800,7 +1841,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     # --------------------------------
     
     def _str_items(self, verbosity=None):
-        verbosity = verbosity or 'medium'  # default verbosity when printing model
+        verbosity = verbosity or 'full'  # default verbosity when printing model
         # edge cases
         if self._future:
             self._job.poll_once()
@@ -1844,7 +1885,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         return items
     
     def _str_usage(self, verbosity=None, fmt=None):
-        verbosity = verbosity or 'medium'  # default verbosity when printing model
+        verbosity = verbosity or 'full'  # default verbosity when printing model
         if not self._model_json or verbosity == 'short':
             return ""
         lines = []

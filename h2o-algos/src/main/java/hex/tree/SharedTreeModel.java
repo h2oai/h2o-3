@@ -109,6 +109,10 @@ public abstract class SharedTreeModel<
 
     public boolean _use_best_cv_iteration = true; // when early stopping is enabled, cv models will pick the iteration that produced the best score instead of the stopping iteration
 
+    public String _in_training_checkpoints_dir;
+
+    public int _in_training_checkpoints_tree_interval = 1;  // save model checkpoint every so many trees (no matter what)
+
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
@@ -299,7 +303,12 @@ public abstract class SharedTreeModel<
       return _calib_model;
     }
 
-    public CompressedTree ctree( int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
+    @Override
+    public void setCalibrationModel(Model<?, ?, ?> model) {
+      _calib_model = model;
+    }
+
+    public CompressedTree ctree(int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
     public String toStringTree ( int tnum, int knum ) { return ctree(tnum,knum).toString(this); }
   }
 

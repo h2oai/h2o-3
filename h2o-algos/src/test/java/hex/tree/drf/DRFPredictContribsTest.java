@@ -209,6 +209,57 @@ public class DRFPredictContribsTest extends TestUtil {
         }
     }
 
+    @Test(expected = UnsupportedOperationException.class)
+    public void testScoreContributionsBinomialDoubleTreesFail() {
+        try {
+            Scope.enter();
+            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+            fr.toCategoricalCol("survived");
+
+            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+
+            parms._train = fr._key;
+            parms._response_column = "survived";
+            parms._ntrees = 1;
+            parms._max_depth = 4;
+            parms._binomial_double_trees = true;
+            parms._seed = 42;
+
+            DRF job = new DRF(parms);
+            DRFModel drf = job.trainModel().get();
+            Scope.track_generic(drf);
+
+            drf.scoreContributions(fr, Key.make("contributions_binomial_titanic"));
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = IOException.class)
+    public void testScoreContributionsBinomialDoubleTreesMojoFail() throws IOException {
+        try {
+            Scope.enter();
+            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+            fr.toCategoricalCol("survived");
+
+            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+
+            parms._train = fr._key;
+            parms._response_column = "survived";
+            parms._ntrees = 1;
+            parms._max_depth = 4;
+            parms._binomial_double_trees = true;
+            parms._seed = 42;
+
+            DRFModel drf = Scope.track_generic(new DRF(parms).trainModel().get());
+
+            new EasyPredictModelWrapper.Config()
+                    .setModel(drf.toMojo())
+                    .setEnableContributions(true);
+        } finally {
+            Scope.exit();
+        }
+    }
 
     private static class CheckTreeSHAPTask extends MRTask<DRFPredictContribsTest.CheckTreeSHAPTask> {
         final DRFModel _model;

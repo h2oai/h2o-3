@@ -1,3 +1,8 @@
+"""
+.. note::
+    Classes in this module are used at runtime as mixins: their methods can (and should) be accessed directly 
+    from a metrics object, for example as a result of :func:`~h2o.model.ModelBase.model_performance`.
+"""
 from .anomaly_detection import H2OAnomalyDetectionModelMetrics
 from .binomial import H2OBinomialModelMetrics
 from .clustering import H2OClusteringModelMetrics

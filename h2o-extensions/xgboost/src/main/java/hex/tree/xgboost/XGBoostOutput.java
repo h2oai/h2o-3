@@ -71,4 +71,10 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Cali
   public Model<?, ?, ?> calibrationModel() {
     return _calib_model;
   }
+
+  @Override
+  public void setCalibrationModel(Model<?, ?, ?> model) {
+    _calib_model = model;
+  }
+
 }

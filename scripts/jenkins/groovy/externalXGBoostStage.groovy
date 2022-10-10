@@ -3,7 +3,8 @@ def call(final pipelineContext, final stageConfig) {
     def buildId = env.BUILD_ID
     def workDir = "/user/jenkins/workspaces/xgb-$branch"
     withCredentials([
-            usernamePassword(credentialsId: 'mr-0xd-admin-credentials', usernameVariable: 'ADMIN_USERNAME', passwordVariable: 'ADMIN_PASSWORD')
+            usernamePassword(credentialsId: 'mr-0xd-admin-credentials', usernameVariable: 'ADMIN_USERNAME', passwordVariable: 'ADMIN_PASSWORD'),
+            usernamePassword(credentialsId: 'kerberos-credentials', usernameVariable: 'KRB_USERNAME', passwordVariable: 'KRB_PASSWORD')
     ]) {
         stageConfig.customBuildAction = """
             export HADOOP_CONF_DIR=/etc/hadoop/conf/
@@ -53,6 +54,11 @@ def call(final pipelineContext, final stageConfig) {
 
 private GString downloadConfigsScript(Map config) {
     def apiBase = "http://${config.configSource}.0xdata.loc:8080/api/v1/clusters/${config.hdpName}/services"
+    def krbScript = """
+        curl -u \$ADMIN_USERNAME:\$ADMIN_PASSWORD ${apiBase}/KERBEROS/components/KERBEROS_CLIENT?format=client_config_tar > krb_config.tar
+        tar xvvf krb_config.tar
+        echo "\$KRB_PASSWORD" | kinit \$KRB_USERNAME
+    """
     return """
         echo "Downloading hadoop configuration from ${apiBase}"
         cd \$HADOOP_CONF_DIR
@@ -62,13 +68,15 @@ private GString downloadConfigsScript(Map config) {
         tar xvvf mapred_config.tar
         curl -u \$ADMIN_USERNAME:\$ADMIN_PASSWORD ${apiBase}/YARN/components/YARN_CLIENT?format=client_config_tar > yarn_config.tar
         tar xvvf yarn_config.tar
+        ${krbScript}
         rm *.tar
+        export HDP_VERSION=${config.versionExact}
         cd -
     """
 }
 
 private GString startH2OScript(final config, final branch, final buildId, final clusterName) {
-    def cloudingDir = config.cloudingDir + branch + "-ext-xgb-" + clusterName
+    def cloudingDir = config.cloudingDir + "-" + branch + "-ext-xgb-" + clusterName + "-" + buildId
     def notifyFile = "h2o_notify_${clusterName}"
     def driverLogFile = "h2odriver_${clusterName}.log"
     def xgbArgs = ""

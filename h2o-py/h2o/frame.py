@@ -4966,6 +4966,7 @@ class H2OFrame(Keyed, H2ODisplay):
         :param cols:
         
         :examples:
+        
         >>> from random import randrange
         >>> import numpy as np
         >>> row_num = randrange(1,10)
@@ -5002,6 +5003,7 @@ class H2OFrame(Keyed, H2ODisplay):
                 with the summary statistics as values.
                 
         :examples:
+        
         >>> frame = h2o.import_file("h2o://iris")
         >>> frame.get_summary()
         """
@@ -5014,6 +5016,7 @@ class H2OFrame(Keyed, H2ODisplay):
         Summary includes min/mean/max/sigma and other rollup data.
         
         :examples:
+        
         >>> frame = h2o.import_file("h2o://iris")
         >>> frame.summarize()
         """

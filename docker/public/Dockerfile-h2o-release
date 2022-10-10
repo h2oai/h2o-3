@@ -9,14 +9,29 @@ LABEL "release"=${H2O_VERSION}
 LABEL "summary"="H2O Open Source Machine Learning platform"
 LABEL "description"="H2O is an Open Source, Distributed, Fast & Scalable Machine Learning Platform: Deep Learning, Gradient Boosting (GBM) & XGBoost, Random Forest, Generalized Linear Modeling (GLM with Elastic Net), K-Means, PCA, Generalized Additive Models (GAM), RuleFit, Support Vector Machine (SVM), Stacked Ensembles, Automatic Machine Learning (AutoML), etc."
 
-# Install OpenJDK 11
-# The Java installed must properly recognize container resource limits
-RUN microdnf install java-11-openjdk
+# Install libgomp - to enable XGBoost multithreading
+RUN microdnf install wget tar gzip \
+    && microdnf install libgomp
 RUN microdnf clean all
+
+# Install Java 17 (GraalVM Community Edition 22.2.0)
+RUN wget -O /tmp/graalvm-ce.tar.gz https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.2.0/graalvm-ce-java17-linux-amd64-22.2.0.tar.gz \
+    && mkdir /tmp/graalvm/ \
+    && cd /tmp/graalvm/ \
+    && tar xfz /tmp/graalvm-ce.tar.gz \
+    && mkdir /opt/java/ \
+    && cp -r graalvm-ce-* /opt/java/ \
+    && cd /opt/java/graalvm-ce-* \
+    && /bin/bash -c 'for cmd in $(ls bin/); do alternatives --install /usr/bin/$cmd $cmd $PWD/bin/$cmd 1; done' \
+    && rm -r /tmp/graalvm-ce.tar.gz /tmp/graalvm/
 
 # Copy H2O-3 artifact into the container
 RUN mkdir -p /opt/h2oai/h2o-3/
 COPY h2o.jar /opt/h2oai/h2o-3/
+
+# Extract native XGBoost libraries to avoid extract on H2O boot-up
+RUN mkdir /opt/h2oai/h2o-3/xgb_lib_dir \
+    && java -cp /opt/h2oai/h2o-3/h2o.jar water.tools.XGBoostLibExtractTool /opt/h2oai/h2o-3/xgb_lib_dir
 
 # Copy project's license into the container (required by Red Hat for certification)
 RUN mkdir /licenses
@@ -24,4 +39,4 @@ COPY LICENSE /licenses/
 
 # By default, run H2O and allocate only 50 percent of memory available to the JVM, the rest remains free for XGBoost
 # Overridable by the user
-CMD java -XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -jar /opt/h2oai/h2o-3/h2o.jar
+CMD java -Djava.library.path=/opt/h2oai/h2o-3/xgb_lib_dir -XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -jar /opt/h2oai/h2o-3/h2o.jar

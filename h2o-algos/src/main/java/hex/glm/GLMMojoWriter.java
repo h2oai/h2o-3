@@ -1,7 +1,6 @@
 package hex.glm;
 
 import hex.ModelMojoWriter;
-import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
 import java.io.IOException;
 

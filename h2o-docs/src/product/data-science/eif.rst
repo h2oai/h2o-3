@@ -27,6 +27,11 @@ splitting for a given point :math:`x` is as follows:
 .. math::
     (x - p) * n ≤ 0
 
+MOJO Support
+''''''''''''
+
+Extended Isolation Forest supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Tutorials and Blogs
 ~~~~~~~~~~~~~~~~~~~
 
@@ -74,7 +79,7 @@ In short, the anomaly score is the average **mean_length** in a forest normalize
 The **anomaly_score**:
 
 .. math::
-    anomaly\_score(x, sample\_size)=2^{-mean\_length/c(sample\_size)}
+    anomaly\_score(x, sample\_size)=2^{-mean\_length(x)/c(sample\_size)}
 
 where:
 
@@ -90,7 +95,7 @@ is the average path of the unsuccessful search in a BST for the data set of size
 
 :math:`H(.)` is a harmonic number estimated as: :math:`H(.) = ln(.) + 0.5772156649` (`Euler’s constant <https://en.wikipedia.org/wiki/Euler%E2%80%93Mascheroni_constant>`__)
 
-The **mean_length** is the mean path length of a point in the forest:
+The **mean_length(x)** is the mean path length of a point in the forest:
 
 .. math::
     mean\_length(x) = \frac{path\_length(x) + c(Node.num\_rows)}{ntrees}

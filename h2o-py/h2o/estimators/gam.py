@@ -67,6 +67,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  compute_p_values=False,  # type: bool
                  remove_collinear_columns=False,  # type: bool
+                 splines_non_negative=None,  # type: Optional[List[bool]]
                  intercept=True,  # type: bool
                  non_negative=False,  # type: bool
                  max_iterations=-1,  # type: int
@@ -219,6 +220,12 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param remove_collinear_columns: In case of linearly dependent columns, remove some of the dependent columns
                Defaults to ``False``.
         :type remove_collinear_columns: bool
+        :param splines_non_negative: Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing
+               (and monotonically non-decreasing) and False if the I-splines are monotonically decreasing (and
+               monotonically non-increasing).  If specified, must be the same size as gam_columns.  Values for other
+               spline types will be ignored.  Default to true.
+               Defaults to ``None``.
+        :type splines_non_negative: List[bool], optional
         :param intercept: Include constant term in the model
                Defaults to ``True``.
         :type intercept: bool
@@ -291,7 +298,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                Defaults to ``0``.
         :type stopping_rounds: int
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               regression and anomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client.
                Defaults to ``"auto"``.
         :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
@@ -322,11 +329,13 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                Defaults to ``None``.
         :type custom_metric_func: str, optional
-        :param num_knots: Number of knots for gam predictors
+        :param num_knots: Number of knots for gam predictors.  If specified, must specify one for each gam predictor.
+               For monotone I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of
+               polynomial basis + 2.
                Defaults to ``None``.
         :type num_knots: List[int], optional
-        :param spline_orders: Order of I-splines used for gam predictors. If specified, must be the same size as
-               gam_columns.Values for bs=0 or 1 will be ignored.
+        :param spline_orders: Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If
+               specified, must be the same size as gam_columns.  Values for bs=0 or 1 will be ignored.
                Defaults to ``None``.
         :type spline_orders: List[int], optional
         :param knot_ids: Array storing frame keys of knots.  One for each gam column set specified in gam_columns
@@ -389,6 +398,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self.plug_values = plug_values
         self.compute_p_values = compute_p_values
         self.remove_collinear_columns = remove_collinear_columns
+        self.splines_non_negative = splines_non_negative
         self.intercept = intercept
         self.non_negative = non_negative
         self.max_iterations = max_iterations
@@ -859,6 +869,23 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         self._parms["remove_collinear_columns"] = remove_collinear_columns
 
     @property
+    def splines_non_negative(self):
+        """
+        Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing (and monotonically non-
+        decreasing) and False if the I-splines are monotonically decreasing (and monotonically non-increasing).  If
+        specified, must be the same size as gam_columns.  Values for other spline types will be ignored.  Default to
+        true.
+
+        Type: ``List[bool]``.
+        """
+        return self._parms.get("splines_non_negative")
+
+    @splines_non_negative.setter
+    def splines_non_negative(self, splines_non_negative):
+        assert_is_type(splines_non_negative, None, [bool])
+        self._parms["splines_non_negative"] = splines_non_negative
+
+    @property
     def intercept(self):
         """
         Include constant term in the model
@@ -1128,7 +1155,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
@@ -1245,7 +1272,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def num_knots(self):
         """
-        Number of knots for gam predictors
+        Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For monotone
+        I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of polynomial basis + 2.
 
         Type: ``List[int]``.
         """
@@ -1259,8 +1287,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def spline_orders(self):
         """
-        Order of I-splines used for gam predictors. If specified, must be the same size as gam_columns.Values for bs=0
-        or 1 will be ignored.
+        Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If specified, must be the
+        same size as gam_columns.  Values for bs=0 or 1 will be ignored.
 
         Type: ``List[int]``.
         """

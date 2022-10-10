@@ -903,6 +903,7 @@ predict_contributions.H2OModel <- function(object, newdata, output_format = c("o
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
+    .check_model_suitability_for_calculation_of_contributions(object)
     params <- list(predict_contributions = TRUE, top_n=top_n, bottom_n=bottom_n, compare_abs=compare_abs)
     params$predict_contributions_output_format <- match.arg(output_format)
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
@@ -2226,6 +2227,45 @@ h2o.coef_with_p_values <- function(object) {
     }
   } else {
     stop("p-values, z-values and std_error are only found in GLM.")
+  }
+}
+
+#'
+#' Return the variable inflation factors associated with numerical predictors for GLM models.
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "cylinders"
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
+#' cars_glm <- h2o.glm(seed = 1234, 
+#'                     lambda=0.0,
+#'                     compute_p_values=TRUE,
+#'                     generate_variable_inflation_factors=TRUE,     
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = train, 
+#'                     validation_frame = valid)
+#' h2o.get_variable_inflation_factors(cars_glm)
+#' }
+#' @export
+h2o.get_variable_inflation_factors <- function(object) {
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+    if (object@parameters$generate_variable_inflation_factors) {
+      structure(object@model$variable_inflation_factors, names = object@model$vif_predictor_names)
+    } else {
+      stop("variable inflation factors are not found in model.  Make sure to set enable_variable_inflation_factors=TRUE.")
+    }
+  } else {
+    stop("variable inflation factors are only found in GLM models with numerical predictors.")
   }
 }
 

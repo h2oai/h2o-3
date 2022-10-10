@@ -9,6 +9,7 @@ import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
+import hex.genmodel.utils.ArrayUtils;
 
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -37,6 +38,7 @@ public class PredictCsv {
   private final boolean setInvNumNA;
   private final boolean getTreePath;
   private final boolean predictContributions;
+  private final boolean predictCalibrated;
   private final boolean returnGLRMReconstruct;
   private final int glrmIterNumber;
   private final boolean outputHeader;
@@ -47,7 +49,8 @@ public class PredictCsv {
   private PredictCsv(
           String inputCSVFileName, String outputCSVFileName, 
           boolean useDecimalOutput, char separator, boolean setInvNumNA, 
-          boolean getTreePath, boolean predictContributions, boolean returnGLRMReconstruct, int glrmIterNumber,
+          boolean getTreePath, boolean predictContributions, boolean predictCalibrated,
+          boolean returnGLRMReconstruct, int glrmIterNumber,
           boolean outputHeader) {
     this.inputCSVFileName = inputCSVFileName;
     this.outputCSVFileName = outputCSVFileName;
@@ -56,6 +59,7 @@ public class PredictCsv {
     this.setInvNumNA = setInvNumNA;
     this.getTreePath = getTreePath;
     this.predictContributions = predictContributions;
+    this.predictCalibrated = predictCalibrated;
     this.returnGLRMReconstruct = returnGLRMReconstruct;
     this.glrmIterNumber = glrmIterNumber;
     this.outputHeader = outputHeader;
@@ -156,6 +160,15 @@ public class PredictCsv {
     writeColumnNames(output, columnNames);
   }
 
+  private void writeCalibratedOutputNames(BufferedWriter output) throws Exception {
+    String[] outputNames = modelWrapper.m.getOutputNames();
+    String[] calibOutputNames = new String[outputNames.length - 1];
+    for (int i = 0; i < calibOutputNames.length; i++) {
+      calibOutputNames[i] = "cal_" + outputNames[i + 1];
+    }
+    writeColumnNames(output, ArrayUtils.append(outputNames, calibOutputNames));
+  }
+
   private void writeContributionNames(BufferedWriter output) throws Exception {
     writeColumnNames(output, modelWrapper.getContributionNames());
   }
@@ -184,6 +197,8 @@ public class PredictCsv {
             writeTreePathNames(output);
           } else if (predictContributions) {
             writeContributionNames(output);
+          } else if (predictCalibrated) {
+            writeCalibratedOutputNames(output);
           } else
             writeHeader(modelWrapper.m.getOutputNames(), output);
           break;
@@ -255,6 +270,14 @@ public class PredictCsv {
                   output.write(",");
                 }
                 output.write(myDoubleToString(p.classProbabilities[i]));
+              }
+              if (predictCalibrated) {
+                for (int i = 0; i < p.classProbabilities.length; i++) {
+                  output.write(",");
+                  double calibProb = p.calibratedClassProbabilities != null ? 
+                          p.calibratedClassProbabilities[i] : Double.NaN;
+                  output.write(myDoubleToString(calibProb));
+                }
               }
             }
             break;
@@ -552,6 +575,7 @@ public class PredictCsv {
     private boolean setInvNumNA;            // enable .setConvertInvalidNumbersToNa(true)
     private boolean getTreePath;            // enable tree models to obtain the leaf-assignment information
     private boolean predictContributions;   // enable tree models to predict contributions instead of regular predictions
+    private boolean predictCalibrated;      // output also calibrated probabilities
     private boolean returnGLRMReconstruct;  // for GLRM, return x factor by default unless set this to true
     private int glrmIterNumber = -1;        // for GLRM, default to 100.
     private boolean outputHeader = true;    // should we write-out header to output files?
@@ -564,12 +588,12 @@ public class PredictCsv {
 
     private PredictCsv newPredictCsv() {
       return new PredictCsv(inputCSVFileName, outputCSVFileName, useDecimalOutput, separator, setInvNumNA,
-              getTreePath, predictContributions, returnGLRMReconstruct, glrmIterNumber, outputHeader);
+              getTreePath, predictContributions, predictCalibrated, returnGLRMReconstruct, glrmIterNumber, outputHeader);
     }
 
     private PredictCsv newConcurrentPredictCsv(int id) {
       return new PredictCsv(inputCSVFileName, outputCSVFileName + "." + id, useDecimalOutput, separator, setInvNumNA,
-              getTreePath, predictContributions, returnGLRMReconstruct, glrmIterNumber, outputHeader);
+              getTreePath, predictContributions, predictCalibrated, returnGLRMReconstruct, glrmIterNumber, outputHeader);
     }
 
     private void parseArgs(String[] args) {
@@ -587,6 +611,8 @@ public class PredictCsv {
           getTreePath = true;
         else if (s.equals("--predictContributions")) {
           predictContributions = true;
+        } else if (s.equals("--predictCalibrated")) {
+          predictCalibrated = true;
         } else if (s.equals("--embedded")) {
           loadType = -1;
         } else {

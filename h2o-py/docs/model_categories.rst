@@ -14,13 +14,6 @@ Model Categories
     :undoc-members:
     :show-inheritance:
 
-:mod:`MetricsBase`
-------------------
-
-.. automodule:: h2o.model.metrics_base
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 :mod:`Binomial Classification`
 ------------------------------
@@ -46,18 +39,10 @@ Model Categories
     :undoc-members:
     :show-inheritance:
 
-:mod:`Dimensionality Reduction`
+:mod:`Anomaly Detection`
 -------------------------------
 
-.. automodule:: h2o.model.models.dim_reduction
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`Clustering Methods`
--------------------------
-
-.. automodule:: h2o.model.models.clustering
+.. automodule:: h2o.model.models.anomaly_detection
     :members:
     :undoc-members:
     :show-inheritance:
@@ -70,10 +55,42 @@ Model Categories
     :undoc-members:
     :show-inheritance:
 
-:mod:`Anomaly Detection`
-------------------------
+:mod:`Clustering Methods`
+-------------------------
 
-.. automodule:: h2o.model.models.anomaly_detection
+.. automodule:: h2o.model.models.clustering
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`CoxPH`
+-------------------------
+
+.. automodule:: h2o.model.models.coxph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`Dimensionality Reduction`
+-------------------------------
+
+.. automodule:: h2o.model.models.dim_reduction
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`Ordinal`
+-------------------------------
+
+.. automodule:: h2o.model.models.ordinal
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`Uplift`
+-------------------------------
+
+.. automodule:: h2o.model.models.uplift
     :members:
     :undoc-members:
     :show-inheritance:

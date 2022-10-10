@@ -246,6 +246,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     Model.Parameters.FoldAssignmentScheme _glmFoldAssignment = null;
     String _glmFoldColumn = null;
     boolean _glmCvOn = false;
+    public boolean[] _splines_non_negative;
+    public boolean[] _splines_non_negative_sorted;
 
     @Override
     public long progressUnits() {

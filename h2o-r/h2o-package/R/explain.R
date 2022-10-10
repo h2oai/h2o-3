@@ -97,6 +97,15 @@ case_insensitive_match_arg <- function(arg, choices) {
   return(.get_algorithm(model) %in% c("drf", "gbm", "xgboost"))
 }
 
+#' Has the \code{model} coefficients?
+#'
+#' @param model Either a linear model with coefficients => TRUE, or something else => FALSE
+#'
+#' @return boolean
+.has_model_coefficients <- function(model) {
+    return(.get_algorithm(model) %in% c("glm"))
+}
+
 #' Is the model considered to be interpretable, i.e., simple enough.
 #'
 #' @param model model or a string containing model id
@@ -1578,6 +1587,19 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
   return(p)
 }
 
+.check_model_suitability_for_calculation_of_contributions <- function(model) {
+    is_h2o_model <- .is_h2o_model(model)
+    if (!is_h2o_model || !(.is_h2o_tree_model(model) || model@algorithm == "generic")) {
+        err_msg <-  "Calculation of feature contributions requires a tree-based model."
+        if (is_h2o_model && .has_model_coefficients(model)) {
+            err_msg <- paste(err_msg, " When features are independent, you can use the h2o.coef() method to get coefficients")
+            err_msg <- paste(err_msg, " for non-standardized data or h2o.coef_norm() to get coefficients for standardized data.")
+            err_msg <- paste(err_msg, " You can plot standardized coefficient magnitudes by calling h2o.std_coef_plot() on the model.")
+        }
+        stop(err_msg)
+    }
+}
+
 #' SHAP Summary Plot
 #'
 #' SHAP summary plot shows the contribution of the features for each instance (row of data).
@@ -1628,9 +1650,7 @@ h2o.shap_summary_plot <-
     .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
-    if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
-      stop("SHAP summary plot requires a tree-based model!")
-    }
+    .check_model_suitability_for_calculation_of_contributions(model)
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
     }
@@ -1838,9 +1858,7 @@ h2o.shap_explain_row_plot <-
     .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
-    if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
-      stop("SHAP explain_row plot requires a tree-based model!")
-    }
+    .check_model_suitability_for_calculation_of_contributions(model)
 
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")

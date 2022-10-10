@@ -46,6 +46,13 @@ def calibration_test():
 
     assert_frame_equal(expected_preds.as_data_frame(), preds_train.as_data_frame())
 
+    assert pyunit_utils.test_java_scoring(model, train, preds_train, 1e-8)
+
+    # test MOJO
+    mojo = pyunit_utils.download_mojo(model)
+    mojo_prediction = h2o.mojo_predict_pandas(dataframe=train.as_data_frame(), predict_calibrated=True, **mojo)
+    assert_frame_equal(expected_preds.as_data_frame(), mojo_prediction)
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(calibration_test)

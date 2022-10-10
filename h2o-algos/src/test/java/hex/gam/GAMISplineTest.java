@@ -22,6 +22,7 @@ import static hex.gam.GamBasicISplineTest.assert2DArrayEqual;
 import static hex.gam.GamTestPiping.genFrameKnots;
 import static hex.glm.GLMModel.GLMParameters.Family.binomial;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -236,6 +237,37 @@ public class GAMISplineTest extends TestUtil {
         Frame gamifiedColumns = DKV.getGet(gam._output._gamTransformedTrainCenter);
         Scope.track(gamifiedColumns);
         return gamifiedColumns;
+    }
+
+    /*** 
+     * test i-spline can do monotonic decreasing
+     */
+    @Test
+    public void testISPlineDecreasing() {
+        Scope.enter();
+        try {
+            Frame trainD = parseAndTrackTestFile("smalldata/gam_test/decreasingCos.csv");
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = "cosy";
+            params._gam_columns = new String[][]{{"a"}};
+            params._train = trainD._key;
+            params._spline_orders = new int[]{3};
+            params._bs = new int[]{2};
+            params._max_iterations = 1;
+            params._ignored_columns = new String[]{"C1","a"};
+            params._splines_non_negative = new boolean[]{false};
+            GAMModel model = new GAM(params).trainModel().get();
+            Scope.track_generic(model);
+            Frame predFrame = model.score(trainD);
+            Scope.track(predFrame);
+            // check make sure predictions are decreasing
+            int nrow = (int) predFrame.numRows();
+            for (int ind=1; ind < nrow; ind++) {
+                assertTrue(predFrame.vec(0).at(ind-1) >= predFrame.vec(0).at(ind));
+            }
+        } finally {
+            Scope.exit();
+        }
     }
 
     /***

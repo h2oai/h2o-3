@@ -416,8 +416,14 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
           copy[i] = from[i];
         f.set(o, copy);
       } else if (parse_result.getClass().getComponentType() == Float.class && f.getType().getComponentType() == float.class) {
-        Float[] from = (Float[])parse_result;
+        Float[] from = (Float[]) parse_result;
         float[] copy = new float[from.length];
+        for (int i = 0; i < from.length; i++)
+          copy[i] = from[i];
+        f.set(o, copy);
+      } else if (parse_result.getClass().getComponentType() == Boolean.class && f.getType().getComponentType() == boolean.class) {
+        Boolean[] from = (Boolean[]) parse_result;
+        boolean[] copy = new boolean[from.length];
         for (int i = 0; i < from.length; i++)
           copy[i] = from[i];
         f.set(o, copy);
@@ -469,7 +475,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         return gson.fromJson(s, fclz);
       // Splitted values
       String[] splits; // "".split(",") => {""} so handle the empty case explicitly
-      if (s.startsWith("[") && s.endsWith("]") ) { // It looks like an array
+      if (s.startsWith("[") && s.endsWith("]")) { // It looks like an array
         read(s, 0, '[', fclz);
         read(s, s.length() - 1, ']', fclz);
         String inside = s.substring(1, s.length() - 1).trim();
@@ -479,7 +485,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
           splits = splitArgs(inside);
       } else { // Lets try to parse single value as an array!
         // See PUBDEV-1955
-        splits = new String[] { s.trim() };
+        splits = new String[]{s.trim()};
       }
 
       // Can't cast an int[] to an Object[].  Sigh.
@@ -489,6 +495,8 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         a = (E[]) Array.newInstance(Double.class, splits.length);
       } else if (afclz == float.class) {
         a = (E[]) Array.newInstance(Float.class, splits.length);
+      } else if (afclz == boolean.class) {
+        a = (E[]) Array.newInstance(Boolean.class, splits.length);
       } else {
         // Fails with primitive classes; need the wrapper class.  Thanks, Java.
         a = (E[]) Array.newInstance(afclz, splits.length);

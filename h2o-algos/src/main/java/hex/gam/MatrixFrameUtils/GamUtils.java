@@ -449,6 +449,7 @@ public class GamUtils {
     parms._bs_sorted = MemoryManager.malloc4(gamColNum);
     parms._gamPredSize = MemoryManager.malloc4(gamColNum);
     parms._spline_orders_sorted = MemoryManager.malloc4(gamColNum);
+    parms._splines_non_negative_sorted = MemoryManager.mallocZ(gamColNum);
     for (int index = 0; index < gamColNum; index++) {
       if (parms._bs[index] == 0) { // CS spline
         setGamParameters(parms, index, csIndex++);
@@ -467,6 +468,7 @@ public class GamUtils {
     parms._scale_sorted[splineIndex] = parms._scale[gamIndex];
     parms._gamPredSize[splineIndex] = parms._gam_columns_sorted[splineIndex].length;
     parms._bs_sorted[splineIndex] = parms._bs[gamIndex];
+    parms._splines_non_negative_sorted[splineIndex] = parms._splines_non_negative[gamIndex];
   }
 
   // default value of scale is 1.0

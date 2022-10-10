@@ -106,9 +106,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  generate_scoring_history=False,  # type: bool
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  dispersion_epsilon=0.0001,  # type: float
-                 max_iterations_dispersion=1000000,  # type: int
+                 tweedie_epsilon=8e-17,  # type: float
+                 max_iterations_dispersion=3000,  # type: int
                  build_null_model=False,  # type: bool
                  fix_dispersion_parameter=False,  # type: bool
+                 generate_variable_inflation_factors=False,  # type: bool
+                 fix_tweedie_variance_power=True,  # type: bool
+                 dispersion_learning_rate=0.5,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -328,7 +332,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``0``.
         :type stopping_rounds: int
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               regression and anomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client.
                Defaults to ``"auto"``.
         :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
@@ -366,13 +370,17 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-        :param dispersion_epsilon: if changes in dispersion parameter estimation is smaller than dispersion_epsilon,
-               will break out of the dispersion parameter estimation loop using maximum likelihood
+        :param dispersion_epsilon: If changes in dispersion parameter estimation or loglikelihood value is smaller than
+               dispersion_epsilon, will break out of the dispersion parameter estimation loop using maximum likelihood.
                Defaults to ``0.0001``.
         :type dispersion_epsilon: float
-        :param max_iterations_dispersion: control the maximum number of iterations in the dispersion parameter
-               estimation loop using maximum likelihood
-               Defaults to ``1000000``.
+        :param tweedie_epsilon: In estimating tweedie dispersion parameter using maximum likelihood, this is used to
+               choose the lower and upper indices in the approximating of the infinite series summation.
+               Defaults to ``8e-17``.
+        :type tweedie_epsilon: float
+        :param max_iterations_dispersion: Control the maximum number of iterations in the dispersion parameter
+               estimation loop using maximum likelihood.
+               Defaults to ``3000``.
         :type max_iterations_dispersion: int
         :param build_null_model: If set, will build a model with only the intercept.  Default to false.
                Defaults to ``False``.
@@ -382,6 +390,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                p-values. Default to false.
                Defaults to ``False``.
         :type fix_dispersion_parameter: bool
+        :param generate_variable_inflation_factors: if true, will generate variable inflation factors for numerical
+               predictors.  Default to false.
+               Defaults to ``False``.
+        :type generate_variable_inflation_factors: bool
+        :param fix_tweedie_variance_power: If true, will fix tweedie variance power value to the value set in
+               tweedie_variance_power.
+               Defaults to ``True``.
+        :type fix_tweedie_variance_power: bool
+        :param dispersion_learning_rate: Dispersion learning rate is only valid for tweedie family dispersion parameter
+               estimation using ml. It must be > 0.  This controls how much the dispersion parameter estimate is to be
+               changed when the calculated loglikelihood actually decreases with the new dispersion.  In this case,
+               instead of setting new dispersion = dispersion - change, we set new dispersion = dispersion +
+               dispersion_learning_rate * change. Defaults to 0.5.
+               Defaults to ``0.5``.
+        :type dispersion_learning_rate: float
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -454,9 +477,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.generate_scoring_history = generate_scoring_history
         self.auc_type = auc_type
         self.dispersion_epsilon = dispersion_epsilon
+        self.tweedie_epsilon = tweedie_epsilon
         self.max_iterations_dispersion = max_iterations_dispersion
         self.build_null_model = build_null_model
         self.fix_dispersion_parameter = fix_dispersion_parameter
+        self.generate_variable_inflation_factors = generate_variable_inflation_factors
+        self.fix_tweedie_variance_power = fix_tweedie_variance_power
+        self.dispersion_learning_rate = dispersion_learning_rate
 
     @property
     def training_frame(self):
@@ -1995,7 +2022,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
@@ -2202,8 +2229,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def dispersion_epsilon(self):
         """
-        if changes in dispersion parameter estimation is smaller than dispersion_epsilon, will break out of the
-        dispersion parameter estimation loop using maximum likelihood
+        If changes in dispersion parameter estimation or loglikelihood value is smaller than dispersion_epsilon, will
+        break out of the dispersion parameter estimation loop using maximum likelihood.
 
         Type: ``float``, defaults to ``0.0001``.
         """
@@ -2215,11 +2242,26 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self._parms["dispersion_epsilon"] = dispersion_epsilon
 
     @property
+    def tweedie_epsilon(self):
+        """
+        In estimating tweedie dispersion parameter using maximum likelihood, this is used to choose the lower and upper
+        indices in the approximating of the infinite series summation.
+
+        Type: ``float``, defaults to ``8e-17``.
+        """
+        return self._parms.get("tweedie_epsilon")
+
+    @tweedie_epsilon.setter
+    def tweedie_epsilon(self, tweedie_epsilon):
+        assert_is_type(tweedie_epsilon, None, numeric)
+        self._parms["tweedie_epsilon"] = tweedie_epsilon
+
+    @property
     def max_iterations_dispersion(self):
         """
-        control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood
+        Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood.
 
-        Type: ``int``, defaults to ``1000000``.
+        Type: ``int``, defaults to ``3000``.
         """
         return self._parms.get("max_iterations_dispersion")
 
@@ -2256,6 +2298,65 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def fix_dispersion_parameter(self, fix_dispersion_parameter):
         assert_is_type(fix_dispersion_parameter, None, bool)
         self._parms["fix_dispersion_parameter"] = fix_dispersion_parameter
+
+    @property
+    def generate_variable_inflation_factors(self):
+        """
+        if true, will generate variable inflation factors for numerical predictors.  Default to false.
+
+        Type: ``bool``, defaults to ``False``.
+
+        :examples:
+
+        >>> training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+        >>> predictors = ['abs.C1.','abs.C2.','abs.C3.','abs.C4.','abs.C5.']
+        >>> response = 'resp'
+        >>> vif_glm = H2OGeneralizedLinearEstimator(family="gamma",
+        ...                                         lambda_=0,
+        ...                                         generate_variable_inflation_factors=True,
+        ...                                         fold_assignment="modulo",
+        ...                                         nfolds=3,
+        ...                                         keep_cross_validation_models=True)
+        >>> vif_glm.train(x=predictors, y=response, training_frame=training_data)
+        >>> vif_glm.get_variable_inflation_factors()
+        """
+        return self._parms.get("generate_variable_inflation_factors")
+
+    @generate_variable_inflation_factors.setter
+    def generate_variable_inflation_factors(self, generate_variable_inflation_factors):
+        assert_is_type(generate_variable_inflation_factors, None, bool)
+        self._parms["generate_variable_inflation_factors"] = generate_variable_inflation_factors
+
+    @property
+    def fix_tweedie_variance_power(self):
+        """
+        If true, will fix tweedie variance power value to the value set in tweedie_variance_power.
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("fix_tweedie_variance_power")
+
+    @fix_tweedie_variance_power.setter
+    def fix_tweedie_variance_power(self, fix_tweedie_variance_power):
+        assert_is_type(fix_tweedie_variance_power, None, bool)
+        self._parms["fix_tweedie_variance_power"] = fix_tweedie_variance_power
+
+    @property
+    def dispersion_learning_rate(self):
+        """
+        Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. It must be >
+        0.  This controls how much the dispersion parameter estimate is to be changed when the calculated loglikelihood
+        actually decreases with the new dispersion.  In this case, instead of setting new dispersion = dispersion -
+        change, we set new dispersion = dispersion + dispersion_learning_rate * change. Defaults to 0.5.
+
+        Type: ``float``, defaults to ``0.5``.
+        """
+        return self._parms.get("dispersion_learning_rate")
+
+    @dispersion_learning_rate.setter
+    def dispersion_learning_rate(self, dispersion_learning_rate):
+        assert_is_type(dispersion_learning_rate, None, numeric)
+        self._parms["dispersion_learning_rate"] = dispersion_learning_rate
 
     Lambda = deprecated_property('Lambda', lambda_)
 

@@ -74,14 +74,28 @@ def call(final pipelineContext) {
   // for Python, mainly test with latest supported version
   def PR_STAGES = [
     [
+      stageName: 'Py3.7 Smoke (Main Assembly)', target: 'test-py-smoke-main', pythonVersion: '3.7', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [
+              pipelineContext.getBuildConfig().COMPONENT_MAIN, pipelineContext.getBuildConfig().COMPONENT_PY
+      ],
+      imageSpecifier: "python-3.7-jdk-8"
+    ],
+    [
       stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_MINIMAL]
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [
+              pipelineContext.getBuildConfig().COMPONENT_MINIMAL, pipelineContext.getBuildConfig().COMPONENT_PY
+      ],
+      imageSpecifier: "python-3.7-jdk-8"
     ],
     [
       stageName: 'Py3.7 Smoke (Steam Assembly)', target: 'test-py-smoke-steam', pythonVersion: '3.7', timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_STEAM]
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [
+              pipelineContext.getBuildConfig().COMPONENT_STEAM, pipelineContext.getBuildConfig().COMPONENT_PY
+      ],
+      imageSpecifier: "python-3.7-jdk-8"
     ],
     [
       stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '2.7', javaVersion: 8,
@@ -181,7 +195,11 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
     [
-      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
+      stageName: 'Py2.7 Demo Notebooks', target: 'test-py-demos', pythonVersion: '2.7',
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Demo Notebooks (Py3 Only)', target: 'test-py3-only-demos', pythonVersion: '3.7',
       timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -249,6 +267,24 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true,
+    ],
+    [
+      stageName: 'GBM Benchmark noscoring-graalvm', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+      customData: [algorithm: 'gbm-noscoring'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true,
+      image: 'harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3-graalvm-17:42', // manually build, see Dockerfile-graalvm
+      javaVersion: 17
+    ],
+    [
+      stageName: 'GBM Benchmark noscoring-java8', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
+      timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+      customData: [algorithm: 'gbm-noscoring'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
     ],
@@ -488,6 +524,11 @@ def call(final pipelineContext) {
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ]
+    ],
+    [
+      stageName: 'Persist Drive (GraalVM)', target: 'test-py-persist-drive-jenkins', javaVersion: 17, timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ]
   ]
 
@@ -521,7 +562,7 @@ def call(final pipelineContext) {
       ], 
       pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
-      executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
+      executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopClusterStage.groovy',
       image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, false)
     ]
     def standaloneStage = evaluate(stageTemplate.inspect())
@@ -594,7 +635,7 @@ def call(final pipelineContext) {
                     bundledS3FileSystems: 's3a,s3n'
             ], pythonVersion: '2.7',
             customDockerArgs: [ '--privileged' ],
-            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
+            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopClusterStage.groovy',
             image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, true)
     ]
     def standaloneStage = evaluate(stageTemplate.inspect())
@@ -648,63 +689,54 @@ def call(final pipelineContext) {
     KERBEROS_STAGES += [ standaloneStage, standaloneKeytabStage, standaloneDriverKeytabStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
-  final MULTINODE_CLUSTERS_CONFIGS = [
-      [ distribution: "hdp", version: "2.2",
-        nameNode: "mr-0xd4", configSource: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
-        hiveHost: "mr-0xd9.0xdata.loc",
-        nodes: 4, xmx: "16G", extramem: "100",
-        cloudingDir: "/user/jenkins/hadoop_multinode_tests"
-      ],
-      [ distribution: "hdp", version: "2.4",
-        nameNode: "mr-0xg5", configSource: "mr-0xg5", hdpName: "steam2", krb: true,
-        hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
-        nodes: 4, xmx: "10G", extramem: "100",
-        cloudingDir: "/user/jenkins/hadoop_multinode_tests"
-      ]
+  final HADOOP_CLUSTER_CONFIG = [
+          distribution: "hdp", version: "2.4", versionExact: "2.4.2.0-258",
+          nameNode: "mr-0xg5", configSource: "mr-0xg5", hdpName: "steam2",
+          hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
+          nodes: 4, xmx: "10G", extramem: "100",
+          cloudingDir: "/user/jenkins/hadoop_multinode_tests"
   ]
-  def HADOOP_MULTINODE_STAGES = []
-  for (config in MULTINODE_CLUSTERS_CONFIGS) {
-    def image = pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(config.distribution, config.version, config.krb)
-    def stage = [
-            stageName: "TEST MULTINODE ${config.krb?"KRB ":""} ${config.distribution}${config.version}-${config.nameNode}",
-            target: "test-hadoop-multinode", timeoutValue: 60,
-            component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-            additionalTestPackages: [
-                    pipelineContext.getBuildConfig().COMPONENT_PY,
-                    pipelineContext.getBuildConfig().COMPONENT_R
-            ],
-            customData: config, pythonVersion: '2.7',
-            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopMultinodeStage.groovy',
-            image: image
+  def hadoopClusterStage = [
+          stageName: "TEST Hadoop Multinode on ${HADOOP_CLUSTER_CONFIG.nameNode}",
+          target: "test-hadoop-multinode", timeoutValue: 60,
+          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+          additionalTestPackages: [
+                  pipelineContext.getBuildConfig().COMPONENT_PY,
+                  pipelineContext.getBuildConfig().COMPONENT_R
+          ],
+          customData: HADOOP_CLUSTER_CONFIG, pythonVersion: '2.7',
+          executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopMultinodeStage.groovy',
+          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
+                  HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
+          )
     ]
-    HADOOP_MULTINODE_STAGES += [ stage ]
-  }
+  def HADOOP_MULTINODE_STAGES = [ hadoopClusterStage ]
   HADOOP_MULTINODE_STAGES += [
       [
-          stageName: "TEST External XGBoost on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+          stageName: "TEST External XGBoost on ${HADOOP_CLUSTER_CONFIG.nameNode}",
           target: "test-steam-websocket", timeoutValue: 30,
           component: pipelineContext.getBuildConfig().COMPONENT_ANY,
           additionalTestPackages: [
                   pipelineContext.getBuildConfig().COMPONENT_PY
           ],
-          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
+          customData: HADOOP_CLUSTER_CONFIG, pythonVersion: '3.6',
           executionScript: 'h2o-3/scripts/jenkins/groovy/externalXGBoostStage.groovy',
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
-                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+                  HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
           )
       ],
       [
-          stageName: "TEST Fault Tolerance on ${MULTINODE_CLUSTERS_CONFIGS[0].nameNode}",
+          stageName: "TEST Fault Tolerance on ${HADOOP_CLUSTER_CONFIG.nameNode}",
           target: "test-hadoop-fault-tolerance", timeoutValue: 45,
           component: pipelineContext.getBuildConfig().COMPONENT_ANY,
           additionalTestPackages: [
                   pipelineContext.getBuildConfig().COMPONENT_PY,
                   pipelineContext.getBuildConfig().COMPONENT_R
           ],
-          customData: MULTINODE_CLUSTERS_CONFIGS[0], pythonVersion: '3.6',
+          customData: HADOOP_CLUSTER_CONFIG, pythonVersion: '3.6',
           executionScript: 'h2o-3/scripts/jenkins/groovy/faultToleranceStage.groovy',
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
-                  MULTINODE_CLUSTERS_CONFIGS[0].distribution, MULTINODE_CLUSTERS_CONFIGS[0].version, MULTINODE_CLUSTERS_CONFIGS[0].krb
+                  HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
           )
       ]
   ]

@@ -18,16 +18,23 @@ import static hex.ModelCategory.Binomial;
 public class CalibrationHelper {
 
     public enum CalibrationMethod {
-        AUTO(-1), PlattScaling(1), IsotonicRegression(2);
+        AUTO("auto", -1),
+        PlattScaling("platt", 1),
+        IsotonicRegression("isotonic", 2);
 
         private final int _calibVecIdx;
+        private final String _id;
 
-        CalibrationMethod(int calibVecIdx) {
+        CalibrationMethod(String id, int calibVecIdx) {
             _calibVecIdx = calibVecIdx;
+            _id = id;
         }
 
         private int getCalibratedVecIdx() {
             return _calibVecIdx;
+        }
+        public String getId() {
+            return _id;
         }
     }
 
@@ -48,9 +55,14 @@ public class CalibrationHelper {
     public interface OutputWithCalibration {
         ModelCategory getModelCategory();
         Model<?, ?, ?> calibrationModel();
+        void setCalibrationModel(Model<?, ?, ?> model);
         default CalibrationMethod getCalibrationMethod() {
+            assert isCalibrated();
             return calibrationModel() instanceof IsotonicRegressionModel ?
                     CalibrationMethod.IsotonicRegression : CalibrationMethod.PlattScaling;
+        }
+        default boolean isCalibrated() {
+            return calibrationModel() != null;
         }
     }
 
@@ -148,7 +160,9 @@ public class CalibrationHelper {
             try {
                 final Model<?, ?, ?> calibModel = output.calibrationModel();
                 final int calibVecIdx = output.getCalibrationMethod().getCalibratedVecIdx();
-                final Frame calibInput = new Frame(calibInputKey, new String[]{"p"}, new Vec[]{predictFr.vec(calibVecIdx)});
+                final String[] calibFeatureNames = calibModel._output.features();
+                assert calibFeatureNames.length == 1;
+                final Frame calibInput = new Frame(calibInputKey, calibFeatureNames, new Vec[]{predictFr.vec(calibVecIdx)});
                 calibOutput = calibModel.score(calibInput);
                 final Vec[] calPredictions;
                 if (calibModel instanceof GLMModel) {

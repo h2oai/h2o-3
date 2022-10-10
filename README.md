@@ -507,11 +507,18 @@ Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2
 To build H2O with Hadoop support yourself, first install sphinx for python: `pip install sphinx`
 Then start the build by entering  the following from the top-level h2o-3 directory:
 
-    (export BUILD_HADOOP=1; ./gradlew build -x test)
-    ./gradlew dist
+    export BUILD_HADOOP=1;
+    ./gradlew build -x test;
+    ./gradlew dist;
 
 This will create a directory called 'target' and generate zip files there.  Note that `BUILD_HADOOP` is the default behavior when the username is `jenkins` (refer to `settings.gradle`); otherwise you have to request it, as shown above.
 
+To build the zip files only for selected distributions use the `H2O_TARGET` env variable together with `BUILD_HADOOP`, for example:
+
+    export BUILD_HADOOP=1;
+    export H2O_TARGET=hdp2.5,hdp2.6
+    ./gradlew build -x test;
+    ./gradlew dist;
 
 ### Adding support for a new version of Hadoop
 
