@@ -3,6 +3,7 @@ package water.test.dummy;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
+import hex.ModelMetricsRegression;
 import water.Futures;
 import water.Key;
 
@@ -12,6 +13,7 @@ public class DummyModel extends Model<DummyModel, DummyModelParameters, DummyMod
   }
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+    if (domain == null) return new ModelMetricsRegression.MetricBuilderRegression();
     return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
   }
   @Override
