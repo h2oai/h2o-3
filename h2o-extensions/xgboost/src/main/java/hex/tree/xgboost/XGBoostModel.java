@@ -144,6 +144,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public Backend _backend = Backend.auto;
 
     public String _eval_metric;
+    public boolean _score_eval_metric_only;
 
     public String algoName() { return "XGBoost"; }
     public String fullName() { return "XGBoost"; }

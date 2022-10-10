@@ -69,7 +69,10 @@ public class ScoreKeeper extends Iced {
   }
 
   public boolean isEmpty() {
-    return Double.isNaN(_mse) && Double.isNaN(_logloss) && Double.isNaN(_anomaly_score_normalized); // at least one of them should always be filled
+    return Double.isNaN(_mse) && 
+            Double.isNaN(_logloss) && 
+            Double.isNaN(_anomaly_score_normalized) &&
+            Double.isNaN(_custom_metric); // at least one of them should always be filled
   }
 
   public void fillFrom(ModelMetrics m) {
@@ -466,6 +469,7 @@ public class ScoreKeeper extends Iced {
         ", _hitratio=" + Arrays.toString(_hitratio) +
         ", _lift=" + _lift +
         ", _anomaly_score_normalized=" + _anomaly_score_normalized +
+        ", _custom_metric=" + _custom_metric +
         '}';
   }
 

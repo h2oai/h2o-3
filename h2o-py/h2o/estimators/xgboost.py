@@ -103,6 +103,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  scale_pos_weight=1.0,  # type: float
                  eval_metric=None,  # type: Optional[str]
+                 score_eval_metric_only=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -342,6 +343,10 @@ class H2OXGBoostEstimator(H2OEstimator):
                technical limitations, evaluation metric can currently only be calculated on the training frame.
                Defaults to ``None``.
         :type eval_metric: str, optional
+        :param score_eval_metric_only: If enabled, score only the evaluation metric. This can make model training faster
+               if scoring is frequent (eg. each iteration).
+               Defaults to ``False``.
+        :type score_eval_metric_only: bool
         """
         super(H2OXGBoostEstimator, self).__init__()
         self._parms = {}
@@ -416,6 +421,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         self.auc_type = auc_type
         self.scale_pos_weight = scale_pos_weight
         self.eval_metric = eval_metric
+        self.score_eval_metric_only = score_eval_metric_only
 
     @property
     def training_frame(self):
@@ -2474,6 +2480,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     def eval_metric(self, eval_metric):
         assert_is_type(eval_metric, None, str)
         self._parms["eval_metric"] = eval_metric
+
+    @property
+    def score_eval_metric_only(self):
+        """
+        If enabled, score only the evaluation metric. This can make model training faster if scoring is frequent (eg.
+        each iteration).
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("score_eval_metric_only")
+
+    @score_eval_metric_only.setter
+    def score_eval_metric_only(self, score_eval_metric_only):
+        assert_is_type(score_eval_metric_only, None, bool)
+        self._parms["score_eval_metric_only"] = score_eval_metric_only
 
 
     @staticmethod

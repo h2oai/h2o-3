@@ -89,7 +89,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "gainslift_bins",
         "auc_type",
         "scale_pos_weight",
-        "eval_metric"
+        "eval_metric",
+        "score_eval_metric_only"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -219,6 +220,10 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="Specification of evaluation metric that will be passed to the native XGBoost backend. Due to technical limitations, evaluation metric can currently only be calculated on the training frame.", level= API.Level.expert, gridable = true)
     public String eval_metric;
+
+    @API(help="If enabled, score only the evaluation metric. This can make model training faster if scoring is frequent (eg. each iteration).", level= API.Level.expert, gridable = true)
+    public boolean score_eval_metric_only;
+
   }
 
 }
