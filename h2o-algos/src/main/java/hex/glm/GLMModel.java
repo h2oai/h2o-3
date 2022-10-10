@@ -426,8 +426,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_alpha","alpha parameter must from (inclusive) [0,1] range");
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
         glm.error("_compute_p_values","P values can only be computed with IRLSM solver, go solver = " + _solver);
-      if(_compute_p_values && (_lambda == null || _lambda[0] > 0))
-        glm.error("_compute_p_values","P values can only be computed with NO REGULARIZATION (lambda = 0)");
+//      if(_compute_p_values && (_lambda == null || _lambda[0] > 0))
+//        glm.error("_compute_p_values","P values can only be computed with NO REGULARIZATION (lambda = 0)");
       if(_compute_p_values && (_family == Family.multinomial || _family==Family.ordinal))
         glm.error("_compute_p_values","P values are currently not supported for " +
                 "family=multinomial or ordinal");
