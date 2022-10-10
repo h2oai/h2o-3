@@ -234,7 +234,7 @@ def testsPath = new File("./tests")
 
 task smokeTest(type: Exec) {
     workingDir testsPath
-	def args = ['python', 'run.py', '--wipeall', '--testsize', 's']
+	def args = ['python', '../../scripts/run.py', '--wipeall', '--testsize', 's']
     if (project.hasProperty("jacocoCoverage")) {
         args << '--jacoco'
     }
