@@ -107,6 +107,8 @@
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param scale_pos_weight Controls the effect of observations with positive labels in relation to the observations with negative labels
 #'        on gradient calculation. Useful for imbalanced problems. Defaults to 1.0.
+#' @param eval_metric Specification of evaluation metric that will be passed to the native XGBoost backend. Due to technical
+#'        limitations, evaluation metric can currently only be calculated on the training frame.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -204,6 +206,7 @@ h2o.xgboost <- function(x,
                         gainslift_bins = -1,
                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         scale_pos_weight = 1.0,
+                        eval_metric = NULL,
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -364,6 +367,8 @@ h2o.xgboost <- function(x,
     parms$auc_type <- auc_type
   if (!missing(scale_pos_weight))
     parms$scale_pos_weight <- scale_pos_weight
+  if (!missing(eval_metric))
+    parms$eval_metric <- eval_metric
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -438,6 +443,7 @@ h2o.xgboost <- function(x,
                                         gainslift_bins = -1,
                                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         scale_pos_weight = 1.0,
+                                        eval_metric = NULL,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -602,6 +608,8 @@ h2o.xgboost <- function(x,
     parms$auc_type <- auc_type
   if (!missing(scale_pos_weight))
     parms$scale_pos_weight <- scale_pos_weight
+  if (!missing(eval_metric))
+    parms$eval_metric <- eval_metric
 
   # Build segment-models specific parameters
   segment_parms <- list()
