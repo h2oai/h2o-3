@@ -5,7 +5,7 @@ import warnings
 from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
 
-from h2o.utils.typechecks import is_type, Enum
+from h2o.utils.typechecks import is_type, Enum, assert_is_type
 
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
@@ -547,6 +547,8 @@ def _density(xs, bins=100):
     :param bins: number of bins
     :returns: density values
     """
+    if len(xs) < 10:
+        return np.zeros(len(xs))
     hist = list(np.histogram(xs, bins=bins))
     # gaussian blur
     hist[0] = np.convolve(hist[0],
@@ -2780,8 +2782,10 @@ def pareto_front(frame,  # type: H2OFrame
     top = "top" in optimum.lower()
     left = "left" in optimum.lower()
 
-    x = np.array(leaderboard[x_metric].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
-    y = np.array(leaderboard[y_metric].as_data_frame(use_pandas=False, header=False), dtype="float64").reshape(-1)
+    nf = NumpyFrame(leaderboard[[x_metric, y_metric]])
+
+    x = nf[x_metric]
+    y = nf[y_metric]
 
     pf = _calculate_pareto_front(x, y, top=top, left=left)
 
@@ -3324,7 +3328,7 @@ def explain_row(
     :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
-    
+
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -3429,5 +3433,374 @@ def explain_row(
                     result["ice"]["plots"][column] = ice
                 else:
                     result["ice"]["plots"][column][target[0]] = ice
+
+    return result
+
+
+# FAIRNESS
+def _corrected_variance(accuracy, total):
+    # From De-biasing bias measurement https://arxiv.org/pdf/2205.05770.pdf
+    import numpy as np
+    accuracy = np.array(accuracy)
+    total = np.array(total)
+    return max(0, np.var(accuracy - np.mean(accuracy * (1 - accuracy) / total)))
+
+
+def disparate_analysis(models, frame, protected_columns, reference, favorable_class):
+    """
+     Create a frame containing aggregations of intersectional fairness across the models.
+
+    :param models: List of H2O Models
+    :param frame: H2OFrame
+    :param protected_columns: List of categorical columns that contain sensitive information
+                              such as race, gender, age etc.
+    :param reference: List of values corresponding to a reference for each protected columns.
+                      If set to ``None``, it will use the biggest group as the reference.
+    :param favorable_class: Positive/favorable outcome class of the response.
+
+    :return:
+    """
+    import numpy as np
+    from collections import defaultdict
+    leaderboard = h2o.make_leaderboard(models, frame, extra_columns="ALL")
+    additional_columns = defaultdict(list)
+    for model in models:
+        fm = model.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference, favorable_class=favorable_class)
+        overview = NumpyFrame(fm["overview"])
+        additional_columns["var"].append(np.var(overview["accuracy"]))
+        additional_columns["corrected_var"].append(_corrected_variance(overview["accuracy"], overview["total"]))
+
+        air = overview["AIR_selectedRatio"]
+        additional_columns["air_min"].append(np.min(air))
+        additional_columns["air_mean"].append(np.mean(air))
+        additional_columns["air_median"].append(np.median(air))
+        additional_columns["air_max"].append(np.max(air))
+        additional_columns["cair"].append(np.sum([w * x for w, x in
+                                                  zip(overview["relativeSize"], air)]))
+
+        pvalue = overview["p.value"]
+        additional_columns["p.value_min"].append(np.min(pvalue))
+        additional_columns["p.value_mean"].append(np.mean(pvalue))
+        additional_columns["p.value_median"].append(np.median(pvalue))
+        additional_columns["p.value_max"].append(np.max(pvalue))
+    return leaderboard.cbind(h2o.H2OFrame(additional_columns))
+
+
+def pd_fair_plot(model, frame, column, protected_columns, figsize=(16, 9), autoscale=True):
+    """
+    Partial dependence plot per protected group.
+
+    :param model: H2O Model Object
+    :param frame: H2OFrame
+    :param column: String containing column name.
+    :param protected_columns: List of categorical columns that contain sensitive information
+                                  such as race, gender, age etc.
+    :param figsize: Tuple with figure size; passed directly to matplotlib.
+    :param autoscale: If ``True``, try to guess when to use log transformation on X axis.
+    :return: Matplotlib Figure object
+    """
+    import numpy as np
+    from itertools import product
+    from h2o.model.model_base import ModelBase
+
+    assert_is_type(model, ModelBase)
+    assert_is_type(frame, h2o.H2OFrame)
+    assert_is_type(column, str)
+    assert_is_type(protected_columns, [str])
+    assert_is_type(figsize, tuple, list)
+    assert_is_type(autoscale, bool)
+
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    pgs = product(*[frame[col].unique()["C1"].as_data_frame(False, False) for col in protected_columns])
+    plt.figure(figsize=figsize)
+    results = []
+    maxes = []
+    with no_progress():
+        for pg in pgs:
+            pg = [p[0] for p in pg]
+            filtered_hdf = frame
+            for i in range(len(protected_columns)):
+                filtered_hdf = filtered_hdf[filtered_hdf[protected_columns[i]] == pg[i], :]
+            if filtered_hdf.nrow == 0: continue
+            pd = model.partial_plot(filtered_hdf, cols=[column], plot=False, nbins=40)[0]
+            results.append((pg, pd))
+            if is_type(pd[column.lower()][0], str):
+                maxes.append(1)
+            else:
+                maxes.append(np.nanmax(pd[column.lower()]))
+    maxes = np.array(maxes) - np.min(maxes) + 1
+    is_factor = frame[column].isfactor()[0]
+    autoscale = autoscale and not is_factor and frame[column].min() > -1 and (np.nanmax(np.log(maxes)) - np.nanmin(np.log(maxes)) > 1).all()
+    for pg, pd in results:
+        x = pd[column.lower()]
+        if autoscale:
+            x = np.log1p(x)
+        mean_response = pd["mean_response"]
+        stdev_response = pd["std_error_mean_response"]
+        if is_factor:
+            plt.errorbar(x, mean_response, yerr=stdev_response, label=", ".join(pg), fmt='o', elinewidth=3, capsize=0, markersize=10 )
+        else:
+            plt.plot(x, mean_response, label=", ".join(pg))
+            plt.fill_between(x, [m[0]-m[1] for m in zip(mean_response, stdev_response)],
+                             [m[0]+m[1] for m in zip(mean_response, stdev_response)], label="_noLabel", alpha=0.2)
+    plt.title("PDP for {}".format(column))
+    plt.xlabel("log({})".format(column) if autoscale else column)
+    plt.ylabel("Response")
+    plt.legend()
+    plt.grid()
+    return plt.gcf()
+
+
+def shap_fair_plot(model, frame, column, protected_columns,  autoscale=True, figsize=(16,9), jitter=0.35, alpha=1):
+    """
+    SHAP summary plot for one feature with protected groups on y-axis.
+
+    :param model: H2O Model Object
+    :param frame: H2OFrame
+    :param column: String containing column name.
+    :param protected_columns: List of categorical columns that contain sensitive information
+                              such as race, gender, age etc.
+    :param category: Used to specify what category to inspect when categorical feature is one hot encoded, typically in XGBoost.
+    :param autoscale: If ``True``, try to guess when to use log transformation on X axis.
+    :param figsize: Tuple with figure size; passed directly to matplotlib.
+    :param jitter: Amount of jitter used to show the point density.
+    :param alpha: Transparency of the points.
+    :return: Matplotlib Figure object
+    """
+    from itertools import product
+    from h2o.model.model_base import ModelBase
+
+    assert_is_type(model, ModelBase)
+    assert_is_type(frame, h2o.H2OFrame)
+    assert_is_type(column, str)
+    assert_is_type(protected_columns, [str])
+    assert_is_type(figsize, tuple, list)
+    assert_is_type(jitter, float)
+    assert_is_type(alpha, float, int)
+    assert_is_type(autoscale, bool)
+
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    pgs = product(*[frame[col].unique()["C1"].as_data_frame(False, False) for col in protected_columns])
+    results = defaultdict(list)
+    maxes = []
+    contr_columns = [column]
+    with no_progress():
+        for pg in pgs:
+            pg = [p[0] for p in pg]
+            filtered_hdf = frame
+            for i in range(len(protected_columns)):
+                filtered_hdf = filtered_hdf[filtered_hdf[protected_columns[i]] == pg[i], :]
+            if filtered_hdf.nrow == 0: continue
+            cont = NumpyFrame(model.predict_contributions(filtered_hdf))
+            vals = NumpyFrame(filtered_hdf)[column]
+            maxes.append(np.nanmax(vals))
+            if len(contr_columns) == 1 and all((c not in cont.columns for c in contr_columns)):
+                contr_columns = [c for c in cont.columns if c.startswith("{}.".format(contr_columns[0]))]
+            for cc in contr_columns:
+                results[cc].append((pg, cont[cc], vals))
+    maxes = np.array(maxes) - np.min(maxes) + 1
+    autoscale = autoscale and not frame[column].isfactor()[0] and frame[column].min() > -1 and (np.nanmax(np.log(maxes)) - np.nanmin(np.log(maxes)) > 1).all()
+    plots = H2OExplanation()
+    for contr_column, result in results.items():
+        plt.figure(figsize=figsize)
+        for i, (pg, contr, vals) in enumerate(result):
+            dens = _density(contr)
+            plt.scatter(x=contr, y=i + dens * np.random.uniform(-jitter, jitter, size=len(contr)),
+                        label=", ".join(pg), alpha=alpha, c=np.log1p(vals) if autoscale else vals)
+        plt.axvline(x=0, c="k")
+        plt.title("SHAP Contributions for {}".format(contr_column))
+        plt.xlabel("Contribution of {}".format(contr_column))
+        plt.ylabel("Sensitive Features")
+        plt.yticks(range(len(result)), [", ".join(pg) for pg, _, _ in result])
+        plt.grid()
+        plt.colorbar().set_label("log({})".format(contr_column) if autoscale else contr_column)
+        plots[contr_column] = plt.gcf()
+    return plots
+
+
+def fair_roc_plot(model, frame, protected_columns, reference, favorable_class, figsize=(16, 9)):
+    """
+    Plot ROC curve per protected group.
+
+    :param model: H2O Model Object
+    :param frame: H2OFrame
+    :param protected_columns: List of categorical columns that contain sensitive information
+                              such as race, gender, age etc.
+    :param reference: List of values corresponding to a reference for each protected columns.
+                      If set to ``None``, it will use the biggest group as the reference.
+    :param favorable_class: Positive/favorable outcome class of the response.
+    :param figsize: Figure size; passed directly to Matplotlib
+
+    :return: Matplotlib Figure object
+    """
+    from h2o.model.model_base import ModelBase
+
+    assert_is_type(model, ModelBase)
+    assert_is_type(frame, h2o.H2OFrame)
+    assert_is_type(protected_columns, [str])
+    assert_is_type(reference, [str])
+    assert_is_type(favorable_class, str)
+    assert_is_type(figsize, tuple, list)
+
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    fair = model.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference, favorable_class=favorable_class)
+    roc_prefix = "thresholds_and_metrics_"
+    rocs = [k for k in fair.keys() if k.startswith(roc_prefix)]
+    plt.figure(figsize=figsize)
+    for roc in rocs:
+        df = NumpyFrame(fair[roc])
+        plt.plot(df["fpr"], df["tpr"], label=roc[len(roc_prefix):])
+    plt.plot([0, 1], [0, 1], c="gray", linestyle="dashed")
+    plt.grid()
+    plt.legend()
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("Receiver Operating Characteristic Curve")
+    return plt.gcf()
+
+
+def fair_pr_plot(model, frame, protected_columns, reference, favorable_class, figsize=(16, 9)):
+    """
+    Plot PR curve per protected group.
+    :param model: H2O Model Object
+    :param frame: H2OFrame
+    :param protected_columns: List of categorical columns that contain sensitive information
+                              such as race, gender, age etc.
+    :param reference: List of values corresponding to a reference for each protected columns.
+                      If set to ``None``, it will use the biggest group as the reference.
+    :param favorable_class: Positive/favorable outcome class of the response.
+    :param figsize: Figure size; passed directly to Matplotlib
+
+    :return: Matplotlib Figure object
+    """
+    from h2o.model.model_base import ModelBase
+
+    assert_is_type(model, ModelBase)
+    assert_is_type(frame, h2o.H2OFrame)
+    assert_is_type(protected_columns, [str])
+    assert_is_type(reference, [str])
+    assert_is_type(favorable_class, str)
+    assert_is_type(figsize, tuple, list)
+
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    fair = model.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference, favorable_class=favorable_class)
+    roc_prefix = "thresholds_and_metrics_"
+    rocs = [k for k in fair.keys() if k.startswith(roc_prefix)]
+    plt.figure(figsize=figsize)
+    for roc in rocs:
+        df = NumpyFrame(fair[roc])
+        plt.plot(df["recall"], df["precision"], label=roc[len(roc_prefix):])
+    mean = frame[model.actual_params["response_column"]].mean()
+    if isinstance(mean, list):
+        mean = mean[0]
+    else:
+        mean = float(mean.as_data_frame(False, False)[0][0])
+    plt.axhline(y=mean, c="gray", linestyle="dashed")
+    plt.grid()
+    plt.legend()
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.title("Precision-Recall Curve")
+    return plt.gcf()
+
+
+def inspect_model_fairness(model, frame, protected_columns, reference, favorable_class,
+                           metrics=("auc", "aucpr", "f1", "p.value", "selectedRatio", "total"), figsize=(16, 9), render=True):
+    """
+     Produce plots and dataframes related to a single model fairness.
+
+    :param model: H2O Model Object
+    :param frame: H2OFrame
+    :param protected_columns: List of categorical columns that contain sensitive information
+                              such as race, gender, age etc.
+    :param reference: List of values corresponding to a reference for each protected columns.
+                      If set to None, it will use the biggest group as the reference.
+    :param favorable_class: Positive/favorable outcome class of the response.
+    :param metrics: List of metrics to show.
+    :param figsize: Figure size; passed directly to Matplotlib
+    :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
+    :return: H2OExplanation object
+    """
+
+    from h2o.model.model_base import ModelBase
+
+    assert_is_type(model, ModelBase)
+    assert_is_type(frame, h2o.H2OFrame)
+    assert_is_type(protected_columns, [str])
+    assert_is_type(reference, [str])
+    assert_is_type(favorable_class, str)
+    assert_is_type(metrics, [str], tuple)
+    assert_is_type(figsize, tuple, list)
+    assert_is_type(render, bool)
+
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    fair = model.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference, favorable_class=favorable_class)
+    cols_to_show = sorted(list(set(metrics).union({"AIR_{}".format(m) for m in metrics}).intersection(fair["overview"].columns)))
+    overview = fair["overview"]
+
+    if render:
+        display = _display
+    else:
+        display = _dont_display
+
+    result = H2OExplanation()
+    result["overview"] = H2OExplanation()
+    result["overview"]["header"] = display(Header("Overview"))
+    result["overview"]["data"] = display(overview[:, protected_columns + cols_to_show])
+
+    groups = [", ".join(r) for r in overview[:, protected_columns].as_data_frame(False, False)]
+    reference_name = ", ".join(reference)
+    result["overview"]["plots"] = H2OExplanation()
+    overview = NumpyFrame(overview)
+    permutation = sorted(range(overview.nrow), key=lambda i: -overview[i, "auc"])
+    def _permute(x):
+        return [x[i] for i in permutation]
+
+    groups = _permute(groups)
+    for col in cols_to_show:
+        plt.figure(figsize=figsize)
+        plt.title(col)
+        if "AIR_" in col:
+            plt.bar(groups, _permute([a-1 for a in overview[col]]), bottom=1)
+            plt.axhline(1, c="k")
+            plt.axhline(0.8, c="gray", linestyle="dashed")
+            plt.axhline(1.25, c="gray", linestyle="dashed")
+        elif "p-value" in col:
+            plt.bar(groups, _permute(overview[col]))
+            plt.axhline(0.05, c="r")
+            plt.axhspan(0, 0.05, color="r", alpha=0.1)
+        else:
+            plt.bar(groups, _permute(overview[col]), color=["C1" if g == reference_name else "C0" for g in groups])
+        plt.grid()
+        plt.xticks(rotation=45)
+        result["overview"]["plots"][col] = display(plt.gcf())
+
+    # ROC
+    result["ROC"] = display(fair_roc_plot(model, frame, protected_columns, reference, favorable_class, figsize=figsize))
+
+    # PR
+    result["PR"] = display(fair_pr_plot(model, frame, protected_columns, reference, favorable_class, figsize=figsize))
+
+    # permutation varimp
+    perm = model.permutation_importance(frame)
+    result["permutation_importance"] = H2OExplanation()
+    result["permutation_importance"]["header"] = display(Header("Permutation Variable Importance"))
+    result["permutation_importance"]["data"] = display(perm)
+    sorted_features = list(perm["Variable"])
+
+    # PDP per group
+    result["pdp"] = H2OExplanation()
+    result["pdp"]["header"] = display(Header("Partial Dependence Plots"))
+    result["pdp"]["plots"] = H2OExplanation()
+    for col in sorted_features:
+        result["pdp"]["plots"][col] = display(pd_fair_plot(model, frame, col, protected_columns, figsize=figsize))
+
+    # SHAP per group
+    if _is_tree_model(model):
+        result["shap"] = H2OExplanation()
+        result["shap"]["header"] = display(Header("SHAP per protected group"))
+        result["shap"]["plots"] = H2OExplanation()
+        for col in sorted_features:
+            result["shap"]["plots"][col] = display(shap_fair_plot(model, frame, col, protected_columns, figsize=figsize))
 
     return result

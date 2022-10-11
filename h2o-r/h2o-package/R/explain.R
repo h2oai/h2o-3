@@ -1069,6 +1069,16 @@ geom_pointrange_or_ribbon <- function(draw_point, ...) {
   }
 }
 
+geom_errorbar_or_ribbon <-
+  function(draw_errorbar,
+           ...) {
+    if (draw_errorbar) {
+      ggplot2::geom_errorbar(..., alpha = 0.8, width = 0.2)
+    } else {
+      ggplot2::geom_ribbon(..., color = NA, alpha = 0.2)
+    }
+  }
+
 stat_count_or_bin <- function(use_count, ..., data) {
   stopifnot("Expecting data frame with just one column." = ncol(data) == 1)
   data <- data[is.finite(data[[1]]), , drop = FALSE]
@@ -4187,3 +4197,357 @@ h2o.explain_row <- function(object,
   class(result) <- "H2OExplanation"
   return(result)
 }
+
+
+# Fairness
+
+#' Partial dependence plot per protected group.
+#' @param model H2O Model Object
+#' @param newdata H2OFrame
+#' @param protected_cols List of categorical columns that contain sensitive information
+#'                       such as race, gender, age etc.
+#' @param column String containing column name.
+#' @param autoscale If ``True``, try to guess when to use log transformation on X axis.
+#' @return ggplot2 object
+#' @export
+h2o.pd_fair_plot <- function(model, newdata, protected_cols, column, autoscale = TRUE) {
+  .check_for_ggplot2()
+  # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
+  .data <- NULL
+  pdps <- data.frame()
+  pgs <- list()
+  for (pc in protected_cols) {
+    pgs[[pc]] <-
+      as.character(unlist(as.list(h2o.unique(newdata[[pc]]))))
+  }
+  pgs <- expand.grid(pgs, stringsAsFactors = FALSE)
+  for (i in seq_len(nrow(pgs))) {
+    filtered_hdf <- newdata
+
+    for (pg in names(pgs)) {
+      stopifnot(
+        "Protected columns have to be factors or character vectors!" = is.factor(filtered_hdf[[pg]]) ||
+          is.character(filtered_hdf[[pg]])
+      )
+      filtered_hdf <-
+        filtered_hdf[filtered_hdf[[pg]] == pgs[i, pg],]
+    }
+    if (h2o.nrow(filtered_hdf) == 0)
+      next
+    h2o.no_progress({
+      tmp <-
+        as.data.frame(h2o.partialPlot(
+          model,
+          filtered_hdf,
+          column,
+          nbins = 40,
+          plot = FALSE
+        ))
+    })
+    tmp[["protected_group"]] <- paste(pgs[i,], collapse = ", ")
+    pdps <- rbind(pdps, tmp)
+  }
+
+  maxes <- if (is.factor(newdata[[column]]))
+    1
+  else {
+    m <- by(pdps, pdps$protected_group, function(x) max(x[[column]]))
+    log(m - min(m, na.rm = TRUE) + 1)
+  }
+  use_log <-
+    autoscale &&
+      (max(maxes, na.rm = TRUE) - min(maxes, na.rm = TRUE) > 1) &&
+      !is.factor(newdata[[column]])
+  p <-
+    ggplot2::ggplot(
+      pdps,
+      ggplot2::aes(
+        x = if (use_log)
+          log(.data[[column]])
+        else
+          .data[[column]],
+        y = .data$mean_response,
+        color = .data$protected_group,
+        fill = .data$protected_group
+      )
+    ) +
+      geom_point_or_line(!.is_continuous(newdata[[column]])) +
+      geom_errorbar_or_ribbon(
+        !.is_continuous(newdata[[column]]),
+        ggplot2::aes(
+          ymin = .data$mean_response - .data$std_error_mean_response,
+          ymax = .data$mean_response + .data$std_error_mean_response
+        )
+      ) +
+      ggplot2::xlab(if (use_log)
+                      paste0("log(", column, ")")
+                    else
+                      column) +
+      ggplot2::labs(title = sprintf("PDP across protected groups for %s", column))
+  return(p)
+}
+
+#' SHAP summary plot for one feature with protected groups on y-axis.
+#'
+#' @param model H2O Model Object
+#' @param newdata H2OFrame
+#' @param column String containing column name.
+#' @param protected_cols List of categorical columns that contain sensitive information
+#'                          such as race, gender, age etc.
+#' @param autoscale If TRUE, try to guess when to use log transformation on X axis.
+#' @returns ggplot2 object
+#' @export
+h2o.shap_fair_plot <- function(model, newdata, column, protected_cols, autoscale = TRUE) {
+  .check_for_ggplot2()
+  # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
+  .data <- NULL
+  .check_model_suitability_for_calculation_of_contributions(model)
+
+  newdata_df <- as.data.frame(newdata)
+
+  newdata_df[["protected_group"]] <- do.call(paste, c(as.list(newdata_df[, protected_cols]), sep = ", "))
+
+  maxes <- if (is.factor(newdata[[column]]))
+    1
+  else {
+    m <- by(newdata_df, newdata_df$protected_group, function(x) max(x[[column]]))
+    log(m - min(m, na.rm = TRUE) + 1)
+  }
+  use_log <-
+    autoscale &&
+      (max(maxes, na.rm = TRUE) - min(maxes, na.rm = TRUE) > 1) &&
+      !is.factor(newdata[[column]])
+  h2o.no_progress({
+    contr <- as.data.frame(h2o.predict_contributions(model, newdata))
+  })
+  names(contr) <- paste0("contribution_of_", names(contr))
+  contr_columns <- paste0("contribution_of_", column)
+  if (!contr_columns %in% names(contr))
+    contr_columns <- names(contr)[startsWith(names(contr), paste0(contr_columns, "."))]
+  contr <- cbind(contr, newdata_df)
+  contr[[column]] <- as.numeric(contr[[column]])
+
+  lapply(contr_columns, function(contr_column) {
+    col_with_cat_name <- substring(contr_column, nchar("contribution_of_") + 1)
+    ggplot2::ggplot(contr[sample(nrow(contr)),], ggplot2::aes(y = .data[[contr_column]], x = .data$protected_group,
+                                                              color = if (use_log) log(.data[[column]]) else .data[[column]])) +
+      ggplot2::geom_abline(intercept = 0, slope = 0) +
+      ggplot2::geom_point(position = position_jitter_density(), alpha = 0.5) +
+      ggplot2::coord_flip() +
+      ggplot2::labs(colour = if (use_log) paste0("log(", col_with_cat_name, ")") else col_with_cat_name) +
+      ggplot2::ylab(paste("Contributions of", col_with_cat_name)) +
+      # ggplot2::scale_color_gradient(low = "#00AAEE", high = "#FF1166") +
+      ggplot2::scale_color_viridis_c()
+  })
+}
+
+#' Plot ROC curve per protected group.
+#'
+#' @param model H2O Model Object
+#' @param newdata H2OFrame
+#' @param protected_cols List of categorical columns that contain sensitive information
+#'                          such as race, gender, age etc.
+#' @param reference List of values corresponding to a reference for each protected columns.
+#'                  If set to NULL, it will use the biggest group as the reference.
+#' @param favorable_class Positive/favorable outcome class of the response.
+#'
+#' @return ggplot2 object
+#' @export
+h2o.roc_fair_plot <- function(model, newdata, protected_cols, reference, favorable_class) {
+  .check_for_ggplot2()
+  .data <- NULL
+  fair <- h2o.calculate_fairness_metrics(
+    model,
+    newdata,
+    protected_cols = protected_cols,
+    reference = reference,
+    favorable_class = favorable_class
+  )
+  res <- data.frame()
+  for (tbl in names(fair)) {
+    if (!startsWith(tbl, "threshold"))
+      next
+
+    df <- fair[[tbl]]
+    df["category"] <- substr(tbl, 24, nchar(tbl))
+    res <- rbind(res, df)
+  }
+
+  # ROC
+  p <- ggplot2::ggplot(res, ggplot2::aes(.data$fpr, .data$tpr, color = .data$category)) +
+    ggplot2::geom_line() +
+    ggplot2::geom_abline(
+      slope = 1,
+      intercept = 0,
+      linetype = "dashed",
+      color = "gray"
+    ) +
+    ggplot2::scale_x_continuous(expand = c(0, 0)) +
+    ggplot2::scale_y_continuous(expand = c(0, 0.01)) +
+    ggplot2::labs(title = "ROC")
+  return(p)
+
+}
+
+#' Plot PR curve per protected group.
+#'
+#' @param model H2O Model Object
+#' @param newdata H2OFrame
+#' @param protected_cols List of categorical columns that contain sensitive information
+#'                          such as race, gender, age etc.
+#' @param reference List of values corresponding to a reference for each protected columns.
+#'                  If set to NULL, it will use the biggest group as the reference.
+#' @param favorable_class Positive/favorable outcome class of the response.
+#'
+#' @return ggplot2 object
+#' @export
+h2o.pr_fair_plot <- function(model, newdata, protected_cols, reference, favorable_class) {
+  .check_for_ggplot2()
+  .data <- NULL
+  fair <- h2o.calculate_fairness_metrics(
+    model,
+    newdata,
+    protected_cols = protected_cols,
+    reference = reference,
+    favorable_class = favorable_class
+  )
+  res <- data.frame()
+  for (tbl in names(fair)) {
+    if (!startsWith(tbl, "threshold"))
+      next
+
+    df <- fair[[tbl]]
+    df["category"] <- substr(tbl, 24, nchar(tbl))
+    res <- rbind(res, df)
+  }
+
+  # Precision-Recall curve
+  q <- ggplot2::ggplot(res, ggplot2::aes(.data$recall, .data$precision, color = .data$category)) +
+    ggplot2::geom_line() +
+    ggplot2::geom_abline(
+      slope = 0,
+      intercept = mean(newdata[[model@allparameters$y]]),
+      linetype = "dashed",
+      color = "gray"
+    ) +
+    ggplot2::scale_x_continuous(expand = c(0, 0)) +
+    ggplot2::scale_y_continuous(expand = c(0, 0.01)) +
+    ggplot2::labs(title = "Precision-Recall Curve")
+  return(q)
+}
+
+
+#' Produce plots and dataframes related to a single model fairness.
+#'
+#' @param model H2O Model Object
+#' @param newdata H2OFrame
+#' @param protected_cols List of categorical columns that contain sensitive information
+#'                       such as race, gender, age etc.
+#' @param reference List of values corresponding to a reference for each protected columns.
+#'                  If set to NULL, it will use the biggest group as the reference.
+#' @param favorable_class Positive/favorable outcome class of the response.
+#' @param metrics Character vector of metrics to show.
+#' @return H2OExplanation object
+h2o.inspect_model_fairness <-
+  function(model,
+           newdata,
+           protected_cols,
+           reference,
+           favorable_class,
+           metrics) {
+    .check_for_ggplot2()
+    # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
+    .data <- NULL
+    result <- list()
+
+    fair <- h2o.calculate_fairness_metrics(
+      model,
+      newdata,
+      protected_cols = protected_cols,
+      reference = reference,
+      favorable_class = favorable_class
+    )
+
+    cols_to_show <-
+      intersect(c(metrics, paste0("AIR_", metrics)), names(fair$overview))
+    da <- fair$overview
+    result[["overview"]] <- list(
+      header = .h2o_explanation_header("Overview"),
+      data = da[, c(protected_cols, cols_to_show)],
+      metrics = list()
+    )
+
+    da[["protected_group"]] <-
+      do.call(paste, c(as.list(da[, protected_cols]), sep = ", "))
+    da[["is_reference"]] <-
+      da[["protected_group"]] == paste(reference, collapse = ", ")
+
+    # Metric comparison
+    for (metric in cols_to_show) {
+      p <-
+        ggplot2::ggplot(da, ggplot2::aes(stats::reorder(.data$protected_group, .data$auc, function(x) -x), .data[[metric]],
+                                         fill = .data$is_reference)) +
+          ggplot2::geom_col() +
+          ggplot2::labs(title = metric) +
+          ggplot2::xlab("protected_group") +
+          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45))
+      if (startsWith(metric, "AIR")) {
+        transf <- scales::trans_new(
+          "shift",
+          transform = function(x)
+            x - 1,
+          inverse = function(x)
+            x + 1
+        )
+        p <- p +
+          ggplot2::geom_abline(intercept = 0, slope = 0) +
+          ggplot2::geom_abline(
+            intercept = -.2,
+            slope = 0,
+            linetype = "dashed",
+            color = "gray"
+          ) +
+          ggplot2::geom_abline(
+            intercept = .25,
+            slope = 0,
+            linetype = "dashed",
+            color = "gray"
+          ) +
+          ggplot2::scale_y_continuous(trans = transf)
+      } else if (metric == "p.value") {
+        p <- p +
+          ggplot2::geom_abline(intercept = 0.05, slope = 0, linetype = "dashed", color = "gray")
+      }
+      result[["overview"]][["metrics"]][[metric]] <- p
+    }
+
+    result[["ROC"]] <- list(
+      header = .h2o_explanation_header("ROC"),
+      plot = h2o.roc_fair_plot(model, newdata, protected_cols, reference, favorable_class)
+    )
+    result[["PR"]] <- list(
+      header = .h2o_explanation_header("Precision-Recall Curve"),
+      plot = h2o.pr_fair_plot(model, newdata, protected_cols, reference, favorable_class)
+    )
+
+    suppressWarnings(
+      pi <-
+        h2o.permutation_importance_plot(model, newdata = newdata, n_repeats = 15)
+    )
+
+    result[["permutation_importance"]] <- pi
+
+    result[["PDP"]] <- list()
+    for (v in rev(pi$Variable)) {
+      result[["PDP"]][[v]] <- h2o.pd_fair_plot(model, newdata, protected_cols, v)
+    }
+    if (.is_h2o_tree_model(model))
+      result[["SHAP"]] <- list()
+    for (v in rev(pi$Variable)) {
+      if (.is_h2o_tree_model(model)) {
+          result[["SHAP"]][[v]] <- h2o.shap_fair_plot(model, newdata, v, protected_cols)
+      }
+    }
+    class(result) <- "H2OExplanation"
+    return(result)
+  }

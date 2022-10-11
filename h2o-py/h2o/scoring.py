@@ -47,7 +47,7 @@ def make_leaderboard(object, leaderboard_frame=None,
             return obj.model_ids
         elif hasattr(obj, "model_id"):
             return obj.model_id
-        elif isinstance(is_type(obj, str)):
+        elif is_type(obj, str):
             return obj
         else:
             raise H2OValueError("Unsupported model_id!")

@@ -392,7 +392,7 @@ public class TwoDimTable extends Iced {
         case "long":
           double[] longRow = new double[getRowDim()];
           for (int i = 0; i < getRowDim(); i++) {
-            longRow[i] = (long) get(i, j);
+            longRow[i] = ((Number) get(i, j)).longValue();
           }
           vecs[j] = Vec.makeVec(longRow, Vec.newKey());
           break;

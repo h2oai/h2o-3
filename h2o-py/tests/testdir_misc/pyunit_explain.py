@@ -796,6 +796,42 @@ def test_pareto_front_corner_cases():
     assert (df.loc[list(bl), "name"] == "bottom left").all()
     assert (df.loc[list(br), "name"] == "bottom right").all()
 
+def test_fairness_plots():
+    data = h2o.upload_file(pyunit_utils.locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+
+    x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',]
+        # 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6' ]
+    y = "default payment next month"
+    protected_columns = ['SEX', 'EDUCATION', 'MARRIAGE',]
+
+    for c in [y]+protected_columns:
+        data[c] = data[c].asfactor()
+
+    train, test = data.split_frame([0.98])
+    print(test.nrow)
+    reference = ["1", "2", "2"]  # university educated single man
+    favorable_class = "0"  # no default next month
+
+    aml = H2OAutoML(max_models=12)
+    aml.train(x, y, train)
+
+    models = [h2o.get_model(m[0]) for m in aml.leaderboard["model_id"].as_data_frame(False, False)]
+    da = h2o.explanation.disparate_analysis(models, test, protected_columns, reference, favorable_class)
+
+    assert isinstance(h2o.explanation.pareto_front(da, "auc", "air_min", optimum="top right").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
+    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("deeplearning"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("drf"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("gbm"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("glm"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("xgboost"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+
 
 def test_pd_plot_row_value():
     import random
@@ -853,4 +889,5 @@ pyunit_utils.run_tests([
     test_explanation_some_dataframe_pareto_front,
     test_pareto_front_corner_cases,
     test_pd_plot_row_value,
+    test_fairness_plots,
     ])
