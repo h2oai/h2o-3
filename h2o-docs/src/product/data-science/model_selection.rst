@@ -1,6 +1,9 @@
 ModelSelection
 --------------
 
+Introduction
+~~~~~~~~~~~~
+
 We implemented the ModelSelection toolbox based on GLM at H2O to help users select the best predictor subsets from their dataset for model building. We have currently implemented four modes to select the predictor subsets:
 
 1. ``mode = "allsubsets"`` where all possible combinations of predictor subsets are generated for a given subset size. A model is built for each subset and the one with the highest :math:`R^2` is returned. The best subsets are also returned for subset size :math:`1, 2, ..., n`. This mode guarantees to return the predictor subset with the highest :math:`R^2` value at the cost of computation complexity.
