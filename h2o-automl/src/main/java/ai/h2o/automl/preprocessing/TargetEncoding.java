@@ -9,9 +9,12 @@ import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import ai.h2o.targetencoding.TargetEncoderPreprocessor;
+import ai.h2o.targetencoding.pipeline.TargetEncoderFeatureTransformer;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelPreprocessor;
+import hex.pipeline.DataTransformer;
+import hex.pipeline.KFoldColumnGenerator;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
@@ -199,6 +202,25 @@ public class TargetEncoding implements PreprocessingStep {
 
     TargetEncoderModel getTEModel() {
         return _teModel;
+    }
+    
+    DataTransformer[] asTransformers() {
+      List<DataTransformer> dts = new ArrayList<>();
+      TargetEncoderParameters teParams = (TargetEncoderParameters)getDefaultParams().clone();
+      Frame train = _aml.getTrainingFrame();
+      Set<String> teColumns = selectColumnsToEncode(train, teParams);
+      if (teColumns.isEmpty()) return new DataTransformer[0];
+      
+      String[] keep = teParams.getNonPredictors();
+      teParams._ignored_columns = Arrays.stream(train.names())
+              .filter(col -> !teColumns.contains(col) && !ArrayUtils.contains(keep, col))
+              .toArray(String[]::new);
+      if (_aml.isCVEnabled()) {
+        dts.add(new KFoldColumnGenerator(null, FoldAssignmentScheme.Modulo));
+        teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
+      }
+      dts.add(new TargetEncoderFeatureTransformer(teParams));
+      return dts.toArray(new DataTransformer[0]);
     }
 
     private static void register(Frame fr, String keyPrefix, boolean force) {

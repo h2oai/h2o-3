@@ -7,6 +7,8 @@ import water.rapids.ast.prims.advmath.AstKFold;
 
 public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator>{
   
+  static String FOLD_COLUMN_PREFIX = "__fold__";
+  
   private String _fold_column;
   private final FoldAssignmentScheme _scheme;
 
@@ -29,8 +31,10 @@ public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator>{
     assert context != null;
     assert context._params != null;
     if (_fold_column == null) _fold_column = context._params._fold_column;
+    if (_fold_column == null) _fold_column = FOLD_COLUMN_PREFIX+context._params._response_column;
     Frame withFoldC = transform(context.getTrain(), FrameType.Training, context);
     context.setTrain(withFoldC);
+    if (context._params._fold_column == null) context._params._fold_column = _fold_column;
   }
 
   @Override

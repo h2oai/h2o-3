@@ -119,7 +119,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
       ModelCategory.Regression,
-      ModelCategory.Binomial,
+      ModelCategory.Binomial, 
+      ModelCategory.Multinomial
     };
   }
 

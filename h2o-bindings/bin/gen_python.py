@@ -456,8 +456,10 @@ def main():
         modelselection="model_selection"
     )
     algo_to_category = dict(
+        generic="Miscellaneous",
+        pipeline=None,
         svd="Miscellaneous",
-        word2vec="Miscellaneous"
+        word2vec="Miscellaneous",
     )
     for name, mb in builders:
         module = name
@@ -465,9 +467,9 @@ def main():
             module = algo_to_module[name]
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
-        category = algo_to_category[name] if name in algo_to_category \
-            else "Supervised" if mb["supervised"] \
-            else "Unsupervised"
+        category = (algo_to_category[name] if name in algo_to_category
+                    else "Supervised" if mb["supervised"] 
+                    else "Unsupervised")
         full_module = '.'.join(["h2o.estimators", module])
         modules.append((full_module, module, algo_to_classname(name), category))
 

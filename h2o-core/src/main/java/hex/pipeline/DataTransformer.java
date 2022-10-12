@@ -16,6 +16,7 @@ public abstract class DataTransformer<T extends DataTransformer> extends Iced<T>
   
   String _id;
   boolean _enabled = true;  // flag allowing to enable/disable transformers dynamically esp. in pipelines (can be used as a pipeline hyperparam in grids).
+  int refCount = 0;
 
   public DataTransformer() {
     this("data_transformer"+Key.rand());
@@ -34,10 +35,17 @@ public abstract class DataTransformer<T extends DataTransformer> extends Iced<T>
   public String id() {
     return _id;
   }
+
+  /**
+   * @return true iff the transformer needs to be applied in a specific way to training/validation frames during cross-validation.
+   */
+  public boolean isCVSensitive() {
+    return false;
+  }
   
   public void prepare(PipelineContext context) {
-    if (!_enabled) return;
-    doPrepare(context);
+    if (_enabled) doPrepare(context);
+    ++refCount;
   }
   
   protected void doPrepare(PipelineContext context) {} 
@@ -51,7 +59,11 @@ public abstract class DataTransformer<T extends DataTransformer> extends Iced<T>
   public void cleanup() {
     cleanup(new Futures());
   }
-  void cleanup(Futures futures) {}
+
+  public void cleanup(Futures futures) {
+    if (--refCount <= 0) doCleanup(futures);
+  }
+  protected void doCleanup(Futures futures) {}
   
   public Frame transform(Frame fr) {
     return transform(fr, FrameType.Scoring, null);

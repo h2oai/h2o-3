@@ -2,6 +2,8 @@ package hex.pipeline;
 
 import water.fvec.Frame;
 
+import java.util.Arrays;
+
 public class TransformerChain extends DataTransformer<TransformerChain> {
   
   @FunctionalInterface
@@ -40,9 +42,14 @@ public class TransformerChain extends DataTransformer<TransformerChain> {
 
   public TransformerChain(DataTransformer[] transformers) {
     assert transformers != null;
-    _transformers = transformers;
+    _transformers = transformers.clone();
   }
-  
+
+  @Override
+  public boolean isCVSensitive() {
+    return Arrays.stream(_transformers).anyMatch(DataTransformer::isCVSensitive);
+  }
+
   @Override
   protected void doPrepare(PipelineContext context) {
     reset();

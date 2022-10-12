@@ -2,6 +2,7 @@ package hex.pipeline;
 
 import hex.Model;
 import hex.ModelBuilder;
+import water.Futures;
 import water.Key;
 import water.Keyed;
 import water.fvec.Frame;
@@ -52,7 +53,7 @@ public class ModelAsFeatureTransformer<T extends ModelAsFeatureTransformer, M ex
   }
 
   @Override
-  public void cleanup() {
+  protected void doCleanup(Futures fs) {
     Keyed.removeQuietly(_model);
   }
 

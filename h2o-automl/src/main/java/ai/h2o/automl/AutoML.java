@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildControl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildModels;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
@@ -13,9 +14,14 @@ import ai.h2o.automl.leaderboard.ModelProvider;
 import ai.h2o.automl.leaderboard.ModelStep;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
+import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
 import hex.leaderboard.*;
+import hex.pipeline.DataTransformer;
+import hex.pipeline.Pipeline;
+import hex.pipeline.PipelineModel;
+import hex.pipeline.PipelineModel.PipelineParameters;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -169,6 +175,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
+  private transient PipelineParameters _pipelineParams;
   transient StepResultState[] _stepsResults;
 
   private boolean _useAutoBlending;
@@ -218,6 +225,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       prepareData();
       initLeaderboard();
       initPreprocessing();
+      initPipeline();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -386,6 +394,34 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       _leaderboard = Leaderboard.getOrMake(_key.toString(), eventLog().asLogger(Stage.ModelTraining), _leaderboardFrame, sortMetric, Leaderboard.ScoreData.auto);
     }
     _leaderboard.setExtensionsProvider(createLeaderboardExtensionProvider(this));
+  }
+  
+  private void initPipeline() {
+    final AutoMLInput input = _buildSpec.input_spec;
+    final AutoMLBuildModels build = _buildSpec.build_models;
+    final AutoMLBuildControl control = _buildSpec.build_control;
+    _pipelineParams = build.preprocessing == null
+            ? null
+            : new PipelineParameters();
+    _pipelineParams._train = getTrainingFrame().getKey();
+    _pipelineParams._valid = getValidationFrame() == null ? null : getValidationFrame().getKey();
+    _pipelineParams._response_column = input.response_column;
+    _pipelineParams._fold_column = input.fold_column;
+    _pipelineParams._weights_column = input.weights_column;
+    _pipelineParams._nfolds= control.nfolds;
+    _pipelineParams._seed = control.stopping_criteria.seed();
+    _pipelineParams._transformers = Arrays.stream(build.preprocessing)
+            .flatMap(def -> Arrays.stream(def.asTransformers(this)))
+            .toArray(DataTransformer[]::new);
+    if (_pipelineParams._transformers.length == 0) _pipelineParams = null;
+    
+    
+    
+    //TODO: given that a transformer can reference a model (e.g. TE), 
+    // and multiple transformers can refer to the same model, 
+    // then we should be careful when deleting a transformer (resp. an entire pipeline) 
+    // as we may delete sth that is still in use by another transformer (resp. pipeline).
+    // --> ref count?
   }
 
   private void initPreprocessing() {
@@ -763,6 +799,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     List<ModelingStep> completed = new ArrayList<>();
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.prepare();
+    }
+    if (_pipelineParams != null) {
+      assert _pipelineParams._estimator == null;
+      Pipeline pipeline = ModelBuilder.make(_pipelineParams);
+      PipelineModel pipelineModel = pipeline.trainModel().get();
     }
     for (ModelingStep step : getExecutionPlan()) {
       if (!exceededSearchLimits(step)) {

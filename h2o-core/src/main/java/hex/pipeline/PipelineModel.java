@@ -72,7 +72,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     if (fr == null) return null;
     try (Scope.Safe s = Scope.safe(fr)) {
       PipelineContext context = newContext(fr);
-      return new TransformerChain(_output._transformers).transform(fr, FrameType.Scoring, context, new UnaryCompleter<Frame>() {
+      Frame result = newChain().transform(fr, FrameType.Scoring, context, new UnaryCompleter<Frame>() {
         @Override
         public Frame apply(Frame frame, PipelineContext context) {
           if (_output._estimator == null) {
@@ -81,7 +81,14 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
           return _output._estimator.get().score(frame, destination_key, j, computeMetrics, customMetricFunc);
         }
       });
+      Scope.untrack(result);
+      return result;
     }
+  }
+  
+  private TransformerChain newChain() {
+    //no need to call `prepare` on this chain as we're using the output transformers, which have been prepared during training.
+    return new TransformerChain(_output._transformers);
   }
   
   private PipelineContext newContext(Frame fr) {
@@ -131,8 +138,8 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     // this doesn't have to work for all type of transformers, but for example for those wrapping a model (see ModelAsFeatureTransformer) and for the final estimator.
     // as soon as we can do this, then we will be able to train pipelines in grids like any other model.
     
-    DataTransformer[] _transformers;
-    Model.Parameters _estimator;
+    public DataTransformer[] _transformers;
+    public Model.Parameters _estimator;
 
     @Override
     public String algoName() {

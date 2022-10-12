@@ -1,6 +1,7 @@
 package ai.h2o.automl.preprocessing;
 
 import ai.h2o.automl.AutoML;
+import hex.pipeline.DataTransformer;
 import water.Iced;
 
 public class PreprocessingStepDefinition extends Iced<PreprocessingStepDefinition> {
@@ -24,5 +25,14 @@ public class PreprocessingStepDefinition extends Iced<PreprocessingStepDefinitio
             default:
                 throw new IllegalStateException();
         }
+    }
+    
+    public DataTransformer[] asTransformers(AutoML aml) {
+      switch (_type) {
+        case TargetEncoding:
+          return new TargetEncoding(aml).asTransformers();
+        default:
+          throw new IllegalArgumentException("unsupported preprocessing transformation "+_type);
+      }
     }
 }

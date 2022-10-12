@@ -68,6 +68,30 @@ public class DataTransformerTest {
     }
   }
   
+  public static class AddDummyCVColumnTransformer extends DataTransformer<AddDummyCVColumnTransformer> {
+    
+    private final String colName;
+
+    public AddDummyCVColumnTransformer(String colName) {
+      this.colName = colName;
+    }
+
+    @Override
+    public boolean isCVSensitive() {
+      return true;
+    }
+
+    @Override
+    protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
+      if (type == FrameType.Training && context._params._is_cv_model) {
+        Frame tr = new Frame(fr);
+        tr.add(colName, Vec.makeSeq(context._params._cv_fold, tr.anyVec().length()));
+        return tr;
+      }
+      return fr;
+    }
+  }
+  
   public static class RenameFrameTransformer extends DataTransformer<RenameFrameTransformer> {
     
     private final String frameName;
@@ -95,6 +119,16 @@ public class DataTransformerTest {
         this.frameId = frameId;
         this.type = type;
         this.is_cv = is_cv;
+      }
+
+      @Override
+      public String toString() {
+        final StringBuilder sb = new StringBuilder("Transformation{");
+        sb.append("frameId='").append(frameId).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", is_cv=").append(is_cv);
+        sb.append('}');
+        return sb.toString();
       }
     }
     

@@ -24,7 +24,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   }
 
   public Pipeline(boolean startup_once) {
-    super(new PipelineParameters(), startup_once, null);  // no schema directory to completely disable schema lookup for now.
+//    super(new PipelineParameters(), startup_once, null);  // no schema directory to completely disable schema lookup for now.
+    super(new PipelineParameters(), startup_once); 
   }
 
   @Override
@@ -56,8 +57,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   @Override
   public ModelCategory[] can_build() {
     ModelBuilder finalBuilder = getFinalBuilder();
-    return finalBuilder == null ? new ModelCategory[] {ModelCategory.Unknown} : finalBuilder.can_build();
-//    return finalBuilder == null ? ModelCategory.values() : finalBuilder.can_build();
+//    return finalBuilder == null ? new ModelCategory[] {ModelCategory.Unknown} : finalBuilder.can_build();
+    return finalBuilder == null ? ModelCategory.values() : finalBuilder.can_build();
   }
 
   @Override
@@ -97,6 +98,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
 //                  _parms._estimator._fold_column = _parms._fold_column;
                   _parms._estimator._weights_column = _parms._weights_column;
                   _parms._estimator._offset_column = _parms._offset_column;
+                  _parms._estimator._ignored_columns = _parms._ignored_columns;
                   Keyed res = ModelBuilder.make(_parms._estimator).trainModel().get();
                   return res == null ? null : res.getKey();
                 }
@@ -138,6 +140,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                 _parms._estimator._fold_column = _parms._fold_column;
                 _parms._estimator._weights_column = _parms._weights_column;
                 _parms._estimator._offset_column = _parms._offset_column;
+                _parms._estimator._ignored_columns = _parms._ignored_columns;
+                _parms._estimator._parallelize_cross_validation = false;  // chain.transform is not thread safe (index incr)
                 ModelBuilder mb = ModelBuilder.make(_parms._estimator);
                 mb._job = _job;
 //                mb.init(true);
@@ -153,14 +157,25 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                   }
 
                   @Override
+                  protected Frame getCVBase() {
+                    if (_cvBase == null && chain.isCVSensitive()) {
+                      _cvBase = new Frame(Key.make(_result.toString()+"_cv"), train().names(), train().vecs()); // referring to pipeline.train() here
+                      if ( _parms._weights_column != null ) _cvBase.remove( _parms._weights_column );
+                    }
+                    return super.getCVBase();
+                  }
+
+                  @Override
                   public Frame[] getCVFrames(int cvIdx) {
-                    PipelineContext cvContext = newCVContext(context, cvIdx, getCVBase());
-                    //TODO: need to disable parallelization for CV: chain.transform is not thread safe (index incr)
-                    return chain.doTransform(
-                            new Frame[] {cvContext.getTrain(), cvContext.getValid()},
-                            new FrameType[] { FrameType.Training, FrameType.Validation },
-                            cvContext
-                    );
+                    if (chain.isCVSensitive()) {
+                      PipelineContext cvContext = newCVContext(context, cvIdx, getCVBase());
+                      return chain.doTransform(
+                              new Frame[]{cvContext.getTrain(), cvContext.getValid()},
+                              new FrameType[]{FrameType.Training, FrameType.Validation},
+                              cvContext
+                      );
+                    }
+                    return super.getCVFrames(cvIdx);
                   }
                 });
                 return mb.dest();

@@ -20,9 +20,14 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
   }
 
   @Override
+  public boolean isCVSensitive() {
+    return _params._data_leakage_handling == KFold;
+  }
+
+  @Override
   protected void doPrepare(PipelineContext context) {
     if (context != null) {
-      if (_params._data_leakage_handling == KFold && context._params._fold_column != null) {
+      if (isCVSensitive() && context._params._fold_column != null) {
         _params._fold_column = context._params._fold_column;
       }
     }
@@ -54,7 +59,7 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
   }
 
   private boolean useFoldTransform(Model.Parameters params) {
-    return params._cv_fold >= 0 && getModel()._parms._data_leakage_handling == KFold;
+    return isCVSensitive() && params._cv_fold >= 0;
   }
   
 }
