@@ -240,7 +240,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     def feature_frequencies(self, test_data):
         """
         Retrieve the number of occurrences of each feature for given observations 
-        on their respective paths in a tree ensemble model.
+        on their respective paths in a tree ensemble model. 
         Available for GBM, Random Forest and Isolation Forest models.
 
         :param H2OFrame test_data: Data on which to calculate feature frequencies.
