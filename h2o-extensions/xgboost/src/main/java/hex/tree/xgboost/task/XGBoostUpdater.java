@@ -2,10 +2,12 @@ package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.BoosterParms;
 import ai.h2o.xgboost4j.java.*;
+import hex.tree.xgboost.EvalMetric;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
 import water.nbhm.NonBlockingHashMap;
+import water.util.Log;
 
 import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
@@ -15,14 +17,15 @@ public class XGBoostUpdater extends Thread {
 
   private static final Logger LOG = Logger.getLogger(XGBoostUpdater.class);
 
-  private static long WORK_START_TIMEOUT_SECS = 5 * 60; // Each Booster task should start before this timer expires
-  private static long INACTIVE_CHECK_INTERVAL_SECS = 60;
+  private static final long WORK_START_TIMEOUT_SECS = 5 * 60; // Each Booster task should start before this timer expires
+  private static final long INACTIVE_CHECK_INTERVAL_SECS = 60;
 
   private static final NonBlockingHashMap<Key, XGBoostUpdater> updaters = new NonBlockingHashMap<>();
 
   private final Key _modelKey;
   private final DMatrix _trainMat;
   private final BoosterParms _boosterParms;
+  private final String _evalMetricSpec;
   private final byte[] _checkpointBoosterBytes;
   private final Map<String, String> _rabitEnv;
 
@@ -30,6 +33,7 @@ public class XGBoostUpdater extends Thread {
   private volatile SynchronousQueue<Object> _out;
 
   private BoosterWrapper _booster;
+  private volatile EvalMetric _evalMetric;
 
   private XGBoostUpdater(
       Key modelKey, DMatrix trainMat, BoosterParms boosterParms, 
@@ -41,6 +45,7 @@ public class XGBoostUpdater extends Thread {
     _boosterParms = boosterParms;
     _checkpointBoosterBytes = checkpointBoosterBytes;
     _rabitEnv = rabitEnv;
+    _evalMetricSpec = (String) _boosterParms.get().get("eval_metric");
     _in = new SynchronousQueue<>();
     _out = new SynchronousQueue<>();
   }
@@ -114,7 +119,8 @@ public class XGBoostUpdater extends Thread {
     @Override
     public Booster call() throws XGBoostError {
       if ((_booster == null) && _tid == 0) {
-        _booster = new BoosterWrapper(_checkpointBoosterBytes, _boosterParms.get(), _trainMat);        
+        _booster = new BoosterWrapper(_checkpointBoosterBytes, _boosterParms.get(), _trainMat);
+        _evalMetric = computeEvalMetric();
         // Force Booster initialization; we can call any method that does "lazy init"
         byte[] boosterBytes = _booster.toByteArray();
         LOG.info("Initial Booster created, size=" + boosterBytes.length);
@@ -122,15 +128,43 @@ public class XGBoostUpdater extends Thread {
         // Do one iteration
         assert _booster != null;
         _booster.update(_trainMat, _tid);
+        _evalMetric = computeEvalMetric();
         _booster.saveRabitCheckpoint();
       }
       return _booster.getBooster();
     }
 
+    private EvalMetric computeEvalMetric() throws XGBoostError {
+      if (_evalMetricSpec == null) {
+        return null;
+      }
+      final String evalMetricVal = _booster.evalTrain(_trainMat, _tid);
+      return parseEvalMetric(evalMetricVal);
+    }
+    
     @Override
     public String toString() {
       return "Boosting Iteration (tid=" + _tid + ")";
     }
+  }
+
+  private EvalMetric parseEvalMetric(String evalMetricVal) {
+    return parseEvalMetric(_evalMetricSpec, evalMetricVal);
+  }
+  
+  static EvalMetric parseEvalMetric(String evalMetricSpec, String evalMetricVal) {
+    final int sepPos = evalMetricVal.lastIndexOf(":");
+    if (sepPos >= 0) {
+      String valStr = evalMetricVal.substring(sepPos + 1).trim();
+      try {
+        double val = Double.parseDouble(valStr);
+        return new EvalMetric(evalMetricSpec, val);
+      } catch (Exception e) {
+        Log.err(e);
+      }
+    }
+    Log.warn("Unexpected format of evaluation metric value: '" + evalMetricVal + "'. Returning NA.");
+    return new EvalMetric(evalMetricSpec, Double.NaN);
   }
 
   private class SerializeBooster implements BoosterCallable<byte[]> {
@@ -150,6 +184,10 @@ public class XGBoostUpdater extends Thread {
     } catch (InterruptedException e) {
       throw new IllegalStateException("Failed to serialize Booster - operation was interrupted", e);
     }
+  }
+
+  EvalMetric getEvalMetric() {
+    return _evalMetric;
   }
 
   Booster doUpdate(int tid) {

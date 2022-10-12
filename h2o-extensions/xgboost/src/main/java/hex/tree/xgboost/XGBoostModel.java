@@ -143,6 +143,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public int[] _gpu_id; // which GPU to use
     public Backend _backend = Backend.auto;
 
+    public String _eval_metric;
+
     public String algoName() { return "XGBoost"; }
     public String fullName() { return "XGBoost"; }
     public String javaName() { return XGBoostModel.class.getName(); }
@@ -431,6 +433,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (p._scale_pos_weight != 1)
       params.put("scale_pos_weight", p._scale_pos_weight);
 
+    // objective function
     if (nClasses==2) {
       params.put("objective", ObjectiveType.BINARY_LOGISTIC.getId());
     } else if (nClasses==1) {
@@ -451,6 +454,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("num_class", nClasses);
     }
     assert ObjectiveType.fromXGBoost((String) params.get("objective")) != null;
+
+    // evaluation metric
+    if (p._eval_metric != null) {
+      params.put("eval_metric", p._eval_metric);
+    }
 
     final int nthreadMax = getMaxNThread();
     final int nthread = p._nthread != -1 ? Math.min(p._nthread, nthreadMax) : nthreadMax;
@@ -596,20 +604,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostModelMetrics(_output, data, originalData, isTrain, this).compute();
   }
 
-  /**
-   * Score an XGBoost model on training and validation data (optional)
-   * Note: every row is scored, all observation weights are assumed to be equal
-   * @param _train training data in the form of matrix
-   * @param _valid validation data (optional, can be null)
-   */
-  final void doScoring(Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) {
-    ModelMetrics mm = makeMetrics(_train, _trainOrig, true, "Metrics reported on training frame");
+  final void doScoring(Frame train, Frame trainOrig, CustomMetric trainCustomMetric, Frame valid, Frame validOrig) {
+    ModelMetrics mm = makeMetrics(train, trainOrig, true, "Metrics reported on training frame");
     _output._training_metrics = mm;
-    _output._scored_train[_output._ntrees].fillFrom(mm);
+    _output._scored_train[_output._ntrees].fillFrom(mm, trainCustomMetric);
     addModelMetrics(mm);
     // Optional validation part
-    if (_valid!=null) {
-      mm = makeMetrics(_valid, _validOrig, false, "Metrics reported on validation frame");
+    if (valid != null) {
+      mm = makeMetrics(valid, validOrig, false, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm);
       addModelMetrics(mm);

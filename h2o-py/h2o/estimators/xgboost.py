@@ -102,6 +102,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  scale_pos_weight=1.0,  # type: float
+                 eval_metric=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -337,6 +338,10 @@ class H2OXGBoostEstimator(H2OEstimator):
                observations with negative labels on gradient calculation. Useful for imbalanced problems.
                Defaults to ``1.0``.
         :type scale_pos_weight: float
+        :param eval_metric: Specification of evaluation metric that will be passed to the native XGBoost backend. Due to
+               technical limitations, evaluation metric can currently only be calculated on the training frame.
+               Defaults to ``None``.
+        :type eval_metric: str, optional
         """
         super(H2OXGBoostEstimator, self).__init__()
         self._parms = {}
@@ -410,6 +415,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
         self.scale_pos_weight = scale_pos_weight
+        self.eval_metric = eval_metric
 
     @property
     def training_frame(self):
@@ -2453,6 +2459,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     def scale_pos_weight(self, scale_pos_weight):
         assert_is_type(scale_pos_weight, None, float)
         self._parms["scale_pos_weight"] = scale_pos_weight
+
+    @property
+    def eval_metric(self):
+        """
+        Specification of evaluation metric that will be passed to the native XGBoost backend. Due to technical
+        limitations, evaluation metric can currently only be calculated on the training frame.
+
+        Type: ``str``.
+        """
+        return self._parms.get("eval_metric")
+
+    @eval_metric.setter
+    def eval_metric(self, eval_metric):
+        assert_is_type(eval_metric, None, str)
+        self._parms["eval_metric"] = eval_metric
 
 
     @staticmethod

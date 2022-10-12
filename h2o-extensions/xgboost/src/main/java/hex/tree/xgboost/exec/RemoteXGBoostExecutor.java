@@ -3,6 +3,7 @@ package hex.tree.xgboost.exec;
 import hex.DataInfo;
 import hex.schemas.XGBoostExecRespV3;
 import hex.tree.xgboost.BoosterParms;
+import hex.tree.xgboost.EvalMetric;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.remote.RemoteXGBoostHandler;
 import hex.tree.xgboost.task.XGBoostUploadMatrixTask;
@@ -12,7 +13,6 @@ import water.H2O;
 import water.Key;
 import water.TypeMap;
 import water.fvec.Frame;
-import water.util.Log;
 
 import java.util.Arrays;
 
@@ -110,6 +110,14 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     public byte[] updateBooster() {
         XGBoostExecReq req = new XGBoostExecReq(); // no req params
         return http.downloadBytes(modelKey, "getBooster", req);
+    }
+
+    @Override
+    public EvalMetric getEvalMetricTrain() {
+        XGBoostExecReq.GetEvalMetric req = new XGBoostExecReq.GetEvalMetric();
+        XGBoostExecRespV3 resp = http.postJson(modelKey, "getEvalMetric", req);
+        assert resp.key.key().equals(modelKey);
+        return resp.readData();
     }
 
     @Override

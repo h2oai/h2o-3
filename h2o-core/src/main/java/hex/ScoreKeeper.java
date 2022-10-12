@@ -74,6 +74,11 @@ public class ScoreKeeper extends Iced {
 
   public void fillFrom(ModelMetrics m) {
     if (m == null) return;
+    fillFrom(m, m._custom_metric);
+  }
+
+  public void fillFrom(ModelMetrics m, CustomMetric customMetric) {
+    if (m == null) return;
     _mse = m._MSE;
     _rmse = m.rmse();
     if (m instanceof ModelMetricsRegression) {
@@ -118,8 +123,9 @@ public class ScoreKeeper extends Iced {
       _qini = ((ModelMetricsBinomialUplift)m).qini();
       _auuc_nbins = ((ModelMetricsBinomialUplift)m).nbins();
     }
-    if (m._custom_metric != null )
-      _custom_metric =  m._custom_metric.value;
+    if (customMetric != null ) {
+      _custom_metric = customMetric.value;
+    }
   }
 
   public interface IStoppingMetric {

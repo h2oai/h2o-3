@@ -281,6 +281,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     CalibrationHelper.initCalibration(this, _parms, expensive);
   }
 
+  protected void checkCustomMetricForEarlyStopping() {
+    if (_parms._eval_metric == null) {
+      error("_eval_metric", "Evaluation metric needs to be defined in order to use it for early stopping.");
+    }
+    if (_parms._valid != null) {
+      error("_stopping_metric", "Evaluation (custom) metric currently cannot be used for early stopping on a validation dataset. " +
+              "This is a technical limitation.");
+    }
+  }
+
   private void checkPositiveRate(String paramName, double rateValue) {
     if (rateValue <= 0 || rateValue > 1)
       error("_" + paramName, paramName + " must be between 0 (exclusive) and 1 (inclusive)");
@@ -723,14 +733,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
         _timeLastScoreStart = now;
+        CustomMetric customMetricTrain = _parms._eval_metric != null ? toCustomMetric(exec.getEvalMetricTrain()) : null;
         model.model_info().updateBoosterBytes(exec.updateBooster());
-        model.doScoring(_train, _parms.train(), _valid, _parms.valid());
+        model.doScoring(_train, _parms.train(), customMetricTrain, _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;
         final Map<String, FeatureScore> varimp = varImp.getFeatureScores(model.model_info()._boosterBytes);
         out._varimp = computeVarImp(varimp);
         out._model_summary = createModelSummaryTable(out._ntrees, null);
-        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null, false);
+        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null || _parms._eval_metric != null, false);
         if (out._varimp != null) {
           out._variable_importances = createVarImpTable(null, ArrayUtils.toDouble(out._varimp._varimp), out._varimp._names);
           out._variable_importances_cover = createVarImpTable("Cover", ArrayUtils.toDouble(out._varimp._covers), out._varimp._names);
@@ -751,6 +762,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       return scored;
     }
+  }
+
+  static CustomMetric toCustomMetric(EvalMetric evalMetric) {
+    if (evalMetric == null) {
+      return null;
+    }
+    return CustomMetric.from(evalMetric._name, evalMetric._value);
   }
 
   private static TwoDimTable createVarImpTable(String name, double[] rel_imp, String[] coef_names) {
