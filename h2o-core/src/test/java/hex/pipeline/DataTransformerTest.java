@@ -71,9 +71,15 @@ public class DataTransformerTest {
   public static class AddDummyCVColumnTransformer extends DataTransformer<AddDummyCVColumnTransformer> {
     
     private final String colName;
+    private final int vecType;
 
     public AddDummyCVColumnTransformer(String colName) {
+      this(colName, Vec.T_NUM);
+    }
+    
+    public AddDummyCVColumnTransformer(String colName, int vecType) {
       this.colName = colName;
+      this.vecType = vecType;
     }
 
     @Override
@@ -85,7 +91,18 @@ public class DataTransformerTest {
     protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
       if (type == FrameType.Training && context._params._is_cv_model) {
         Frame tr = new Frame(fr);
-        tr.add(colName, Vec.makeSeq(context._params._cv_fold, tr.anyVec().length()));
+        Vec v = Vec.makeRepSeq(tr.anyVec().length(), context._params._cv_fold+2);
+        switch (vecType) {
+          case Vec.T_CAT:
+            v = v.toCategoricalVec(); break;
+          case Vec.T_STR:
+            v = v.toStringVec(); break;
+          case Vec.T_NUM:
+          default:
+            //already numeric by construct
+            break;
+        }
+        tr.add(colName, v);
         return tr;
       }
       return fr;
@@ -156,7 +173,7 @@ public class DataTransformerTest {
   
   public static class FrameCheckerAsTransformer extends DataTransformer<FrameTrackerAsTransformer> {
 
-    final FrameChecker checker;
+    final transient FrameChecker checker;
 
     public FrameCheckerAsTransformer(FrameChecker checker) {
       this.checker = checker;

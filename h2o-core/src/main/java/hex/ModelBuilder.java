@@ -23,6 +23,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
+  
+  public static final String CV_WEIGHTS_COLUMN = "__internal_cv_weights__";
 
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
@@ -812,9 +814,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
-    final String weightName = "__internal_cv_weights__";
     Frame train = framesProvider.getTrain();
-    if (train.find(weightName) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '" + weightName + "'.");
+    if (train.find(CV_WEIGHTS_COLUMN) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '"+CV_WEIGHTS_COLUMN+"'.");
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     List<Frame> cvFramesForFailedModels = new ArrayList<>();
@@ -825,11 +826,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Frame[] cvFrames = framesProvider.getCVFrames(i);
       Frame cvTrain = new Frame(Key.make(identifier + "_train"), cvFrames[0].names(), cvFrames[0].vecs());
       cvTrain.write_lock(_job);
-      cvTrain.add(weightName, weights[2*i]);
+      cvTrain.add(CV_WEIGHTS_COLUMN, weights[2*i]);
       cvTrain.update(_job);
       Frame cvValid = new Frame(Key.make(identifier + "_valid"), cvFrames[1].names(), cvFrames[1].vecs());
       cvValid.write_lock(_job);
-      cvValid.add(weightName, weights[2*i+1]);
+      cvValid.add(CV_WEIGHTS_COLUMN, weights[2*i+1]);
       cvValid.update(_job);
       
       // Shallow clone - not everything is a private copy!!!
@@ -840,7 +841,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Fix up some parameters of the clone
       cv_mb._parms._is_cv_model = true;
       cv_mb._parms._cv_fold = i;
-      cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
+      cv_mb._parms._weights_column = CV_WEIGHTS_COLUMN;// All submodels have a weight column, which the main model does not
       cv_mb._parms.setTrain(cvTrain._key);       // All submodels have a weight column, which the main model does not
       cv_mb._parms._valid = cvValid._key;
       cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
@@ -867,7 +868,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if( error_count() > 0 ) {               // Found an error in one or more submodels
       Futures fs = new Futures();
       for (Frame cvf : cvFramesForFailedModels) {
-        cvf.vec(weightName).remove(fs);     // delete the Vec's chunks
+        cvf.vec(CV_WEIGHTS_COLUMN).remove(fs);     // delete the Vec's chunks
         DKV.remove(cvf._key, fs);           // delete the Frame from the DKV, leaving its vecs
         Log.info("Removing frame for failed cv model: " + cvf._key);
       }

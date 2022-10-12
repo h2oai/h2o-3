@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.pipeline.DataTransformerTest.AddDummyCVColumnTransformer;
 import hex.pipeline.DataTransformerTest.AddRandomColumnTransformer;
+import hex.pipeline.DataTransformerTest.FrameCheckerAsTransformer;
 import hex.pipeline.DataTransformerTest.FrameTrackerAsTransformer;
 import hex.pipeline.PipelineModel.PipelineOutput;
 import hex.pipeline.PipelineModel.PipelineParameters;
@@ -19,6 +20,8 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.dummy.DummyModel;
 import water.test.dummy.DummyModelParameters;
+
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.*;
@@ -131,7 +134,7 @@ public class PipelineTest {
       pparams._transformers = new DataTransformer[] {
               new AddRandomColumnTransformer("foo").id("add_foo"),
               new AddRandomColumnTransformer("bar").id("add_bar"),
-              new AddDummyCVColumnTransformer("cv_fold").id("add_cv_fold"),
+              new AddDummyCVColumnTransformer("cv_fold", Vec.T_CAT).id("add_cv_fold"),
               tracker.id("track"), 
       };
       DummyModelParameters eparams = new DummyModelParameters();
@@ -172,10 +175,15 @@ public class PipelineTest {
       assertEquals(nfolds, tracker.transformations.stream().filter(t -> t.is_cv && t.type == DataTransformer.FrameType.Training).count());
       assertEquals(nfolds, tracker.transformations.stream().filter(t -> t.is_cv && t.type == DataTransformer.FrameType.Validation).count());
       assertEquals(nfolds, emodel._output._cross_validation_models.length);
-      for (Key<DummyModel> km : emodel._output._cross_validation_models) {
-        DummyModel cvModel = km.get();
+      for (int i=0; i<nfolds; i++) {
+        DummyModel cvModel = (DummyModel) emodel._output._cross_validation_models[i].get();
         assertNotNull(cvModel);
-        assertArrayEquals(new String[] {"one", "two", "foo", "bar", "cv_fold", "__internal_cv_weights__", "target"}, cvModel._output._names);
+        assertArrayEquals("CV training frame not transformed", 
+                new String[] {"one", "two", "foo", "bar", "cv_fold", ModelBuilder.CV_WEIGHTS_COLUMN, "target"}, 
+                cvModel._output._names);
+        assertArrayEquals("CV training frame not transformed using CV context", 
+                IntStream.rangeClosed(0, i+1).mapToObj(String::valueOf).toArray(String[]::new), 
+                cvModel._output._domains[4]);
       }
       
       Frame predictions = Scope.track(pmodel.score(fr));
@@ -388,8 +396,12 @@ public class PipelineTest {
       Scope.enter();
       PipelineParameters pparams = new PipelineParameters();
       pparams._nfolds = nfolds;
+      FrameCheckerAsTransformer checker = new FrameCheckerAsTransformer(fr -> {
+        assertArrayEquals(new String[][] {{"a", "b", "c", "d"}, {"a", "b", "c", "d"}, {"n", "y"}}, fr.domains());
+      });
       FrameTrackerAsTransformer tracker = new FrameTrackerAsTransformer();
       pparams._transformers = new DataTransformer[]{
+              checker.id("check_frame_not_encoded"),
               new AddRandomColumnTransformer("foo").id("add_foo"),
               new AddRandomColumnTransformer("bar").id("add_bar"),
               new AddDummyCVColumnTransformer("cv_fold").id("add_cv_fold"),
@@ -397,13 +409,15 @@ public class PipelineTest {
       };
       DummyModelParameters eparams = new DummyModelParameters();
       eparams._makeModel = true;
+      eparams._keep_cross_validation_models = true;
+      eparams._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.LabelEncoder;
+      
       pparams._estimator = eparams;
       final Frame fr = Scope.track(new TestFrameBuilder()
               .withColNames("one", "two", "target")
               .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_CAT)
               .withDataForCol(0, ar("a", "b", "c", "a", "b", "c", "a", "b", "c", "d", "c", "b", "a", "c", "b", "a", "c", "b", "a"))
               .withDataForCol(1, ar("c", "b", "a", "c", "b", "a", "c", "b", "a", "c", "b", "d", "b", "a", "c", "b", "a", "c", "b"))
-              .withDataForCol(1, ard(3, 2, 1, 6, 5, 4, 9, 8, 7, 2, 1, 0, 5, 4, 3, 8, 7, 6, 1))
               .withDataForCol(2, ar("y", "n", "y", "y", "y", "y", "n", "n", "n", "n", "y", "y", "n", "n", "y", "y", "y", "n", "n"))
               .build());
 
@@ -420,7 +434,16 @@ public class PipelineTest {
       assertNotNull(emodel);
       assertTrue(emodel instanceof DummyModel);
       assertArrayEquals(new String[][] {{"a", "b", "c", "d"}, {"a", "b", "c", "d"}, {"n", "y"}}, pmodel._output._domains);
-      assertArrayEquals(new String[][] {{"a", "b", "c", "d"}, {"a", "b", "c", "d"}, null, null, {"n", "y"}}, emodel._output._domains);
+      assertArrayEquals(new String[][] {{"a", "b", "c", "d"}, {"a", "b", "c", "d"}, null/*foo*/, null/*bar*/, {"n", "y"}}, emodel._output._origDomains);
+      assertArrayEquals(new String[][] {null/*encoded one*/, null/*encoded two*/, null/*foo*/, null/*bar*/, {"n", "y"}}, emodel._output._domains);
+      
+      assertEquals(nfolds, emodel._output._cross_validation_models.length);
+      for (Key<DummyModel> km : emodel._output._cross_validation_models) {
+        DummyModel cvModel = km.get();
+        assertNotNull(cvModel);
+        assertArrayEquals(new String[][] {{"a", "b", "c", "d"}, {"a", "b", "c", "d"}, null/*foo*/, null/*bar*/, null/*cv_fold*/, null/*cv_weights*/, {"n", "y"}}, cvModel._output._origDomains);
+        assertArrayEquals(new String[][] {null/*encoded one*/, null/*encoded two*/, null/*foo*/, null/*bar*/ , null/*cv_fold*/, null/*cv_weights*/, {"n", "y"}}, cvModel._output._domains);
+      }
     } finally {
       Scope.exit();
     }
