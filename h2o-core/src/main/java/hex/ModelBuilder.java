@@ -256,8 +256,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         notifyModelListeners();
       } finally {
         _parms.read_unlock_frames(_job);
-        if (!_parms._is_cv_model) cleanUp(); //cv calls cleanUp on its own terms
-        Scope.exit();
+        if (_parms._is_cv_model) {
+          // CV models get completely cleaned up when the main model is fully trained.
+          Key[] keep = _workspace == null ? new Key[0] : _workspace.getToDelete(true).keySet().toArray(new Key[0]);
+          Scope.exit(keep);
+        } else {
+          cleanUp();
+          Scope.exit();
+        }
       }
       tryComplete();
     }
