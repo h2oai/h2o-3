@@ -351,7 +351,62 @@ infogram_grid_works_test <- function() {
   expect_true(any((da$air_min > 0.8) & (da$air_max < 1.25))) # four-fifths rule
 }
 
+.get_data_taiwan <- function() {
+  data <- h2o.importFile(locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+  x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+       'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+  y <- "default payment next month"
+  protected_classes <- c('SEX', 'EDUCATION', 'MARRIAGE')
+
+  for (col in c(y, protected_classes))
+    data[[col]] <- as.factor(data[[col]])
+
+  splits <- h2o.splitFrame(data, 0.8)
+  train <- splits[[1]]
+  test <- splits[[2]]
+  reference <- c(SEX="1", EDUCATION="2", MARRIAGE="2")  # university educated single man
+  favorable_class <- "0" # no default next month
+
+  list(
+    train=train,
+    test=test,
+    x=x,
+    y=y,
+    protected_cols=protected_classes,
+    reference=reference,
+    favorable_class=favorable_class
+  )
+}
+
+
+infogram_grid_works_taiwan_test <- function() {
+  attach(.get_data_taiwan())
+  ig <- h2o.infogram(x = x, y = y, training_frame = train, protected_columns = protected_cols)
+
+  # GBM
+  cat("GBM\n")
+  da <- h2o.infogram_grid(ig, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = favorable_class)
+  expect_equal(nrow(da), length(x))
+  expect_true(any((da$cair > 0.8) & (da$cair < 1.25))) # four-fifths rule
+
+  # AutoML
+  cat("AutoML\n")
+  da <- h2o.infogram_grid(ig, h2o.automl, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = favorable_class, max_models = 2)
+  expect_equal(nrow(da), 2 * length(x) + length(x))  # models + SEs
+  # some SEs tend to be more unfair than base models, so I relaxed the condition here
+  expect_true(any((da$cair > 0.8) & (da$cair < 1.25))) # four-fifths rule
+
+  # GRID
+  cat("Grid\n")
+  da <- h2o.infogram_grid(ig, h2o.grid, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference,
+                          favorable_class = favorable_class, algorithm = "gbm", hyper_params = list(ntrees = c(1, 2, 3)))
+  expect_equal(nrow(da), 3 * length(x))
+  expect_true(any((da$cair > 0.8) & (da$cair < 1.25))) # four-fifths rule
+}
+
+
 doSuite("Fairness tests", makeSuite(
   infogram_grid_works_test,
+  infogram_grid_works_taiwan_test,
   fairness_metrics_are_correct_test
 ))
