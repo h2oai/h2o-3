@@ -58,8 +58,6 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 import static water.util.FileUtils.getFile;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
 
@@ -1604,7 +1602,9 @@ public class XGBoostTest extends TestUtil {
       rabitEnv.put("DMLC_TASK_ID", "0");
       Rabit.init(rabitEnv);
       Booster booster = BoosterHelper.loadModel(model.model_info()._boosterBytes);
-      DMatrix matrix = new DMatrix(new File(parms._save_matrix_directory, "matrix.part0").getAbsolutePath());
+      File trainMatrixFile = new File(parms._save_matrix_directory, "train_matrix.part0");
+      assertTrue(trainMatrixFile.exists());
+      DMatrix matrix = new DMatrix(trainMatrixFile.getAbsolutePath());
       final float[][] expectedContribs = booster.predictContrib(matrix, 0);
       booster.dispose();
       matrix.dispose();
@@ -2969,37 +2969,112 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void testEarlyStoppingOnEvalMetric() {
-    checkEarlyStoppingOnEvalMetric(false, -1);
-  }
-
-  @Test
-  public void testEarlyStoppingOnEvalMetric_scoreEvalMetricOnly() {
-    final int expectedStopIter = checkEarlyStoppingOnEvalMetric(false, -1);
-    checkEarlyStoppingOnEvalMetric(true, expectedStopIter);
-  }
-
-  private int checkEarlyStoppingOnEvalMetric(final boolean scoreEvalMetricOnly, final int expectedStopIter) {
+  public void testEvalMetricWithValidation() {
     Scope.enter();
     try {
       String response = "RainTomorrow";
       Frame df = loadWeather(response);
 
+      // split into train/test
+      SplitFrame sf = new SplitFrame(df, new double[] { 0.7, 0.3 }, null);
+      sf.exec().get();
+      Key<Frame>[] ksplits = sf._destination_frames;
+      Frame trainFrame = Scope.track(ksplits[0].get());
+      Frame testFrame = Scope.track(ksplits[1].get());
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ntrees = 5;
+      parms._max_depth = 5;
+      parms._train = trainFrame._key;
+      parms._valid = testFrame._key;
+      parms._response_column = response;
+      parms._eval_metric = "logloss";
+      parms._score_each_iteration = true;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      LOG.info(model);
+
+      TwoDimTable scoringHistory = model._output._scoring_history;
+      int h2oTrainLoglossIdx = ArrayUtils.find(scoringHistory.getColHeaders(), "Training LogLoss");
+      assertTrue(h2oTrainLoglossIdx > 0);
+      int xgbTrainLoglossIdx = ArrayUtils.find(scoringHistory.getColHeaders(), "Training Custom");
+      assertTrue(xgbTrainLoglossIdx > 0);
+      int h2oValidLoglossIdx = ArrayUtils.find(scoringHistory.getColHeaders(), "Validation LogLoss");
+      assertTrue(h2oValidLoglossIdx > 0);
+      int xgbValidLoglossIdx = ArrayUtils.find(scoringHistory.getColHeaders(), "Validation Custom");
+      assertTrue(xgbValidLoglossIdx > 0);
+
+      assertEquals(1 /*null model*/ + parms._ntrees, scoringHistory.getRowDim());
+      for (int i = 0; i < scoringHistory.getRowDim(); i++) {
+        // check training
+        double h2oTrainValue = (Double) scoringHistory.get(i, h2oTrainLoglossIdx);
+        double xgbTrainValue = (Double) scoringHistory.get(i, xgbTrainLoglossIdx);
+        assertEquals(h2oTrainValue, xgbTrainValue, 1e-5);
+        // check validation
+        double h2oValidValue = (Double) scoringHistory.get(i, h2oValidLoglossIdx);
+        double xgbValidValue = (Double) scoringHistory.get(i, xgbValidLoglossIdx);
+        assertEquals(h2oValidValue, xgbValidValue, 1e-5);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testEarlyStoppingOnEvalMetric() {
+    checkEarlyStoppingOnEvalMetric(false, false);
+  }
+
+  @Test
+  public void testEarlyStoppingOnEvalMetricWithValidation() {
+    checkEarlyStoppingOnEvalMetric(true, false);
+  }
+
+  @Test
+  public void testEarlyStoppingOnEvalMetric_scoreEvalMetricOnly() {
+    checkEarlyStoppingOnEvalMetric(false, true);
+  }
+
+  @Test
+  public void testEarlyStoppingOnEvalMetricWithValidation_scoreEvalMetricOnly() {
+    checkEarlyStoppingOnEvalMetric(true, true);
+  }
+
+  private void checkEarlyStoppingOnEvalMetric(final boolean useValidation, final boolean scoreEvalMetricOnly) {
+    Scope.enter();
+    try {
+      final String response = "RainTomorrow";
       final int ntrees = 100;
 
       XGBoostModel.XGBoostParameters basicParms = new XGBoostModel.XGBoostParameters();
+      Frame df = loadWeather(response);
+
+      if (useValidation) {
+        // split into train/valid
+        SplitFrame sf = new SplitFrame(df, new double[] { 0.7, 0.3 }, null);
+        sf.exec().get();
+        //df.delete();
+        Key<Frame>[] splits = sf._destination_frames;
+        Frame trainFrame = Scope.track(splits[0].get());
+        Frame validFrame = Scope.track(splits[1].get());
+        basicParms._train = trainFrame._key;
+        basicParms._valid = validFrame._key;
+      } else {
+        basicParms._train = df._key;
+      }
+
       basicParms._ntrees = ntrees;
       basicParms._max_depth = 3;
-      basicParms._train = df._key;
       basicParms._response_column = response;
       basicParms._stopping_rounds = 3;
       basicParms._stopping_tolerance = 1e-1;
       basicParms._score_each_iteration = true;
-      basicParms._score_eval_metric_only = scoreEvalMetricOnly;
 
       XGBoostModel.XGBoostParameters parms = (XGBoostModel.XGBoostParameters) basicParms.clone();
       parms._eval_metric = "logloss";
       parms._stopping_metric = ScoreKeeper.StoppingMetric.custom;
+      parms._score_eval_metric_only = scoreEvalMetricOnly;
 
       XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model);
@@ -3009,32 +3084,40 @@ public class XGBoostTest extends TestUtil {
       // 1.  Check that we actually stopped early - for ntrees = 100, in the interval of [5, 95]
       assertEquals(ntrees / 2.0, scoringHistory.getRowDim(), (ntrees / 2.0) * 0.9);
 
-      // 2. Check that we stopped at the right time
-      int shouldStopIter = expectedStopIter;
+      // 2. If we do have H2O metric, compare it to eval metric
       if (!scoreEvalMetricOnly) {
-        for (int i = 1; i < ntrees; i++) {
-          ScoreKeeper[] sks = Arrays.copyOf(model._output.scoreKeepers(), i);
-          boolean shouldStop = ScoreKeeper.stopEarly(sks, 3, ScoreKeeper.ProblemType.classification, ScoreKeeper.StoppingMetric.logloss, 1e-1, "model", true);
-          if (shouldStop) {
-            shouldStopIter = i;
-            break;
-          }
+        for (ScoreKeeper sk : model._output.scoreKeepers()) {
+          assertEquals(sk._logloss, sk._custom_metric, 1e-6);
         }
-        assertNotEquals(-1, shouldStopIter);
       }
+
+      // 3. Check that we stopped at the right time based on the value of the evaluation stopping metric
+      int shouldStopIter = -1;
+      for (int i = 1; i < ntrees; i++) {
+        ScoreKeeper[] sks = Arrays.copyOf(model._output.scoreKeepers(), i);
+        boolean shouldStop = ScoreKeeper.stopEarly(sks, 3, ScoreKeeper.ProblemType.classification, ScoreKeeper.StoppingMetric.custom, 1e-1, "model", true);
+        if (shouldStop) {
+          shouldStopIter = i;
+          break;
+        }
+      }
+      assertNotEquals(-1, shouldStopIter);
       assertEquals(shouldStopIter, model._output._ntrees + 1);
 
+      // 4. Validate early stopping against a fully scored model trained with logloss for early stopping
+      // Keep in mind that H2O logloss and XGBoost logloss will not be identical - there will be differences
+      // caused by a different precision for each value, and we cannot expect the same stopping iteration
+      // in all cases. This should work for the purpose of this test.
       XGBoostModel.XGBoostParameters parmsH2O = (XGBoostModel.XGBoostParameters) basicParms.clone();
       parmsH2O._eval_metric = null;
       parmsH2O._stopping_metric = ScoreKeeper.StoppingMetric.logloss;
 
-      XGBoostModel modelH2O = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      XGBoostModel modelH2O = new hex.tree.xgboost.XGBoost(basicParms).trainModel().get();
       assertNotNull(modelH2O);
       Scope.track_generic(modelH2O);
       LOG.info(modelH2O);
 
       assertEquals(modelH2O._output._ntrees, model._output._ntrees);
-      return shouldStopIter;
     } finally {
       Scope.exit();
     }
@@ -3042,11 +3125,18 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testToCustomMetric() {
-    EvalMetric em = new EvalMetric("anything", Math.E);
-    CustomMetric cm = hex.tree.xgboost.XGBoost.toCustomMetric(em);
-    assertEquals("anything", cm.name);
-    assertEquals(Math.E, cm.value, 0);
-    assertNull(hex.tree.xgboost.XGBoost.toCustomMetric(null));
+    EvalMetric em = new EvalMetric("anything", Math.E, Math.PI);
+
+    CustomMetric cmTrain = hex.tree.xgboost.XGBoost.toCustomMetricTrain(em);
+    assertEquals("anything", cmTrain.name);
+    assertEquals(Math.E, cmTrain.value, 0);
+
+    CustomMetric cmValid = hex.tree.xgboost.XGBoost.toCustomMetricValid(em);
+    assertEquals("anything", cmValid.name);
+    assertEquals(Math.PI, cmValid.value, 0);
+
+    assertNull(hex.tree.xgboost.XGBoost.toCustomMetricTrain(null));
+    assertNull(hex.tree.xgboost.XGBoost.toCustomMetricValid(null));
   }
 
 }

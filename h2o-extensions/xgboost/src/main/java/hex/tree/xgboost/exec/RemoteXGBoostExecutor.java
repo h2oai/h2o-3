@@ -113,7 +113,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     }
 
     @Override
-    public EvalMetric getEvalMetricTrain() {
+    public EvalMetric getEvalMetric() {
         XGBoostExecReq.GetEvalMetric req = new XGBoostExecReq.GetEvalMetric();
         XGBoostExecRespV3 resp = http.postJson(modelKey, "getEvalMetric", req);
         assert resp.key.key().equals(modelKey);

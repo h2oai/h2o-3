@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,14 +75,21 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     /**
      * Used when executing from a local model
      */
-    public LocalXGBoostExecutor(XGBoostModel model, Frame train) {
+    public LocalXGBoostExecutor(XGBoostModel model, Frame train, Frame valid) {
         modelKey = model._key;
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
+        if (valid != null) {
+            // FIXME
+            XGBoostSetupTask.FrameNodes validFrameNodes = XGBoostSetupTask.findFrameNodes(train);
+            if (!Arrays.equals(validFrameNodes._nodes, trainFrameNodes._nodes)) {
+                throw new IllegalStateException("Validation Frame needs to span the same set of nodes as the training frame. This is a technical limitation.");
+            }
+        }
         rt = setupRabitTracker(trainFrameNodes.getNumNodes());
         DataInfo dataInfo = model.model_info().dataInfo();
         boosterParams = XGBoostModel.createParams(model._parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParams.toTwoDimTable();
-        loader = new FrameMatrixLoader(model, train);
+        loader = new FrameMatrixLoader(model, train, valid);
         nodes = trainFrameNodes._nodes;
         saveMatrixDirectory = model._parms._save_matrix_directory;
         checkpointProvider = () -> {
@@ -138,7 +146,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     }
 
     @Override
-    public EvalMetric getEvalMetricTrain() {
+    public EvalMetric getEvalMetric() {
         if (evalMetric != null) { // re-use cached value, this is important for early stopping when final scoring is done without prior boosting iteration
             return evalMetric;
         }

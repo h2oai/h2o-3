@@ -339,8 +339,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                observations with negative labels on gradient calculation. Useful for imbalanced problems.
                Defaults to ``1.0``.
         :type scale_pos_weight: float
-        :param eval_metric: Specification of evaluation metric that will be passed to the native XGBoost backend. Due to
-               technical limitations, evaluation metric can currently only be calculated on the training frame.
+        :param eval_metric: Specification of evaluation metric that will be passed to the native XGBoost backend.
                Defaults to ``None``.
         :type eval_metric: str, optional
         :param score_eval_metric_only: If enabled, score only the evaluation metric. This can make model training faster
@@ -2469,8 +2468,7 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def eval_metric(self):
         """
-        Specification of evaluation metric that will be passed to the native XGBoost backend. Due to technical
-        limitations, evaluation metric can currently only be calculated on the training frame.
+        Specification of evaluation metric that will be passed to the native XGBoost backend.
 
         Type: ``str``.
         """

@@ -42,24 +42,36 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
 
   @Override
   protected void execute() {
-    DMatrix matrix;
+    DMatrix trainMatrix, validMatrix = null;
     try {
-      matrix = _matrixLoader.makeLocalMatrix().get();
+      trainMatrix = _matrixLoader.makeLocalTrainMatrix().get();
     } catch (XGBoostError e) {
-      throw new IllegalStateException("Failed to create XGBoost DMatrix", e);
+      throw new IllegalStateException("Failed to create XGBoost DMatrix for training dataset", e);
+    }
+    if (_matrixLoader.hasValidationFrame()) {
+      try {
+        validMatrix = _matrixLoader.makeLocalValidMatrix().get();
+      } catch (XGBoostError e) {
+        throw new IllegalStateException("Failed to create XGBoost DMatrix for validation dataset", e);
+      }
     }
     if (_saveMatrixDirectory != null) {
       File directory = new File(_saveMatrixDirectory);
       if (directory.mkdirs()) {
         LOG.debug("Created directory for matrix export: " + directory.getAbsolutePath());
       }
-      File path = new File(directory, "matrix.part" + H2O.SELF.index());
-      LOG.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
-      matrix.saveBinary(path.getAbsolutePath());
+      File trainPath = new File(directory, "train_matrix.part" + H2O.SELF.index());
+      LOG.info("Saving node-local portion of XGBoost training dataset to " + trainPath.getAbsolutePath() + ".");
+      trainMatrix.saveBinary(trainPath.getAbsolutePath());
+      if (validMatrix != null) {
+        File validPath = new File(directory, "valid_matrix.part" + H2O.SELF.index());
+        LOG.info("Saving node-local portion of XGBoost validation dataset to " + validPath.getAbsolutePath() + ".");
+        validMatrix.saveBinary(validPath.getAbsolutePath());
+      }
     }
     _rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
-    XGBoostUpdater thread = XGBoostUpdater.make(_modelKey, matrix, _boosterParms, _checkpoint, _rabitEnv);
+    XGBoostUpdater thread = XGBoostUpdater.make(_modelKey, trainMatrix, validMatrix, _boosterParms, _checkpoint, _rabitEnv);
     thread.start(); // we do not need to wait for the Updater to init Rabit - subsequent tasks will wait
   }
 
