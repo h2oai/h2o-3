@@ -10,6 +10,7 @@ import jsr166y.RecursiveAction;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
+import water.util.Log;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -402,18 +403,23 @@ public class ModelSelectionUtils {
         return subsetCPM[lastSubsetCPMInd][lastSubsetCPMInd];
     }
 
-    public static double applySweepVectors2NewPred(SweepVector[][] sweepVec, double[][][] subsetCPM, int numNewRows, int[] sweepIndices) {
+    /***
+     *  The actualCPMSize here is before we added the numNewRows from the new predictor.
+     */
+    public static double applySweepVectors2NewPred(SweepVector[][] sweepVec, double[][][] subsetCPM, int numNewRows,
+                                                   int[] sweepIndices, int actualCPMSize) {
         if (sweepIndices.length != subsetCPM.length)
             return applySweepVectors2NewPred(sweepVec, subsetCPM[subsetCPM.length-1], numNewRows, sweepIndices);
-        int lastSubsetCPMInd = subsetCPM[0].length-1;
         int lastCPMInd = subsetCPM.length-1;
         int numSweep = sweepVec.length; // number of sweeps that we need to do
+        int newCPMSize = actualCPMSize+numNewRows;
         for (int sweepInd=0; sweepInd < numSweep; sweepInd++) {
             oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM[sweepInd], sweepIndices[sweepInd], numNewRows);
             // need to copy over swept new row/columns to next cpm which will be the bottom rows/columns but not the last one
             if (sweepInd < lastCPMInd)
-                copyNewColsRows(subsetCPM, sweepInd, numNewRows);
+                copyNewColsRows(subsetCPM, sweepInd, numNewRows, newCPMSize);
         }
+        int lastSubsetCPMInd = newCPMSize -1;
         return subsetCPM[lastCPMInd][lastSubsetCPMInd][lastSubsetCPMInd];
     }
     
@@ -421,6 +427,22 @@ public class ModelSelectionUtils {
         int lastCPMInd = cpms[0].length-1;
         int startCPMInd = lastCPMInd-numNewRows;
         int cpmLen = cpms[0].length;
+        int nextIndex = currIndex+1;
+        for (int rowIndex=startCPMInd; rowIndex < lastCPMInd; rowIndex++) {
+            for (int colIndex = 0; colIndex < cpmLen; colIndex++) {
+                cpms[nextIndex][rowIndex][colIndex] = cpms[currIndex][rowIndex][colIndex];
+                cpms[nextIndex][colIndex][rowIndex] = cpms[currIndex][colIndex][rowIndex];
+            }
+        }
+    }
+
+    /***
+     * actualCPMSize is the actual size of cpms.
+     */
+    public static void copyNewColsRows(double[][][] cpms, int currIndex, int numNewRows, int actualCPMSize) {
+        int lastCPMInd = actualCPMSize-1;
+        int startCPMInd = lastCPMInd-numNewRows;
+        int cpmLen = actualCPMSize;
         int nextIndex = currIndex+1;
         for (int rowIndex=startCPMInd; rowIndex < lastCPMInd; rowIndex++) {
             for (int colIndex = 0; colIndex < cpmLen; colIndex++) {
@@ -543,6 +565,51 @@ public class ModelSelectionUtils {
         return newCPM;
     }
 
+    /*** 
+     * This method will add new rows/cols to currentCPM due to the addition of the new predictor newPred.  Note, no
+     * new array allocation is needed.  The new expanded cpm will be stored back in currentCPM.
+     */
+    public static double[][] addNewPred2CPM(double[][] allCPM, double[][] currentCPM, int[] newPredList,
+                                            int[][] pred2CPMIndices, int actualCPMSize, boolean hasIntercept) {
+        List<Integer> CPMIndices = extractCPMIndexFromPred(allCPM, pred2CPMIndices, newPredList, hasIntercept);
+        int newPred = newPredList[newPredList.length-1];
+        int numNewRowsCols = pred2CPMIndices[newPred].length;
+        int newCPMSize = actualCPMSize + numNewRowsCols;
+        int lastNewCPMIndex = newCPMSize - 1;
+        int lastCurrCPMIndex = actualCPMSize - 1;
+        // copy the last column/row of cpm first
+        currentCPM[lastNewCPMIndex][lastNewCPMIndex] = currentCPM[lastCurrCPMIndex][lastCurrCPMIndex];
+        for (int index=0; index < actualCPMSize; index++) {
+            currentCPM[lastNewCPMIndex][index] = currentCPM[lastCurrCPMIndex][index];
+            currentCPM[index][lastNewCPMIndex] = currentCPM[index][lastCurrCPMIndex];
+        }
+        // copy new rows columns into currentCPM
+        List<Integer> pred2cpmIndex = Arrays.stream(pred2CPMIndices[newPred]).boxed().collect(Collectors.toList());
+        int subsetcpmDim = pred2cpmIndex.size()+lastCurrCPMIndex;
+        for (int index=lastCurrCPMIndex; index < subsetcpmDim; index++) {  // through each new row/col
+            int newRowColIndex = pred2cpmIndex.get(index-lastCurrCPMIndex);
+            for (int index2 = 0; index2 < newCPMSize; index2++) {  // go through the whole row/col
+                int newRowColIndex2 = CPMIndices.get(index2);
+                currentCPM[index2][index] = allCPM[newRowColIndex2][newRowColIndex];
+                currentCPM[index][index2] = allCPM[newRowColIndex][newRowColIndex2];
+            }
+            
+        }
+        return currentCPM;
+    }
+    
+    public static List<Integer> extractCPMIndexFromPred(double[][] allCPM, int[][] pred2CPMIndices, int[] newPredList, 
+                                                        boolean hasIntercept) {
+        List<Integer> CPMIndices = new ArrayList<>();
+        for (int predInd : newPredList) {
+            CPMIndices.addAll(Arrays.stream(pred2CPMIndices[predInd]).boxed().collect(Collectors.toList()));
+        }
+        if (hasIntercept)
+            CPMIndices.add(0, allCPM.length-2);;
+        CPMIndices.add(allCPM.length-1);
+        return CPMIndices;
+    }
+
     /***
      * Given the predictor subset in bestModel, this method will perform sweeping on the predictor subset, generate
      * new sweep vector arrays and stored the new swept CPM back to bestModel.  Note that the Sweep Vectors generated
@@ -569,6 +636,16 @@ public class ModelSelectionUtils {
         return sweepVecs;
     }
 
+    public static SweepVector[][] sweepCPM(double[][] subsetCPM, int[] sweepIndices, boolean genSweepVector, 
+                                           int actualCPMSize) {
+        int currSubsetCPMSize = actualCPMSize;
+        int numSweep = sweepIndices.length;
+        SweepVector[][] sweepVecs = new SweepVector[numSweep][2*(currSubsetCPMSize+1)];
+        for (int index=0; index < numSweep; index++)
+            performOneSweep(subsetCPM, sweepVecs[index], sweepIndices[index], genSweepVector);
+        return sweepVecs;
+    }
+
     /**
      * can change content of prevCPM and subsetCPM
      */
@@ -586,15 +663,36 @@ public class ModelSelectionUtils {
         }
         return sweepVecs;
     }
+
+    /**
+     * Note that prevCPM has size cpmSizeUsed by cpmSizeUsed and is a copy that can be over-written.  There is no new
+     * memory allocation here.
+     */
+    public static SweepVector[][] sweepCPM(double[][] prevCPMCopy, double[][][] subsetCPM, int[] sweepIndices, int cpmSizeUsed, 
+                                           boolean genSweepVector) {
+        int currSubsetCPMSize = cpmSizeUsed;
+        int numSweep = sweepIndices.length;
+        int lastSweepIndex = numSweep-1;
+        SweepVector[][] sweepVecs = new SweepVector[numSweep][2*(currSubsetCPMSize+1)];
+        for (int index=0; index < numSweep; index++) {
+            copy2D(prevCPMCopy, subsetCPM[index], cpmSizeUsed);
+            performOneSweep(subsetCPM[index], sweepVecs[index], sweepIndices[index], cpmSizeUsed, genSweepVector);
+            if (index < lastSweepIndex)
+                copy2D(subsetCPM[index], prevCPMCopy, cpmSizeUsed);
+        }
+        return sweepVecs;
+    }
     
     public static void copy2D(double[][] orig, double[][] copy) {
         int row = orig.length;
         int col = orig[0].length;
         for (int rInd=0; rInd < row; rInd++)
-            for (int cInd=rInd; cInd < col; cInd++) {
-                copy[rInd][cInd] = orig[rInd][cInd];
-                copy[cInd][rInd] = orig[cInd][rInd];
-            }
+            System.arraycopy(orig[rInd], 0, copy[rInd], 0, col);
+    }
+
+    public static void copy2D(double[][] orig, double[][] copy, int cpmSize) {
+        for (int rInd=0; rInd < cpmSize; rInd++)
+            System.arraycopy(orig[rInd], 0, copy[rInd], 0, cpmSize);
     }
 
     /**
@@ -664,6 +762,54 @@ public class ModelSelectionUtils {
         }
     }
 
+    public static void performOneSweep(double[][] subsetCPM, SweepVector[] sweepVec, int sweepIndex, int subsetCPMLen, 
+                                       boolean genSweepVector) {
+        int lastSubsetInd = subsetCPMLen-1;
+        if (subsetCPM[sweepIndex][sweepIndex]==0) { // pivot is zero, set error variance to max value
+            subsetCPM[lastSubsetInd][lastSubsetInd] = Double.MAX_VALUE;
+            return;
+        } else {    // subsetCPM is healthy
+            double oneOverPivot = 1.0/subsetCPM[sweepIndex][sweepIndex];
+            // generate sweep vector as in section V.II of doc
+            if (genSweepVector) {
+                int sweepVecLen = sweepVec.length / 2;
+                for (int index = 0; index < sweepVecLen; index++) {
+                    if (index == sweepIndex) {
+                        sweepVec[index] = new SweepVector(index, lastSubsetInd, oneOverPivot);
+                        sweepVec[index + sweepVecLen] = new SweepVector(lastSubsetInd, index, -oneOverPivot);
+                    } else if (index == subsetCPMLen) {
+                        sweepVec[index] = new SweepVector(index, lastSubsetInd, subsetCPM[lastSubsetInd][sweepIndex] * oneOverPivot);
+                        sweepVec[index + sweepVecLen] = new SweepVector(lastSubsetInd, index, subsetCPM[sweepIndex][lastSubsetInd] * oneOverPivot);
+                    } else if (index==lastSubsetInd) {
+                        sweepVec[index] = new SweepVector(index, lastSubsetInd, oneOverPivot);
+                        sweepVec[index+sweepVecLen] = new SweepVector(lastSubsetInd, index, oneOverPivot);
+                    } else {
+                        sweepVec[index] = new SweepVector(index, lastSubsetInd, subsetCPM[index][sweepIndex] * oneOverPivot);
+                        sweepVec[index + sweepVecLen] = new SweepVector(lastSubsetInd, index, subsetCPM[sweepIndex][index] * oneOverPivot);
+                    }
+                }
+            }
+            // perform sweeping action as in section II of doc.
+            for (int rInd = 0; rInd < subsetCPMLen; rInd++) {
+                for (int cInd = rInd; cInd < subsetCPMLen; cInd++) {
+                    if (rInd != sweepIndex && cInd != sweepIndex) {
+                        subsetCPM[rInd][cInd] = subsetCPM[rInd][cInd]-
+                                subsetCPM[rInd][sweepIndex]*subsetCPM[sweepIndex][cInd]*oneOverPivot;
+                        if (cInd != rInd)
+                            subsetCPM[cInd][rInd] = subsetCPM[cInd][rInd]-
+                                    subsetCPM[cInd][sweepIndex]*subsetCPM[sweepIndex][rInd]*oneOverPivot;
+                    }
+                }
+            }
+            for (int index=0; index < subsetCPMLen; index++) {
+                subsetCPM[index][sweepIndex] = -subsetCPM[index][sweepIndex]*oneOverPivot;
+                if (sweepIndex != index)
+                    subsetCPM[sweepIndex][index] = subsetCPM[sweepIndex][index]*oneOverPivot;
+            }
+            subsetCPM[sweepIndex][sweepIndex] = oneOverPivot;
+        }
+    }
+
     public static SweepVector[][] generateSweepVectors(double[][] prevCPM, double[][][] subsetCPM, int[] sweepIndices) {
         int currSubsetCPMSize = subsetCPM[0].length;
         int numSweep = sweepIndices.length;
@@ -675,6 +821,43 @@ public class ModelSelectionUtils {
         }
         return sweepVecs;
     }
+
+    public static SweepVector[][] generateSweepVectors(double[][] prevCPM, double[][][] subsetCPM, int[] sweepIndices, int actualCPMSize) {
+        int currSubsetCPMSize = actualCPMSize;
+        int numSweep = sweepIndices.length;
+        SweepVector[][] sweepVecs = new SweepVector[numSweep][2*(currSubsetCPMSize+1)];
+        for (int index=0; index < numSweep; index++) {
+            genOneSweepVector(prevCPM, sweepIndices[index], sweepVecs[index], actualCPMSize);
+            prevCPM = subsetCPM[index];
+        }
+        return sweepVecs;
+    }
+
+    public static void genOneSweepVector(double[][] subsetCPM, int sweepIndex, SweepVector[] sweepVec, int actualCPMSize) {
+        int subsetCPMLen = actualCPMSize;
+        int lastSubsetInd = subsetCPMLen-1;
+        int sweepVecLen = sweepVec.length / 2;
+        if (subsetCPM[sweepIndex][sweepIndex] == 0)
+            throw new ArithmeticException("CPM pivot is 0.0!");
+
+        double oneOverPivot = 1.0/subsetCPM[sweepIndex][sweepIndex];
+        for (int index = 0; index < sweepVecLen; index++) {
+            if (index == sweepIndex) {
+                sweepVec[index] = new SweepVector(index, lastSubsetInd, oneOverPivot);
+                sweepVec[index + sweepVecLen] = new SweepVector(lastSubsetInd, index, -oneOverPivot);
+            } else if (index == subsetCPMLen) {
+                sweepVec[index] = new SweepVector(index, lastSubsetInd, subsetCPM[lastSubsetInd][sweepIndex] * oneOverPivot);
+                sweepVec[index + sweepVecLen] = new SweepVector(lastSubsetInd, index, subsetCPM[sweepIndex][lastSubsetInd] * oneOverPivot);
+            } else if (index==lastSubsetInd) {
+                sweepVec[index] = new SweepVector(index, lastSubsetInd, oneOverPivot);
+                sweepVec[index+sweepVecLen] = new SweepVector(lastSubsetInd, index, oneOverPivot);
+            } else {
+                sweepVec[index] = new SweepVector(index, lastSubsetInd, subsetCPM[index][sweepIndex] * oneOverPivot);
+                sweepVec[index + sweepVecLen] = new SweepVector(lastSubsetInd, index, subsetCPM[sweepIndex][index] * oneOverPivot);
+            }
+        }
+    }
+    
     
     public static void genOneSweepVector(double[][] subsetCPM, int sweepIndex, SweepVector[] sweepVec) {
         int subsetCPMLen = subsetCPM.length;
@@ -701,31 +884,19 @@ public class ModelSelectionUtils {
         }
     }
 
-    /***
-     * Given a predictor subset and the complete CPM, we extract the CPM associated with the predictors 
-     * specified in the predictor subset (predIndices).  
-     */
-    public static double[][] extractPredSubsetsCPM(double[][] allCPM, int[] predIndices, int[][] pred2CPMIndices,
-                                                   boolean hasIntercept) {
-        int allCPMLength = allCPM.length;
-        List<Integer> CPMIndices = new ArrayList<>();
-        for (int predInd : predIndices) {
-            CPMIndices.addAll(Arrays.stream(pred2CPMIndices[predInd]).boxed().collect(Collectors.toList()));
-        }
-        if (hasIntercept)
-            CPMIndices.add(0, allCPM.length-2);
 
-        CPMIndices.add(allCPMLength-1);
+
+    public static int extractPredSubsetsCPM(double[][] allCPM, double[][] subsetCPM, int[] predIndices, 
+                                               int[][] pred2CPMIndices, boolean hasIntercept) {
+        List<Integer> CPMIndices = extractCPMIndexFromPred(allCPM, pred2CPMIndices, predIndices, hasIntercept);
         int subsetcpmDim = CPMIndices.size();
-        double[][] subsetCPM = new double[subsetcpmDim][subsetcpmDim];
-        
         for (int rIndex=0; rIndex < subsetcpmDim; rIndex++) {
             for (int cIndex=rIndex; cIndex < subsetcpmDim; cIndex++) {
                 subsetCPM[rIndex][cIndex] = allCPM[CPMIndices.get(rIndex)][CPMIndices.get(cIndex)];
                 subsetCPM[cIndex][rIndex] = allCPM[CPMIndices.get(cIndex)][CPMIndices.get(rIndex)];
             }
         }
-        return subsetCPM;
+        return subsetcpmDim;
     }
     
     public static String[][] shrinkStringArray(String[][] array, int numModels) {
@@ -1040,32 +1211,58 @@ public class ModelSelectionUtils {
     public static ModelSelection.SweepModel2 genUpdateCPMSweepVectors(int[] newPredSubset, ModelSelection.SweepModel2 bestModel,
                                                                       double[][] allCPM, int[][] pred2CPMIndices, 
                                                                       boolean hasIntercept, List<Integer> origCurrentSub,
-                                                                      boolean forReplacement) {
+                                                                      boolean forReplacement, int maxPredNum) {
         if (bestModel == null) {    // at the beginning
-             double[][] cpm0 = extractPredSubsetsCPM(allCPM, newPredSubset, pred2CPMIndices, hasIntercept);
-            int lastSubsetIndex = cpm0.length-1;
+            int currCPMSize = (int) Math.ceil(allCPM.length*maxPredNum/(pred2CPMIndices.length+2)); 
+            double[][][] subsetCPM0 = new double[1][currCPMSize][currCPMSize];
+            int cpmSizeUsed = extractPredSubsetsCPM(allCPM, subsetCPM0[0], newPredSubset, pred2CPMIndices, hasIntercept);
+            int lastSubsetIndex = cpmSizeUsed-1;
             // perform sweeping action and record the sweeping vector and save the changed cpm
             int[] sweepIndices = IntStream.range(0, lastSubsetIndex).toArray();
-            double[][][] subsetCPM = new double[sweepIndices.length][cpm0.length][cpm0.length];
-            SweepVector[][] sweepVectors = sweepCPM(cpm0, subsetCPM, sweepIndices, true);
+            double[][][] subsetCPM = new double[sweepIndices.length][currCPMSize][currCPMSize];
+            double[][] cpmCopy = clone2D(subsetCPM0[0], cpmSizeUsed);
+            SweepVector[][] sweepVectors = sweepCPM(cpmCopy, subsetCPM, sweepIndices, cpmSizeUsed, 
+                    true);
             List<ModelSelection.SweepInfo> sInfoList = new ArrayList<>();
-            sInfoList.add(new ModelSelection.SweepInfo(new double[][][]{cpm0}, null, null));
-            ModelSelection.SweepInfo oneInfo = new ModelSelection.SweepInfo(subsetCPM, sweepVectors, IntStream.range(0, cpm0.length-1).toArray());
+            sInfoList.add(new ModelSelection.SweepInfo(subsetCPM0, null, null));
+            ModelSelection.SweepInfo oneInfo = new ModelSelection.SweepInfo(subsetCPM, sweepVectors, 
+                    IntStream.range(0, cpmSizeUsed-1).toArray());
             sInfoList.add(oneInfo);
-            int lastIndex = subsetCPM[0].length-1; 
-            return new ModelSelection.SweepModel2(newPredSubset, sInfoList, subsetCPM[sweepVectors.length-1][lastIndex][lastIndex]);
+            return new ModelSelection.SweepModel2(newPredSubset, 
+                    sInfoList, subsetCPM[sweepVectors.length-1][lastSubsetIndex][lastSubsetIndex], cpmSizeUsed);
         } else { // update all CPMs, sweep Vectors, no need if for replacement because if it is the best, we will start over anyway
             // enlarge and update CPMS
+            int actualCPMSize = bestModel._cpmSize;
             int newPred = newPredSubset[newPredSubset.length-1];
             final int sweepLen = pred2CPMIndices[newPred].length;
             List<ModelSelection.SweepInfo> sInfo = bestModel._sweepInfo;
-            final int sweepOffset = sInfo.get(0)._cpm[0].length-1; //  cpm size before adding new predictor
-            enLargeNUpdateCPMs(sInfo, allCPM, newPredSubset, pred2CPMIndices, hasIntercept, origCurrentSub, forReplacement);
+            final int sweepOffset = actualCPMSize-1; //  cpm size before adding new predictor
+            expandCPM(sInfo, sweepLen, actualCPMSize, allCPM.length, maxPredNum-newPredSubset.length);    // expand cpm sizes if necessary
+            bestModel._cpmSize = enLargeNUpdateCPMs(sInfo, allCPM, newPredSubset, pred2CPMIndices, hasIntercept, origCurrentSub, 
+                    actualCPMSize, forReplacement);
             // generate new SweepInfo with new sweep vectors for newPred, CPM swept by all predictors
             int[] newSweepIndices = IntStream.range(0,sweepLen).map(x -> x+sweepOffset).toArray();
-            bestModel._errorVariance = genSweepVectorsBigCPM(sInfo, newSweepIndices);
+            bestModel._errorVariance = genSweepVectorsBigCPM(sInfo, newSweepIndices, bestModel._cpmSize);
             bestModel._predSubset = newPredSubset;
             return bestModel;
+        }
+    }
+    
+    public static void expandCPM(List<ModelSelection.SweepInfo> sInfo, int newRowsColsSize, 
+                                 int actualCPMSize, int allCPMLen, int numPred2Add) {
+        int currCPMSize = sInfo.get(0)._cpm[0].length;
+        if (actualCPMSize + newRowsColsSize < currCPMSize)   // current cpm still fit.  No need to expand
+            return;
+        int newCPMSize = Math.min(currCPMSize + numPred2Add*newRowsColsSize, allCPMLen);
+        int numInfo = sInfo.size();
+        for (int index=0; index<numInfo; index++) {
+            ModelSelection.SweepInfo oneInfo = sInfo.remove(index);
+            int cpmFirstLen = oneInfo._cpm.length;
+            double[][][] cpm = new double[cpmFirstLen][newCPMSize][newCPMSize];
+            for (int index2=0; index2 < cpmFirstLen; index2++)
+                copy2D(oneInfo._cpm[index2], cpm[index2], actualCPMSize);
+            oneInfo._cpm = cpm;
+            sInfo.add(index, oneInfo);
         }
     }
 
@@ -1089,6 +1286,32 @@ public class ModelSelectionUtils {
         int lastCPMInd = newInfo._cpm[0].length-1;
         return newInfo._cpm[newInfo._cpm.length-1][lastCPMInd][lastCPMInd];
     }
+
+    public static double genSweepVectorsBigCPM(List<ModelSelection.SweepInfo> sInfo, int[] sweepIndices, int actualCPMSize) {
+        int sweepVecLen = sInfo.size();
+        for (int index=1; index<sweepVecLen; index++) {
+            double[][][] prevCPMs = sInfo.get(index-1)._cpm;
+            double[][] prevCPM = prevCPMs[prevCPMs.length-1];
+            ModelSelection.SweepInfo oneInfo = sInfo.remove(index);
+            SweepVector[][] sv = generateSweepVectors(prevCPM, oneInfo._cpm, oneInfo._sweepIndices, actualCPMSize);
+            oneInfo._sweepVector = sv;
+            sInfo.add(index, oneInfo);
+        }
+        // sweep with latest predictor and generate new SweepInfo element to add to SweepInfo list
+        ModelSelection.SweepInfo newInfo = genNewSweepInfo(sInfo.get(sweepVecLen-1), sweepIndices, actualCPMSize);
+        sInfo.add(newInfo);
+        int lastCPMInd = actualCPMSize - 1;
+        return newInfo._cpm[newInfo._cpm.length-1][lastCPMInd][lastCPMInd];
+    }
+
+    public static ModelSelection.SweepInfo genNewSweepInfo(ModelSelection.SweepInfo prevInfo, int[] sweepIndices, int actualCPMSize) {
+        double[][] prevCPM = clone2DSameCPMSize(prevInfo._cpm[prevInfo._cpm.length-1], actualCPMSize);
+        int cpmLen = prevCPM.length;
+        double[][][] newCPM = new double[sweepIndices.length][cpmLen][cpmLen];
+        SweepVector[][] newSV = sweepCPM(prevCPM, newCPM, sweepIndices, actualCPMSize, true);
+        ModelSelection.SweepInfo oneInfo = new ModelSelection.SweepInfo(newCPM, newSV, sweepIndices);
+        return oneInfo;
+    }
     
     public static ModelSelection.SweepInfo genNewSweepInfo(ModelSelection.SweepInfo prevInfo, int[] sweepIndices) {
         double[][] prevCPM = prevInfo._cpm[prevInfo._cpm.length-1];
@@ -1107,23 +1330,33 @@ public class ModelSelectionUtils {
      */
     public static ModelSelection.SweepModel2 removeDuplicatePreds(ModelSelection.SweepModel2 currModel, int predPos,
                                                                   int[][] predictorIndex2CPMIndices, double[][] allCPM, 
-                                                                  boolean hasIntercept) {
+                                                                  boolean hasIntercept, int numPreds2Add) {
         List<Integer> currentPredIndices = extractTruePredSubset(currModel._replacementPredSubset, predPos);
         currModel._predSubset = currentPredIndices.stream().mapToInt(x->x).toArray();
+        int newPred = currModel._replacementPredSubset.get(currModel._replacementPredSubset.size()-1);
         List<ModelSelection.SweepInfo> newInfo = new ArrayList<>();
         int lastGoodInfoIndex = currentPredIndices.size()+1;  // 0 for non-sweep Info
         double[][] cpmSweep0 = extractPredSubsetsCPM(allCPM, currModel._predSubset, predictorIndex2CPMIndices, hasIntercept);
-        newInfo.add(new ModelSelection.SweepInfo(new double[][][]{cpmSweep0}, null, null));
+        int currCPMSize = cpmSweep0.length;
+        int expandedCPMSize = currModel._sweepInfo.get(0)._cpm[0].length;
+        currModel._cpmSize = currCPMSize;
+        if (currCPMSize > expandedCPMSize) {
+            expandedCPMSize = Math.min(currCPMSize + numPreds2Add*predictorIndex2CPMIndices[newPred].length, allCPM.length);
+        }
+        double[][] expandedCPM0 = new double[expandedCPMSize][expandedCPMSize];
+        copy2D(cpmSweep0, expandedCPM0, currCPMSize);
+        newInfo.add(new ModelSelection.SweepInfo(new double[][][]{expandedCPM0}, null, null));
         int offsetSweepInfo = 0;
+        int sweepLen;
         for (int index=1; index < lastGoodInfoIndex; index++) {
             int prevIndex = index-1;
-            int newPred = currentPredIndices.get(prevIndex);
-            int sweepLen = predictorIndex2CPMIndices[newPred].length;
+            newPred = currentPredIndices.get(prevIndex);
+            sweepLen = predictorIndex2CPMIndices[newPred].length;
             if (index==1 && hasIntercept)
                 sweepLen++; // need to account for intercept sweep
             final int offset = offsetSweepInfo;
             int[] sweepIndices = IntStream.range(0, sweepLen).map(x->x+offset).toArray();
-            newInfo.add(genNewSweepInfo(newInfo.get(prevIndex), sweepIndices));
+            newInfo.add(genNewSweepInfo(newInfo.get(prevIndex), sweepIndices, currCPMSize));
             offsetSweepInfo += sweepLen;
         }
         currModel._sweepInfo = newInfo;
@@ -1140,9 +1373,9 @@ public class ModelSelectionUtils {
         return duplicatedSet;
     }
     
-    public static void enLargeNUpdateCPMs(List<ModelSelection.SweepInfo> sInfo, double[][] allCPM, int[] newPreds, 
+    public static int enLargeNUpdateCPMs(List<ModelSelection.SweepInfo> sInfo, double[][] allCPM, int[] newPreds, 
                                           int[][] pred2CPMIndices, boolean hasIntercept, List<Integer> origCurrSub,
-                                          boolean forReplacement) {
+                                          int actualCPMSize, boolean forReplacement) {
 
         int lastIndex = sInfo.size(); // last one is already done
         int numNewRowsCols = pred2CPMIndices[newPreds[newPreds.length-1]].length;
@@ -1155,25 +1388,44 @@ public class ModelSelectionUtils {
             if (index == 0) { // no sweeps yet, therefore no sweepvector;
                 ModelSelection.SweepInfo oneInfo = sInfo.remove(index);
                 if (forReplacement)
-                    oneInfo._cpm[index] = addNewPred2CPM(allCPM, oneInfo._cpm[index], repNewPreds, pred2CPMIndices, hasIntercept);
+                    oneInfo._cpm[index] = addNewPred2CPM(allCPM, oneInfo._cpm[index], repNewPreds, pred2CPMIndices, actualCPMSize, hasIntercept);
                 else
-                    oneInfo._cpm[index] = addNewPred2CPM(allCPM, oneInfo._cpm[index], newPreds, pred2CPMIndices, hasIntercept);
+                    oneInfo._cpm[index] = addNewPred2CPM(allCPM, oneInfo._cpm[index], newPreds, pred2CPMIndices, actualCPMSize, hasIntercept);
                 sInfo.add(index, oneInfo);
             } else {
                 double[][][] previousSweptCPM = sInfo.get(index-1)._cpm;
                 double[][] lastPrevCPM = previousSweptCPM[previousSweptCPM.length-1];
                 ModelSelection.SweepInfo oneInfo = sInfo.remove(index);
-                double[][][] currCPMNLastSwept = addPrevSweptNewPred(lastPrevCPM, oneInfo._cpm);    // new addition not swept
+                double[][][] currCPMNLastSwept = addPrevSweptNewPred(lastPrevCPM, oneInfo._cpm, actualCPMSize, numNewRowsCols);    // add new rows/cols not swept
                 if (numNewRowsCols == 1) {
-                    applySweepVectors2NewPred(oneInfo._sweepVector, currCPMNLastSwept, numNewRowsCols, oneInfo._sweepIndices);
+                    applySweepVectors2NewPred(oneInfo._sweepVector, currCPMNLastSwept, numNewRowsCols, oneInfo._sweepIndices, actualCPMSize);
                 } else {
                     SweepVector[][] newSweepVector = mapBasicVector2Multiple(oneInfo._sweepVector, numNewRowsCols);
-                    applySweepVectors2NewPred(newSweepVector, currCPMNLastSwept, numNewRowsCols, oneInfo._sweepIndices);
+                    applySweepVectors2NewPred(newSweepVector, currCPMNLastSwept, numNewRowsCols, oneInfo._sweepIndices, actualCPMSize);
                 }
-                oneInfo._cpm = currCPMNLastSwept;
                 sInfo.add(index, oneInfo);
             }
         }
+        return actualCPMSize+numNewRowsCols;
+    }
+
+    /***
+     * Given a predictor subset and the complete CPM, we extract the CPM associated with the predictors 
+     * specified in the predictor subset (predIndices).  
+     */
+    public static double[][] extractPredSubsetsCPM(double[][] allCPM, int[] predIndices, int[][] pred2CPMIndices,
+                                                   boolean hasIntercept) {
+        List<Integer> CPMIndices = extractCPMIndexFromPred(allCPM, pred2CPMIndices, predIndices, hasIntercept);
+        int subsetcpmDim = CPMIndices.size();
+        double[][] subsetCPM = new double[subsetcpmDim][subsetcpmDim];
+
+        for (int rIndex=0; rIndex < subsetcpmDim; rIndex++) {
+            for (int cIndex=rIndex; cIndex < subsetcpmDim; cIndex++) {
+                subsetCPM[rIndex][cIndex] = allCPM[CPMIndices.get(rIndex)][CPMIndices.get(cIndex)];
+                subsetCPM[cIndex][rIndex] = allCPM[CPMIndices.get(cIndex)][CPMIndices.get(rIndex)];
+            }
+        }
+        return subsetCPM;
     }
     
     public static double[][] addPrevSweptNewPred(double[][] prevSweptCPM, double[][] currentCPM) {
@@ -1210,6 +1462,42 @@ public class ModelSelectionUtils {
             newCPMs[index] = addPrevSweptNewPred(prevSweptCPM, currentCPM[index]);
         return newCPMs;
     }
+
+    public static double[][] addPrevSweptNewPred(double[][] prevSweptCPM, double[][] currentCPM, int actualCPMSize,
+                                                   int newColsRows) {
+        int newCPMSize = actualCPMSize+newColsRows;
+        int lastCPMIndex = actualCPMSize-1;
+        int lastNewCPMIndex = newCPMSize-1;
+        // copy over last rows/cols of prevSweptCPM to currentCPM
+        for (int index = 0; index < actualCPMSize; index++) {
+            currentCPM[index][lastNewCPMIndex] = currentCPM[index][lastCPMIndex];
+            currentCPM[lastNewCPMIndex][index] = currentCPM[lastCPMIndex][index];
+        }
+        // copy over last cell of prevSweptCPM to currentCPM
+        currentCPM[lastNewCPMIndex][lastNewCPMIndex] = currentCPM[lastCPMIndex][lastCPMIndex];
+        // copy over new rows/columns from prevSweptCPM to currentCPM
+        for (int index1 = 0; index1 < newColsRows; index1++) {
+            for (int index2 = lastCPMIndex; index2 < lastNewCPMIndex; index2++) {
+                int indexWOffset = index1+index2;
+                for (int index3= 0; index3 < newCPMSize; index3++) {
+                    currentCPM[index3][indexWOffset] = prevSweptCPM[index3][indexWOffset];
+                    currentCPM[indexWOffset][index3] = prevSweptCPM[indexWOffset][index3];
+                }
+            }
+        }
+        return currentCPM;
+    }
+
+    /***
+     * prevSweptCPM is bigger with the newly added rows/cols due to the newly added predictor.  The currentCPM contains
+     * swept contents but need to add the new rows/cols to it.
+     */
+    public static double[][][] addPrevSweptNewPred(double[][] prevSweptCPM, double[][][] currentCPM, int actualCPMSize, int newColsRows) {
+        int numCPM = currentCPM.length;
+        for (int index=0; index<numCPM; index++)    // take care of multiple sweeps per predictor like enum
+            addPrevSweptNewPred(prevSweptCPM, currentCPM[index], actualCPMSize, newColsRows);
+        return currentCPM;
+    }
     
     public static List<ModelSelection.SweepInfo> cloneSweepInfo(List<ModelSelection.SweepInfo> orig) {
         List<ModelSelection.SweepInfo> infoCopy = new ArrayList<>();
@@ -1225,6 +1513,20 @@ public class ModelSelectionUtils {
         return infoCopy;
     }
 
+    public static List<ModelSelection.SweepInfo> cloneSweepInfo(List<ModelSelection.SweepInfo> orig, int actualCPMSize) {
+        List<ModelSelection.SweepInfo> infoCopy = new ArrayList<>();
+        ModelSelection.SweepInfo newInfo;
+        for (ModelSelection.SweepInfo oneInfo : orig) {
+            if (oneInfo._sweepVector == null)
+                newInfo = new ModelSelection.SweepInfo(clone3DSameCPMSize(oneInfo._cpm, actualCPMSize), null, null);
+            else
+                newInfo = new ModelSelection.SweepInfo(clone3DSameCPMSize(oneInfo._cpm, actualCPMSize),
+                        cloneSweepVector(oneInfo._sweepVector), oneInfo._sweepIndices.clone());
+            infoCopy.add(newInfo);
+        }
+        return infoCopy;
+    }
+
     public static double[][][] clone3D(double[][][] orig) {
         int firstLen = orig.length;
         double[][][] copied = new double[firstLen][][];
@@ -1233,6 +1535,42 @@ public class ModelSelectionUtils {
         }
         return copied;
     }
+
+    public static double[][][] clone3D(double[][][] orig, int actualCPMSize) {
+        int firstLen = orig.length;
+        double[][][] copied = new double[firstLen][][];
+        for (int index=0; index<firstLen; index++) {
+            copied[index] = clone2D(orig[index], actualCPMSize);
+        }
+        return copied;
+    }
+
+    public static double[][][] clone3DSameCPMSize(double[][][] orig, int actualCPMSize) {
+        int firstLen = orig.length;
+        double[][][] copied = new double[firstLen][][];
+        for (int index=0; index<firstLen; index++) {
+            copied[index] = clone2DSameCPMSize(orig[index], actualCPMSize);
+        }
+        return copied;
+    }
+
+    public static double[][] clone2DSameCPMSize(double[][] orig, int actualCPMSize) {
+        int origDim = orig.length;
+        double[][] copied = new double[origDim][origDim];
+        for (int index=0; index<actualCPMSize; index++) {
+            System.arraycopy(orig[index], 0, copied[index], 0, actualCPMSize);
+        }
+        return copied;
+    }
+
+    public static double[][] clone2D(double[][] orig, int actualCPMSize) {
+        double[][] copied = new double[actualCPMSize][actualCPMSize];
+        for (int index=0; index<actualCPMSize; index++) {
+            System.arraycopy(orig[index], 0, copied[index], 0, actualCPMSize);
+        }
+        return copied;
+    }
+    
     public static double[][] clone2D(double[][] orig) {
         int firstLen = orig.length;
         double[][] copied = new double[firstLen][];
