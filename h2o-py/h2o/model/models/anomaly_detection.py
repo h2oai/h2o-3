@@ -22,8 +22,19 @@ class H2OAnomalyDetectionModel(ModelBase):
             The sum of all depths of a variable used to make a split. 
             (If a variable is used on level N of a tree, then it contributes with N to the total aggregate.)
 
-        :param use_pandas: If True, then the variable splits will be returned as a Pandas data frame.
+        :param use_pandas: If ``True``, then the variable splits will be returned as a Pandas data frame.
         :returns: A list or Pandas DataFrame.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OIsolationForestEstimator
+        >>> h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+        >>> train,test = h2o_df.split_frame(ratios=[0.75])
+        >>> model = H2OIsolationForestEstimator(sample_rate = 0.1,
+        ...                                     max_depth = 20,
+        ...                                     ntrees = 50)
+        >>> model.train(training_frame=train)
+        >>> model.varsplits()
         """
         model = self._model_json["output"]
         if "variable_splits" in list(model.keys()) and model["variable_splits"]:

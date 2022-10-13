@@ -240,12 +240,23 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     def feature_frequencies(self, test_data):
         """
         Retrieve the number of occurrences of each feature for given observations 
-        on their respective paths in a tree ensemble model.
+        on their respective paths in a tree ensemble model. 
         Available for GBM, Random Forest and Isolation Forest models.
 
         :param H2OFrame test_data: Data on which to calculate feature frequencies.
 
         :returns: A new H2OFrame made of feature contributions.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OIsolationForestEstimator
+        >>> h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+        >>> train,test = h2o_df.split_frame(ratios=[0.75])
+        >>> model = H2OIsolationForestEstimator(sample_rate = 0.1,
+        ...                                     max_depth = 20,
+        ...                                     ntrees = 50)
+        >>> model.train(training_frame=train)
+        >>> model.feature_frequencies(test_data = test)
         """
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
