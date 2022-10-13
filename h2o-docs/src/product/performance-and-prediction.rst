@@ -2652,9 +2652,16 @@ Using the previous example, run the following to predict the leaf node assignmen
 Predict Contributions
 ~~~~~~~~~~~~~~~~~~~~~
 
-In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
+In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being
+the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model.
+Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction.
+For Gaussian distribution, the sum of the contributions is equal to the model prediction.
 
-H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model. If you have SHAP installed, then graphical representations can be retrieved in Python using `SHAP functions <https://shap.readthedocs.io/en/latest/#>`__. (Note that retrieving graphs via R is not yet supported.) An .ipynb demo showing this example is also available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb>`__.
+H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost.
+For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model.
+
+You can use methods from `model explainability <explain.html#shap-summary>`__ to plot SHAP or if you have SHAP installed, then graphical representations can be retrieved in Python using `SHAP functions <https://shap.readthedocs.io/en/latest/#>`__.
+(Note that retrieving graphs via R is not yet supported.) An .ipynb demo showing this example is also available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb>`__.
 
 **Note**: Multinomial classification models are currently not supported.
 
@@ -2674,7 +2681,13 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         5 -0.02015455  0.06589284 -1.5968542 -0.9778085 -0.2434755
         6 -0.33494386 -0.58143651 -0.4093136  0.5271149 -0.2434755
 
-        [90 rows x 5 columns] 
+        [90 rows x 5 columns]
+
+        # Plot SHAP summary plot
+        h2o.shap_summary_plot(model, prostate_test)
+
+        # Plot SHAP contributions for one instance, e.g., row 5
+        h2o.shap_explain_row_plot(model, prostate_test, row_index = 5)
 
 
    .. code-tab:: python
@@ -2698,6 +2711,13 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
 
         [90 rows x 5 columns]
 
+        # Plot SHAP summary plot
+        model.shap_summary_plot(test)
+
+        # Plot SHAP contributions for one instance, e.g., row 5
+        model.shap_explain_row_plot(test, row_index=5)
+
+        # OR using the shap package:
         # Import required packages for running SHAP commands
         import shap
 
