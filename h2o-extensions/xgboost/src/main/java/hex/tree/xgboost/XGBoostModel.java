@@ -40,7 +40,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
-  private static final String PROP_VERBOSITY = H2O.OptArgs.SYSTEM_PROP_PREFIX + ".xgboost.verbosity";
+  private static final String PROP_VERBOSITY = H2O.OptArgs.SYSTEM_PROP_PREFIX + "xgboost.verbosity";
   private static final String PROP_NTHREAD = SYSTEM_PROP_PREFIX + "xgboost.nthreadMax";
 
   private XGBoostModelInfo model_info;
