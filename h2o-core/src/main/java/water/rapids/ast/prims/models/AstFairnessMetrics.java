@@ -49,13 +49,15 @@ public class AstFairnessMetrics extends AstPrimitive {
         double gini;
         double selected;
         double selectedRatio;
+        double logloss;
 
-        public FairnessMetrics(double TP, double TN, double FP, double FN, AUC2.AUCBuilder aucBuilder, double nrows) {
+        public FairnessMetrics(double TP, double TN, double FP, double FN, double LLS, AUC2.AUCBuilder aucBuilder, double nrows) {
             this.TP = TP;
             this.TN = TN;
             this.FP = FP;
             this.FN = FN;
             total = TP + FP + TN + FN;
+            logloss = -LLS/total;
             relativeSize = total / nrows;
             accuracy = (TP + TN)/total;
             precision = TP / (FP + TP);
@@ -88,6 +90,8 @@ public class AstFairnessMetrics extends AstPrimitive {
         final int TN = 1;
         final int FP = 2;
         final int FN = 3;
+        final int LLS = 4; // Log Loss Sum
+        final int essentialMetrics = 5;
         final int maxIndex;
         final int favourableClass;
 
@@ -156,26 +160,28 @@ public class AstFairnessMetrics extends AstPrimitive {
         @Override
         public void map(Chunk[] cs) {
             assert _results == null;
-            _results = new int[maxIndex * 4];
+            _results = new int[maxIndex * essentialMetrics];
             _aucs = new AUC2.AUCBuilder[maxIndex];
             for (int i = 0; i < cs[0]._len; i++) {
                 final int key = pColsToKey(cs, i);
-                final long response = cs[responseIdx].at8(i);
-                final long prediction = cs[predictionIdx].at8(i);
+                final long response = favourableClass == 1 ? cs[responseIdx].at8(i) : 1 - cs[responseIdx].at8(i);
+                final long prediction = favourableClass == 1 ? cs[predictionIdx].at8(i) : 1 - cs[predictionIdx].at8(i) ;
+                final double predictionProb = favourableClass == 1 ? cs[predictionIdx+2].atd(i) : cs[predictionIdx+1].atd(i);
                 if (response == prediction) {
-                    if (response == favourableClass)
-                        _results[4 * key + TP]++;
+                    if (response == 1)
+                        _results[essentialMetrics * key + TP]++;
                     else
-                        _results[4 * key + TN]++;
+                        _results[essentialMetrics * key + TN]++;
                 } else {
-                    if (prediction == favourableClass)
-                        _results[4 * key + FP]++;
+                    if (prediction == 1)
+                        _results[essentialMetrics * key + FP]++;
                     else
-                        _results[4 * key + FN]++;
+                        _results[essentialMetrics * key + FN]++;
                 }
+                _results[essentialMetrics * key + LLS] += response * Math.log(predictionProb) + (1 - response) * Math.log(1 - predictionProb);
                 if (_aucs[key] == null)
                     _aucs[key] = new AUC2.AUCBuilder(400);
-                _aucs[key].perRow(cs[predictionIdx+2].atd(i), (int) response,1);
+                _aucs[key].perRow(predictionProb, (int) response,1);
             }
         }
 
@@ -200,10 +206,11 @@ public class AstFairnessMetrics extends AstPrimitive {
             final long nrows = fr.numRows();
             for (int i = 0; i < maxIndex; i++) {
                 results[i] = new FairnessMetrics(
-                        _results[i * 4 + TP],
-                        _results[i * 4 + TN],
-                        _results[i * 4 + FP],
-                        _results[i * 4 + FN],
+                        _results[i * essentialMetrics + TP],
+                        _results[i * essentialMetrics + TN],
+                        _results[i * essentialMetrics + FP],
+                        _results[i * essentialMetrics + FN],
+                        _results[i * essentialMetrics + LLS],
                         _aucs[i],
                         nrows
                 );
