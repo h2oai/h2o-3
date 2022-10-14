@@ -381,7 +381,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
             SweepModel2 bestModel = null;
             int maxPredNum = _parms._max_predictor_number;
-            for (int predNum = 1; predNum <= maxPredNum; predNum++) { // find best predictor subset for each subset size
+            for (int predNum = 1; predNum <= maxPredNum; predNum++) { // find bes_predictorNamest predictor subset for each subset size
                 Set<BitSet> usedCombos = new HashSet<>();
                 bestModel = forwardStepO(currSubsetIndices, coefNames, validSubset, usedCombos, _crossProdcutMatrix, 
                         _predictorIndex2CPMIndices, bestModel, _parms._intercept, false, maxPredNum);
@@ -720,7 +720,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             subsetErrVar = generateAllErrorVariances(origCPM, null, null, predictorNames, currSubsetIndices, 
                     validSubsets, usedCombo, predInd2CPMInd, hasIntercept, predSubsetList, null, null, forReplacement);
         } else {
-            SweepVector[][] accumSV = concateSweepVectors(bestModel._sweepInfo);
+            SweepVector[][] accumSV = concateSweepVectors(bestModel._sweepInfo, (bestModel._cpmSize+1)*2);
             SweepInfo sInfo = bestModel._sweepInfo.get(bestModel._sweepInfo.size()-1);
             double[][] cpm = clone2D(sInfo._cpm[sInfo._cpm.length-1], bestModel._cpmSize);
             int[] sweepIndices = concatSweepIndices(bestModel._sweepInfo);
