@@ -64,7 +64,7 @@ class H2OLocalServer(object):
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
               ice_root=None, log_dir=None, log_level=None, max_log_file_size=None, port="54321+", name=None, extra_classpath=None,
-              verbose=True, jvm_custom_args=None, bind_to_localhost=True):
+              verbose=True, jvm_custom_args=None, bind_to_localhost=True, off_heap_memory_ratio=2.0/3):
         """
         Start new H2O server on the local machine.
 
@@ -91,6 +91,8 @@ class H2OLocalServer(object):
         :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local
             machine (default) or if it can be reached from other computers on the network.
             Only applicable when H2O is started from the Python client.
+        :param off_heap_memory_ratio: Minimum amount of memory that should be unused by the JVM.
+                                      Used in XGBoost to decide whether to warn.
 
         :returns: a new H2OLocalServer instance.
         """
@@ -139,7 +141,8 @@ class H2OLocalServer(object):
         if verbose: print("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size, jvm_custom_args=jvm_custom_args,
-                          bind_to_localhost=bind_to_localhost, log_dir=log_dir, log_level=log_level, max_log_file_size=max_log_file_size)
+                          bind_to_localhost=bind_to_localhost, log_dir=log_dir, log_level=log_level,
+                          max_log_file_size=max_log_file_size, off_heap_memory_ratio=off_heap_memory_ratio)
         if verbose: print("  Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
         atexit.register(lambda: hs.shutdown())
         return hs
@@ -264,7 +267,7 @@ class H2OLocalServer(object):
         yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
 
     def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost, 
-                       log_dir=None, log_level=None, max_log_file_size=None):
+                       log_dir=None, log_level=None, max_log_file_size=None, off_heap_memory_ratio=2.0/3):
         """Actually start the h2o.jar executable (helper method for `.start()`)."""
         self._ip = "127.0.0.1"
 
@@ -309,6 +312,8 @@ class H2OLocalServer(object):
         cmd += ["-baseport", str(baseport)] if baseport else []
         cmd += ["-ice_root", self._ice_root]
         cmd += ["-nthreads", str(nthreads)] if nthreads > 0 else []
+
+        cmd += ["-off_heap_memory_ratio", str(off_heap_memory_ratio)]
 
         if log_dir:
             cmd += ["-log_dir", log_dir]

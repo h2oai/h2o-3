@@ -36,6 +36,7 @@
 #' @param extra_classpath (Optional) A vector of paths to libraries to be added to the Java classpath when H2O is started from R.
 #' @param jvm_custom_args (Optional) A \code{character} list of custom arguments for the JVM where new H2O instance is going to run, if started. Ignored when connecting to an existing instance.
 #' @param bind_to_localhost (Optional) A \code{logical} flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network. Only applicable when H2O is started from R.
+#' @param off_heap_memory_ratio (Optional) How much memory is expected to be necessary for use outside of JVM, typically for XGBoost.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -69,7 +70,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
                      username = NA_character_, password = NA_character_, use_spnego = FALSE,
                      cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE,
                      extra_classpath = NULL, jvm_custom_args = NULL,
-                     bind_to_localhost = TRUE) {
+                     bind_to_localhost = TRUE, off_heap_memory_ratio = 2/3) {
 
     if(!(ignore_config)){
       # Check for .h2oconfig file
@@ -168,6 +169,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     stop("`context_path` must be a character string or NA_character_")
   if(!is.null(extra_classpath) && !is.character(extra_classpath))
     stop("`extra_classpath` must be a character vector or NULL")
+  if(!is.numeric(off_heap_memory_ratio))
+    stop("`off_heap_memory_ratio` must be a number")
 
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
     stop("H2O is not compatible with R 3.1.0\n",
@@ -212,7 +215,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
                     enable_assertions = enable_assertions, forceDL = forceDL, license = license,
                     extra_classpath = extra_classpath, ice_root = ice_root, stdout = stdout, stderr = stderr,
                     log_dir = log_dir, log_level = log_level, context_path = context_path,
-                    jvm_custom_args = jvm_custom_args, bind_to_localhost = bind_to_localhost)
+                    jvm_custom_args = jvm_custom_args, bind_to_localhost = bind_to_localhost,
+                    off_heap_memory_ratio=off_heap_memory_ratio)
 
       count <- 0L
       cat("Starting H2O JVM and connecting: ")
@@ -611,7 +615,7 @@ h2o.resume <- function(recovery_dir=NULL) {
                           max_memory = NULL, min_memory = NULL,
                           enable_assertions = TRUE, forceDL = FALSE, license = NULL, extra_classpath = NULL,
                           ice_root, stdout, stderr, log_dir, log_level, context_path, jvm_custom_args = NULL, 
-                          bind_to_localhost) {
+                          bind_to_localhost, off_heap_memory_ratio) {
   command <- .h2o.checkJava()
 
   if (! is.null(license)) {
@@ -700,6 +704,7 @@ h2o.resume <- function(recovery_dir=NULL) {
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(!is.null(license)) args <- c(args, "-license", license)
   args <- c(args, "-allow_unsupported_java")
+  args <- c(args, "-off_heap_memory_ratio", off_heap_memory_ratio)
 
   cat("\n")
   cat(        "Note:  In case of errors look at the following log files:\n")

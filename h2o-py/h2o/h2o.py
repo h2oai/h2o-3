@@ -214,7 +214,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     assert_is_type(jvm_custom_args, [str], None)
     assert_is_type(bind_to_localhost, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
-                            "force_connect": bool, "as_port": bool})
+                            "force_connect": bool, "as_port": bool, "off_heap_memory_ratio": float})
 
     def get_mem_size(mmint, mmgb):
         if not mmint:  # treat 0 and "" as if they were None
@@ -288,7 +288,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                                   min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
                                   max_log_file_size=max_log_file_size, port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
-                                  bind_to_localhost=bind_to_localhost)
+                                  bind_to_localhost=bind_to_localhost, off_heap_memory_ratio=kwargs.get("off_heap_memory_ratio", 2.0/3))
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
                                      cacert=cacert, auth=auth, proxy=proxy, cookies=cookies, verbose=True,
                                      strict_version_check=svc)
