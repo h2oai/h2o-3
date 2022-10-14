@@ -109,6 +109,8 @@
 #'        on gradient calculation. Useful for imbalanced problems. Defaults to 1.0.
 #' @param eval_metric Specification of evaluation metric that will be passed to the native XGBoost backend. Due to technical
 #'        limitations, evaluation metric can currently only be calculated on the training frame.
+#' @param score_eval_metric_only \code{Logical}. If enabled, score only the evaluation metric. This can make model training faster if scoring
+#'        is frequent (eg. each iteration). Defaults to FALSE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -207,6 +209,7 @@ h2o.xgboost <- function(x,
                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         scale_pos_weight = 1.0,
                         eval_metric = NULL,
+                        score_eval_metric_only = FALSE,
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -369,6 +372,8 @@ h2o.xgboost <- function(x,
     parms$scale_pos_weight <- scale_pos_weight
   if (!missing(eval_metric))
     parms$eval_metric <- eval_metric
+  if (!missing(score_eval_metric_only))
+    parms$score_eval_metric_only <- score_eval_metric_only
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -444,6 +449,7 @@ h2o.xgboost <- function(x,
                                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         scale_pos_weight = 1.0,
                                         eval_metric = NULL,
+                                        score_eval_metric_only = FALSE,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -610,6 +616,8 @@ h2o.xgboost <- function(x,
     parms$scale_pos_weight <- scale_pos_weight
   if (!missing(eval_metric))
     parms$eval_metric <- eval_metric
+  if (!missing(score_eval_metric_only))
+    parms$score_eval_metric_only <- score_eval_metric_only
 
   # Build segment-models specific parameters
   segment_parms <- list()

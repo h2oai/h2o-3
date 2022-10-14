@@ -974,7 +974,7 @@ public abstract class SharedTree<
 
     int rows = 0;
     for( int i = 0; i<_scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
+      if (i != 0 && _scored_train[i].isEmpty() && (_scored_valid == null || _scored_valid[i].isEmpty())) continue;
       rows++;
     }
     TwoDimTable table = new TwoDimTable(
@@ -986,7 +986,7 @@ public abstract class SharedTree<
             "");
     int row = 0;
     for( int i = 0; i<_scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
+      if (i != 0 && _scored_train[i].isEmpty() && (_scored_valid == null || _scored_valid[i].isEmpty())) continue;
       int col = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(_training_time_ms[i]));

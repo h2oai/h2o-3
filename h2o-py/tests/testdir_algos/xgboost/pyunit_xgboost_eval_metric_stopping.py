@@ -14,7 +14,7 @@ def assert_same_scoring_history(model_actual, model_expected, metric_name1, metr
     assert (sh1 - sh2).abs().max() < 1e-4, msg
 
 
-def test_eval_metric_early_stopping():
+def check_eval_metric_early_stopping(score_eval_metric_only=False):
     (train, _, _) = dataset_prostate()
     model_expected = H2OXGBoostEstimator(model_id="prostate_mae", ntrees=1000, max_depth=5,
                                          score_each_iteration=True,
@@ -26,6 +26,7 @@ def test_eval_metric_early_stopping():
 
     model_actual = H2OXGBoostEstimator(model_id="prostate_custom", ntrees=1000, max_depth=5,
                                        score_each_iteration=True,
+                                       score_eval_metric_only=score_eval_metric_only,
                                        eval_metric="mae",
                                        stopping_metric="custom",
                                        stopping_tolerance=0.1,
@@ -35,8 +36,25 @@ def test_eval_metric_early_stopping():
 
     assert_same_scoring_history(model_actual, model_expected, "training_custom", "training_mae")
 
+    return model_actual.scoring_history()
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_eval_metric_early_stopping)
-else:
-    test_eval_metric_early_stopping()
+
+def test_eval_metric_early_stopping():
+    check_eval_metric_early_stopping()
+
+
+def test_eval_metric_early_stopping_native_scoring_only():
+    history = check_eval_metric_early_stopping(True)
+    for col in history.columns:
+        if col.startswith("training_") and col != "training_custom":
+            is_missing = history[col].isnull()
+            # scoring history is not defined for H2O metrics...
+            assert is_missing.sum() == len(is_missing) - 1
+            # ...except for the final scoring metric
+            assert not is_missing.iloc[-1]
+
+
+pyunit_utils.run_tests([
+    test_eval_metric_early_stopping,
+    test_eval_metric_early_stopping_native_scoring_only
+])

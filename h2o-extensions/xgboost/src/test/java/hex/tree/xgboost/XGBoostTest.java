@@ -18,7 +18,6 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.FeatureInteraction;
 import hex.FeatureInteractions;
-import hex.grid.HyperSpaceSearchCriteria;
 import hex.schemas.XGBoostV3;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
@@ -60,7 +59,6 @@ import static org.junit.Assert.assertEquals;
 import static water.util.FileUtils.getFile;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
@@ -2972,6 +2970,16 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testEarlyStoppingOnEvalMetric() {
+    checkEarlyStoppingOnEvalMetric(false, -1);
+  }
+
+  @Test
+  public void testEarlyStoppingOnEvalMetric_scoreEvalMetricOnly() {
+    final int expectedStopIter = checkEarlyStoppingOnEvalMetric(false, -1);
+    checkEarlyStoppingOnEvalMetric(true, expectedStopIter);
+  }
+
+  private int checkEarlyStoppingOnEvalMetric(final boolean scoreEvalMetricOnly, final int expectedStopIter) {
     Scope.enter();
     try {
       String response = "RainTomorrow";
@@ -2987,6 +2995,7 @@ public class XGBoostTest extends TestUtil {
       basicParms._stopping_rounds = 3;
       basicParms._stopping_tolerance = 1e-1;
       basicParms._score_each_iteration = true;
+      basicParms._score_eval_metric_only = scoreEvalMetricOnly;
 
       XGBoostModel.XGBoostParameters parms = (XGBoostModel.XGBoostParameters) basicParms.clone();
       parms._eval_metric = "logloss";
@@ -3001,16 +3010,18 @@ public class XGBoostTest extends TestUtil {
       assertEquals(ntrees / 2.0, scoringHistory.getRowDim(), (ntrees / 2.0) * 0.9);
 
       // 2. Check that we stopped at the right time
-      int shouldStopIter = -1;
-      for (int i = 1; i < ntrees; i++) {
-        ScoreKeeper[] sks = Arrays.copyOf(model._output.scoreKeepers(), i);
-        boolean shouldStop = ScoreKeeper.stopEarly(sks, 3, ScoreKeeper.ProblemType.classification, ScoreKeeper.StoppingMetric.logloss, 1e-1, "model", true);
-        if (shouldStop) {
-          shouldStopIter = i;
-          break;
+      int shouldStopIter = expectedStopIter;
+      if (!scoreEvalMetricOnly) {
+        for (int i = 1; i < ntrees; i++) {
+          ScoreKeeper[] sks = Arrays.copyOf(model._output.scoreKeepers(), i);
+          boolean shouldStop = ScoreKeeper.stopEarly(sks, 3, ScoreKeeper.ProblemType.classification, ScoreKeeper.StoppingMetric.logloss, 1e-1, "model", true);
+          if (shouldStop) {
+            shouldStopIter = i;
+            break;
+          }
         }
+        assertNotEquals(-1, shouldStopIter);
       }
-      assertNotEquals(-1, shouldStopIter);
       assertEquals(shouldStopIter, model._output._ntrees + 1);
 
       XGBoostModel.XGBoostParameters parmsH2O = (XGBoostModel.XGBoostParameters) basicParms.clone();
@@ -3023,6 +3034,7 @@ public class XGBoostTest extends TestUtil {
       LOG.info(modelH2O);
 
       assertEquals(modelH2O._output._ntrees, model._output._ntrees);
+      return shouldStopIter;
     } finally {
       Scope.exit();
     }

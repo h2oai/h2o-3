@@ -507,7 +507,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       for (int tid = 0; tid < _ntrees; tid++) {
         if (_job.stop_requested() && tid > 0) break;
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, exec, varImp, false);
+        boolean scored = doScoring(model, exec, varImp, false, _parms._score_eval_metric_only);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           LOG.info("Early stopping triggered - stopping XGBoost training");
           break;
@@ -548,7 +548,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       
       _job.update(0, "Scoring the final model");
       // Final scoring
-      doScoring(model, exec, varImp, true);
+      doScoring(model, exec, varImp, true, _parms._score_eval_metric_only);
       // Finish remaining work (if stopped early)
       _job.update(_parms._ntrees-model._output._ntrees);
     }
@@ -714,7 +714,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
 
-    private boolean doScoring(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp, boolean finalScoring) {
+    private boolean doScoring(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp,
+                              boolean finalScoring, boolean scoreEvalMetricOnly) {
       boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
@@ -732,20 +733,29 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (_parms._score_each_iteration || finalScoring || // always score under these circumstances
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
+        final XGBoostOutput out = model._output;
+        final boolean boosterUpdated;
         _timeLastScoreStart = now;
         CustomMetric customMetricTrain = _parms._eval_metric != null ? toCustomMetric(exec.getEvalMetricTrain()) : null;
-        model.model_info().updateBoosterBytes(exec.updateBooster());
-        model.doScoring(_train, _parms.train(), customMetricTrain, _valid, _parms.valid());
+        if (!finalScoring && scoreEvalMetricOnly && customMetricTrain != null) {
+          out._scored_train[out._ntrees]._custom_metric = customMetricTrain.value;
+          boosterUpdated = false;
+        } else {
+          model.model_info().updateBoosterBytes(exec.updateBooster());
+          boosterUpdated = true;
+          model.doScoring(_train, _parms.train(), customMetricTrain, _valid, _parms.valid());
+        }
         _timeLastScoreEnd = System.currentTimeMillis();
-        XGBoostOutput out = model._output;
-        final Map<String, FeatureScore> varimp = varImp.getFeatureScores(model.model_info()._boosterBytes);
-        out._varimp = computeVarImp(varimp);
         out._model_summary = createModelSummaryTable(out._ntrees, null);
         out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null || _parms._eval_metric != null, false);
-        if (out._varimp != null) {
-          out._variable_importances = createVarImpTable(null, ArrayUtils.toDouble(out._varimp._varimp), out._varimp._names);
-          out._variable_importances_cover = createVarImpTable("Cover", ArrayUtils.toDouble(out._varimp._covers), out._varimp._names);
-          out._variable_importances_frequency = createVarImpTable("Frequency", ArrayUtils.toDouble(out._varimp._freqs), out._varimp._names);
+        if (boosterUpdated) {
+          final Map<String, FeatureScore> varimp = varImp.getFeatureScores(model.model_info()._boosterBytes);
+          out._varimp = computeVarImp(varimp);
+          if (out._varimp != null) {
+            out._variable_importances = createVarImpTable(null, ArrayUtils.toDouble(out._varimp._varimp), out._varimp._names);
+            out._variable_importances_cover = createVarImpTable("Cover", ArrayUtils.toDouble(out._varimp._covers), out._varimp._names);
+            out._variable_importances_frequency = createVarImpTable("Frequency", ArrayUtils.toDouble(out._varimp._freqs), out._varimp._names);
+          }
         }
         model.update(_job);
         LOG.info(model);
