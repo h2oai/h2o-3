@@ -12,7 +12,6 @@ import water.util.TwoDimTable;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,7 +74,6 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public double _p_values_threshold = 0;
         public double _tweedie_variance_power;
         public double _tweedie_link_power;
-        public GLMModel.GLMParameters.GLMType _glmType = glm;
         public Mode _mode = Mode.maxr;  // mode chosen to perform model selection
         public double _beta_epsilon = 1e-4;
         public double _objective_epsilon = -1;  // -1 to use default setting
@@ -84,6 +82,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public double[] _lambda = new double[]{0.0};
         public boolean _use_all_factor_levels = false;
         public int _max_predictor_subset = 65;  // for maxrsweep mode only, 
+        public boolean _build_glm_model = true;
         
         public enum Mode {
             allsubsets, // use combinatorial, exponential runtime
@@ -149,13 +148,14 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
     public static class ModelSelectionModelOutput extends Model.Output {
         GLMModel.GLMParameters.Family _family;
         DataInfo _dinfo;
-        String[][] _best_model_predictors; // store for each predictor number, the best model predictors
+        String[][] _best_model_coef_names; // store for each predictor number, the best model predictors
         double[] _best_r2_values;  // store the best R2 values of the best models with fix number of predictors
         String[][] _predictors_added_per_step;
         String[][] _predictors_removed_per_step;
         public Key[] _best_model_ids;
         String[][] _coefficient_names;
         double[][] _coef_p_values;
+        double[][] _best_model_coef_values;   // store best predictor subset coefficient values
         double[][] _z_values;
         public ModelSelectionParameters.Mode _mode;
         String[][] _best_predictors_subset; // predictor names for subset of each size
@@ -195,7 +195,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         }
         
         private Frame generateResultFrame() {
-            int numRows = _best_model_predictors.length;
+            int numRows = _best_model_coef_names.length;
             String[] modelNames = new String[numRows];
             String[] coefNames = new String[numRows];
             String[] predNames = new String[numRows];
@@ -210,7 +210,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
                 int numPred = _best_predictors_subset[index].length;
                 modelNames[index] = "best "+numPred+" predictor(s) model";
                 coefNames[index] = backwardMode ? String.join(", ", _coefficient_names[index])
-                        :String.join(", ", _best_model_predictors[index]);
+                        :String.join(", ", _best_model_coef_names[index]);
                 predAddedNames[index] = backwardMode ? "" : String.join(", ", _predictors_added_per_step[index]);
                 predRemovedNames[index] = _predictors_removed_per_step[index] == null ? "" : 
                         String.join(", ", _predictors_removed_per_step[index]);
@@ -252,8 +252,8 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         }
         
         public void shrinkArrays(int numModelsBuilt) {
-            if (_best_model_predictors.length > numModelsBuilt) {
-                _best_model_predictors = shrinkStringArray(_best_model_predictors, numModelsBuilt);
+            if (_best_model_coef_names.length > numModelsBuilt) {
+                _best_model_coef_names = shrinkStringArray(_best_model_coef_names, numModelsBuilt);
                 _best_predictors_subset = shrinkStringArray(_best_predictors_subset, numModelsBuilt);
                 _coefficient_names = shrinkStringArray(_coefficient_names, numModelsBuilt);
                 _z_values = shrinkDoubleArray(_z_values, numModelsBuilt);
@@ -277,7 +277,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
             for (int rIndex=0; rIndex < numModels; rIndex++) {
                 int colInd = 0;
                 _model_summary.set(rIndex, colInd++, _best_r2_values[rIndex]);
-                _model_summary.set(rIndex, colInd++, String.join(", ", _best_model_predictors[rIndex]));
+                _model_summary.set(rIndex, colInd++, String.join(", ", _best_model_coef_names[rIndex]));
                 _model_summary.set(rIndex, colInd, String.join(", ", _best_predictors_subset[rIndex]));
                 if (_predictors_removed_per_step[rIndex] != null)
                     _model_summary.set(rIndex, colInd++, String.join(", ", _predictors_removed_per_step[rIndex]));
@@ -323,11 +323,62 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
             extractCoeffs(bestModel, index);
             updateAddedRemovedPredictors(index);
         }
+
+        void updateBestModels(String[] predictorNames, String[] coefNames, ModelSelection.SweepModel2 bestModel,
+                              int index, boolean hasIntercept) {
+            ModelSelection.SweepInfo lastInfo = bestModel._sweepInfo.get(bestModel._sweepInfo.size()-1);
+            double[][] lastCPM = lastInfo._cpm[lastInfo._cpm.length-1];
+            int lastCPMIndex = bestModel._cpmSize-1;
+            _best_r2_values[index] = lastCPM[lastCPMIndex][lastCPMIndex];
+            extractCoeffs(predictorNames, coefNames, bestModel, lastCPM, index, hasIntercept);
+            updateAddedRemovedPredictors(index);
+        }
+
+        void extractCoeffs(String[] predNames, String[] coefNames, ModelSelection.SweepModel2 bestModel, double[][] cpm, int index,
+                           boolean hasIntercept) {
+            int[] predSubset = bestModel._predSubset;
+            _best_predictors_subset[index] = extractPredsFromPredIndices(predNames, predSubset);
+            _best_model_coef_names[index] = extractCoefsFromPred(_best_predictors_subset[index], coefNames, hasIntercept);
+            _best_model_coef_values[index] = extractCoefsValues(cpm, _best_model_coef_names[index].length,
+                    hasIntercept, bestModel._cpmSize);
+        }
+        
+        public static double[] extractCoefsValues(double[][] cpm, int coefValLen, boolean hasIntercept, int actualCPMSize) {
+            double[] coefValues = new double[coefValLen];
+            int lastCPMIndex = actualCPMSize-1;
+            int coefStartIndex = 0;
+            if (hasIntercept) { // extract intercept value
+                coefStartIndex = 1;
+                coefValues[coefValLen-1] = cpm[0][lastCPMIndex];
+            }
+            for (int index=coefStartIndex; index<lastCPMIndex; index++) 
+                coefValues[index-1] = cpm[index][lastCPMIndex];
+            return coefValues;
+        }
+        
+        public static String[] extractCoefsFromPred(String[] predNames, String[] allCoefNames, boolean hasIntercept) {
+            List<String> coefNames = new ArrayList<>();
+            List<String> allCoefList = Stream.of(allCoefNames).collect(Collectors.toList());
+            for (String onePred : predNames) {
+                List<String> predStart = allCoefList.stream().filter(x -> x.contains(onePred)).collect(Collectors.toList());
+                coefNames.addAll(predStart);
+            }
+            if (hasIntercept)
+                coefNames.add("Intercept");
+            return coefNames.toArray(new String[0]);
+        }
+        public static String[] extractPredsFromPredIndices(String[] allPreds, int[] predSubset) {
+            int numPreds = predSubset.length;
+            String[] predSubsetNames = new String[numPreds];
+            for (int index=0; index<numPreds; index++)
+                predSubsetNames[index] = allPreds[predSubset[index]];
+            return predSubsetNames;
+        }
         
         void updateAddedRemovedPredictors(int index) {
-            final List<String> newSet = Stream.of(_best_model_predictors[index]).collect(Collectors.toList());
+            final List<String> newSet = Stream.of(_best_model_coef_names[index]).collect(Collectors.toList());
             if (index > 0) {
-                final List<String> oldSet = Stream.of(_best_model_predictors[index - 1]).collect(Collectors.toList());
+                final List<String> oldSet = Stream.of(_best_model_coef_names[index - 1]).collect(Collectors.toList());
                 List<String> predDeleted = oldSet.stream().filter(x -> (!newSet.contains(x) && 
                         !"Intercept".equals(x))).collect(Collectors.toList());
                 _predictors_removed_per_step[index] = predDeleted == null || predDeleted.size()==0 ? new String[]{""} :
@@ -339,7 +390,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
                 }
                 return;
             } else if (!ModelSelectionParameters.Mode.backward.equals(_mode)) {
-                _predictors_added_per_step[index] = new String[]{_best_model_predictors[index][0]};
+                _predictors_added_per_step[index] = new String[]{_best_model_coef_names[index][0]};
                 _predictors_removed_per_step[index] = new String[]{""};
                 return;
             }
@@ -350,7 +401,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         void extractCoeffs(GLMModel model, int index) {
             _coefficient_names[index] = model._output.coefficientNames().clone(); // all coefficients
             ArrayList<String> coeffNames = new ArrayList<>(Arrays.asList(model._output.coefficientNames()));
-            _best_model_predictors[index] = coeffNames.toArray(new String[0]); // without intercept
+            _best_model_coef_names[index] = coeffNames.toArray(new String[0]); // without intercept
             List<String> predNames = Stream.of(model.names()).collect(Collectors.toList());
             predNames.remove(model._parms._response_column);
             _best_predictors_subset[index] = predNames.stream().toArray(String[]::new);

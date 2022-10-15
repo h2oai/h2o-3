@@ -87,6 +87,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  max_predictor_number=1,  # type: int
                  min_predictor_number=1,  # type: int
                  mode="maxr",  # type: Literal["allsubsets", "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward"]
+                 build_glm_model=True,  # type: bool
                  p_values_threshold=0.0,  # type: float
                  ):
         """
@@ -310,6 +311,12 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``"maxr"``.
         :type mode: Literal["allsubsets", "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep",
                "backward"]
+        :param build_glm_model: for maxrsweep model only.  If true, will return full blown GLM models with the desired
+               predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
+               forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby
+               using the predictor subsets themselves.  Default to true.
+               Defaults to ``True``.
+        :type build_glm_model: bool
         :param p_values_threshold: For mode='backward' only.  If specified, will stop the model building process when
                all coefficientsp-values drop below this threshold
                Defaults to ``0.0``.
@@ -373,6 +380,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         self.max_predictor_number = max_predictor_number
         self.min_predictor_number = min_predictor_number
         self.mode = mode
+        self.build_glm_model = build_glm_model
         self.p_values_threshold = p_values_threshold
 
     @property
@@ -1180,6 +1188,23 @@ class H2OModelSelectionEstimator(H2OEstimator):
     def mode(self, mode):
         assert_is_type(mode, None, Enum("allsubsets", "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward"))
         self._parms["mode"] = mode
+
+    @property
+    def build_glm_model(self):
+        """
+        for maxrsweep model only.  If true, will return full blown GLM models with the desired predictorsubsets.  If
+        false, only the predictor subsets, predictor coefficients are returned.  This is forspeeding up the model
+        selection process.  The users can choose to build the GLM models themselvesby using the predictor subsets
+        themselves.  Default to true.
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("build_glm_model")
+
+    @build_glm_model.setter
+    def build_glm_model(self, build_glm_model):
+        assert_is_type(build_glm_model, None, bool)
+        self._parms["build_glm_model"] = build_glm_model
 
     @property
     def p_values_threshold(self):

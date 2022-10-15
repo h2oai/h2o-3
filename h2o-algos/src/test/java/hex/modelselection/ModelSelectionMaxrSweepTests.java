@@ -62,7 +62,8 @@ public class ModelSelectionMaxrSweepTests extends TestUtil {
             parms._family = gaussian;
             parms._max_predictor_number = 5;
             parms._train = origF._key;
-            parms._mode = maxrsweep;
+            parms._mode = maxrsweepsmall;
+            parms._build_glm_model = false;
             ModelSelectionModel modelMaxRSweep = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Frame resultFrameSweep = modelMaxRSweep.result();
             Scope.track(resultFrameSweep);

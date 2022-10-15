@@ -119,6 +119,10 @@
 #'        speedups,  'maxrsweepfull' for using the full data matrix, 'maxrsweepsmall' for using working with the
 #'        predictor subset and not the full data matrix, 'backward' for backward selection Must be one of: "allsubsets",
 #'        "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward". Defaults to maxr.
+#' @param build_glm_model \code{Logical}. for maxrsweep model only.  If true, will return full blown GLM models with the desired
+#'        predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
+#'        forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby using
+#'        the predictor subsets themselves.  Default to true. Defaults to TRUE.
 #' @param p_values_threshold For mode='backward' only.  If specified, will stop the model building process when all coefficientsp-values
 #'        drop below this threshold  Defaults to 0.
 #' @examples
@@ -187,6 +191,7 @@ h2o.modelSelection <- function(x,
                                max_predictor_number = 1,
                                min_predictor_number = 1,
                                mode = c("allsubsets", "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward"),
+                               build_glm_model = TRUE,
                                p_values_threshold = 0)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -314,6 +319,8 @@ h2o.modelSelection <- function(x,
     parms$min_predictor_number <- min_predictor_number
   if (!missing(mode))
     parms$mode <- mode
+  if (!missing(build_glm_model))
+    parms$build_glm_model <- build_glm_model
   if (!missing(p_values_threshold))
     parms$p_values_threshold <- p_values_threshold
 
@@ -375,6 +382,7 @@ h2o.modelSelection <- function(x,
                                                max_predictor_number = 1,
                                                min_predictor_number = 1,
                                                mode = c("allsubsets", "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward"),
+                                               build_glm_model = TRUE,
                                                p_values_threshold = 0,
                                                segment_columns = NULL,
                                                segment_models_id = NULL,
@@ -507,6 +515,8 @@ h2o.modelSelection <- function(x,
     parms$min_predictor_number <- min_predictor_number
   if (!missing(mode))
     parms$mode <- mode
+  if (!missing(build_glm_model))
+    parms$build_glm_model <- build_glm_model
   if (!missing(p_values_threshold))
     parms$p_values_threshold <- p_values_threshold
 

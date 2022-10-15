@@ -354,7 +354,7 @@ public class ModelSelectionUtils {
     public static SweepVector[][] mapBasicVector2Multiple(SweepVector[][] sweepVec, int newPredCPMLen) {
         int numSweep = sweepVec.length;
         int oldColLen = sweepVec[0].length/2;
-        int newColLen = oldColLen+newPredCPMLen-1;
+        int newColLen = oldColLen+newPredCPMLen-1;  // sweepVector from old CPM was calculated when one new row/col is added
         int lastNewColInd = newColLen-1;
         int lastOldColInd = oldColLen-1;
         SweepVector[][] newSweepVec = new SweepVector[numSweep][newColLen*2];
@@ -421,16 +421,24 @@ public class ModelSelectionUtils {
     public static double applySweepVectors2NewPred(SweepVector[][] sweepVec, double[][] subsetCPM, int numNewRows) {
         int lastSubsetCPMInd = subsetCPM.length-1;
         int numSweep = sweepVec.length; // number of sweeps that we need to do
-        for (int sweepInd=0; sweepInd < numSweep; sweepInd++)
-            oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM, sweepInd, numNewRows);
+        int sweepVecLen = sweepVec[0].length;
+        int[][] elementAccessMatrix = new int[sweepVecLen][sweepVecLen];
+        for (int sweepInd=0; sweepInd < numSweep; sweepInd++) {
+            zeroFill2DArrays(elementAccessMatrix);
+            oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM, sweepInd, numNewRows, elementAccessMatrix);
+        }
         return subsetCPM[lastSubsetCPMInd][lastSubsetCPMInd];
     }
 
     public static double applySweepVectors2NewPred(SweepVector[][] sweepVec, double[][] subsetCPM, int numNewRows, int[] sweepIndices) {
         int lastSubsetCPMInd = subsetCPM.length-1;
         int numSweep = sweepVec.length; // number of sweeps that we need to do
-        for (int sweepInd=0; sweepInd < numSweep; sweepInd++)
-            oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM, sweepIndices[sweepInd], numNewRows);
+        int sweepVecLen = sweepVec[0].length;
+        int[][] elementAccessCount = new int[sweepVecLen][sweepVecLen];
+        for (int sweepInd=0; sweepInd < numSweep; sweepInd++) {
+            zeroFill2DArrays(elementAccessCount);
+            oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM, sweepIndices[sweepInd], numNewRows, elementAccessCount);
+        }
         return subsetCPM[lastSubsetCPMInd][lastSubsetCPMInd];
     }
 
@@ -516,14 +524,14 @@ public class ModelSelectionUtils {
      * I used temporary variable to store element changes that are used by other element updates.  I copied the 
      * temporary elements back to the CPM at the end.
      */
-    public static void oneSweepWSweepVector(SweepVector[] sweepVec, double[][] subsetCPM, int sweepIndex, int colRowsAdded) {
+    public static void oneSweepWSweepVector(SweepVector[] sweepVec, double[][] subsetCPM, int sweepIndex,
+                                            int colRowsAdded, int[][] elementAccessCount) {
         int sweepVecLen = sweepVec.length / 2;
         int newLastCPMInd = sweepVecLen - 1;
         int oldSweepVec = sweepVecLen - colRowsAdded;
         int oldLastCPMInd = oldSweepVec - 1;    // sweeping index before adding new rows/columns
         double[] colSweeps = new double[colRowsAdded];
         double[] rowSweeps = new double[colRowsAdded];
-        int[][] elementAccessCount = new int[sweepVecLen][sweepVecLen];// mark elements that are changed already
 
         for (int rcInd = 0; rcInd < colRowsAdded; rcInd++) {   // for each newly added row/column
             int rowColInd = sweepVec[0]._column + rcInd;
@@ -1401,10 +1409,8 @@ public class ModelSelectionUtils {
             List<ModelSelection.SweepInfo> sInfo = bestModel._sweepInfo;
             final int sweepOffset = actualCPMSize-1; //  cpm size before adding new predictor
             expandCPM(sInfo, sweepLen, actualCPMSize, allCPM.length, maxPredNum-newPredSubset.length);    // expand cpm sizes if necessary
-            int sweepVecLen = actualCPMSize+1;
-            int[][] elementAccess = new int[sweepVecLen][sweepVecLen];
             bestModel._cpmSize = enLargeNUpdateCPMs(sInfo, allCPM, newPredSubset, pred2CPMIndices, hasIntercept, origCurrentSub, 
-                    actualCPMSize, forReplacement, elementAccess);
+                    actualCPMSize, forReplacement);
             // generate new SweepInfo with new sweep vectors for newPred, CPM swept by all predictors
             int[] newSweepIndices = IntStream.range(0,sweepLen).map(x -> x+sweepOffset).toArray();
             bestModel._errorVariance = genSweepVectorsBigCPM(sInfo, newSweepIndices, bestModel._cpmSize);
@@ -1549,7 +1555,7 @@ public class ModelSelectionUtils {
     
     public static int enLargeNUpdateCPMs(List<ModelSelection.SweepInfo> sInfo, double[][] allCPM, int[] newPreds, 
                                           int[][] pred2CPMIndices, boolean hasIntercept, List<Integer> origCurrSub,
-                                          int actualCPMSize, boolean forReplacement, int[][] elementAccess) {
+                                          int actualCPMSize, boolean forReplacement) {
 
         int lastIndex = sInfo.size(); // last one is already done
         int numNewRowsCols = pred2CPMIndices[newPreds[newPreds.length-1]].length;
@@ -1570,10 +1576,14 @@ public class ModelSelectionUtils {
                 double[][] lastPrevCPM = previousSweptCPM[previousSweptCPM.length-1];
                 ModelSelection.SweepInfo oneInfo = sInfo.get(index);
                 double[][][] currCPMNLastSwept = addPrevSweptNewPred(lastPrevCPM, oneInfo._cpm, actualCPMSize, numNewRowsCols);    // add new rows/cols not swept
+                int svLen = actualCPMSize+1;
                 if (numNewRowsCols == 1) {
+                    int[][] elementAccess = new int[svLen][svLen];
                     applySweepVectors2NewPred(oneInfo._sweepVector, currCPMNLastSwept, numNewRowsCols, oneInfo._sweepIndices, actualCPMSize, elementAccess);
                 } else {
                     SweepVector[][] newSweepVector = mapBasicVector2Multiple(oneInfo._sweepVector, numNewRowsCols, 2*(actualCPMSize+1));
+                    svLen = newSweepVector[0].length;
+                    int[][] elementAccess = new int[svLen][svLen];
                     applySweepVectors2NewPred(newSweepVector, currCPMNLastSwept, numNewRowsCols, oneInfo._sweepIndices, actualCPMSize, elementAccess);
                 }
             }

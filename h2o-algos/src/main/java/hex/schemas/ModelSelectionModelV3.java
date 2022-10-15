@@ -39,6 +39,9 @@ public class ModelSelectionModelV3 extends ModelSchemaV3<ModelSelectionModel, Mo
         
         @API(help="arrays of string arrays containing coefficient names of best 1-predictor model, best 2-predictors model, ....")
         String[][] coefficient_names;
+
+        @API(help="store coefficient values for each predictor subset.  Only for maxrsweep when build_glm_model is false.")
+        double[][]  _best_model_coef_values;
         
         @Override
         public ModelSelectionModelOutputV3 fillFromImpl(ModelSelectionModel.ModelSelectionModelOutput impl) {

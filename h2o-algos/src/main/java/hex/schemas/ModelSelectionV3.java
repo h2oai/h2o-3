@@ -69,6 +69,7 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "max_predictor_number",  // denote maximum number of predictors to build models for
                 "min_predictor_number",
                 "mode", // naive, maxr, maxrsweep, backward
+                "build_glm_model",
                 "p_values_threshold"
         };
 
@@ -111,6 +112,13 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min", 
                 level = API.Level.critical)
         public boolean lambda_search;
+
+        @API(help = "for maxrsweep model only.  If true, will return full blown GLM models with the desired predictor" +
+                "subsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is for" +
+                "speeding up the model selection process.  The users can choose to build the GLM models themselves" +
+                "by using the predictor subsets themselves.  Default to true.",
+                level = API.Level.critical)
+        public boolean build_glm_model;
 
         @API(help="Stop early when there is no more relative improvement on train or validation (if provided)")
         public boolean early_stopping;

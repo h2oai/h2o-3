@@ -9,7 +9,6 @@ import water.HeartBeat;
 import water.Key;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.lang.reflect.Field;
@@ -185,10 +184,9 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     " modelss with maxrsweep, maxrsweepsmall, maxrsweepfull.");
     }
 
-    protected void checkMemoryFootPrint(DataInfo activeData) {
-        int p = activeData.fullN() + 1;
+    protected void checkMemoryFootPrint(int p) {
         if (maxrsweepsmall.equals(_parms._mode))
-            p = _parms._max_predictor_number+1;
+            p = (int) Math.ceil(p*(_parms._max_predictor_number+2)/_dinfo.fullN());
         HeartBeat hb = H2O.SELF._heartbeat;
         long mem_usage = (long) (hb._cpus_allowed * (p * p * p));
         long max_mem = hb.get_free_mem();
@@ -213,15 +211,20 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     model._output._best_model_ids = new Key[_numPredictors];
                     model._output._coef_p_values = new double[_numPredictors][];
                     model._output._z_values = new double[_numPredictors][];
-                    model._output._best_model_predictors = new String[_numPredictors][];
+                    model._output._best_model_coef_names = new String[_numPredictors][];
                     model._output._best_predictors_subset = new String[_numPredictors][];
                     model._output._coefficient_names = new String[_numPredictors][];
                 } else {    // maxr, maxrsweep, marxsweepfull, maxrsweepsmall
-                    model._output._best_model_ids = new Key[_parms._max_predictor_number];
                     model._output._best_r2_values = new double[_parms._max_predictor_number];
-                    model._output._best_model_predictors = new String[_parms._max_predictor_number][];
+                    model._output._best_model_coef_names = new String[_parms._max_predictor_number][];
                     model._output._best_predictors_subset = new String[_numPredictors][];
                     model._output._coefficient_names = new String[_parms._max_predictor_number][];
+                    if (maxrsweep.equals(_parms._mode) && !_parms._build_glm_model) {
+                        model._output._best_model_coef_values = new double[_parms._max_predictor_number][];
+                        model._output._best_model_ids = null;
+                    } else {
+                        model._output._best_model_ids = new Key[_parms._max_predictor_number];
+                    }
                 }
                 model._output._predictors_removed_per_step = new String[_numPredictors][];
                 model._output._predictors_added_per_step = new String[_numPredictors][];
@@ -281,7 +284,6 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
          * 
          */
         void buildMaxRSweepFullModels(ModelSelectionModel model, int modelIndexStart, int numModels2Build, List<Integer> currSubsetIndices) {
-            checkMemoryFootPrint(_dinfo);
             _coefNames = _dinfo.coefNames();
             List<String> coefNames = new ArrayList<>(Arrays.asList(_predictorNames));
             // store predictor indices that are still available to be added to the bigger subset
@@ -290,6 +292,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             _predictorIndex2CPMIndices = mapPredIndex2CPMIndices(_dinfo, _predictorNames.length);
             // generate cross-product matrix (CPM) as in section III of doc
             double[][] crossProdcutMatrix = createCrossProductMatrix(_job._key, _dinfo);
+            checkMemoryFootPrint(crossProdcutMatrix.length);
             if (_parms._intercept)  // sweep the intercept now
                 sweepCPM(crossProdcutMatrix, new int[]{crossProdcutMatrix.length-2}, false);
             if (modelIndexStart > 1) {    // perform model sweep before continue
@@ -329,10 +332,10 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
          *
          */
         List<Integer> buildMaxRSweepSmallModels(ModelSelectionModel model, int numModels2Build) {
-            checkMemoryFootPrint(_dinfo);
             _coefNames = _dinfo.coefNames();
             // generate cross-product matrix (CPM) as in section III of doc
             _crossProdcutMatrix = createCrossProductMatrix(_job._key, _dinfo);
+            checkMemoryFootPrint(_crossProdcutMatrix.length);
             // generate mapping of predictor index to CPM indices due to enum columns add multiple rows/columns to CPM
             _predictorIndex2CPMIndices = mapPredIndex2CPMIndices(_dinfo, _predictorNames.length);
             List<Integer> currSubsetIndices = new ArrayList<>();    // store best k predictor subsets for 1 to k predictors
@@ -369,10 +372,10 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         }
 
         List<Integer> buildMaxRSweepModels(ModelSelectionModel model) {
-            checkMemoryFootPrint(_dinfo);
             _coefNames = _dinfo.coefNames();
             // generate cross-product matrix (CPM) as in section III of doc
             _crossProdcutMatrix = createCrossProductMatrix(_job._key, _dinfo);
+            checkMemoryFootPrint(_crossProdcutMatrix.length);
             // generate mapping of predictor index to CPM indices due to enum columns add multiple rows/columns to CPM
             _predictorIndex2CPMIndices = mapPredIndex2CPMIndices(_dinfo, _predictorNames.length);
             List<Integer> currSubsetIndices = new ArrayList<>();    // store best k predictor subsets for 1 to k predictors
@@ -394,10 +397,15 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
                     validSubset.removeAll(currSubsetIndices);
                 }
-                // build glm model with best subcarrier subsets for size and record the update
-                GLMModel bestR2Model = buildGLMModel(currSubsetIndices);
-                DKV.put(bestR2Model);
-                model._output.updateBestModels(bestR2Model, predNum-1);
+                
+                if (_parms._build_glm_model) {
+                    // build glm model with best subcarrier subsets for size and record the update
+                    GLMModel bestR2Model = buildGLMModel(currSubsetIndices);
+                    DKV.put(bestR2Model);
+                    model._output.updateBestModels(bestR2Model, predNum - 1);
+                } else {
+                    model._output.updateBestModels(_predictorNames, _coefNames, bestModel, predNum-1, _parms._intercept);
+                }
             }
             return currSubsetIndices;
         }

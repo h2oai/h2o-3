@@ -37,7 +37,7 @@ def test_maxrsweep_replacement():
         response="response"
         predictors = train.names
         predictors.remove(response)
-        maxrsweep3_model = H2OModelSelectionEstimator(mode="maxrsweep", max_predictor_number=npred, intercept=True)
+        maxrsweep3_model = H2OModelSelectionEstimator(mode="maxrsweep", max_predictor_number=npred, intercept=True, build_glm_model=False)
         maxrsweep3_model.train(x=predictors, y=response, training_frame=train)
         print("Maxrsweep Run time for npred {1} (ms): {0}".format(maxrsweep3_model._model_json["output"]["run_time"], npred))
 
