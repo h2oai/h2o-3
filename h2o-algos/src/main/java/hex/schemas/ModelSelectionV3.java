@@ -113,7 +113,7 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 level = API.Level.critical)
         public boolean lambda_search;
 
-        @API(help = "for maxrsweep model only.  If true, will return full blown GLM models with the desired predictor" +
+        @API(help = "for maxrsweep, maxrsweepfull, maxrsweepsmall modes only.  If true, will return full blown GLM models with the desired predictor" +
                 "subsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is for" +
                 "speeding up the model selection process.  The users can choose to build the GLM models themselves" +
                 "by using the predictor subsets themselves.  Default to true.",

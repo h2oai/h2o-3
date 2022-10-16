@@ -324,23 +324,20 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
             updateAddedRemovedPredictors(index);
         }
 
-        void updateBestModels(String[] predictorNames, String[] coefNames, ModelSelection.SweepModel2 bestModel,
-                              int index, boolean hasIntercept) {
-            ModelSelection.SweepInfo lastInfo = bestModel._sweepInfo.get(bestModel._sweepInfo.size()-1);
-            double[][] lastCPM = lastInfo._cpm[lastInfo._cpm.length-1];
-            int lastCPMIndex = bestModel._cpmSize-1;
+        void updateBestModels(String[] predictorNames, String[] coefNames, int index, boolean hasIntercept, 
+                              int actualCPMSize, int[] predsubset, double[][] lastCPM) {
+            int lastCPMIndex = actualCPMSize-1;
             _best_r2_values[index] = lastCPM[lastCPMIndex][lastCPMIndex];
-            extractCoeffs(predictorNames, coefNames, bestModel, lastCPM, index, hasIntercept);
+            extractCoeffs(predictorNames, coefNames, lastCPM, index, hasIntercept, actualCPMSize, predsubset);
             updateAddedRemovedPredictors(index);
         }
 
-        void extractCoeffs(String[] predNames, String[] coefNames, ModelSelection.SweepModel2 bestModel, double[][] cpm, int index,
-                           boolean hasIntercept) {
-            int[] predSubset = bestModel._predSubset;
+        void extractCoeffs(String[] predNames, String[] coefNames, double[][] cpm, int index, boolean hasIntercept,
+                           int actualCPMSize, int[] predSubset) {
             _best_predictors_subset[index] = extractPredsFromPredIndices(predNames, predSubset);
             _best_model_coef_names[index] = extractCoefsFromPred(_best_predictors_subset[index], coefNames, hasIntercept);
             _best_model_coef_values[index] = extractCoefsValues(cpm, _best_model_coef_names[index].length,
-                    hasIntercept, bestModel._cpmSize);
+                    hasIntercept, actualCPMSize);
         }
         
         public static double[] extractCoefsValues(double[][] cpm, int coefValLen, boolean hasIntercept, int actualCPMSize) {

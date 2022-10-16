@@ -219,7 +219,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     model._output._best_model_coef_names = new String[_parms._max_predictor_number][];
                     model._output._best_predictors_subset = new String[_numPredictors][];
                     model._output._coefficient_names = new String[_parms._max_predictor_number][];
-                    if (maxrsweep.equals(_parms._mode) && !_parms._build_glm_model) {
+                    if ((maxrsweep.equals(_parms._mode) || maxrsweepsmall.equals(_parms._mode) || 
+                            maxrsweepfull.equals(_parms._mode)) && !_parms._build_glm_model) {
                         model._output._best_model_coef_values = new double[_parms._max_predictor_number][];
                         model._output._best_model_ids = null;
                     } else {
@@ -318,9 +319,15 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     validSubset.removeAll(currSubsetIndices);
                 }
                 // build glm model with best subcarrier subsets for size and record the update
-                GLMModel bestR2Model = buildGLMModel(currSubsetIndices);
-                DKV.put(bestR2Model);
-                model._output.updateBestModels(bestR2Model, predNum-1);
+                if (_parms._build_glm_model) {
+                    GLMModel bestR2Model = buildGLMModel(currSubsetIndices);
+                    DKV.put(bestR2Model);
+                    model._output.updateBestModels(bestR2Model, predNum - 1);
+                } else {
+                    model._output.updateBestModels(_predictorNames, _coefNames, predNum-1, _parms._intercept,
+                            crossProdcutMatrix.length, currSubsetIndices.stream().mapToInt(x->x).toArray(),
+                            crossProdcutMatrix);
+                }
             }
         }
 
@@ -364,9 +371,14 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     validSubset.removeAll(currSubsetIndices);
                 }
                 // build glm model with best subcarrier subsets for size and record the update
-                GLMModel bestR2Model = buildGLMModel(currSubsetIndices);
-                DKV.put(bestR2Model);
-                model._output.updateBestModels(bestR2Model, predNum-1);
+                if (_parms._build_glm_model) {
+                    GLMModel bestR2Model = buildGLMModel(currSubsetIndices);
+                    DKV.put(bestR2Model);
+                    model._output.updateBestModels(bestR2Model, predNum - 1);
+                } else {
+                    model._output.updateBestModels(_predictorNames, _coefNames, predNum-1, _parms._intercept, 
+                            bestModel._CPM.length, bestModel._predSubset, bestModel._CPM);
+                }
             }
             return currSubsetIndices;
         }
@@ -404,7 +416,10 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     DKV.put(bestR2Model);
                     model._output.updateBestModels(bestR2Model, predNum - 1);
                 } else {
-                    model._output.updateBestModels(_predictorNames, _coefNames, bestModel, predNum-1, _parms._intercept);
+                    SweepInfo lastInfo = bestModel._sweepInfo.get(bestModel._sweepInfo.size()-1);
+                    double[][] lastCPM = lastInfo._cpm[lastInfo._cpm.length-1];
+                    model._output.updateBestModels(_predictorNames, _coefNames,  predNum-1, _parms._intercept, bestModel._cpmSize,
+                            bestModel._predSubset, lastCPM);
                 }
             }
             return currSubsetIndices;
