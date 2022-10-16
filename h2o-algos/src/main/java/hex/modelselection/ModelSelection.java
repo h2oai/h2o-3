@@ -357,7 +357,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     bestModel = forwardStep(currSubsetIndices, coefNames, validSubset,
                             usedCombos, _crossProdcutMatrix, _predictorIndex2CPMIndices, null, _parms._intercept);
                 } else {
-                    genBestSweepVector(bestModel, _crossProdcutMatrix, _predictorIndex2CPMIndices, _parms._intercept);
+                    if (_parms._build_glm_model)
+                        genBestSweepVector(bestModel, _crossProdcutMatrix, _predictorIndex2CPMIndices, _parms._intercept);
                     bestModel = forwardStep(currSubsetIndices, coefNames, validSubset,
                             usedCombos, _crossProdcutMatrix, _predictorIndex2CPMIndices, bestModel, _parms._intercept);
                 }
@@ -376,6 +377,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     DKV.put(bestR2Model);
                     model._output.updateBestModels(bestR2Model, predNum - 1);
                 } else {
+                    genBestSweepVector(bestModel, _crossProdcutMatrix, _predictorIndex2CPMIndices, _parms._intercept);
                     model._output.updateBestModels(_predictorNames, _coefNames, predNum-1, _parms._intercept, 
                             bestModel._CPM.length, bestModel._predSubset, bestModel._CPM);
                 }
