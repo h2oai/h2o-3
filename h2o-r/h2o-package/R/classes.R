@@ -132,15 +132,24 @@ setMethod("h2o.keyof", signature(object = "Keyed"), function(object) {
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containg all parameters used to fit the model.
+#' @slot params A \code{list} containing default, set, and actual parameters.
 #' @slot have_pojo A \code{logical} indicating whether export to POJO is supported
 #' @slot have_mojo A \code{logical} indicating whether export to MOJO is supported
 #' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", have_pojo="logical", have_mojo="logical", model="list"),
-         prototype(model_id=NA_character_),
-         contains=c("Keyed","VIRTUAL"))
+         slots =  c(
+           model_id = "character",
+           algorithm = "character",
+           parameters = "list",
+           allparameters = "list",
+           params = "list",
+           have_pojo = "logical",
+           have_mojo = "logical",
+           model = "list"),
+         prototype = c(model_id = NA_character_),
+         contains = c("Keyed", "VIRTUAL"))
 
 # TODO: make a more model-specific constructor
 .newH2OModel <- function(Class, model_id, ...) {
