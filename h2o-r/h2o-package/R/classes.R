@@ -82,7 +82,7 @@ setClass("H2OConnection",
            cookies = "character",
            context_path = "character",
            mutable = "H2OConnectionMutableState"),
-         prototype = c(
+         prototype = prototype(
            ip = NA_character_,
            port = NA_integer_,
            name = NA_character_,
@@ -157,7 +157,7 @@ setClass("H2OModel",
            have_pojo = "logical",
            have_mojo = "logical",
            model = "list"),
-         prototype = c(model_id = NA_character_),
+         prototype = prototype(model_id = NA_character_),
          contains = c("Keyed", "VIRTUAL"))
 
 # TODO: make a more model-specific constructor
@@ -603,7 +603,7 @@ setClass("H2OModelMetrics",
             on_valid = "logical",
             on_xval = "logical",
             metrics = "listOrNull"),
-         prototype = c(algorithm = NA_character_, on_train = FALSE, on_valid = FALSE, on_xval = FALSE, metrics = NULL),
+         prototype = prototype(algorithm = NA_character_, on_train = FALSE, on_valid = FALSE, on_xval = FALSE, metrics = NULL),
          contains = "VIRTUAL")
 
 #' @rdname H2OModelMetrics-class
