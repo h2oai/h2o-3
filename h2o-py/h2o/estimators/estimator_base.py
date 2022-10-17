@@ -228,6 +228,7 @@ class H2OEstimator(ModelBase):
             raise H2OValueError("Verbose mode is not available for %s" % self.__class__.__name__)
         parms = self._parms.copy()
         names = training_frame.names if training_frame is not None else []
+        names_set = set(names)
         ncols = training_frame.ncols if training_frame is not None else 0
         types = training_frame.types if training_frame is not None else {}
     
@@ -238,7 +239,7 @@ class H2OEstimator(ModelBase):
                     raise H2OValueError("Column %d does not exist in the training frame" % y)
                 y = names[y]
             else:
-                if y not in names:
+                if y not in names_set:
                     raise H2OValueError("Column %s does not exist in the training frame" % y)
             self._estimator_type = "classifier" if types[y] == "enum" else "regressor"
         else:
@@ -262,11 +263,11 @@ class H2OEstimator(ModelBase):
                             raise H2OValueError("Column %d does not exist in the training frame" % ic)
                         ignored_columns_set.add(names[ic])
                     else:
-                        if ic not in names:
+                        if ic not in names_set:
                             raise H2OValueError("Column %s not in the training frame" % ic)
                         ignored_columns_set.add(ic)
             if x is None:
-                xset = set(names) - {y} - ignored_columns_set
+                xset = names_set - {y} - ignored_columns_set
             elif isinstance(x, ModelBase) and hasattr(x, '_extract_x_from_model'):
                 xset = x._extract_x_from_model()
             else:
@@ -278,7 +279,7 @@ class H2OEstimator(ModelBase):
                             raise H2OValueError("Column %d does not exist in the training frame" % xi)
                         xset.add(names[xi])
                     else:
-                        if xi not in names:
+                        if xi not in names_set:
                             raise H2OValueError("Column %s not in the training frame" % xi)
                         xset.add(xi)
             x = list(xset)
@@ -309,7 +310,7 @@ class H2OEstimator(ModelBase):
         if len(x) > 0 and is_type(x[0], int):
             x = [names[i] for i in x]
         if override_default_training_frame:
-            ignored_columns = list(set(names) - set(x + [y, offset, folds, weights]))
+            ignored_columns = list(names_set - set(x + [y, offset, folds, weights]))
             parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None
                                  else [quoted(col) for col in parms["interactions"]])
