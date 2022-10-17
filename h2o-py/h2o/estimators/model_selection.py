@@ -311,10 +311,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``"maxr"``.
         :type mode: Literal["allsubsets", "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep",
                "backward"]
-        :param build_glm_model: for maxrsweep model only.  If true, will return full blown GLM models with the desired
-               predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
-               forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby
-               using the predictor subsets themselves.  Default to true.
+        :param build_glm_model: for maxrsweep, maxrsweepfull, maxrsweepsmall modes only.  If true, will return full
+               blown GLM models with the desired predictorsubsets.  If false, only the predictor subsets, predictor
+               coefficients are returned.  This is forspeeding up the model selection process.  The users can choose to
+               build the GLM models themselvesby using the predictor subsets themselves.  Default to true.
                Defaults to ``True``.
         :type build_glm_model: bool
         :param p_values_threshold: For mode='backward' only.  If specified, will stop the model building process when
@@ -1192,10 +1192,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
     @property
     def build_glm_model(self):
         """
-        for maxrsweep model only.  If true, will return full blown GLM models with the desired predictorsubsets.  If
-        false, only the predictor subsets, predictor coefficients are returned.  This is forspeeding up the model
-        selection process.  The users can choose to build the GLM models themselvesby using the predictor subsets
-        themselves.  Default to true.
+        for maxrsweep, maxrsweepfull, maxrsweepsmall modes only.  If true, will return full blown GLM models with the
+        desired predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
+        forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby using the
+        predictor subsets themselves.  Default to true.
 
         Type: ``bool``, defaults to ``True``.
         """

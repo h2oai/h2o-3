@@ -9,6 +9,7 @@ import water.HeartBeat;
 import water.Key;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.lang.reflect.Field;

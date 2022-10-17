@@ -9,7 +9,8 @@ def test_maxrsweep_replacement():
     allPreds = a = list(range(10, 210, 10))
     for npred in allPreds:
         h2o.remove_all()
-        train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/gaussian_500Cols_500KRows.csv"))
+        #train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/gaussian_500Cols_500KRows.csv"))
+        train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/maxrglm200Cols50KRows.csv"))
         response="response"
         predictors = train.names
         predictors.remove(response)
@@ -17,22 +18,22 @@ def test_maxrsweep_replacement():
                                                      build_glm_model=False)
         maxrsweep_model.train(x=predictors, y=response, training_frame=train)
         print("Maxrsweepsmall Run time for npred {1} (ms): {0}".format(maxrsweep_model._model_json["output"]["run_time"], npred))
-        h2o.remove_all()
-        train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/gaussian_500Cols_500KRows.csv"))
-        response="response"
-        predictors = train.names
-        predictors.remove(response)        
-        maxrsweep2_model = H2OModelSelectionEstimator(mode="maxrsweepfull", max_predictor_number=npred, intercept=True)
-        maxrsweep2_model.train(x=predictors, y=response, training_frame=train)
-        print("Maxrsweepfull Run time for npred {1} (ms): {0}".format(maxrsweep2_model._model_json["output"]["run_time"], npred))
-        h2o.remove_all()
-        train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/gaussian_500Cols_500KRows.csv"))
-        response="response"
-        predictors = train.names
-        predictors.remove(response)
-        maxrsweep3_model = H2OModelSelectionEstimator(mode="maxrsweephybrid", max_predictor_number=npred, intercept=True)
-        maxrsweep3_model.train(x=predictors, y=response, training_frame=train)
-        print("Maxrsweephybrid Run time for npred {1} (ms): {0}".format(maxrsweep3_model._model_json["output"]["run_time"], npred))
+        # h2o.remove_all()
+        # train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/gaussian_500Cols_500KRows.csv"))
+        # response="response"
+        # predictors = train.names
+        # predictors.remove(response)        
+        # maxrsweep2_model = H2OModelSelectionEstimator(mode="maxrsweepfull", max_predictor_number=npred, intercept=True)
+        # maxrsweep2_model.train(x=predictors, y=response, training_frame=train)
+        # print("Maxrsweepfull Run time for npred {1} (ms): {0}".format(maxrsweep2_model._model_json["output"]["run_time"], npred))
+        # h2o.remove_all()
+        # train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/gaussian_500Cols_500KRows.csv"))
+        # response="response"
+        # predictors = train.names
+        # predictors.remove(response)
+        # maxrsweep3_model = H2OModelSelectionEstimator(mode="maxrsweephybrid", max_predictor_number=npred, intercept=True)
+        # maxrsweep3_model.train(x=predictors, y=response, training_frame=train)
+        # print("Maxrsweephybrid Run time for npred {1} (ms): {0}".format(maxrsweep3_model._model_json["output"]["run_time"], npred))
         h2o.remove_all()
         train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/gaussian_500Cols_500KRows.csv"))
         response="response"

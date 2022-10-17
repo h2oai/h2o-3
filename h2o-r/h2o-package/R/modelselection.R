@@ -119,10 +119,10 @@
 #'        speedups,  'maxrsweepfull' for using the full data matrix, 'maxrsweepsmall' for using working with the
 #'        predictor subset and not the full data matrix, 'backward' for backward selection Must be one of: "allsubsets",
 #'        "maxr", "maxrsweephybrid", "maxrsweepfull", "maxrsweepsmall", "maxrsweep", "backward". Defaults to maxr.
-#' @param build_glm_model \code{Logical}. for maxrsweep model only.  If true, will return full blown GLM models with the desired
-#'        predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
-#'        forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby using
-#'        the predictor subsets themselves.  Default to true. Defaults to TRUE.
+#' @param build_glm_model \code{Logical}. for maxrsweep, maxrsweepfull, maxrsweepsmall modes only.  If true, will return full blown GLM
+#'        models with the desired predictorsubsets.  If false, only the predictor subsets, predictor coefficients are
+#'        returned.  This is forspeeding up the model selection process.  The users can choose to build the GLM models
+#'        themselvesby using the predictor subsets themselves.  Default to true. Defaults to TRUE.
 #' @param p_values_threshold For mode='backward' only.  If specified, will stop the model building process when all coefficientsp-values
 #'        drop below this threshold  Defaults to 0.
 #' @examples
