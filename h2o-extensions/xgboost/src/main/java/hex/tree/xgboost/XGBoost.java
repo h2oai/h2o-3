@@ -115,7 +115,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode.");
     if (expensive) {
-      if (_response.naCnt() > 0) {
+      if (_response != null && _response.naCnt() > 0) {
         error("_response_column", "Response contains missing values (NAs) - not supported by XGBoost.");
       }
       if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
