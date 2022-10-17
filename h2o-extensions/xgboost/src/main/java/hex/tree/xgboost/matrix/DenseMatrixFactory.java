@@ -108,7 +108,12 @@ public class DenseMatrixFactory {
         BigDenseMatrix data = null;
         try {
             data = allocateDenseMatrix(nRows, di);
-            int actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, offsetVec, responseVec, di, resp, weights, offsets);
+            final int actualRows;
+            if (nRows != 0) {
+                actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, offsetVec, responseVec, di, resp, weights, offsets);
+            } else {
+                actualRows = 0;
+            }
             assert data.nrow == actualRows;
             return new DenseDMatrixProvider(actualRows, resp, weights, offsets, data);
         } catch (Exception e) {

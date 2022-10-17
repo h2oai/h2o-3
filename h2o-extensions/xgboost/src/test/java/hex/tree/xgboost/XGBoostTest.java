@@ -3139,4 +3139,37 @@ public class XGBoostTest extends TestUtil {
     assertNull(hex.tree.xgboost.XGBoost.toCustomMetricValid(null));
   }
 
+  @Test
+  public void testValidMatrixOnSubsetOfTrainMatrixNodes() { // == some nodes don't hold any data of the validation dataset
+    Assume.assumeTrue(H2O.getCloudSize() > 1);
+    Scope.enter();
+    try {
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+
+      Frame train = parseAndTrackTestFile("./smalldata/logreg/prostate_train.csv");
+      train = ensureDistributed(train); // distributed
+
+      Frame valid = parseAndTrackTestFile("./smalldata/logreg/prostate_test.csv");
+      assertEquals(1, valid.anyVec().nChunks()); // not distributed
+
+      parms._response_column = "AGE";
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._ntrees = 10;
+      parms._max_depth = 3;
+      parms._score_each_iteration = true;
+      parms._eval_metric = "rmse";
+      parms._score_eval_metric_only = true;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      LOG.info(model);
+
+      TwoDimTable scoringHistory = model._output._scoring_history;
+      assertTrue(ArrayUtils.find(scoringHistory.getColHeaders(), "Validation Custom") >= 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

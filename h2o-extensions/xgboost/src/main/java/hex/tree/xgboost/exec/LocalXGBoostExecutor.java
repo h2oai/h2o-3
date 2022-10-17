@@ -79,10 +79,10 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         modelKey = model._key;
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
         if (valid != null) {
-            // FIXME
-            XGBoostSetupTask.FrameNodes validFrameNodes = XGBoostSetupTask.findFrameNodes(train);
-            if (!Arrays.equals(validFrameNodes._nodes, trainFrameNodes._nodes)) {
-                throw new IllegalStateException("Validation Frame needs to span the same set of nodes as the training frame. This is a technical limitation.");
+            XGBoostSetupTask.FrameNodes validFrameNodes = XGBoostSetupTask.findFrameNodes(valid);
+            if (!validFrameNodes.isSubsetOf(trainFrameNodes)) {
+                throw new IllegalStateException(
+                        "Validation Frame cannot be distributed on nodes that don't have any data of the training matrix.");
             }
         }
         rt = setupRabitTracker(trainFrameNodes.getNumNodes());

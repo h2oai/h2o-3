@@ -105,6 +105,16 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
       _numNodes = n;
     }
     public int getNumNodes() { return _numNodes; }
+
+    public boolean isSubsetOf(FrameNodes otherNodes) {
+      for (int i = 0; i < _nodes.length; i++) {
+        if (_nodes[i] && !otherNodes._nodes[i]) {
+          return false;
+        }
+      }
+      return true;
+    }
+
   }
 
 }
