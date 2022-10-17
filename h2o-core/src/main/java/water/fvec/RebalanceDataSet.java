@@ -29,18 +29,19 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
   /**
    * Constructor for make-compatible task.
-   *
    * To be used to make frame compatible with other frame (i.e. make all vecs compatible with other vector group and rows-per-chunk).
    */
-  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey) {this(modelFrame,srcFrame,dstKey,null,null);}
-  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey, H2O.H2OCountedCompleter cmp, Key jobKey) {
-    super(cmp);
+  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key<?> dstKey) {
+    this(modelFrame.anyVec().espc(), modelFrame.anyVec().group(), srcFrame, dstKey);
+  }
+  public RebalanceDataSet(long[] espc, Vec.VectorGroup vg, Frame srcFrame, Key<?> dstKey) {
+    super(null);
     _in = srcFrame;
-    _jobKey = jobKey;
+    _jobKey = null;
     _okey = dstKey;
-    _espc = modelFrame.anyVec().espc(); // Get prior layout
-    _vg = modelFrame.anyVec().group();
-    _nchunks = modelFrame.anyVec().nChunks();
+    _espc = espc;
+    _vg = vg;
+    _nchunks = espc.length - 1;
   }
 
   public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks) { this(srcFrame, dstKey,nchunks,null,null);}

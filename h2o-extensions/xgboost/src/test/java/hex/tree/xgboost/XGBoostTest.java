@@ -23,6 +23,7 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.predict.AuxNodeWeights;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
+import hex.tree.xgboost.task.XGBoostSetupTask;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.FeatureScore;
@@ -47,6 +48,7 @@ import water.util.TwoDimTable;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.Filter;
 import java.util.stream.Collectors;
 
 import static hex.Model.Contributions.*;
@@ -3151,6 +3153,42 @@ public class XGBoostTest extends TestUtil {
 
       Frame valid = parseAndTrackTestFile("./smalldata/logreg/prostate_test.csv");
       assertEquals(1, valid.anyVec().nChunks()); // not distributed
+
+      parms._response_column = "AGE";
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._ntrees = 10;
+      parms._max_depth = 3;
+      parms._score_each_iteration = true;
+      parms._eval_metric = "rmse";
+      parms._score_eval_metric_only = true;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      LOG.info(model);
+
+      TwoDimTable scoringHistory = model._output._scoring_history;
+      assertTrue(ArrayUtils.find(scoringHistory.getColHeaders(), "Validation Custom") >= 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testValidMatrixNotCollocatedWithTrainMatrix() { // == training and validation are on different nodes
+    Assume.assumeTrue(H2O.getCloudSize() > 1);
+    Scope.enter();
+    try {
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+
+      Frame train = parseAndTrackTestFile("./smalldata/logreg/prostate_train.csv");
+      assertEquals(1, train.anyVec().nChunks()); // not distributed, only on leader node
+      Frame valid = parseAndTrackTestFile("./smalldata/logreg/prostate_test.csv");
+      valid = ensureDistributed(valid); // distributed on all nodes
+
+      XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
+      XGBoostSetupTask.FrameNodes validFrameNodes = XGBoostSetupTask.findFrameNodes(valid);
+      assertFalse(validFrameNodes.isSubsetOf(trainFrameNodes)); 
 
       parms._response_column = "AGE";
       parms._train = train._key;

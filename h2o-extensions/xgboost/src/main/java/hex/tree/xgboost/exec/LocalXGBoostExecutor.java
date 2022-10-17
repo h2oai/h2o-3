@@ -13,9 +13,12 @@ import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.task.XGBoostCleanupTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import hex.tree.xgboost.task.XGBoostUpdateTask;
+import water.DKV;
 import water.H2O;
 import water.Key;
+import water.Keyed;
 import water.fvec.Frame;
+import water.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -38,6 +41,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     private final boolean[] nodes;
     private final String saveMatrixDirectory;
     private final RabitTrackerH2O rt;
+    private final Key<Frame> toCleanUp;
 
     private XGBoostSetupTask setupTask;
     private XGBoostUpdateTask updateTask;
@@ -53,6 +57,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         nodes = new boolean[H2O.CLOUD.size()];
         for (int i = 0; i < init.num_nodes; i++) nodes[i] = init.nodes[i] != null;
         loader = new RemoteMatrixLoader(modelKey);
+        toCleanUp = null;
         saveMatrixDirectory = init.save_matrix_path;
         checkpointProvider = () -> {
             if (!init.has_checkpoint) {
@@ -81,10 +86,14 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         if (valid != null) {
             XGBoostSetupTask.FrameNodes validFrameNodes = XGBoostSetupTask.findFrameNodes(valid);
             if (!validFrameNodes.isSubsetOf(trainFrameNodes)) {
-                throw new IllegalStateException(
-                        "Validation Frame cannot be distributed on nodes that don't have any data of the training matrix.");
-            }
-        }
+                Log.warn("Need to re-distribute the Validation Frame because it has data on nodes that " +
+                        "don't have any data of the training matrix. This might impact runtime performance.");
+                toCleanUp = Key.make();
+                valid = train.makeSimilarlyDistributed(valid, toCleanUp);
+            } else 
+                toCleanUp = null;
+        } else 
+            toCleanUp = null;
         rt = setupRabitTracker(trainFrameNodes.getNumNodes());
         DataInfo dataInfo = model.model_info().dataInfo();
         boosterParams = XGBoostModel.createParams(model._parms, model._output.nclasses(), dataInfo.coefNames());
@@ -170,6 +179,9 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
 
     @Override
     public void close() {
+        if (toCleanUp != null) {
+            Keyed.remove(toCleanUp);
+        }
         XGBoostCleanupTask.cleanUp(setupTask);
         stopRabitTracker();
     }
