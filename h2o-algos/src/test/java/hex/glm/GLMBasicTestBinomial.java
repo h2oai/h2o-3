@@ -1483,7 +1483,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       parms._lambda = new double[]{0};
       GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
-      double[] standardErr = manualGenSE(trainFrame, model);
+      double[] standardErr = manualGenSE(trainFrame, model._output.beta());
       assertStandardErr(model, standardErr, 1, 1e-3, 1e-4, 1e-2);
     } finally {
       Scope.exit();
@@ -1516,7 +1516,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       parms._lambda = new double[]{0};
       GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
-      double[] standardErr = manualGenSE(trainFrame, model);
+      double[] standardErr = manualGenSE(trainFrame, model._output.beta());
       assertStandardErr(model, standardErr, 1, 1e-2, 1e-2, 1e-4);
     } finally {
       Scope.exit();
@@ -1590,46 +1590,6 @@ public class GLMBasicTestBinomial extends TestUtil {
     }
   }
 
-
-  /***
-   * Test the implementation of binomial standard error calculation.  It should be the same as here:
-   * https://stats.stackexchange.com/questions/89484/how-to-compute-the-standard-errors-of-a-logistic-regressions-coefficients
-   */
-  @Test
-  public void testStandardErrorBinomialWithRegularization() {
-    Scope.enter();
-    try {
-      Frame bigFrame = parseAndTrackTestFile("smalldata/gam_test/synthetic_20Cols_binomial_20KRows.csv");
-      String[] ignoreCols = new String[]{"C1","C2","C3","C4","C5","C6","C7","C8","C9","C10"};
-      SplitFrame sf = new SplitFrame(bigFrame, new double[] {0.01, 0.99}, null);
-      sf.exec().get();
-      Key[] splits = sf._destination_frames;
-      Frame trainFrame = Scope.track((Frame) splits[0].get());
-      Scope.track((Frame) splits[1].get());
-      double[] startVal = new double[]{0.07453275580005079, 0.064848157889351, 0.06002544346079828, 0.08681890882639597,
-              0.08383870319271398, 0.08867949974556715, 0.007576417746370567, 0.05373550607913393, 0.0005879217569412454,
-              0.08942772492726005, 0.03461378283678047};
-      GLMParameters parms = new GLMParameters();
-      parms._family = binomial;
-      parms._train = trainFrame._key;
-      parms._response_column = "response";
-      parms._startval = startVal;
-      parms._ignored_columns = ignoreCols;
-      parms._max_iterations = 1;
-      parms._compute_p_values = true; // standardize = true by default
-      parms._lambda = new double[]{1.0, 0.5}; // largest at the beginning
-      parms._standardize = false; // has to be false for calculating p-values
-      parms._remove_collinear_columns = true; // try for p-values
-      GLMModel model = new GLM(parms).trainModel().get();
-      Scope.track_generic(model);
-      double[] standardErr = manualGenSE(trainFrame, model);
-      assertStandardErr(model, standardErr, 1, 1e-3, 1e-4, 1e-2);
-    } finally {
-      Scope.exit();
-    }
-  }
-  
-  
   public void assertCorrectCoeffs(GLMModel model, Frame trainFrame, String response, double[] betaOld, boolean standardize) {
     double[] modelCoef = standardize ? model._output.getNormBeta() : model._output.beta();
     double[] manualCoef = genBinomialCoeff(trainFrame, response, model._output.coefficientNames(), betaOld, standardize);
@@ -1775,8 +1735,6 @@ public class GLMBasicTestBinomial extends TestUtil {
     double[] pValues = model._output.pValues();
     double[] zValuesManual = genZValues(model._output.beta(), manualStdErr, reg);
     double[] pValuesManual = genPValues(zValuesManual);
-    System.out.println("pValuesManual: " + Arrays.toString(pValuesManual));
-    System.out.println("pValues:       " + Arrays.toString(pValues));
     assertArrayEquals(zValuesManual, zValues, tot1);
     assertArrayEquals(manualStdErr, stdErr, tot2);
     assertArrayEquals(pValuesManual, pValues, tot3);
@@ -1798,9 +1756,9 @@ public class GLMBasicTestBinomial extends TestUtil {
     return zValues;
   }
   
-  public static double[] manualGenSE(Frame trainFrame, GLMModel model) {
-    double[] betaDeriv = genBetaDeriv2(trainFrame, model); // generate d2l(b)/db2
-    double[][] xcov = genXCOV(betaDeriv, trainFrame, model);
+  public static double[] manualGenSE(Frame trainFrame, double[] beta) {
+    double[] betaDeriv = genBetaDeriv2(trainFrame, beta); // generate d2l(b)/db2
+    double[][] xcov = genXCOV(betaDeriv, trainFrame, beta.length);
     double[] xcovDiag = genXCOVInvDiag(xcov);
     return getStdErr(xcovDiag);
   }
@@ -1823,8 +1781,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     return xcovInvDiag;
   }
   
-  public static double[][] genXCOV(double[] betaDeriv2, Frame trainFrame, GLMModel model) {
-    int betaLen = model._output.beta().length;
+  public static double[][] genXCOV(double[] betaDeriv2, Frame trainFrame, int betaLen) {
     int numRows = (int) trainFrame.numRows();
     int dataLen = betaLen-1; // exclude intercept
     double[][] xcov = new double[betaLen][betaLen];
@@ -1842,8 +1799,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     return xcov;
   }
   
-  public static double[] genBetaDeriv2(Frame trainFrame, GLMModel model) {
-    double[] beta = model._output.beta();
+  public static double[] genBetaDeriv2(Frame trainFrame, double[] beta) {
     int numData = (int) trainFrame.numRows();
     double[] betaDeriv = new double[numData];
     for (int index=0; index<numData; index++) { // generate W
