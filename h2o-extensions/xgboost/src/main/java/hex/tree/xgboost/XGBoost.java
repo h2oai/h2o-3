@@ -79,12 +79,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
-    if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
-      if (_parms._gpu_id != null && _parms._gpu_id.length > 0) {
-        return _parms._gpu_id.length;
-      } else {
-        return numGPUs(H2O.CLOUD.members()[0]);
-      }
+    if (_parms._parallelize_cross_validation &&
+            _train.byteSize() > smalldataSize() && // for small data use the "CPU recipe" - full parallelization capped by #threads
+            XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      int numGPUs = _parms._gpu_id != null && _parms._gpu_id.length > 0 ? _parms._gpu_id.length : numGPUs(H2O.CLOUD.members()[0]);
+      int parallelizationPerGPU = _train.byteSize() < 1e9 ? 2 : 1;
+      return numGPUs * parallelizationPerGPU;
     } else {
       return nModelsInParallel(folds, 2);
     }
@@ -100,7 +100,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    *  and each subclass will start with "super.init();".  This call is made
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
-   *
    *  Validate the learning rate and distribution family. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
@@ -392,21 +391,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
       buildModel();
     }
-
-    final void buildModel() {
-      if ((XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend)) &&
-              hasGPU(_parms._gpu_id) && (H2O.getCloudSize() == 1 || allowMultiGPU()) && _parms.gpuIncompatibleParams().isEmpty()) {
-        int[] lockedGpus = null;
-        try {
-          lockedGpus = XGBoostGPULock.lock(_parms._gpu_id);
-          buildModelImpl();
-        } finally {
-          if (lockedGpus != null) XGBoostGPULock.unlock(lockedGpus);
-        }
-      } else {
-        buildModelImpl();
-      }
-    }
     
     private XGBoostExecutor makeExecutor(XGBoostModel model) throws IOException {
       if (H2O.ARGS.use_external_xgboost) {
@@ -423,7 +407,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    final void buildModelImpl() {
+    final void buildModel() {
       final XGBoostModel model;
       if (_parms.hasCheckpoint()) {
         XGBoostModel checkpoint = DKV.get(_parms._checkpoint).<XGBoostModel>get().deepClone(_result);
