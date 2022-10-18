@@ -3210,4 +3210,47 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  /**
+   * Show 2 XGBoost models can run concurrently on a (single) GPU. Models used to have exclusive access to GPU
+   * which we removed. This test shows there is no longer exclusive ownership of the GPU and models are not forced
+   * to run sequentially.
+   */
+  @Test
+  public void testConcurrentModelsOnGPU() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // would run single node anyway
+    Assume.assumeTrue(GpuUtils.hasGPU());
+    Scope.enter();
+    try {
+      Frame train = parseAndTrackTestFile("./smalldata/chicago/chicagoCrimes10k.csv.zip");
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._response_column = "Arrest";
+      parms._train = train._key;
+      parms._ntrees = 20;
+      parms._max_depth = 5;
+      parms._score_each_iteration = true;
+
+      Job<XGBoostModel> job1 = new hex.tree.xgboost.XGBoost((XGBoostModel.XGBoostParameters) parms.clone()).trainModel();
+      Job<XGBoostModel> job2 = new hex.tree.xgboost.XGBoost((XGBoostModel.XGBoostParameters) parms.clone()).trainModel();
+
+      XGBoostModel model1 = job1.get();
+      assertNotNull(model1);
+      Scope.track_generic(model1);
+      XGBoostModel model2 = job2.get();
+      assertNotNull(model2);
+      Scope.track_generic(model2);
+
+      long[] timestamps1 = model1._output._training_time_ms;
+      long[] timestamps2 = model2._output._training_time_ms;
+      // check that there was an overlap in model training (=they were running at the same time)
+      assertFalse(
+              timestamps2[0] > timestamps1[timestamps1.length-1] || // second model started after the first one
+                      timestamps2[timestamps2.length-1] < timestamps1[0] // second model finished before the first one
+      );
+    } finally {
+      Scope.exit();
+    }
+    
+  }
+  
 }

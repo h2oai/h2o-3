@@ -60,6 +60,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "nthread",
         "save_matrix_directory",
         "build_tree_one_node",
+        "parallelize_cross_validation",
 
         //model calibration
         "calibrate_model",

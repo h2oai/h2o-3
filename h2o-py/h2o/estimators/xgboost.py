@@ -81,6 +81,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  nthread=-1,  # type: int
                  save_matrix_directory=None,  # type: Optional[str]
                  build_tree_one_node=False,  # type: bool
+                 parallelize_cross_validation=True,  # type: bool
                  calibrate_model=False,  # type: bool
                  calibration_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  calibration_method="auto",  # type: Literal["auto", "platt_scaling", "isotonic_regression"]
@@ -273,6 +274,9 @@ class H2OXGBoostEstimator(H2OEstimator):
                datasets.
                Defaults to ``False``.
         :type build_tree_one_node: bool
+        :param parallelize_cross_validation: Allow parallel training of cross-validation models
+               Defaults to ``True``.
+        :type parallelize_cross_validation: bool
         :param calibrate_model: Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
                probabilities. Calibration can provide more accurate estimates of class probabilities.
                Defaults to ``False``.
@@ -398,6 +402,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         self.nthread = nthread
         self.save_matrix_directory = save_matrix_directory
         self.build_tree_one_node = build_tree_one_node
+        self.parallelize_cross_validation = parallelize_cross_validation
         self.calibrate_model = calibrate_model
         self.calibration_frame = calibration_frame
         self.calibration_method = calibration_method
@@ -1903,6 +1908,20 @@ class H2OXGBoostEstimator(H2OEstimator):
     def build_tree_one_node(self, build_tree_one_node):
         assert_is_type(build_tree_one_node, None, bool)
         self._parms["build_tree_one_node"] = build_tree_one_node
+
+    @property
+    def parallelize_cross_validation(self):
+        """
+        Allow parallel training of cross-validation models
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("parallelize_cross_validation")
+
+    @parallelize_cross_validation.setter
+    def parallelize_cross_validation(self, parallelize_cross_validation):
+        assert_is_type(parallelize_cross_validation, None, bool)
+        self._parms["parallelize_cross_validation"] = parallelize_cross_validation
 
     @property
     def calibrate_model(self):

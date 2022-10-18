@@ -123,6 +123,10 @@ public class GpuUtils {
         return hasGPU;
     }
 
+    public static boolean hasGPU() {
+        return hasGPU(null);
+    }
+
     // helper
     private static synchronized boolean hasGPU_impl(int gpu_id) {
         if (!isGpuSupportEnabled()) {
