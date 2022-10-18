@@ -21,6 +21,7 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Cali
   int _cats;
   int[] _catOffsets;
   boolean _useAllFactorLevels;
+  boolean _useValidForScoreKeeping;
   public boolean _sparse;
 
   public int _ntrees;
@@ -28,11 +29,14 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Cali
   public ScoreKeeper[/*ntrees+1*/] _scored_valid;
   public ScoreKeeper[] scoreKeepers() {
     List<ScoreKeeper> skl = new ArrayList<>();
-    ScoreKeeper[] ska = _validation_metrics != null ? _scored_valid : _scored_train;
+    ScoreKeeper[] ska = trainedWithValidation() ? _scored_valid : _scored_train;
     for( ScoreKeeper sk : ska )
       if (!sk.isEmpty())
         skl.add(sk);
     return skl.toArray(new ScoreKeeper[0]);
+  }
+  private boolean trainedWithValidation() {
+    return _validation_metrics != null || _useValidForScoreKeeping;
   }
   public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
   public TwoDimTable _variable_importances; // gain

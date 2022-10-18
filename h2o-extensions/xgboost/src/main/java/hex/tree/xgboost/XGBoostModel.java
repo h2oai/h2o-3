@@ -605,7 +605,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostModelMetrics(_output, data, originalData, isTrain, this).compute();
   }
 
-  final void doScoring(Frame train, Frame trainOrig, CustomMetric trainCustomMetric, Frame valid, Frame validOrig) {
+  final void doScoring(Frame train, Frame trainOrig, CustomMetric trainCustomMetric,
+                       Frame valid, Frame validOrig, CustomMetric validCustomMetric) {
     ModelMetrics mm = makeMetrics(train, trainOrig, true, "Metrics reported on training frame");
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm, trainCustomMetric);
@@ -614,7 +615,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (valid != null) {
       mm = makeMetrics(valid, validOrig, false, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
-      _output._scored_valid[_output._ntrees].fillFrom(mm);
+      _output._scored_valid[_output._ntrees].fillFrom(mm, validCustomMetric);
       addModelMetrics(mm);
     }
   }

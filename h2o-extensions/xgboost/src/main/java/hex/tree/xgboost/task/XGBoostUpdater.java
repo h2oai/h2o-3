@@ -24,6 +24,7 @@ public class XGBoostUpdater extends Thread {
 
   private final Key _modelKey;
   private final DMatrix _trainMat;
+  private final DMatrix _validMat;
   private final BoosterParms _boosterParms;
   private final String _evalMetricSpec;
   private final byte[] _checkpointBoosterBytes;
@@ -36,12 +37,13 @@ public class XGBoostUpdater extends Thread {
   private volatile EvalMetric _evalMetric;
 
   private XGBoostUpdater(
-      Key modelKey, DMatrix trainMat, BoosterParms boosterParms, 
+      Key modelKey, DMatrix trainMat, DMatrix validMat, BoosterParms boosterParms, 
       byte[] checkpointBoosterBytes, Map<String, String> rabitEnv
   ) {
     super("XGBoostUpdater-" + modelKey);
     _modelKey = modelKey;
     _trainMat = trainMat;
+    _validMat = validMat;
     _boosterParms = boosterParms;
     _checkpointBoosterBytes = checkpointBoosterBytes;
     _rabitEnv = rabitEnv;
@@ -76,6 +78,9 @@ public class XGBoostUpdater extends Thread {
       updaters.remove(_modelKey);
       try {
         _trainMat.dispose();
+        if (_validMat != null) {
+          _validMat.dispose();
+        }
         if (_booster != null)
           _booster.dispose();
       } catch (Exception e) {
@@ -119,7 +124,7 @@ public class XGBoostUpdater extends Thread {
     @Override
     public Booster call() throws XGBoostError {
       if ((_booster == null) && _tid == 0) {
-        _booster = new BoosterWrapper(_checkpointBoosterBytes, _boosterParms.get(), _trainMat);
+        _booster = new BoosterWrapper(_checkpointBoosterBytes, _boosterParms.get(), _trainMat, _validMat);
         _evalMetric = computeEvalMetric();
         // Force Booster initialization; we can call any method that does "lazy init"
         byte[] boosterBytes = _booster.toByteArray();
@@ -138,7 +143,7 @@ public class XGBoostUpdater extends Thread {
       if (_evalMetricSpec == null) {
         return null;
       }
-      final String evalMetricVal = _booster.evalTrain(_trainMat, _tid);
+      final String evalMetricVal = _booster.evalSet(_trainMat, _validMat, _tid);
       return parseEvalMetric(evalMetricVal);
     }
     
@@ -149,24 +154,37 @@ public class XGBoostUpdater extends Thread {
   }
 
   private EvalMetric parseEvalMetric(String evalMetricVal) {
-    return parseEvalMetric(_evalMetricSpec, evalMetricVal);
+    return parseEvalMetric(_evalMetricSpec, _validMat != null, evalMetricVal);
   }
   
-  static EvalMetric parseEvalMetric(String evalMetricSpec, String evalMetricVal) {
+  static EvalMetric parseEvalMetric(String evalMetricSpec, boolean hasValid, String evalMetricVal) {
+    final String[] parts = evalMetricVal.split("\t");
+    final int expectedParts = hasValid ? 3 : 2;
+    if (parts.length != expectedParts) {
+      Log.err("Evaluation metric cannot be parsed, unexpected number of elements. Value: '" + evalMetricSpec + "'.");
+      return EvalMetric.empty(evalMetricSpec);
+    }
+    double trainVal, validVal = Double.NaN;
+    trainVal = parseEvalMetricPart(parts[1]);
+    if (hasValid) {
+      validVal = parseEvalMetricPart(parts[2]);
+    }
+    return new EvalMetric(evalMetricSpec, trainVal, validVal);
+  }
+
+  static double parseEvalMetricPart(String evalMetricVal) {
     final int sepPos = evalMetricVal.lastIndexOf(":");
     if (sepPos >= 0) {
       String valStr = evalMetricVal.substring(sepPos + 1).trim();
       try {
-        double val = Double.parseDouble(valStr);
-        return new EvalMetric(evalMetricSpec, val);
+        return Double.parseDouble(valStr);
       } catch (Exception e) {
-        Log.err(e);
+        Log.err("Failed to parse value of evaluation metric: '" + evalMetricVal + "'.", e);
       }
     }
-    Log.warn("Unexpected format of evaluation metric value: '" + evalMetricVal + "'. Returning NA.");
-    return new EvalMetric(evalMetricSpec, Double.NaN);
+    return Double.NaN;
   }
-
+  
   private class SerializeBooster implements BoosterCallable<byte[]> {
     @Override
     public byte[] call() throws XGBoostError {
@@ -198,9 +216,9 @@ public class XGBoostUpdater extends Thread {
     }
   }
 
-  static XGBoostUpdater make(Key modelKey, DMatrix trainMat, BoosterParms boosterParms,
+  static XGBoostUpdater make(Key modelKey, DMatrix trainMat, DMatrix validMat, BoosterParms boosterParms,
                              byte[] checkpoint, Map<String, String> rabitEnv) {
-    XGBoostUpdater updater = new XGBoostUpdater(modelKey, trainMat, boosterParms, checkpoint, rabitEnv);
+    XGBoostUpdater updater = new XGBoostUpdater(modelKey, trainMat, validMat, boosterParms, checkpoint, rabitEnv);
     updater.setUncaughtExceptionHandler(LoggingExceptionHandler.INSTANCE);
     if (updaters.putIfAbsent(modelKey, updater) != null)
       throw new IllegalStateException("XGBoostUpdater for modelKey=" + modelKey + " already exists!");

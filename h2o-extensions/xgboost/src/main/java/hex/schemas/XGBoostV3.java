@@ -218,7 +218,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help="Controls the effect of observations with positive labels in relation to the observations with negative labels on gradient calculation. Useful for imbalanced problems.", level= API.Level.expert, gridable = true)
     public float scale_pos_weight;
 
-    @API(help="Specification of evaluation metric that will be passed to the native XGBoost backend. Due to technical limitations, evaluation metric can currently only be calculated on the training frame.", level= API.Level.expert, gridable = true)
+    @API(help="Specification of evaluation metric that will be passed to the native XGBoost backend.", level= API.Level.expert, gridable = true)
     public String eval_metric;
 
     @API(help="If enabled, score only the evaluation metric. This can make model training faster if scoring is frequent (eg. each iteration).", level= API.Level.expert, gridable = true)

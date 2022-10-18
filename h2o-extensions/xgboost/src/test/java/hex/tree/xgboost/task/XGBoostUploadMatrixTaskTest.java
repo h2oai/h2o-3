@@ -11,7 +11,6 @@ import org.junit.runner.RunWith;
 import water.H2O;
 import water.Key;
 import water.Scope;
-import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
@@ -45,8 +44,8 @@ public class XGBoostUploadMatrixTaskTest {
                 model, df, new boolean[] { true },
                 new String[] {H2O.getIpPortString()}, H2O.ARGS.jks != null, null, null, null
             ).run();
-            MatrixLoader.DMatrixProvider remoteProvider = new RemoteMatrixLoader(model._key).makeLocalMatrix();
-            MatrixLoader.DMatrixProvider localProvider = new FrameMatrixLoader(model, df).makeLocalMatrix();
+            MatrixLoader.DMatrixProvider remoteProvider = new RemoteMatrixLoader(model._key).makeLocalTrainMatrix();
+            MatrixLoader.DMatrixProvider localProvider = new FrameMatrixLoader(model, df, null).makeLocalTrainMatrix();
 
             System.out.println("------ LOCAL -----");
             localProvider.print(10);
@@ -80,8 +79,8 @@ public class XGBoostUploadMatrixTaskTest {
                 model, df, new boolean[] { true },
                 new String[] {H2O.getIpPortString()}, H2O.ARGS.jks != null, null, null, null
             ).run();
-            MatrixLoader.DMatrixProvider remoteProvider = new RemoteMatrixLoader(model._key).makeLocalMatrix();
-            MatrixLoader.DMatrixProvider localProvider = new FrameMatrixLoader(model, df).makeLocalMatrix();
+            MatrixLoader.DMatrixProvider remoteProvider = new RemoteMatrixLoader(model._key).makeLocalTrainMatrix();
+            MatrixLoader.DMatrixProvider localProvider = new FrameMatrixLoader(model, df, null).makeLocalTrainMatrix();
 
             System.out.println("------ LOCAL -----");
             localProvider.print(10);

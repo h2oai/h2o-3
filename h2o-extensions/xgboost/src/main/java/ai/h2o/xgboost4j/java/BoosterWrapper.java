@@ -14,13 +14,15 @@ public class BoosterWrapper {
     public BoosterWrapper(
         byte[] checkpointBoosterBytes,
         Map<String, Object> params,
-        DMatrix train
+        DMatrix train,
+        DMatrix valid
     ) throws XGBoostError {
         if (checkpointBoosterBytes != null) {
             booster = BoosterHelper.loadModel(checkpointBoosterBytes);
             booster.setParams(params);
         } else {
-            booster = Booster.newBooster(params, new DMatrix[]{train});
+            DMatrix[] cacheMats = valid == null ? new DMatrix[]{train} : new DMatrix[]{train, valid};
+            booster = Booster.newBooster(params, cacheMats);
             booster.loadRabitCheckpoint();
         }
         booster.saveRabitCheckpoint();
@@ -30,8 +32,12 @@ public class BoosterWrapper {
         booster.update(dtrain, iter);
     }
 
-    public String evalTrain(DMatrix dtrain, int iter) throws XGBoostError {
-        return booster.evalSet(new DMatrix[]{dtrain}, new String[]{"train"}, iter);
+    public String evalSet(DMatrix dtrain, DMatrix dvalid, int iter) throws XGBoostError {
+        if (dvalid == null) {
+            return booster.evalSet(new DMatrix[]{dtrain}, new String[]{"train"}, iter);
+        } else {
+            return booster.evalSet(new DMatrix[]{dtrain, dvalid}, new String[]{"train", "valid"}, iter);
+        }
     }
 
     public void saveRabitCheckpoint() throws XGBoostError {

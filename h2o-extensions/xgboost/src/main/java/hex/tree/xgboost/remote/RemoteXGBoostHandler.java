@@ -70,7 +70,7 @@ public class RemoteXGBoostHandler extends Handler {
     @SuppressWarnings("unused")
     public XGBoostExecRespV3 getEvalMetric(int ignored, XGBoostExecReqV3 req) {
         LocalXGBoostExecutor exec = getExecutor(req);
-        EvalMetric evalMetric = exec.getEvalMetricTrain();
+        EvalMetric evalMetric = exec.getEvalMetric();
         return new XGBoostExecRespV3(exec.modelKey, evalMetric);
     }
     

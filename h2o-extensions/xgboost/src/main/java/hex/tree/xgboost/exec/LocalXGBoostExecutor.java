@@ -13,14 +13,18 @@ import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.task.XGBoostCleanupTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import hex.tree.xgboost.task.XGBoostUpdateTask;
+import water.DKV;
 import water.H2O;
 import water.Key;
+import water.Keyed;
 import water.fvec.Frame;
+import water.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +41,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     private final boolean[] nodes;
     private final String saveMatrixDirectory;
     private final RabitTrackerH2O rt;
+    private final Key<Frame> toCleanUp;
 
     private XGBoostSetupTask setupTask;
     private XGBoostUpdateTask updateTask;
@@ -52,6 +57,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         nodes = new boolean[H2O.CLOUD.size()];
         for (int i = 0; i < init.num_nodes; i++) nodes[i] = init.nodes[i] != null;
         loader = new RemoteMatrixLoader(modelKey);
+        toCleanUp = null;
         saveMatrixDirectory = init.save_matrix_path;
         checkpointProvider = () -> {
             if (!init.has_checkpoint) {
@@ -74,14 +80,25 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     /**
      * Used when executing from a local model
      */
-    public LocalXGBoostExecutor(XGBoostModel model, Frame train) {
+    public LocalXGBoostExecutor(XGBoostModel model, Frame train, Frame valid) {
         modelKey = model._key;
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
+        if (valid != null) {
+            XGBoostSetupTask.FrameNodes validFrameNodes = XGBoostSetupTask.findFrameNodes(valid);
+            if (!validFrameNodes.isSubsetOf(trainFrameNodes)) {
+                Log.warn("Need to re-distribute the Validation Frame because it has data on nodes that " +
+                        "don't have any data of the training matrix. This might impact runtime performance.");
+                toCleanUp = Key.make();
+                valid = train.makeSimilarlyDistributed(valid, toCleanUp);
+            } else 
+                toCleanUp = null;
+        } else 
+            toCleanUp = null;
         rt = setupRabitTracker(trainFrameNodes.getNumNodes());
         DataInfo dataInfo = model.model_info().dataInfo();
         boosterParams = XGBoostModel.createParams(model._parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParams.toTwoDimTable();
-        loader = new FrameMatrixLoader(model, train);
+        loader = new FrameMatrixLoader(model, train, valid);
         nodes = trainFrameNodes._nodes;
         saveMatrixDirectory = model._parms._save_matrix_directory;
         checkpointProvider = () -> {
@@ -138,7 +155,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     }
 
     @Override
-    public EvalMetric getEvalMetricTrain() {
+    public EvalMetric getEvalMetric() {
         if (evalMetric != null) { // re-use cached value, this is important for early stopping when final scoring is done without prior boosting iteration
             return evalMetric;
         }
@@ -162,6 +179,9 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
 
     @Override
     public void close() {
+        if (toCleanUp != null) {
+            Keyed.remove(toCleanUp);
+        }
         XGBoostCleanupTask.cleanUp(setupTask);
         stopRabitTracker();
     }

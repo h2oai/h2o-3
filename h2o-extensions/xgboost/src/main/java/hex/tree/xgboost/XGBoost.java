@@ -25,6 +25,7 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
@@ -114,7 +115,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode.");
     if (expensive) {
-      if (_response.naCnt() > 0) {
+      if (_response != null && _response.naCnt() > 0) {
         error("_response_column", "Response contains missing values (NAs) - not supported by XGBoost.");
       }
       if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
@@ -285,10 +286,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (_parms._eval_metric == null) {
       error("_eval_metric", "Evaluation metric needs to be defined in order to use it for early stopping.");
     }
-    if (_parms._valid != null) {
-      error("_stopping_metric", "Evaluation (custom) metric currently cannot be used for early stopping on a validation dataset. " +
-              "This is a technical limitation.");
-    }
   }
 
   private void checkPositiveRate(String paramName, double rateValue) {
@@ -418,13 +415,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
     
-    private XGBoostExecutor makeExecutor(XGBoostModel model) throws IOException {
+    private XGBoostExecutor makeExecutor(XGBoostModel model, boolean useValidFrame) throws IOException {
       if (H2O.ARGS.use_external_xgboost) {
         return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train, _job);
       } else {
         String remoteUriFromProp = H2O.getSysProperty("xgboost.external.address", null);
         if (remoteUriFromProp == null) {
-          return new LocalXGBoostExecutor(model, _train);
+          return new LocalXGBoostExecutor(model, _train, useValidFrame ? _valid : null);
         } else {
           String userName = H2O.getSysProperty("xgboost.external.user", null);
           String password = H2O.getSysProperty("xgboost.external.password", null);
@@ -458,7 +455,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       XGBoostUtils.createFeatureMap(model, _train);
       XGBoostVariableImportance variableImportance = model.setupVarImp();
-      try (XGBoostExecutor exec = makeExecutor(model)) {
+      boolean scoreValidFrame = _valid != null && _parms._eval_metric != null;
+      LOG.info("Need to score validation frame by XGBoost native backend: " + scoreValidFrame);
+      try (XGBoostExecutor exec = makeExecutor(model, scoreValidFrame)) {
         model.model_info().updateBoosterBytes(exec.setup());
         scoreAndBuildTrees(model, exec, variableImportance);
       } catch (Exception e) {
@@ -736,14 +735,19 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         final XGBoostOutput out = model._output;
         final boolean boosterUpdated;
         _timeLastScoreStart = now;
-        CustomMetric customMetricTrain = _parms._eval_metric != null ? toCustomMetric(exec.getEvalMetricTrain()) : null;
+        CustomMetric customMetricTrain = _parms._eval_metric != null ? toCustomMetricTrain(exec.getEvalMetric()) : null;
+        CustomMetric customMetricValid = _parms._eval_metric != null && _valid != null ? toCustomMetricValid(exec.getEvalMetric()) : null;
         if (!finalScoring && scoreEvalMetricOnly && customMetricTrain != null) {
           out._scored_train[out._ntrees]._custom_metric = customMetricTrain.value;
+          if (customMetricValid != null) {
+            out._useValidForScoreKeeping = true;
+            out._scored_valid[out._ntrees]._custom_metric = customMetricValid.value;
+          }
           boosterUpdated = false;
         } else {
           model.model_info().updateBoosterBytes(exec.updateBooster());
           boosterUpdated = true;
-          model.doScoring(_train, _parms.train(), customMetricTrain, _valid, _parms.valid());
+          model.doScoring(_train, _parms.train(), customMetricTrain, _valid, _parms.valid(), customMetricValid);
         }
         _timeLastScoreEnd = System.currentTimeMillis();
         out._model_summary = createModelSummaryTable(out._ntrees, null);
@@ -774,11 +778,19 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
   }
 
-  static CustomMetric toCustomMetric(EvalMetric evalMetric) {
+  static CustomMetric toCustomMetricTrain(EvalMetric evalMetric) {
+    return toCustomMetric(evalMetric, true);
+  }
+
+  static CustomMetric toCustomMetricValid(EvalMetric evalMetric) {
+    return toCustomMetric(evalMetric, false);
+  }
+
+  private static CustomMetric toCustomMetric(EvalMetric evalMetric, boolean isTrain) {
     if (evalMetric == null) {
       return null;
     }
-    return CustomMetric.from(evalMetric._name, evalMetric._value);
+    return CustomMetric.from(evalMetric._name, isTrain ? evalMetric._trainValue : evalMetric._validValue);
   }
 
   private static TwoDimTable createVarImpTable(String name, double[] rel_imp, String[] coef_names) {

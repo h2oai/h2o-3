@@ -97,8 +97,17 @@ public class RemoteMatrixLoader extends MatrixLoader {
     }
 
     @Override
-    public DMatrixProvider makeLocalMatrix() {
+    public DMatrixProvider makeLocalTrainMatrix() {
         return REGISTRY.remove(modelKey.toString()).make();
     }
 
+    @Override
+    public DMatrixProvider makeLocalValidMatrix() {
+        throw new UnsupportedOperationException("External backend currently doesn't support (external) validation dataset");
+    }
+
+    @Override
+    public boolean hasValidationFrame() {
+        return false;
+    }
 }
