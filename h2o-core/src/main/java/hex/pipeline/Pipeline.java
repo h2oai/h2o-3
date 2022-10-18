@@ -2,6 +2,7 @@ package hex.pipeline;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelBuilderCallbacks;
 import hex.ModelCategory;
 import hex.pipeline.DataTransformer.FrameType;
 import hex.pipeline.PipelineContext.CompositeFrameTracker;
@@ -9,6 +10,7 @@ import hex.pipeline.PipelineContext.ConsistentKeyTracker;
 import hex.pipeline.PipelineModel.PipelineOutput;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 
 
@@ -43,7 +45,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
            "Pipeline supports only AUTO categorical encoding: custom categorical encoding should be applied either as a transformer or directly to the final estimator of the pipeline.");
       _parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
     }
-    if (_parms._estimator == null && nFoldCV()) {
+    if (_parms._estimatorParams == null && nFoldCV()) {
       error("_estimator", "Pipeline can use cross validation only if provided with an estimator.");
     }
     if (_parms._transformers == null) _parms._transformers = new DataTransformer[0];
@@ -68,7 +70,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   }
   
   private ModelBuilder getFinalBuilder() {
-    return _parms._estimator == null ? null : ModelBuilder.make(_parms._estimator.algoName(), null, null);
+    return _parms._estimatorParams == null ? null : ModelBuilder.make(_parms._estimatorParams.algoName(), null, null);
   }
   
   
@@ -80,26 +82,20 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       output._transformers = _parms._transformers.clone();
       PipelineModel model = new PipelineModel(dest(), _parms, output);
       model.delete_and_lock(_job);
+      
       try {
         PipelineContext context = newContext();
         TransformerChain chain = newChain(context);
         setTrain(context.getTrain());
         setValid(context.getValid());
-        if (_parms._estimator == null) return;
-        output._estimator = chain.transform(
+        if (_parms._estimatorParams == null) return;
+        output._model = chain.transform(
                 new Frame[]{ train(), valid() },
                 new FrameType[]{FrameType.Training, FrameType.Validation},
                 context,
                 (frames, ctxt) -> {
-                  // propagate data params only
-                  _parms._estimator._train = frames[0] == null ? null : frames[0].getKey();
-                  _parms._estimator._valid = frames[1] == null ? null : frames[1].getKey();
-                  _parms._estimator._response_column = _parms._response_column;
-//                  _parms._estimator._fold_column = _parms._fold_column;
-                  _parms._estimator._weights_column = _parms._weights_column;
-                  _parms._estimator._offset_column = _parms._offset_column;
-                  _parms._estimator._ignored_columns = _parms._ignored_columns;
-                  Keyed res = ModelBuilder.make(_parms._estimator).trainModel().get();
+                  ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorResult, _parms._estimatorParams, frames[0], frames[1]);
+                  Keyed res = mb.trainModelNested(null);
                   return res == null ? null : res.getKey();
                 }
         );
@@ -108,43 +104,36 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
         model.unlock(_job);
       }
     }
-    
   }
 
   @Override
   public void computeCrossValidation() {
-    assert _parms._estimator != null; // no CV if pipeline used as a pure transformer (see params validation)
+    assert _parms._estimatorParams != null; // no CV if pipeline used as a pure transformer (see params validation)
     PipelineModel model = null;
     try {
       Scope.enter();
-      init(false);
-      PipelineContext context = newContext();
-      TransformerChain chain = newChain(context);
-      setTrain(context.getTrain());
-      setValid(context.getValid());
+      init(true);
       PipelineOutput output = new PipelineOutput(Pipeline.this);
       output._transformers = _parms._transformers.clone();
       model = new PipelineModel(dest(), _parms, output);
       model.delete_and_lock(_job);
+      
+      PipelineContext context = newContext();
+      TransformerChain chain = newChain(context);
+      setTrain(context.getTrain());
+      setValid(context.getValid());
       Scope.protect(train(), valid());
-      initWorkspace(true);
-      output._estimator = chain.transform(
+//      initWorkspace(true);
+      output._model = chain.transform(
               new Frame[] { train(), valid() }, 
               new FrameType[]{FrameType.Training, FrameType.Validation}, 
               context,
               (frames, ctxt) -> {
-                _parms._estimator._train = frames[0] == null ? null : frames[0].getKey();
-                _parms._estimator._valid = frames[1] == null ? null : frames[1].getKey();
-                _parms._estimator._response_column = _parms._response_column;
-                _parms._estimator._nfolds= _parms._nfolds;
-                _parms._estimator._fold_column = _parms._fold_column;
-                _parms._estimator._weights_column = _parms._weights_column;
-                _parms._estimator._offset_column = _parms._offset_column;
-                _parms._estimator._ignored_columns = _parms._ignored_columns;
-                _parms._estimator._parallelize_cross_validation = false;  // chain.transform is not thread safe (index incr)
-                ModelBuilder mb = ModelBuilder.make(_parms._estimator);
-                mb._job = _job;
+                ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorResult, _parms._estimatorParams, frames[0], frames[1]);
 //                mb.init(true);
+                /*
+                // FIXME: note that by using this FramesProvider, the CV frames are transformed on the "full" model time budget, not on the CV model budget...
+                // also, ALL frames for ALL CV models are created BEFORE the first CV model even starts training.
                 mb.trainModelNested(new DefaultTrainingFramesProvider() {
                   @Override
                   public Frame getTrain() {
@@ -178,6 +167,39 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                     return super.getCVFrames(cvIdx);
                   }
                 });
+                 */
+                mb.setCallbacks(new ModelBuilderCallbacks() {
+                  /**
+                   * Using this callback, the transformations are applied at the time the CV model training is triggered, 
+                   * we don't have to stack up all transformed frames in memory BEFORE starting the CV-training.
+                   */
+                  @Override
+//                  public void beforeCompute(Model.Parameters params) {
+                  public void beforeCompute(ModelBuilder builder) {
+                    Model.Parameters params = builder._parms;
+                    if (!params._is_cv_model || !chain.isCVSensitive()) return;
+                    PipelineContext cvContext = newCVContext(context, params);
+                    chain.transform(
+                            new Frame[]{cvContext.getTrain(), cvContext.getValid()},
+                            new FrameType[]{FrameType.Training, FrameType.Validation},
+                            cvContext,
+                            (cvFrames, ctxt) -> {
+                              reassign(cvFrames[0], params._train);
+                              reassign(cvFrames[1], params._valid);
+                              
+                              // re-init & re-validate the builder in case we produced a bad frame 
+                              // (although this should have been detected earlier as a similar transformation was already applied to main training frame)
+                              builder._input_parms = params.clone();
+                              builder.setTrain(null); builder.setValid(null);
+                              builder.init(false);
+                              if (builder.error_count() > 0)
+                                throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
+                              return null;
+                            }
+                    );
+                  }
+                });
+                mb.trainModelNested((Frame)null);
                 return mb.dest();
               }
       );
@@ -191,19 +213,44 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     }
   }
   
-  private PipelineContext newCVContext(PipelineContext context, int cvIdx, Frame cvBase) {
-      PipelineParameters params = (PipelineParameters) context._params.clone();
-      params._is_cv_model = true;
-      params._cv_fold = cvIdx;
-      PipelineContext cvContext = new PipelineContext(params, context._tracker);
-      Frame baseFrame = new Frame(Key.make(cvBase.getKey()+"_"+(cvIdx+1)), cvBase.names(), cvBase.vecs());
-      cvContext.setTrain(baseFrame);
-      cvContext.setValid(baseFrame);
-      return cvContext;
+/*  private PipelineContext newCVContext(PipelineContext context, int cvIdx, Frame cvBase) {
+    PipelineParameters pparams = (PipelineParameters) context._params.clone();
+    pparams._is_cv_model = true;
+    pparams._cv_fold = cvIdx;
+    PipelineContext cvContext = new PipelineContext(pparams, context._tracker);
+    Frame baseFrame = new Frame(Key.make(cvBase.getKey()+"_"+(cvIdx+1)), cvBase.names(), cvBase.vecs());
+    cvContext.setTrain(baseFrame);
+    cvContext.setValid(baseFrame);
+    return cvContext;
+  }*/
+  
+  private PipelineContext newCVContext(PipelineContext context, Model.Parameters cvParams) {
+    PipelineParameters pparams = (PipelineParameters) context._params.clone();
+    pparams._is_cv_model = cvParams._is_cv_model;
+    pparams._cv_fold = cvParams._cv_fold;
+    PipelineContext cvContext = new PipelineContext(pparams, context._tracker);
+    Frame baseFrame = new Frame(Key.make(_result.toString()+"_cv_"+(pparams._cv_fold+1)), train().names(), train().vecs());
+    if ( pparams._weights_column != null ) baseFrame.remove( pparams._weights_column );
+    Frame cvTrainOld = cvParams.train();
+    Frame cvValidOld = cvParams.valid();
+    String cvWeights = cvParams._weights_column;
+    Frame cvTrain = new Frame(baseFrame);
+    cvTrain.add(cvWeights, cvTrainOld.vec(cvWeights));
+    Frame cvValid = new Frame(baseFrame);
+    cvValid.add(cvWeights, cvValidOld.vec(cvWeights));
+    cvContext.setTrain(cvTrain);
+    cvContext.setValid(cvValid);
+    return cvContext;
   }
   
   private PipelineContext newContext() {
     return new PipelineContext(_parms, new CompositeFrameTracker(
+            new PipelineContext.FrameTracker() {
+              @Override
+              public void apply(Frame transformed, Frame frame, FrameType type, PipelineContext context, DataTransformer transformer) {
+                if (stop_requested()) throw new Job.JobCancelledException(_job);
+              }
+            },
             new ConsistentKeyTracker(),
             new PipelineContext.FrameTracker() {
               @Override
@@ -221,5 +268,32 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     chain.prepare(context);
     return chain;
   }
-
+  
+  private Frame reassign(Frame fr, Key key) {
+    Frame copy = new Frame(fr);
+    copy._key = key;
+    DKV.put(copy);
+    copy.write_lock(_job);
+    copy.update(_job);
+    return copy;
+  }
+  
+  private ModelBuilder makeEstimatorBuilder(Key<Model> eKey, Model.Parameters eParams, Frame train, Frame valid) {
+    eParams._train = train == null ? null : train.getKey();
+    eParams._valid = valid == null ? null : valid.getKey();
+    eParams._response_column = _parms._response_column;
+    eParams._weights_column = _parms._weights_column;
+    eParams._offset_column = _parms._offset_column;
+    eParams._ignored_columns = _parms._ignored_columns;
+    eParams._fold_column = _parms._fold_column;
+    eParams._fold_assignment = _parms._fold_assignment;
+    eParams._nfolds= _parms._nfolds;
+    eParams._parallelize_cross_validation = false;  // chain.transform is not thread safe (index incr)
+    eParams._max_runtime_secs = _parms._max_runtime_secs > 0 ? remainingTimeSecs() : _parms._max_runtime_secs;
+    
+    ModelBuilder mb = ModelBuilder.make(eParams, eKey == null ? Key.make(_result+"_estimator") : eKey);
+    mb._job = _job;
+    return mb;
+  }
+  
 }

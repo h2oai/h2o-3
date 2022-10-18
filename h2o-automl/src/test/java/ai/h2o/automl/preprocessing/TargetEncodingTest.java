@@ -11,6 +11,7 @@ import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsembleModel;
 import hex.glm.GLMModel;
+import hex.pipeline.PipelineModel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -246,4 +247,46 @@ public class TargetEncodingTest {
             Scope.exit();
         }
     }
+    
+  @Test
+  public void test_automl_run_with_target_encoding_pipeline() {
+    try {
+      Scope.enter();
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      Frame fr = parseTestFile("./smalldata/titanic/titanic_expanded.csv"); Scope.track(fr);
+      SplitFrame sf = new SplitFrame(fr, new double[] { 0.7, 0.3 }, new Key[]{Key.make("titanic_train"), Key.make("titanic_test")});
+      sf.exec().get();
+      Frame train = sf._destination_frames[0].get(); Scope.track(train);
+      Frame test = sf._destination_frames[1].get(); Scope.track(test);
+
+      autoMLBuildSpec.input_spec.training_frame = train._key;
+//            autoMLBuildSpec.input_spec.validation_frame = test._key;
+      autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
+      autoMLBuildSpec.input_spec.response_column = "survived";
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(15); // sth big enough to test all algos+grids with TE
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(42);
+      autoMLBuildSpec.build_control.nfolds = 3;
+      autoMLBuildSpec.build_models.preprocessing = new PreprocessingStepDefinition[] {
+              new PreprocessingStepDefinition(Type.TargetEncoding)
+      };
+      autoMLBuildSpec.build_models._pipelineEnabled = true;
+
+      aml = AutoML.startAutoML(autoMLBuildSpec); Scope.track_generic(aml);
+      aml.get();
+      System.out.println(aml.leaderboard().toTwoDimTable());
+      for (Model m : aml.leaderboard().getModels()) {
+        assertNull(m._parms._preprocessors);
+        if (m instanceof StackedEnsembleModel) {
+          assertFalse(m.haveMojo()); // all SEs should have at least one XGB which doesn't support MOJO
+          assertFalse(m.havePojo());
+        } else if (m._key.toString().contains("_grid_")) {
+          assertFalse(m instanceof PipelineModel);
+        } else {
+          assertTrue(m instanceof PipelineModel);
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 }

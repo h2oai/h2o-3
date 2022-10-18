@@ -1684,7 +1684,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                            String[] names, String[][] domains, final AdaptFrameParameters parms,
                                            final boolean expensive, final boolean computeMetrics,
                                            final InteractionBuilder interactionBldr, final ToEigenVec tev,
-                                           final IcedHashMap<Key, String> toDelete, final boolean catEncoded)
+                                           final Map<Key, String> toDelete, final boolean catEncoded)
           throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
@@ -2421,7 +2421,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       deleteCrossValidationPreds();
       deleteCrossValidationModels();
     }
-    cleanUp(_toDelete);
+    cleanUp(_toDelete == null ? null : _toDelete.keySet());
     return super.remove_impl(fs, cascade);
   }
 

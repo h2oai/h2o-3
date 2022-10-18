@@ -216,7 +216,7 @@ public class TargetEncoding implements PreprocessingStep {
               .filter(col -> !teColumns.contains(col) && !ArrayUtils.contains(keep, col))
               .toArray(String[]::new);
       if (_aml.isCVEnabled()) {
-        dts.add(new KFoldColumnGenerator(null, FoldAssignmentScheme.Modulo));
+        dts.add(new KFoldColumnGenerator());
         teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
       }
       dts.add(new TargetEncoderFeatureTransformer(teParams));

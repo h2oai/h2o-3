@@ -1,6 +1,5 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildControl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildModels;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
@@ -14,23 +13,19 @@ import ai.h2o.automl.leaderboard.ModelProvider;
 import ai.h2o.automl.leaderboard.ModelStep;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
-import hex.ModelBuilder;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
 import hex.leaderboard.*;
 import hex.pipeline.DataTransformer;
-import hex.pipeline.Pipeline;
-import hex.pipeline.PipelineModel;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import hex.splitframe.ShuffleSplitFrame;
+import org.apache.log4j.Logger;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
 import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.logging.Logger;
-import water.logging.LoggerFactory;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
@@ -67,7 +62,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private static final boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private static final ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
-  private static final Logger log = LoggerFactory.getLogger(AutoML.class);
+  private static final Logger log = Logger.getLogger(AutoML.class);
 
   private static LeaderboardExtensionsProvider createLeaderboardExtensionProvider(AutoML automl) {
     final Key<AutoML> amlKey = automl._key;
@@ -397,37 +392,35 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
   
   private void initPipeline() {
-    final AutoMLInput input = _buildSpec.input_spec;
     final AutoMLBuildModels build = _buildSpec.build_models;
-    final AutoMLBuildControl control = _buildSpec.build_control;
-    _pipelineParams = build.preprocessing == null
-            ? null
-            : new PipelineParameters();
-    _pipelineParams._train = getTrainingFrame().getKey();
-    _pipelineParams._valid = getValidationFrame() == null ? null : getValidationFrame().getKey();
-    _pipelineParams._response_column = input.response_column;
-    _pipelineParams._fold_column = input.fold_column;
-    _pipelineParams._weights_column = input.weights_column;
-    _pipelineParams._nfolds= control.nfolds;
-    _pipelineParams._seed = control.stopping_criteria.seed();
+    _pipelineParams = build.preprocessing == null || !build._pipelineEnabled ? null : new PipelineParameters();
+    if (_pipelineParams == null) return;
     _pipelineParams._transformers = Arrays.stream(build.preprocessing)
             .flatMap(def -> Arrays.stream(def.asTransformers(this)))
             .toArray(DataTransformer[]::new);
     if (_pipelineParams._transformers.length == 0) _pipelineParams = null;
-    
-    
     
     //TODO: given that a transformer can reference a model (e.g. TE), 
     // and multiple transformers can refer to the same model, 
     // then we should be careful when deleting a transformer (resp. an entire pipeline) 
     // as we may delete sth that is still in use by another transformer (resp. pipeline).
     // --> ref count?
+    
+    //TODO: in AutoML, the same transformations are likely to occur on multiple (sometimes all) models, 
+    // especially if the transformers parameters are not tuned.
+    // But it also depends if the transformers are context(CV)-sensitive (e.g. Target Encoding).
+    // See `CachingTransformer` for some thoughts about this.
+  }
+  
+  PipelineParameters getPipelineParams() {
+    return _pipelineParams;
   }
 
   private void initPreprocessing() {
-    _preprocessing = _buildSpec.build_models.preprocessing == null 
+    final AutoMLBuildModels build = _buildSpec.build_models;
+    _preprocessing = build.preprocessing == null || build._pipelineEnabled
             ? null 
-            : Arrays.stream(_buildSpec.build_models.preprocessing)
+            : Arrays.stream(build.preprocessing)
                 .map(def -> def.newPreprocessingStep(this))
                 .toArray(PreprocessingStep[]::new);
   }
@@ -799,11 +792,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     List<ModelingStep> completed = new ArrayList<>();
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.prepare();
-    }
-    if (_pipelineParams != null) {
-      assert _pipelineParams._estimator == null;
-      Pipeline pipeline = ModelBuilder.make(_pipelineParams);
-      PipelineModel pipelineModel = pipeline.trainModel().get();
     }
     for (ModelingStep step : getExecutionPlan()) {
       if (!exceededSearchLimits(step)) {

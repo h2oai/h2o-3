@@ -181,6 +181,7 @@ public class AutoMLBuildSpec extends Iced {
     public double exploitation_ratio = -1;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
     public PreprocessingStepDefinition[] preprocessing;
+    public boolean _pipelineEnabled = false; // currently used for testing until ready: to be removed
   }
 
   public static final class AutoMLCustomParameters extends Iced {

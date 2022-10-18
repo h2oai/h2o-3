@@ -16,6 +16,7 @@ import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
+import hex.genmodel.attributes.parameters.ModelParameter;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
@@ -23,6 +24,7 @@ import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceWalker;
 import hex.leaderboard.Leaderboard;
+import hex.pipeline.PipelineModel.PipelineParameters;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
@@ -87,11 +89,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     ) {
         assert resultKey != null;
         assert params != null;
-        Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
-        applyPreprocessing(params);
-        ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
-        builder._parms = params;
-        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
+        ModelBuilder builder = makeBuilder(resultKey, params);
+        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+builder.dest()+" model training")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         builder.init(false);          // validate parameters
         if (builder._messages.length > 0) {
@@ -104,6 +103,18 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             }
         }
         return builder.trainModelOnH2ONode();
+    }
+    
+    protected <MP extends Model.Parameters> ModelBuilder makeBuilder(Key<M> resultKey, MP params) {
+      applyPreprocessing(params);
+      Model.Parameters finalParams = applyPipeline(resultKey, params);
+      if (finalParams instanceof PipelineParameters) resultKey = Key.make("Pipeline_"+resultKey);
+      
+      Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
+      ModelBuilder builder = ModelBuilder.make(finalParams.algoName(), job, (Key<Model>) resultKey);
+      builder._parms = finalParams;
+      builder._input_parms = finalParams.clone();
+      return builder;
     }
 
     private boolean validParameters(Model.Parameters parms, String[] fields) {
@@ -363,8 +374,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         setClassBalancingParams(params);
         params._custom_metric_func = buildSpec.build_control.custom_metric_func;
 
-        params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
-        params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
         
         /** Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
@@ -377,6 +386,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected void setCrossValidationParams(Model.Parameters params) {
         AutoMLBuildSpec buildSpec = aml().getBuildSpec();
         params._keep_cross_validation_predictions = aml().getBlendingFrame() == null || buildSpec.build_control.keep_cross_validation_predictions;
+        params._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
+        params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._fold_column = buildSpec.input_spec.fold_column;
 
         if (buildSpec.input_spec.fold_column == null) {
@@ -414,6 +425,17 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             PreprocessingStep.Completer complete = preprocessingStep.apply(params, getPreprocessingConfig());
             _onDone.add(j -> complete.run());
         }
+    }
+    
+    protected Model.Parameters applyPipeline(Key<M> estimatorResult, Model.Parameters params) {
+      if (aml().getPipelineParams() == null) return params;
+      PipelineParameters pparams = (PipelineParameters) aml().getPipelineParams().clone();
+      setCommonModelBuilderParams(pparams);
+      pparams._seed = params._seed;
+      pparams._max_runtime_secs = params._max_runtime_secs;
+      pparams._estimatorParams = params;
+      pparams._estimatorResult = (Key<Model>) estimatorResult;
+      return pparams;
     }
     
     protected PreprocessingConfig getPreprocessingConfig() {
@@ -761,7 +783,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 final Key<Models> selectionKey = Key.make(key+"_select");
                 final EventLog selectionEventLog = EventLog.getOrMake(selectionKey);
 //                EventLog selectionEventLog = aml().eventLog();
-final LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toString(), selectionEventLog);
+                final LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toString(), selectionEventLog);
 
                 {
                     result.delete_and_lock(job);

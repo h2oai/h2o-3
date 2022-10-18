@@ -26,6 +26,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   
   public static final String CV_WEIGHTS_COLUMN = "__internal_cv_weights__";
 
+  private ModelBuilderCallbacks _callbacks;
+
+  public void setCallbacks(ModelBuilderCallbacks callbacks) {
+    this._callbacks = callbacks;
+  }
+
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
 
@@ -238,12 +244,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     protected Driver(){ super(); }
     
-    private ModelBuilderListener _callback;
-
-    public void setCallback(ModelBuilderListener callback) {
-      this._callback = callback;
-    }
-
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
     // 1) Scope (unless they want to keep data, then they must call Scope.untrack(Key<Vec>[]))
     // 2) Train/Valid frame locking and unlocking
@@ -251,6 +251,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     public void compute2() {
       try {
         Scope.enter();
+        if (_callbacks != null) _callbacks.beforeCompute(_parms);
+        if (_callbacks != null) _callbacks.beforeCompute(ModelBuilder.this);
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
         computeParameters();
@@ -260,7 +262,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _parms.read_unlock_frames(_job);
         if (_parms._is_cv_model) {
           // CV models get completely cleaned up when the main model is fully trained.
-          Key[] keep = _workspace == null ? new Key[0] : _workspace.getToDelete(true).keySet().toArray(new Key[0]);
+          Key[] keep = new Key[0];
+          try {
+            keep = _workspace.getToDelete(true).keySet().toArray(new Key[0]);
+          } catch (Exception ignored) {}
           Scope.exit(keep);
         } else {
           cleanUp();
@@ -273,16 +278,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     @Override
     public void onCompletion(CountedCompleter caller) {
       setFinalState();
-      if (_callback != null) {
-        _callback.onModelSuccess(_result.get());
+      if (_callbacks != null) {
+        _callbacks.onModelSuccess(_result);
       }
     }
 
     @Override
     public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       setFinalState();
-      if (_callback != null) {
-        _callback.onModelFailure(ex, _parms);
+      if (_callbacks != null) {
+        _callbacks.onModelFailure(_result, ex, _parms);
       }
       return true;
     }
@@ -381,16 +386,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
-    return trainModel(null);
-  }
-
-  final public Job<M> trainModel(final ModelBuilderListener callback) {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
     if (!nFoldCV()) {
       Driver driver = trainModelImpl();
-      driver.setCallback(callback);
       return _job.start(driver, _parms.progressUnits(), _parms._max_runtime_secs);
     } else {
       // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
@@ -402,14 +402,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                           }
 
                           @Override
-                          public void onCompletion(CountedCompleter caller) {
-                            if (callback != null) callback.onModelSuccess(_result.get());
-                          }
-
-                          @Override
                           public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
                             Log.warn("Model training job " + _job._description + " completed with exception: " + ex);
-                            if (callback != null) callback.onModelFailure(ex, _parms);
+                            if (_callbacks != null) _callbacks.onModelFailure(_result, ex, _parms);
                             try {
                               Keyed.remove(_job._result); // ensure there's no incomplete model left for manipulation after crash or cancellation
                             } catch (Exception logged) {
@@ -439,17 +434,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     startClock();
     if( !nFoldCV() ) submitTrainModelTask().join();
     else computeCrossValidation();
-    return _result.get();
-  }
-  
-  final public M trainModelNested(TrainingFramesProvider framesProvider) {
-    setTrain(framesProvider.getTrain());
-    setValid(framesProvider.getValid());
-    if (error_count() > 0)
-      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
-    startClock();
-    if( !nFoldCV() ) submitTrainModelTask().join();
-    else computeCrossValidation(framesProvider);
     return _result.get();
   }
 
@@ -621,56 +605,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   
   
-  protected interface TrainingFramesProvider {
-    Frame getTrain();
-    
-    Frame getValid();
-    
-    Frame[] getCVFrames(int cvIdx);
-  }
-  
-  protected class DefaultTrainingFramesProvider implements TrainingFramesProvider {
-
-    protected Frame _cvBase; // must always be accessed through lazy getter `getCVBase()`
-    
-    @Override
-    public Frame getTrain() {
-      return train();
-    }
-
-    @Override
-    public Frame getValid() {
-      return valid();
-    }
-
-    /**
-     * @param cvIdx
-     * @return a Frame array for the given CV index: [ cv_train, cv_valid ] 
-     */
-    @Override
-    public Frame[] getCVFrames(int cvIdx) {
-      Frame cvBase = getCVBase();
-      return new Frame[] {cvBase, cvBase};
-    }
-    
-    protected Frame getCVBase() {
-      if (_cvBase == null) {
-        _cvBase = new Frame(Key.make(_result.toString()+"_cv"), getTrain().names(), getTrain().vecs());
-        if ( _parms._weights_column != null ) _cvBase.remove( _parms._weights_column );
-      }
-      return _cvBase;
-    }
-  } 
-
-  public void computeCrossValidation() {
-    computeCrossValidation(new DefaultTrainingFramesProvider());
-  }
-
   /**
    * Default naive (serial) implementation of N-fold cross-validation
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
-  public void computeCrossValidation(TrainingFramesProvider framesProvider) {
+  public void computeCrossValidation() {
     assert _job.isRunning();    // main Job is still running
     _job.setReadyForView(false); //wait until the main job starts to let the user inspect the main job
     final int N = nFoldWork();
@@ -686,7 +625,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final Vec[] weights = cv_makeWeights(N, foldAssignment);
 
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-      cvModelBuilders = cv_makeFramesAndBuilders(N, weights, framesProvider);
+      cvModelBuilders = cv_makeFramesAndBuilders(N, weights);
 
       // Step 4: Run all the CV models (and optionally train the main model in parallel to the CV training)
       final boolean buildMainModel;
@@ -810,12 +749,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  protected ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights, TrainingFramesProvider framesProvider) {
+  protected ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
-    Frame train = framesProvider.getTrain();
-    if (train.find(CV_WEIGHTS_COLUMN) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '"+CV_WEIGHTS_COLUMN+"'.");
+    if (train().find(CV_WEIGHTS_COLUMN) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '"+CV_WEIGHTS_COLUMN+"'.");
+
+    Frame cv_fr = new Frame(train().names(),train().vecs());
+    if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     List<Frame> cvFramesForFailedModels = new ArrayList<>();
@@ -823,19 +764,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame[] cvFrames = framesProvider.getCVFrames(i);
-      Frame cvTrain = new Frame(Key.make(identifier + "_train"), cvFrames[0].names(), cvFrames[0].vecs());
+      Frame cvTrain = new Frame(Key.make(identifier + "_train"), cv_fr.names(), cv_fr.vecs());
       cvTrain.write_lock(_job);
       cvTrain.add(CV_WEIGHTS_COLUMN, weights[2*i]);
       cvTrain.update(_job);
-      Frame cvValid = new Frame(Key.make(identifier + "_valid"), cvFrames[1].names(), cvFrames[1].vecs());
+      Frame cvValid = new Frame(Key.make(identifier + "_valid"), cv_fr.names(), cv_fr.vecs());
       cvValid.write_lock(_job);
       cvValid.add(CV_WEIGHTS_COLUMN, weights[2*i+1]);
       cvValid.update(_job);
       
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
-      cv_mb.setTrain(cvTrain);
+      cv_mb._desc = "Cross-Validation model " + (i + 1) + " / " + N;
       cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
@@ -847,11 +787,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
       cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
-      cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
+      
       cv_mb._input_parms = (P) _parms.clone();
-      cv_mb._desc = "Cross-Validation model " + (i + 1) + " / " + N;
-
       // Error-check all the cross-validation Builders before launching any
+      cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
+      cv_mb.setTrain(null); cv_mb.setValid(null); // reset before validating
       cv_mb.init(false);
       if( cv_mb.error_count() > 0 ) { // Gather all submodel error messages
         Log.info("Marking frame for failed cv model for removal: " + cvTrain._key);
@@ -1504,7 +1444,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       } else {
         hide("_nfolds", "nfolds is ignored when a fold column is specified.");
       }
-      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null && _parms != null) {
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null) {
         error("_fold_assignment", "Fold assignment is not allowed in conjunction with a fold column.");
       }
     }

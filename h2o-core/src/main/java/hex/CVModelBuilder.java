@@ -38,32 +38,31 @@ public class CVModelBuilder {
         int nRunning = 0;
         RuntimeException rt = null;
         for (int i = 0; i < N; ++i) {
-            final int cvNum = i+1;
             if (job.stop_requested()) {
                 LOG.info("Skipping build of last " + (N - i) + " out of " + N + " cross-validation models");
                 stopAll(submodel_tasks);
                 throw new Job.JobCancelledException(job);
             }
-            LOG.info("Building cross-validation model " + cvNum + " / " + N + ".");
+            LOG.info("Building "+modelBuilders[i]._desc+".");
             prepare(modelBuilders[i]);
             modelBuilders[i].startClock();
             submodel_tasks[i] = modelBuilders[i].submitTrainModelTask();
             if (++nRunning == parallelization) { //piece-wise advance in training the models
                 while (nRunning > 0) {
                     final int waitForTaskIndex = i + 1 - nRunning;
-                    final int waitCvNum = waitForTaskIndex+1;
+                    final String modelDesc = modelBuilders[waitForTaskIndex]._desc;
                     try {
                         submodel_tasks[waitForTaskIndex].join();
                         finished(modelBuilders[waitForTaskIndex]);
                     } catch (RuntimeException t) {
                         if (rt == null) {
-                            LOG.info("Exception from CV model #" + waitCvNum + " will be reported as main exception.");
+                            LOG.info("Exception from "+ modelDesc + " will be reported as main exception.");
                             rt = t;
                         } else {
-                            LOG.warn("CV model #" + waitCvNum + " failed, the exception will not be reported", t);
+                            LOG.warn(modelDesc + " failed, the exception will not be reported", t);
                         }
                     } finally {
-                        LOG.info("Completed cross-validation model " + waitCvNum + " / " + N + ".");
+                        LOG.info("Completed "+modelDesc+".");
                         nRunning--; // need to decrement regardless even if there is an exception, otherwise looping...
                     }
                 }
@@ -71,20 +70,20 @@ public class CVModelBuilder {
             }
         }
         for (int i = 0; i < N; ++i) { //all sub-models must be completed before the main model can be built
-            final int cvNum = i+1;
+            final String modelDesc = modelBuilders[i]._desc;
             try {
                 final TrainModelTaskController task = submodel_tasks[i];
                 assert task != null;
                 task.join();
             } catch (RuntimeException t) {
                 if (rt == null) {
-                    LOG.info("Exception from CV model #"+cvNum+" will be reported as main exception.");
+                    LOG.info("Exception from "+ modelDesc + " will be reported as main exception.");
                     rt = t;
                 } else {
-                    LOG.warn("CV model #"+cvNum+" failed, the exception will not be reported", t);
+                    LOG.warn(modelDesc + " failed, the exception will not be reported", t);
                 }
             } finally {
-                LOG.info("Completed cross-validation model "+cvNum+" / "+N+".");
+                LOG.info("Completed "+modelDesc+".");
             }
         }
         if (rt != null) throw rt;

@@ -31,7 +31,7 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
         _params._fold_column = context._params._fold_column;
       }
     }
-    super.prepare(context);
+    super.doPrepare(context);
   }
   
   @Override

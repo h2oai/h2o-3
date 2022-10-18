@@ -6,6 +6,7 @@ import water.DKV;
 import water.Key;
 import water.Scope;
 import water.fvec.Frame;
+import water.util.Countdown;
 
 public class PipelineContext implements Cloneable {
   
@@ -99,6 +100,8 @@ public class PipelineContext implements Cloneable {
   
   private Frame _train;
   private Frame _valid;
+  
+  private Countdown _countdown;
 
   public PipelineContext(PipelineParameters params) {
     this(params, null);

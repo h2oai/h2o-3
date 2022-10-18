@@ -75,10 +75,15 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       Frame result = newChain().transform(fr, FrameType.Scoring, context, new UnaryCompleter<Frame>() {
         @Override
         public Frame apply(Frame frame, PipelineContext context) {
-          if (_output._estimator == null) {
+          if (_output._model == null) {
             return new Frame(Key.make(destination_key), frame.names(), frame.vecs());
           }
-          return _output._estimator.get().score(frame, destination_key, j, computeMetrics, customMetricFunc);
+          Frame result = _output._model.get().score(frame, destination_key, j, computeMetrics, customMetricFunc);
+          if (computeMetrics) {
+            ModelMetrics mm = ModelMetrics.getFromDKV(_output._model.get(), frame);
+            if (mm != null) addModelMetrics(mm.deepCloneWithDifferentModelAndFrame(PipelineModel.this, fr));
+          }
+          return result;
         }
       });
       Scope.untrack(result);
@@ -106,8 +111,8 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
           dt.cleanup(fs);
         }
       }
-      if (_output._estimator != null) {
-        Keyed.remove(_output._estimator, fs, cascade);
+      if (_output._model != null) {
+        Keyed.remove(_output._model, fs, cascade);
       }
     }
     return super.remove_impl(fs, cascade);
@@ -139,7 +144,8 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     // as soon as we can do this, then we will be able to train pipelines in grids like any other model.
     
     public DataTransformer[] _transformers;
-    public Model.Parameters _estimator;
+    public Model.Parameters _estimatorParams;
+    public Key<Model> _estimatorResult;
 
     @Override
     public String algoName() {
@@ -165,7 +171,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
   public static class PipelineOutput extends Model.Output {
     
     DataTransformer[] _transformers;
-    Key<Model> _estimator;
+    Key<Model> _model;
 
     public PipelineOutput(ModelBuilder b) {
       super(b);
@@ -175,8 +181,8 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       return _transformers == null ? null : _transformers.clone();
     }
     
-    public Model getFinalModel() {
-      return _estimator == null ? null : _estimator.get();
+    public Model getModel() {
+      return _model == null ? null : _model.get();
     }
 
   }
