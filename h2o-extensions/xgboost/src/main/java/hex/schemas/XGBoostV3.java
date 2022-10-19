@@ -88,7 +88,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "gpu_id",
         "gainslift_bins",
         "auc_type",
-        "scale_pos_weight"
+        "scale_pos_weight",
+        "parallelize_cross_validation"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)

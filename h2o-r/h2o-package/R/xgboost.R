@@ -107,6 +107,7 @@
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param scale_pos_weight Controls the effect of observations with positive labels in relation to the observations with negative labels
 #'        on gradient calculation. Useful for imbalanced problems. Defaults to 1.0.
+#' @param parallelize_cross_validation \code{Logical}. Allow parallel training of cross-validation models Defaults to TRUE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -204,6 +205,7 @@ h2o.xgboost <- function(x,
                         gainslift_bins = -1,
                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         scale_pos_weight = 1.0,
+                        parallelize_cross_validation = TRUE,
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -364,6 +366,8 @@ h2o.xgboost <- function(x,
     parms$auc_type <- auc_type
   if (!missing(scale_pos_weight))
     parms$scale_pos_weight <- scale_pos_weight
+  if (!missing(parallelize_cross_validation))
+    parms$parallelize_cross_validation <- parallelize_cross_validation
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -438,6 +442,7 @@ h2o.xgboost <- function(x,
                                         gainslift_bins = -1,
                                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         scale_pos_weight = 1.0,
+                                        parallelize_cross_validation = TRUE,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -602,6 +607,8 @@ h2o.xgboost <- function(x,
     parms$auc_type <- auc_type
   if (!missing(scale_pos_weight))
     parms$scale_pos_weight <- scale_pos_weight
+  if (!missing(parallelize_cross_validation))
+    parms$parallelize_cross_validation <- parallelize_cross_validation
 
   # Build segment-models specific parameters
   segment_parms <- list()

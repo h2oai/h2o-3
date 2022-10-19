@@ -101,6 +101,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  scale_pos_weight=1.0,  # type: float
+                 parallelize_cross_validation=True,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -336,6 +337,9 @@ class H2OXGBoostEstimator(H2OEstimator):
                observations with negative labels on gradient calculation. Useful for imbalanced problems.
                Defaults to ``1.0``.
         :type scale_pos_weight: float
+        :param parallelize_cross_validation: Allow parallel training of cross-validation models
+               Defaults to ``True``.
+        :type parallelize_cross_validation: bool
         """
         super(H2OXGBoostEstimator, self).__init__()
         self._parms = {}
@@ -409,6 +413,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
         self.scale_pos_weight = scale_pos_weight
+        self.parallelize_cross_validation = parallelize_cross_validation
 
     @property
     def training_frame(self):
@@ -2452,6 +2457,20 @@ class H2OXGBoostEstimator(H2OEstimator):
     def scale_pos_weight(self, scale_pos_weight):
         assert_is_type(scale_pos_weight, None, float)
         self._parms["scale_pos_weight"] = scale_pos_weight
+
+    @property
+    def parallelize_cross_validation(self):
+        """
+        Allow parallel training of cross-validation models
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("parallelize_cross_validation")
+
+    @parallelize_cross_validation.setter
+    def parallelize_cross_validation(self, parallelize_cross_validation):
+        assert_is_type(parallelize_cross_validation, None, bool)
+        self._parms["parallelize_cross_validation"] = parallelize_cross_validation
 
 
     @staticmethod
