@@ -27,8 +27,6 @@ dependencies {
         exclude group: 'com.esotericsoftware.kryo', module: 'kryo'
     }
     api "ai.h2o:xgboost4j-linux-gpuv4:${xgboost4jVersion}"
-    api "ai.h2o:xgboost4j-linux-minimal:${xgboost4jVersion}"
-    api "ai.h2o:xgboost4j-osx-minimal:${xgboost4jVersion}"
 
     testImplementation project(":h2o-test-support")
     testImplementation 'com.esotericsoftware.kryo:kryo:2.21'

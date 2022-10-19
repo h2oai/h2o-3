@@ -230,9 +230,7 @@ subprojects {
     version = rootProject.version
 
     repositories {
-        if (project.hasProperty("enableMavenLocal")) { // useful for development
             mavenLocal()
-        }
         if (isCi) {
             maven {
                 allowInsecureProtocol = true

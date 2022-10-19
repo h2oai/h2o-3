@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit;
 
 public class XGBoostUpdater extends Thread {
 
+  public static boolean UGLY_TRICK = false;
+  public static long UGLY_TRICK_OVERHEAD;
+  
   private static final Logger LOG = Logger.getLogger(XGBoostUpdater.class);
 
   private static long WORK_START_TIMEOUT_SECS = 5 * 60; // Each Booster task should start before this timer expires
@@ -21,7 +24,7 @@ public class XGBoostUpdater extends Thread {
   private static final NonBlockingHashMap<Key, XGBoostUpdater> updaters = new NonBlockingHashMap<>();
 
   private final Key _modelKey;
-  private final DMatrix _trainMat;
+  private DMatrix _trainMat;
   private final BoosterParms _boosterParms;
   private final byte[] _checkpointBoosterBytes;
   private final Map<String, String> _rabitEnv;
@@ -38,6 +41,11 @@ public class XGBoostUpdater extends Thread {
     super("XGBoostUpdater-" + modelKey);
     _modelKey = modelKey;
     _trainMat = trainMat;
+    if (UGLY_TRICK) {
+      UGLY_TRICK_OVERHEAD += System.currentTimeMillis();
+      _trainMat.saveBinary("xgb.dmatrix");
+      UGLY_TRICK_OVERHEAD -= System.currentTimeMillis();
+    }
     _boosterParms = boosterParms;
     _checkpointBoosterBytes = checkpointBoosterBytes;
     _rabitEnv = rabitEnv;
@@ -114,6 +122,12 @@ public class XGBoostUpdater extends Thread {
     @Override
     public Booster call() throws XGBoostError {
       if ((_booster == null) && _tid == 0) {
+        if (UGLY_TRICK) {
+          UGLY_TRICK_OVERHEAD += System.currentTimeMillis();
+          _trainMat = new ai.h2o.xgboost4j.java.DMatrix("xgb.dmatrix");
+          UGLY_TRICK_OVERHEAD -= System.currentTimeMillis();
+        }
+        
         _booster = new BoosterWrapper(_checkpointBoosterBytes, _boosterParms.get(), _trainMat);        
         // Force Booster initialization; we can call any method that does "lazy init"
         byte[] boosterBytes = _booster.toByteArray();
@@ -121,7 +135,10 @@ public class XGBoostUpdater extends Thread {
       } else {
         // Do one iteration
         assert _booster != null;
+        long before = System.currentTimeMillis();
         _booster.update(_trainMat, _tid);
+        long after = System.currentTimeMillis();
+        System.out.println("DURATION: " + (after-before));
         _booster.saveRabitCheckpoint();
       }
       return _booster.getBooster();
