@@ -1,6 +1,6 @@
-package hex.pipeline;
+package hex.pipeline.transformers;
 
-import water.Key;
+import hex.pipeline.DataTransformer;
 
 /**
  * a DataTransformer that never modifies the response column

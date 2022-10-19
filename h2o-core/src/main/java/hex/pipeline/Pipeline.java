@@ -49,6 +49,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       error("_estimator", "Pipeline can use cross validation only if provided with an estimator.");
     }
     if (_parms._transformers == null) _parms._transformers = new DataTransformer[0];
+    if (_parms._estimatorResult == null) _parms._estimatorResult = Key.make(_result+"_estimator");
   }
 
   @Override
@@ -291,7 +292,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     eParams._parallelize_cross_validation = false;  // chain.transform is not thread safe (index incr)
     eParams._max_runtime_secs = _parms._max_runtime_secs > 0 ? remainingTimeSecs() : _parms._max_runtime_secs;
     
-    ModelBuilder mb = ModelBuilder.make(eParams, eKey == null ? Key.make(_result+"_estimator") : eKey);
+    ModelBuilder mb = ModelBuilder.make(eParams, eKey);
     mb._job = _job;
     return mb;
   }

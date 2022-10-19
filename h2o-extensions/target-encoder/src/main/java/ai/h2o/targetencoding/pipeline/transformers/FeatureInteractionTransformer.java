@@ -1,7 +1,7 @@
-package ai.h2o.targetencoding.pipeline;
+package ai.h2o.targetencoding.pipeline.transformers;
 
 import ai.h2o.targetencoding.interaction.InteractionSupport;
-import hex.pipeline.FeatureTransformer;
+import hex.pipeline.transformers.FeatureTransformer;
 import hex.pipeline.PipelineContext;
 import water.fvec.Frame;
 

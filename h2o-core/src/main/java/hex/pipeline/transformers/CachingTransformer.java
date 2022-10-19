@@ -1,5 +1,7 @@
-package hex.pipeline;
+package hex.pipeline.transformers;
 
+import hex.pipeline.DataTransformer;
+import hex.pipeline.PipelineContext;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;

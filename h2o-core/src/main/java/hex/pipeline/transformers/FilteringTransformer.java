@@ -1,5 +1,7 @@
-package hex.pipeline;
+package hex.pipeline.transformers;
 
+import hex.pipeline.DataTransformer;
+import hex.pipeline.PipelineContext;
 import water.fvec.Frame;
 
 public abstract class FilteringTransformer<T extends DataTransformer> extends DataTransformer<T> {

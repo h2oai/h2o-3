@@ -1,5 +1,7 @@
-package hex.pipeline;
+package hex.pipeline.transformers;
 
+import hex.pipeline.DataTransformer;
+import hex.pipeline.PipelineContext;
 import water.fvec.Frame;
 
 public class UnionTransformer extends DataTransformer<UnionTransformer> {
@@ -29,7 +31,7 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
         break;
     }
     for (DataTransformer dt : _transformers) {
-      result.add(dt.doTransform(fr, type, context));
+      result.add(dt.transform(fr, type, context));
     }
     return result;
   }

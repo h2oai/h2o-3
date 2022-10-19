@@ -1,9 +1,9 @@
-package ai.h2o.targetencoding.pipeline;
+package ai.h2o.targetencoding.pipeline.transformers;
 
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.Model;
-import hex.pipeline.ModelAsFeatureTransformer;
+import hex.pipeline.transformers.ModelAsFeatureTransformer;
 import hex.pipeline.PipelineContext;
 import water.fvec.Frame;
 

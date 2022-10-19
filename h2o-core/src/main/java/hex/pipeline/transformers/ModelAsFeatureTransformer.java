@@ -1,7 +1,8 @@
-package hex.pipeline;
+package hex.pipeline.transformers;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.pipeline.PipelineContext;
 import water.Futures;
 import water.Key;
 import water.Keyed;

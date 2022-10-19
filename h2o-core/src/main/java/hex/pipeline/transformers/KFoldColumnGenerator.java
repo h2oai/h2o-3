@@ -1,13 +1,15 @@
-package hex.pipeline;
+package hex.pipeline.transformers;
 
 import hex.Model.Parameters.FoldAssignmentScheme;
+import hex.pipeline.DataTransformer;
+import hex.pipeline.PipelineContext;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.ast.prims.advmath.AstKFold;
 
-public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator>{
+public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator> {
   
   private static final int DEFAULT_NFOLDS = 5;
   
