@@ -19,11 +19,11 @@ public abstract class DataTransformer<T extends DataTransformer> extends Iced<T>
   int refCount = 0;
 
   public DataTransformer() {
-    this("data_transformer"+Key.rand());
+    this(null);
   }
   
   public DataTransformer(String id) {
-    _id = id; 
+    _id = id == null ? getClass().getSimpleName().toLowerCase()+Key.rand() : id;
   }
   
   @SuppressWarnings("unchecked")

@@ -157,7 +157,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
-  public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
+  public static <B extends ModelBuilder, M extends Model, K extends Key<M>> B make(String algo, Job job, K result) {
     return getRegisteredBuilder(algo)
             .map(prototype -> { 
               @SuppressWarnings("unchecked")
@@ -185,8 +185,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return make(parms, mKey);
   }
 
-  public static <B extends ModelBuilder, MP extends Model.Parameters> B make(MP parms, Key<Model> mKey) {
-    Job<Model> mJob = new Job<>(mKey, parms.javaName(), parms.algoName());
+  public static <B extends ModelBuilder, MP extends Model.Parameters, M extends Model, K extends Key<M>> B make(MP parms, K mKey) {
+    Job<M> mJob = new Job<>(mKey, parms.javaName(), parms.algoName());
     B newMB = ModelBuilder.make(parms.algoName(), mJob, mKey);
     newMB._parms = parms.clone();
     newMB._input_parms = parms.clone();

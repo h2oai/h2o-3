@@ -89,17 +89,20 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
         TransformerChain chain = newChain(context);
         setTrain(context.getTrain());
         setValid(context.getValid());
+        Scope.track(train(), valid()); //chain preparation may have provided extended/modified train/valid frames.
         if (_parms._estimatorParams == null) return;
-        output._model = chain.transform(
-                new Frame[]{ train(), valid() },
-                new FrameType[]{FrameType.Training, FrameType.Validation},
-                context,
-                (frames, ctxt) -> {
-                  ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorResult, _parms._estimatorParams, frames[0], frames[1]);
-                  Keyed res = mb.trainModelNested(null);
-                  return res == null ? null : res.getKey();
-                }
-        );
+        try (Scope.Safe inner = Scope.safe(train(), valid())) {
+          output._model = chain.transform(
+                  new Frame[]{train(), valid()},
+                  new FrameType[]{FrameType.Training, FrameType.Validation},
+                  context,
+                  (frames, ctxt) -> {
+                    ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorResult, _parms._estimatorParams, frames[0], frames[1]);
+                    Keyed res = mb.trainModelNested(null);
+                    return res == null ? null : res.getKey();
+                  }
+          );
+        }
       } finally {
         model.update(_job);
         model.unlock(_job);
@@ -123,87 +126,52 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       TransformerChain chain = newChain(context);
       setTrain(context.getTrain());
       setValid(context.getValid());
-      Scope.protect(train(), valid());
+      Scope.track(train(), valid()); //chain preparation may have provided extended/modified train/valid frames.
 //      initWorkspace(true);
-      output._model = chain.transform(
-              new Frame[] { train(), valid() }, 
-              new FrameType[]{FrameType.Training, FrameType.Validation}, 
-              context,
-              (frames, ctxt) -> {
-                ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorResult, _parms._estimatorParams, frames[0], frames[1]);
-//                mb.init(true);
-                /*
-                // FIXME: note that by using this FramesProvider, the CV frames are transformed on the "full" model time budget, not on the CV model budget...
-                // also, ALL frames for ALL CV models are created BEFORE the first CV model even starts training.
-                mb.trainModelNested(new DefaultTrainingFramesProvider() {
-                  @Override
-                  public Frame getTrain() {
-                    return frames[0];
-                  }
-
-                  @Override
-                  public Frame getValid() {
-                    return frames[1];
-                  }
-
-                  @Override
-                  protected Frame getCVBase() {
-                    if (_cvBase == null && chain.isCVSensitive()) {
-                      _cvBase = new Frame(Key.make(_result.toString()+"_cv"), train().names(), train().vecs()); // referring to pipeline.train() here
-                      if ( _parms._weights_column != null ) _cvBase.remove( _parms._weights_column );
-                    }
-                    return super.getCVBase();
-                  }
-
-                  @Override
-                  public Frame[] getCVFrames(int cvIdx) {
-                    if (chain.isCVSensitive()) {
-                      PipelineContext cvContext = newCVContext(context, cvIdx, getCVBase());
-                      return chain.doTransform(
+      try (Scope.Safe inner = Scope.safe(train(), valid())) {
+        output._model = chain.transform(
+                new Frame[]{train(), valid()},
+                new FrameType[]{FrameType.Training, FrameType.Validation},
+                context,
+                (frames, ctxt) -> {
+                  ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorResult, _parms._estimatorParams, frames[0], frames[1]);
+                  mb.setCallbacks(new ModelBuilderCallbacks() {
+                    /**
+                     * Using this callback, the transformations are applied at the time the CV model training is triggered,
+                     * we don't have to stack up all transformed frames in memory BEFORE starting the CV-training.
+                     */
+                    @Override
+//                  public void beforeCompute(Model.Parameters params) {
+                    public void beforeCompute(ModelBuilder builder) {
+                      Model.Parameters params = builder._parms;
+                      if (!params._is_cv_model || !chain.isCVSensitive()) return;
+                      PipelineContext cvContext = newCVContext(context, params);
+                      chain.transform(
                               new Frame[]{cvContext.getTrain(), cvContext.getValid()},
                               new FrameType[]{FrameType.Training, FrameType.Validation},
-                              cvContext
+                              cvContext,
+                              (cvFrames, ctxt) -> {
+                                reassign(cvFrames[0], params._train);
+                                reassign(cvFrames[1], params._valid);
+
+                                // re-init & re-validate the builder in case we produced a bad frame 
+                                // (although this should have been detected earlier as a similar transformation was already applied to main training frame)
+                                builder._input_parms = params.clone();
+                                builder.setTrain(null);
+                                builder.setValid(null);
+                                builder.init(false);
+                                if (builder.error_count() > 0)
+                                  throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
+                                return null;
+                              }
                       );
                     }
-                    return super.getCVFrames(cvIdx);
-                  }
-                });
-                 */
-                mb.setCallbacks(new ModelBuilderCallbacks() {
-                  /**
-                   * Using this callback, the transformations are applied at the time the CV model training is triggered, 
-                   * we don't have to stack up all transformed frames in memory BEFORE starting the CV-training.
-                   */
-                  @Override
-//                  public void beforeCompute(Model.Parameters params) {
-                  public void beforeCompute(ModelBuilder builder) {
-                    Model.Parameters params = builder._parms;
-                    if (!params._is_cv_model || !chain.isCVSensitive()) return;
-                    PipelineContext cvContext = newCVContext(context, params);
-                    chain.transform(
-                            new Frame[]{cvContext.getTrain(), cvContext.getValid()},
-                            new FrameType[]{FrameType.Training, FrameType.Validation},
-                            cvContext,
-                            (cvFrames, ctxt) -> {
-                              reassign(cvFrames[0], params._train);
-                              reassign(cvFrames[1], params._valid);
-                              
-                              // re-init & re-validate the builder in case we produced a bad frame 
-                              // (although this should have been detected earlier as a similar transformation was already applied to main training frame)
-                              builder._input_parms = params.clone();
-                              builder.setTrain(null); builder.setValid(null);
-                              builder.init(false);
-                              if (builder.error_count() > 0)
-                                throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
-                              return null;
-                            }
-                    );
-                  }
-                });
-                mb.trainModelNested((Frame)null);
-                return mb.dest();
-              }
-      );
+                  });
+                  mb.trainModelNested(null);
+                  return mb.dest();
+                }
+        );
+      }
     } finally {
       if (model != null) {
         model.update(_job);
@@ -213,17 +181,6 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       Scope.exit();
     }
   }
-  
-/*  private PipelineContext newCVContext(PipelineContext context, int cvIdx, Frame cvBase) {
-    PipelineParameters pparams = (PipelineParameters) context._params.clone();
-    pparams._is_cv_model = true;
-    pparams._cv_fold = cvIdx;
-    PipelineContext cvContext = new PipelineContext(pparams, context._tracker);
-    Frame baseFrame = new Frame(Key.make(cvBase.getKey()+"_"+(cvIdx+1)), cvBase.names(), cvBase.vecs());
-    cvContext.setTrain(baseFrame);
-    cvContext.setValid(baseFrame);
-    return cvContext;
-  }*/
   
   private PipelineContext newCVContext(PipelineContext context, Model.Parameters cvParams) {
     PipelineParameters pparams = (PipelineParameters) context._params.clone();

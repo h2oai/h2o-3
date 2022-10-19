@@ -5,6 +5,7 @@ import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
 import hex.Model;
 import hex.pipeline.transformers.ModelAsFeatureTransformer;
 import hex.pipeline.PipelineContext;
+import water.Key;
 import water.fvec.Frame;
 
 import static ai.h2o.targetencoding.TargetEncoderModel.DataLeakageHandlingStrategy.KFold;
@@ -15,8 +16,8 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
     super(params);
   }
 
-  public TargetEncoderFeatureTransformer(TargetEncoderParameters params, String modelId) {
-    super(params, modelId);
+  public TargetEncoderFeatureTransformer(TargetEncoderParameters params, Key<TargetEncoderModel> modelKey) {
+    super(params, modelKey);
   }
 
   @Override
@@ -24,16 +25,6 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
     return _params._data_leakage_handling == KFold;
   }
 
-  @Override
-  protected void doPrepare(PipelineContext context) {
-    if (context != null) {
-      if (isCVSensitive() && context._params._fold_column != null) {
-        _params._fold_column = context._params._fold_column;
-      }
-    }
-    super.doPrepare(context);
-  }
-  
   @Override
   protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     assert type != null;

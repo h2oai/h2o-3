@@ -206,7 +206,7 @@ public class TargetEncoding implements PreprocessingStep {
     
     DataTransformer[] asTransformers() {
       List<DataTransformer> dts = new ArrayList<>();
-      TargetEncoderParameters teParams = (TargetEncoderParameters)getDefaultParams().clone();
+      TargetEncoderParameters teParams = (TargetEncoderParameters) getDefaultParams().clone();
       Frame train = _aml.getTrainingFrame();
       Set<String> teColumns = selectColumnsToEncode(train, teParams);
       if (teColumns.isEmpty()) return new DataTransformer[0];
@@ -216,10 +216,10 @@ public class TargetEncoding implements PreprocessingStep {
               .filter(col -> !teColumns.contains(col) && !ArrayUtils.contains(keep, col))
               .toArray(String[]::new);
       if (_aml.isCVEnabled()) {
-        dts.add(new KFoldColumnGenerator());
+        dts.add(new KFoldColumnGenerator().id("add_fold_column"));
         teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
       }
-      dts.add(new TargetEncoderFeatureTransformer(teParams));
+      dts.add(new TargetEncoderFeatureTransformer(teParams).id("default_TE"));
       return dts.toArray(new DataTransformer[0]);
     }
 
