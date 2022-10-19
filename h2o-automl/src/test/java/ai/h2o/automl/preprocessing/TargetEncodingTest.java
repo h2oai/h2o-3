@@ -162,7 +162,49 @@ public class TargetEncodingTest {
             Scope.exit();
         }
     }
-    
+     @Test
+    public void test_te_preprocessing_lifecycle_with_automl_cv_nfolds_random_fold_assignment() {
+        int nfolds = 3;
+        aml.getBuildSpec().build_control.nfolds = nfolds;
+         aml.getBuildSpec().build_control.stopping_criteria.set_seed(1234);
+        TargetEncoding te = new TargetEncoding(aml);
+        TargetEncoderParameters teParms = new TargetEncoderParameters();
+        teParms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Random;
+
+        te.setDefaultParams(teParms);
+        te.setEncodeAllColumns(true);
+        try {
+            Scope.enter();
+            te.prepare();
+            assertNotNull(te.getTEModel());
+            assertNotNull(te.getTEPreprocessor());
+            Scope.track_generic(te.getTEModel());
+            Scope.track_generic(te.getTEPreprocessor());
+            assertNotNull(te.getTEModel()._parms._fold_column);
+            assertTrue(te.getTEModel()._parms._fold_column.endsWith(TargetEncoding.TE_FOLD_COLUMN_SUFFIX));
+            assertEquals(DataLeakageHandlingStrategy.KFold, te.getTEModel()._parms._data_leakage_handling);
+
+            Model.Parameters params = new DummyModel.DummyModelParameters();
+            params._train = fr._key;
+            params._nfolds = nfolds;
+            params._fold_column = null;
+
+            PreprocessingStep.Completer complete = te.apply(params, new PreprocessingConfig());
+            assertEquals(0, params._nfolds);
+            assertNotNull(params._fold_column);
+            assertEquals(te.getTEModel()._parms._fold_column, params._fold_column);
+            assertNotEquals(fr._key, params._train);
+            Frame newTrain = params._train.get();
+            assertTrue(ArrayUtils.contains(newTrain.names(), params._fold_column));
+            assertFalse(ArrayUtils.contains(fr.names(), params._fold_column));
+            assertEquals(nfolds, newTrain.vec(params._fold_column).toCategoricalVec().cardinality());
+            complete.run();
+        } finally {
+            te.dispose();
+            Scope.exit();
+        }
+    }
+
     @Test
     public void test_te_preprocessing_lifecycle_with_automl_cv_foldcolumn() {
         aml.getBuildSpec().input_spec.fold_column = "foldc";

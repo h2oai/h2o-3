@@ -14,6 +14,7 @@ import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelPreprocessor;
 import water.DKV;
 import water.Key;
+import water.exceptions.H2OAutoMLException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.ast.prims.advmath.AstKFold;
@@ -69,12 +70,15 @@ public class TargetEncoding implements PreprocessingStep {
         if (_aml.isCVEnabled()) {
             params._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
             params._fold_column = amlInput.fold_column;
+            if (!(params._fold_assignment.equals(FoldAssignmentScheme.Modulo) ||
+                    params._fold_assignment.equals(FoldAssignmentScheme.AUTO)) && params._seed == -1)
+                throw new H2OAutoMLException("When using TargetEncoding with fold_assignment other than Modulo, the seed has to be set to a value > -1.");
             if (params._fold_column == null) {
                 //generate fold column
                 Frame train = new Frame(params.train());
                 Vec foldColumn = createFoldColumn(
                         params.train(), 
-                        FoldAssignmentScheme.Modulo,
+                        params._fold_assignment.equals(FoldAssignmentScheme.AUTO) ? FoldAssignmentScheme.Modulo : params._fold_assignment,
                         amlBuild.nfolds,
                         params._response_column,
                         params._seed
@@ -94,6 +98,8 @@ public class TargetEncoding implements PreprocessingStep {
         params._ignored_columns = Arrays.stream(amlTrain.names())
                 .filter(col -> !teColumns.contains(col) && !ArrayUtils.contains(keep, col))
                 .toArray(String[]::new);
+
+        params._fold_assignment = FoldAssignmentScheme.AUTO; // ModelBuilder doesn't like to have both fold_column and fold_assignment
 
         TargetEncoder te = new TargetEncoder(params, _aml.makeKey(getType(), null, false));
         _teModel = te.trainModel().get();
