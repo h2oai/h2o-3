@@ -2652,16 +2652,12 @@ Using the previous example, run the following to predict the leaf node assignmen
 Predict Contributions
 ~~~~~~~~~~~~~~~~~~~~~
 
-In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being
-the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model.
-Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction.
-For Gaussian distribution, the sum of the contributions is equal to the model prediction.
+In H2O-3, each returned H2OFrame has the specific shape of *#rows, #features + 1*. This includes a feature contribution column for each input feature. The last column of this table is the model bias (the column is the same for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of a tree-based model is the sum of the predictions of the individual trees prior to applying the inverse link function to retrieve the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction.
 
-H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost.
-For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model.
+We support TreeSHAP for DRF, GBM, and XGBoost. For these problems, ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions as SHAP (SHapley Additive exPlanation) values on an H2O model.
 
-You can use methods from `model explainability <explain.html#shap-summary>`__ to plot SHAP or if you have SHAP installed, then graphical representations can be retrieved in Python using `SHAP functions <https://shap.readthedocs.io/en/latest/#>`__.
-(Note that retrieving graphs via R is not yet supported.) An .ipynb demo showing this example is also available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb>`__.
+You can use methods from `model explainability <explain.html#shap-summary>`__ to plot SHAP. If you have SHAP installed, graphical representations can be retrieved in Python using `SHAP functions <https://shap.readthedocs.io/en/latest/#>`__.
+Retrieving graphs via R is not yet supported. An `.ipynb demo showing this example <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb>`__ is also available.
 
 **Note**: Multinomial classification models are currently not supported.
 
@@ -2669,7 +2665,7 @@ You can use methods from `model explainability <explain.html#shap-summary>`__ to
 .. tabs::
    .. code-tab:: r R
   
-        # Predict the contributions using the GBM model and test data.
+        # Predict the contributions using the GBM model and test data:
         contributions <- h2o.predict_contributions(model, prostate_test)
         contributions
 
@@ -2683,16 +2679,16 @@ You can use methods from `model explainability <explain.html#shap-summary>`__ to
 
         [90 rows x 5 columns]
 
-        # Plot SHAP summary plot
+        # Plot SHAP summary plot:
         h2o.shap_summary_plot(model, prostate_test)
 
-        # Plot SHAP contributions for one instance, e.g., row 5
+        # Plot SHAP contributions for one instance (e.g., row 5):
         h2o.shap_explain_row_plot(model, prostate_test, row_index = 5)
 
 
    .. code-tab:: python
 
-        # Predict the contributions using the GBM model and test data.
+        # Predict the contributions using the GBM model and test data:
         contributions = model.predict_contributions(test)
         contributions
 
@@ -2711,36 +2707,36 @@ You can use methods from `model explainability <explain.html#shap-summary>`__ to
 
         [90 rows x 5 columns]
 
-        # Plot SHAP summary plot
+        # Plot SHAP summary plot:
         model.shap_summary_plot(test)
 
-        # Plot SHAP contributions for one instance, e.g., row 5
+        # Plot SHAP contributions for one instance (e.g., row 5):
         model.shap_explain_row_plot(test, row_index=5)
 
         # OR using the shap package:
         # Import required packages for running SHAP commands
         import shap
 
-        # Load JS visualization code
+        # Load JS visualization code:
         shap.initjs()
 
-        # Convert the H2OFrame to use with SHAP's visualization functions
+        # Convert the H2OFrame to use with SHAP's visualization functions:
         contributions_matrix = contributions.as_data_frame().as_matrix()
 
-        # Calculate SHAP values for all features
+        # Calculate SHAP values for all features:
         shap_values = contributions_matrix[:,0:4]
 
-        # Expected values is the last returned column
+        # Expected values is the last returned column:
         expected_value = contributions_matrix[:,4].min()
 
-        # Visualize the training set predictions
+        # Visualize the training set predictions:
         X=["AGE","RACE","PSA","GLEASON"]
         shap.force_plot(expected_value, shap_values, X)
 
-        # Summarize the effects of all the features
+        # Summarize the effects of all the features:
         shap.summary_plot(shap_values, X)
 
-        # View the same summary as a bar chart
+        # View the same summary as a bar chart:
         shap.summary_plot(shap_values, X, plot_type="bar")
 
 
