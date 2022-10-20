@@ -5,7 +5,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.DKVManager;
 import water.Key;
-import water.runner.ClearBeforeTestKeysTask;
+import water.junit.rules.tasks.ClearBeforeTestKeysTask;
 
 @Ignore 
 public class DKVIsolation implements PriorityTestRule {

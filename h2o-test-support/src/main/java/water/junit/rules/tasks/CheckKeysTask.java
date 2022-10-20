@@ -1,4 +1,4 @@
-package water.runner;
+package water.junit.rules.tasks;
 
 import org.junit.Ignore;
 import water.*;
@@ -6,13 +6,14 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 @Ignore
 public class CheckKeysTask extends MRTask<CheckKeysTask> {
 
-    Key[] leakedKeys;
-    LeakInfo[] leakInfos;
+    public Key[] leakedKeys;
+    public LeakInfo[] leakInfos;
 
     /**
      * Determines if a key leak is ignorable
@@ -39,15 +40,15 @@ public class CheckKeysTask extends MRTask<CheckKeysTask> {
         final Set<Key> initKeys = LocalTestRuntime.beforeTestKeys;
         final Set<Key> keysAfterTest = H2O.localKeySet();
 
-        final int numLeakedKeys = keysAfterTest.size() - initKeys.size();
+        Set<Key> leaks = new HashSet<>(keysAfterTest);
+        leaks.removeAll(initKeys);
+        final int numLeakedKeys = leaks.size();
         leakedKeys = numLeakedKeys > 0 ? new Key[numLeakedKeys] : new Key[]{};
         leakInfos = new LeakInfo[]{};
         if (numLeakedKeys > 0) {
             int leakedKeysPointer = 0;
 
-            for (Key key : keysAfterTest) {
-                if (initKeys.contains(key)) continue;
-
+            for (Key key : leaks) {
                 final Value keyValue = Value.STORE_get(key);
                 if (!isIgnorableKeyLeak(key, keyValue)) {
                     leakedKeys[leakedKeysPointer] = key;
@@ -60,7 +61,6 @@ public class CheckKeysTask extends MRTask<CheckKeysTask> {
             }
             if (leakedKeysPointer < numLeakedKeys) leakedKeys = Arrays.copyOfRange(leakedKeys, 0, leakedKeysPointer);
         }
-
     }
 
     private LeakInfo makeLeakInfo(int keyIdx, Value value) {
@@ -78,10 +78,10 @@ public class CheckKeysTask extends MRTask<CheckKeysTask> {
     }
     
     public static class LeakInfo extends Iced<LeakInfo> {
-        final int _keyIdx;
-        final Key<Vec> _vecKey;
-        final int _nodeId;
-        final String _info;
+        public final int _keyIdx;
+        public final Key<Vec> _vecKey;
+        public final int _nodeId;
+        public final String _info;
 
         private LeakInfo(int keyIdx, Key<Vec> vecKey, String info) {
             _keyIdx = keyIdx;
