@@ -30,6 +30,8 @@ import java.util.stream.Stream;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
+import static hex.glm.GLMModel.GLMOutput.calculatePValuesFromZValues;
+import static hex.glm.GLMModel.GLMOutput.calculateStdErrFromZValues;
 import static hex.glm.GLMUtils.genGLMParameters;
 import static hex.modelselection.ModelSelectionUtils.extractPredictorNames;
 import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
@@ -309,14 +311,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public void update(double [] beta, double devianceTrain, double devianceTest,int iter){
     int id = _output._submodels.length-1;
     _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,_output._submodels[id].alpha_value,beta,
-            iter,devianceTrain,devianceTest, _output._totalBetaLength);
+            iter, devianceTrain, devianceTest, _output._totalBetaLength,
+            _output._submodels[id].zValues, _output._submodels[id].dispersionEstimated);
     _output.setSubmodelIdx(id, _parms);
   }
 
   public void update(double [] beta, double[] ubeta, double devianceTrain, double devianceTest,int iter){
     int id = _output._submodels.length-1;
     Submodel sm = new Submodel(_output._submodels[id].lambda_value,_output._submodels[id].alpha_value,beta,iter,
-            devianceTrain,devianceTest, _output._totalBetaLength);
+            devianceTrain, devianceTest, _output._totalBetaLength,
+            _output._submodels[id].zValues, _output._submodels[id].dispersionEstimated);
     sm.ubeta = Arrays.copyOf(ubeta, ubeta.length);
     _output._submodels[id] = sm;
     _output.setSubmodelIdx(id, _parms);
@@ -426,8 +430,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_alpha","alpha parameter must from (inclusive) [0,1] range");
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
         glm.error("_compute_p_values","P values can only be computed with IRLSM solver, go solver = " + _solver);
-//      if(_compute_p_values && (_lambda == null || _lambda[0] > 0))
-//        glm.error("_compute_p_values","P values can only be computed with NO REGULARIZATION (lambda = 0)");
       if(_compute_p_values && (_family == Family.multinomial || _family==Family.ordinal))
         glm.error("_compute_p_values","P values are currently not supported for " +
                 "family=multinomial or ordinal");
@@ -1193,6 +1195,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double [] beta;
     public double[] ubeta;  // store HGLM random coefficients
     public double _trainTheta;
+    public double[] zValues;
+    public boolean dispersionEstimated;
+
 
     public double [] getBeta(double [] beta) {
       if(idxs != null){
@@ -1207,13 +1212,28 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int rank(){
       return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
-    
-    public Submodel(double lambda , double alpha, double [] beta, int iteration, double devTrain, double devValid, int totBetaLen){
+
+    public double[] zValues() {
+      return zValues.clone();
+    }
+
+    public double[] pValues(long residualDegreesOfFreedom) {
+      return calculatePValuesFromZValues(zValues, dispersionEstimated, residualDegreesOfFreedom);
+    }
+
+    public double[] stdErr() {
+      return calculateStdErrFromZValues(zValues, beta);
+    }
+
+    public Submodel(double lambda, double alpha, double[] beta, int iteration, double devTrain, double devValid,
+                    int totBetaLen, double[] zValues, boolean dispersionEstimated) {
       this.lambda_value = lambda;
       this.alpha_value = alpha;
       this.iteration = iteration;
       this.devianceTrain = devTrain;
       this.devianceValid = devValid;
+      this.zValues = zValues;
+      this.dispersionEstimated = dispersionEstimated;
       int r = 0;
       if(beta != null){
         
@@ -1306,10 +1326,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int[] _activeColsPerClass;
     public boolean hasPValues(){return _zvalues != null;}
     public boolean hasVIF() { return _vif_predictor_names != null; }
-    public double [] stdErr(){
-      double [] res = _zvalues.clone();
-      for(int i = 0; i < res.length; ++i)
-        res[i] = _global_beta[i]/_zvalues[i];
+
+    public double[] stdErr() {
+      return calculateStdErrFromZValues(_zvalues, _global_beta);
+    }
+
+    public static double[] calculateStdErrFromZValues(double[] zValues, double[] beta) {
+      double[] res = zValues.clone();
+      for (int i = 0; i < res.length; ++i)
+        res[i] = beta[i] / zValues[i];
       return res;
     }
     
@@ -1339,13 +1364,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return d*super.checksum_impl();
     }
     public double [] zValues(){return _zvalues.clone();}
-    public double [] pValues(){
-      double [] res = zValues();
-      RealDistribution rd = _dispersionEstimated?new TDistribution(_training_metrics.residual_degrees_of_freedom()):new NormalDistribution();
+
+    public static double[] calculatePValuesFromZValues(double[] zValues,
+                                                       boolean dispersionEstimated,
+                                                       long residualDegreesOfFreedom) {
+      double[] res = zValues.clone();
+      RealDistribution rd = dispersionEstimated ? new TDistribution(residualDegreesOfFreedom) : new NormalDistribution();
       for(int i = 0; i < res.length; ++i)
         res[i] = 2*rd.cumulativeProbability(-Math.abs(res[i]));
       return res;
     }
+
+    public double[] pValues() {
+      return calculatePValuesFromZValues(_zvalues, _dispersionEstimated, _training_metrics.residual_degrees_of_freedom());
+    }
+
     public double[] variableInflationFactors() {
       return _variable_inflation_factors; // predictor orders the same as in coefficientNames
     }
@@ -1432,7 +1465,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _global_beta_multinomial=ArrayUtils.convertTo2DMatrix(beta, coefficient_names.length);
       else
         _global_beta=beta;
-      _submodels = new Submodel[]{new Submodel(0, 0,beta,-1,Double.NaN,Double.NaN, _totalBetaLength)};
+      _submodels = new Submodel[]{new Submodel(0, 0,beta,-1,Double.NaN,Double.NaN, _totalBetaLength,
+              new double[0], false)};
     }
     
     public GLMOutput() {
