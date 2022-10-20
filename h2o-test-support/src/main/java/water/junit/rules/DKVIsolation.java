@@ -24,7 +24,7 @@ public class DKVIsolation implements PriorityTestRule {
    */
   @Override
   public int priority() {
-    return 100;
+    return PriorityTestRule.IGNORED_TEST_RULE_PRIORITY * 2;
   }
 
   @Override

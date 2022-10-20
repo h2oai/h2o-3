@@ -19,7 +19,7 @@ public class CheckLeakedKeysRule extends ExternalResource implements PriorityTes
 
   @Override
   public int priority() {
-    return 1_000_000; //outer most
+    return PriorityTestRule.IGNORED_TEST_RULE_PRIORITY-1; // the highest possible priority that can safely be skipped if test is ignored.
   }
 
   @Override

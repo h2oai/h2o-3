@@ -442,7 +442,7 @@ public class TestUtil extends Iced {
 
     @Override
     public int priority() {
-      return 10; // all rules will lower priority won't be evaluated for ignored tests.
+      return PriorityTestRule.IGNORED_TEST_RULE_PRIORITY;
     }
   };
 
