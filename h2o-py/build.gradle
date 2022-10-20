@@ -1,7 +1,7 @@
 description = "H2O Python Package"
 
 dependencies {
-    api project(path: ":h2o-assemblies:main", configuration: 'shadow')
+    api project(path: ":h2o-assemblies:${mainAssemblyName}", configuration: 'shadow')
 }
 
 def buildVersion = new H2OBuildVersion(rootDir, version)
@@ -157,5 +157,5 @@ task cleanBuild(type: Delete) {
 //
 clean.dependsOn cleanBuild, cleanUpTestResults, cleanCoverageData
 buildDist.dependsOn buildClientDist // to have a predictable order of these 2 
-copyH2OJar.dependsOn ":h2o-assemblies:main:copyJar"
+copyH2OJar.dependsOn ":h2o-assemblies:${mainAssemblyName}:copyJar"
 build.dependsOn copyMainDist

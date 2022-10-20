@@ -102,7 +102,24 @@ task licenseReport(dependsOn: project.tasks.getByName('downloadLicenses')) {
     }
 }
 
+//
+// Copying the resulting assembly into parent for convenient scripting
+// project build directory
+//
+task copyJar(type: Copy) {
+    from ("${project.buildDir}/libs"){
+        include "${mainAssemblyName}.jar"
+    }
+    into "${project.parent.parent.buildDir}"
+    rename { it.replace("${mainAssemblyName}.jar", "h2o.jar") }
+}
+
 // Include licences
 shadowJar.dependsOn(licenseReport)
 // Run shadowJar as part of build
 jar.finalizedBy shadowJar
+
+// For main assembly execute copyJar
+if (mainAssemblyName == project.name) {
+    shadowJar.finalizedBy copyJar
+}
