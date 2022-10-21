@@ -25,7 +25,6 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
@@ -80,12 +79,21 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
-    if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
-      if (_parms._gpu_id != null && _parms._gpu_id.length > 0) {
-        return _parms._gpu_id.length;
-      } else {
-        return numGPUs(H2O.CLOUD.members()[0]);
-      }
+    /*
+      Concept of XGBoost CV parallelization:
+        - for CPU backend use regular strategy with defaultParallelization = 2
+        - for GPU backend:
+            - running on GPU in parallel might not be faster in all cases - but H2O currently has overhead in scoring,
+              and scoring is done always on CPU - we want to keep GPU busy the whole training, the idea is when one model
+              is being scored (on CPU) the other one is running on GPU and the GPU is never idle
+            - data up to a certain limit can run 2 models parallel per GPU
+            - big data take the whole GPU
+     */
+    if (_parms._parallelize_cross_validation &&
+            XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      int numGPUs = _parms._gpu_id != null && _parms._gpu_id.length > 0 ? _parms._gpu_id.length : numGPUs(H2O.CLOUD.members()[0]);
+      int parallelizationPerGPU = _train.byteSize() < parallelTrainingSizeLimit() ? 2 : 1;
+      return numGPUs * parallelizationPerGPU;
     } else {
       return nModelsInParallel(folds, 2);
     }
@@ -101,7 +109,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    *  and each subclass will start with "super.init();".  This call is made
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
-   *
    *  Validate the learning rate and distribution family. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
@@ -312,6 +319,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return H2O.getSysBoolProperty("xgboost.multinode.gpu.enabled", false);
   }
 
+  static long parallelTrainingSizeLimit() {
+    long defaultLimit = (long) 1e9; // 1GB; current GPUs typically have at least 8GB of memory - plenty of buffer left
+    String limitSpec = H2O.getSysProperty("xgboost.gpu.parallelTrainingSizeLimit", Long.toString(defaultLimit));
+    return Long.parseLong(limitSpec);
+  }
+
   static boolean prestartExternalClusterForCV() {
     return H2O.getSysBoolProperty("xgboost.external.cv.prestart", false);
   }
@@ -399,21 +412,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
       buildModel();
     }
-
-    final void buildModel() {
-      if ((XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend)) &&
-              hasGPU(_parms._gpu_id) && (H2O.getCloudSize() == 1 || allowMultiGPU()) && _parms.gpuIncompatibleParams().isEmpty()) {
-        int[] lockedGpus = null;
-        try {
-          lockedGpus = XGBoostGPULock.lock(_parms._gpu_id);
-          buildModelImpl();
-        } finally {
-          if (lockedGpus != null) XGBoostGPULock.unlock(lockedGpus);
-        }
-      } else {
-        buildModelImpl();
-      }
-    }
     
     private XGBoostExecutor makeExecutor(XGBoostModel model, boolean useValidFrame) throws IOException {
       if (H2O.ARGS.use_external_xgboost) {
@@ -430,7 +428,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    final void buildModelImpl() {
+    final void buildModel() {
       final XGBoostModel model;
       if (_parms.hasCheckpoint()) {
         XGBoostModel checkpoint = DKV.get(_parms._checkpoint).<XGBoostModel>get().deepClone(_result);

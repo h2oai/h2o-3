@@ -80,6 +80,7 @@
 #' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 #'        Defaults to FALSE.
+#' @param parallelize_cross_validation \code{Logical}. Allow parallel training of cross-validation models Defaults to TRUE.
 #' @param calibrate_model \code{Logical}. Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
 #'        probabilities. Calibration can provide more accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Data for model calibration
@@ -186,6 +187,7 @@ h2o.xgboost <- function(x,
                         nthread = -1,
                         save_matrix_directory = NULL,
                         build_tree_one_node = FALSE,
+                        parallelize_cross_validation = TRUE,
                         calibrate_model = FALSE,
                         calibration_frame = NULL,
                         calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
@@ -327,6 +329,8 @@ h2o.xgboost <- function(x,
     parms$save_matrix_directory <- save_matrix_directory
   if (!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
+  if (!missing(parallelize_cross_validation))
+    parms$parallelize_cross_validation <- parallelize_cross_validation
   if (!missing(calibrate_model))
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
@@ -426,6 +430,7 @@ h2o.xgboost <- function(x,
                                         nthread = -1,
                                         save_matrix_directory = NULL,
                                         build_tree_one_node = FALSE,
+                                        parallelize_cross_validation = TRUE,
                                         calibrate_model = FALSE,
                                         calibration_frame = NULL,
                                         calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
@@ -571,6 +576,8 @@ h2o.xgboost <- function(x,
     parms$save_matrix_directory <- save_matrix_directory
   if (!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
+  if (!missing(parallelize_cross_validation))
+    parms$parallelize_cross_validation <- parallelize_cross_validation
   if (!missing(calibrate_model))
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
