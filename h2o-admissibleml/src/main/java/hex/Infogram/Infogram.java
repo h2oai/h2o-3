@@ -74,13 +74,13 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, InfogramP
    * This is called before cross-validation is carried out
    */
   @Override
-  public void computeCrossValidation() {
+  protected void cv_init() {
+    super.cv_init();
     info("cross-validation", "cross-validation infogram information is stored in frame with key" +
             " labeled as admissible_score_key_cv and the admissible features in admissible_features_cv.");
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(Infogram.this);
     }
-    super.computeCrossValidation();
   }
 
   @Override

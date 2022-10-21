@@ -448,7 +448,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   /**
    * Ideally there should be no need to deep copy columns that are not listed as input in _input_to_output_columns.
-   * However if we keep the original columns in the output, then they are deleted in the model integration: {@link hex.ModelBuilder#trackFrame}.
+   * However if we keep the original columns in the output, then they are deleted in the model integration: {@link hex.ModelBuilder#track}.
    * On the other side, if copied as a "ShallowVec" (extending WrappedVec) to prevent deletion of data in trackFrame, 
    *  then we expose WrappedVec to the client in all non-integration use cases, which is strongly discouraged.
    * Catch-22 situation, so keeping the deepCopy for now.

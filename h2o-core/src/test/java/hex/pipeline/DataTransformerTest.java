@@ -92,11 +92,12 @@ public class DataTransformerTest {
       if (type == FrameType.Training && context._params._is_cv_model) {
         Frame tr = new Frame(fr);
         Vec v = Vec.makeRepSeq(tr.anyVec().length(), context._params._cv_fold+2);
+        Vec tmp;
         switch (vecType) {
           case Vec.T_CAT:
-            v = v.toCategoricalVec(); break;
+            tmp = v.toCategoricalVec(); v.remove(); v = tmp; break;
           case Vec.T_STR:
-            v = v.toStringVec(); break;
+            tmp = v.toStringVec(); v.remove(); v = tmp; break;
           case Vec.T_NUM:
           default:
             //already numeric by construct

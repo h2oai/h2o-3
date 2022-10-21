@@ -11,9 +11,7 @@ import hex.pipeline.PipelineModel.PipelineParameters;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -39,6 +37,18 @@ public class PipelineTest {
 
   @Rule
   public DKVIsolation isolation = new DKVIsolation();
+  
+  private void checkFrameState(Frame fr) {
+    assertNotNull(fr.getKey());
+    assertNotNull(DKV.get(fr.getKey()));
+    assertFrameEquals(fr, DKV.getGet(fr.getKey()), 1e-10);
+    for (int i=0; i<fr.keys().length; i++) {
+      Key<Vec> k = fr.keys()[i];
+      assertNotNull(k);
+      assertNotNull(k.get());
+      assertVecEquals(fr.vec(i), k.get(), 1e-10);
+    }
+  }
   
   @Test
   public void test_simple_transformation_pipeline() {
@@ -69,18 +79,21 @@ public class PipelineTest {
     assertNotNull(output._transformers);
     assertEquals(3, output._transformers.length);
     assertEquals(0, tracker.transformations.size());
+    checkFrameState(fr);
 
     Frame transformed = Scope.track(pmodel.score(fr));
     assertNotNull(transformed);
     TestUtil.printOutFrameAsTable(transformed);
     assertEquals(1, tracker.transformations.size());
     assertArrayEquals(new String[] {"one", "two", "target", "foo", "bar"}, transformed.names());
+    checkFrameState(fr);
 
     Frame retransformed = Scope.track(pmodel.score(fr));
     TestUtil.printOutFrameAsTable(retransformed);
     assertEquals(2, tracker.transformations.size());
     assertNotSame(transformed, retransformed);
     assertFrameEquals(transformed, retransformed, 1.6);
+    checkFrameState(fr);
   }
 
   @Test
@@ -118,10 +131,12 @@ public class PipelineTest {
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
       
     assertEquals(1, tracker.transformations.size());
+    checkFrameState(fr);
       
     Frame predictions = Scope.track(pmodel.score(fr));
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
+    checkFrameState(fr);
   }
   
   @Test 
@@ -167,7 +182,7 @@ public class PipelineTest {
     System.out.println(tracker.transformations);
     assertEquals(2*nfolds+1, tracker.transformations.size()); // nfolds * 2 [train+valid] + 1 [final model, train only]
     assertNotEquals(fr.getKey().toString(), tracker.transformations.get(0).frameId); // training frame for final model transformed first
-    assertEquals(fr.getKey().toString()+"@@Training_after_trf_by_add_bar", tracker.transformations.get(0).frameId); 
+    assertEquals(fr.getKey().toString()+"@@Training_trf_by_add_bar", tracker.transformations.get(0).frameId); 
     assertEquals(DataTransformer.FrameType.Training, tracker.transformations.get(0).type);
     assertFalse(tracker.transformations.get(0).is_cv);
     assertEquals(nfolds*2, tracker.transformations.stream().filter(t -> t.is_cv).count());
@@ -184,10 +199,12 @@ public class PipelineTest {
               IntStream.rangeClosed(0, i+1).mapToObj(String::valueOf).toArray(String[]::new), 
               cvModel._output._domains[4]);
     }
+    checkFrameState(fr);
       
     Frame predictions = Scope.track(pmodel.score(fr));
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
+    checkFrameState(fr);
   }
 
   @Test
@@ -233,13 +250,15 @@ public class PipelineTest {
     System.out.println(tracker.transformations);
     assertEquals(1, tracker.transformations.size()); // only one transformation, once and for all, as no transformer is CV-sensitive
     assertNotEquals(fr.getKey().toString(), tracker.transformations.get(0).frameId); 
-    assertEquals(fr.getKey().toString()+"@@Training_after_trf_by_add_bar", tracker.transformations.get(0).frameId); 
+    assertEquals(fr.getKey().toString()+"@@Training_trf_by_add_bar", tracker.transformations.get(0).frameId); 
     assertEquals(DataTransformer.FrameType.Training, tracker.transformations.get(0).type);
     assertFalse(tracker.transformations.get(0).is_cv);
+    checkFrameState(fr);
 
     Frame predictions = Scope.track(pmodel.score(fr));
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
+    checkFrameState(fr);
   }
   
   @Test
@@ -277,10 +296,12 @@ public class PipelineTest {
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
 
     assertEquals(1, tracker.transformations.size());
+    checkFrameState(fr);
 
     Frame predictions = Scope.track(pmodel.score(fr));
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
+    checkFrameState(fr);
   }
   
   @Test 
@@ -322,10 +343,12 @@ public class PipelineTest {
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
 
     assertEquals(2*nfolds+1, tracker.transformations.size()); // nfolds * 2 [train+valid] + 1 [final model, train only]
+    checkFrameState(fr);
 
     Frame predictions = Scope.track(pmodel.score(fr));
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
+    checkFrameState(fr);
   }
   
   @Test
@@ -362,6 +385,7 @@ public class PipelineTest {
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[][] {{"a", "b", "c"}, {"a", "b", "c"}, {"no", "yes"}}, pmodel._output._domains);
     assertArrayEquals(new String[][] {{"a", "b", "c"}, {"a", "b", "c"}, null, null, {"no", "yes"}}, emodel._output._domains);
+    checkFrameState(fr);
   }
   
   @Test
@@ -426,5 +450,6 @@ public class PipelineTest {
       assertArrayEquals(new String[][] {{"a", "b", "c", "d"}, {"a", "b", "c", "d"}, null/*foo*/, null/*bar*/, null/*cv_fold*/, null/*cv_weights*/, {"n", "y"}}, cvModel._output._origDomains);
       assertArrayEquals(new String[][] {null/*encoded one*/, null/*encoded two*/, null/*foo*/, null/*bar*/ , null/*cv_fold*/, null/*cv_weights*/, {"n", "y"}}, cvModel._output._domains);
     }
+    checkFrameState(fr);
   }
 }

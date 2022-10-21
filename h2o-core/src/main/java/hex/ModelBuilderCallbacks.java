@@ -20,9 +20,7 @@ public abstract class ModelBuilderCallbacks<SELF extends ModelBuilderCallbacks> 
   
   private static final HandledException HANDLED = new HandledException();
   
-  public void beforeCompute(Model.Parameters params) {}
-  
-  public void beforeCompute(ModelBuilder builder) {}
+  public void wrapCompute(ModelBuilder builder, Runnable compute) { compute.run(); }
   /**
    * Callback for successfully finished model builds
    *

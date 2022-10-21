@@ -16,10 +16,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.DKV;
-import water.Key;
-import water.Keyed;
-import water.Scope;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -253,11 +250,12 @@ public class TargetEncodingTest {
     try {
       Scope.enter();
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      Frame fr = parseTestFile("./smalldata/titanic/titanic_expanded.csv"); Scope.track(fr);
+      Frame fr = Scope.track(parseTestFile("./smalldata/titanic/titanic_expanded.csv"));
       SplitFrame sf = new SplitFrame(fr, new double[] { 0.7, 0.3 }, new Key[]{Key.make("titanic_train"), Key.make("titanic_test")});
       sf.exec().get();
-      Frame train = sf._destination_frames[0].get(); Scope.track(train);
-      Frame test = sf._destination_frames[1].get(); Scope.track(test);
+      Frame train = Scope.track(sf._destination_frames[0].get());
+      Frame test = Scope.track(sf._destination_frames[1].get());
+      TestUtil.printOutFrameAsTable(test);
 
       autoMLBuildSpec.input_spec.training_frame = train._key;
 //            autoMLBuildSpec.input_spec.validation_frame = test._key;

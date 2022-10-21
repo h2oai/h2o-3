@@ -8,6 +8,8 @@ import water.Scope;
 import water.fvec.Frame;
 import water.util.Countdown;
 
+import static hex.pipeline.PipelineHelper.reassignInplace;
+
 public class PipelineContext implements Cloneable {
   
   @FunctionalInterface
@@ -42,7 +44,7 @@ public class PipelineContext implements Cloneable {
   public static class ConsistentKeyTracker implements FrameTracker {
     
     private static final String SEP = "@@"; // anything that doesn't contain Key.MAGIC_CHAR
-    private static final String TRF_BY = "_after_trf_by_"; 
+    private static final String TRF_BY = "_trf_by_"; 
     
     private final Frame _refFrame;
 
@@ -78,11 +80,9 @@ public class PipelineContext implements Cloneable {
       if (!frName.startsWith(refName)) return; // all successive frames must have the same naming pattern when using this tracker -> doesn't apply to this frame.
       
       if (transformed != frame) {
-        DKV.remove(transformed.getKey());
         String baseName = frName.contains(SEP) ? frName.substring(0, frName.lastIndexOf(SEP)) : frName;
-        transformed._key = Key.make(baseName+SEP+type+TRF_BY+transformer.id());
+        reassignInplace(transformed, Key.make(baseName+SEP+type+TRF_BY+transformer.id()));
       }
-      DKV.put(transformed);
     }
   }
   

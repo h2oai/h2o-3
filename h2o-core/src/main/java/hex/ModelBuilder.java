@@ -244,15 +244,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     protected Driver(){ super(); }
     
+    @Override
+    public void compute2() {
+      if (_callbacks != null) _callbacks.wrapCompute(ModelBuilder.this, this::compute3);
+      else this.compute3();
+    }
+    
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
     // 1) Scope (unless they want to keep data, then they must call Scope.untrack(Key<Vec>[]))
     // 2) Train/Valid frame locking and unlocking
     // 3) calling tryComplete()
-    public void compute2() {
+    public void compute3() {
       try {
         Scope.enter();
-        if (_callbacks != null) _callbacks.beforeCompute(_parms);
-        if (_callbacks != null) _callbacks.beforeCompute(ModelBuilder.this);
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
         computeParameters();
@@ -616,7 +620,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     ModelBuilder<M, P, O>[] cvModelBuilders = null;
     try {
       Scope.enter();
-      init(false);
+      // Step 0: custom preparation for CV
+      cv_init(); // ensures that this initialization is done in the current Scope to avoid key leakage.
 
       // Step 1: Assign each row to a fold
       final FoldAssignment foldAssignment = cv_AssignFold(N);
@@ -687,6 +692,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cleanUp();
       Scope.exit();
     }
+  }
+  
+  // Step 0: Algos can override this if additional preparation is required before starting CV.
+  protected void cv_init() {
+    init(false);
   }
 
   // Step 1: Assign each row to a fold
@@ -1620,9 +1630,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
-      boolean scopeTrack = !_parms._is_cv_model;
-      Frame newtrain = applyPreprocessors(_train, true, scopeTrack);
-      newtrain = encodeFrameCategoricals(newtrain, scopeTrack); //we could turn this into a preprocessor later
+      Frame newtrain = applyPreprocessors(_train, true);
+      newtrain = encodeFrameCategoricals(newtrain); //we could turn this into a preprocessor later
       if (newtrain != _train) {
         _origTrain = _train;
         _origNames = _train.names();
@@ -1633,8 +1642,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _origTrain = null;
       }
       if (_valid != null) {
-        Frame newvalid = applyPreprocessors(_valid, false, scopeTrack);
-        newvalid = encodeFrameCategoricals(newvalid, scopeTrack /* for CV, need to score one more time in outer loop */);
+        Frame newvalid = applyPreprocessors(_valid, false);
+        newvalid = encodeFrameCategoricals(newvalid /* for CV, need to score one more time in outer loop */);
         setValid(newvalid);
       }
       boolean restructured = false;
@@ -1740,7 +1749,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
     Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive, false);
     if (expensive)
-      adapted = encodeFrameCategoricals(adapted, true);
+      adapted = encodeFrameCategoricals(adapted);
     return adapted;
   }
 
@@ -1777,7 +1786,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return adapted;
   }
 
-  private Frame applyPreprocessors(Frame fr, boolean isTraining, boolean scopeTrack) {
+  private Frame applyPreprocessors(Frame fr, boolean isTraining) {
     if (_parms._preprocessors == null) return fr;
 
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
@@ -1788,14 +1797,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for (Key<ModelPreprocessor> key : _parms._preprocessors) {
       ModelPreprocessor preprocessor = key.get();
       encoded = isTraining ? preprocessor.processTrain(result, _parms) : preprocessor.processValid(result, _parms);
-      if (encoded != result) trackFrame(encoded, scopeTrack);
+      if (encoded != result) Scope.track(encoded);
       result = encoded;
     }
-    if (!scopeTrack) Scope.untrack(result); // otherwise encoded frame is fully removed on CV model completion, raising exception when computing CV scores.
+    track(result); // otherwise encoded frame is fully removed on CV model completion, raising exception when computing CV scores.
     return result;
   }
 
-  private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
+  private Frame encodeFrameCategoricals(Frame fr) {
     Frame encoded = FrameUtils.categoricalEncoder(
             fr, 
             _parms.getNonPredictors(),
@@ -1803,17 +1812,49 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             getToEigenVec(), 
             _parms._max_categorical_levels
     );
-    if (encoded != fr) trackFrame(encoded, scopeTrack);
+    if (encoded != fr) track(encoded);
     return encoded;
   }
-  
-  protected void trackFrame(Frame fr, boolean scopeTrack) {
-    assert fr._key != null;
-    if (scopeTrack)
-      Scope.track(fr);
-    else
-      _workspace.getToDelete(true).put(fr._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+
+  protected void track(Frame... frames) {
+    for (Frame fr : frames) track(fr, _parms._is_cv_model);
   }
+
+  protected void track(Frame fr, boolean keepUntilCompletion) {
+    if (fr == null || fr._key == null) return;
+    if (keepUntilCompletion) {
+      keepUntilCompletion(fr._key);
+      Scope.untrack(fr);
+    }
+    else {
+      Scope.track(fr);
+    }
+  }
+
+  protected void track(Vec... vecs) {
+    for (Vec vec : vecs) track(vec, _parms._is_cv_model);
+  }
+
+  protected void track(Vec vec, boolean keepUntilCompletion) {
+    if (vec == null || vec._key == null) return;
+    if (keepUntilCompletion) {
+      keepUntilCompletion(vec._key);
+      Scope.untrack(vec._key);
+    } else {
+      Scope.track(vec);
+    }
+  }
+
+  /**
+   * Track keys to be removed only once the model is fully trained.
+   * Especially useful for keys created during CV model training that may be needed after the CV model is trained (e.g. CV scoring). 
+   * @param key
+   */
+  protected void keepUntilCompletion(Key key) {
+    assert key != null;
+    _workspace.getToDelete(true).put(key, Arrays.toString(Thread.currentThread().getStackTrace()));
+  }
+  
 
   /**
    * Rebalance a frame for load balancing
