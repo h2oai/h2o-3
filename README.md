@@ -235,6 +235,23 @@ git pull
 open target/docs-website/h2o-docs/index.html
 ```
 
+#### Recipe 5:  Building using a Makefile
+
+Root of the git repository contains a Makefile with convenient shortcuts for frequent build targets used in development.
+To build `h2o.jar` while skipping tests and also the building of alternative assemblies, execute 
+
+```
+make
+```
+
+To build `h2o.jar` using the minimal assembly, run
+```
+make minimal
+```
+
+The minimal assembly is well suited for developement of H2O machine learning algorithms. It doesn't bundle some heavyweight
+dependencies (like Hadoop) and using it saves build time as well as need to download large libraries from Maven repositories.
+
 <a name="SetupWin"></a>
 ### 4.3. Setup on Windows
 

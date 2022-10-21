@@ -50,22 +50,3 @@ shadowJar {
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer)
 }
-
-//
-// Copying the resulting assembly into parent for convenient scripting
-// project build directory
-//
-
-def assembly = "main.jar"
-def allInOne = "h2o.jar"
-
-task copyJar(type: Copy) {
-    from ("${project.buildDir}/libs"){
-        include assembly
-    }
-    into "${project.parent.parent.buildDir}"
-    rename { it.replace(assembly, allInOne) }
-}
-
-// Execute always copyJar
-shadowJar.finalizedBy copyJar
