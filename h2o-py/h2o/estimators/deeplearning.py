@@ -2810,8 +2810,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @autoencoder.setter
     def autoencoder(self, autoencoder):
-        assert_is_type(autoencoder, None, bool)
+        assert_is_type(autoencoder, bool)
         self._parms["autoencoder"] = autoencoder
+        self.supervised_learning = not autoencoder
 
     @property
     def sparse(self):
@@ -3231,11 +3232,11 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     >>> fr = ml.H2OFrame(rows)
     >>> fr[4] = fr[4].asfactor()
     >>> model = H2OAutoEncoderEstimator()
-    >>> model.train(x=range(4), training_frame=fr)
+    >>> model.train(x=list(range(4)), training_frame=fr)
     """
 
     supervised_learning = False
 
     def __init__(self, **kwargs):
         super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
-        self._parms['autoencoder'] = True
+        self.autoencoder = True
