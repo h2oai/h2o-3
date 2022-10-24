@@ -5,8 +5,8 @@ import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.exec.XGBoostHttpClient;
 import hex.tree.xgboost.matrix.SparseMatrixDimensions;
-import water.BootstrapFreezable;
 import hex.tree.xgboost.remote.RemoteXGBoostUploadServlet;
+import water.BootstrapFreezable;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Iced;
@@ -23,8 +23,8 @@ import java.util.Optional;
 import static hex.tree.xgboost.XGBoostUtils.sumChunksLength;
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseWeightAndOffset;
 import static hex.tree.xgboost.matrix.SparseMatrixFactory.calculateCSRMatrixDimensions;
-import static hex.tree.xgboost.remote.RemoteXGBoostUploadServlet.RequestType.*;
 import static water.MemoryManager.malloc4f;
+import static hex.tree.xgboost.remote.RemoteXGBoostUploadServlet.MatrixRequestType.*;
 
 public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMatrixTask> {
 
@@ -36,13 +36,13 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
     private final String userName;
     private final String password;
 
-    private final Frame train;
+    private final Frame frame;
     private final XGBoostModelInfo modelInfo;
     private final XGBoostModel.XGBoostParameters parms;
     private final boolean sparse;
 
     public XGBoostUploadMatrixTask(
-        XGBoostModel model, Frame train, boolean[] frameNodes, String[] remoteNodes, 
+        XGBoostModel model, Frame frame, boolean[] frameNodes, String[] remoteNodes, 
         boolean https, String contextPath, String userName, String password
     ) {
         super(model._key, frameNodes);
@@ -55,7 +55,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         this.modelInfo = model.model_info();
         this.parms = model._parms;
         this.sparse = model._output._sparse;
-        this.train = train;
+        this.frame = frame;
     }
     
     private XGBoostHttpClient makeClient() {
@@ -69,10 +69,10 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         LOG.info("Starting matrix upload for " + _modelKey);
         long start = System.currentTimeMillis();
         assert modelInfo.dataInfo() != null;
-        int[] chunks = VecUtils.getLocalChunkIds(train.anyVec());
-        final Vec responseVec = train.vec(parms._response_column);
-        final Vec weightVec = train.vec(parms._weights_column);
-        final Vec offsetsVec = train.vec(parms._offset_column);
+        int[] chunks = VecUtils.getLocalChunkIds(frame.anyVec());
+        final Vec responseVec = frame.vec(parms._response_column);
+        final Vec weightVec = frame.vec(parms._weights_column);
+        final Vec offsetsVec = frame.vec(parms._offset_column);
         final int[] nRowsByChunk = new int[chunks.length];
         final long nRowsL = sumChunksLength(chunks, responseVec, Optional.ofNullable(weightVec), nRowsByChunk);
         if (nRowsL > Integer.MAX_VALUE) {
@@ -96,7 +96,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
                 matrixData.resp, matrixData.weights, matrixData.offsets
             );
         }
-        client.uploadObject(_modelKey, RemoteXGBoostUploadServlet.RequestType.matrixData, matrixData);
+        client.uploadMatrixData(_modelKey, RemoteXGBoostUploadServlet.MatrixRequestType.matrixData, matrixData);
         LOG.debug("Matrix upload finished in " + ((System.currentTimeMillis() - start) / 1000d));
     }
 
@@ -143,9 +143,9 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         for (int i = 0; i < chunksIds.length; i++) {
             rowOffsets[i + 1] = nRowsByChunk[i] + rowOffsets[i];
         }
-        client.uploadObject(_modelKey, denseMatrixDimensions, new DenseMatrixDimensions(nRows, dataInfo.fullN(), rowOffsets));
+        client.uploadMatrixData(_modelKey, denseMatrixDimensions, new DenseMatrixDimensions(nRows, dataInfo.fullN(), rowOffsets));
         UploadDenseChunkFun writeFun = new UploadDenseChunkFun(
-            train, chunksIds, rowOffsets, weightVec, offsetsVec, responseVec, dataInfo, resp, weights, offsets
+                frame, chunksIds, rowOffsets, weightVec, offsetsVec, responseVec, dataInfo, resp, weights, offsets
         );
         H2O.submitTask(new LocalMR<>(writeFun, chunksIds.length)).join();
         return writeFun.getTotalRows();
@@ -223,7 +223,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
             }
             assert idx == chunkData.data.length : "idx should be " + chunkData.data.length + " but it is " + idx;
             _nRowsByChunk[id] = actualRows;
-            makeClient().uploadObject(_modelKey, denseMatrixChunk, chunkData);
+            makeClient().uploadMatrixData(_modelKey, denseMatrixChunk, chunkData);
         }
 
         private int writeDenseRow(
@@ -258,10 +258,10 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         Vec weightVec, Vec offsetsVec, Vec responseVec, DataInfo dataInfo, 
         float[] resp, float[] weights, float[] offsets
     ) {
-        SparseMatrixDimensions dimensions = calculateCSRMatrixDimensions(train, chunksIds, weightVec, dataInfo);
-        client.uploadObject(_modelKey, sparseMatrixDimensions, dimensions);
+        SparseMatrixDimensions dimensions = calculateCSRMatrixDimensions(frame, chunksIds, weightVec, dataInfo);
+        client.uploadMatrixData(_modelKey, sparseMatrixDimensions, dimensions);
         UploadSparseMatrixFun fun = new UploadSparseMatrixFun(
-            train, chunksIds, weightVec, offsetsVec, dataInfo, dimensions, responseVec, resp, weights, offsets
+                frame, chunksIds, weightVec, offsetsVec, dataInfo, dimensions, responseVec, resp, weights, offsets
         );
         H2O.submitTask(new LocalMR<>(fun, chunksIds.length)).join();
         return ArrayUtils.sum(fun._actualRows);
@@ -368,7 +368,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
                 rwRow = setResponseWeightAndOffset(weightChunk, offsetChunk, respChunk, _resp, _weights, _offsets, rwRow, i);
             }
             chunkData.rowHeader[rowHeaderIndex] = nonZeroCount;
-            makeClient().uploadObject(_modelKey, sparseMatrixChunk, chunkData);
+            makeClient().uploadMatrixData(_modelKey, sparseMatrixChunk, chunkData);
         }
     }
 

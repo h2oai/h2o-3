@@ -32,29 +32,41 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
     
     public enum RequestType {
         checkpoint,
+        matrixTrain,
+        matrixValid
+    }
+
+    public enum MatrixRequestType {
         sparseMatrixDimensions,
         sparseMatrixChunk,
         denseMatrixDimensions,
         denseMatrixChunk,
         matrixData
     }
-
+    
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         String uri = ServletUtils.getDecodedUri(request);
         try {
-            String model_key = request.getParameter("model_key");
-            String data_type = request.getParameter("data_type");
-            LOG.info("Upload request for " + model_key + " " + data_type + " received");
-            RequestType type = RequestType.valueOf(data_type);
+            String modelKey = request.getParameter("model_key");
+            String requestType = request.getParameter("request_type");
+            LOG.info("Upload request for " + modelKey + " " + requestType + " received");
+            
+            RequestType type = RequestType.valueOf(requestType);
             if (type == RequestType.checkpoint) {
-                File destFile = getCheckpointFile(model_key);
+                File destFile = getCheckpointFile(modelKey);
                 saveIntoFile(destFile, request);
-            } else {
-                handleMatrixRequest(model_key, type, request);
+            } else if (type == RequestType.matrixTrain) {
+                MatrixRequestType matrixRequestType = MatrixRequestType.valueOf(request.getParameter("data_type"));
+                String matrixKey = modelKey + "_train";
+                handleMatrixRequest(matrixKey, matrixRequestType, request);
+            } else if (type == RequestType.matrixValid) {
+                MatrixRequestType matrixRequestType = MatrixRequestType.valueOf(request.getParameter("data_type"));
+                String matrixKey = modelKey + "_valid";
+                handleMatrixRequest(matrixKey, matrixRequestType, request);
             }
             response.setContentType("application/json");
-            response.getWriter().write(new XGBoostExecRespV3(Key.make(model_key)).toJsonString());
+            response.getWriter().write(new XGBoostExecRespV3(Key.make(modelKey)).toJsonString());
         } catch (Exception e) {
             ServletUtils.sendErrorResponse(response, e, uri);
         } finally {
@@ -62,26 +74,26 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
         }
     }
 
-    private void handleMatrixRequest(String model_key, RequestType type, HttpServletRequest request) throws IOException {
+    private void handleMatrixRequest(String matrixKey, MatrixRequestType type, HttpServletRequest request) throws IOException {
         BootstrapFreezable<?> requestData;
         try (AutoBuffer ab = new AutoBuffer(request.getInputStream(), TypeMap.bootstrapClasses())) {
             requestData = ab.get();
         }
         switch (type) {
             case sparseMatrixDimensions:
-                RemoteMatrixLoader.initSparse(model_key, (SparseMatrixDimensions) requestData);
+                RemoteMatrixLoader.initSparse(matrixKey, (SparseMatrixDimensions) requestData);
                 break;
             case sparseMatrixChunk:
-                RemoteMatrixLoader.sparseChunk(model_key, (XGBoostUploadMatrixTask.SparseMatrixChunk) requestData);
+                RemoteMatrixLoader.sparseChunk(matrixKey, (XGBoostUploadMatrixTask.SparseMatrixChunk) requestData);
                 break;
             case denseMatrixDimensions:
-                RemoteMatrixLoader.initDense(model_key, (XGBoostUploadMatrixTask.DenseMatrixDimensions) requestData);
+                RemoteMatrixLoader.initDense(matrixKey, (XGBoostUploadMatrixTask.DenseMatrixDimensions) requestData);
                 break;
             case denseMatrixChunk:
-                RemoteMatrixLoader.denseChunk(model_key, (XGBoostUploadMatrixTask.DenseMatrixChunk) requestData);
+                RemoteMatrixLoader.denseChunk(matrixKey, (XGBoostUploadMatrixTask.DenseMatrixChunk) requestData);
                 break;
             case matrixData:
-                RemoteMatrixLoader.matrixData(model_key, (XGBoostUploadMatrixTask.MatrixData) requestData);
+                RemoteMatrixLoader.matrixData(matrixKey, (XGBoostUploadMatrixTask.MatrixData) requestData);
                 break;
             default:
                 throw new IllegalArgumentException("Unexpected request type: " + type);

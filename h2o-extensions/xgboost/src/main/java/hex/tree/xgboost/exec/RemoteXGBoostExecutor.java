@@ -16,8 +16,6 @@ import water.fvec.Frame;
 
 import java.util.Arrays;
 
-import static hex.tree.xgboost.remote.RemoteXGBoostUploadServlet.RequestType.checkpoint;
-
 public class RemoteXGBoostExecutor implements XGBoostExecutor {
     
     private static final Logger LOG = Logger.getLogger(RemoteXGBoostExecutor.class);
@@ -49,11 +47,11 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         }
         assert modelKey.equals(resp.key.key());
         uploadCheckpointBooster(model);
-        uploadMatrices(model, train, trainFrameNodes, executors._nodes, https, remoteUri, userName, password);
+        uploadMatrix(model, train, trainFrameNodes, executors._nodes, https, remoteUri, userName, password);
         LOG.info("Remote executor init complete.");
     }
 
-    private void uploadMatrices(
+    private void uploadMatrix(
         XGBoostModel model, Frame train,
         XGBoostSetupTask.FrameNodes trainFrameNodes, String[] remoteNodes,
         boolean https, String leaderUri, String userName, String password
@@ -79,7 +77,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
             return;
         }
         LOG.info("Uploading booster checkpoint.");
-        http.uploadBytes(modelKey, checkpoint, model.model_info()._boosterBytes);
+        http.uploadCheckpointBytes(modelKey, model.model_info()._boosterBytes);
     }
 
     private String[] collectNodes(XGBoostSetupTask.FrameNodes nodes) {
