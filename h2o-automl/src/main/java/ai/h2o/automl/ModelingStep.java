@@ -16,7 +16,6 @@ import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
-import hex.genmodel.attributes.parameters.ModelParameter;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
@@ -42,6 +41,8 @@ import java.util.function.Predicate;
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
  */
 public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
+  
+  protected static final String PIPELINE_KEY_PREFIX = "Pipeline_";
 
     protected enum SeedPolicy {
         /** No seed will be used (= random). */
@@ -108,7 +109,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected <MP extends Model.Parameters> ModelBuilder makeBuilder(Key<M> resultKey, MP params) {
       applyPreprocessing(params);
       Model.Parameters finalParams = applyPipeline(resultKey, params);
-      if (finalParams instanceof PipelineParameters) resultKey = Key.make("Pipeline_"+resultKey);
+      if (finalParams instanceof PipelineParameters) resultKey = Key.make(PIPELINE_KEY_PREFIX+resultKey);
       
       Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
       ModelBuilder builder = ModelBuilder.make(finalParams.algoName(), job, (Key<Model>) resultKey);

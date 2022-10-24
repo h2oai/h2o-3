@@ -9,6 +9,9 @@ import hex.pipeline.TransformerChain.UnaryCompleter;
 import water.*;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
+import water.util.ReflectionUtils;
+
+import java.util.stream.Stream;
 
 public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineParameters, PipelineModel.PipelineOutput> {
 
@@ -183,6 +186,20 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     
     public Model getModel() {
       return _model == null ? null : _model.get();
+    }
+    
+    void sync() {
+      Model m = getModel();
+      if (m == null) return;
+      _training_metrics = m._output._training_metrics;
+      _validation_metrics = m._output._validation_metrics;
+      _cross_validation_metrics = m._output._cross_validation_metrics;
+      _cross_validation_metrics_summary = m._output._cross_validation_metrics_summary;
+      _cross_validation_fold_assignment_frame_id = m._output._cross_validation_fold_assignment_frame_id;
+      _cross_validation_holdout_predictions_frame_id = m._output._cross_validation_holdout_predictions_frame_id;
+      _cross_validation_predictions = m._output._cross_validation_predictions;
+      _cross_validation_models = m._output._cross_validation_models; // FIXME: ideally, should be PipelineModels (build pipeline output pointing at Cv model, use it for new pipeline model, etc.)
+      //...???
     }
 
   }

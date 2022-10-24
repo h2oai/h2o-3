@@ -29,7 +29,7 @@ public final class PipelineHelper {
   }
   
   public static void reassignInplace(Frame fr, Key<Frame> key, Key<Job> job) {
-    assert DKV.get(key) == null; // inplace reassignment only for new keys
+    assert DKV.get(key) == null || DKV.getGet(key) == null; // inplace reassignment only to fresh/unassigned keys
     if (fr.getKey() != null) DKV.remove(fr.getKey());
     fr._key = key;
     DKV.put(fr);

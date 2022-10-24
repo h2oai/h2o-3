@@ -6,6 +6,8 @@ import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public abstract class DataTransformer<T extends DataTransformer> extends Iced<T> {
   
   public enum FrameType {
@@ -16,7 +18,7 @@ public abstract class DataTransformer<T extends DataTransformer> extends Iced<T>
   
   String _id;
   boolean _enabled = true;  // flag allowing to enable/disable transformers dynamically esp. in pipelines (can be used as a pipeline hyperparam in grids).
-  int refCount = 0;
+  private final AtomicInteger refCount = new AtomicInteger(0);
 
   public DataTransformer() {
     this(null);
@@ -45,7 +47,7 @@ public abstract class DataTransformer<T extends DataTransformer> extends Iced<T>
   
   public void prepare(PipelineContext context) {
     if (_enabled) doPrepare(context);
-    ++refCount;
+    refCount.incrementAndGet();
   }
   
   protected void doPrepare(PipelineContext context) {} 
@@ -61,7 +63,7 @@ public abstract class DataTransformer<T extends DataTransformer> extends Iced<T>
   }
 
   public void cleanup(Futures futures) {
-    if (--refCount <= 0) doCleanup(futures);
+    if (refCount.decrementAndGet() <= 0) doCleanup(futures);
   }
   protected void doCleanup(Futures futures) {}
   

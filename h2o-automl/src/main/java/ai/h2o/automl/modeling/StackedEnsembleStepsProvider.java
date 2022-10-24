@@ -127,13 +127,18 @@ public class StackedEnsembleStepsProvider
             protected abstract Key<Model>[] getBaseModels();
 
             protected String getModelType(Key<Model> key) {
+              ModelingStep step = aml().session().getModelingStep(key);
+              if (step == null) { // dirty case
                 String keyStr = key.toString();
-                return keyStr.substring(0, keyStr.indexOf('_'));
+                int lookupStart = keyStr.startsWith(PIPELINE_KEY_PREFIX) ? PIPELINE_KEY_PREFIX.length() : 0; 
+                return keyStr.substring(lookupStart, keyStr.indexOf('_', lookupStart));
+              } else {
+                return step.getAlgo().name();
+              }
             }
 
             protected boolean isStackedEnsemble(Key<Model> key) {
-                ModelingStep step = aml().session().getModelingStep(key);
-                return step != null && step.getAlgo() == Algo.StackedEnsemble;
+                return Algo.StackedEnsemble.name().equals(getModelType(key));
             }
 
             @Override

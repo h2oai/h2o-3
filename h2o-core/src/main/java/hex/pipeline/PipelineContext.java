@@ -81,7 +81,7 @@ public class PipelineContext implements Cloneable {
       
       if (transformed != frame) {
         String baseName = frName.contains(SEP) ? frName.substring(0, frName.lastIndexOf(SEP)) : frName;
-        reassignInplace(transformed, Key.make(baseName+SEP+type+TRF_BY+transformer.id()));
+        reassignInplace(transformed, Key.make(baseName+SEP+type+TRF_BY+transformer.id()+Key.rand()));
       }
     }
   }

@@ -109,6 +109,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
           );
         }
       } finally {
+        model._output.sync();
         model.update(_job);
         model.unlock(_job);
       }
@@ -190,6 +191,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       }
     } finally {
       if (model != null) {
+        model._output.sync();
         model.update(_job);
         model.unlock(_job);
       }
