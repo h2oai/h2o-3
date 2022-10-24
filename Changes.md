@@ -24,6 +24,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/2/inde
 - [[PUBDEV-8870]](https://h2oai.atlassian.net/browse/PUBDEV-8870) - Fixed incorrect header case on ModelSelection and Cox Proportional Hazards algorithm pages in the user guide.
 - [[PUBDEV-8854]](https://h2oai.atlassian.net/browse/PUBDEV-8854) - Added an example to Variable Inflation Factors in the user guide.
 - [[PUBDEV-8849]](https://h2oai.atlassian.net/browse/PUBDEV-8849) - Fixed broken links on the “Welcome to H2O-3” page of the user guide.
+- [[PUBDEV-8786]](https://h2oai.atlassian.net/browse/PUBDEV-8786) - Added model explainability for plotting SHAP to the “Performance and Prediction” section of the user guide.
 - [[PUBDEV-8209]](https://h2oai.atlassian.net/browse/PUBDEV-8209) - Added examples for `varsplits()` and `feature_frequencies()` to Python documentation.
 
 ### Zygmund (3.38.0.1) - 9/19/2022
