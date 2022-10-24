@@ -630,7 +630,7 @@ def call(final pipelineContext) {
                     bundledS3FileSystems: 's3a,s3n'
             ], pythonVersion: '2.7',
             customDockerArgs: [ '--privileged' ],
-            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopClusterStage.groovy',
+            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
             image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, true)
     ]
     def standaloneStage = evaluate(stageTemplate.inspect())
