@@ -157,7 +157,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                       try (Scope.Safe cvModelComputeScope = Scope.safe(train(), params.train(), params.valid())) {
                         PipelineContext cvContext = newCVContext(context, params);
                         Scope.track(cvContext.getTrain(), cvContext.getValid());
-                        chain.transform(
+                        TransformerChain cvChain = chain.clone(); // as cv models can be trained in parallel
+                        cvChain.transform(
                                 new Frame[]{cvContext.getTrain(), cvContext.getValid()},
                                 new FrameType[]{FrameType.Training, FrameType.Validation},
                                 cvContext,
@@ -260,7 +261,6 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     eParams._fold_column = _parms._fold_column;
     eParams._fold_assignment = _parms._fold_assignment;
     eParams._nfolds= _parms._nfolds;
-    eParams._parallelize_cross_validation = false;  // chain.transform is not thread safe (index incr)
     eParams._max_runtime_secs = _parms._max_runtime_secs > 0 ? remainingTimeSecs() : _parms._max_runtime_secs;
     
     ModelBuilder mb = ModelBuilder.make(eParams, eKey);
