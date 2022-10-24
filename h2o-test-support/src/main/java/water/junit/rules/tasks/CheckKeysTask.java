@@ -23,7 +23,6 @@ public class CheckKeysTask extends MRTask<CheckKeysTask> {
      * @return True if the leak is considered to be ignorable, otherwise false
      */
     protected static boolean isIgnorableKeyLeak(final Key key, final Value value) {
-
         return value == null || value.isVecGroup() || value.isESPCGroup() || key.equals(Job.LIST) ||
                 (value.isJob() && value.<Job>get().isStopped());
     }
