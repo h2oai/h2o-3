@@ -98,20 +98,25 @@ public class RemoteMatrixLoader extends MatrixLoader {
 
     @Override
     public DMatrixProvider makeLocalTrainMatrix() {
-        return REGISTRY.remove(trainMatrixKey()).make();
+        return REGISTRY.remove(trainMatrixKey(modelKey)).make();
     }
 
-    String trainMatrixKey() {
+    public static String trainMatrixKey(Key<?> modelKey) {
         return modelKey.toString() + "_train";
     }
 
     @Override
-    public DMatrixProvider makeLocalValidMatrix() {
-        throw new UnsupportedOperationException("External backend currently doesn't support (external) validation dataset");
+    public boolean hasValidationFrame() {
+        return REGISTRY.containsKey(validMatrixKey(modelKey));
     }
 
     @Override
-    public boolean hasValidationFrame() {
-        return false;
+    public DMatrixProvider makeLocalValidMatrix() {
+        return REGISTRY.remove(validMatrixKey(modelKey)).make();
     }
+
+    public static String validMatrixKey(Key<?> modelKey) {
+        return modelKey.toString() + "_valid";
+    }
+
 }

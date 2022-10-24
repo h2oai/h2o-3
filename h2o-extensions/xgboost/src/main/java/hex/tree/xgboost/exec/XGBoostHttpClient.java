@@ -191,11 +191,13 @@ public class XGBoostHttpClient {
         }
     }
 
-    public void uploadMatrixData(Key key, 
-                                 RemoteXGBoostUploadServlet.MatrixRequestType matrixRequestType, 
+    public void uploadMatrixData(Key<?> key,
+                                 RemoteXGBoostUploadServlet.MatrixRequestType matrixRequestType, boolean isTrain,
                                  BootstrapFreezable<?> data) {
         LOG.info("Request upload " + key + " " + matrixRequestType + " " + data.getClass().getSimpleName());
-        HttpPost httpReq = makeUploadMatrixRequest(key, RemoteXGBoostUploadServlet.RequestType.matrixTrain, matrixRequestType); // FIXME
+        RemoteXGBoostUploadServlet.RequestType requestType = isTrain ? 
+                RemoteXGBoostUploadServlet.RequestType.matrixTrain : RemoteXGBoostUploadServlet.RequestType.matrixValid;
+        HttpPost httpReq = makeUploadMatrixRequest(key, requestType, matrixRequestType);
         httpReq.setEntity(new ObjectEntity(data));
         addAuthentication(httpReq);
         XGBoostExecRespV3 resp = executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);

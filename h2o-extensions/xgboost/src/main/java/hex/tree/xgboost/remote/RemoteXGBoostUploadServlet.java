@@ -56,13 +56,11 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
             if (type == RequestType.checkpoint) {
                 File destFile = getCheckpointFile(modelKey);
                 saveIntoFile(destFile, request);
-            } else if (type == RequestType.matrixTrain) {
+            } else if (type == RequestType.matrixTrain || type == RequestType.matrixValid) {
+                Key<?> key = Key.make(modelKey);
                 MatrixRequestType matrixRequestType = MatrixRequestType.valueOf(request.getParameter("data_type"));
-                String matrixKey = modelKey + "_train";
-                handleMatrixRequest(matrixKey, matrixRequestType, request);
-            } else if (type == RequestType.matrixValid) {
-                MatrixRequestType matrixRequestType = MatrixRequestType.valueOf(request.getParameter("data_type"));
-                String matrixKey = modelKey + "_valid";
+                String matrixKey = type == RequestType.matrixTrain ? 
+                        RemoteMatrixLoader.trainMatrixKey(key) : RemoteMatrixLoader.validMatrixKey(key);
                 handleMatrixRequest(matrixKey, matrixRequestType, request);
             }
             response.setContentType("application/json");
