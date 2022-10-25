@@ -55,15 +55,14 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
 
     @Override
     protected List<TestRule> getTestRules(Object target) {
-        if (target instanceof TestUtil) {
-            return super.getTestRules(target);
-        }
-
-        List<TestRule> rules = new ArrayList<>(super.getTestRules(target));
+        List<TestRule> rules = new ArrayList<>();
         rules.add(new CheckLeakedKeysRule());
-        // add rules defined in TestUtil
-        rules.addAll(new TestClass(DefaultRulesBlueprint.class)
-                .getAnnotatedFieldValues(DefaultRulesBlueprint.INSTANCE, Rule.class, TestRule.class));
+        rules.addAll(super.getTestRules(target));
+        if (!(target instanceof TestUtil)) {
+          // add rules defined in TestUtil
+          rules.addAll(new TestClass(DefaultRulesBlueprint.class)
+                  .getAnnotatedFieldValues(DefaultRulesBlueprint.INSTANCE, Rule.class, TestRule.class));
+        }
         rules.sort(new Comparator<TestRule>() {
           /** 
            * sort rules from lower (or no priority) to higher priority rules 
