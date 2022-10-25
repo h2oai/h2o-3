@@ -140,6 +140,9 @@ public class Scope {
   public static Vec track( Vec vec ) {
     Level level = lget();                   // Pay the price of T.L.S. lookup
     track_impl(level, vec._key);
+    final TrackingInfo vecInfo = new TrackingInfo();
+    vecInfo._nchunks = vec.nChunks();
+    level._trackingInfo.put(vec._key, vecInfo);
     return vec;
   }
 
@@ -165,7 +168,8 @@ public class Scope {
           Vec vec = vkey.get();
           if (vec != null) vecInfo._nchunks = vec.nChunks();
         }
-        level._trackingInfo.put(vkey, vecInfo);
+        if (vecInfo._nchunks > 0)
+          level._trackingInfo.put(vkey, vecInfo);
       }
     }
     return frames[0];
