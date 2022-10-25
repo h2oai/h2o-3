@@ -799,7 +799,7 @@ public class Frame extends Lockable<Frame> {
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override protected Futures remove_impl(Futures fs, boolean cascade) {
-    final Key[] keys = _keys;
+    final Key<Vec>[] keys = _keys;
     if( keys.length==0 ) return fs;
 
     // Get the nChunks without calling anyVec - which loads all Vecs eagerly,

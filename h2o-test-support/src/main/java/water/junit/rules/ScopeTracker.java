@@ -20,7 +20,7 @@ public class ScopeTracker extends ExternalResource implements Serializable {
   @Override
   protected void after() {
     Scope.exit();
-    assert Scope.currentLevel() == 0: "at least one nested Scope was not exited properly: "+Scope.currentLevel();
+    assert Scope.nLevel() == 0: "at least one nested Scope was not exited properly: "+Scope.nLevel();
   }
 
   public final Frame track(Frame frame) { // no varargs (no use in tests) as the Java compiler is misleading: when calling `track(fr)` it prefers the signature with generic to the signature with Frame varargs.

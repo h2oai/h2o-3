@@ -19,11 +19,10 @@ public class ScopeInspect {
     StringBuilder sb = new StringBuilder();
     Set<Key> scoped = new HashSet<>();
     sb.append("Scope").append(hierarchy ? " hierarchy" : "").append("\n");
-    List<Set<Key>> keys = scope.keys();
-    List<Set<Key>> protectedKeys = scope.protectedKeys();
-    for (int i=keys.size()-1; i >= 0; i--) {
-      Set<Key> ks = new TreeSet<>(keys.get(i));
-      Set<Key> pks = new TreeSet<>(protectedKeys.get(i));
+    List<Scope.Level> levels = scope.levels();
+    for (int i=levels.size()-1; i >= 0; i--) {
+      Set<Key> ks = new TreeSet<>(levels.get(i)._keys);
+      Set<Key> pks = new TreeSet<>(levels.get(i)._protectedKeys);
       scoped.addAll(ks);
       scoped.addAll(pks);
       if (hierarchy) indent(sb, 1).append("level ").append(i).append(": \n");
