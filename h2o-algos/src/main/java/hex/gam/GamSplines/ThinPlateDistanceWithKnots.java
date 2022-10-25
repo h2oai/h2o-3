@@ -92,7 +92,7 @@ public class ThinPlateDistanceWithKnots extends MRTask<ThinPlateDistanceWithKnot
             false, false, false, false, null);
     // expand the frame with k-M columns which will contain the product of Xnmd*ZCS
     for (int colInd = 0; colInd < newColNum; colInd++) {
-      fr.add(colNameStart+"_cs_"+colInd, fr.anyVec().makeZero());
+      fr.add(colNameStart+"_tp_"+colInd, fr.anyVec().makeZero());
     }
     new BMulInPlaceTask(frInfo, zCST, numCols, false).doAll(fr);
     for (int index=0; index < numCols; index++) { // remove the original gam columns
