@@ -1,5 +1,6 @@
 package water;
 
+import water.fvec.FileVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.logging.Logger;
@@ -84,14 +85,19 @@ public class Scope {
         boolean cascade = !(v == null || v.isFrame()); //Frames are handled differently as we're explicitly also tracking their Vec keys...
         if (v != null && v.isVec() && exitingLevel._trackingInfo.containsKey(key)) {
           int nchunks = exitingLevel._trackingInfo.get(key)._nchunks;
-          if (!bulkRemovals.containsKey(nchunks)) bulkRemovals.put(nchunks, new ArrayList<>());
-          bulkRemovals.get(nchunks).add(key);
+          if (nchunks < 0) {
+            Keyed.remove(key, fs, cascade); // don't bulk remove Vecs with unfilled _nchunks info.
+          } else {
+            if (!bulkRemovals.containsKey(nchunks)) bulkRemovals.put(nchunks, new ArrayList<>());
+            bulkRemovals.get(nchunks).add(key);
+          }
         } else {
           Keyed.remove(key, fs, cascade);
         }
       }
     }
     for (Map.Entry<Integer, List<Key<Vec>>> bulkRemoval : bulkRemovals.entrySet()) {
+      System.out.println("Bulk removing keys with nchunks = "+bulkRemoval.getKey()+" :\n"+bulkRemoval.getValue());
       Vec.bulk_remove(bulkRemoval.getValue().toArray(new Key[0]), bulkRemoval.getKey());
     }
     
@@ -142,9 +148,11 @@ public class Scope {
     Level level = lget();                   // Pay the price of T.L.S. lookup
     if (level == null) return vec;
     track_impl(level, vec._key);
-    final TrackingInfo vecInfo = new TrackingInfo();
-    vecInfo._nchunks = vec.nChunks();
-    level._trackingInfo.put(vec._key, vecInfo);
+    if (!(vec instanceof FileVec)) { // don't provide nchunks for individually tracked FileVecs as it is mutable for those (alternative is to fully disable this for all individually tracked Vecs) 
+      final TrackingInfo vecInfo = new TrackingInfo();
+      vecInfo._nchunks = vec.nChunks();  
+      level._trackingInfo.put(vec._key, vecInfo);
+    }
     return vec;
   }
 
