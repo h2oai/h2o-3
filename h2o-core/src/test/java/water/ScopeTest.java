@@ -30,6 +30,28 @@ public class ScopeTest {
   }
   
   @Test
+  public void testTrackNulls() {
+    Frame nfr1 = null, nfr2 = null;
+    Vec nv1 = null;
+    Key nk1 = null;
+    Keyed nkd1 = null;
+    try (Scope.Safe safe = Scope.safe(nfr1)) {
+      Scope.protect(nfr2);
+      try {
+        Scope.enter();
+        Scope.protect(nfr1, nfr2);
+        Scope.protect(nfr1);
+        Scope.track(nfr1, nfr2);
+        Scope.track(nfr1);
+        Scope.track(nv1);
+        Scope.track_generic(nkd1);
+      } finally {
+        Scope.exit(nk1);
+      }
+    }
+  }
+  
+  @Test
   public void testTrackFrame() {
     Scope.enter();
     Frame fr = Scope.track(dummyFrame());
