@@ -179,7 +179,7 @@ Defining a ModelSelection Model
 
 - **p_values_threshold**: For ``mode = "backward"`` only. If specified, will stop the model building process when all coefficient p-values drop to or below this threshold. Defaults to ``0.0``.
 
-- **build_glm_model**: For ``mode="maxrsweep"`` only. If enabled, will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models yourself by using the returned predictor subsets. This values defaults to ``True`` (enabled).
+- **build_glm_model**: For ``mode="maxrsweep"`` only. If enabled, will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models yourself by using the returned predictor subsets. This value defaults to ``True`` (enabled).
 
 
 Understanding ModelSelection ``mode = allsubsets``
