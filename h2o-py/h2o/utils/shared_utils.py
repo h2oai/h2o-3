@@ -49,6 +49,30 @@ class List(list):
     pass
 
 
+class LookupList(list):
+    def __init__(self, l):
+        super(LookupList, self).__init__(l)
+        self.__set = set(self)  # lookup functions backed by a set
+        
+    def __contains__(self, item):
+        return item in self.__set
+    
+    def __setitem__(self, key, value):
+        raise TypeError("LookupList is read-only")
+    
+    def __delitem__(self, key):
+        raise TypeError("LookupList is read-only")
+    
+    def set(self):
+        """
+        use this for arithmetic operations on the elements to avoid confusion.
+        We still want this to behave like a list for the most part, 
+        and this is a slightly faster than building a set from the list itself.
+        """
+        return set(self.__set)
+
+
+
 def _py_tmp_key(append):
     global _id_ctr
     _id_ctr += 1
