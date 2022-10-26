@@ -417,11 +417,22 @@ Examples
       [6,] "RACE"  
       [7,] "VOL" 
 
-      # To build the fastest model with ModelSelection, use ``mode="maxrsweep"``:
-      sweepModel <- h2o.modelSelection(mode = "maxrsweep", build_glm_model = FALSE)
+      # To build the fastest model with ModelSelection, use ``mode = "maxrsweep"``:
+      sweepModel <- h2o.modelSelection(x = predictors, 
+                                       y = response, 
+                                       training_frame = prostate, 
+                                       mode = "maxrsweep", 
+                                       build_glm_model = FALSE, 
+                                       max_predictor_number = 3, 
+                                       seed = 12345)
+      |======================================================================| 100%
 
       # Retrieve the results to view the best predictor subsets:
       h2o.result(sweepModel)
+        model_name                  best_r2_value          coefficient_names     predictor_names predictors_removed predictors_added
+      1 best 1 predictors model     0.2058873             CAPSULE, Intercept             CAPSULE                             CAPSULE
+      2 best 2 predictors model     0.2695684        CAPSULE, PSA, Intercept        CAPSULE, PSA                                 PSA
+      3 best 3 predictors model     0.2862536 CAPSULE, PSA, DCAPS, Intercept CAPSULE, PSA, DCAPS                               DCAPS
 
    .. code-tab:: python
 
@@ -512,10 +523,20 @@ Examples
       [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
 
       # To build the fastest model with ModelSelection, use ``mode="maxrsweep"``:
-      sweepModel = H2OModelSelectionEstimator(mode="maxrsweep", build_glm_model=False)
+      sweepModel = H2OModelSelectionEstimator(mode="maxrsweep", 
+                                              build_glm_model=False, 
+                                              max_predictor_number=3, 
+                                              seed=12345)
+      sweepModel.train(x=predictors, y=response, training_frame=prostate)
+      modelselection Model Build progress: ======================================= (done)| 100%
 
       # Retrieve the results to view the best predictor subsets:
-      sweepModel.results()
+      print(sweepModel.results())
+      model_name                 best_r2_value  coefficient_names               predictor_names      predictors_removed    predictors_added
+      best 1 predictors model         0.205887  CAPSULE, Intercept              CAPSULE                                    CAPSULE
+      best 2 predictors model         0.269568  CAPSULE, PSA, Intercept         CAPSULE, PSA                               PSA
+      best 3 predictors model         0.286254  CAPSULE, PSA, DCAPS, Intercept  CAPSULE, PSA, DCAPS                        DCAPS
+      [3 rows x 6 columns]
 
 FAQ
 ~~~
