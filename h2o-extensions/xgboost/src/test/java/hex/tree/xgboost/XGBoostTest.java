@@ -3089,7 +3089,7 @@ public class XGBoostTest extends TestUtil {
       // 2. If we do have H2O metric, compare it to eval metric
       if (!scoreEvalMetricOnly) {
         for (ScoreKeeper sk : model._output.scoreKeepers()) {
-          assertEquals(sk._logloss, sk._custom_metric, 1e-6);
+          assertEquals(sk._logloss, sk._custom_metric, 1e-5);
         }
       }
 

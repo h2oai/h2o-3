@@ -50,9 +50,9 @@ public class SteamExecutorStarter implements SteamMessenger {
         instance = this;
     }
 
-    public RemoteXGBoostExecutor getRemoteExecutor(XGBoostModel model, Frame train, Job<XGBoostModel> job) throws IOException {
+    public RemoteXGBoostExecutor getRemoteExecutor(XGBoostModel model, Frame train, Frame valid, Job<XGBoostModel> job) throws IOException {
         ClusterInfo clusterInfo = ensureClusterStarted(model._key, job);
-        return makeExecutor(model, train, clusterInfo);
+        return makeExecutor(model, train, valid, clusterInfo);
     }
 
     public void startCluster(Key<XGBoostModel> key, Job<XGBoostModel> job) throws IOException {
@@ -100,8 +100,8 @@ public class SteamExecutorStarter implements SteamMessenger {
         }
     }
 
-    private static RemoteXGBoostExecutor makeExecutor(XGBoostModel model, Frame train, ClusterInfo cluster) {
-        return new RemoteXGBoostExecutor(model, train, cluster.uri, cluster.userName, cluster.password);
+    private static RemoteXGBoostExecutor makeExecutor(XGBoostModel model, Frame train, Frame valid, ClusterInfo cluster) {
+        return new RemoteXGBoostExecutor(model, train, valid, cluster.uri, cluster.userName, cluster.password);
     }
     
     private void clearMessages() {

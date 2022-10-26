@@ -11,12 +11,12 @@ import hex.tree.xgboost.task.XGBoostSetupTask;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
+import water.Keyed;
 import water.TypeMap;
 import water.fvec.Frame;
+import water.util.Log;
 
 import java.util.Arrays;
-
-import static hex.tree.xgboost.remote.RemoteXGBoostUploadServlet.RequestType.checkpoint;
 
 public class RemoteXGBoostExecutor implements XGBoostExecutor {
     
@@ -25,7 +25,8 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     public final XGBoostHttpClient http;
     public final Key modelKey;
     
-    public RemoteXGBoostExecutor(XGBoostModel model, Frame train, String remoteUri, String userName, String password) {
+    public RemoteXGBoostExecutor(XGBoostModel model, Frame train, Frame valid,
+                                 String remoteUri, String userName, String password) {
         final boolean https = H2O.ARGS.jks != null;
         http = new XGBoostHttpClient(remoteUri, https, userName, password);
         modelKey = model._key;
@@ -49,18 +50,33 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         }
         assert modelKey.equals(resp.key.key());
         uploadCheckpointBooster(model);
-        uploadMatrices(model, train, trainFrameNodes, executors._nodes, https, remoteUri, userName, password);
+        uploadMatrix(model, train, true, trainFrameNodes, executors._nodes, https, remoteUri, userName, password);
+        if (valid != null) {
+            XGBoostSetupTask.FrameNodes validFrameNodes = XGBoostSetupTask.findFrameNodes(valid);
+            Key<Frame> toCleanUp = null;
+            if (!validFrameNodes.isSubsetOf(trainFrameNodes)) {
+                Log.info("Validation Frame will be re-distributed to be collocated with remote nodes of the " +
+                        "training matrix.");
+                toCleanUp = Key.make();
+                valid = train.makeSimilarlyDistributed(valid, toCleanUp);
+            }
+
+            uploadMatrix(model, valid, false, validFrameNodes, executors._nodes, https, remoteUri, userName, password);
+            if (toCleanUp != null) {
+                Keyed.remove(toCleanUp);
+            }
+        }
         LOG.info("Remote executor init complete.");
     }
 
-    private void uploadMatrices(
-        XGBoostModel model, Frame train,
+    private void uploadMatrix(
+        XGBoostModel model, Frame train, boolean isTrain,
         XGBoostSetupTask.FrameNodes trainFrameNodes, String[] remoteNodes,
         boolean https, String leaderUri, String userName, String password
     ) {
         LOG.info("Starting matrix data upload.");
         new XGBoostUploadMatrixTask(
-                model, train, trainFrameNodes._nodes, remoteNodes, 
+                model, train, isTrain, trainFrameNodes._nodes, remoteNodes,
                 https, parseContextPath(leaderUri), userName, password
         ).run();
     }
@@ -79,7 +95,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
             return;
         }
         LOG.info("Uploading booster checkpoint.");
-        http.uploadBytes(modelKey, checkpoint, model.model_info()._boosterBytes);
+        http.uploadCheckpointBytes(modelKey, model.model_info()._boosterBytes);
     }
 
     private String[] collectNodes(XGBoostSetupTask.FrameNodes nodes) {

@@ -414,16 +414,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
     
     private XGBoostExecutor makeExecutor(XGBoostModel model, boolean useValidFrame) throws IOException {
+      final Frame valid = useValidFrame ? _valid : null;
       if (H2O.ARGS.use_external_xgboost) {
-        return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train, _job);
+        return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train, valid, _job);
       } else {
         String remoteUriFromProp = H2O.getSysProperty("xgboost.external.address", null);
         if (remoteUriFromProp == null) {
-          return new LocalXGBoostExecutor(model, _train, useValidFrame ? _valid : null);
+          return new LocalXGBoostExecutor(model, _train, valid);
         } else {
           String userName = H2O.getSysProperty("xgboost.external.user", null);
           String password = H2O.getSysProperty("xgboost.external.password", null);
-          return new RemoteXGBoostExecutor(model, _train, remoteUriFromProp, userName, password);
+          return new RemoteXGBoostExecutor(model, _train, valid, remoteUriFromProp, userName, password);
         }
       }
     }
