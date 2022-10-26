@@ -22,6 +22,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/2/inde
 
 #### Docs
 
+- [[PUBDEV-8883]](https://h2oai.atlassian.net/browse/PUBDEV-8883) - Added information on ModelSelection’s new `build_glm_model` parameter for `mode=“maxrsweep”`.
 - [[PUBDEV-8870]](https://h2oai.atlassian.net/browse/PUBDEV-8870) - Fixed incorrect header case on ModelSelection and Cox Proportional Hazards algorithm pages in the user guide.
 - [[PUBDEV-8854]](https://h2oai.atlassian.net/browse/PUBDEV-8854) - Added an example to Variable Inflation Factors in the user guide.
 - [[PUBDEV-8849]](https://h2oai.atlassian.net/browse/PUBDEV-8849) - Fixed broken links on the “Welcome to H2O-3” page of the user guide.
