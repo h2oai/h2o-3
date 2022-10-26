@@ -11,6 +11,8 @@ We implemented the ModelSelection toolbox based on GLM at H2O to help users sele
 3. ``mode = "backward"`` where a model is built starting with all predictors. The predictor with the smallest absolute z-value (or z-score) is dropped after each model is built. This process repeats until only one predictor remains or until the number of predictors equal to ``min_predictor_number`` is reached. The model build can also be stopped using ``p_values_threshold``. 
 4. ``mode = "maxrsweep"`` where the model runs similar to ``mode = "maxr"`` except that instead of calling our GLM toolbox to build models, we use the sweep operator [:ref:`3<ref4>`] plus our own incremental sweep operation using sweep vectors. This change speeds up the execution of finding the best predictor subset for each subset size and is essential in dropping the build time of the model. 
 
+The fastest mode for ModelSelection is ``mode = "maxrsweep"`` with ``build_gbm_model = False``. This skips the GLM model process while still generating the predictor subsets, the coefficients, and the coefficient values.
+
 This model only supports GLM regression families. 
 
 MOJO Support
@@ -177,7 +179,7 @@ Defining a ModelSelection Model
 
 - **p_values_threshold**: For ``mode = "backward"`` only. If specified, will stop the model building process when all coefficient p-values drop to or below this threshold. Defaults to ``0.0``.
 
-- **build_glm_model**: For ``mode="maxrsweep"`` only. If enabled, will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models themselves by using the returned predictor subsets. This values defaults to ``True`` (enabled).
+- **build_glm_model**: For ``mode="maxrsweep"`` only. If enabled, will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models yourself by using the returned predictor subsets. This values defaults to ``True`` (enabled).
 
 
 Understanding ModelSelection ``mode = allsubsets``
@@ -538,12 +540,6 @@ Examples
       best 3 predictors model         0.286254  CAPSULE, PSA, DCAPS, Intercept  CAPSULE, PSA, DCAPS                        DCAPS
       [3 rows x 6 columns]
 
-FAQ
-~~~
-
-- **What is the fastest mode available for ModelSelection?**
-   
-   The fastest mode for ModelSelection is ``mode="maxrsweep"`` with ``build_gbm_model`` disabled.
 
 References
 ~~~~~~~~~~
