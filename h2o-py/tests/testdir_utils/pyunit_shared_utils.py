@@ -31,7 +31,9 @@ def test_LookupList():
         
 def test_LookupList_is_fast_for_lookups():
     cols = LookupList("C"+str(n) for n in range(1000000))
+    assert len(cols) == 1000000
     diff = cols.set() - set("C"+str(n) for n in range(100000))
+    assert len(diff) == 900000
     start = time.time()
     for c in diff:
         if c in cols:
