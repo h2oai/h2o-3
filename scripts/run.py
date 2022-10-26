@@ -273,7 +273,7 @@ class H2OCloudNode(object):
     terminated: Only from a signal.  Not normal shutdown.
     """
 
-    def __init__(self, is_client, allow_clients,
+    def __init__(self, is_client, allow_clients, is_external_xgboost, external_xgboost_leader,
                  cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
                  xmx, cp, output_dir, test_ssl, login_config, jvm_opts, flatfile, strict_port=True):
         """
@@ -298,6 +298,8 @@ class H2OCloudNode(object):
         """
         self.is_client = is_client
         self.allow_clients = allow_clients
+        self.is_external_xgboost = is_external_xgboost
+        self.external_xgboost_leader = external_xgboost_leader
         self.cloud_num = cloud_num
         self.nodes_per_cloud = nodes_per_cloud
         self.node_num = node_num
@@ -360,6 +362,8 @@ class H2OCloudNode(object):
                "-ea"]
         if self.jvm_opts is not None:
             cmd += self.jvm_opts if isinstance(self.jvm_opts, list) else [self.jvm_opts]
+        if not self.is_external_xgboost and self.external_xgboost_leader:
+            cmd += ["-Dsys.ai.h2o.xgboost.external.address=" + self.external_xgboost_leader.get_ip() + ":" + str(self.external_xgboost_leader.get_port())]
         port_spec = "-port" if self.strict_port else "-baseport"
         cmd += ["-cp", classpath,
                main_class,
@@ -437,7 +441,7 @@ class H2OCloudNode(object):
                 raise "Failed to spawn %s in %s" % (cmd, self.output_dir)
 
 
-    def scrape_port_from_stdout(self):
+    def scrape_port_from_stdout(self, node_type=None):
         """
         Look at the stdout log and figure out which port the JVM chose.
 
@@ -447,14 +451,15 @@ class H2OCloudNode(object):
         """
         regex = re.compile(r"Open H2O Flow in your web browser: https?://([^:]+):(\d+)")
         retries_left = 30
+        type_desc = " [" + node_type + "]" if node_type else ""
         while retries_left and not self.terminated:
             with open(self.output_file_name, "r") as f:
                 for line in f:
                     mm = re.search(regex, line)
                     if mm is not None:
                         self.port = mm.group(2)
-                        print("H2O cloud %d node %d listening on port %s\n    with output file %s" %
-                              (self.cloud_num, self.node_num, self.port, self.output_file_name))
+                        print("H2O cloud %d node %d listening on port %s%s\n    with output file %s" %
+                              (self.cloud_num, self.node_num, self.port, type_desc, self.output_file_name))
                         return
             if self.terminated: break
             retries_left -= 1
@@ -553,7 +558,8 @@ class H2OCloud(object):
     A class representing one of the H2O clusters.
     """
 
-    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl,
+    def __init__(self, cloud_num, use_client, use_external_xgboost,
+                 nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl,
                  login_config, jvm_opts=None, strict_port=True):
         """
         Create a cluster.
@@ -582,6 +588,7 @@ class H2OCloud(object):
         self.cloud_name = "H2O_runit_{}_{}".format(user, n)
         self.nodes = []
         self.client_nodes = []
+        self.external_xgboost_nodes = []
         self.jobs_run = 0
 
         if use_client:
@@ -592,8 +599,10 @@ class H2OCloud(object):
             actual_nodes_per_cloud = self.nodes_per_cloud
             self.flatfile = None
 
-        for node_num in range(actual_nodes_per_cloud):
+        leader = None
+        for node_num in range(actual_nodes_per_cloud * (use_external_xgboost + 1)):
             is_client = False
+            is_external_xgboost = use_external_xgboost and (node_num < actual_nodes_per_cloud)
             if use_client:
                 if node_num == (actual_nodes_per_cloud - 1):
                     is_client = True
@@ -601,16 +610,28 @@ class H2OCloud(object):
                 with open(self.flatfile, "a") as ff:
                     for node in self.nodes:
                         ff.write("%s:%s\n" % (node.ip, node.port))
+
+            cloud_name_suffix = ''
+            base_port_offset = 0
+            if is_external_xgboost:
+                cloud_name_suffix = "_ext_xgb"
+                base_port_offset = actual_nodes_per_cloud * 4
+
             node = H2OCloudNode(is_client, use_client,
+                                is_external_xgboost, leader if use_external_xgboost and not is_external_xgboost else None,
                                 self.cloud_num, actual_nodes_per_cloud, node_num,
-                                self.cloud_name,
+                                self.cloud_name + cloud_name_suffix,
                                 self.h2o_jar,
-                                "127.0.0.1", self.base_port,
+                                "127.0.0.1", self.base_port + base_port_offset,
                                 self.xmx, self.cp, self.output_dir,
                                 self.test_ssl, self.login_config, self.jvm_opts,
                                 self.flatfile, strict_port=self.strict_port)
+            if not leader:
+                leader = node
             if is_client:
                 self.client_nodes.append(node)
+            elif is_external_xgboost:
+                self.external_xgboost_nodes.append(node)
             else:
                 self.nodes.append(node)
 
@@ -625,6 +646,9 @@ class H2OCloud(object):
             node.start()
 
         for node in self.client_nodes:
+            node.start()
+
+        for node in self.external_xgboost_nodes:
             node.start()
 
     def wait_for_cloud_to_be_up(self):
@@ -648,6 +672,9 @@ class H2OCloud(object):
         for node in self.client_nodes:
             node.stop()
 
+        for node in self.external_xgboost_nodes:
+            node.stop()
+
     def terminate(self):
         """
         Terminate a running cluster.  (Due to a signal.)
@@ -656,6 +683,9 @@ class H2OCloud(object):
         """
         for node in self.client_nodes:
             node.terminate()
+
+        for node in self.external_xgboost_nodes:
+            node.stop()
 
         for node in self.nodes:
             node.terminate()
@@ -677,12 +707,16 @@ class H2OCloud(object):
         return node.get_port()
 
     def _scrape_port_from_stdout(self):
+        for node in self.external_xgboost_nodes:
+            node.scrape_port_from_stdout("external-xgboost")
         for node in self.nodes:
             node.scrape_port_from_stdout()
         for node in self.client_nodes:
-            node.scrape_port_from_stdout()
+            node.scrape_port_from_stdout("client")
 
     def _scrape_cloudsize_from_stdout(self):
+        for node in self.external_xgboost_nodes:
+            node.scrape_cloudsize_from_stdout(self.nodes_per_cloud)
         for node in self.nodes:
             node.scrape_cloudsize_from_stdout(self.nodes_per_cloud)
         for node in self.client_nodes:
@@ -696,6 +730,8 @@ class H2OCloud(object):
         for node in self.nodes:
             s += str(node)
         for node in self.client_nodes:
+            s += str(node)
+        for node in self.external_xgboost_nodes:
             s += str(node)
         return s
 
@@ -1045,7 +1081,7 @@ class TestRunner(object):
 
     def __init__(self,
                  test_root_dir,
-                 use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
+                 use_cloud, use_cloud2, use_client, use_external_xgboost, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
                  testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl, login_config, jvm_opts):
@@ -1083,6 +1119,7 @@ class TestRunner(object):
         self.use_cloud = use_cloud
         self.use_cloud2 = use_cloud2
         self.use_client = use_client
+        self.use_external_xgboost = use_external_xgboost
 
         # Valid if use_cloud is True
         self.use_ip = use_ip
@@ -1142,7 +1179,8 @@ class TestRunner(object):
                 node_num += 1
         else:
             for i in range(self.num_clouds):
-                cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx, cp,
+                cloud = H2OCloud(i, self.use_client, self.use_external_xgboost,
+                                 self.nodes_per_cloud, h2o_jar, self.base_port, xmx, cp,
                                  self.output_dir, self.test_ssl, self.login_config, self.jvm_opts)
                 self.clouds.append(cloud)
 
@@ -2012,6 +2050,7 @@ g_run_xlarge = True
 g_use_cloud = False
 g_use_cloud2 = False
 g_use_client = False
+g_use_external_xgboost = False
 g_config = None
 g_use_proto = ""
 g_use_ip = None
@@ -2281,6 +2320,7 @@ def parse_args(argv):
     global g_use_cloud
     global g_use_cloud2
     global g_use_client
+    global g_use_external_xgboost
     global g_config
     global g_use_proto
     global g_use_ip
@@ -2416,6 +2456,8 @@ def parse_args(argv):
             g_config = s
         elif s == "--client":
             g_use_client = True
+        elif s == "--extxgboost":
+            g_use_external_xgboost = True
         elif s == "--nopass":
             g_nopass = True
         elif s == "--nointernal":
@@ -2708,7 +2750,7 @@ def main(argv):
         g_num_clouds = 1
 
     g_runner = TestRunner(test_root_dir,
-                          g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
+                          g_use_cloud, g_use_cloud2, g_use_client, g_use_external_xgboost, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx, g_jvm_cp,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
                           testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf, g_test_ssl,

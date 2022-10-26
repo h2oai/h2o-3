@@ -36,6 +36,7 @@ print("Starting H2O cloud...")
 cloud = run.H2OCloud(
     cloud_num=0,
     use_client=False,
+    use_external_xgboost=False,
     nodes_per_cloud=1,
     h2o_jar=os.path.abspath(h2o_jarfile),
     base_port=48000,

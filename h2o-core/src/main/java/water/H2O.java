@@ -272,7 +272,7 @@ final public class H2O {
     /** -allow_insecure_xgboost is a boolean that allows xgboost to run in a secured cluster */
     public boolean allow_insecure_xgboost = false;
 
-    /** -use_external_xgboost; invoke XGBoost on external cluster stared by Steam */
+    /** -use_external_xgboost; invoke XGBoost on external cluster started by Steam */
     public boolean use_external_xgboost = false;
 
     /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/

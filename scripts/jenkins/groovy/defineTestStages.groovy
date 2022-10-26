@@ -259,6 +259,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY,
       awsCredsPrefix: 'H2O_'
     ],
+    [
+      stageName: 'External XGBoost', target: 'test-external-xgboost', pythonVersion: '3.7', timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ]
   ]
 
   def BENCHMARK_STAGES = [

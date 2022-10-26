@@ -602,6 +602,9 @@ test-hadoop-multinode:
 test-steam-websocket:
 	cd h2o-extensions/steam/tests/python && mkdir -p results && python test.py
 
+test-external-xgboost:
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --extxgboost --test pyunit_xgboost_eval_metric_cv_large.py --numnodes 3
+
 test-hadoop-fault-tolerance:
 	cd h2o-hadoop-common/tests_fault_tolerance/python && python -m unittest test_*.py
 	cd h2o-hadoop-common/tests_fault_tolerance/R && Rscript all-tests.R
