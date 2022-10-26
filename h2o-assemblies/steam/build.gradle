@@ -58,6 +58,12 @@ dependencies {
     }
     // Google OAuth force version
     api "com.google.oauth-client:google-oauth-client:1.33.3"
+
+    constraints {
+        api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
+            because 'Fixes CVE-2022-42003'
+        }
+    }
 }
 
 shadowJar {
