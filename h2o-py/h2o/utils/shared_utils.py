@@ -50,6 +50,13 @@ class List(list):
 
 
 class LookupList(list):
+    """
+    A list implementation optimized for fast lookups.
+    Some code needs both random/indexed access on large lists and do many lookups `elem in my_list` (e.g. in a loop),
+    it is recommended to use this class in that case to avoid forgetting to build or use a set every time we need a lookup. 
+    
+    Note that this list is read-only as we don't want to have to synchronize the backed set used for the lookups.
+    """
     def __init__(self, l):
         super(LookupList, self).__init__(l)
         self.__set = set(self)  # lookup functions backed by a set
