@@ -119,7 +119,7 @@ public class Scope {
 
 
   static void track_internal(Key k) {
-    if( k.user_allowed() || !k.isVec() ) return; // Not tracked
+    if (k.user_allowed() || !k.isVec()) return; // Not tracked
     Scope scope = _scope.get();                  // Pay the price of T.L.S. lookup
     if (scope._levels.empty()) return;           // track internal may currently be implicitly called when we're not inside a scope.
     track_impl(scope._levels.peek(), k);
@@ -137,8 +137,10 @@ public class Scope {
    * @param vec
    * @return
    */
-  public static Vec track( Vec vec ) {
+  public static Vec track(Vec vec) {
+    if (vec == null) return vec;
     Level level = lget();                   // Pay the price of T.L.S. lookup
+    if (level == null) return vec;
     track_impl(level, vec._key);
     final TrackingInfo vecInfo = new TrackingInfo();
     vecInfo._nchunks = vec.nChunks();
@@ -156,6 +158,7 @@ public class Scope {
    * @return the first Frame passed as param
    */
   public static Frame track(Frame... frames) {
+    if (frames.length == 0) return null;
     Level level = lget();
     if (level == null) return frames[0];
     for (Frame fr : frames) {
@@ -189,6 +192,7 @@ public class Scope {
    * @param keys
    */
   public static <K extends Key> void untrack(K... keys) {
+    if (keys.length == 0) return;
     Level level = lget();           // Pay the price of T.L.S. lookup
     if (level == null) return;      // should we allow calling `untrack` if we're not entered in a scope? (symmetry with `track` currently forces us to do so).
     Set<Key> xkeys = level._keys;
