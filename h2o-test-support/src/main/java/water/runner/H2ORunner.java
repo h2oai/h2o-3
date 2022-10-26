@@ -14,8 +14,8 @@ import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import water.TestUtil;
+import water.junit.Priority;
 import water.junit.rules.CheckLeakedKeysRule;
-import water.junit.rules.PriorityTestRule;
 
 import java.util.*;
 
@@ -71,8 +71,8 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
           @Override
           public int compare(TestRule lhs, TestRule rhs) {
             int lp = 0, rp = 0;
-            if (lhs instanceof PriorityTestRule) lp = ((PriorityTestRule)lhs).priority();
-            if (rhs instanceof PriorityTestRule) rp = ((PriorityTestRule)rhs).priority();
+            if (lhs.getClass().isAnnotationPresent(Priority.class)) lp = lhs.getClass().getAnnotation(Priority.class).value();
+            if (rhs.getClass().isAnnotationPresent(Priority.class)) rp = rhs.getClass().getAnnotation(Priority.class).value();
             return lp - rp;
           }
         });

@@ -6,6 +6,7 @@ import water.Key;
 import water.Value;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.junit.Priority;
 import water.junit.rules.tasks.CheckKeysTask;
 import water.junit.rules.tasks.CollectBeforeTestKeysTask;
 import water.runner.H2ORunner;
@@ -15,12 +16,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class CheckLeakedKeysRule extends ExternalResource implements PriorityTestRule {
-
-  @Override
-  public int priority() {
-    return PriorityTestRule.IGNORED_TEST_RULE_PRIORITY-1; // the highest possible priority that can safely be skipped if test is ignored.
-  }
+@Priority(RulesPriorities.CHECK_LEAKED_KEYS)
+public class CheckLeakedKeysRule extends ExternalResource {
 
   @Override
   protected void before() throws Throwable {

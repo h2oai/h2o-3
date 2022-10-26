@@ -1,30 +1,21 @@
 package water.junit.rules;
 
 import org.junit.Ignore;
+import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.DKVManager;
 import water.Key;
+import water.junit.Priority;
 import water.junit.rules.tasks.ClearBeforeTestKeysTask;
 
-@Ignore 
-public class DKVIsolation implements PriorityTestRule {
+@Ignore @Priority(RulesPriorities.DKV_ISOLATION)
+public class DKVIsolation implements TestRule {
   
   final Key[] retainedKeys;
 
   public DKVIsolation(Key... retainedKeys) {
     this.retainedKeys = retainedKeys;
-  }
-
-  /**
-   * High priority so that it applies even if the test was ignored. 
-   * Prevents having ignored tests showing leaked keys failures
-   * because ignored tests skip rules evaluation but don't skip checks for key leakage, 
-   * therefore they can inherit the state of the previous state and appear as failures.
-   */
-  @Override
-  public int priority() {
-    return PriorityTestRule.IGNORED_TEST_RULE_PRIORITY * 2;
   }
 
   @Override
