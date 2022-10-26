@@ -177,6 +177,8 @@ Defining a ModelSelection Model
 
 - **p_values_threshold**: For ``mode = "backward"`` only. If specified, will stop the model building process when all coefficient p-values drop to or below this threshold. Defaults to ``0.0``.
 
+- **build_glm_model**: For ``mode="maxrsweep"`` only. If enabled, will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models themselves by using the returned predictor subsets. This values defaults to ``True`` (enabled).
+
 
 Understanding ModelSelection ``mode = allsubsets``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -415,6 +417,12 @@ Examples
       [6,] "RACE"  
       [7,] "VOL" 
 
+      # To build the fastest model with ModelSelection, use ``mode="maxrsweep"``:
+      sweepModel <- h2o.modelSelection(mode = "maxrsweep", build_glm_model = FALSE)
+
+      # Retrieve the results to view the best predictor subsets:
+      h2o.result(sweepModel)
+
    .. code-tab:: python
 
       import h2o
@@ -503,6 +511,18 @@ Examples
       bwModel.get_predictors_removed_per_step()
       [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
 
+      # To build the fastest model with ModelSelection, use ``mode="maxrsweep"``:
+      sweepModel = H2OModelSelectionEstimator(mode="maxrsweep", build_glm_model=False)
+
+      # Retrieve the results to view the best predictor subsets:
+      sweepModel.results()
+
+FAQ
+~~~
+
+- **What is the fastest mode available for ModelSelection?**
+   
+   The fastest mode for ModelSelection is ``mode="maxrsweep"`` with ``build_gbm_model`` disabled.
 
 References
 ~~~~~~~~~~
