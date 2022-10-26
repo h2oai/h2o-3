@@ -24,14 +24,14 @@ def test_modelselection_backward_gaussian():
                                     min_predictor_number=min_predictor_num)
     model_backward.train(training_frame=tst_data, x=predictors, y=response_col)
     # check predictor deletion order same as in predictor_elimination_order
-    predictor_orders = model_backward._model_json['output']['best_model_predictors']
+    predictor_orders = model_backward._model_json['output']["best_predictors_subset"]
     num_models = len(predictor_orders)
     counter = 0
     pred_ele = []
     pred_pvalue = []
     for ind in list(range(num_models-1, 0, -1)):
-        pred_large = model_backward._model_json["output"]["best_model_predictors"][ind]
-        pred_small = model_backward._model_json["output"]["best_model_predictors"][ind-1]
+        pred_large = model_backward._model_json["output"]["best_predictors_subset"][ind]
+        pred_small = model_backward._model_json["output"]["best_predictors_subset"][ind-1]
         predictor_removed = set(pred_large).symmetric_difference(pred_small).pop()
         pred_ele.append(predictor_removed)        
         predictor_removed_index = model_backward._model_json["output"]["coefficient_names"][ind].index(predictor_removed)

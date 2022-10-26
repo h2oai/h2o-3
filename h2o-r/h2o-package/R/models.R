@@ -2299,36 +2299,67 @@ h2o.get_variable_inflation_factors <- function(object) {
 #' h2o.coef(cars_glm)
 #' }
 #' @export
-h2o.coef <- function(object, predictorSize=-1) {
-  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "gam", "coxph", "modelselection")) {
-    if ((object@algorithm == "glm" || object@algorithm == "gam") && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
-        grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
+h2o.coef <- function(object, predictorSize = -1) {
+  if (is(object, "H2OModel") &&
+      object@algorithm %in% c("glm", "gam", "coxph", "modelselection")) {
+    if ((object@algorithm == "glm" ||
+         object@algorithm == "gam") &&
+        (object@allparameters$family %in% c("multinomial", "ordinal"))) {
+      grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
     } else {
       if (object@algorithm == "modelselection") {
-        modelIDs <- object@model$best_model_ids
-        numModels <- length(modelIDs)
-        mode <- object@parameters$mode
-        maxPredNumbers <- length(object@model$best_model_predictors[[numModels]])
-        if (predictorSize == 0)
-          stop("predictorSize (predictor subset size) must be between 0 and the total number of predictors used.")
-        if (predictorSize > maxPredNumbers)
-          stop("predictorSize (predictor subset size) cannot exceed the total number of predictors used.")
-        if (predictorSize > 0) { # subset size was specified
-          if (mode == "backward") {
-            return(grabOneModelCoef(modelIDs, numModels-(maxPredNumbers-predictorSize), FALSE))
+        if (object@allparameters$mode == "maxrsweep" &&
+            !object@allparameters$build_glm_model) {
+          numModels <- length(object@model$best_r2_values)
+          maxPredNumbers <- object@parameters$max_predictor_number
+          stopifnot(
+            "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
+            "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
+          )
+          if (predictorSize < 0) {
+            coeffs <- vector("list", numModels)
+            for (index in seq(numModels)) {
+              coeffs[[index]] <- structure(object@model$coefficient_values[[index]], names=object@model$coefficient_names[[index]])
+            }
+            return(coeffs)
           } else {
-            return(grabOneModelCoef(modelIDs, predictorSize, FALSE))
+            return(structure(object@model$coefficient_values[[predictorSize]], names=object@model$coefficient_names[[predictorSize]]))    
           }
         } else {
-        coeffs <- vector("list", numModels)
-        for (index in seq(numModels)) {
-          coeffs[[index]] <- grabOneModelCoef(modelIDs, index, FALSE)
-        }
-        return(coeffs)
+          modelIDs <- object@model$best_model_ids
+          numModels <- length(modelIDs)
+          mode <- object@parameters$mode
+          maxPredNumbers <- numModels
+          if (mode == "backward")
+            maxPredNumbers <- length(object@model$best_predictors_subset[[numModels]])
+          stopifnot(
+            "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
+            "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
+            )
+          if (predictorSize > 0) {
+            # subset size was specified
+            if (mode == "backward") {
+              return(grabOneModelCoef(
+                modelIDs,
+                numModels - (maxPredNumbers - predictorSize),
+                FALSE
+              ))
+            } else {
+              return(grabOneModelCoef(modelIDs, predictorSize, FALSE))
+            }
+          } else {
+            coeffs <- vector("list", numModels)
+            for (index in seq(numModels)) {
+              coeffs[[index]] <- grabOneModelCoef(modelIDs, index, FALSE)
+            }
+            return(coeffs)
           }
+        }
       } else {
-        structure(object@model$coefficients_table$coefficients,
-                names = object@model$coefficients_table$names)
+        structure(
+          object@model$coefficients_table$coefficients,
+          names = object@model$coefficients_table$names
+        )
       }
     }
   } else {
@@ -2376,26 +2407,61 @@ h2o.coef_norm <- function(object, predictorSize=-1) {
   if (is(object, "H2OModel") &&
       (object@algorithm %in% c("glm", "gam", "coxph", "modelselection"))) {
     if (object@algorithm == "modelselection") {
-      modelIDs <- object@model$best_model_ids
-      numModels = length(modelIDs)
-      mode <- object@parameters$mode
-      maxPredNumbers <- length(object@model$best_model_predictors[[numModels]])
-      if (predictorSize == 0)
-        stop("predictorSize (predictor subset size) must be between 0 and the total number of predictors used.")
-      if (predictorSize > maxPredNumbers)
-        stop("predictorSize (predictor subset size) cannot exceed the total number of predictors used.")
-      if (predictorSize > 0) { # subset size was specified 
+      if (object@allparameters$mode == "maxrsweep" &&
+          !object@allparameters$build_glm_model) {
+        numModels <- length(object@model$best_r2_values)
+        maxPredNumbers <- object@parameters$max_predictor_number
+        stopifnot(
+            "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
+            "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
+        )
+        if (predictorSize < 0) {
+          coeffs <- vector("list", numModels)
+          for (index in seq(numModels)) {
+            coeffs[[index]] <-
+              structure(
+                object@model$coefficient_values_normalized[[index]],
+                names = object@model$coefficient_names[[index]]
+              )
+          }
+          return(coeffs)
+        } else {
+          return(structure(object@model$coefficient_values_normalized[[predictorSize]],
+                    names = object@model$coefficient_names[[predictorSize]]))
+        }
+        
+        if (predictorSize < 0) {
+          structure(names=object@model$coefficient_names, object@model$coefficient_values_normalized)
+        } else {
+          structure(names=object@model$coefficient_names[[predictorSize]], object@model$coefficient_values_normalized[[predictorSize]])    
+        }        
+      } else {
+        modelIDs <- object@model$best_model_ids
+        numModels = length(modelIDs)
+        mode <- object@parameters$mode
+        maxPredNumbers <- numModels
+        stopifnot(
+            "predictorSize (predictor subset size) must be between 0 and the total number of predictors used." = predictorSize != 0,
+            "predictorSize (predictor subset size) cannot exceed the total number of predictors used." = predictorSize <= maxPredNumbers
+        )
+        if (predictorSize > 0) {
+          # subset size was specified
           if (mode == "backward") {
-            return(grabOneModelCoef(modelIDs, numModels-(maxPredNumbers-predictorSize), TRUE))
+            return(grabOneModelCoef(
+              modelIDs,
+              numModels - (maxPredNumbers - predictorSize),
+              TRUE
+            ))
           } else {
             return(grabOneModelCoef(modelIDs, predictorSize, TRUE))
           }
-      } else {
-      coeffs <- vector("list", numModels)
-      for (index in seq(numModels)) {
-        coeffs[[index]] <- grabOneModelCoef(modelIDs, index, TRUE)
-      }
-      return(coeffs)
+        } else {
+          coeffs <- vector("list", numModels)
+          for (index in seq(numModels)) {
+            coeffs[[index]] <- grabOneModelCoef(modelIDs, index, TRUE)
+          }
+          return(coeffs)
+        }
       }
     }
     if (object@allparameters$family %in% c("multinomial", "ordinal")) {

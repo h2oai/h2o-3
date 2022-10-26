@@ -22,7 +22,7 @@ def test_megan_failure():
     backward_model.train(x=x, y=y, training_frame=df)
     
     # verify that deleted predictors have minimum abs(z-values)
-    coefficient_orders = backward_model._model_json['output']['best_model_predictors']
+    coefficient_orders = backward_model._model_json['output']['coefficient_names']
     predictor_z_values = backward_model._model_json['output']['z_values']
     num_models = len(coefficient_orders)
     counter = 0

@@ -115,8 +115,14 @@
 #' @param min_predictor_number For mode = 'backward' only.  Minimum number of predictors to be considered when building GLM models starting
 #'        with all predictors to be included.  Defaults to 1. Defaults to 1.
 #' @param mode Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all subsets, 'maxr'
-#'        for MaxR calling GLM to build all models, 'maxrsweep' for using sweep in MaxR, 'backward' for backward
-#'        selection Must be one of: "allsubsets", "maxr", "maxrsweep", "backward". Defaults to maxr.
+#'        that uses sequential replacement and GLM to build all models, slow but works with cross-validation, validation
+#'        frames for more robust results, 'maxrsweep' that uses sequential replacement and sweeping action, much faster
+#'        than 'maxr', 'backward' for backward selection. Must be one of: "allsubsets", "maxr", "maxrsweep", "backward".
+#'        Defaults to maxr.
+#' @param build_glm_model \code{Logical}. For maxrsweep mode only.  If true, will return full blown GLM models with the desired
+#'        predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
+#'        forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby using
+#'        the predictor subsets themselves.  Default to true. Defaults to TRUE.
 #' @param p_values_threshold For mode='backward' only.  If specified, will stop the model building process when all coefficientsp-values
 #'        drop below this threshold  Defaults to 0.
 #' @examples
@@ -185,6 +191,7 @@ h2o.modelSelection <- function(x,
                                max_predictor_number = 1,
                                min_predictor_number = 1,
                                mode = c("allsubsets", "maxr", "maxrsweep", "backward"),
+                               build_glm_model = TRUE,
                                p_values_threshold = 0)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -312,6 +319,8 @@ h2o.modelSelection <- function(x,
     parms$min_predictor_number <- min_predictor_number
   if (!missing(mode))
     parms$mode <- mode
+  if (!missing(build_glm_model))
+    parms$build_glm_model <- build_glm_model
   if (!missing(p_values_threshold))
     parms$p_values_threshold <- p_values_threshold
 
@@ -373,6 +382,7 @@ h2o.modelSelection <- function(x,
                                                max_predictor_number = 1,
                                                min_predictor_number = 1,
                                                mode = c("allsubsets", "maxr", "maxrsweep", "backward"),
+                                               build_glm_model = TRUE,
                                                p_values_threshold = 0,
                                                segment_columns = NULL,
                                                segment_models_id = NULL,
@@ -505,6 +515,8 @@ h2o.modelSelection <- function(x,
     parms$min_predictor_number <- min_predictor_number
   if (!missing(mode))
     parms$mode <- mode
+  if (!missing(build_glm_model))
+    parms$build_glm_model <- build_glm_model
   if (!missing(p_values_threshold))
     parms$p_values_threshold <- p_values_threshold
 
@@ -561,7 +573,7 @@ h2o.get_predictors_removed_per_step<- function(model) {
 #' @export 
 h2o.get_best_model_predictors<-function(model) {
   if ( is(model, "H2OModel") && (model@algorithm=='modelselection'))
-    return(model@model$best_model_predictors)
+    return(model@model$best_predictors_subset)
 }
 
     

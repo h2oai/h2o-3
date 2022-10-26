@@ -87,6 +87,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  max_predictor_number=1,  # type: int
                  min_predictor_number=1,  # type: int
                  mode="maxr",  # type: Literal["allsubsets", "maxr", "maxrsweep", "backward"]
+                 build_glm_model=True,  # type: bool
                  p_values_threshold=0.0,  # type: float
                  ):
         """
@@ -304,10 +305,17 @@ class H2OModelSelectionEstimator(H2OEstimator):
                Defaults to ``1``.
         :type min_predictor_number: int
         :param mode: Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all
-               subsets, 'maxr' for MaxR calling GLM to build all models, 'maxrsweep' for using sweep in MaxR, 'backward'
-               for backward selection
+               subsets, 'maxr' that uses sequential replacement and GLM to build all models, slow but works with cross-
+               validation, validation frames for more robust results, 'maxrsweep' that uses sequential replacement and
+               sweeping action, much faster than 'maxr', 'backward' for backward selection.
                Defaults to ``"maxr"``.
         :type mode: Literal["allsubsets", "maxr", "maxrsweep", "backward"]
+        :param build_glm_model: For maxrsweep mode only.  If true, will return full blown GLM models with the desired
+               predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
+               forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby
+               using the predictor subsets themselves.  Default to true.
+               Defaults to ``True``.
+        :type build_glm_model: bool
         :param p_values_threshold: For mode='backward' only.  If specified, will stop the model building process when
                all coefficientsp-values drop below this threshold
                Defaults to ``0.0``.
@@ -371,6 +379,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         self.max_predictor_number = max_predictor_number
         self.min_predictor_number = min_predictor_number
         self.mode = mode
+        self.build_glm_model = build_glm_model
         self.p_values_threshold = p_values_threshold
 
     @property
@@ -1165,7 +1174,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
     def mode(self):
         """
         Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all subsets, 'maxr'
-        for MaxR calling GLM to build all models, 'maxrsweep' for using sweep in MaxR, 'backward' for backward selection
+        that uses sequential replacement and GLM to build all models, slow but works with cross-validation, validation
+        frames for more robust results, 'maxrsweep' that uses sequential replacement and sweeping action, much faster
+        than 'maxr', 'backward' for backward selection.
 
         Type: ``Literal["allsubsets", "maxr", "maxrsweep", "backward"]``, defaults to ``"maxr"``.
         """
@@ -1175,6 +1186,23 @@ class H2OModelSelectionEstimator(H2OEstimator):
     def mode(self, mode):
         assert_is_type(mode, None, Enum("allsubsets", "maxr", "maxrsweep", "backward"))
         self._parms["mode"] = mode
+
+    @property
+    def build_glm_model(self):
+        """
+        For maxrsweep mode only.  If true, will return full blown GLM models with the desired predictorsubsets.  If
+        false, only the predictor subsets, predictor coefficients are returned.  This is forspeeding up the model
+        selection process.  The users can choose to build the GLM models themselvesby using the predictor subsets
+        themselves.  Default to true.
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("build_glm_model")
+
+    @build_glm_model.setter
+    def build_glm_model(self, build_glm_model):
+        assert_is_type(build_glm_model, None, bool)
+        self._parms["build_glm_model"] = build_glm_model
 
     @property
     def p_values_threshold(self):
@@ -1200,8 +1228,25 @@ class H2OModelSelectionEstimator(H2OEstimator):
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
         """
         model_ids = self._model_json["output"]["best_model_ids"]
-        if model_ids is None:
-            return None
+        if not(self.actual_params["build_glm_model"]) and self.actual_params["mode"]=="maxrsweep":
+            coef_names = self._model_json["output"]["coefficient_names"]
+            coef_values = self._model_json["output"]["coefficient_values_normalized"]
+            num_models = len(coef_names)
+            if predictor_size==None:
+                coefs = [None]*num_models
+                for index in range(0, num_models):
+                    coef_name = coef_names[index]
+                    coef_val = coef_values[index]
+                    coefs[index] = dict(zip(coef_name, coef_val))
+                return coefs
+            else:
+                if predictor_size > num_models:
+                    raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
+                if predictor_size <= 0:
+                    raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
+                coef_name = coef_names[predictor_size-1]
+                coef_val = coef_values[predictor_size-1]
+                return dict(zip(coef_name, coef_val))
         else:
             model_numbers = len(model_ids)
             mode = self.get_params()['mode']
@@ -1213,7 +1258,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                     if tbl is not None:
                         coefs[index] =  {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
                 return coefs
-            max_pred_numbers = len(self._model_json["output"]["best_model_predictors"][model_numbers-1])
+            max_pred_numbers = len(self._model_json["output"]["best_predictors_subset"][model_numbers-1])
             if predictor_size > max_pred_numbers:
                 raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
             if predictor_size == 0:
@@ -1235,34 +1280,54 @@ class H2OModelSelectionEstimator(H2OEstimator):
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
         """
-        model_ids = self._model_json["output"]["best_model_ids"]
-        if model_ids is None:
-            return None
-        else:
-            model_numbers = len(model_ids)
-            mode = self.get_params()['mode']
+        if not self.actual_params["build_glm_model"] and self.actual_params["mode"]=="maxrsweep":
+            coef_names = self._model_json["output"]["coefficient_names"]
+            coef_values = self._model_json["output"]["coefficient_values"]
+            num_models = len(coef_names)
             if predictor_size==None:
-                coefs = [None]*model_numbers
-                for index in range(0, model_numbers):
-                    one_model = h2o.get_model(model_ids[index]['name'])
-                    tbl = one_model._model_json["output"]["coefficients_table"]
-                    if tbl is not None:
-                        coefs[index] =  {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
-                return coefs
-            max_pred_numbers = len(self._model_json["output"]["best_model_predictors"][model_numbers-1])
-            if predictor_size > max_pred_numbers:
-                raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
-            if predictor_size == 0:
-                raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
-
-            if mode=='backward':
-                offset = max_pred_numbers - predictor_size
-                one_model = h2o.get_model(model_ids[model_numbers-1-offset]['name'])
+                coefs = [None]*num_models
+                for index in range(0, num_models):
+                    coef_name = coef_names[index]
+                    coef_val = coef_values[index]
+                    coefs[index] = dict(zip(coef_name, coef_val))
+                return coefs  
             else:
-                one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
-            tbl = one_model._model_json["output"]["coefficients_table"]
-            if tbl is not None:
-                return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
+                if predictor_size > num_models:
+                    raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
+                if predictor_size <= 0:
+                    raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
+                coef_name = coef_names[predictor_size-1]
+                coef_val = coef_values[predictor_size-1]
+                return dict(zip(coef_name, coef_val))
+        else:
+            model_ids = self._model_json["output"]["best_model_ids"]
+            if model_ids is None:
+                return None
+            else:
+                model_numbers = len(model_ids)
+                mode = self.get_params()['mode']
+                if predictor_size==None:
+                    coefs = [None]*model_numbers
+                    for index in range(0, model_numbers):
+                        one_model = h2o.get_model(model_ids[index]['name'])
+                        tbl = one_model._model_json["output"]["coefficients_table"]
+                        if tbl is not None:
+                            coefs[index] =  dict(zip(tbl["names"], tbl["coefficients"]))
+                    return coefs
+                max_pred_numbers = len(self._model_json["output"]["best_predictors_subset"][model_numbers-1])
+                if predictor_size > max_pred_numbers:
+                    raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
+                if predictor_size == 0:
+                    raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
+
+                if mode=='backward':
+                    offset = max_pred_numbers - predictor_size
+                    one_model = h2o.get_model(model_ids[model_numbers-1-offset]['name'])
+                else:
+                    one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
+                tbl = one_model._model_json["output"]["coefficients_table"]
+                if tbl is not None:
+                    return dict(zip(tbl["names"], tbl["coefficients"]))
 
     def result(self):
         """
@@ -1303,6 +1368,6 @@ class H2OModelSelectionEstimator(H2OEstimator):
         Get list of best models with 1 predictor, 2 predictors, ..., max_predictor_number of predictors that have the
         highest r2 values
 
-        :return: a list of best r2 values
+        :return: a list of best predictors subset
         """
-        return self._model_json["output"]["best_model_predictors"]
+        return self._model_json["output"]["best_predictors_subset"]

@@ -21,6 +21,10 @@ def test_gaussian_result_frame_model_id():
     maxrsweep_model.train(training_frame=d, x=my_x, y=my_y)
     verifyCorrectAddedRemovedPreds(maxrsweep_model, 'maxrsweep')
 
+    maxrsweep_model_glm = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep", build_glm_model=False)
+    maxrsweep_model_glm.train(training_frame=d, x=my_x, y=my_y)
+    verifyCorrectAddedRemovedPreds(maxrsweep_model_glm, 'maxrsweep')
+
     allsubsets_model = modelSelection(seed=12345, max_predictor_number=7, mode="allsubsets")
     allsubsets_model.train(training_frame=d, x=my_x, y=my_y)
     verifyCorrectAddedRemovedPreds(allsubsets_model, 'allsubsets')

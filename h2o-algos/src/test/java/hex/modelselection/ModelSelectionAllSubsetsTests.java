@@ -21,7 +21,6 @@ import static hex.genmodel.utils.MathUtils.combinatorial;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.modelselection.ModelSelectionMaxRTests.compareResultFModelSummary;
 import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.allsubsets;
-import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.maxrsweep;
 import static hex.modelselection.ModelSelectionUtils.updatePredIndices;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -171,7 +170,7 @@ public class ModelSelectionAllSubsetsTests extends TestUtil {
             Scope.track(resultFrame);
 
             double[] bestR2 = model._output._best_r2_values;
-            String[][] bestPredictorSubsets = model._output._best_model_predictors;
+            String[][] bestPredictorSubsets = model._output._coefficient_names;
             int numModels = bestR2.length;
             for (int index = 0; index < numModels; index++) {
                 // check with model summary r2 values

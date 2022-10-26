@@ -45,7 +45,7 @@ h2o.get_predictors_removed_per_step<- function(model) {
 #' @export 
 h2o.get_best_model_predictors<-function(model) {
   if ( is(model, "H2OModel") && (model@algorithm=='modelselection'))
-    return(model@model$best_model_predictors)
+    return(model@model$best_predictors_subset)
 }
 
     """

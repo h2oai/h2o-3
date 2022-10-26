@@ -69,6 +69,7 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "max_predictor_number",  // denote maximum number of predictors to build models for
                 "min_predictor_number",
                 "mode", // naive, maxr, maxrsweep, backward
+                "build_glm_model",
                 "p_values_threshold"
         };
 
@@ -111,6 +112,13 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min", 
                 level = API.Level.critical)
         public boolean lambda_search;
+
+        @API(help = "For maxrsweep mode only.  If true, will return full blown GLM models with the desired predictor" +
+                "subsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is for" +
+                "speeding up the model selection process.  The users can choose to build the GLM models themselves" +
+                "by using the predictor subsets themselves.  Default to true.",
+                level = API.Level.critical)
+        public boolean build_glm_model;
 
         @API(help="Stop early when there is no more relative improvement on train or validation (if provided)")
         public boolean early_stopping;
@@ -183,9 +191,9 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 valuesProvider = ModelSelectionModeProvider.class,
                 help = "Mode: Used to choose model selection algorithms to use.  Options include "
                         + "'allsubsets' for all subsets, "
-                        + "'maxr' for MaxR calling GLM to build all models, "
-                        + "'maxrsweep' for using sweep in MaxR, "
-                        + "'backward' for backward selection"
+                        + "'maxr' that uses sequential replacement and GLM to build all models, slow but works with cross-validation, validation frames for more robust results, "
+                        + "'maxrsweep' that uses sequential replacement and sweeping action, much faster than 'maxr', "
+                        + "'backward' for backward selection."
         )
         public ModelSelectionModel.ModelSelectionParameters.Mode mode;
 
