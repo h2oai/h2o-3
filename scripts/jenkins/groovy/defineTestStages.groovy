@@ -809,7 +809,7 @@ def call(final pipelineContext) {
   } else if (modeCode == MODE_KERBEROS_CODE) {
     executeInParallel(KERBEROS_STAGES, pipelineContext)
   } else if (modeCode == MODE_HADOOP_MULTINODE_CODE) {
-    executeInParallel(HADOOP_MULTINODE_STAGES, pipelineContext)
+    executeSequentially(HADOOP_MULTINODE_STAGES, pipelineContext)
   } else if (modeCode == MODE_XGB_CODE) {
     executeInParallel(XGB_STAGES, pipelineContext)
   } else if (modeCode == MODE_COVERAGE_CODE) {
@@ -845,38 +845,47 @@ def call(final pipelineContext) {
 }
 
 private void executeInParallel(final jobs, final pipelineContext) {
-  parallel(jobs.collectEntries { c ->
-    [
-      c['stageName'], {
-        invokeStage(pipelineContext) {
-          stageName = c['stageName']
-          target = c['target']
-          pythonVersion = c['pythonVersion']
-          rVersion = c['rVersion']
-          installRPackage = c['installRPackage']
-          javaVersion = c['javaVersion']
-          timeoutValue = c['timeoutValue']
-          hasJUnit = c['hasJUnit']
-          component = c['component']
-          additionalTestPackages = c['additionalTestPackages']
-          nodeLabel = c['nodeLabel']
-          executionScript = c['executionScript']
-          image = c['image']
-          customData = c['customData']
-          makefilePath = c['makefilePath']
-          archiveAdditionalFiles = c['archiveAdditionalFiles']
-          excludeAdditionalFiles = c['excludeAdditionalFiles']
-          archiveFiles = c['archiveFiles']
-          activatePythonEnv = c['activatePythonEnv']
-	      customDockerArgs = c['customDockerArgs']
-          imageSpecifier = c['imageSpecifier']
-          healthCheckSuppressed = c['healthCheckSuppressed']
-          addToDockerGroup = c['addToDockerGroup']
-          awsCredsPrefix = c['awsCredsPrefix']
-        }
-      }
+  parallel(jobs.collectEntries { c -> [
+      c['stageName'], { invokeStageUsingDefinition(c, pipelineContext) }
     ]
   })
+}
+
+private void executeSequentially(final jobs, final pipelineContext) {
+  jobs.each { c ->
+      stage(c['stageName']) {
+        invokeStageUsingDefinition(c, pipelineContext)
+      }
+  }
+}
+
+private void invokeStageUsingDefinition(final stageDef, final pipelineContext) {
+  invokeStage(pipelineContext) {
+    stageName = stageDef['stageName']
+    target = stageDef['target']
+    pythonVersion = stageDef['pythonVersion']
+    rVersion = stageDef['rVersion']
+    installRPackage = stageDef['installRPackage']
+    javaVersion = stageDef['javaVersion']
+    timeoutValue = stageDef['timeoutValue']
+    hasJUnit = stageDef['hasJUnit']
+    component = stageDef['component']
+    additionalTestPackages = stageDef['additionalTestPackages']
+    nodeLabel = stageDef['nodeLabel']
+    executionScript = stageDef['executionScript']
+    image = stageDef['image']
+    customData = stageDef['customData']
+    makefilePath = stageDef['makefilePath']
+    archiveAdditionalFiles = stageDef['archiveAdditionalFiles']
+    excludeAdditionalFiles = stageDef['excludeAdditionalFiles']
+    archiveFiles = stageDef['archiveFiles']
+    activatePythonEnv = stageDef['activatePythonEnv']
+    customDockerArgs = stageDef['customDockerArgs']
+    imageSpecifier = stageDef['imageSpecifier']
+    healthCheckSuppressed = stageDef['healthCheckSuppressed']
+    addToDockerGroup = stageDef['addToDockerGroup']
+    awsCredsPrefix = stageDef['awsCredsPrefix']
+  }
 }
 
 private void invokeStage(final pipelineContext, final body) {
