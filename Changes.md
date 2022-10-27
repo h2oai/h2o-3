@@ -2,6 +2,38 @@
 
 ## H2O
 
+### Zygmund (3.38.0.2) - 10/27/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/2/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8878]](https://h2oai.atlassian.net/browse/PUBDEV-8878) - Fixed H2ODeepLearningEstimator `autoencoder` not working without `y` value.
+- [[PUBDEV-8861]](https://h2oai.atlassian.net/browse/PUBDEV-8861) - Added `libgomp` into docker images thus enabling XGBoost multithreading.
+- [[PUBDEV-8846]](https://h2oai.atlassian.net/browse/PUBDEV-8846) - Stopped throwing warning about jobs not having proper model types when models weren’t even trained.
+- [[PUBDEV-8833]](https://h2oai.atlassian.net/browse/PUBDEV-8833) - Fixed cross validation failure for concurrent sorting.
+- [[PUBDEV-8830]](https://h2oai.atlassian.net/browse/PUBDEV-8830) - Enabled parallelism in cross validation for Isotonic Regression.
+
+#### Task
+
+- [[PUBDEV-8849]](https://h2oai.atlassian.net/browse/PUBDEV-8849) - Enabled GAM I-spline to support increasing and decreasing functions.
+- [[PUBDEV-8836]](https://h2oai.atlassian.net/browse/PUBDEV-8836) - Updated the number of knots required for GAM I-splines to be >=2.
+- [[PUBDEV-8785]](https://h2oai.atlassian.net/browse/PUBDEV-8785) -  Improved ModelSelection’s `mode=“maxrsweep”` runtime.
+
+#### Docs
+
+- [[PUBDEV-8883]](https://h2oai.atlassian.net/browse/PUBDEV-8883) - Added information on ModelSelection’s new `build_glm_model` parameter for `mode=“maxrsweep”`.
+- [[PUBDEV-8870]](https://h2oai.atlassian.net/browse/PUBDEV-8870) - Fixed incorrect header case on ModelSelection and Cox Proportional Hazards algorithm pages in the user guide.
+- [[PUBDEV-8854]](https://h2oai.atlassian.net/browse/PUBDEV-8854) - Added an example to Variable Inflation Factors in the user guide.
+- [[PUBDEV-8849]](https://h2oai.atlassian.net/browse/PUBDEV-8849) - Fixed broken links on the “Welcome to H2O-3” page of the user guide.
+- [[PUBDEV-8786]](https://h2oai.atlassian.net/browse/PUBDEV-8786) - Added model explainability for plotting SHAP to the “Performance and Prediction” page of the user guide.
+- [[PUBDEV-8209]](https://h2oai.atlassian.net/browse/PUBDEV-8209) - Added examples for `varsplits()` and `feature_frequencies()` to Python documentation.
+
+#### Security
+
+- [[PUBDEV-8885]](https://h2oai.atlassian.net/browse/PUBDEV-8885) - Addressed CVE-2022-42003 and CVE-2022-42889 security issues through Library upgrades.
+
+
 ### Zygmund (3.38.0.1) - 9/19/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/1/index.html</a>
