@@ -16,7 +16,7 @@ from h2o.exceptions import H2OValueError, H2OResponseError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.mixin import assign, load_ext, mixin
-from h2o.utils.shared_utils import quoted, LookupList
+from h2o.utils.shared_utils import quoted, LookupSeq
 from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from h2o.model import ModelBase, H2OSegmentModels
 from h2o.model.models import *
@@ -227,7 +227,7 @@ class H2OEstimator(ModelBase):
         if verbose and not self._options_.get('verbose', False):
             raise H2OValueError("Verbose mode is not available for %s" % self.__class__.__name__)
         parms = self._parms.copy()
-        names = LookupList(training_frame.names if training_frame is not None else [])
+        names = LookupSeq(training_frame.names if training_frame is not None else [])
         ncols = training_frame.ncols if training_frame is not None else 0
         types = training_frame.types if training_frame is not None else {}
     

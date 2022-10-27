@@ -49,26 +49,23 @@ class List(list):
     pass
 
 
-class LookupList(list):
+class LookupSeq(tuple):
     """
-    A list implementation optimized for fast lookups.
+    An immutable sequence implementation (actually a tuple) optimized for fast lookups.
     Some code needs both random/indexed access on large lists and do many lookups `elem in my_list` (e.g. in a loop),
     it is recommended to use this class in that case to avoid forgetting to build or use a set every time we need a lookup. 
     
     Note that this list is read-only as we don't want to have to synchronize the backed set used for the lookups.
     """
-    def __init__(self, l):
-        super(LookupList, self).__init__(l)
-        self.__set = set(self)  # lookup functions backed by a set
+    def __new__(cls, seq=()):
+        """need to implement  __new__ to be able to extend tuple (not necessary for list)"""
+        return super(LookupSeq, cls).__new__(cls, seq)
+    
+    def __init__(self, seq=()):
+        self.__set = frozenset(self)  # lookup functions backed by a set
         
     def __contains__(self, item):
         return item in self.__set
-    
-    def __setitem__(self, key, value):
-        raise TypeError("LookupList is read-only")
-    
-    def __delitem__(self, key):
-        raise TypeError("LookupList is read-only")
     
     def set(self):
         """
@@ -76,7 +73,7 @@ class LookupList(list):
         We still want this to behave like a list for the most part, 
         and this is a slightly faster than building a set from the list itself.
         """
-        return set(self.__set)
+        return self.__set
 
 
 
