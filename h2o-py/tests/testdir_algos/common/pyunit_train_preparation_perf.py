@@ -17,7 +17,7 @@ class DummyEstimator(H2OEstimator):
         pass
 
 
-def test_basic_estimator_preparation_is_fast_enough():
+def test_basic_estimator_preparation_perf_with_x():
     dummy = DummyEstimator()
     # for some mysterious reason, the parser fails if uploading more than 331186 columns: magic number?
     # using this upper limit for now, but this is fishy:
@@ -45,7 +45,26 @@ def test_basic_estimator_preparation_is_fast_enough():
     assert training_duration < 10  # generous upper limit for slow Jenkins (obtaining around 1-2s on macOS) 
 
 
+def test_basic_estimator_preparation_perf_with_ignored_columns():
+    dummy = DummyEstimator()
+    shape = (5, 331186)  # see previous test
+    data_start = time.time()
+    names = ["Col_"+str(n) for n in range(shape[1])]
+    y = names[len(names)//2]  # average worst scenario
+    ignored = [n for i, n in enumerate(names) if i % 2]   # average worst scenario regardless what preparation is doing
+    train_fr = h2o.H2OFrame({n: list(range(shape[0])) for n in names})
+    data_duration = time.time() - data_start
+    print("data preparation/upload took {}s".format(data_duration))
+    training_start = time.time()
+    dummy.train(y=y, training_frame=train_fr, validation_frame=train_fr, ignored_columns=ignored)
+    training_duration = time.time() - training_start
+    print("training preparation took {}s".format(training_duration))
+    assert training_duration < 10  # generous upper limit for slow Jenkins (obtaining around 1-2s on macOS) 
+
+
+
 pu.run_tests([
-    test_basic_estimator_preparation_is_fast_enough,
+    test_basic_estimator_preparation_perf_with_x,
+    test_basic_estimator_preparation_perf_with_ignored_columns,
 ])
 
