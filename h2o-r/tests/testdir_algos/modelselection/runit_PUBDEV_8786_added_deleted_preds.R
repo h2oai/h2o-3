@@ -16,17 +16,19 @@ testAddedRemovedPreds <- function() {
   assertAddedRemovedPreds(maxrsweepModel)
   backwardModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, mode="backward")
   assertAddedRemovedPreds(backwardModel)
+  maxrsweepModelGLM <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel, mode="maxrsweep", build_glm_model=FALSE)
+  assertAddedRemovedPreds(maxrsweepModelGLM)
 }
 
 assertAddedRemovedPreds <- function(model) {
   resultFrame <- h2o.result(model)
-  removedPF <- resultFrame["predictor(s)_removed"]
+  removedPF <- resultFrame["predictors_removed"]
   removedPreds <- h2o.get_predictors_removed_per_step(model)
   assertFrameListEquals(removedPF, removedPreds)
   
   if (model@allparameters$mode != 'backward') {
     addPreds <- h2o.get_predictors_added_per_step(model)
-    addPredsF <- resultFrame["predictor(s)_added"]
+    addPredsF <- resultFrame["predictors_added"]
     assertFrameListEquals(addPredsF, addPreds)
   }
 }

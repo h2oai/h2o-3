@@ -10,11 +10,11 @@ public class ModelSelectionModelV3 extends ModelSchemaV3<ModelSelectionModel, Mo
         ModelSelectionV3.ModelSelectionParametersV3, ModelSelectionModel.ModelSelectionModelOutput, ModelSelectionModelV3.ModelSelectionModelOutputV3> {
     public static final class ModelSelectionModelOutputV3 extends ModelOutputSchemaV3<ModelSelectionModel.ModelSelectionModelOutput,
             ModelSelectionModelOutputV3> {
-        
-        @API(help="Best predictor subset names for each subset size.")
-        String[][] best_model_predictors; // store for each predictor number, the best model predictors
+        @API(help="Names of predictors in the best predictor subset")
+        String[][] best_predictors_subset;
         
         @API(help="R2 values of all possible predictor subsets.  Only for mode='allsubsets' or 'maxr'.")
+
         double[] best_r2_values;  // store the best R2 values of the best models with fix number of predictors
         
         @API(help="at each predictor subset size, the predictor added is collected in this array.  Not for mode = " +
@@ -35,6 +35,12 @@ public class ModelSelectionModelV3 extends ModelSchemaV3<ModelSelectionModel, Mo
         
         @API(help="arrays of string arrays containing coefficient names of best 1-predictor model, best 2-predictors model, ....")
         String[][] coefficient_names;
+
+        @API(help="store coefficient values for each predictor subset.  Only for maxrsweep when build_glm_model is false.")
+        double[][]  coefficient_values;
+
+        @API(help="store standardized coefficient values for each predictor subset.  Only for maxrsweep when build_glm_model is false.")
+        double[][]  coefficient_values_normalized;
         
         @Override
         public ModelSelectionModelOutputV3 fillFromImpl(ModelSelectionModel.ModelSelectionModelOutput impl) {

@@ -15,12 +15,14 @@ def test_modelselection_gaussian():
     my_x = ["AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
     model_maxrsweep = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweep")
     model_maxrsweep.train(training_frame=d, x=my_x, y=my_y)
+    model_maxrsweep_glm = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweep", build_glm_model=False)
+    model_maxrsweep_glm.train(training_frame=d, x=my_x, y=my_y)
     model_maxr = modelSelection(seed=12345, max_predictor_number=3, mode="maxr")
     model_maxr.train(training_frame=d, x=my_x, y=my_y)
 
     # make sure results returned by maxr and maxrsweep are the same
     pyunit_utils.compare_frames_local(model_maxr.result()[2:4], model_maxrsweep.result()[2:4], prob=1.0, tol=1e-6)
-    
+    pyunit_utils.compare_frames_local(model_maxr.result()[2:4], model_maxrsweep_glm.result()[1:3], prob=1.0, tol=1e-6)
     model_allsubsets = modelSelection(seed=12345, max_predictor_number=3, mode="allsubsets")
     model_allsubsets.train(training_frame=d, x=my_x, y=my_y)
     best_r2_value_allsubsets = model_allsubsets.get_best_R2_values()

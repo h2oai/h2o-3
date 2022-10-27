@@ -12,7 +12,7 @@ testModelSelection <- function() {
                                       link='logit')
   resultsF <- h2o.result(backwardModel) # check coefficients length are valid
   numModels <- h2o.nrow(resultsF)
-  allCoefs <- backwardModel@model$best_model_predictors
+  allCoefs <- backwardModel@model$best_predictors_subset
 
   for (ind in seq(numModels, 2, -1)) {
     predNamesL <- allCoefs[[ind]]
@@ -20,7 +20,7 @@ testModelSelection <- function() {
     predMissing <- xor(predNamesL, predNamesS)
     print(predMissing)
     coefs <- h2o.coef(backwardModel, length(predNamesL))
-    expect_equal(length(coefs), length(predNamesL), tol=1e-6) # coefficient length should be equal to arguments used
+    expect_equal(length(coefs)-1, length(predNamesL), tol=1e-6) # coefficient length should be equal to arguments used
   }
 }
 

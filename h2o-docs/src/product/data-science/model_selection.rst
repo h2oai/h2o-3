@@ -11,6 +11,8 @@ We implemented the ModelSelection toolbox based on GLM at H2O to help users sele
 3. ``mode = "backward"`` where a model is built starting with all predictors. The predictor with the smallest absolute z-value (or z-score) is dropped after each model is built. This process repeats until only one predictor remains or until the number of predictors equal to ``min_predictor_number`` is reached. The model build can also be stopped using ``p_values_threshold``. 
 4. ``mode = "maxrsweep"`` where the model runs similar to ``mode = "maxr"`` except that instead of calling our GLM toolbox to build models, we use the sweep operator [:ref:`3<ref4>`] plus our own incremental sweep operation using sweep vectors. This change speeds up the execution of finding the best predictor subset for each subset size and is essential in dropping the build time of the model. 
 
+The fastest mode for ModelSelection is ``mode = "maxrsweep"`` with ``build_gbm_model = False``. This skips the GLM model process while still generating the predictor subsets, the coefficients, and the coefficient values.
+
 This model only supports GLM regression families. 
 
 MOJO Support
@@ -176,6 +178,8 @@ Defining a ModelSelection Model
 - **min_predictor_number**: For ``mode = "backward"`` only.  Minimum number of predictors to be considered when building GLM models starting with all predictors to be included. Defaults to ``1``.
 
 - **p_values_threshold**: For ``mode = "backward"`` only. If specified, will stop the model building process when all coefficient p-values drop to or below this threshold. Defaults to ``0.0``.
+
+- **build_glm_model**: For ``mode="maxrsweep"`` only. If enabled, will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models yourself by using the returned predictor subsets. This value defaults to ``True`` (enabled).
 
 
 Understanding ModelSelection ``mode = allsubsets``
@@ -415,6 +419,23 @@ Examples
       [6,] "RACE"  
       [7,] "VOL" 
 
+      # To build the fastest model with ModelSelection, use ``mode = "maxrsweep"``:
+      sweepModel <- h2o.modelSelection(x = predictors, 
+                                       y = response, 
+                                       training_frame = prostate, 
+                                       mode = "maxrsweep", 
+                                       build_glm_model = FALSE, 
+                                       max_predictor_number = 3, 
+                                       seed = 12345)
+      |======================================================================| 100%
+
+      # Retrieve the results to view the best predictor subsets:
+      h2o.result(sweepModel)
+        model_name                  best_r2_value          coefficient_names     predictor_names predictors_removed predictors_added
+      1 best 1 predictors model     0.2058873             CAPSULE, Intercept             CAPSULE                             CAPSULE
+      2 best 2 predictors model     0.2695684        CAPSULE, PSA, Intercept        CAPSULE, PSA                                 PSA
+      3 best 3 predictors model     0.2862536 CAPSULE, PSA, DCAPS, Intercept CAPSULE, PSA, DCAPS                               DCAPS
+
    .. code-tab:: python
 
       import h2o
@@ -502,6 +523,22 @@ Examples
       # Check the variables that were removed during this process:
       bwModel.get_predictors_removed_per_step()
       [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
+
+      # To build the fastest model with ModelSelection, use ``mode="maxrsweep"``:
+      sweepModel = H2OModelSelectionEstimator(mode="maxrsweep", 
+                                              build_glm_model=False, 
+                                              max_predictor_number=3, 
+                                              seed=12345)
+      sweepModel.train(x=predictors, y=response, training_frame=prostate)
+      modelselection Model Build progress: ======================================= (done)| 100%
+
+      # Retrieve the results to view the best predictor subsets:
+      print(sweepModel.results())
+      model_name                 best_r2_value  coefficient_names               predictor_names      predictors_removed    predictors_added
+      best 1 predictors model         0.205887  CAPSULE, Intercept              CAPSULE                                    CAPSULE
+      best 2 predictors model         0.269568  CAPSULE, PSA, Intercept         CAPSULE, PSA                               PSA
+      best 3 predictors model         0.286254  CAPSULE, PSA, DCAPS, Intercept  CAPSULE, PSA, DCAPS                        DCAPS
+      [3 rows x 6 columns]
 
 
 References

@@ -23,12 +23,12 @@ def test_modelselection_backward_gaussian():
                                 weights_column='weight')
     model_backward.train(training_frame=d, x=my_x, y=my_y)
     # check predictor deletion order same as in predictor_elimination_order
-    predictor_orders = model_backward._model_json['output']['best_model_predictors']
+    predictor_orders = model_backward._model_json['output']['best_predictors_subset']
     num_models = len(predictor_orders)
     counter = 0
     for ind in list(range(num_models-1, 0, -1)):
-        pred_large = model_backward._model_json["output"]["best_model_predictors"][ind]
-        pred_small = model_backward._model_json["output"]["best_model_predictors"][ind-1]
+        pred_large = model_backward._model_json["output"]["best_predictors_subset"][ind]
+        pred_small = model_backward._model_json["output"]["best_predictors_subset"][ind-1]
         predictor_removed = set(pred_large).symmetric_difference(pred_small).pop()
         assert predictor_removed==predictor_elimination_order[counter], "expected eliminated predictor {0}, " \
                                                                         "actual eliminated predictor {1}".format(predictor_elimination_order[counter], predictor_removed)
