@@ -310,7 +310,7 @@ class H2OEstimator(ModelBase):
             x = [names[i] for i in x]
         if override_default_training_frame:
             ignored_columns = list(names.set() - set(x + [y, offset, folds, weights]))
-            parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
+            parms["ignored_columns"] = None if len(ignored_columns) == 0 else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None
                                  else [quoted(col) for col in parms["interactions"]])
         parms["interaction_pairs"] = (None if "interaction_pairs" not in parms or parms["interaction_pairs"] is None
