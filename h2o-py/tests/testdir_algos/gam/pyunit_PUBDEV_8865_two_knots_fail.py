@@ -6,8 +6,9 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 
+# test taken from Narasimha Durgam
 def test_2_knots():
-    train = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/dataset-37830.csv"))
+    train = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/gam_test/dataset-37830.csv")
     y = "wage"
     x = ["year","age"]
 
