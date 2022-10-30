@@ -45,7 +45,6 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.ComputationState.extractSubRange;
@@ -56,9 +55,8 @@ import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.*;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
-import static hex.glm.GLMModel.GLMParameters.GLMType.*;
+import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 import static hex.glm.GLMUtils.*;
-import static hex.modelselection.ModelSelectionUtils.extractPredictorNames;
 import static water.fvec.Vec.T_NUM;
 
 /**
@@ -3856,6 +3854,34 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+    public void setNonNegative(Frame otherConst) {
+      List<String> constraintNames = extractVec2List(otherConst); // maximum size = number of predictors, an integer
+      List<String> coeffNames = Arrays.stream(_dinfo.coefNames()).collect(Collectors.toList());
+      int numCoef = coeffNames.size();
+      for (int index=0; index<numCoef; index++) { // only changes beta constraints if not been specified before
+        if (!constraintNames.contains(coeffNames.get(index))) {  
+          _betaLB[index] = 0;
+          _betaUB[index] = Double.POSITIVE_INFINITY;
+        }
+      }
+    }
+
+    /**
+     * Extract predictor names in the constraint frame constraintF into a list.  Okay to extract into a list as
+     * the number of predictor is an integer and not long.
+     */
+    public List<String> extractVec2List(Frame constraintF) {
+      List<String> constraintNames = new ArrayList<>();
+      Vec.Reader vr = constraintF.vec(0).new Reader();
+      long numRows = constraintF.numRows();
+      
+      for (long index=0; index<numRows; index++) {
+        BufferedString bs = vr.atStr(new BufferedString(), index);
+        constraintNames.add(bs.toString());
+      }
+      return constraintNames;
+    }
+
     public void applyAllBounds(double[] beta) {
       int betaLength = beta.length;
       for (int index=0; index<betaLength; index++)
@@ -4048,7 +4074,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
       }
-      if (_parms._non_negative) setNonNegative();
+      if (_parms._non_negative) {
+        if (gam.equals(_parms._glmType))
+          setNonNegative(beta_constraints);
+        else
+          setNonNegative();
+      }
       check();
     }
 
