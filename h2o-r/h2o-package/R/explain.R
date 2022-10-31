@@ -3428,7 +3428,8 @@ setMethod("plot", "H2OParetoFront", function(x, y, ...) {
     ggplot2::labs(x = xlab, y = ylab, title = x@title) +
     ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
     ggplot2::theme_bw() +
-    ggplot2::theme(legend.title = ggplot2::element_blank())
+    ggplot2::theme(legend.title = ggplot2::element_blank(),
+                   plot.title = ggplot2::element_text(hjust = 0.5))
 })
 
 #' Show H2OParetoFront
@@ -4283,7 +4284,8 @@ h2o.pd_fair_plot <- function(model, newdata, protected_cols, column, autoscale =
                       paste0("log(", column, ")")
                     else
                       column) +
-      ggplot2::labs(title = sprintf("PDP across protected groups for %s", column))
+      ggplot2::labs(title = sprintf("PDP across protected groups for %s", column)) +
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   return(p)
 }
 
@@ -4337,7 +4339,8 @@ h2o.shap_fair_plot <- function(model, newdata, column, protected_cols, autoscale
       ggplot2::labs(colour = if (use_log) paste0("log(", col_with_cat_name, ")") else col_with_cat_name) +
       ggplot2::ylab(paste("Contributions of", col_with_cat_name)) +
       # ggplot2::scale_color_gradient(low = "#00AAEE", high = "#FF1166") +
-      ggplot2::scale_color_viridis_c()
+      ggplot2::scale_color_viridis_c() +
+      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   })
 }
 
@@ -4384,9 +4387,9 @@ h2o.roc_fair_plot <- function(model, newdata, protected_cols, reference, favorab
     ) +
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_continuous(expand = c(0, 0.01)) +
-    ggplot2::labs(title = "ROC")
+    ggplot2::labs(title = "ROC") +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   return(p)
-
 }
 
 #' Plot PR curve per protected group.
@@ -4432,7 +4435,8 @@ h2o.pr_fair_plot <- function(model, newdata, protected_cols, reference, favorabl
     ) +
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_continuous(expand = c(0, 0.01)) +
-    ggplot2::labs(title = "Precision-Recall Curve")
+    ggplot2::labs(title = "Precision-Recall Curve") +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   return(q)
 }
 
@@ -4490,7 +4494,8 @@ h2o.inspect_model_fairness <-
           ggplot2::geom_col() +
           ggplot2::labs(title = metric) +
           ggplot2::xlab("protected_group") +
-          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45))
+          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45),
+                         plot.title = ggplot2::element_text(hjust = 0.5))
       if (startsWith(metric, "AIR")) {
         transf <- scales::trans_new(
           "shift",
