@@ -274,54 +274,55 @@ I am writing an academic research paper and I would like to cite H2O in my bibli
 
 To cite our software (insert correct H2O version & year):
 
--  H2O.ai. (2020) *h2o: R Interface for H2O*. R package version
+-  H2O.ai. (2022) *h2o: R Interface for H2O*. R package version
    |version|. https://github.com/h2oai/h2o-3.
 
--  H2O.ai. (2020) *h2o: Python Interface for H2O*. Python
+-  H2O.ai. (2022) *h2o: Python Interface for H2O*. Python
    package version |version|. https://github.com/h2oai/h2o-3.
 
--  H2O.ai. (2020) *H2O: Scalable Machine Learning Platform*. Version |version|. https://github.com/h2oai/h2o-3.
+-  H2O.ai. (2022) *H2O: Scalable Machine Learning Platform*. Version |version|. https://github.com/h2oai/h2o-3.
 
 To cite one of our booklets:
 
--  Nykodym, N., Kraljevic, T., Wang, A., and Wong W. (March 2020). *Generalized Linear Modeling with H2O.*
-   http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf.
+-  Nykodym, N., Kraljevic, T., Wang, A., and Wong W. (October 2022). *Generalized Linear Modeling with H2O.*
+   https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf.
 
--  Candel, A., and LeDell, E. (March 2020). *Deep
-   Learning with H2O.* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf.
+-  Candel, A., and LeDell, E. (October 2022). *Deep
+   Learning with H2O.* https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf.
 
--  Candel, A., and Malohlava, M. (March 2020).
-   *Gradient Boosted Machine with H2O.* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf.
+-  Candel, A., and Malohlava, M. October 2022).
+   *Gradient Boosted Machine with H2O.* https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf.
 
--  Landry, M. (March 2020) *Machine Learning 
-   with R and H2O.* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf.
+-  Landry, M. (October 2022) *Machine Learning 
+   with R and H2O.* https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf.
 
--  Stetsenko, P. (March 2020) *Machine Learning 
-   with Python and H2O* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/PythonBooklet.pdf.
+-  Stetsenko, P. (October 2022) *Machine Learning 
+   with Python and H2O* https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/PythonBooklet.pdf.
 
--  Malohlava, M., Hava, J., and Mehta, N. (March 2020) *Machine Learning with
-   Sparkling Water: H2O + Spark* http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/SparklingWaterBooklet.pdf.
+-  Malohlava, M., Hava, J., and Mehta, N. (October 2022) *Machine Learning with
+   Sparkling Water: H2O + Spark* https://docs.h2o.ai/sparkling-water/3.0/latest-stable/booklet/SparklingWaterBooklet.pdf.
 
 To cite H2O AutoML, please use the instructions `here <../automl.html#citation>`__.
 
 
 If you are using Bibtex:
 
-.. substitution-code-block:: bash
+.. code-block:: bash
+    :substitutions:
 
 
     @Manual{h2o_R_package,
         title = {h2o: R Interface for H2O},
-        year = {2020},
-        month = {March},
+        year = {2022},
+        month = {October},
         note = {R package version |version|},
-        url = {http://www.h2o.ai},
+        url = {https://www.h2o.ai},
     }
 
     @Manual{h2o_Python_module,
         title = {h2o: Python Interface for H2O},
         author = {H2O.ai},
-        year = {2020},
+        year = {2022},
         note = {Python package version |version|},
         url = {https://github.com/h2oai/h2o-3},
     }
@@ -329,7 +330,7 @@ If you are using Bibtex:
     @Manual{h2o_platform,
         title = {H2O: Scalable Machine Learning Platform},
         author = {H2O.ai},
-        year = {2020},
+        year = {2022},
         note = {version |version|},
         url = {https://github.com/h2oai/h2o-3},
     }
@@ -337,49 +338,49 @@ If you are using Bibtex:
     @Manual{h2o_GLM_booklet,
         title = {Generalized Linear Modeling with H2O},
         author = {Nykodym, T. and Kraljevic, T. and Wang, A. and Wong W.},
-        year = {2020},
-        month = {March},
-        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf},
+        year = {2022},
+        month = {October},
+        url = {https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf},
     }
 
     @Manual{h2o_DL_booklet,
         title = {Deep Learning with H2O},
         author = {Candel, A. and LeDell, E.},
-        year = {2020},
-        month = {March},
-        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf},
+        year = {2022},
+        month = {October},
+        url = {https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf},
     }
 
     @Manual{h2o_GBM_booklet,
         title = {Gradient Boosted Models},
         author = {Candel, A., and Malohlava, M.},
-        year = {2020},
-        month = {March},
-        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf},
+        year = {2022},
+        month = {October},
+        url = {https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf},
     }
 
     @Manual{h2o_R_booklet,
         title = {Machine Learning with R and H2O},
         author = {Landry, M.},
-        year = {2020},
-        month = {March},
-        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf},
+        year = {2022},
+        month = {October},
+        url = {https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/RBooklet.pdf},
     }
 
     @Manual{h2o_Python_booklet,
         title = {Machine Learning with Python and H2O},
         author = {Stetsenko, P.},
-        year = {2020},
-        month = {March},
-        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/PythonBooklet.pdf},
+        year = {2022},
+        month = {October},
+        url = {https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/PythonBooklet.pdf},
     }
 
     @Manual{h2o_SW_booklet,
         title = {Machine Learning with Sparkling Water: H2O + Spark},
         author = {Malohlava, M., and Hava, J., and Mehta, N},
-        year = {2020},
-        month = {March},
-        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/SparklingWaterBooklet.pdf},
+        year = {2022},
+        month = {October},
+        url = {https://docs.h2o.ai/sparkling-water/3.3/latest-stable/booklet/SparklingWaterBooklet.pdf},
     }    
 
 
