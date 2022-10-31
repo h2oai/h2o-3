@@ -2428,7 +2428,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         // set z-values for the final model (might be overwritten later)
         _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
         // save z-values to assign to the new submodel
-        _state.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), seEst);
+        _state.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, 0), seEst);
       }
     }
 
@@ -2794,7 +2794,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sm = _model._output._submodels[i];
         else
           _model.addSubmodel(i, sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain,
-                  nullDevValid, _betaInfo.totalBetaLength(), new double[0], false));
+                  nullDevValid, _betaInfo.totalBetaLength(), null, false));
       } else {  // this is also the path for HGLM model
         if (continueFromPreviousSubmodel) {
           sm = _model._output._submodels[i];
