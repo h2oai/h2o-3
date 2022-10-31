@@ -466,6 +466,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     Frame adaptTrain() {
       int numGamFrame = _parms._gam_columns.length;
       _zTranspose = GamUtils.allocate3DArray(numGamFrame, _parms, firstOneLess);  // for centering for all smoothers 
+      zeroOutIStranspose(_parms._bs_sorted, _zTranspose);
       _penaltyMat = _parms._savePenaltyMat?GamUtils.allocate3DArray(numGamFrame, _parms, sameOrig):null;
       _penaltyMatCenter = GamUtils.allocate3DArray(numGamFrame, _parms, bothOneLess);
       removeCenteringIS(_penaltyMatCenter, _parms);
@@ -628,7 +629,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         Frame oneGamifiedColumn = oneGAMCol.outputFrame(Key.make(), _newGAMColNames, null);
         for (int index=0; index<numBasis; index++)
           _gamColMeans[_gamColIndex][index] = oneGamifiedColumn.vec(index).mean();
-        copy2DArray(generateZTransp(oneGamifiedColumn, numBasis), _zTranspose[_gamColIndex]); // copy transpose(Z)
         DKV.put(oneGamifiedColumn);
         _gamFrameKeysCenter[_gamColIndex] = oneGamifiedColumn._key;
         System.arraycopy(oneGamifiedColumn.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
@@ -676,7 +676,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         for (int index = 0; index < _numKnots; index++)
           _gamColMeans[_gamColIndex][index] = oneAugmentedColumnCenter.vec(index).mean();
         oneAugmentedColumnCenter = genOneGamCol.centralizeFrame(oneAugmentedColumnCenter,
-                _predictVec.name(0) + "_" + _splineType + "_center", _parms);
+                _predictVec.name(0) + "_" + _splineType + "_center_cs_", _parms);
         copy2DArray(genOneGamCol._ZTransp, _zTranspose[_gamColIndex]); // copy transpose(Z)
         double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(genOneGamCol._ZTransp,
                 genOneGamCol._penaltyMat), ArrayUtils.transpose(genOneGamCol._ZTransp));  // transform penalty as zt*S*z
