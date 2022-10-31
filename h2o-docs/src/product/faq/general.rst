@@ -290,7 +290,7 @@ To cite one of our booklets:
 -  Candel, A., and LeDell, E. (October 2022). *Deep
    Learning with H2O.* https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf.
 
--  Candel, A., and Malohlava, M. October 2022).
+-  Candel, A., and Malohlava, M. (October 2022).
    *Gradient Boosted Machine with H2O.* https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf.
 
 -  Landry, M. (October 2022) *Machine Learning 
@@ -307,8 +307,7 @@ To cite H2O AutoML, please use the instructions `here <../automl.html#citation>`
 
 If you are using Bibtex:
 
-.. code-block:: bash
-    :substitutions:
+.. substitution-code-block:: bash
 
 
     @Manual{h2o_R_package,
