@@ -19,18 +19,7 @@ class DummyEstimator(H2OEstimator):
 
 def test_basic_estimator_preparation_perf_with_x():
     dummy = DummyEstimator()
-    # for some mysterious reason, the parser fails if uploading more than 331186 columns: magic number?
-    # using this upper limit for now, but this is fishy:
-    #
-    # ~/repos/h2o/h2o-3/h2o-py/h2o/h2o.py in parse_setup(raw_frames, destination_frame, header, separator, column_names, column_types, na_strings, skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
-    #     874             if len(column_names) != len(j["column_types"]): raise ValueError(
-    #     875                 "length of col_names should be equal to the number of columns: %d vs %d"
-    # --> 876                 % (len(column_names), len(j["column_types"])))
-    #     877         j["column_names"] = column_names
-    #     878         counter = 0
-    # 
-    # ValueError: length of col_names should be equal to the number of columns: 1000000 vs 331186
-    shape = (5, 331186)  # just need a very wide dataset as preparation is mainly working on columns selection
+    shape = (5, 100000)  # just need a very wide dataset as preparation is mainly working on columns selection
     data_start = time.time()
     names = ["Col_"+str(n) for n in range(shape[1])]
     y = names[len(names)//2]  # average worst scenario
@@ -47,7 +36,7 @@ def test_basic_estimator_preparation_perf_with_x():
 
 def test_basic_estimator_preparation_perf_with_ignored_columns():
     dummy = DummyEstimator()
-    shape = (5, 331186)  # see previous test
+    shape = (5, 100000) 
     data_start = time.time()
     names = ["Col_"+str(n) for n in range(shape[1])]
     y = names[len(names)//2]  # average worst scenario
