@@ -71,10 +71,9 @@ class LookupSeq(tuple):
         """
         use this for arithmetic operations on the elements to avoid confusion.
         We still want this to behave like a list for the most part, 
-        and this is a slightly faster than building a set from the list itself.
+        and this is slightly faster than building a set from the list itself.
         """
         return self.__set
-
 
 
 def _py_tmp_key(append):
