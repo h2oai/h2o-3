@@ -92,11 +92,17 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     int[] numKnotsM1 = subtract(_model._num_knots_sorted, 1);
     int numKnotsLen = numKnotsM1.length;
     int isCounter=0;
-    for (int index=0; index<numKnotsLen; index++)
-      if (_model._bs_sorted[index] == 2)
+    int[] zSecondDim = new int[numKnotsLen];
+    for (int index=0; index<numKnotsLen; index++) {
+      if (_model._bs_sorted[index] == 2) {
         numKnotsM1[index] = _model._numBasisSize[isCounter++];
+        zSecondDim[index] = 0;
+      } else {
+        zSecondDim[index] = numKnotsM1[index];
+      }
+    }
     _model._gamColNamesCenter = read2DStringArrays(numKnotsM1, "gamColNamesCenter");
-    _model._zTranspose = read3DArray("zTranspose", _model._num_gam_columns, numKnotsM1, _model._num_knots_sorted);
+    _model._zTranspose = read3DArray("zTranspose", _model._num_gam_columns, zSecondDim, _model._num_knots_sorted);
     _model._knots = read3DArray("knots", _model._num_gam_columns, _model._gamPredSize, _model._num_knots_sorted);
     if (_model._numCSCol > 0) {
       int[] numKnotsM2 = subtract(_model._num_knots_sorted, 2);
