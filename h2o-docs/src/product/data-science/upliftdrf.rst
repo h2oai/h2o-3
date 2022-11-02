@@ -86,20 +86,10 @@ H2O supports extremely randomized trees (XRT) via ``histogram_type="Random"``. W
 Defining a Uplift DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as
-   a reference. By default, H2O automatically generates a destination
-   key.
+Parameters are optional unless specified as *required*.
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the
-   model. **NOTE**: In Flow, if you click the **Build a model** button from the
-   ``Parse`` cell, the training frame is entered automatically.
-
--  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
-   the accuracy of the model.
-
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be only categorical (only binomial classification is currently supported).
-
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
 -  `treatment_column <algo-params/treatment_column.html>`__: Specify the column which contains information about group dividing. The data must be categorical and have two categories: ``0`` means the observation is in control group and ``1`` means the observation is in treatment group.
 
@@ -117,106 +107,102 @@ Defining a Uplift DRF Model
   - ``lift`` or ``Lift`` 
   - ``gain`` or ``Gain``
   
--  `auuc_nbins <algo-params/auuc_nbins.html>`__: Specify number of bins in a histogram to calculate Area Under Uplift Curve (AUUC). This option defaults to -1 which means 1000.
+-  `auuc_nbins <algo-params/auuc_nbins.html>`__: Specify number of bins in a histogram to calculate Area Under Uplift Curve (AUUC). This option defaults to ``-1`` which means 1000.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Enable this option to score
-   during each iteration of the model training. This option is defaults to false (not enabled).
+Shared-tree algorithm parameters
+''''''''''''''''''''''''''''''''
 
--  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees.
-   Disabled if set to 0 (default).
+-  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees. Disabled if set to ``0`` (default).
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees (defaults to ``50``).
 
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant
-   training columns, since no information can be gained from them. This option is defaults to true (enabled).
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to ``0`` specifies no limit. This value defaults to ``20``. 
 
--  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees (defaults to 50).
+-  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf (``nodesize`` in R). This value defaults to ``1``.
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 20. 
+-  `nbins <algo-params/nbins.html>`__: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point. This option defaults to ``20``.
 
--  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf
-   (``nodesize`` in R). This value defaults to 1.
+-  `nbins_top_level <algo-params/nbins_top_level.html>`__: (For numerical/real/int columns only) Specify the minimum number of bins at the root level to use to build the histogram. This number will then be decreased by a factor of two per level. This option defaults to ``1024``.
 
--  `nbins <algo-params/nbins.html>`__: (Numerical/real/int only) Specify the number of bins for
-   the histogram to build, then split at the best point. This option defaults to 20.
+-  `nbins_cats <algo-params/nbins_cats.html>`__: (Categorical/enums only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting. The levels are ordered alphabetically; if there are more levels than bins, adjacent levels share bins. This value has a more significant impact on model fitness than ``nbins``. Larger values may increase runtime, especially for deep trees and large clusters, so tuning may be required to find the optimal value for your configuration. This option defaults to ``1024``.
 
--  `nbins_top_level <algo-params/nbins_top_level.html>`__: (For numerical/real/int columns only) Specify
-   the minimum number of bins at the root level to use to build the
-   histogram. This number will then be decreased by a factor of two per
-   level. This option defaults to 1024.
+-  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and :math:`\frac{p}{3}` for regression (where p is the number of predictors). If ``-2`` is specified, all features of DRF are used. Valid values for this option are ``-2``, ``-1`` (default), and any value :math:`\geq` 1.
 
--  `nbins_cats <algo-params/nbins_cats.html>`__: (Categorical/enums only) Specify the maximum number
-   of bins for the histogram to build, then split at the best point.
-   Higher values can lead to more overfitting. The levels are ordered
-   alphabetically; if there are more levels than bins, adjacent levels
-   share bins. This value has a more significant impact on model fitness
-   than **nbins**. Larger values may increase runtime, especially for
-   deep trees and large clusters, so tuning may be required to find the
-   optimal value for your configuration. This option defaults to 1024.
+-  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate on the x-axis (note that this method samples without replacement). The range is 0.0 to 1.0, and this value defaults to ``0.6320000291``. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
-   training. Use 0 (default) to disable.
+-  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with ``sample_rate``). The range for this option is 0.0 to 1.0. Note that this method samples without replacement.
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
-   algorithm components dependent on randomization. The seed is
-   consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
+-  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and :math:`\leq` 2.0 and defaults to ``1``. (Note that this method samples without replacement.) For example:
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. This option is defaults to false (not enabled).
+   - **level 1**: :math:`\text{col_sample_rate}`
+   - **level 2**: :math:`\text{col_sample_rate} \times \text{factor}` 
+   - **level 3**: :math:`\text{col_sample_rate} \times \text{factor}^2`
+   - **level 4**: :math:`\text{col_sample_rate} \times \text{factor}^3`
+   - etc.
 
--  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of DRF are used. Valid values for this option are -2, -1 (default), and any value >= 1.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0 and defaults to ``1``. Note that this method samples without replacement.
 
--  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0, and this value defaults to 0.6320000291. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+-  `histogram_type <algo-params/histogram_type.html>`__: By default (``AUTO``) Uplift DRF bins from min...max in steps of :math:`\frac{(max-min)}{N}`. ``Random`` split points or quantile-based split points can be selected as well. ``RoundRobin`` can be specified to cycle through all histogram types (one per tree). Use one of these options to specify the type of histogram to use for finding optimal split points:
 
--  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. Note that this method is sample without replacement.
+   - ``AUTO`` (default)
+   - ``UniformAdaptive``
+   - ``Random``
+   - ``QuantilesGlobal``
+   - ``RoundRobin``
 
--  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
+-  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. 
 
-   level 1: **col\_sample_rate**
-  
-   level 2: **col\_sample_rate** * **factor**
-  
-   level 3: **col\_sample_rate** * **factor^2**
-  
-   level 4: **col\_sample_rate** * **factor^3**
-  
-   etc.
+-  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10 to 1e-3 range. This value defaults to ``1e-05``.
 
--  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0 and defaults to 1. Note that this method is sample without replacement.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. This option defaults to ``False`` (disabled).
 
--  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 1e-05.
+Common parameters
+'''''''''''''''''
 
--  `histogram_type <algo-params/histogram_type.html>`__: By default (AUTO) Uplift DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
-	- AUTO (default)
-	- UniformAdaptive
-	- Random
-	- QuantilesGlobal
-	- RoundRobin
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data can be only categorical (only binomial classification is currently supported).
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
+
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option defaults to ``True`` (enabled).
+
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable.
+
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to ``-1`` (time-based random number).
 
 - `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Uplift DRF, the algorithm will automatically perform ``enum`` encoding.
-  - ``enum`` or ``Enum``: 1 column per categorical feature
+  - ``enum`` or ``Enum``: 1 column per categorical feature.
   - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
-  - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
-  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
-  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
-  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
+  - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels.
+  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature.
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only.
+  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.).
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
 
--  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. This option is defaults to false (not enabled).
+-  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are ``AUTO`` (default), ``bernoulli``, ``multinomial``, ``gaussian``, ``poisson``, ``gamma``, ``laplace``, ``quantile``, ``huber``, or ``tweedie``.
 
+  - If the distribution is ``bernoulli``, the the response column must be 2-class categorical.
+  - If the distribution is ``multinomial``, the response column must be categorical.
+  - If the distribution is ``poisson``, the response column must be numeric.
+  - If the distribution is ``laplace``, the response column must be numeric.
+  - If the distribution is ``tweedie``, the response column must be numeric.
+  - If the distribution is ``gaussian``, the response column must be numeric.
+  - If the distribution is ``huber``, the response column must be numeric.
+  - If the distribution is ``gamma``, the response column must be numeric.
+  - If the distribution is ``quantile``, the response column must be numeric.
+
+-  **verbose**: Print scoring history to the console (metrics per tree). Defaults to ``False``.
 
 Leaf Node Assignment 
 ~~~~~~~~~~~~~~~~~~~~

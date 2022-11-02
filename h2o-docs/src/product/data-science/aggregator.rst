@@ -23,36 +23,49 @@ Aggregator currently does not support `MOJOs <../save-and-load-model.html#suppor
 Defining an Aggregator Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as
-   a reference. By default, H2O automatically generates a destination
-   key.
+Parameters are optional unless specified as *required*.
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the
-   model. **NOTE**: In Flow, if you click the **Build a model** button from the
-   ``Parse`` cell, the training frame is entered automatically.
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+-  **target_num_exemplars**: Specify a value for the targeted number of exemplars. This value defaults to ``5000``.
 
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
+-  **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g, ``0.5`` is +/- 50 percent). This value defaults to ``0.5``.
 
--  **target_num_exemplars**: Specify a value for the targeted number of exemplars. This value defaults to 5000.
+- **save_mapping_frame**: When this option is enabled, the mapping of rows in an aggregated frame to the one in the original/raw frame will be created and exported. This option defaults to ``False`` (disabled).
 
--  **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g, 0.5 is +/- 50 percent). This value defaults to 0.5.
+- **num_iteration_without_new_exemplar**: The number of iterations to run before aggregator exits if the number of exempalrs collected doesn't change. Defaults to ``500``.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize (default), Demean, or Descale.
+Common parameters
+'''''''''''''''''
 
--  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features (defaults to AUTO):
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+
+-  `x <algo-params/x.html>`__: Specify a vector contaitning the character names of the predictors in the model.
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns, since no information can be gained from them. This option defaults to ``True`` (enabled).
+
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data. One of
+
+  - ``"none"``
+  - ``"standardize"``
+  - ``"normalize"`` (default)
+  - ``"demean"``
+  - ``"descale"``
+
+-  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features (defaults to ``AUTO``):
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Aggregator, the algorithm will automatically perform ``enum`` encoding.
-  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels 
-  - ``binary``: No more than 32 columns per categorical feature
-  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
-  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
+  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels.
+  - ``binary``: No more than 32 columns per categorical feature.
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only.
+  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.).
   - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** (10) most frequent levels.
 
-- **save_mapping_frame**: When this option is enabled, the mapping of rows in an aggregated frame to the one in the original/raw frame will be created and exported. This option is disabled by default.
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will be automatically exported.
 
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 Aggregator Output
 ~~~~~~~~~~~~~~~~~
