@@ -9,7 +9,7 @@ cython==0.27.3
 twine==1.10.0
 urllib3==1.26.5
 grip==4.4.0
-wheel==0.30.0
+wheel==0.38.0
 numpy==1.22.2
 scipy==1.2.3; python_version == '2.7'
 scipy==1.4.1; python_version > '2.7'
