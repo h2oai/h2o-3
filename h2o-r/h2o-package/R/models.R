@@ -5696,7 +5696,7 @@ h2o.deepfeatures <- function(object, data, layer) {
 #'
 #' #' @aliases H2ONode
 #'
-setClass("H2ONode", representation(
+setClass("H2ONode", slots = c(
   id = "integer"
 ))
 
@@ -5707,7 +5707,7 @@ setClass("H2ONode", representation(
 #'
 #' #' @aliases H2OLeafNode
 #'
-setClass("H2OLeafNode", representation(
+setClass("H2OLeafNode", slots = c(
   prediction = "numeric"
 ),
 contains = "H2ONode")
@@ -5727,7 +5727,7 @@ contains = "H2ONode")
 #' @export
 setClass(
   "H2OSplitNode",
-  representation(
+  slots = c(
     threshold = "numeric",
     left_child = "H2ONode",
     right_child = "H2ONode",
@@ -5798,7 +5798,7 @@ print.H2ONode <- function(node){
 #' @export
 setClass(
   "H2OTree",
-  representation(
+  slots = c(
     root_node = "H2ONode",
     left_children = "integer",
     right_children = "integer",

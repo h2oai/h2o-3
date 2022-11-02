@@ -505,7 +505,7 @@ gbm@parameters
 ```
 
 ```
-> gbm@parameters
+> gbm@params$actual
 $model_id
 [1] "final_grid_model_45"
 
@@ -589,7 +589,7 @@ Now we can confirm that these parameters are generally sound, by building a GBM 
 model <- do.call(h2o.gbm,
         ## update parameters in place
         {
-          p <- gbm@parameters
+          p <- gbm@params$actual
           p$model_id = NULL          ## do not overwrite the original grid model
           p$training_frame = df      ## use the full dataset
           p$validation_frame = NULL  ## no validation frame
@@ -634,7 +634,7 @@ for (i in 1:5) {
   cvgbm <- do.call(h2o.gbm,
         ## update parameters in place
         {
-          p <- gbm@parameters
+          p <- gbm@params$actual
           p$model_id = NULL          ## do not overwrite the original grid model
           p$training_frame = df      ## use the full dataset
           p$validation_frame = NULL  ## no validation frame

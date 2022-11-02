@@ -426,8 +426,8 @@ Once you have retreived the model in R or Python, you can inspect the model para
 .. tabs::
    .. code-tab:: r R
 
-        # View the non-default parameter values for the XGBoost model above
-        xgb@parameters
+        # View the parameter values for the XGBoost model selected above
+        xgb@params$actual
 
    .. code-tab:: python
 

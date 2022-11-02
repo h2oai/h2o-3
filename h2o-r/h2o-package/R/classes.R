@@ -68,25 +68,34 @@ setRefClass("H2OConnectionMutableState",
 #' @aliases H2OConnection
 #' @export
 setClass("H2OConnection",
-         representation(ip="character", port="numeric", name="character", proxy="character",
-                        https="logical", cacert="character", insecure="logical",
-                        username="character", password="character", use_spnego="logical",
-                        cookies="character",
-                        context_path="character",
-                        mutable="H2OConnectionMutableState"),
-         prototype(ip           = NA_character_,
-                   port         = NA_integer_,
-                   name         = NA_character_,
-                   proxy        = NA_character_,
-                   https        = FALSE,
-                   cacert       = NA_character_,
-                   insecure     = FALSE,
-                   username     = NA_character_,
-                   password     = NA_character_,
-                   use_spnego   = FALSE,
-                   cookies      = NA_character_,
-                   context_path = NA_character_,
-                   mutable      = new("H2OConnectionMutableState")))
+         slots = c(
+           ip = "character",
+           port = "numeric",
+           name = "character",
+           proxy = "character",
+           https = "logical",
+           cacert = "character",
+           insecure = "logical",
+           username = "character",
+           password = "character",
+           use_spnego = "logical",
+           cookies = "character",
+           context_path = "character",
+           mutable = "H2OConnectionMutableState"),
+         prototype = prototype(
+           ip = NA_character_,
+           port = NA_integer_,
+           name = NA_character_,
+           proxy = NA_character_,
+           https = FALSE,
+           cacert = NA_character_,
+           insecure = FALSE,
+           username = NA_character_,
+           password = NA_character_,
+           use_spnego = FALSE,
+           cookies = NA_character_,
+           context_path = NA_character_,
+           mutable = new("H2OConnectionMutableState")))
 
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
@@ -132,15 +141,24 @@ setMethod("h2o.keyof", signature(object = "Keyed"), function(object) {
 #' @slot algorithm A \code{character} string specifying the algorithm that were used to fit the model.
 #' @slot parameters A \code{list} containing the parameter settings that were used to fit the model that differ from the defaults.
 #' @slot allparameters A \code{list} containg all parameters used to fit the model.
+#' @slot params A \code{list} containing default, set, and actual parameters.
 #' @slot have_pojo A \code{logical} indicating whether export to POJO is supported
 #' @slot have_mojo A \code{logical} indicating whether export to MOJO is supported
 #' @slot model A \code{list} containing the characteristics of the model returned by the algorithm.
 #' @aliases H2OModel
 #' @export
 setClass("H2OModel",
-         representation(model_id="character", algorithm="character", parameters="list", allparameters="list", have_pojo="logical", have_mojo="logical", model="list"),
-         prototype(model_id=NA_character_),
-         contains=c("Keyed","VIRTUAL"))
+         slots =  c(
+           model_id = "character",
+           algorithm = "character",
+           parameters = "list",
+           allparameters = "list",
+           params = "list",
+           have_pojo = "logical",
+           have_mojo = "logical",
+           model = "list"),
+         prototype = prototype(model_id = NA_character_),
+         contains = c("Keyed", "VIRTUAL"))
 
 # TODO: make a more model-specific constructor
 .newH2OModel <- function(Class, model_id, ...) {
@@ -380,7 +398,7 @@ setMethod("show", "H2OCoxPHModel", function(object) {
 #' @slot summary A \code{list} containing the a summary compatible with CoxPH summary used in the survival package.
 #' @aliases H2OCoxPHModelSummary
 #' @export
-setClass("H2OCoxPHModelSummary", representation(summary="list"))
+setClass("H2OCoxPHModelSummary", slots = c(summary = "list"))
 
 #' @rdname H2OCoxPHModelSummary-class
 #' @param object An \code{H2OCoxPHModelSummary} object.
@@ -579,9 +597,14 @@ setMethod("getClusterSizes", "H2OClusteringModel", function(object) { object@mod
 #' @aliases H2OModelMetrics
 #' @export
 setClass("H2OModelMetrics",
-         representation(algorithm="character", on_train="logical", on_valid="logical", on_xval="logical", metrics="listOrNull"),
-         prototype(algorithm=NA_character_, on_train=FALSE, on_valid=FALSE, on_xval=FALSE, metrics=NULL),
-         contains="VIRTUAL")
+          slots = c(
+            algorithm = "character",
+            on_train = "logical",
+            on_valid = "logical",
+            on_xval = "logical",
+            metrics = "listOrNull"),
+         prototype = prototype(algorithm = NA_character_, on_train = FALSE, on_valid = FALSE, on_xval = FALSE, metrics = NULL),
+         contains = "VIRTUAL")
 
 #' @rdname H2OModelMetrics-class
 #' @param object An \code{H2OModelMetrics} object
@@ -822,7 +845,7 @@ setClass("H2OTargetEncoderMetrics", contains="H2OModelMetrics")
 #' @slot model_id the final identifier for the model
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @export
-setClass("H2OModelFuture", representation(job_key="character", model_id="character"))
+setClass("H2OModelFuture", slots = c(job_key = "character", model_id = "character"))
 
 #' H2O Future Segment Models
 #'
@@ -831,14 +854,14 @@ setClass("H2OModelFuture", representation(job_key="character", model_id="charact
 #' @slot segment_models_id the final identifier for the segment models collections
 #' @seealso \linkS4class{H2OSegmentModels} for the final segment models types.
 #' @export
-setClass("H2OSegmentModelsFuture", representation(job_key="character", segment_models_id="character"))
+setClass("H2OSegmentModelsFuture", slots = c(job_key = "character", segment_models_id = "character"))
 
 #' H2O Segment Models
 #'
 #' A class to contain the information for segment models.
 #' @slot segment_models_id the  identifier for the segment models collections
 #' @export
-setClass("H2OSegmentModels", representation(segment_models_id="character"))
+setClass("H2OSegmentModels", slots = c(segment_models_id = "character"))
 
 #' H2O Grid
 #'
@@ -856,14 +879,16 @@ setClass("H2OSegmentModels", representation(segment_models_id="character"))
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @aliases H2OGrid
 #' @export
-setClass("H2OGrid", representation(grid_id = "character",
-                                   model_ids = "list",
-                                   hyper_names = "list",
-                                   failed_params = "list",
-                                   failure_details = "list",
-                                   failure_stack_traces = "list",
-                                   failed_raw_params = "matrix",
-                                   summary_table = "ANY"))
+setClass("H2OGrid",
+         slots = c(
+           grid_id = "character",
+           model_ids = "list",
+           hyper_names = "list",
+           failed_params = "list",
+           failure_details = "list",
+           failure_stack_traces = "list",
+           failed_raw_params = "matrix",
+           summary_table = "ANY"))
 
 #' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OGrid"), function(object) object@grid_id)
