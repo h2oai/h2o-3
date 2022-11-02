@@ -11,7 +11,7 @@ We implemented the ModelSelection toolbox based on GLM at H2O to help users sele
 3. ``mode = "backward"`` where a model is built starting with all predictors. The predictor with the smallest absolute z-value (or z-score) is dropped after each model is built. This process repeats until only one predictor remains or until the number of predictors equal to ``min_predictor_number`` is reached. The model build can also be stopped using ``p_values_threshold``. 
 4. ``mode = "maxrsweep"`` where the model runs similar to ``mode = "maxr"`` except that instead of calling our GLM toolbox to build models, we use the sweep operator [:ref:`3<ref4>`] plus our own incremental sweep operation using sweep vectors. This change speeds up the execution of finding the best predictor subset for each subset size and is essential in dropping the build time of the model. 
 
-The fastest mode for ModelSelection is ``mode = "maxrsweep"`` with ``build_gbm_model = False``. This skips the GLM model process while still generating the predictor subsets, the coefficients, and the coefficient values.
+The fastest mode for ModelSelection is ``mode = "maxrsweep"`` with ``build_glm_model = False``. This skips the GLM model process while still generating the predictor subsets, the coefficients, and the coefficient values.
 
 This model only supports GLM regression families. 
 
