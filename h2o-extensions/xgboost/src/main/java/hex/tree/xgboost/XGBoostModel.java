@@ -240,7 +240,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   public XGBoostModel(Key<XGBoostModel> selfKey, XGBoostParameters parms, XGBoostOutput output, Frame train, Frame valid) {
     super(selfKey,parms,output);
-    final DataInfo dinfo = makeDataInfo(train, valid, _parms, output.nclasses());
+    final DataInfo dinfo = makeDataInfo(train, valid, _parms);
     DKV.put(dinfo);
     setDataInfoToOutput(dinfo);
     model_info = new XGBoostModelInfo(parms, dinfo);
