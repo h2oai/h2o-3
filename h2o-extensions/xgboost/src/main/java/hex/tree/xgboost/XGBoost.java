@@ -366,10 +366,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (original_chunks == 1)
         return original_fr;
       LOG.info("Rebalancing " + name.substring(name.length()-5) + " dataset onto a single node.");
-      Key newKey = Key.make(name + ".1chk");
-      RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, 1);
-      H2O.submitTask(rb).join();
-      Frame singleChunkFr = DKV.get(newKey).get();
+      Key<Frame> newKey = Key.make(name + ".1chk");
+      Frame singleChunkFr = RebalanceDataSet.toSingleChunk(original_fr, newKey);
       Scope.track(singleChunkFr);
       return singleChunkFr;
     } else {
