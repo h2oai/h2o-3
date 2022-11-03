@@ -63,6 +63,9 @@ dependencies {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
             because 'Fixes CVE-2022-42003'
         }
+        api('com.fasterxml.woodstox:woodstox-core:5.4.0') {
+            because 'Fixes CVE-2022-40153, CVE-2022-40154, CVE-2022-40155, CVE-2022-40156'
+        }
     }
 }
 
