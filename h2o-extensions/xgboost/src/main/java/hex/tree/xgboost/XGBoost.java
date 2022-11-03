@@ -37,8 +37,7 @@ import static hex.tree.xgboost.util.GpuUtils.*;
 import static water.H2O.technote;
 
 /** 
- * Gradient Boosted Trees
- * Based on "Elements of Statistical Learning, Second Edition, page 387"
+ * H2O XGBoost
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> 
     implements CalibrationHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
@@ -144,29 +143,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (_parms._max_depth < 0) error("_max_depth", "_max_depth must be >= 0.");
     if (_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
 
-    // Initialize response based on given distribution family.
-    // Regression: initially predict the response mean
-    // Binomial: just class 0 (class 1 in the exact inverse prediction)
-    // Multinomial: Class distribution which is not a single value.
-
-    // However there is this weird tension on the initial value for
-    // classification: If you guess 0's (no class is favored over another),
-    // then with your first GBM tree you'll typically move towards the correct
-    // answer a little bit (assuming you have decent predictors) - and
-    // immediately the Confusion Matrix shows good results which gradually
-    // improve... BUT the Means Squared Error will suck for unbalanced sets,
-    // even as the CM is good.  That's because we want the predictions for the
-    // common class to be large and positive, and the rare class to be negative
-    // and instead they start around 0.  Guessing initial zero's means the MSE
-    // is so bad, that the R^2 metric is typically negative (usually it's
-    // between 0 and 1).
-
-    // If instead you guess the mean (reversed through the loss function), then
-    // the zero-tree XGBoost model reports an MSE equal to the response variance -
-    // and an initial R^2 of zero.  More trees gradually improves the R^2 as
-    // expected.  However, all the minority classes have large guesses in the
-    // wrong direction, and it takes a long time (lotsa trees) to correct that
-    // - so your CM sucks for a long time.
     if (expensive) {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
