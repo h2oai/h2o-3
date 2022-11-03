@@ -7,7 +7,6 @@ import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLMTask;
 import hex.tree.CalibrationHelper;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.exec.LocalXGBoostExecutor;
@@ -340,18 +339,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             parms._offset_column != null,
             parms._fold_column != null
     );
-    // Checks and adjustments:
-    // 1) observation weights (adjust mean/sigmas for predictors and response)
-    // 2) NAs (check that there's enough rows left)
-    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, false, true, true).doAll(dinfo._adaptedFrame);
-    if (parms._weights_column != null && parms._offset_column != null) {
-      LOG.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
-    }
-    if (parms._weights_column != null && parms._offset_column == null) {
-      dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
-      if (nClasses == 1)
-        dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
-    }
+    assert !dinfo._predictor_transform.isMeanAdjusted() : "Unexpected predictor transform, it shouldn't be mean adjusted";
+    assert !dinfo._predictor_transform.isSigmaScaled() : "Unexpected predictor transform, it shouldn't be sigma scaled";
+    assert !dinfo._response_transform.isMeanAdjusted() : "Unexpected response transform, it shouldn't be mean adjusted";
+    assert !dinfo._response_transform.isSigmaScaled() : "Unexpected response transform, it shouldn't be sigma scaled";
     dinfo.coefNames(); // cache the coefficient names
     dinfo.coefOriginalColumnIndices(); // cache the original column indices
     assert dinfo._coefNames != null && dinfo._coefOriginalIndices != null;
