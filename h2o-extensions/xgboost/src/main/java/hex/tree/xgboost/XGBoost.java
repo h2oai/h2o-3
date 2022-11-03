@@ -324,7 +324,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return true;
   }
 
-  static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
+  static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms) {
     DataInfo dinfo = new DataInfo(
             train,
             valid,

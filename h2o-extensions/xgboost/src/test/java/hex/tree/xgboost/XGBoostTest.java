@@ -1564,7 +1564,7 @@ public class XGBoostTest extends TestUtil {
       parms._response_column = "year";
       parms._train = f._key;
 
-      DataInfo dinfo = hex.tree.xgboost.XGBoost.makeDataInfo(f, null, parms, 1);
+      DataInfo dinfo = hex.tree.xgboost.XGBoost.makeDataInfo(f, null, parms);
       assertNotNull(dinfo._coefNames);
     } finally {
       Scope.exit();
