@@ -476,7 +476,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
     print("java code saved in {0}".format(java_file))
 
     print("Compiling Java Pojo")
-    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
+    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx16g", "-J-XX:MaxPermSize=256m", java_file]
     subprocess.check_call(javac_cmd)
 
     if not compile_only:
