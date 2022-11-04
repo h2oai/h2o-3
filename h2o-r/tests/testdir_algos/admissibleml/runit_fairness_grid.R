@@ -322,7 +322,7 @@ fairness_metrics_are_correct_test <- function() {
   }
 }
 
-infogram_grid_works_test <- function() {
+infogram_train_subset_models_works_test <- function() {
   attach(.get_data())
   ig <- h2o.infogram(x = x, y = y, training_frame = train, protected_columns = protected_cols)
 
@@ -379,7 +379,7 @@ infogram_grid_works_test <- function() {
 }
 
 
-infogram_grid_works_taiwan_test <- function() {
+infogram_train_subset_models_works_taiwan_test <- function() {
   attach(.get_data_taiwan())
   ig <- h2o.infogram(x = x, y = y, training_frame = train, protected_columns = protected_cols)
 
@@ -405,8 +405,74 @@ infogram_grid_works_taiwan_test <- function() {
 }
 
 
+infogram_train_subset_models_works_with_multiple_metrics_test <- function () {
+  attach(.get_data())
+  ig_fair <- h2o.infogram(x = x, y = y, training_frame = train, protected_columns = protected_cols)
+  ig_core <- h2o.infogram(x = x, y = y, training_frame = train)
+
+  # Basic fair
+  da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0")
+  expect_equal(nrow(da), 9)
+
+  # Fair with relevance
+  da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = "relevance_index")
+  expect_equal(nrow(da), 9)
+
+  # Fair with relevance and safety
+  da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = c("safety_index", "relevance_index"))
+  expect_equal(nrow(da), 9)
+
+  # Fair with relevance and safety and cmi_raw
+  da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = c("safety_index", "relevance_index", "cmi_raw"))
+  expect_equal(nrow(da), 9)
+
+  # Fair with relevance and manhattan distance
+  da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = "relevance_index", metric = "manhattan")
+  expect_equal(nrow(da), 9)
+
+  # Fair with relevance and safety and manhattan distance
+  da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = c("safety_index", "relevance_index"), metric = "manhattan")
+  expect_equal(nrow(da), 9)
+
+
+  # Basic core
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0")
+  expect_equal(nrow(da), 9)
+
+  # core with total information
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = "total_information")
+  expect_equal(nrow(da), 9)
+
+  # Core with total and net information
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = c("total_information", "net_information"))
+  expect_equal(nrow(da), 9)
+
+  # Core with total and net information and cmi_raw
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = c("total_information", "net_information", "cmi_raw"))
+  expect_equal(nrow(da), 9)
+
+  # Core with total and manhattan distance
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = "total_information", metric = "manhattan")
+  expect_equal(nrow(da), 9)
+
+  # Core with total and net information and manhattan distance
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = c("total_information", "net_information"), metric = "manhattan")
+  expect_equal(nrow(da), 9)
+}
+
 doSuite("Fairness tests", makeSuite(
-  infogram_grid_works_test,
-  infogram_grid_works_taiwan_test,
-  fairness_metrics_are_correct_test
+  fairness_metrics_are_correct_test,
+  infogram_train_subset_models_works_test,
+  infogram_train_subset_models_works_taiwan_test,
+  infogram_train_subset_models_works_with_multiple_metrics_test
 ))

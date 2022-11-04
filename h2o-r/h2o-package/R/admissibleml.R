@@ -119,6 +119,8 @@ h2o.disparate_analysis <-
 #' @param reference List of values corresponding to a reference for each protected columns.
 #'                  If set to NULL, it will use the biggest group as the reference.
 #' @param favorable_class Positive/favorable outcome class of the response.
+#' @param feature_selection_metrics One or more columns from the infogram@admissible_score.
+#' @param metric Metric supported by stats::dist which is used to sort the features.
 #' @param ... Parameters that are passed to the model_fun.
 #' @return frame containing aggregations of intersectional fairness across the models
 #'
@@ -132,11 +134,24 @@ h2o.infogram_train_subset_models <-
            protected_columns,
            reference,
            favorable_class,
+           feature_selection_metrics = c("safety_index"),
+           metric = "euclidean",
            ...
   ) {
     score <- as.data.frame(ig@admissible_score)
-    stopifnot("Infogram has to be trained with protected columns" = "safety_index" %in% names(score))
-    score <- score[order(score$safety_index, decreasing = TRUE), ]
+    if (missing(feature_selection_metrics) && !feature_selection_metrics %in% names(score)) {
+      feature_selection_metrics <- "admissible_index"
+    }
+    for (fs_metric in feature_selection_metrics) {
+      if (! fs_metric %in% names(score))
+        stop(paste0("Metric ", fs_metric, " is not found in ig@admissible_score!"))
+    }
+
+    origin <- rep_len(0, length(feature_selection_metrics))
+    feature_score <- apply(score[, feature_selection_metrics, drop = FALSE], 1,
+                           function(row) dist(rbind(row, origin), method = metric))
+
+    score <- score[order(feature_score, decreasing = TRUE), ]
     xs <- lapply(seq_len(nrow(score)), function(n) score$column[seq_len(n)])
     models <-
       do.call(c, lapply(xs, function(cols)
