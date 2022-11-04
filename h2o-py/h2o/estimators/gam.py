@@ -33,7 +33,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     algo = "gam"
     supervised_learning = True
     _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryGLM',
-                                      'h2o.model.extensions.FairnessMetrics']}
+                                      'h2o.model.extensions.Fairness']}
 
     @deprecated_params({'Lambda': 'lambda_'})
     def __init__(self,

@@ -38,7 +38,7 @@ def test_infogram_grid():
     ig.train(x, y, training_frame=train)
 
     # GBM
-    igg = infogram_grid(ig, H2OGradientBoostingEstimator, y=y, training_frame=train)
+    igg = ig.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train)
     assert len(igg) == 9
     da = h2o.explanation.disparate_analysis(igg, test, ["ethnic", "sex"], ["white", "M"], "0")
     assert (da[:, "air_min"] > 0.7).all()
@@ -47,7 +47,7 @@ def test_infogram_grid():
     assert ((da[:, "cair"] > 0.8) & (da[:, "cair"] < 1.25)).any()  # four-fifths rule
 
     # AutoML
-    igg = infogram_grid(ig, H2OAutoML, y=y, training_frame=train, max_models=2)
+    igg = ig.train_subset_models(H2OAutoML, y=y, training_frame=train, max_models=2)
     assert len(igg) == 2 * 9 + 9  # models + SEs
     da = h2o.explanation.disparate_analysis(igg, test, ["ethnic", "sex"], ["white", "M"], "0")
     # some SEs tend to be more unfair than base models, so I relaxed the condition here
@@ -55,7 +55,7 @@ def test_infogram_grid():
     assert ((da[:, "cair"] > 0.8) & (da[:, "cair"] < 1.25)).any()  # four-fifths rule
 
     # GRID
-    igg = infogram_grid(ig, H2OGridSearch, y=y, training_frame=train, model=H2OGradientBoostingEstimator(),
+    igg = ig.train_subset_models(H2OGridSearch, y=y, training_frame=train, model=H2OGradientBoostingEstimator(),
                         hyper_params=dict(ntrees=[1, 3, 5]))
     assert len(igg) == 3 * 9
     da = h2o.explanation.disparate_analysis(igg, test, ["ethnic", "sex"], ["white", "M"], "0")
@@ -77,26 +77,26 @@ def test_infogram_grid_taiwan():
 
     train, test = data.split_frame([0.8])
 
-    reference = ["1", "2", "2"] # university educated single man
-    favorable_class = "0" # no default next month
+    reference = ["1", "2", "2"]  # university educated single man
+    favorable_class = "0"  # no default next month
 
     ig = H2OInfogram(protected_columns=protected_classes)
     ig.train(x, y, training_frame=train)
 
     # GBM
-    igg = infogram_grid(ig, H2OGradientBoostingEstimator, y=y, training_frame=train)
+    igg = ig.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train)
     assert len(igg) == len(x)
     da = h2o.explanation.disparate_analysis(igg, test, protected_classes, reference, favorable_class)
     assert ((da[:, "cair"] > 0.8) & (da[:, "cair"] < 1.25)).any()  # four-fifths rule
 
     # AutoML
-    igg = infogram_grid(ig, H2OAutoML, y=y, training_frame=train, max_models=2)
+    igg = ig.train_subset_models(H2OAutoML, y=y, training_frame=train, max_models=2)
     assert len(igg) == 2 * len(x) + len(x)  # models + SEs
     da = h2o.explanation.disparate_analysis(igg, test, protected_classes, reference, favorable_class)
     assert ((da[:, "cair"] > 0.8) & (da[:, "cair"] < 1.25)).any()  # four-fifths rule
 
     # GRID
-    igg = infogram_grid(ig, H2OGridSearch, y=y, training_frame=train, model=H2OGradientBoostingEstimator(),
+    igg = ig.train_subset_models(H2OGridSearch, y=y, training_frame=train, model=H2OGradientBoostingEstimator(),
                         hyper_params=dict(ntrees=[1, 3, 5]))
     assert len(igg) == 3 * len(x)
     da = h2o.explanation.disparate_analysis(igg, test, protected_classes, reference, favorable_class)

@@ -328,7 +328,7 @@ infogram_grid_works_test <- function() {
 
   # GBM
   cat("GBM\n")
-  da <- h2o.infogram_grid(ig, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0")
+  da <- h2o.infogram_train_subset_models(ig, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0")
   expect_equal(nrow(da), 9)
   expect_true(all(da$air_min > 0.7))
   expect_true(all(da$air_max < 1.2))
@@ -336,14 +336,14 @@ infogram_grid_works_test <- function() {
 
   # AutoML
   cat("AutoML\n")
-  da <- h2o.infogram_grid(ig, h2o.automl, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0", max_models = 2)
+  da <- h2o.infogram_train_subset_models(ig, h2o.automl, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0", max_models = 2)
   expect_equal(nrow(da), 2 * 9 + 9)  # models + SEs
   # some SEs tend to be more unfair than base models, so I relaxed the condition here
   expect_true(any((da$air_min > 0.8) & (da$air_max < 1.25))) # four-fifths rule
 
   # GRID
   cat("Grid\n")
-  da <- h2o.infogram_grid(ig, h2o.grid, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference,
+  da <- h2o.infogram_train_subset_models(ig, h2o.grid, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference,
                           favorable_class = "0", algorithm = "gbm", hyper_params = list(ntrees = c(1, 2, 3)))
   expect_equal(nrow(da), 3 * 9)
   expect_true(all(da$air_min > 0.7))
@@ -385,20 +385,20 @@ infogram_grid_works_taiwan_test <- function() {
 
   # GBM
   cat("GBM\n")
-  da <- h2o.infogram_grid(ig, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = favorable_class)
+  da <- h2o.infogram_train_subset_models(ig, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = favorable_class)
   expect_equal(nrow(da), length(x))
   expect_true(any((da$cair > 0.8) & (da$cair < 1.25))) # four-fifths rule
 
   # AutoML
   cat("AutoML\n")
-  da <- h2o.infogram_grid(ig, h2o.automl, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = favorable_class, max_models = 2)
+  da <- h2o.infogram_train_subset_models(ig, h2o.automl, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = favorable_class, max_models = 2)
   expect_equal(nrow(da), 2 * length(x) + length(x))  # models + SEs
   # some SEs tend to be more unfair than base models, so I relaxed the condition here
   expect_true(any((da$cair > 0.8) & (da$cair < 1.25))) # four-fifths rule
 
   # GRID
   cat("Grid\n")
-  da <- h2o.infogram_grid(ig, h2o.grid, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference,
+  da <- h2o.infogram_train_subset_models(ig, h2o.grid, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference,
                           favorable_class = favorable_class, algorithm = "gbm", hyper_params = list(ntrees = c(1, 2, 3)))
   expect_equal(nrow(da), 3 * length(x))
   expect_true(any((da$cair > 0.8) & (da$cair < 1.25))) # four-fifths rule

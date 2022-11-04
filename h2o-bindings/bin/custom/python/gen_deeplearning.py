@@ -3,7 +3,7 @@ options = dict(
     model_extensions=[
         'h2o.model.extensions.ScoringHistoryDL',
         'h2o.model.extensions.VariableImportance',
-        'h2o.model.extensions.FairnessMetrics',
+        'h2o.model.extensions.Fairness',
     ],
 )
 

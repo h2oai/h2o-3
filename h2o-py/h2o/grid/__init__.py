@@ -5,8 +5,7 @@ from .grid_search import H2OAutoEncoderGridSearch
 from .grid_search import H2OMultinomialGridSearch
 from .grid_search import H2ODimReductionGridSearch
 from .grid_search import H2ORegressionGridSearch
-from .infogram_grid import infogram_grid
 
 __all__ = ['H2OGridSearch', 'H2OBinomialGridSearch', 'H2OClusteringGridSearch',
            'H2OAutoEncoderGridSearch', 'H2OMultinomialGridSearch',
-           'H2ODimReductionGridSearch', 'H2ORegressionGridSearch', "infogram_grid"]
+           'H2ODimReductionGridSearch', 'H2ORegressionGridSearch']

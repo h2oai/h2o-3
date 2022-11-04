@@ -64,7 +64,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     algo = "stackedensemble"
     supervised_learning = True
-    _options_ = {'model_extensions': ['h2o.model.extensions.FairnessMetrics']}
+    _options_ = {'model_extensions': ['h2o.model.extensions.Fairness']}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]

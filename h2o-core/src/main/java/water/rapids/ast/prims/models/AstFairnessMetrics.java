@@ -2,13 +2,11 @@ package water.rapids.ast.prims.models;
 
 import hex.AUC2;
 import hex.Model;
-import joptsimple.internal.Strings;
 import org.apache.commons.math3.distribution.HypergeometricDistribution;
 import org.apache.commons.math3.stat.inference.GTest;
 import water.DKV;
 import water.Key;
 import water.MRTask;
-import water.api.schemas3.TwoDimTableV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -16,7 +14,6 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValMapFrame;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
@@ -25,25 +22,24 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.stream.IntStream;
 
 public class AstFairnessMetrics extends AstPrimitive {
     static public class FairnessMetrics {
-        double TP;
-        double FP;
-        double TN;
-        double FN;
+        double tp;
+        double fp;
+        double tn;
+        double fn;
 
         double total;
         double relativeSize;
         double accuracy;
         double precision;
         double f1;
-        double sensitivity;
-        double specificity;
-        double falsePositiveRate;
-        double falseNegativeRate;
+        double tpr;
+        double tnr;
+        double fpr;
+        double fnr;
         double auc;
         double aucpr;
         double gini;
@@ -51,21 +47,21 @@ public class AstFairnessMetrics extends AstPrimitive {
         double selectedRatio;
         double logloss;
 
-        public FairnessMetrics(double TP, double TN, double FP, double FN, double LLS, AUC2.AUCBuilder aucBuilder, double nrows) {
-            this.TP = TP;
-            this.TN = TN;
-            this.FP = FP;
-            this.FN = FN;
-            total = TP + FP + TN + FN;
-            logloss = -LLS/total;
+        public FairnessMetrics(double tp, double tn, double fp, double fn, double logLossSum, AUC2.AUCBuilder aucBuilder, double nrows) {
+            this.tp = tp;
+            this.tn = tn;
+            this.fp = fp;
+            this.fn = fn;
+            total = tp + fp + tn + fn;
+            logloss = logLossSum / total;
             relativeSize = total / nrows;
-            accuracy = (TP + TN)/total;
-            precision = TP / (FP + TP);
-            f1 = (2 * TP) / (2 * TP + FP + FN);
-            sensitivity = TP / (TP + FN);
-            specificity = TN / (TN + FP);
-            falsePositiveRate = FP / (FP + TN);
-            falseNegativeRate = FN / (FN + TP);
+            accuracy = (tp + tn) / total;
+            precision = tp / (fp + tp);
+            f1 = (2 * tp) / (2 * tp + fp + fn);
+            tpr = tp / (tp + fn);
+            tnr = tn / (tn + fp);
+            fpr = fp / (fp + tn);
+            fnr = fn / (fn + tp);
             if (aucBuilder != null) {
                 AUC2 auc2 = new AUC2(aucBuilder);
                 auc = auc2._auc;
@@ -76,27 +72,29 @@ public class AstFairnessMetrics extends AstPrimitive {
                 aucpr = Double.NaN;
                 gini = Double.NaN;
             }
-            selected = TP + FP;
-            selectedRatio = (TP + FP) / total;
+            selected = tp + fp;
+            selectedRatio = (tp + fp) / total;
         }
     }
 
     public static class FairnessMRTask extends MRTask {
+        public static final int GTEST_THRESHOLD = 10000;
         int[] protectedColsIdx;
         int[] cardinalities;
         int responseIdx;
         int predictionIdx;
-        final int TP = 0;
-        final int TN = 1;
-        final int FP = 2;
-        final int FN = 3;
-        final int LLS = 4; // Log Loss Sum
+        final int tpIdx = 0;
+        final int tnIdx = 1;
+        final int fpIdx = 2;
+        final int fnIdx = 3;
+        final int llsIdx = 4; // Log Loss Sum
         final int essentialMetrics = 5;
         final int maxIndex;
         final int favourableClass;
 
         int[] _results;
         AUC2.AUCBuilder[] _aucs;
+
         public FairnessMRTask(int[] protectedColsIdx, int[] cardinalities, int responseIdx, int predictionIdx, int favourableClass) {
             super();
             this.protectedColsIdx = protectedColsIdx;
@@ -104,18 +102,21 @@ public class AstFairnessMetrics extends AstPrimitive {
             this.responseIdx = responseIdx;
             this.predictionIdx = predictionIdx;
             this.favourableClass = favourableClass;
-            this.maxIndex = Arrays.stream(cardinalities).reduce((a,b) -> a*b ).getAsInt();
-        }
+            double maxIndexDbl = Arrays.stream(cardinalities).asDoubleStream().reduce((a, b) -> a * b).getAsDouble();
+            if (maxIndexDbl > Integer.MAX_VALUE)
+                throw new RuntimeException("Too many combinations of categories! Maximum number of category combinations is " + Integer.MAX_VALUE + "!");
 
+            this.maxIndex = (int) maxIndexDbl;
+        }
 
 
         private int pColsToKey(Chunk[] cs, int row) {
             int[] indices = new int[protectedColsIdx.length];
-            for(int i = 0; i < protectedColsIdx.length; i++) {
+            for (int i = 0; i < protectedColsIdx.length; i++) {
                 if (cs[protectedColsIdx[i]].isNA(row))
-                    indices[i] = (cardinalities[i]-1);
+                    indices[i] = (cardinalities[i] - 1);
                 else
-                    indices[i] += cs[protectedColsIdx[i]].at8(row) ;
+                    indices[i] += cs[protectedColsIdx[i]].at8(row);
             }
             return pColsToKey(indices);
         }
@@ -123,7 +124,7 @@ public class AstFairnessMetrics extends AstPrimitive {
         public int pColsToKey(int[] indices) {
             int result = 0;
             int base = 1;
-            for(int i = 0; i < protectedColsIdx.length; i++) {
+            for (int i = 0; i < protectedColsIdx.length; i++) {
                 result += indices[i] * base;
                 base *= cardinalities[i];
             }
@@ -165,23 +166,23 @@ public class AstFairnessMetrics extends AstPrimitive {
             for (int i = 0; i < cs[0]._len; i++) {
                 final int key = pColsToKey(cs, i);
                 final long response = favourableClass == 1 ? cs[responseIdx].at8(i) : 1 - cs[responseIdx].at8(i);
-                final long prediction = favourableClass == 1 ? cs[predictionIdx].at8(i) : 1 - cs[predictionIdx].at8(i) ;
-                final double predictionProb = favourableClass == 1 ? cs[predictionIdx+2].atd(i) : cs[predictionIdx+1].atd(i);
+                final long prediction = favourableClass == 1 ? cs[predictionIdx].at8(i) : 1 - cs[predictionIdx].at8(i);
+                final double predictionProb = favourableClass == 1 ? cs[predictionIdx + 2].atd(i) : cs[predictionIdx + 1].atd(i);
                 if (response == prediction) {
                     if (response == 1)
-                        _results[essentialMetrics * key + TP]++;
+                        _results[essentialMetrics * key + tpIdx]++;
                     else
-                        _results[essentialMetrics * key + TN]++;
+                        _results[essentialMetrics * key + tnIdx]++;
                 } else {
                     if (prediction == 1)
-                        _results[essentialMetrics * key + FP]++;
+                        _results[essentialMetrics * key + fpIdx]++;
                     else
-                        _results[essentialMetrics * key + FN]++;
+                        _results[essentialMetrics * key + fnIdx]++;
                 }
-                _results[essentialMetrics * key + LLS] += response * Math.log(predictionProb) + (1 - response) * Math.log(1 - predictionProb);
+                _results[essentialMetrics * key + llsIdx] += -(response * Math.log(predictionProb) + (1 - response) * Math.log(1 - predictionProb));
                 if (_aucs[key] == null)
                     _aucs[key] = new AUC2.AUCBuilder(400);
-                _aucs[key].perRow(predictionProb, (int) response,1);
+                _aucs[key].perRow(predictionProb, (int) response, 1);
             }
         }
 
@@ -200,17 +201,17 @@ public class AstFairnessMetrics extends AstPrimitive {
             }
         }
 
-        public Frame getMetrics(String[] protectedCols, Frame fr, Model model, String[] reference) {
+        public Frame getMetrics(String[] protectedCols, Frame fr, Model model, String[] reference, final String frName) {
             // Calculate additional metrics
             FairnessMetrics[] results = new FairnessMetrics[maxIndex];
             final long nrows = fr.numRows();
             for (int i = 0; i < maxIndex; i++) {
                 results[i] = new FairnessMetrics(
-                        _results[i * essentialMetrics + TP],
-                        _results[i * essentialMetrics + TN],
-                        _results[i * essentialMetrics + FP],
-                        _results[i * essentialMetrics + FN],
-                        _results[i * essentialMetrics + LLS],
+                        _results[i * essentialMetrics + tpIdx],
+                        _results[i * essentialMetrics + tnIdx],
+                        _results[i * essentialMetrics + fpIdx],
+                        _results[i * essentialMetrics + fnIdx],
+                        _results[i * essentialMetrics + llsIdx],
                         _aucs[i],
                         nrows
                 );
@@ -226,7 +227,7 @@ public class AstFairnessMetrics extends AstPrimitive {
                 referenceIdx = pColsToKey(indices);
             } else {
                 double max = 0;
-                for (int key = 0; key < maxIndex; key ++) {
+                for (int key = 0; key < maxIndex; key++) {
                     if (results[key].total > max) {
                         max = results[key].total;
                         referenceIdx = key;
@@ -235,30 +236,30 @@ public class AstFairnessMetrics extends AstPrimitive {
             }
 
             int emptyResults = 0;
-            for (FairnessMetrics fm: results)
+            for (FairnessMetrics fm : results)
                 emptyResults += fm.total == 0 ? 1 : 0;
 
             // Fill in a frame
             final String[] skipAIR = new String[]{"total", "relativeSize"};
             Field[] metrics = FairnessMetrics.class.getDeclaredFields();
-            final int PCOL_COUNT = protectedCols.length;
-            final int METRICS_COUNT = metrics.length + (metrics.length - skipAIR.length)  + 1/*p-value*/ ;
-            double[][] resultCols = new double[PCOL_COUNT + METRICS_COUNT][results.length - emptyResults];
+            final int protectedColsCnt = protectedCols.length;
+            final int metricsCount = metrics.length + (metrics.length - skipAIR.length) + 1/*p-value*/;
+            double[][] resultCols = new double[protectedColsCnt + metricsCount][results.length - emptyResults];
             FairnessMetrics ref = results[referenceIdx];
             int nonEmptyKey = 0;
-            for (int key = 0; key < maxIndex; key ++) {
+            for (int key = 0; key < maxIndex; key++) {
                 if (results[key].total == 0) continue;
                 int counter = 0;
                 double[] decodedKey = keyToPCols(key);
-                for(int i = 0; i < protectedCols.length; i++) {
+                for (int i = 0; i < protectedCols.length; i++) {
                     resultCols[i][nonEmptyKey] = decodedKey[i];
                 }
                 for (int i = 0; i < metrics.length; i++) {
                     try {
-                        resultCols[PCOL_COUNT + i][nonEmptyKey] = metrics[i].getDouble(results[key]);
+                        resultCols[protectedColsCnt + i][nonEmptyKey] = metrics[i].getDouble(results[key]);
                         if (!ArrayUtils.contains(skipAIR, metrics[i].getName())) {
                             final double air = metrics[i].getDouble(results[key]) / metrics[i].getDouble(ref);
-                            resultCols[PCOL_COUNT + metrics.length + i - counter][nonEmptyKey] = air;
+                            resultCols[protectedColsCnt + metrics.length + i - counter][nonEmptyKey] = air;
 
                         } else
                             counter++;
@@ -273,31 +274,29 @@ public class AstFairnessMetrics extends AstPrimitive {
                 }
                 nonEmptyKey++;
             }
-            String[] colNames = new String[PCOL_COUNT + METRICS_COUNT];
-            for(int i = 0; i < protectedCols.length; i++) {
-                colNames[i] = protectedCols[i];
-            }
+            String[] colNames = new String[protectedColsCnt + metricsCount];
+            System.arraycopy(protectedCols, 0, colNames, 0, protectedCols.length);
             int counter = 0;
             for (int i = 0; i < metrics.length; i++) {
-                colNames[PCOL_COUNT + i] = metrics[i].getName();
+                colNames[protectedColsCnt + i] = metrics[i].getName();
                 if (!ArrayUtils.contains(skipAIR, metrics[i].getName())) {
-                    colNames[PCOL_COUNT + metrics.length + i - counter] = "AIR_" + metrics[i].getName();
+                    colNames[protectedColsCnt + metrics.length + i - counter] = "AIR_" + metrics[i].getName();
                 } else
                     counter++;
             }
             colNames[colNames.length - 1] = "p.value";
 
-            Vec[] vecs = new Vec[PCOL_COUNT + METRICS_COUNT];
-            for (int i = 0; i < PCOL_COUNT; i++) {
+            Vec[] vecs = new Vec[protectedColsCnt + metricsCount];
+            for (int i = 0; i < protectedColsCnt; i++) {
                 vecs[i] = Vec.makeVec(resultCols[i], fr.domains()[protectedColsIdx[i]], Vec.newKey());
             }
-            for (int i = 0; i < METRICS_COUNT; i++) {
-                vecs[PCOL_COUNT + i] = Vec.makeVec(resultCols[PCOL_COUNT + i], Vec.newKey());
+            for (int i = 0; i < metricsCount; i++) {
+                vecs[protectedColsCnt + i] = Vec.makeVec(resultCols[protectedColsCnt + i], Vec.newKey());
             }
-            return new Frame(Key.make("fairness_metrics_" + fr._key + "_for_model_"+ model._key), colNames, vecs);
+            return new Frame(Key.make("fairness_metrics_" + frName + "_for_model_" + model._key), colNames, vecs);
         }
 
-        public Map<String, Frame> getROCInfo(Model model, Frame fr) {
+        public Map<String, Frame> getROCInfo(Model model, Frame fr, final String frName) {
             Map<String, Frame> result = new HashMap<>();
             for (int id = 0; id < maxIndex; id++) {
                 if (_aucs[id] == null) continue;
@@ -308,7 +307,6 @@ public class AstFairnessMetrics extends AstPrimitive {
                     thresholds[i] = Double.toString(auc._ths[i]);
                 AUC2.ThresholdCriterion crits[] = AUC2.ThresholdCriterion.VALUES;
                 String[] colHeaders = new String[crits.length + 2];
-                String[] colHeadersMax = new String[crits.length];
                 String[] types = new String[crits.length + 2];
                 String[] formats = new String[crits.length + 2];
                 colHeaders[0] = "Threshold";
@@ -316,7 +314,6 @@ public class AstFairnessMetrics extends AstPrimitive {
                 formats[0] = "%f";
                 int i;
                 for (i = 0; i < crits.length; i++) {
-                    if (colHeadersMax.length > i) colHeadersMax[i] = "max " + crits[i].toString();
                     colHeaders[i + 1] = crits[i].toString();
                     types[i + 1] = crits[i]._isInt ? "long" : "double";
                     formats[i + 1] = crits[i]._isInt ? "%d" : "%f";
@@ -335,7 +332,7 @@ public class AstFairnessMetrics extends AstPrimitive {
                     thresholdsByMetrics.set(i, 1 + j, i);
                 }
                 String groupName = keyToString(id, fr);
-                Frame f = thresholdsByMetrics.asFrame(Key.make("thresholds_and_metrics_" + groupName + "_for_model_" + model._key + "_for_frame_" + fr._key));
+                Frame f = thresholdsByMetrics.asFrame(Key.make("thresholds_and_metrics_" + groupName + "_for_model_" + model._key + "_for_frame_" + frName));
                 DKV.put(f);
                 result.put("thresholds_and_metrics_" + groupName, f);
             }
@@ -344,7 +341,7 @@ public class AstFairnessMetrics extends AstPrimitive {
 
         /**
          * Calculate p-value using Fisher's exact test
-         *
+         * <p>
          * |              | Protected Group | Reference |
          * |--------------+-----------------+-----------|
          * | Selected     | a               | b         |
@@ -357,15 +354,17 @@ public class AstFairnessMetrics extends AstPrimitive {
          * @return
          */
         private static double fishersTest(long a, long b, long c, long d) {
-            long popSize = a+b+c+d;
-            if (popSize > 1e5) return Double.NaN;
-            HypergeometricDistribution hgd = new HypergeometricDistribution((int)popSize, (int)(a+b), (int)(a+c));
+            long popSize = a + b + c + d;
+            if (popSize > 1e5) return Double.NaN; // Make sure we don't get stuck on p-value computation
+            HypergeometricDistribution hgd = new HypergeometricDistribution((int) popSize, (int) (a + b), (int) (a + c));
             double p = hgd.probability((int) a);
             double pValue = 0;
             // sum up pValues in all more extreme cases - like in R, sum all less probable cases in to the p-value
-            for (int i = (int) Math.max(a-d, 0); i <= Math.min(a+b, a+c); i++) {
-                final double proposal = hgd.probability( i);
-                if (proposal <= p*(1 + 1e-7)) pValue += proposal;
+            for (int i = (int) Math.max(a - d, 0); i <= Math.min(a + b, a + c); i++) {
+                final double proposal = hgd.probability(i);
+                // The magic constant 1+1e-7 is taken from the R implementation of fisher.test in order to make
+                // the results the same => easier to test
+                if (proposal <= p * (1 + 1e-7)) pValue += proposal;
             }
             return pValue;
         }
@@ -375,7 +374,7 @@ public class AstFairnessMetrics extends AstPrimitive {
          * Calculate p-value. If there is a high number of instances use G-test as approximation of Fisher's exact test,
          * otherwise use Fisher's exact test.
          *
-         * @param ref Metrics for the reference group
+         * @param ref     Metrics for the reference group
          * @param results Metrics for a protected group
          * @return p-value
          */
@@ -384,7 +383,7 @@ public class AstFairnessMetrics extends AstPrimitive {
             long b = (long) ref.selected;
             long c = (long) (results.total - results.selected);
             long d = (long) (ref.total - ref.selected);
-            if ((ref.total < 10000 && results.total < 10000) || a == 0 || b == 0 || c == 0 || d == 0) {
+            if ((ref.total < GTEST_THRESHOLD && results.total < GTEST_THRESHOLD) || a == 0 || b == 0 || c == 0 || d == 0) {
                 // fisher's exact test
                 return fishersTest(a, b, c, d);
             } else {
@@ -419,10 +418,10 @@ public class AstFairnessMetrics extends AstPrimitive {
         String[] protectedCols = stk.track(asts[3].exec(env)).getStrs();
         String[] reference = stk.track(asts[4].exec(env)).getStrs();
         String favourableClass = stk.track(asts[5].exec(env)).getStr();
-
+        final String frameName = asts[2].str(); // Used only for naming the derived metrics
 
         final int responseIdx = fr.find(model._parms._response_column);
-        if (!(model.isSupervised() && fr.vec(responseIdx).isCategorical() && fr.vec(responseIdx).cardinality() == 2)) {
+        if (!model._output.isBinomialClassifier()) {
             throw new H2OIllegalArgumentException("Model has to be a binomial model!");
         }
         for (String pc : protectedCols) {
@@ -447,24 +446,26 @@ public class AstFairnessMetrics extends AstPrimitive {
 
         // Sanity check - the number of subgroups grows very quickly and higher values are practically unexplainable
         // but I don't want to limit the user too much
-        if (Arrays.stream(cardinalities).asLongStream().reduce((a,b) -> a * b).orElse(Long.MAX_VALUE) > 1e6)
+        if (Arrays.stream(cardinalities).asDoubleStream().reduce((a, b) -> a * b).orElse(Double.MAX_VALUE) > 1e6)
             throw new RuntimeException("Too many combinations of categories! Maximum number of category combinations is 1e6.");
 
         Frame predictions = new Frame(fr).add(model.score(fr));
         DKV.put(predictions);
-        FairnessMRTask fairnessMRTask = (FairnessMRTask) new FairnessMRTask(
-                protectedColsIdx,
-                cardinalities,
-                responseIdx,
-                fr.numCols(),
-                favorableClassId
-        ).doAll(predictions);
-        Frame metrics = fairnessMRTask.getMetrics(protectedCols, fr, model, reference);
-        DKV.put(metrics);
-        Map<String, Frame> results = fairnessMRTask.getROCInfo(model, fr);
-        results.put("overview", metrics);
-        return new ValMapFrame(results);
+        try {
+            FairnessMRTask fairnessMRTask = (FairnessMRTask) new FairnessMRTask(
+                    protectedColsIdx,
+                    cardinalities,
+                    responseIdx,
+                    fr.numCols(),
+                    favorableClassId
+            ).doAll(predictions);
+            Frame metrics = fairnessMRTask.getMetrics(protectedCols, fr, model, reference, frameName);
+            Map<String, Frame> results = fairnessMRTask.getROCInfo(model, fr, frameName);
+            DKV.put(metrics);
+            results.put("overview", metrics);
+            return new ValMapFrame(results);
+        } finally {
+            DKV.remove(predictions.getKey());
+        }
     }
-
-
 }

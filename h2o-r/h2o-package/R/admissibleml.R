@@ -26,6 +26,7 @@ h2o.calculate_fairness_metrics <- function(model, frame, protected_cols, referen
   res <- list()
   for (i in seq_along(lst$map_keys$string)) {
     res[[lst$map_keys$string[[i]]]] <- as.data.frame(h2o.getFrame(lst$frames[[i]]$key$name))
+    h2o.rm(lst$frames[[i]]$key$name, cascade = TRUE)
   }
   res
 }
@@ -107,7 +108,7 @@ h2o.disparate_analysis <-
     lapply(models_info$model_ids, models_info$get_model)
   }
 
-#' Train a grid of models over subsets selected using infogram
+#' Train models over subsets selected using infogram
 #'
 #' @param ig Infogram object trained with the same protected columns
 #' @param model_fun Function that creates models. This can be something like h2o.automl, h2o.gbm, etc.
@@ -122,7 +123,7 @@ h2o.disparate_analysis <-
 #' @return frame containing aggregations of intersectional fairness across the models
 #'
 #' @export
-h2o.infogram_grid <-
+h2o.infogram_train_subset_models <-
   function(ig,
            model_fun,
            training_frame,

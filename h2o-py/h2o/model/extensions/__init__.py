@@ -5,7 +5,7 @@ A collection of mixins optionally added to the model if the feature is supported
 """
 import sys
 
-from .fairness_metrics import FairnessMetrics
+from .fairness import Fairness
 from .feature_interaction import FeatureInteraction
 from .h_statistic import HStatistic
 from .scoring_history import ScoringHistory, ScoringHistoryDL, ScoringHistoryGLM, ScoringHistoryTrees
@@ -53,5 +53,5 @@ __all__ = [  # mainly useful here for the generated documentation
     'SupervisedTrees', 
     'VariableImportance',
     'Contributions',
-    'FairnessMetrics',
+    'Fairness',
 ]

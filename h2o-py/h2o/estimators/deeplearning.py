@@ -35,7 +35,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
     supervised_learning = True
     _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryDL',
                                       'h2o.model.extensions.VariableImportance',
-                                      'h2o.model.extensions.FairnessMetrics'],
+                                      'h2o.model.extensions.Fairness'],
                  'verbose': True}
 
     def __init__(self,

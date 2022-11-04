@@ -821,15 +821,15 @@ def test_fairness_plots():
     assert isinstance(h2o.explanation.pareto_front(da, "auc", "air_min", optimum="top right").figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
-    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("deeplearning"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    assert isinstance(aml.get_best_model("deeplearning").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
     matplotlib.pyplot.close("all")
-    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("drf"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    assert isinstance(aml.get_best_model("drf").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
     matplotlib.pyplot.close("all")
-    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("gbm"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    assert isinstance(aml.get_best_model("gbm").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
     matplotlib.pyplot.close("all")
-    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("glm"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    assert isinstance(aml.get_best_model("glm").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
     matplotlib.pyplot.close("all")
-    assert isinstance(h2o.explanation.inspect_model_fairness(aml.get_best_model("xgboost"),  test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    assert isinstance(aml.get_best_model("xgboost").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
     matplotlib.pyplot.close("all")
 
 
