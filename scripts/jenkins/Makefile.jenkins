@@ -93,7 +93,7 @@ test-py-smoke-steam: lookup-steam-assembly-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 6 --jvm.xmx 3g --h2ojar ../../h2o-assemblies/steam/build/libs/steam.jar 
 
 test-py-changed:
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitChangedTestList --numclouds 1 --jvm.xmx 3g
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitChangedTestList --numclouds 1 --jvm.xmx 16g
 
 test-py-persist-s3: lookup-persist-s3-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist .lookup.txt --numclouds 1 --jvm.xmx 3g
@@ -162,8 +162,12 @@ test-pyunit-automl-smoke-noxgb: lookup-automl-smoke-tests
 test-pyunit-fault-tolerance: init-lookup lookup-fault-tolerance-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --numnodes 3 --jvm.xmx 4g --testlist .lookup.txt
 
+
 test-pyunit-medium-large:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+
+test-pyunit-xlarge:
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize x --numclouds 1 --numnodes 1 --jvm.xmx 30g
 
 test-py-single-test:
 	@echo "test=$$SINGLE_TEST_PATH"
