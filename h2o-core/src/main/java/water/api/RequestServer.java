@@ -778,7 +778,7 @@ public class RequestServer extends HttpServlet {
     switch (type) {
       case html: // return JSON for html requests
       case json:
-        return new NanoResponse(http_response_header, MIME_JSON, s.toJsonString());
+        return new NanoResponse(http_response_header, MIME_JSON, s.toJsonBytes());
       case xml:
         throw H2O.unimpl("Unknown type: " + type.toString());
       case java:
