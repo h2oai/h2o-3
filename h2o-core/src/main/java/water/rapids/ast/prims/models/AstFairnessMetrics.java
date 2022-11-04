@@ -78,7 +78,16 @@ public class AstFairnessMetrics extends AstPrimitive {
     }
 
     public static class FairnessMRTask extends MRTask {
+        // Threshold to switch from Fisher's exact test to G-test.
+        // Fisher's exact test gets slower with increasing size of the population
+        // fortunately G-test approximates it very well for bigger population.
+        // Recommendation is to use Fisher's test if the population size is lower than 1000
+        // (http://www.biostathandbook.com/small.html) but nowadays even 10000 is computed in the blink of an eye
         public static final int GTEST_THRESHOLD = 10000;
+
+        // The magic constant REL1+1e-7 is taken from the R implementation of fisher.test in order to make
+        // the results the same => easier to test
+        public static final double FISHER_TEST_REL_ERROR = (1 + 1e-7);
         int[] protectedColsIdx;
         int[] cardinalities;
         int responseIdx;
@@ -355,16 +364,14 @@ public class AstFairnessMetrics extends AstPrimitive {
          */
         private static double fishersTest(long a, long b, long c, long d) {
             long popSize = a + b + c + d;
-            if (popSize > 1e5) return Double.NaN; // Make sure we don't get stuck on p-value computation
+            if (popSize > Integer.MAX_VALUE) return Double.NaN; // Make sure we don't get stuck on p-value computation
             HypergeometricDistribution hgd = new HypergeometricDistribution((int) popSize, (int) (a + b), (int) (a + c));
             double p = hgd.probability((int) a);
             double pValue = 0;
             // sum up pValues in all more extreme cases - like in R, sum all less probable cases in to the p-value
             for (int i = (int) Math.max(a - d, 0); i <= Math.min(a + b, a + c); i++) {
                 final double proposal = hgd.probability(i);
-                // The magic constant 1+1e-7 is taken from the R implementation of fisher.test in order to make
-                // the results the same => easier to test
-                if (proposal <= p * (1 + 1e-7)) pValue += proposal;
+                if (proposal <= p * FISHER_TEST_REL_ERROR) pValue += proposal;
             }
             return pValue;
         }

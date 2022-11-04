@@ -68,7 +68,6 @@ Suggests: ggplot2 (>= 3.3.0),
           curl,
           scales
 Collate:
-         'admissibleml.R'
          'aggregator.R'
          'astfun.R'
          'automl.R'
@@ -119,5 +118,6 @@ Collate:
          'explain.R'
          'permutation_varimp.R'
          'infogram.R'
-         'zzz.R'
          'upliftrandomforest.R'
+         'admissibleml.R'
+         'zzz.R'

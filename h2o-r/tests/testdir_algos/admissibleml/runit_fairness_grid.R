@@ -19,17 +19,17 @@ source("../../../scripts/h2o-r-test-setup.R")
 
     return(
       list(
-        TP = tp,
-        FP = fp,
-        TN = tn,
-        FN = fn,
+        tp = tp,
+        fp = fp,
+        tn = tn,
+        fn = fn,
         Accuracy = (tp + tn) / total,
         Precision = tp / (tp + fp),
-        Sensitivity = tp / (tp + fn),
-        Specificity = tn / (fp + tn),
+        tpr = tp / (tp + fn),
+        tnr = tn / (fp + tn),
         F1 = (2 * tp) / (2 * tp + fp + fn),
-        FalsePositiveRate = fp / (fp + tn),
-        FalseNegativeRate = fn / (fn + tp),
+        fpr = fp / (fp + tn),
+        fnr = fn / (fn + tp),
         Selected = tp + fp,
         SelectedRatio = (tp + fp) / total,
         Total = total
@@ -50,7 +50,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 }
 
 
-h2o.calculate_disparate_measures <-
+.calculate_disparate_measures <-
   function(model,
            newdata,
            sensitive_features,
@@ -113,15 +113,15 @@ h2o.calculate_disparate_measures <-
         cm <-
           .calculate_confusion_matrix(predictions[mask, "predict"], newdata_df[mask, y],
                                       favorable_class = favorable_class)
-        results[idx, "TP"] <- cm$TP
-        results[idx, "FP"] <- cm$FP
-        results[idx, "TN"] <- cm$TN
-        results[idx, "FN"] <- cm$FN
+        results[idx, "tp"] <- cm$tp
+        results[idx, "fp"] <- cm$fp
+        results[idx, "tn"] <- cm$tn
+        results[idx, "fn"] <- cm$fn
 
         results[idx, "Accuracy"] <- cm$Accuracy
         results[idx, "Precision"] <- cm$Precision
-        results[idx, "Sensitivity"] <- cm$Sensitivity
-        results[idx, "Specificity"] <- cm$Specificity
+        results[idx, "tpr"] <- cm$tpr
+        results[idx, "tnr"] <- cm$tnr
         results[idx, "F1"] <- cm$F1
         results[idx, "Total"] <- cm$Total
         results[idx, "Selected"] <- cm$Selected
@@ -306,7 +306,7 @@ fairness_metrics_are_correct_test <- function() {
       m <- h2o.getModel(model_id)
       for (fav_class in c("0", "1")) {
         java_metrics <- h2o.calculate_fairness_metrics(m, test, protected_cols = pcols, reference = ref[pcols], favorable_class = fav_class)$overview
-        R_metrics <- h2o.calculate_disparate_measures(m, test, sensitive_features = pcols, favorable_class = fav_class, reference_groups = ref[pcols])
+        R_metrics <- .calculate_disparate_measures(m, test, sensitive_features = pcols, favorable_class = fav_class, reference_groups = ref[pcols])
         names(java_metrics) <- tolower(names(java_metrics))
         java_metrics$air <- java_metrics$air_selectedratio
         names(R_metrics) <- tolower(names(R_metrics))
