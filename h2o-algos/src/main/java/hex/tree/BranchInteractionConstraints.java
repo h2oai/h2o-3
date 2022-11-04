@@ -17,7 +17,7 @@ public class BranchInteractionConstraints extends Iced<BranchInteractionConstrai
     }
     
     public boolean isAllowedIndex(int i){
-        return allowedInteractionIndices.contains(i);
+        return allowedInteractionIndices.contains(new IcedInt(i));
     }
 
     /**
