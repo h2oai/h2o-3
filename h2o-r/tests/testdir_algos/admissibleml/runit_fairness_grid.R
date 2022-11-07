@@ -344,8 +344,8 @@ infogram_train_subset_models_works_test <- function() {
   # GRID
   cat("Grid\n")
   da <- h2o.infogram_train_subset_models(ig, h2o.grid, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference,
-                          favorable_class = "0", algorithm = "gbm", hyper_params = list(ntrees = c(1, 2, 3)))
-  expect_equal(nrow(da), 3 * 9)
+                          favorable_class = "0", algorithm = "gbm", hyper_params = list(ntrees = c(1, 3)))
+  expect_equal(nrow(da), 2 * 9)
   expect_true(all(da$air_min > 0.7))
   expect_true(all(da$air_max < 1.2))
   expect_true(any((da$air_min > 0.8) & (da$air_max < 1.25))) # four-fifths rule
@@ -399,8 +399,8 @@ infogram_train_subset_models_works_taiwan_test <- function() {
   # GRID
   cat("Grid\n")
   da <- h2o.infogram_train_subset_models(ig, h2o.grid, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference,
-                          favorable_class = favorable_class, algorithm = "gbm", hyper_params = list(ntrees = c(1, 2, 3)))
-  expect_equal(nrow(da), 3 * length(x))
+                          favorable_class = favorable_class, algorithm = "gbm", hyper_params = list(ntrees = c(1, 3)))
+  expect_equal(nrow(da), 2 * length(x))
   expect_true(any((da$cair > 0.8) & (da$cair < 1.25))) # four-fifths rule
 }
 
@@ -439,6 +439,15 @@ infogram_train_subset_models_works_with_multiple_metrics_test <- function () {
                                          feature_selection_metrics = c("safety_index", "relevance_index"), metric = "manhattan")
   expect_equal(nrow(da), 9)
 
+  # Fair with relevance and maximum distance
+  da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = "relevance_index", metric = "maximum")
+  expect_equal(nrow(da), 9)
+
+  # Fair with relevance and safety and maximum distance
+  da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+                                         feature_selection_metrics = c("safety_index", "relevance_index"), metric = "maximum")
+  expect_equal(nrow(da), 9)
 
   # Basic core
   da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0")

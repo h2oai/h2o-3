@@ -10,7 +10,7 @@ from h2o.estimators import *
 from h2o.grid import *
 
 
-def test_infogram_grid():
+def test_train_subset_models():
     x = ["loan_amount", "loan_to_value_ratio", "no_intro_rate_period", "intro_rate_period",
          "property_value", "income", "debt_to_income_ratio", "term_360", "conforming"]
 
@@ -65,7 +65,7 @@ def test_infogram_grid():
     assert ((da[:, "cair"] > 0.8) & (da[:, "cair"] < 1.25)).any()  # four-fifths rule
 
 
-def test_infogram_grid_taiwan():
+def test_train_subset_models_taiwan():
     data = h2o.import_file(pyunit_utils.locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
     x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
          'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
@@ -102,8 +102,93 @@ def test_infogram_grid_taiwan():
     da = h2o.explanation.disparate_analysis(igg, test, protected_classes, reference, favorable_class)
     assert ((da[:, "cair"] > 0.8) & (da[:, "cair"] < 1.25)).any()  # four-fifths rule
 
+def test_train_subset_models_metrics():
+    x = ["loan_amount", "loan_to_value_ratio", "no_intro_rate_period", "intro_rate_period",
+         "property_value", "income", "debt_to_income_ratio", "term_360", "conforming"]
+
+    y = "high_priced"
+
+    train = h2o.import_file("https://raw.githubusercontent.com/h2oai/article-information-2019/master/data/output/hmda_train.csv")
+    test = h2o.import_file("https://raw.githubusercontent.com/h2oai/article-information-2019/master/data/output/hmda_test.csv")
+    train = train[~train["black"].isna()[0] & ~train["hispanic"].isna()[0] & ~train["male"].isna()[0] & ~train["agegte62"].isna()[0],:]
+    test = test[~test["black"].isna()[0] & ~test["hispanic"].isna()[0] & ~test["male"].isna()[0] & ~test["agegte62"].isna()[0],:]
+    for d in [train, test]:
+        d[:, y] = d[:, y].asfactor()
+        d[d["black"] == 1, "ethnic"] = "black"
+        d[d["asian"] == 1, "ethnic"] = "asian"
+        d[d["white"] == 1, "ethnic"] = "white"
+        d[d["amind"] == 1, "ethnic"] = "amind"
+        d[d["hipac"] == 1, "ethnic"] = "hipac"
+        d[d["hispanic"] == 1, "ethnic"] = "hispanic"
+        d["sex"] = "NA"
+        d[d["female"] == 1, "sex"] = "F"
+        d[d["male"] == 1, "sex"] = "M"
+        d["ethnic"] = d["ethnic"].asfactor()
+        d["sex"] = d["sex"].asfactor()
+
+    ig_fair = H2OInfogram(protected_columns=["ethnic", "sex"])
+    ig_fair.train(x, y, training_frame=train)
+
+    ig_core = H2OInfogram()
+    ig_core.train(x, y, training_frame=train)
+
+    # Fair, safety_index
+    igg = ig_fair.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train)
+    assert len(igg) == 9
+
+    # Fair, safety_index + admissible_index
+    igg = ig_fair.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train,
+                                      feature_selection_metrics=["safety_index", "admissible_index"])
+    assert len(igg) == 9
+
+    # Fair, safety_index, manhattan distance
+    igg = ig_fair.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train, metric="manhattan")
+    assert len(igg) == 9
+
+    # Fair, safety_index + admissible_index, manhattan distance
+    igg = ig_fair.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train,
+                                      feature_selection_metrics=["safety_index", "admissible_index"], metric="manhattan")
+    assert len(igg) == 9
+
+    # Fair, safety_index, maximum distance
+    igg = ig_fair.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train, metric="maximum")
+    assert len(igg) == 9
+
+    # Fair, safety_index + admissible_index, maximum distance
+    igg = ig_fair.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train,
+                                      feature_selection_metrics=["safety_index", "admissible_index"], metric="maximum")
+    assert len(igg) == 9
+
+    # Core, admissible_index
+    igg = ig_core.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train)
+    assert len(igg) == 9
+
+    # Core, total_information + admissible_index
+    igg = ig_core.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train,
+                                      feature_selection_metrics=["total_information", "admissible_index"])
+    assert len(igg) == 9
+
+    # Core, admissible_index, manhattan distance
+    igg = ig_core.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train, metric="manhattan")
+    assert len(igg) == 9
+
+    # Core, total_information + admissible_index, manhattan distance
+    igg = ig_core.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train,
+                                      feature_selection_metrics=["total_information", "admissible_index"], metric="manhattan")
+    assert len(igg) == 9
+
+    # Core, admissible_index, maximum distance
+    igg = ig_core.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train, metric="maximum")
+    assert len(igg) == 9
+
+    # Core, total_information + admissible_index, maximum distance
+    igg = ig_core.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train,
+                                      feature_selection_metrics=["total_information", "admissible_index"], metric="maximum")
+    assert len(igg) == 9
+
 
 pyunit_utils.run_tests([
-    test_infogram_grid,
-    test_infogram_grid_taiwan,
+    test_train_subset_models,
+    test_train_subset_models_taiwan,
+    test_train_subset_models_metrics,
 ])
