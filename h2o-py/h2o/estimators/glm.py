@@ -2486,9 +2486,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
             "explained_deviance_train": x["explained_deviance_train"],
             "explained_deviance_valid": x["explained_deviance_valid"],
             "coefficients": [dict(zip(ns, y)) for y in x["coefficients"]],
-            "z_values": [dict(zip(ns, z)) for z in x["z_values"]],
-            "p_values": [dict(zip(ns, p)) for p in x["p_values"]],
-            "std_errs": [dict(zip(ns, s)) for s in x["std_errs"]]
+            "z_values": None if (x["z_values"] is None) else [dict(zip(ns, z)) for z in x["z_values"]],
+            "p_values": None if (x["p_values"] is None) else [dict(zip(ns, p)) for p in x["p_values"]],
+            "std_errs": None if (x["std_errs"] is None) else [dict(zip(ns, s)) for s in x["std_errs"]],
+            "names": ns
         }
         if "coefficients_std" in x and not(x["coefficients_std"] == None):
             res["coefficients_std"] = [dict(zip(ns, y)) for y in x["coefficients_std"]]
