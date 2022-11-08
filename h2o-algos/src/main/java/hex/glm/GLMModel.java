@@ -223,9 +223,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         rp._coefficients[i] = _output._dinfo.denormalizeBeta(rp._coefficients_std[i]);
       }
       if (_parms._compute_p_values) {
-        rp._z_values[i] = sm.zValues();
-        rp._p_values[i] = sm.pValues(_output._training_metrics.residual_degrees_of_freedom());
-        rp._std_errs[i] = sm.stdErr();
+        // need to expand vectors to be of size numcols
+        rp._z_values[i] = sm.getZValues(MemoryManager.malloc8d(P));
+        rp._p_values[i] = sm.pValues(rp._z_values[i], _output._training_metrics.residual_degrees_of_freedom());
+        rp._std_errs[i] = sm.stdErr(rp._z_values[i], rp._coefficients[i]);
       }
       rp._explained_deviance_train[i] = 1 - (_output._training_metrics._nobs*sm.devianceTrain)/((GLMMetrics)_output._training_metrics).null_deviance();
       if (rp._explained_deviance_valid != null)
@@ -1222,6 +1223,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return beta;
     }
 
+
+    public double [] getZValues(double [] zValues) {
+      Arrays.fill(zValues, Double.NaN); // non-active z-values should not be 0 but Double.NaN
+      if(idxs != null){
+        for(int i = 0; i < idxs.length; ++i)
+          zValues[idxs[i]] = this.zValues[i];
+      } else
+        System.arraycopy(this.zValues, 0, zValues, 0, zValues.length);
+      return zValues;
+    }
+
     public int rank(){
       return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
@@ -1234,7 +1246,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return calculatePValuesFromZValues(zValues, dispersionEstimated, residualDegreesOfFreedom);
     }
 
+    public double[] pValues(double[] zValues, long residualDegreesOfFreedom) {
+      return calculatePValuesFromZValues(zValues, dispersionEstimated, residualDegreesOfFreedom);
+    }
+
     public double[] stdErr() {
+      return calculateStdErrFromZValues(zValues, beta);
+    }
+
+    public double[] stdErr(double[] zValues, double[] beta) {
       return calculateStdErrFromZValues(zValues, beta);
     }
 
@@ -1348,8 +1368,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public static double[] calculateStdErrFromZValues(double[] zValues, double[] beta) {
       double[] res = zValues.clone();
-      for (int i = 0; i < res.length; ++i)
-        res[i] = beta[i] / zValues[i];
+      for (int i = 0; i < res.length; ++i) {
+        if(beta[i] == 0) {
+          res[i] = Double.NaN;
+        } else {
+          res[i] = beta[i] / zValues[i];
+        }
+      }
       return res;
     }
     
@@ -1385,8 +1410,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                                                        long residualDegreesOfFreedom) {
       double[] res = zValues.clone();
       RealDistribution rd = dispersionEstimated ? new TDistribution(residualDegreesOfFreedom) : new NormalDistribution();
-      for(int i = 0; i < res.length; ++i)
-        res[i] = 2*rd.cumulativeProbability(-Math.abs(res[i]));
+      for(int i = 0; i < res.length; ++i) {
+        if(!Double.isNaN(zValues[i])) { // if zValues[i] is Nan, then res[i] is already set to NaN (desired value)
+          res[i] = 2 * rd.cumulativeProbability(-Math.abs(res[i]));
+        }
+      }
       return res;
     }
 
