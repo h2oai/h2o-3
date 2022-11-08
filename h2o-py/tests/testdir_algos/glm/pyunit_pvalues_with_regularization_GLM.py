@@ -18,9 +18,9 @@ def p_values_with_regularization_check():
 
     # check model's p-values
     p_values_model = model.coef_with_p_values()['p_value']
-    print(p_values_model)
+    # print(p_values_model)
     p_values_model1 = model1.coef_with_p_values()['p_value']
-    print(p_values_model1)
+    # print(p_values_model1)
 
     assert p_values_model is not None
     assert len(p_values_model) > 0
@@ -73,7 +73,67 @@ def p_values_with_regularization_check():
         assert len(std_errs_for_submodels[i]) > 0
 
 
+def p_values_with_lambda_search_check():
+    prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    nlambdas = 5
+    model = glm(family="binomial", nlambdas=nlambdas, lambda_search=True, compute_p_values=True)
+    model.train(x=list(range(2, 9)), y=1, training_frame=prostate)
+    r = glm.getGLMRegularizationPath(model)
+    for l in range(len(r['lambdas'])):
+        coefficients_lambda_search = r['coefficients'][l]
+        z_values_lambda_search = r['z_values'][l]
+        p_values_lambda_search = r['p_values'][l]
+        std_errs_lambda_search = r['std_errs'][l]
+
+        m = glm(family='binomial', lambda_search=False, lambda_=r['lambdas'][l], compute_p_values=True)
+        m.train(x=list(range(2, 9)), y=1, training_frame=prostate)
+
+        coefs = m.coef_with_p_values()
+        coefficients_model = dict(zip(coefs["names"], coefs["coefficients"]))
+        # print("coefficients_lambda_search: ", coefficients_lambda_search)
+        # print("coefficients_model: ", coefficients_model)
+        z_values_model = dict(zip(coefs["names"], coefs['z_value']))
+        p_values_model = dict(zip(coefs["names"], coefs['p_value']))
+        std_errs_model = dict(zip(coefs["names"], coefs['std_error']))
+        assert z_values_lambda_search is not None
+        assert p_values_lambda_search is not None
+        assert std_errs_lambda_search is not None
+
+        assert z_values_model is not None
+        assert p_values_model is not None
+        assert std_errs_model is not None
+        # print("z_values_lambda_search: ", p_values_lambda_search)
+        # print("z_values_model: ", p_values_model)
+
+        # see the coefficions
+        assert len(z_values_lambda_search) == len(z_values_model)
+        assert len(p_values_lambda_search) == len(p_values_model)
+        assert len(std_errs_lambda_search) == len(std_errs_model)
+        # print("1: ", z_values_lambda_search)
+        # print("2: ", z_values_model)
+
+        epsilon_beta = 1e-4
+        epsilon_values = 1e-2
+        for name in r["names"]:
+            # if coefficients are different, do not test z/pValues and stdErrs
+            if abs(coefficients_model[name] - coefficients_lambda_search[name]) < epsilon_beta:
+                if name in z_values_lambda_search and name in z_values_model:
+                    assert ((str(z_values_lambda_search[name]).lower() == 'nan'
+                             and str(z_values_model[name]).lower() == 'nan')
+                            or (abs(z_values_lambda_search[name] - z_values_model[name]) < epsilon_values))
+                if name in p_values_lambda_search and name in p_values_model:
+                    assert ((str(p_values_lambda_search[name]).lower() == 'nan'
+                             and str(p_values_model[name]).lower() == 'nan')
+                            or (abs(p_values_lambda_search[name] - p_values_model[name]) < epsilon_values))
+                if name in std_errs_lambda_search and name in std_errs_model:
+                    assert ((str(std_errs_lambda_search[name]).lower() == 'nan'
+                             and str(std_errs_model[name]).lower() == 'nan')
+                            or (abs(std_errs_lambda_search[name] - std_errs_model[name]) < epsilon_values))
+
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(p_values_with_regularization_check)
+    pyunit_utils.standalone_test(p_values_with_lambda_search_check)
 else:
     p_values_with_regularization_check()
+    p_values_with_lambda_search_check()
