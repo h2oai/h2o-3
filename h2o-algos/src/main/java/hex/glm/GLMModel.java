@@ -1277,8 +1277,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             for (int i = 0; i < beta.length; ++i)
               if (beta[i] != 0) idxs[j++] = i;
             this.beta = ArrayUtils.select(beta, idxs);
-            if(zValues != null && zValues.length != this.beta.length) // zValues not shorten yet
+            if(zValues != null && zValues.length > this.beta.length) { // zValues not shorten yet
               this.zValues = ArrayUtils.select(zValues, idxs); // zValues must correspond to beta
+            }
           } else {
             this.beta = beta.clone();
             idxs = null;
