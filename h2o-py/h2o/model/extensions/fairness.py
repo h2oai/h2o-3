@@ -18,6 +18,28 @@ class Fairness:
 
         :return: Dictionary of frames. One frame is the overview, other frames contain dependence
                  of performance on threshold for each protected group.
+
+        :examples:
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+        >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+        >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+        >>> y = "default payment next month"
+        >>> protected_columns = ['SEX', 'EDUCATION']
+        >>>
+        >>> for c in [y] + protected_columns:
+        >>>     data[c] = data[c].asfactor()
+        >>>
+        >>> train, test = data.split_frame([0.8])
+        >>>
+        >>> reference = ["1", "2"]  # university educated single man
+        >>> favorable_class = "0"  # no default next month
+        >>>
+        >>> gbm = H2OGradientBoostingEstimator()
+        >>> gbm.train(x, y, training_frame=train)
+        >>>
+        >>> fairness_metrics = gbm.fairness_metrics(test, protected_columns, reference, favorable_class)
+        >>> display(fairness_metrics["overview"])
         """
         import h2o
         from h2o.utils.typechecks import assert_is_type
@@ -55,6 +77,27 @@ class Fairness:
         :param figsize: Tuple with figure size; passed directly to matplotlib.
         :param autoscale: If ``True``, try to guess when to use log transformation on X axis.
         :return: Matplotlib Figure object
+
+        :examples:
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+        >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+        >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+        >>> y = "default payment next month"
+        >>> protected_columns = ['SEX', 'EDUCATION']
+        >>>
+        >>> for c in [y] + protected_columns:
+        >>>     data[c] = data[c].asfactor()
+        >>>
+        >>> train, test = data.split_frame([0.8])
+        >>>
+        >>> reference = ["1", "2"]  # university educated man
+        >>> favorable_class = "0"  # no default next month
+        >>>
+        >>> gbm = H2OGradientBoostingEstimator()
+        >>> gbm.train(x, y, training_frame=train)
+        >>>
+        >>> gbm.pd_fair_plot(test, "AGE", protected_columns)
         """
         import h2o
         from h2o.explanation._explain import no_progress_block
@@ -123,6 +166,27 @@ class Fairness:
         :param figsize: Figure size; passed directly to Matplotlib
 
         :return: Matplotlib Figure object
+
+        :examples:
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+        >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+        >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+        >>> y = "default payment next month"
+        >>> protected_columns = ['SEX', 'EDUCATION']
+        >>>
+        >>> for c in [y] + protected_columns:
+        >>>     data[c] = data[c].asfactor()
+        >>>
+        >>> train, test = data.split_frame([0.8])
+        >>>
+        >>> reference = ["1", "2"]  # university educated man
+        >>> favorable_class = "0"  # no default next month
+        >>>
+        >>> gbm = H2OGradientBoostingEstimator()
+        >>> gbm.train(x, y, training_frame=train)
+        >>>
+        >>> gbm.fair_roc_plot(test, protected_columns, reference, favorable_class)
         """
         import h2o
         from h2o.explanation._explain import NumpyFrame
@@ -164,6 +228,27 @@ class Fairness:
         :param figsize: Figure size; passed directly to Matplotlib
 
         :return: Matplotlib Figure object
+
+        :examples:
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+        >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+        >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+        >>> y = "default payment next month"
+        >>> protected_columns = ['SEX', 'EDUCATION']
+        >>>
+        >>> for c in [y] + protected_columns:
+        >>>     data[c] = data[c].asfactor()
+        >>>
+        >>> train, test = data.split_frame([0.8])
+        >>>
+        >>> reference = ["1", "2"]  # university educated man
+        >>> favorable_class = "0"  # no default next month
+        >>>
+        >>> gbm = H2OGradientBoostingEstimator()
+        >>> gbm.train(x, y, training_frame=train)
+        >>>
+        >>> gbm.fair_pr_plot(test, protected_columns, reference, favorable_class)
         """
         import h2o
         from h2o.utils.typechecks import assert_is_type
@@ -199,11 +284,10 @@ class Fairness:
         plt.title("Precision-Recall Curve")
         return plt.gcf()
 
-    def shap_fair_plot(model, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1):
+    def shap_fair_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1):
         """
         SHAP summary plot for one feature with protected groups on y-axis.
 
-        :param model: H2O Model Object
         :param frame: H2OFrame
         :param column: String containing column name.
         :param protected_columns: List of categorical columns that contain sensitive information
@@ -214,6 +298,27 @@ class Fairness:
         :param jitter: Amount of jitter used to show the point density.
         :param alpha: Transparency of the points.
         :return: Matplotlib Figure object
+
+        :examples:
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+        >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+        >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+        >>> y = "default payment next month"
+        >>> protected_columns = ['SEX', 'EDUCATION']
+        >>>
+        >>> for c in [y] + protected_columns:
+        >>>     data[c] = data[c].asfactor()
+        >>>
+        >>> train, test = data.split_frame([0.8])
+        >>>
+        >>> reference = ["1", "2"]  # university educated man
+        >>> favorable_class = "0"  # no default next month
+        >>>
+        >>> gbm = H2OGradientBoostingEstimator()
+        >>> gbm.train(x, y, training_frame=train)
+        >>>
+        >>> gbm.shap_fair_plot(test, "AGE", protected_columns)
         """
         import h2o
         from h2o.explanation._explain import no_progress_block
@@ -223,7 +328,6 @@ class Fairness:
         from h2o.model.model_base import ModelBase
         from h2o.utils.typechecks import assert_is_type
 
-        assert_is_type(model, ModelBase)
         assert_is_type(frame, h2o.H2OFrame)
         assert_is_type(column, str)
         assert_is_type(protected_columns, [str])
@@ -245,7 +349,7 @@ class Fairness:
                 for i in range(len(protected_columns)):
                     filtered_hdf = filtered_hdf[filtered_hdf[protected_columns[i]] == pg[i], :]
                 if filtered_hdf.nrow == 0: continue
-                cont = NumpyFrame(model.predict_contributions(filtered_hdf))
+                cont = NumpyFrame(self.predict_contributions(filtered_hdf))
                 vals = NumpyFrame(filtered_hdf)[column]
                 maxes.append(np.nanmax(vals))
                 if len(contr_columns) == 1 and all((c not in cont.columns for c in contr_columns)):
@@ -288,6 +392,27 @@ class Fairness:
         :param figsize: Figure size; passed directly to Matplotlib
         :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
         :return: H2OExplanation object
+
+        :examples:
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+        >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+        >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+        >>> y = "default payment next month"
+        >>> protected_columns = ['SEX', 'EDUCATION']
+        >>>
+        >>> for c in [y] + protected_columns:
+        >>>     data[c] = data[c].asfactor()
+        >>>
+        >>> train, test = data.split_frame([0.8])
+        >>>
+        >>> reference = ["1", "2"]  # university educated single man
+        >>> favorable_class = "0"  # no default next month
+        >>>
+        >>> gbm = H2OGradientBoostingEstimator()
+        >>> gbm.train(x, y, training_frame=train)
+        >>>
+        >>> gbm.inspect_model_fairness(test, protected_columns, reference, favorable_class)
         """
         import h2o
         from h2o.explanation import H2OExplanation

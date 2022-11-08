@@ -1119,6 +1119,27 @@ class H2OInfogram(H2OEstimator):
                        and feature_selection_metrics and produces a single column.
         :param kwargs: Arguments passed to the constructor of the model_class
         :return: list of H2O models
+
+        :examples:
+        >>> from h2o.estimators import H2OGradientBoostingEstimator, H2OInfogram
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+        >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+        >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+        >>> y = "default payment next month"
+        >>> protected_columns = ['SEX', 'EDUCATION']
+        >>>
+        >>> for c in [y] + protected_columns:
+        >>>     data[c] = data[c].asfactor()
+        >>>
+        >>> train, test = data.split_frame([0.8])
+        >>>
+        >>> reference = ["1", "2"]  # university educated single man
+        >>> favorable_class = "0"  # no default next month
+        >>>
+        >>> ig = H2OInfogram(protected_columns=protected_columns)
+        >>> ig.train(x, y, training_frame=train)
+        >>>
+        >>> igg = ig.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train)
         """
         from h2o import H2OFrame
         from h2o.utils.typechecks import assert_is_type
@@ -1149,7 +1170,10 @@ class H2OInfogram(H2OEstimator):
             raise ValueError("Metric '{}' is not supported!".format(metric.lower()))
         if not callable(metric):
             metric_fn = metrics.get(metric.lower())
-        score["sort_metric"] = metric_fn(score, feature_selection_metrics)
+        if len(feature_selection_metrics) == 1:
+            score["sort_metric"] = score[:, feature_selection_metrics] # sum(.., axis=1) does work weird for single column -> sums it to one number
+        else:
+            score["sort_metric"] = metric_fn(score, feature_selection_metrics)
         score = score.sort("sort_metric", False)
         cols = [x[0] for x in score["column"].as_data_frame(False, False)]
         subsets = [cols[0:i] for i in range(1, len(cols)+1)]
