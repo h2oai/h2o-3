@@ -1126,9 +1126,13 @@ pd_ice_common <- function(model,
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
     factors_to_merge <- tail(names(factor_frequencies), n = -max_levels)
+    if (!is.null(row_index)) {
+      row_value <- newdata[row_index, column]
+      factors_to_merge <- factors_to_merge[factors_to_merge != row_value] # keep the row value category as a separate one
+    }
     newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
                                 newdata[[column]])
-    message(length(factor_frequencies) - max_levels, " least common factor levels were omitted from \"",
+    message(length(factors_to_merge), " least common factor levels were omitted from \"",
             column, "\" feature.")
   }
 
