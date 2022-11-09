@@ -1021,6 +1021,8 @@ position_jitter_density <-
         trans_xy <- function(X) {
 
           trans_single_group <- function(df) {
+            if (nrow(df) < 10)
+              return(df[["y"]])
             d <- stats::density(
               df[, "y"],
               adjust = params$bandwidth,
@@ -4205,19 +4207,44 @@ h2o.explain_row <- function(object,
 #' Partial dependence plot per protected group.
 #' @param model H2O Model Object
 #' @param newdata H2OFrame
-#' @param protected_cols List of categorical columns that contain sensitive information
-#'                       such as race, gender, age etc.
+#' @param protected_columns List of categorical columns that contain sensitive information
+#'                          such as race, gender, age etc.
 #' @param column String containing column name.
 #' @param autoscale If ``True``, try to guess when to use log transformation on X axis.
 #' @return ggplot2 object
+#'
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' y <- "default payment next month"
+#' protected_columns <- c('SEX', 'EDUCATION')
+#'
+#' for (col in c(y, protected_columns))
+#'   data[[col]] <- as.factor(data[[col]])
+#'
+#' splits <- h2o.splitFrame(data, 0.8)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#' reference <- c(SEX = "1", EDUCATION = "2")  # university educated man
+#' favorable_class <- "0" # no default next month
+#'
+#' gbm <- h2o.gbm(x, y, training_frame = train)
+#'
+#' h2o.pd_fair_plot(gbm, test, protected_columns, "AGE")
+#' }
+#'
 #' @export
-h2o.pd_fair_plot <- function(model, newdata, protected_cols, column, autoscale = TRUE) {
+h2o.pd_fair_plot <- function(model, newdata, protected_columns, column, autoscale = TRUE) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   pdps <- data.frame()
   pgs <- list()
-  for (pc in protected_cols) {
+  for (pc in protected_columns) {
     pgs[[pc]] <-
       as.character(unlist(as.list(h2o.unique(newdata[[pc]]))))
   }
@@ -4284,7 +4311,8 @@ h2o.pd_fair_plot <- function(model, newdata, protected_cols, column, autoscale =
                       paste0("log(", column, ")")
                     else
                       column) +
-      ggplot2::labs(title = sprintf("PDP across protected groups for %s", column)) +
+      ggplot2::labs(title = sprintf("PDP for protected groups for %s", column)) +
+      ggplot2::theme_bw() +
       ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   return(p)
 }
@@ -4294,12 +4322,37 @@ h2o.pd_fair_plot <- function(model, newdata, protected_cols, column, autoscale =
 #' @param model H2O Model Object
 #' @param newdata H2OFrame
 #' @param column String containing column name.
-#' @param protected_cols List of categorical columns that contain sensitive information
+#' @param protected_columns List of categorical columns that contain sensitive information
 #'                          such as race, gender, age etc.
 #' @param autoscale If TRUE, try to guess when to use log transformation on X axis.
-#' @returns ggplot2 object
+#' @returns list of ggplot2 objects
+#'
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' y <- "default payment next month"
+#' protected_columns <- c('SEX', 'EDUCATION')
+#'
+#' for (col in c(y, protected_columns))
+#'   data[[col]] <- as.factor(data[[col]])
+#'
+#' splits <- h2o.splitFrame(data, 0.8)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#' reference <- c(SEX = "1", EDUCATION = "2")  # university educated man
+#' favorable_class <- "0" # no default next month
+#'
+#' gbm <- h2o.gbm(x, y, training_frame = train)
+#'
+#' h2o.shap_fair_plot(gbm, test, protected_columns, "AGE")
+#' }
+#'
 #' @export
-h2o.shap_fair_plot <- function(model, newdata, column, protected_cols, autoscale = TRUE) {
+h2o.shap_fair_plot <- function(model, newdata, protected_columns, column, autoscale = TRUE) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -4307,7 +4360,7 @@ h2o.shap_fair_plot <- function(model, newdata, column, protected_cols, autoscale
 
   newdata_df <- as.data.frame(newdata)
 
-  newdata_df[["protected_group"]] <- do.call(paste, c(as.list(newdata_df[, protected_cols]), sep = ", "))
+  newdata_df[["protected_group"]] <- do.call(paste, c(as.list(newdata_df[, protected_columns]), sep = ", "))
 
   maxes <- if (is.factor(newdata[[column]]))
     1
@@ -4340,6 +4393,8 @@ h2o.shap_fair_plot <- function(model, newdata, column, protected_cols, autoscale
       ggplot2::ylab(paste("Contributions of", col_with_cat_name)) +
       # ggplot2::scale_color_gradient(low = "#00AAEE", high = "#FF1166") +
       ggplot2::scale_color_viridis_c() +
+      ggplot2::labs(title = paste0("SHAP plot for protected groups for column ", col_with_cat_name)) +
+      ggplot2::theme_bw() +
       ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   })
 }
@@ -4348,21 +4403,46 @@ h2o.shap_fair_plot <- function(model, newdata, column, protected_cols, autoscale
 #'
 #' @param model H2O Model Object
 #' @param newdata H2OFrame
-#' @param protected_cols List of categorical columns that contain sensitive information
+#' @param protected_columns List of categorical columns that contain sensitive information
 #'                          such as race, gender, age etc.
 #' @param reference List of values corresponding to a reference for each protected columns.
 #'                  If set to NULL, it will use the biggest group as the reference.
 #' @param favorable_class Positive/favorable outcome class of the response.
 #'
 #' @return ggplot2 object
+#'
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' y <- "default payment next month"
+#' protected_columns <- c('SEX', 'EDUCATION')
+#'
+#' for (col in c(y, protected_columns))
+#'   data[[col]] <- as.factor(data[[col]])
+#'
+#' splits <- h2o.splitFrame(data, 0.8)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#' reference <- c(SEX = "1", EDUCATION = "2")  # university educated man
+#' favorable_class <- "0" # no default next month
+#'
+#' gbm <- h2o.gbm(x, y, training_frame = train)
+#'
+#' h2o.roc_fair_plot(gbm, test, protected_columns = protected_columns, reference = reference, favorable_class = favorable_class)
+#' }
+#'
 #' @export
-h2o.roc_fair_plot <- function(model, newdata, protected_cols, reference, favorable_class) {
+h2o.roc_fair_plot <- function(model, newdata, protected_columns, reference, favorable_class) {
   .check_for_ggplot2()
   .data <- NULL
   fair <- h2o.calculate_fairness_metrics(
     model,
     newdata,
-    protected_cols = protected_cols,
+    protected_columns = protected_columns,
     reference = reference,
     favorable_class = favorable_class
   )
@@ -4387,7 +4467,8 @@ h2o.roc_fair_plot <- function(model, newdata, protected_cols, reference, favorab
     ) +
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_continuous(expand = c(0, 0.01)) +
-    ggplot2::labs(title = "ROC") +
+    ggplot2::labs(title = "ROC for protected groups") +
+    ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   return(p)
 }
@@ -4396,21 +4477,45 @@ h2o.roc_fair_plot <- function(model, newdata, protected_cols, reference, favorab
 #'
 #' @param model H2O Model Object
 #' @param newdata H2OFrame
-#' @param protected_cols List of categorical columns that contain sensitive information
+#' @param protected_columns List of categorical columns that contain sensitive information
 #'                          such as race, gender, age etc.
 #' @param reference List of values corresponding to a reference for each protected columns.
 #'                  If set to NULL, it will use the biggest group as the reference.
 #' @param favorable_class Positive/favorable outcome class of the response.
 #'
 #' @return ggplot2 object
+#'
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' y <- "default payment next month"
+#' protected_columns <- c('SEX', 'EDUCATION')
+#'
+#' for (col in c(y, protected_columns))
+#'   data[[col]] <- as.factor(data[[col]])
+#'
+#' splits <- h2o.splitFrame(data, 0.8)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#' reference <- c(SEX = "1", EDUCATION = "2")  # university educated man
+#' favorable_class <- "0" # no default next month
+#'
+#' gbm <- h2o.gbm(x, y, training_frame = train)
+#'
+#' h2o.pr_fair_plot(gbm, test, protected_columns = protected_columns, reference = reference, favorable_class = favorable_class)
+#' }
 #' @export
-h2o.pr_fair_plot <- function(model, newdata, protected_cols, reference, favorable_class) {
+h2o.pr_fair_plot <- function(model, newdata, protected_columns, reference, favorable_class) {
   .check_for_ggplot2()
   .data <- NULL
   fair <- h2o.calculate_fairness_metrics(
     model,
     newdata,
-    protected_cols = protected_cols,
+    protected_columns = protected_columns,
     reference = reference,
     favorable_class = favorable_class
   )
@@ -4435,7 +4540,8 @@ h2o.pr_fair_plot <- function(model, newdata, protected_cols, reference, favorabl
     ) +
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_continuous(expand = c(0, 0.01)) +
-    ggplot2::labs(title = "Precision-Recall Curve") +
+    ggplot2::labs(title = "Precision-Recall Curve for protected groups") +
+    ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   return(q)
 }
@@ -4445,20 +4551,46 @@ h2o.pr_fair_plot <- function(model, newdata, protected_cols, reference, favorabl
 #'
 #' @param model H2O Model Object
 #' @param newdata H2OFrame
-#' @param protected_cols List of categorical columns that contain sensitive information
-#'                       such as race, gender, age etc.
+#' @param protected_columns List of categorical columns that contain sensitive information
+#'                          such as race, gender, age etc.
 #' @param reference List of values corresponding to a reference for each protected columns.
 #'                  If set to NULL, it will use the biggest group as the reference.
 #' @param favorable_class Positive/favorable outcome class of the response.
 #' @param metrics Character vector of metrics to show.
 #' @return H2OExplanation object
+#'
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' y <- "default payment next month"
+#' protected_columns <- c('SEX', 'EDUCATION')
+#'
+#' for (col in c(y, protected_columns))
+#'   data[[col]] <- as.factor(data[[col]])
+#'
+#' splits <- h2o.splitFrame(data, 0.8)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#' reference <- c(SEX = "1", EDUCATION = "2")  # university educated man
+#' favorable_class <- "0" # no default next month
+#'
+#' gbm <- h2o.gbm(x, y, training_frame = train)
+#'
+#' h2o.inspect_model_fairness(gbm, test, protected_columns = protected_columns, reference = reference, favorable_class = favorable_class)
+#' }
+#'
+#' @export
 h2o.inspect_model_fairness <-
   function(model,
            newdata,
-           protected_cols,
+           protected_columns,
            reference,
            favorable_class,
-           metrics) {
+           metrics = c("auc", "aucpr", "f1", "p.value", "selectedRatio", "total")) {
     .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
@@ -4467,7 +4599,7 @@ h2o.inspect_model_fairness <-
     fair <- h2o.calculate_fairness_metrics(
       model,
       newdata,
-      protected_cols = protected_cols,
+      protected_columns = protected_columns,
       reference = reference,
       favorable_class = favorable_class
     )
@@ -4477,12 +4609,12 @@ h2o.inspect_model_fairness <-
     da <- fair$overview
     result[["overview"]] <- list(
       header = .h2o_explanation_header("Overview"),
-      data = da[, c(protected_cols, cols_to_show)],
+      data = da[, c(protected_columns, cols_to_show)],
       metrics = list()
     )
 
     da[["protected_group"]] <-
-      do.call(paste, c(as.list(da[, protected_cols]), sep = ", "))
+      do.call(paste, c(as.list(da[, protected_columns]), sep = ", "))
     da[["is_reference"]] <-
       da[["protected_group"]] == paste(reference, collapse = ", ")
 
@@ -4494,6 +4626,7 @@ h2o.inspect_model_fairness <-
           ggplot2::geom_col() +
           ggplot2::labs(title = metric) +
           ggplot2::xlab("protected_group") +
+          ggplot2::theme_bw() +
           ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45),
                          plot.title = ggplot2::element_text(hjust = 0.5))
       if (startsWith(metric, "AIR")) {
@@ -4528,11 +4661,11 @@ h2o.inspect_model_fairness <-
 
     result[["ROC"]] <- list(
       header = .h2o_explanation_header("ROC"),
-      plot = h2o.roc_fair_plot(model, newdata, protected_cols, reference, favorable_class)
+      plot = h2o.roc_fair_plot(model, newdata, protected_columns, reference, favorable_class)
     )
     result[["PR"]] <- list(
       header = .h2o_explanation_header("Precision-Recall Curve"),
-      plot = h2o.pr_fair_plot(model, newdata, protected_cols, reference, favorable_class)
+      plot = h2o.pr_fair_plot(model, newdata, protected_columns, reference, favorable_class)
     )
 
     suppressWarnings(
@@ -4544,13 +4677,13 @@ h2o.inspect_model_fairness <-
 
     result[["PDP"]] <- list()
     for (v in rev(pi$Variable)) {
-      result[["PDP"]][[v]] <- h2o.pd_fair_plot(model, newdata, protected_cols, v)
+      result[["PDP"]][[v]] <- h2o.pd_fair_plot(model, newdata, protected_columns, v)
     }
     if (.is_h2o_tree_model(model))
       result[["SHAP"]] <- list()
     for (v in rev(pi$Variable)) {
       if (.is_h2o_tree_model(model)) {
-          result[["SHAP"]][[v]] <- h2o.shap_fair_plot(model, newdata, v, protected_cols)
+          result[["SHAP"]][[v]] <- h2o.shap_fair_plot(model, newdata, protected_columns, v)
       }
     }
     class(result) <- "H2OExplanation"

@@ -3458,7 +3458,29 @@ def disparate_analysis(models, frame, protected_columns, reference, favorable_cl
                       If set to ``None``, it will use the biggest group as the reference.
     :param favorable_class: Positive/favorable outcome class of the response.
 
-    :return:
+    :return: H2OFrame
+
+    :examples:
+    >>> from h2o.estimators import H2OGradientBoostingEstimator, H2OInfogram
+    >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+    >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+    >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+    >>> y = "default payment next month"
+    >>> protected_columns = ['SEX', 'EDUCATION']
+    >>>
+    >>> for c in [y] + protected_columns:
+    >>>     data[c] = data[c].asfactor()
+    >>>
+    >>> train, test = data.split_frame([0.8])
+    >>>
+    >>> reference = ["1", "2"]  # university educated single man
+    >>> favorable_class = "0"  # no default next month
+    >>>
+    >>> ig = H2OInfogram(protected_columns=protected_columns)
+    >>> ig.train(x, y, training_frame=train)
+    >>>
+    >>> igg = ig.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train)
+    >>> h2o.explanation.disparate_analysis(igg, test, protected_columns, reference, favorable_class)
     """
     import numpy as np
     from collections import defaultdict

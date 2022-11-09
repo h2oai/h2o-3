@@ -305,7 +305,7 @@ fairness_metrics_are_correct_test <- function() {
       print(model_id)
       m <- h2o.getModel(model_id)
       for (fav_class in c("0", "1")) {
-        java_metrics <- h2o.calculate_fairness_metrics(m, test, protected_cols = pcols, reference = ref[pcols], favorable_class = fav_class)$overview
+        java_metrics <- h2o.calculate_fairness_metrics(m, test, protected_columns = pcols, reference = ref[pcols], favorable_class = fav_class)$overview
         R_metrics <- .calculate_disparate_measures(m, test, sensitive_features = pcols, favorable_class = fav_class, reference_groups = ref[pcols])
         names(java_metrics) <- tolower(names(java_metrics))
         java_metrics$air <- java_metrics$air_selectedratio
