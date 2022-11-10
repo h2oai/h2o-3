@@ -67,9 +67,7 @@ source("../../../scripts/h2o-r-test-setup.R")
     } else {
       y <- model@allparameters$y
     }
-
     is_classification <- is.factor(newdata[[y]])
-
     if (missing(criterion) || criterion == "AUTO") {
       if (is_classification) {
         criterion <- "SelectedRatio"
@@ -80,7 +78,6 @@ source("../../../scripts/h2o-r-test-setup.R")
 
     newdata_df <- as.data.frame(newdata)
     predictions <- as.data.frame(predict(model, newdata)$predict)
-
     results <- expand.grid(lapply(sensitive_features, function(col)
       unlist(c(
         NA, levels(newdata_df[[col]])
@@ -294,15 +291,46 @@ source("../../../scripts/h2o-r-test-setup.R")
   )
 }
 
-fairness_metrics_are_correct_test <- function() {
-  attach(.get_data())
-  aml <- h2o.automl(x, y, training_frame = train, max_models = 12)
 
-  ref <- c(ethnic = "white", sex = "M")
-  for (pcols in list("ethnic", "sex", c("ethnic", "sex"))) {
-    print(pcols)
+.get_data_taiwan <- function() {
+  data <- h2o.importFile(locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+  x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2',  'PAY_4',  'PAY_6', 'BILL_AMT1', 'BILL_AMT2',
+         'BILL_AMT4',  'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT4', 'PAY_AMT6')
+  y <- "default payment next month"
+  protected_classes <- tolower(c('SEX', 'EDUCATION'))
+  y <- make.names(y)
+  x <- tolower(make.names(x))
+  names(data) <- make.names(tolower(names(data)))
+
+  for (col in c(y, protected_classes)) {
+    print(col)
+    data[[col]] <- as.factor(data[[col]])
+  }
+
+  splits <- h2o.splitFrame(data, 0.8)
+  train <- splits[[1]]
+  test <- splits[[2]]
+  reference <- c(sex="1", education="2")  # university educated man
+  favorable_class <- "0" # no default next month
+
+  list(
+    train=train,
+    test=test,
+    x=x,
+    y=y,
+    protected_cols=protected_classes,
+    reference=reference,
+    favorable_class=favorable_class
+  )
+}
+
+
+fairness_metrics_are_correct_test <- function() {
+  attach(.get_data_taiwan())
+  aml <- h2o.automl(x, y, training_frame = train, max_models = 2)
+  ref <- reference
+  for (pcols in list('sex', 'education', protected_cols)) {
     for (model_id in as.character(as.list(aml@leaderboard$model_id))) {
-      print(model_id)
       m <- h2o.getModel(model_id)
       for (fav_class in c("0", "1")) {
         java_metrics <- h2o.calculate_fairness_metrics(m, test, protected_columns = pcols, reference = ref[pcols], favorable_class = fav_class)$overview
@@ -351,33 +379,6 @@ infogram_train_subset_models_works_test <- function() {
   expect_true(any((da$air_min > 0.8) & (da$air_max < 1.25))) # four-fifths rule
 }
 
-.get_data_taiwan <- function() {
-  data <- h2o.importFile(locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-  x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-       'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
-  y <- "default payment next month"
-  protected_classes <- c('SEX', 'EDUCATION', 'MARRIAGE')
-
-  for (col in c(y, protected_classes))
-    data[[col]] <- as.factor(data[[col]])
-
-  splits <- h2o.splitFrame(data, 0.8)
-  train <- splits[[1]]
-  test <- splits[[2]]
-  reference <- c(SEX="1", EDUCATION="2", MARRIAGE="2")  # university educated single man
-  favorable_class <- "0" # no default next month
-
-  list(
-    train=train,
-    test=test,
-    x=x,
-    y=y,
-    protected_cols=protected_classes,
-    reference=reference,
-    favorable_class=favorable_class
-  )
-}
-
 
 infogram_train_subset_models_works_taiwan_test <- function() {
   attach(.get_data_taiwan())
@@ -406,82 +407,82 @@ infogram_train_subset_models_works_taiwan_test <- function() {
 
 
 infogram_train_subset_models_works_with_multiple_metrics_test <- function () {
-  attach(.get_data())
+  attach(.get_data_taiwan())
   ig_fair <- h2o.infogram(x = x, y = y, training_frame = train, protected_columns = protected_cols)
   ig_core <- h2o.infogram(x = x, y = y, training_frame = train)
 
   # Basic fair
   da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Fair with relevance
   da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = "relevance_index")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Fair with relevance and safety
   da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = c("safety_index", "relevance_index"))
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Fair with relevance and safety and cmi_raw
   da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = c("safety_index", "relevance_index", "cmi_raw"))
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Fair with relevance and manhattan distance
   da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = "relevance_index", metric = "manhattan")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Fair with relevance and safety and manhattan distance
   da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = c("safety_index", "relevance_index"), metric = "manhattan")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Fair with relevance and maximum distance
   da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = "relevance_index", metric = "maximum")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Fair with relevance and safety and maximum distance
   da <- h2o.infogram_train_subset_models(ig_fair, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = c("safety_index", "relevance_index"), metric = "maximum")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Basic core
   da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # core with total information
   da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = "total_information")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Core with total and net information
   da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = c("total_information", "net_information"))
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Core with total and net information and cmi_raw
   da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = c("total_information", "net_information", "cmi_raw"))
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Core with total and manhattan distance
   da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = "total_information", metric = "manhattan")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 
   # Core with total and net information and manhattan distance
   da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
                                          feature_selection_metrics = c("total_information", "net_information"), metric = "manhattan")
-  expect_equal(nrow(da), 9)
+  expect_equal(nrow(da), length(x))
 }
 
 doSuite("Fairness tests", makeSuite(
   fairness_metrics_are_correct_test,
-  infogram_train_subset_models_works_test,
+  #infogram_train_subset_models_works_test,  # uses data outside of smalldata; useful for debugging
   infogram_train_subset_models_works_taiwan_test,
   infogram_train_subset_models_works_with_multiple_metrics_test
 ))

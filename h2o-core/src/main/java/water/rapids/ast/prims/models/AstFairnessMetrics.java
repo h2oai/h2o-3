@@ -432,6 +432,8 @@ public class AstFairnessMetrics extends AstPrimitive {
             throw new H2OIllegalArgumentException("Model has to be a binomial model!");
         }
         for (String pc : protectedCols) {
+            if (fr.find(pc) == -1)
+                throw new RuntimeException(pc + " was not found in the frame!");
             if (!fr.vec(pc).isCategorical())
                 throw new H2OIllegalArgumentException(pc + " has to be a categorical column!");
         }
