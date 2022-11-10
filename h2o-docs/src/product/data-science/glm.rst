@@ -26,6 +26,11 @@ MOJO Support
 
 GLM supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
+Additional Resources
+~~~~~~~~~~~~~~~~~~~~
+
+* `GLM Booklet <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf>`__
+
 Defining a GLM Model
 ~~~~~~~~~~~~~~~~~~~~
 
