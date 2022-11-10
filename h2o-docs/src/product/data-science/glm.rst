@@ -1570,9 +1570,6 @@ than (N/CPUs), O is dominated by p.
 
   :math:`Complexity = O(p^3 + N*p^2)`
 
-For more information about how GLM works, refer to the `Generalized
-Linear Modeling booklet <http://h2o.ai/resources>`__.
-
 References
 ~~~~~~~~~~
 
