@@ -249,14 +249,20 @@ def class_extensions():
             return [model]
 
 
-    def train_subset_models(self, model_class, y, training_frame, feature_selection_metrics=None,
-                            metric="euclidean", **kwargs):
+    def train_subset_models(self, model_class, y, training_frame, test_frame, protected_columns, reference,
+                            favorable_class, feature_selection_metrics=None, metric="euclidean", **kwargs):
         """
         Train models using different feature subsets selected by infogram.
 
         :param model_class: H2O Estimator class, H2OAutoML, or H2OGridSearch
         :param y: response column
         :param training_frame: training frame
+        :param test_frame: test frame
+        :param protected_columns: List of categorical columns that contain sensitive information
+                                  such as race, gender, age etc.
+        :param reference: List of values corresponding to a reference for each protected columns.
+                          If set to ``None``, it will use the biggest group as the reference.
+        :param favorable_class: Positive/favorable outcome class of the response.
         :param feature_selection_metrics: column names from infogram's admissible score frame that are used
                                           for the feature subset selection. Defaults to ``safety_index`` for fair infogram
                                           and ``admissible_index`` for the core infogram.
@@ -264,7 +270,7 @@ def class_extensions():
                        of "euclidean", "manhattan", "maximum", or a function with that takes the admissible score frame
                        and feature_selection_metrics and produces a single column.
         :param kwargs: Arguments passed to the constructor of the model_class
-        :return: list of H2O models
+        :return: H2OFrame
 
         :examples:
         >>> from h2o.estimators import H2OGradientBoostingEstimator, H2OInfogram
@@ -285,9 +291,10 @@ def class_extensions():
         >>> ig = H2OInfogram(protected_columns=protected_columns)
         >>> ig.train(x, y, training_frame=train)
         >>>
-        >>> igg = ig.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train)
+        >>> ig.train_subset_models(H2OGradientBoostingEstimator, y, train, test, protected_columns, reference, favorable_class)
         """
         from h2o import H2OFrame
+        from h2o.explanation import disparate_analysis
         from h2o.utils.typechecks import assert_is_type
 
         assert hasattr(model_class, "train")
@@ -326,7 +333,8 @@ def class_extensions():
         models = []
         for x in subsets:
             models.extend(self._train_and_get_models(model_class, x, y, training_frame, **kwargs))
-        return models
+
+        return disparate_analysis(models, test_frame, protected_columns, reference, favorable_class)
 
 
 extensions = dict(

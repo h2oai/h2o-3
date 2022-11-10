@@ -3476,11 +3476,13 @@ def disparate_analysis(models, frame, protected_columns, reference, favorable_cl
     >>> reference = ["1", "2"]  # university educated single man
     >>> favorable_class = "0"  # no default next month
     >>>
-    >>> ig = H2OInfogram(protected_columns=protected_columns)
-    >>> ig.train(x, y, training_frame=train)
+    >>> gbm1 = H2OGradientBoostingEstimator()
+    >>> gbm1.train(x, y, train)
     >>>
-    >>> igg = ig.train_subset_models(H2OGradientBoostingEstimator, y=y, training_frame=train)
-    >>> h2o.explanation.disparate_analysis(igg, test, protected_columns, reference, favorable_class)
+    >>> gbm2 = H2OGradientBoostingEstimator(ntrees=5)
+    >>> gbm2.train(x, y, train)
+    >>>
+    >>> h2o.explanation.disparate_analysis([gbm1, gbm2], test, protected_columns, reference, favorable_class)
     """
     import numpy as np
     from collections import defaultdict
