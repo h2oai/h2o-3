@@ -29,6 +29,47 @@ public class GLMPValuesWithRegularizationTest extends TestUtil {
    * Test p-values, z-values and standard error calculations for binomial family with regularization.
    */
   @Test
+  public void testBinomial() {
+    Scope.enter();
+    try {
+      Frame bigFrame = parseAndTrackTestFile("smalldata/gam_test/synthetic_20Cols_binomial_20KRows.csv");
+      String[] ignoreCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
+      GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+      parms._family = binomial;
+      parms._train = bigFrame._key;
+      parms._response_column = "response";
+      parms._ignored_columns = ignoreCols;
+      parms._compute_p_values = true;
+      parms._lambda = new double[]{0.7, 0.5}; // largest lambda at the beginning
+      parms._standardize = false; // has to be false for calculating p-values
+      parms._remove_collinear_columns = true; // has to be true for calculating p-values
+      GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+      assert model != null;
+      System.out.println(model._output._submodels.length);
+      // manually calculate standard error for final model and for both submodels
+      double[] standardErr = manualGenSE(bigFrame, model._output.beta()); // redundant, calculate just for control
+      double[] standardErrSub0 = manualGenSE(bigFrame, model._output._submodels[0].beta);
+      double[] standardErrSub1 = manualGenSE(bigFrame, model._output._submodels[1].beta);
+      // assert final model
+      assertStandardErr(model, standardErr, 1, 1e-1, 1e-2, 1e-2);
+      // assert first submodel
+      assertStandardErrForSubmodels(model._output._submodels[0],
+              model._output._training_metrics.residual_degrees_of_freedom(),
+              standardErrSub0, 1, 1e-2, 1e-2, 1e-2);
+      // assert second submodel
+      assertStandardErrForSubmodels(model._output._submodels[1],
+              model._output._training_metrics.residual_degrees_of_freedom(),
+              standardErrSub1, 1, 1e-2, 1e-2, 1e-2);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /**
+   * Test p-values, z-values and standard error calculations for binomial family with regularization and cross validation.
+   */
+  @Test
   public void testBinomialWithCrossValidation() {
     Scope.enter();
     try {
@@ -41,32 +82,22 @@ public class GLMPValuesWithRegularizationTest extends TestUtil {
       parms._ignored_columns = ignoreCols;
       parms._compute_p_values = true;
       parms._lambda = new double[]{0.7, 0.5}; // largest lambda at the beginning
-//      parms._alpha = new double[]{0.7, 0.5};
       parms._standardize = false; // has to be false for calculating p-values
-      parms._remove_collinear_columns = false; // has to be true for calculating p-values
+      parms._remove_collinear_columns = true; // has to be true for calculating p-values
       parms._nfolds = 3;
-//      parms._keep_cross_validation_models = true;
       GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
       assert model != null;
       System.out.println(model._output._submodels.length);
-      System.out.println(model._output._submodels[0].lambda_value);
       // manually calculate standard error for final model and for both submodels
       double[] standardErr = manualGenSE(bigFrame, model._output.beta()); // redundant, calculate just for control
       double[] standardErrSub0 = manualGenSE(bigFrame, model._output._submodels[0].beta);
-      double[] standardErrSub1 = manualGenSE(bigFrame, model._output._submodels[1].beta);
-//      double[] standardErrSub3 = manualGenSE(bigFrame, model._output._submodels[2].beta);
       // assert final model
-      assertStandardErr(model, standardErr, 1, 1e-2, 1e-2, 1e-2);
+      assertStandardErr(model, standardErr, 1, 1e-1, 1e-2, 1e-2);
       // assert first submodel
       assertStandardErrForSubmodels(model._output._submodels[0],
               model._output._training_metrics.residual_degrees_of_freedom(),
               standardErrSub0, 1, 1e-2, 1e-2, 1e-2);
-      // assert second submodel
-      assertStandardErrForSubmodels(model._output._submodels[1],
-              model._output._training_metrics.residual_degrees_of_freedom(),
-              standardErrSub1, 1, 1e-2, 1e-2, 1e-2);
-      // 0.024351, 0.994726, 0.076867, 0.215071, 0.058557, 0.094051, 0.229239, 0.069782, 0.274645, 0.075530, 0.204998
     } finally {
       Scope.exit();
     }
@@ -76,7 +107,7 @@ public class GLMPValuesWithRegularizationTest extends TestUtil {
    * Test p-values, z-values and standard error calculations for binomial family with regularization.
    */
   @Test
-  public void testBinomialLambdaSearch() {
+  public void testBinomialLambdaSearchAndCrossValidation() {
     Scope.enter();
     try {
       Frame bigFrame = parseAndTrackTestFile("smalldata/gam_test/synthetic_20Cols_binomial_20KRows.csv");
@@ -94,16 +125,16 @@ public class GLMPValuesWithRegularizationTest extends TestUtil {
       parms._keep_cross_validation_models = false;
       GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
+      assert model != null;
       System.out.println(model._output._submodels.length);
       System.out.println(Arrays.stream(model._output._submodels).map(a -> a.lambda_value + "-" + a.alpha_value).collect(Collectors.joining(", ")));
       // manually calculate standard error for final model and for both submodels
-      assert model != null;
       double[] standardErr = manualGenSE(bigFrame, model._output.beta()); // redundant, calculate just for control
       double[] standardErrSub0 = manualGenSE(bigFrame, model._output._submodels[0].beta);
       double[] standardErrSub1 = manualGenSE(bigFrame, model._output._submodels[1].beta);
       assertStandardErrNotEmpty(model);
       // assert final model
-      assertStandardErr(model, standardErr, 1, 1e1, 1e-2, 1e-1);
+      assertStandardErr(model, standardErr, 1, 1e1, 1e-1, 1e-1);
       // assert first submodel
       assertStandardErrForSubmodels(model._output._submodels[0],
               model._output._training_metrics.residual_degrees_of_freedom(),
@@ -112,7 +143,6 @@ public class GLMPValuesWithRegularizationTest extends TestUtil {
       assertStandardErrForSubmodels(model._output._submodels[1],
               model._output._training_metrics.residual_degrees_of_freedom(),
               standardErrSub1, 1, 1e1, 1e-2, 1e-2);
-      // 0.024351, 0.994726, 0.076867, 0.215071, 0.058557, 0.094051, 0.229239, 0.069782, 0.274645, 0.075530, 0.204998
     } finally {
       Scope.exit();
     }
@@ -171,7 +201,6 @@ public class GLMPValuesWithRegularizationTest extends TestUtil {
       parms._train = bigFrame._key;
       parms._response_column = "response";
       parms._ignored_columns = ignoreCols;
-      parms._max_iterations = 1;
       parms._compute_p_values = true;
       parms._lambda = new double[]{1.0, 0.5}; // largest lambda at the beginning
       parms._lambda_search = true;
@@ -419,14 +448,12 @@ public class GLMPValuesWithRegularizationTest extends TestUtil {
     double[] zValuesManual = genZValues(model._output.beta(), manualStdErr, reg);
     double[] pValuesManual = genPValues(zValuesManual, model._output.dispersionEstimated(),
             model._output._training_metrics.residual_degrees_of_freedom());
-    System.out.println(Arrays.toString(zValues));
-    System.out.println(Arrays.toString(zValuesManual));
-    assertArrayEquals(zValuesManual, zValues, tot1);
-    assertArrayEquals(pValuesManual, pValues, tot3);
-    // check stdErrs ignoring NaN values as they are caused by zero betta values
+    // check equality ignoring NaN values as they are caused by zero betta values
     for (int i = 0; i < stdErr.length; i++) {
       if (!Double.isNaN(stdErr[i])) {
-        assertEquals(manualStdErr[i], stdErr[i], tot2);
+        assertEquals(zValuesManual[i], zValues[i], tot1);
+        assertEquals(pValuesManual[i], pValues[i], tot2);
+        assertEquals(manualStdErr[i], stdErr[i], tot3);
       }
     }
   }
@@ -449,12 +476,12 @@ public class GLMPValuesWithRegularizationTest extends TestUtil {
     double[] pValues = submodel.pValues(residualDegreesOfFreedom);
     double[] zValuesManual = genZValues(submodel.beta, manualStdErr, reg);
     double[] pValuesManual = genPValues(zValuesManual, submodel.dispersionEstimated, residualDegreesOfFreedom);
-    assertArrayEquals(zValuesManual, zValues, tot1);
-    assertArrayEquals(pValuesManual, pValues, tot3);
-    // check stdErrs ignoring NaN values as they are caused by zero betta values
+    // check equality ignoring NaN values as they are caused by zero betta values
     for (int i = 0; i < stdErr.length; i++) {
       if (!Double.isNaN(stdErr[i])) {
-        assertEquals(manualStdErr[i], stdErr[i], tot2);
+        assertEquals(zValuesManual[i], zValues[i], tot1);
+        assertEquals(pValuesManual[i], pValues[i], tot2);
+        assertEquals(manualStdErr[i], stdErr[i], tot3);
       }
     }
   }
