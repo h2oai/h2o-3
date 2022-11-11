@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from .compatibility import *  # NOQA
 
 import csv
+import contextlib
 import io
 import itertools
 import os
@@ -567,3 +568,12 @@ class InMemoryZipArch(object):
         if self._file_name is None:
             return
         self.write_to_file(self._file_name)
+
+
+@contextlib.contextmanager
+def as_resource(res):
+    try:
+        yield res
+    finally:
+        if hasattr(res, "close") and callable(res.close):
+            res.close()

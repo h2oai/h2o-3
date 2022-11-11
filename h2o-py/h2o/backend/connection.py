@@ -36,7 +36,7 @@ from h2o.model.metrics import make_metrics
 from h2o.schemas import H2OMetadataV3, H2OErrorV3, H2OModelBuilderErrorV3, define_classes_from_schema
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.metaclass import CallableString, backwards_compatibility, h2o_meta
-from h2o.utils.shared_utils import stringify_list, stringify_dict
+from h2o.utils.shared_utils import stringify_list, stringify_dict, as_resource
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 
 __all__ = ("H2OConnection", "H2OConnectionConf", )
@@ -486,34 +486,35 @@ class H2OConnection(h2o_meta()):
             self._cookies = ";".join(self._cookies)
 
         # Make the request
-        start_time = time.time()
-        try:
-            self._log_start_transaction(endpoint, request_data, json, filename, params)
-            args = self._request_args()
-            resp = requests.request(method=method, url=url, data=request_data, json=json, params=params,
-                                    stream=stream, **args)
-            if isinstance(save_to, types.FunctionType):
-                save_to = save_to(resp)
-            self._log_end_transaction(start_time, resp)
-            return self._process_response(resp, save_to)
+        with as_resource(request_data) as rd:
+            start_time = time.time()
+            try:
+                self._log_start_transaction(endpoint, rd, json, filename, params)
+                args = self._request_args()
+                resp = requests.request(method=method, url=url, data=rd, json=json, params=params,
+                                        stream=stream, **args)
+                if isinstance(save_to, types.FunctionType):
+                    save_to = save_to(resp)
+                self._log_end_transaction(start_time, resp)
+                return self._process_response(resp, save_to)
 
-        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-            if self._local_server and not self._local_server.is_running():
-                self._log_end_exception("Local server has died.")
-                raise H2OConnectionError("Local server has died unexpectedly. RIP.")
-            else:
+            except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+                if self._local_server and not self._local_server.is_running():
+                    self._log_end_exception("Local server has died.")
+                    raise H2OConnectionError("Local server has died unexpectedly. RIP.")
+                else:
+                    self._log_end_exception(e)
+                    raise H2OConnectionError("Unexpected HTTP error: %s" % e)
+            except requests.exceptions.Timeout as e:
                 self._log_end_exception(e)
-                raise H2OConnectionError("Unexpected HTTP error: %s" % e)
-        except requests.exceptions.Timeout as e:
-            self._log_end_exception(e)
-            elapsed_time = time.time() - start_time
-            raise H2OConnectionError("Timeout after %.3fs" % elapsed_time)
-        except H2OResponseError as e:
-            err = e.args[0]
-            if isinstance(err, H2OErrorV3):
-                err.endpoint = endpoint
-                err.payload = (request_data, json, filename, params)
-            raise
+                elapsed_time = time.time() - start_time
+                raise H2OConnectionError("Timeout after %.3fs" % elapsed_time)
+            except H2OResponseError as e:
+                err = e.args[0]
+                if isinstance(err, H2OErrorV3):
+                    err.endpoint = endpoint
+                    err.payload = (rd, json, filename, params)
+                raise
 
     def _request_args(self):
         headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
