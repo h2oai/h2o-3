@@ -26,6 +26,7 @@ public class JythonCFuncLoader extends CFuncLoader {
     String clsName = jfuncName.substring(idxLastDot+1);
 
     PySystemState pySystemState = new PySystemState();
+    pySystemState.setClassLoader(classLoader);
     ClassLoader savedCtxCl = Thread.currentThread().getContextClassLoader();
     try {
       Thread.currentThread().setContextClassLoader(classLoader);
