@@ -28,8 +28,8 @@ Defining a CoxPH Model
 
 Parameters are optional unless specified as *required*.
 
-Algorithm-specific parameters parameters
-''''''''''''''''''''''''''''''''''''''''
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
 -  `stop_column <algo-params/stop_column.html>`__: *Required* The name of an integer column in the **source** data set representing the stop time. 
 

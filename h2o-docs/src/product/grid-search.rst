@@ -758,6 +758,8 @@ The following lists show the shared hyperparameters between their respective gro
 Supervised Algorithms Common Hyperparameters
 ''''''''''''''''''''''''''''''''''''''''''''
 
+These the are shared common hyperparameters amongst the supervised algorithms.
+
 .. |yes| image:: /images/checkmark.png
    :scale: 3%
    :align: middle
@@ -802,6 +804,8 @@ Supervised Algorithms Common Hyperparameters
 Unsupervised Algorithms Common Hyperparameters
 ''''''''''''''''''''''''''''''''''''''''''''''
 
+These are the shared common hyperparameters amongst the unsupervised algorithms.
+
 +---------------------------+------------+-------+-----------+-----------+---------+-------+
 | Parameters                | Aggregator | GLRM  | Isolation | Extended  | K-Means | PCA   |
 |                           |            |       | Forest    | Isolation |         |       |
@@ -828,6 +832,8 @@ Unsupervised Algorithms Common Hyperparameters
 
 Shared Tree Algorithm Hyperparameters
 '''''''''''''''''''''''''''''''''''''
+
+These are the shared tree algorithm hyperparameters.
 
 +--------------------------------------+-------+-------+---------+-----------+------------------+
 |                                      | GBM   | DRF   | XGBoost | Isolation | Extended         |
@@ -875,6 +881,8 @@ Shared Tree Algorithm Hyperparameters
 Shared GLM Family Hyperparameters
 '''''''''''''''''''''''''''''''''
 
+These are the shared GLM family hyperparameters.
+
 +----------------------------+-------+-------+-------+-----------+
 |                            | GAM   | GLM   | ANOVA | Model     |
 |                            |       |       | GLM   | Selection |
@@ -894,6 +902,8 @@ Shared GLM Family Hyperparameters
 
 Algorithm-specific Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These are the hyperparameters that are specific to each algorithm.
 
 Aggregator Hyperparameters
 ''''''''''''''''''''''''''
@@ -916,7 +926,7 @@ AutoML Hyperparameters
 CoxPH Hyperparameters
 '''''''''''''''''''''
 
-- ``max_iterations``
+No algorithm-specific hyperparameters.
 
 Deep Learning Hyperparameters
 '''''''''''''''''''''''''''''
@@ -984,6 +994,7 @@ Extended Isolation Forest Hyperparameters
 
 GBM Hyperparameters
 '''''''''''''''''''
+
 - ``huber_alpha`` 
 - ``learn_rate_annealing`` 
 - ``pred_noise_bandwidth`` 
@@ -1025,6 +1036,11 @@ GLRM Hyparameters
 
 Isolation Forest Hyperparameters
 ''''''''''''''''''''''''''''''''
+
+No algorithm-specific hyperparameters.
+
+Isotonic Regression Hyperparameters
+'''''''''''''''''''''''''''''''''''
 
 No algorithm-specific hyperparameters.
 
