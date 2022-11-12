@@ -1,5 +1,6 @@
 package water.udf;
 
+import org.python.core.Py;
 import org.python.core.PySystemState;
 
 /**
@@ -26,12 +27,14 @@ public class JythonCFuncLoader extends CFuncLoader {
     String clsName = jfuncName.substring(idxLastDot+1);
 
     PySystemState pySystemState = new PySystemState();
-    pySystemState.setClassLoader(classLoader);
     ClassLoader savedCtxCl = Thread.currentThread().getContextClassLoader();
+    ClassLoader savedPyStateCl = Py.getSystemState().getClassLoader();
     try {
       Thread.currentThread().setContextClassLoader(classLoader);
+      Py.getSystemState().setClassLoader(classLoader);
       return new JythonObjectFactory(pySystemState, targetKlazz, module, clsName).createObject();
     } finally {
+      Py.getSystemState().setClassLoader(savedPyStateCl);
       Thread.currentThread().setContextClassLoader(savedCtxCl);
     }
   }
