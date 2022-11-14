@@ -31,6 +31,20 @@ import sys
 import tempfile
 import zipfile
 
+
+try:
+    from contextlib import AbstractContextManager
+except ImportError:
+    import abc
+    from future.utils import with_metaclass
+    class AbstractContextManager(with_metaclass(abc.ABCMeta)):
+        @classmethod
+        def __subclasshook__(cls, C):
+            if cls is AbstractContextManager:
+                return all(any(m in SC.__dict__ for SC in C.__mro__) for m in ("__enter__", "__exit__"))
+            return NotImplemented
+
+
 from h2o.backend.server import H2OLocalServer
 from h2o.exceptions import H2OValueError
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
@@ -571,9 +585,9 @@ class InMemoryZipArch(object):
 
 
 @contextlib.contextmanager
-def as_resource(res):
-    try:
-        yield res
-    finally:
-        if hasattr(res, "close") and callable(res.close):
-            res.close()
+def as_resource(o):
+    if isinstance(o, AbstractContextManager):
+        with o as res:
+            yield res
+    else:
+        yield o
