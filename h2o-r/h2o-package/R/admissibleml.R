@@ -15,9 +15,11 @@
 #'\dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' data <- h2o.importFile(paste0("https://s3.amazonaws.com/h2o-public-test-data/smalldata/",
+#'                               "admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1',
+#'        'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2',
+#'        'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
 #' y <- "default payment next month"
 #' protected_columns <- c('SEX', 'EDUCATION')
 #'
@@ -32,7 +34,8 @@
 #'
 #' gbm <- h2o.gbm(x, y, training_frame = train)
 #'
-#' h2o.calculate_fairness_metrics(gbm, test, protected_columns = protected_columns, reference = reference, favorable_class = favorable_class)
+#' h2o.calculate_fairness_metrics(gbm, test, protected_columns = protected_columns,
+#'                                reference = reference, favorable_class = favorable_class)
 #' }
 #' @export
 h2o.calculate_fairness_metrics <- function(model, frame, protected_columns, reference, favorable_class) {
@@ -77,9 +80,11 @@ h2o.calculate_fairness_metrics <- function(model, frame, protected_columns, refe
 #'\dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' data <- h2o.importFile(paste0("https://s3.amazonaws.com/h2o-public-test-data/smalldata/",
+#'                               "admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1',
+#'        'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2',
+#'        'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
 #' y <- "default payment next month"
 #' protected_columns <- c('SEX', 'EDUCATION')
 #'
@@ -94,7 +99,8 @@ h2o.calculate_fairness_metrics <- function(model, frame, protected_columns, refe
 #'
 #' aml <- h2o.automl(x, y, training_frame = train, max_models = 3)
 #'
-#' h2o.disparate_analysis(aml, test, protected_columns = protected_columns, reference = reference, favorable_class = favorable_class)
+#' h2o.disparate_analysis(aml, test, protected_columns = protected_columns,
+#'                        reference = reference, favorable_class = favorable_class)
 #' }
 #' @export
 h2o.disparate_analysis <-
@@ -152,7 +158,7 @@ h2o.disparate_analysis <-
     ...
   ) {
     obj <- model_fun(x = x, y = y, training_frame = training_frame, ...)
-    models_info <- .process_models_or_automl(obj, train, check_x_y_consistency=FALSE)
+    models_info <- .process_models_or_automl(obj, training_frame, check_x_y_consistency=FALSE)
     lapply(models_info$model_ids, models_info$get_model)
   }
 
@@ -176,9 +182,11 @@ h2o.disparate_analysis <-
 #'\dontrun{
 #' library(h2o)
 #' h2o.connect()
-#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' data <- h2o.importFile(paste0("https://s3.amazonaws.com/h2o-public-test-data/smalldata/",
+#'                               "admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1',
+#'        'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2',
+#'        'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
 #' y <- "default payment next month"
 #' protected_columns <- c('SEX', 'EDUCATION')
 #'
@@ -195,9 +203,12 @@ h2o.disparate_analysis <-
 #' print(ig@admissible_score)
 #' plot(ig)
 #'
-#' infogram_models <- h2o.infogram_train_subset_models(ig, h2o.gbm, train, test, y, protected_columns, reference, favorable_class)
+#' infogram_models <- h2o.infogram_train_subset_models(ig, h2o.gbm, train, test, y,
+#'                                                     protected_columns, reference,
+#'                                                     favorable_class)
 #'
-#' pf <- h2o.pareto_front(infogram_models, x_metric = "air_min", y_metric = "AUC", optimum = "top right")
+#' pf <- h2o.pareto_front(infogram_models, x_metric = "air_min",
+#'                        y_metric = "AUC", optimum = "top right")
 #' plot(pf)
 #' pf@pareto_front
 #' }
@@ -226,7 +237,7 @@ h2o.infogram_train_subset_models <-
 
     origin <- rep_len(0, length(feature_selection_metrics))
     feature_score <- apply(score[, feature_selection_metrics, drop = FALSE], 1,
-                           function(row) dist(rbind(row, origin), method = metric))
+                           function(row) stats::dist(rbind(row, origin), method = metric))
 
     score <- score[order(feature_score, decreasing = TRUE), ]
     xs <- lapply(seq_len(nrow(score)), function(n) score$column[seq_len(n)])

@@ -4217,9 +4217,11 @@ h2o.explain_row <- function(object,
 #'\dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' data <- h2o.importFile(paste0("https://s3.amazonaws.com/h2o-public-test-data/smalldata/",
+#'                               "admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1',
+#'        'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2',
+#'        'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
 #' y <- "default payment next month"
 #' protected_columns <- c('SEX', 'EDUCATION')
 #'
@@ -4331,9 +4333,11 @@ h2o.pd_fair_plot <- function(model, newdata, protected_columns, column, autoscal
 #'\dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' data <- h2o.importFile(paste0("https://s3.amazonaws.com/h2o-public-test-data/smalldata/",
+#'                               "admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1',
+#'        'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2',
+#'        'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
 #' y <- "default payment next month"
 #' protected_columns <- c('SEX', 'EDUCATION')
 #'
@@ -4415,9 +4419,11 @@ h2o.shap_fair_plot <- function(model, newdata, protected_columns, column, autosc
 #'\dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' data <- h2o.importFile(paste0("https://s3.amazonaws.com/h2o-public-test-data/smalldata/",
+#'                               "admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1',
+#'        'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2',
+#'        'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
 #' y <- "default payment next month"
 #' protected_columns <- c('SEX', 'EDUCATION')
 #'
@@ -4432,7 +4438,8 @@ h2o.shap_fair_plot <- function(model, newdata, protected_columns, column, autosc
 #'
 #' gbm <- h2o.gbm(x, y, training_frame = train)
 #'
-#' h2o.roc_fair_plot(gbm, test, protected_columns = protected_columns, reference = reference, favorable_class = favorable_class)
+#' h2o.roc_fair_plot(gbm, test, protected_columns = protected_columns,
+#'                   reference = reference, favorable_class = favorable_class)
 #' }
 #'
 #' @export
@@ -4489,9 +4496,11 @@ h2o.roc_fair_plot <- function(model, newdata, protected_columns, reference, favo
 #'\dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' data <- h2o.importFile(paste0("https://s3.amazonaws.com/h2o-public-test-data/smalldata/",
+#'                               "admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1',
+#'        'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2',
+#'        'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
 #' y <- "default payment next month"
 #' protected_columns <- c('SEX', 'EDUCATION')
 #'
@@ -4506,7 +4515,8 @@ h2o.roc_fair_plot <- function(model, newdata, protected_columns, reference, favo
 #'
 #' gbm <- h2o.gbm(x, y, training_frame = train)
 #'
-#' h2o.pr_fair_plot(gbm, test, protected_columns = protected_columns, reference = reference, favorable_class = favorable_class)
+#' h2o.pr_fair_plot(gbm, test, protected_columns = protected_columns,
+#'                  reference = reference, favorable_class = favorable_class)
 #' }
 #' @export
 h2o.pr_fair_plot <- function(model, newdata, protected_columns, reference, favorable_class) {
@@ -4563,9 +4573,11 @@ h2o.pr_fair_plot <- function(model, newdata, protected_columns, reference, favor
 #'\dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
-#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
-#'        'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
+#' data <- h2o.importFile(paste0("https://s3.amazonaws.com/h2o-public-test-data/smalldata/",
+#'                               "admissibleml_test/taiwan_credit_card_uci.csv"))
+#' x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1',
+#'        'BILL_AMT2', 'BILL_AMT3', 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2',
+#'        'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6')
 #' y <- "default payment next month"
 #' protected_columns <- c('SEX', 'EDUCATION')
 #'
@@ -4580,7 +4592,8 @@ h2o.pr_fair_plot <- function(model, newdata, protected_columns, reference, favor
 #'
 #' gbm <- h2o.gbm(x, y, training_frame = train)
 #'
-#' h2o.inspect_model_fairness(gbm, test, protected_columns = protected_columns, reference = reference, favorable_class = favorable_class)
+#' h2o.inspect_model_fairness(gbm, test, protected_columns = protected_columns,
+#'                            reference = reference, favorable_class = favorable_class)
 #' }
 #'
 #' @export
