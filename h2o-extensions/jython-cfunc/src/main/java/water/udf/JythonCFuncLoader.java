@@ -26,15 +26,16 @@ public class JythonCFuncLoader extends CFuncLoader {
     String module = jfuncName.substring(0, idxLastDot);
     String clsName = jfuncName.substring(idxLastDot+1);
 
-    PySystemState pySystemState = new PySystemState();
     ClassLoader savedCtxCl = Thread.currentThread().getContextClassLoader();
-    ClassLoader savedPyStateCl = Py.getSystemState().getClassLoader();
+    PySystemState savedSystemState = Py.getSystemState(); // Get a system state for the current thread
     try {
       Thread.currentThread().setContextClassLoader(classLoader);
-      Py.getSystemState().setClassLoader(classLoader);
-      return new JythonObjectFactory(pySystemState, targetKlazz, module, clsName).createObject();
+      PySystemState newSystemState = new PySystemState();
+      newSystemState.setClassLoader(classLoader);
+      Py.setSystemState(newSystemState); // Assign a new system state with a specific classloader to the current thread.
+      return new JythonObjectFactory(targetKlazz, module, clsName).createObject();
     } finally {
-      Py.getSystemState().setClassLoader(savedPyStateCl);
+      Py.setSystemState(savedSystemState);
       Thread.currentThread().setContextClassLoader(savedCtxCl);
     }
   }
