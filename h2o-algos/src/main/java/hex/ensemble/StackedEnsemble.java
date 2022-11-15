@@ -471,7 +471,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           if (aModel._parms._fold_assignment != basemodel_fold_assignment
                   && !(aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random)
           ) {
-            warn("base_models", "Base models are inconsistent: they use different fold_assignments.");
+            warn("base_models", "Base models are inconsistent: they use different fold_assignments. This can lead to data leakage.");
           }
 
           if (aModel._parms._fold_column == null) {
@@ -481,14 +481,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
             if (aModel._parms._nfolds < 2)
               throw new H2OIllegalArgumentException("Base model does not use cross-validation: "+aModel._parms._nfolds);
             if (basemodel_nfolds != aModel._parms._nfolds)
-              warn("base_models", "Base models are inconsistent: they use different values for nfolds.");
+              warn("base_models", "Base models are inconsistent: they use different values for nfolds. This can lead to data leakage.");
 
             if (basemodel_fold_assignment == Random && aModel._parms._seed != seed)
-              warn("base_models", "Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds.");
+              warn("base_models", "Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds. This can lead to data leakage.");
 
           } else {
             if (!aModel._parms._fold_column.equals(basemodel_fold_column))
-              warn("base_models", "Base models are inconsistent: they use different fold_columns.");
+              warn("base_models", "Base models are inconsistent: they use different fold_columns. This can lead to data leakage.");
           }
           if (! aModel._parms._keep_cross_validation_predictions)
             throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: "+aModel._parms._nfolds);
