@@ -57,7 +57,7 @@ public class JythonCFuncTest extends TestUtil {
   }
 
   @Test
-  public void testJythonCFuncLoaderDeosNotRequireRelationshipBetweenClassLoaders() throws Exception {
+  public void testJythonCFuncLoaderDoesNotRequireRelationshipBetweenClassLoaders() throws Exception {
     // Load test python code
     ClassLoader cl = Thread.currentThread().getContextClassLoader();
     try(InputStream is = cl.getResourceAsStream("py/test_cfunc2.py")) {
