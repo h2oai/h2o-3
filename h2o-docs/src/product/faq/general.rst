@@ -300,7 +300,7 @@ To cite one of our booklets:
    with Python and H2O* https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/PythonBooklet.pdf.
 
 -  Malohlava, M., Hava, J., and Mehta, N. (October 2022) *Machine Learning with
-   Sparkling Water: H2O + Spark* https://docs.h2o.ai/sparkling-water/3.0/latest-stable/booklet/SparklingWaterBooklet.pdf.
+   Sparkling Water: H2O + Spark* https://docs.h2o.ai/sparkling-water/3.3/latest-stable/booklet/SparklingWaterBooklet.pdf.
 
 To cite H2O AutoML, please use the instructions `here <../automl.html#citation>`__.
 
