@@ -49,6 +49,33 @@ class List(list):
     pass
 
 
+class LookupSeq(tuple):
+    """
+    An immutable sequence implementation (actually a tuple) optimized for fast lookups.
+    Some code needs both random/indexed access on large lists and do many lookups `elem in my_list` (e.g. in a loop),
+    it is recommended to use this class in that case to avoid forgetting to build or use a set every time we need a lookup. 
+    
+    Note that this list is read-only as we don't want to have to synchronize the backed set used for the lookups.
+    """
+    def __new__(cls, seq=()):
+        """need to implement  __new__ to be able to extend tuple (not necessary for list)"""
+        return super(LookupSeq, cls).__new__(cls, seq)
+    
+    def __init__(self, seq=()):
+        self.__set = frozenset(self)  # lookup functions backed by a set
+        
+    def __contains__(self, item):
+        return item in self.__set
+    
+    def set(self):
+        """
+        use this for arithmetic operations on the elements to avoid confusion.
+        We still want this to behave like a list for the most part, 
+        and this is slightly faster than building a set from the list itself.
+        """
+        return self.__set
+
+
 def _py_tmp_key(append):
     global _id_ctr
     _id_ctr += 1
