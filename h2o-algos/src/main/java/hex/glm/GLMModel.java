@@ -256,7 +256,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    if(domain == null && (_parms._family == Family.binomial || _parms._family == Family.quasibinomial
+    if(domain == null && (_parms._family == Family.binomial || _parms._family == Family.quasibinomial 
             || _parms._family == Family.fractionalbinomial))
       domain = binomialClassNames;
     if (_parms._HGLM) {
@@ -543,7 +543,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_link != Link.family_default) { // check we have compatible link
         switch (_family) {
           case AUTO:
-            if (_link != Link.family_default & _link != Link.identity & _link != Link.log & _link != Link.inverse
+            if (_link != Link.family_default & _link != Link.identity & _link != Link.log & _link != Link.inverse 
                     & _link != Link.logit & _link != Link.multinomial)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only family_default, identity, log, inverse, logit and multinomial are allowed for family=AUTO");
             break;
@@ -558,7 +558,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
               throw new IllegalArgumentException("Incompatible link function for selected family. Only logit is allowed for family=" + _family + ". Got " + _link);
             break;
           case poisson:
-          case negativebinomial:
+          case negativebinomial:  
             if (_link != Link.log && _link != Link.identity)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only log and " +
                       "identity links are allowed for family=poisson and family=negbinomimal.");
@@ -590,7 +590,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         }
       }
     }
-
+    
     public GLMParameters() {
       this(Family.AUTO, Link.family_default);
       assert _link == Link.family_default;
@@ -606,9 +606,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk, String[] interactions) {
       this(f,l,lambda,alpha,twVar,twLnk,interactions,GLMTask.EPS);
     }
+    
 
-
-    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk,
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk, 
                          String[] interactions, double theta){
       this._lambda = lambda;
       this._alpha = alpha;
@@ -674,7 +674,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if( yr == 0 ) return 2 * ym;
           return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
         case negativebinomial:
-          return (yr==0||ym==0)?0:2*((_invTheta+yr)*Math.log((1+_theta*ym)/(1+_theta*yr))+yr*Math.log(yr/ym));
+          return (yr==0||ym==0)?0:2*((_invTheta+yr)*Math.log((1+_theta*ym)/(1+_theta*yr))+yr*Math.log(yr/ym));        
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
@@ -694,7 +694,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      return deviance((double)yr,(double)ym);
     }
 
-    public final double likelihood(double yr, double ym){
+    public final double likelihood(double yr, double ym){ 
       if (_family.equals(Family.negativebinomial)) {
         return ((yr>0 && ym>0)?
                 (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
@@ -761,7 +761,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           throw new RuntimeException("unexpected link function id  " + this);
       }
     }
-
+    
     public final double linkInv(double x) {
       switch(_link) {
 //        case multinomial: // should not be used
@@ -787,16 +787,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           throw new RuntimeException("unexpected link function id  " + this);
       }
     }
-
+    
     // supported families
     public enum Family {
       AUTO(Link.family_default), gaussian(Link.identity), binomial(Link.logit), fractionalbinomial(Link.logit), quasibinomial(Link.logit),poisson(Link.log),
-      gamma(Link.inverse), multinomial(Link.multinomial), tweedie(Link.tweedie), ordinal(Link.ologit),
+      gamma(Link.inverse), multinomial(Link.multinomial), tweedie(Link.tweedie), ordinal(Link.ologit), 
       negativebinomial(Link.log);
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
     }
-
+    
     public enum DispersionMethod {pearson, ml, deviance} // methods used to estimate dispersion parameter, ML = maximum likelhood
     public static enum GLMType {glm, gam, hglm} // special functions are performed depending on GLMType.  Internal use
     public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit, ologlog}
@@ -829,10 +829,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public boolean imputeMissing() {
-      return missingValuesHandling() == MissingValuesHandling.MeanImputation ||
-              missingValuesHandling() == MissingValuesHandling.PlugValues;
+      return missingValuesHandling() == MissingValuesHandling.MeanImputation || 
+              missingValuesHandling() == MissingValuesHandling.PlugValues; 
     }
-
+    
     public DataInfo.Imputer makeImputer() {
       if (missingValuesHandling() == MissingValuesHandling.PlugValues) {
         if (_plug_values == null || _plug_values.get() == null) {
@@ -880,8 +880,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     double _oneOetaSquare;
 
     final NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
-
-    public GLMWeightsFun(GLMParameters parms) {this(parms._family,parms._link, parms._tweedie_variance_power,
+    
+    public GLMWeightsFun(GLMParameters parms) {this(parms._family,parms._link, parms._tweedie_variance_power, 
             parms._tweedie_link_power, parms._theta);}
 
     public GLMWeightsFun(Family fam, Link link, double var_power, double link_power, double theta) {
@@ -923,7 +923,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           throw new RuntimeException("unknown link function " + this);
       }
     }
-
+    
     public final double linkInvDeriv(double x) {
       switch(_link) {
         case identity:
@@ -1108,13 +1108,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           throw new RuntimeException("unknown family " + _family);
       }
     }
-
+    
     public final double likelihood(double w, double yr, double ym) {
       if (w==0)
         return 0;
       return w*likelihood(yr, ym);
     }
-
+    
     public final double likelihood(double yr, double ym) {
       switch (_family) {
         case gaussian:
@@ -1131,7 +1131,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return ((yr>0 && ym>0)?
                   (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
                           yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
-                  ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
+                  ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything 
         case gamma:
           if (yr == 0) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
@@ -1269,6 +1269,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       this.dispersionEstimated = dispersionEstimated;
       int r = 0;
       if(beta != null){
+        
           // grab the indices of non-zero coefficients
           for (int i = 0; i < beta.length; ++i) if (beta[i] != 0) ++r;
           if (r < beta.length && beta.length == totBetaLen) { // not been shorten before for multinomial
@@ -1488,7 +1489,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
     }
 
-    public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains,
+    public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains, 
                      String[] coefficient_names, double[] beta, boolean binomial, boolean multinomial, boolean ordinal) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo.clone();
@@ -1512,9 +1513,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _submodels = new Submodel[]{new Submodel(0, 0, beta, -1, Double.NaN, Double.NaN,
               _totalBetaLength, null, false)};
     }
-
+    
     public GLMOutput() {
-      _isSupervised = true;
+      _isSupervised = true; 
       _nclasses = -1;
       _totalBetaLength = -1;
     }
