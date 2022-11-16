@@ -768,7 +768,67 @@ GAM using Monotone Splines
       # Generate predictions using the test data:
       pred = monotone_model.predict(test)
 
+GAM using M-splines
+'''''''''''''''''''
 
+.. tabs::
+   .. code-tab:: r R
+
+      # Import the GLM test data set:
+      gam_test = h2o.importFile(“https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv”)
+
+      # Set the factors, predictors, and response:
+      gam_test["C1"] <- as.factor(gam_test["C1"])
+      gam_test["C2"] <- as.factor(gam_test["C2"])
+      gam_test["C21"] <- as.factor(gam_test["C21"])
+      predictors <- c("C1","C2")
+      response <- "C21"
+
+      # Split into train and validation sets:
+      splits <- h2o.splitFrame(data = gam_test, ratios = 0.8)
+      train <- splits[[1]]
+      test <- splits[[2]]
+
+      # Build and train the model using spline order:
+      mspline_model <- h2o.gam(x = predictors,
+                               y = response,
+                               training_frame = train,
+                               family = "binomial"
+                               gam_columns = c("C11", "C12", "C13"),
+                               scale = c(0.001, 0.001, 0.001),
+                               bs = c(2, 0, 3),
+                               spline_orders = c(10, -1, 10),
+                               num_knots = c(3, 4, 5))
+      # Retrieve the coefficients:
+      h2o.coef(mspline_model)
+
+   .. code-tab:: python
+
+      # Import the GLM test data set:
+      gam_test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+
+      # Set the factors, predictors, and response:
+      gam_test["C1"] = gam_test["C1"].asfactor()
+      gam_test["C2"] = gam_test["C2"].asfactor()
+      gam_test["C21"] = gam_test["C21"].asfactor()
+      predictors = ["C1","C2"]
+      response = "C21"
+
+      # Split into train and validation sets:
+      train, test = gam_test.split_frame(ratios = [.8])
+
+      # Build and train your model using spline order:
+      mspline_model = H2OGeneralizedAdditiveEstimator(family="binomial",
+                                                      gam_columns=["C11", "C12", "C13"],
+                                                      scale=[0.001, 0.001, 0.001],
+                                                      bs=[2,0,3],
+                                                      spline_orders=[10,-1,10],
+                                                      num_knots=[3,4,5])
+      mspline_model.train(x=predictors, y=response, training_frame=train)
+
+      # Retrieve the coefficients:
+      coef = mspline_model.coef()  
+      print(coef)
 
 References
 ~~~~~~~~~~
