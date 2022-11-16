@@ -409,7 +409,7 @@ For documentation on thin plate regression splines, refer here:
 Monotone Splines
 ''''''''''''''''
 
-We have implemented I-splines which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. In order to specify the monotone spline, you need to both set ``bs=2`` and specify the ``spline_orders`` parameter.
+We have implemented I-splines which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. In order to specify the monotone spline, you need to both set ``bs = 2`` and specify ``spline_orders`` which will be equal to the polynomials used to generate the splines.
 
 **B-splines:** :math:`Q_{i,k}(t)`
 
@@ -450,17 +450,21 @@ where:
 
 **M-splines:** :math:`M_{i,k}(t)`
 
-If you normalize the basic B-spline function to have an integration of 1 over the interest range where it is non-zero, you can denote it as :math:`M_{i,k}(t)`. This is the normalized B-spline Type I, and it is defined as:
+M-splines serve two functions: they are part of the construction of I-splines and they are normal (non-monotonic) splines that are implemented separate of the monotone spline as part of the GAM toolbox. You must set ``bs = 3`` for M-splines. ``spline_orders`` must also be set where the polynomials used to generate the splines will be equal to ``spline_orders``-1.
+
+The B-spline function can be normalized and denoted as :math:`M_{i,k}(t)` where it has an integration of 1 over the range of interest and is non-zero. This is the normalized B-spline Type I, and it is defined as:
 
 .. math::
    
    M_{i,k}(t) = k \times Q_{i,k}(t)
 
-You can also derive :math:`M_{i,k}(t)` using the following recursive formula:
+with the property :math:`\int_{- \infty}^{+ \infty} M_{i,k}(t)dt = \int_{t_i}^{t_{i+k}} M_{i,k}(t)dt = 1`. 
+
+You can derive :math:`M_{i,k}(t)` using the following recursive formula:
 
 .. math::
    
-   M_{i,k}(t) = {\frac{k}{k-1}}\bigg( {\frac{(t-t_i)}{(t_{i+k}-t_i)}}M_{i,k-1}(t)-{\frac{(t_{i+k}-t)}{(t_{i+k}-t_i)}}M_{i+1,k-1}(t)\bigg)
+   M_{i,k}(t) = \frac{k}{k-1} \bigg(\frac{(t-t_1)}{(t_{i+k}-t_i)} M_{i,k-1}(t) + \frac{(t_{i+k}-t)}{(t_{i+k}-t_i)} M_{i+1,k-1}(t) \bigg)
 
 Note that :math:`M_{i,k}(t)` is defined over the same knot sequence as the original B-spline, and the number of :math:`M_{i,k}(t)` splines is the same as the number of B-splines over the same known sequence.
 
@@ -486,7 +490,7 @@ I-splines are used to build the monotone spline functions by restricting the gam
    
    I_{i,k}(t) = \sum_{l=1}^{i+r}N_{l,k+1}(t), t \leq t_{i+r+1}
 
-**Penalty Matrix for I-splines**
+**Penalty Matrix**
 
 The objective function used to derive the coefficients for regression is:
 
@@ -514,6 +518,20 @@ Element at row :math:`m` and column :math:`n` of :math:`penaltyMat` is
 .. math::
    
    penaltyMat_{m,n} = \int_{t_0}^{t_N}{\frac{d^2(I_{m,k}(t))}{d^2t}}{\frac{d^2(I_{n,k}(t))}{d^2t}}dt
+
+*Derivative of M-splines*
+
+The penalty matrix written in terms of the second derivative of M-spline as:
+
+.. math::
+   
+   penaltyMat_{m,n} = \int_{t_0}^{t_N} \frac{dM_{m,k}^2 (t)}{dt^2} \frac{dM_{n,k} (t)}{dt^2}dt
+
+Instead of using the recursive expression, look at the coefficients associated with :math:`M_{m,k}(t)`, take the second derivative, and go from there. This is the procedure to use:
+
+- generate the coefficients of :math:`\frac{d^2M_{i,k}(t)}{dt^2}`;
+- implement multiplication of coefficients of :math:`\frac{dM_{i,k}^2 (t)}{dt^2} \frac{dM_{j,k} (t)}{dt^2}dt`. Due to the commutative property, :math:`\frac{dM_{i,k}^2 (t)}{dt^2} \frac{dM_{j,k} (t)}{dt^2}dt = \frac{dM_{j,k} (t)}{dt^2}dt \frac{dM_{i,k}^2 (t)}{dt^2}`, so you only need to perform the multiplication once and the :math:`penaltyMat_{m,n}` is symmetrical;
+- implement the integration of :math:`\frac{d^2M_{i,k}(t)}{dt^2} \frac{d^2M_{j,k}(t)}{dt^2}` by easy integration of the coefficients.
 
 .. _scenario6:
 
