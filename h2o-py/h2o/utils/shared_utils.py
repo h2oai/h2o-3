@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from .compatibility import *  # NOQA
 
 import csv
+import contextlib
 import io
 import itertools
 import os
@@ -29,6 +30,20 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+
+
+try:
+    from contextlib import AbstractContextManager
+except ImportError:
+    import abc
+    from future.utils import with_metaclass
+    class AbstractContextManager(with_metaclass(abc.ABCMeta)):
+        @classmethod
+        def __subclasshook__(cls, C):
+            if cls is AbstractContextManager:
+                return all(any(m in SC.__dict__ for SC in C.__mro__) for m in ("__enter__", "__exit__"))
+            return NotImplemented
+
 
 from h2o.backend.server import H2OLocalServer
 from h2o.exceptions import H2OValueError
@@ -594,3 +609,12 @@ class InMemoryZipArch(object):
         if self._file_name is None:
             return
         self.write_to_file(self._file_name)
+
+
+@contextlib.contextmanager
+def as_resource(o):
+    if isinstance(o, AbstractContextManager):
+        with o as res:
+            yield res
+    else:
+        yield o
