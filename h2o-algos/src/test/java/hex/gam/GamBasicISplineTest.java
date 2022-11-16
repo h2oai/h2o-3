@@ -7,26 +7,21 @@ import hex.genmodel.algos.gam.NBSplinesTypeII;
 import jsr166y.ThreadLocalRandom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.Key;
 import water.MemoryManager;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.parser.ParseDataset;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.stream.DoubleStream;
-import java.util.stream.Stream;
 
 import static hex.gam.GamSplines.NBSplinesTypeI.extractNBSplineCoeffs;
 import static hex.gam.GamSplines.NBSplinesTypeI.formBasis;
 import static hex.gam.GamSplines.NBSplinesTypeIDerivative.formDerivatives;
-import static hex.gam.GamSplines.NBSplinesUtils.*;
+import static hex.gam.GamSplines.NBSplinesUtils.integratePolynomial;
+import static hex.gam.GamSplines.NBSplinesUtils.polynomialProduct;
 import static hex.genmodel.algos.gam.GamUtilsISplines.extractKnots;
 import static hex.genmodel.algos.gam.GamUtilsISplines.fillKnots;
 import static org.junit.Assert.assertArrayEquals;
@@ -36,6 +31,39 @@ import static org.junit.Assert.assertTrue;
 @CloudSize(1)
 public class GamBasicISplineTest extends TestUtil {
     public static final double EPS = 1e-11;
+
+    /***
+     * Java unit test to make sure that gam I-spline beta constraint takes precedence over glm non-negative 
+     * constraints.  All coefficients should be non-negative except the coefficients belonging to the I-spline
+     * which in this case is specified to be non-positive.
+     */
+    @Test
+    public void testNonNegative() {
+        Scope.enter();
+        try {
+            Frame train = parseAndTrackTestFile("smalldata/gam_test/cosPp1X.csv");;
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._train = train._key;
+            params._response_column = "y2";
+            params._non_negative = true;
+            params._splines_non_negative = new boolean[]{false};
+            params._gam_columns = new String[][]{{"x"}};
+            params._bs = new int[]{2};
+            params._ignored_columns = new String[]{"C1"};
+            GAMModel gam = new GAM(params).trainModel().get();
+            Scope.track_generic(gam);
+            // make sure gamified columns coefficients have non-positive values
+            double[] coeffs = gam._output._model_beta;
+            // first coefficient belong to predictor "x"
+            assertTrue(coeffs[0] >= 0); // non-negative
+            // next three coefficients belong to gamified columns of "x"
+            assertTrue(coeffs[1] <= 0);
+            assertTrue(coeffs[2] <= 0);
+            assertTrue(coeffs[3] <= 0);
+        } finally {
+            Scope.exit();
+        }
+    }
 
     /***
      * Given a knot sequence length and a spline order, I want to make sure the correct number of duplication is 
