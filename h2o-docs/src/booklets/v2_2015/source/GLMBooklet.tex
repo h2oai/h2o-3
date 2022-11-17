@@ -994,7 +994,7 @@ hypothesis tests on the values of each coefficient. A high p-value means that a 
 (insiginificant) while a low p-value suggest that the coefficient is statistically significant.
 
 You can request p-values by setting the \\\texttt{compute\_p\_values} option. It can only be used with the
-\texttt{IRLSM} solver. P-values and z-score are compatible with regularization. It is recommended that you also set the \texttt{remove\_collinear\_columns} option. Otherwise, H2O will return an error if it detects collinearity in the dataset and p-values are requested. 
+\texttt{IRLSM} solver. P-values and z-score can be computed with regularization. It is recommended that you also set the \texttt{remove\_collinear\_columns} option. Otherwise, H2O will return an error if it detects collinearity in the dataset and p-values are requested. 
 
 \textbf{Note:} GLM auto-standardizes the data by default (recommended). This changes the p-value of the constant term
 (intercept).
