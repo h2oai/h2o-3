@@ -10,6 +10,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 
 def p_values_with_regularization_check():
     prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    prostate[1] = prostate[1].asfactor()
     nlambdas = 5
     model = glm(family="binomial", nlambdas=nlambdas, lambda_search=True, compute_p_values=True)
     model1 = glm(family="binomial", lambda_=[0.5, 0.1], alpha=[0.5, 0.5], compute_p_values=True)
@@ -75,6 +76,7 @@ def p_values_with_regularization_check():
 
 def p_values_with_lambda_search_check():
     prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    prostate[1] = prostate[1].asfactor()
     nlambdas = 5
     model = glm(family="binomial", nlambdas=nlambdas, lambda_search=True, compute_p_values=True)
     model.train(x=list(range(2, 9)), y=1, training_frame=prostate)
@@ -131,9 +133,33 @@ def p_values_with_lambda_search_check():
                             or (abs(std_errs_lambda_search[name] - std_errs_model[name]) < epsilon_values))
 
 
+# test p-value calculation with regularization for maximum likelihood
+def test_p_value_for_maximum_likelihood():
+    training_data = h2o.import_file(
+        "http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+    weight = pyunit_utils.random_dataset_real_only(training_data.nrow, 1, realR=2, misFrac=0, randSeed=12345)
+    weight = weight.abs()
+    training_data = training_data.cbind(weight)
+    Y = 'resp'
+    x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
+    model_ml = glm(family='gamma', lambda_=0, compute_p_values=True, dispersion_parameter_method="ml")
+    model_ml.train(training_frame=training_data, x=x, y=Y)
+
+    model_ml_reg = glm(family='gamma', lambda_=0.0000000001, compute_p_values=True, dispersion_parameter_method="ml")
+    model_ml_reg.train(training_frame=training_data, x=x, y=Y)
+
+    dispersion_factor_ml_estimated = model_ml._model_json["output"]["dispersion"]
+    dispersion_factor_ml_reg_estimated = model_ml_reg._model_json["output"]["dispersion"]
+    print(abs(dispersion_factor_ml_estimated-dispersion_factor_ml_reg_estimated))
+    assert abs(dispersion_factor_ml_estimated-dispersion_factor_ml_reg_estimated) < 1e-4, \
+        "Expected: {0}, Actual: {1}".format(dispersion_factor_ml_estimated, dispersion_factor_ml_reg_estimated)
+
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(p_values_with_regularization_check)
     pyunit_utils.standalone_test(p_values_with_lambda_search_check)
+    pyunit_utils.standalone_test(test_p_value_for_maximum_likelihood)
 else:
     p_values_with_regularization_check()
     p_values_with_lambda_search_check()
+    test_p_value_for_maximum_likelihood()
