@@ -1281,15 +1281,6 @@ public class GLMBasicTestBinomial extends TestUtil {
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     params._solver = Solver.IRLSM;
-    try {
-      params._lambda = new double[]{1};
-      job0 = new GLM(params);
-      GLMModel model = job0.trainModel().get();
-      assertFalse("should've thrown, p-values only supported with no regularization",true);
-    } catch(H2OModelBuilderIllegalArgumentException t) {
-    }
-    params._lambda_search = false;
-    params._lambda = new double[]{0};
     GLM job = new GLM(params);
     GLMModel model = null;
     Frame predictTrain = null;
