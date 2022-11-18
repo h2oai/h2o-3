@@ -43,31 +43,7 @@ Algorithm-specific parameters
 
 -  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
 
-- **subspaces**: A list of model parameters that, when in the same subspace list, can vary freely amongst each other. This allows you to group model parameters that can vary with restrictions. If specified, the following parameters must have the same array dimension:
-  
-  - ``gam_columns``
-  - ``scale``
-  - ``num_knots``
-  - ``bs``
-
-These parameters can be specified as follows:
-
-  .. code-block:: bash
-    
-    hyper_parameters = {
-        'alpha':[0.9, 0.1],
-        ‘subspaces’: [{
-            ‘scale’:[[1,1,1],[0.1, 0.1, 0.1]], 
-            ‘num_knots’:[[4,4,4],[5,5,5]], 
-            ‘gam_columns’:[[“C1”,“C2",“C3”]]
-        }, {
-            ‘scale’:[[1,1],[0.1, 0.1,]], 
-            ‘num_knots’:[[4,4],[5,5]], 
-            ‘gam_columns’:[[“C2",“C3”]]
-        }]
-   }
-
-With this hyperparameter specification, there will be 16 GAM models built.
+**splines_non_negative**: Valid for I-spline (``bs=2``) only. ``True`` if the I-splines are monotonically increasing (and monotonically non-decreasing). ``False`` if the I-splines are monotonically decreasing (and monotonically non-increasing). If specified, must be the same size as ``gam_columns``. Values for other spline types will be ignored. Defaults to ``True``.
 
 GLM family parameters
 '''''''''''''''''''''
@@ -113,13 +89,11 @@ GLM family parameters
 
 -  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GAM will calculate the minimum lambda. This option defaults to ``False`` (disabled).
 
--  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``True`` (enabled).
-
 -  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if ``lambda_search`` is enabled) Specify the number of lambdas to use in the search. When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, then the default value for ``nlambdas`` is ``100``. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When ``alpha=0``, the default value for ``nlamdas`` is set to ``30`` because fewer lambdas are needed for ridge regression. This value defaults to ``-1`` (disabled).
 
 -  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
 
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (``lambda=0`` and no beta constraints). Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver required. This option defaults to ``False`` (disabled).
+-  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
 -  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (``lambda=0``). This option defaults to ``False`` (disabled).
 
@@ -231,6 +205,8 @@ Common parameters
 -  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to ``-1`` (unlimited). This default indicates that if the ``IRLSM`` solver is used, the value of ``max_active_predictors`` is set to ``5000``, otherwise it is set to ``100000000``.
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
+-  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``True`` (enabled).
 
 - `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
 

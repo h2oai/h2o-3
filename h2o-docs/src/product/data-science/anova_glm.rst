@@ -33,8 +33,8 @@ Algorithm-specific parameters
 
 - **type**: Refer to the SS type 1, 2, 3, or 4. We are currently only supporting type 3.
 
-Maybe algorithm-specific
-''''''''''''''''''''''''
+GLM family parameters
+'''''''''''''''''''''
 
 - `family <algo-params/family.html>`__: Specify the model type.
 
@@ -72,7 +72,7 @@ Maybe algorithm-specific
 
 -  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
 
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. P-values only work with the ``IRLSM`` solver and no regularization. Defaults to ``True``.
+-  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
 -  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values. This option defaults to ``False``.
 
@@ -109,8 +109,6 @@ Maybe algorithm-specific
 
 -  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. This option defaults to ``False`` (disabled).
 
--  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``False`` (disabled).
-
 Common parameters
 '''''''''''''''''
 
@@ -137,6 +135,8 @@ Common parameters
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. This option defaults to ``True``.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations (defaults to ``0``).
+
+-  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``False`` (disabled).
 
 -  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. This option defaults ``0`` (no early stopping). The metric is computed on the validation data (if provided); otherwise, training data is used.
 
