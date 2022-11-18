@@ -28,13 +28,15 @@ MOJO Support
 
 GBM supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
-Quick Start
-~~~~~~~~~~~~
+Quick Start and Additional Resources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 * Quick GBM using H2O Flow (Lending Club Dataset) `[Youtube] <https://www.youtube.com/watch?v=1R9iBBCxhE8>`__
 * Simplest getting started R script `[Github] <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/gbm-randomforest/GBM_RandomForest_Example.R>`__
 * GBM & Random Forest Video Overview `[Youtube] <https://www.youtube.com/watch?v=9wn1f-30_ZY>`__
 * GBM and other algos in R (Citi Bike Dataset) `[Youtube] <https://www.youtube.com/watch?v=_ig6ZmBfhH8/>`__ `[Github] <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.citi.bike.small.R/>`__ 
 * Prof. Trevor Hastie - Gradient Boosting Machine Learning `[Youtube] <https://www.youtube.com/watch?v=wPqtzj5VZus/>`__
+* `GBM Booklet <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>`__
 
 Defining a GBM Model
 ~~~~~~~~~~~~~~~~~~~~
@@ -340,9 +342,6 @@ zero-weighted rows are sliced away first, the integer weight is used.
 The resulting histogram is either kept at full ``nbins`` resolution or
 potentially shrunk to the discrete integer range, which affects the
 split points.
-
-For more information about the GBM algorithm, refer to the `Gradient
-Boosting Machine booklet <http://h2o.ai/resources>`__.
 
 Parallel Performance in GBM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -15,7 +15,7 @@ Deep Learning supports importing and exporting `MOJOs <../save-and-load-model.ht
 
 Quick Start and Additional Resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* `Deep Learning Booklet <http://h2o.ai/resources>`__
+* `Deep Learning Booklet <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/DeepLearningBooklet.pdf>`__
 * Deep Learning in H2O Tutorial (R): `[GitHub] <https://htmlpreview.github.io/?https://github.com/ledell/sldm4-h2o/blob/master/sldm4-deeplearning-h2o.html>`__
 * H2O + TensorFlow on AWS GPU Tutorial (Python Notebook) `[Blog] <https://www.h2o.ai/blog/h2o-tensorflow-on-aws-gpu/>`__ `[Github] <https://github.com/h2oai/sparkling-water/blob/master/py/examples/notebooks/TensorFlowDeepLearning.ipynb>`__
 * Deep learning in H2O with Arno Candel (Overview) `[Youtube] <https://www.youtube.com/watch?v=zGdXaRug7LI/>`__

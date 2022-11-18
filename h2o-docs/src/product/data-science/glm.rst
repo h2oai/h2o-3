@@ -26,6 +26,11 @@ MOJO Support
 
 GLM supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
+Additional Resources
+~~~~~~~~~~~~~~~~~~~~
+
+* `GLM Booklet <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GLMBooklet.pdf>`__
+
 Defining a GLM Model
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -1564,9 +1569,6 @@ becomes to the overall computational cost. However, when p is greater
 than (N/CPUs), O is dominated by p.
 
   :math:`Complexity = O(p^3 + N*p^2)`
-
-For more information about how GLM works, refer to the `Generalized
-Linear Modeling booklet <http://h2o.ai/resources>`__.
 
 References
 ~~~~~~~~~~
