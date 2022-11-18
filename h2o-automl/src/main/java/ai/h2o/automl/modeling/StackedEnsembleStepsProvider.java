@@ -73,7 +73,7 @@ public class StackedEnsembleStepsProvider
             }
 
           @Override
-          protected Model.Parameters applyPipeline(Key<StackedEnsembleModel> estimatorResult, Model.Parameters params) {
+          protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
               return params; // no pipeline in SE, base models handle the transformations when making predictions.
           }
 

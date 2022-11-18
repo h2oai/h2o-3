@@ -6,11 +6,16 @@ import hex.ModelMetrics;
 import hex.pipeline.DataTransformer.FrameType;
 import hex.pipeline.PipelineContext.CompositeFrameTracker;
 import hex.pipeline.TransformerChain.UnaryCompleter;
+import org.apache.commons.lang.StringUtils;
 import water.*;
+import water.KeyGen.PatternKeyGen;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
-import water.util.ReflectionUtils;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineParameters, PipelineModel.PipelineOutput> {
@@ -33,8 +38,6 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     throw new UnsupportedOperationException("PipelineModel.makeMetricBuilder should never be called!");
-//    assert _output.getFinalModel() != null;
-//    return _output.getFinalModel().makeMetricBuilder(domain);
   }
 
   @Override
@@ -148,7 +151,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     
     public DataTransformer[] _transformers;
     public Model.Parameters _estimatorParams;
-    public Key<Model> _estimatorResult;
+    public KeyGen _estimatorKeyGen = new PatternKeyGen("{0}_estimator"); 
 
     @Override
     public String algoName() {
@@ -168,6 +171,97 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     @Override
     public long progressUnits() {
       return 0;
+    }
+
+    private transient ModelParametersAccessor mpa = new ModelParametersAccessor();
+    @Override
+    public Object getParameter(String name) {
+      String[] tokens = parseParameterName(name);
+      if (tokens.length > 1) {
+        String tok0 = tokens[0];
+        if ("estimator".equals(tok0)) return _estimatorParams == null ? null : _estimatorParams.getParameter(tokens[1]);
+        DataTransformer dt = getTransformer(tok0);
+        return dt == null ? null : dt.getParameter(tokens[1]);
+      }
+      return super.getParameter(name);
+    }
+
+    @Override
+    public void setParameter(String name, Object value) {
+      String[] tokens = parseParameterName(name);
+      if (tokens.length > 1) {
+        String tok0 = tokens[0];
+        if ("estimator".equals(tok0)) {
+          _estimatorParams.setParameter(tokens[1], value);
+          return;
+        }
+        DataTransformer dt = getTransformer(tok0);
+        if (dt != null) dt.setParameter(tokens[1], value);
+        return;
+      }
+      super.setParameter(name, value);
+    }
+
+    @Override
+    public boolean isValidHyperParameter(String name) {
+      String[] tokens = parseParameterName(name);
+      if (tokens.length > 1) {
+        String tok0 = tokens[0];
+        if ("estimator".equals(tok0)) return _estimatorParams == null ? null : _estimatorParams.isValidHyperParameter(tokens[1]);
+        DataTransformer dt = getTransformer(tok0);
+        // for now allow transformers hyper params on non-defaults
+        return dt != null && dt.hasParameter(tokens[1]); 
+//        return dt != null && dt.isValidHyperParameter(tokens[1]);
+      }
+      return super.isValidHyperParameter(name);
+    }
+
+    private static final Pattern TRANSFORMER_PAT = Pattern.compile("transformers\\[(\\w+)]");
+    private String[] parseParameterName(String name) {
+      String[] tokens = name.split("\\.", 2);
+      if (tokens.length == 1) return tokens;
+      String tok0 = StringUtils.stripStart(tokens[0], "_");
+      if ("estimator".equals(tok0) || getTransformer(tok0) != null) {
+        return new String[]{tok0, tokens[1]} ;
+      } else {
+        Matcher m = TRANSFORMER_PAT.matcher(tok0);
+        if (m.matches()) {
+          String id = m.group(1);
+          try {
+            int idx = Integer.parseInt(id);
+            assert idx >=0 && idx < _transformers.length;
+            return new String[]{_transformers[idx].id(), tokens[1]};
+          } catch(NumberFormatException nfe) {
+            if (getTransformer(id) != null) return new String[] {id, tokens[1]};
+            throw new IllegalArgumentException("Unknown pipeline transformer: "+tok0);
+          }
+        } else {
+          throw new IllegalArgumentException("Unknown pipeline parameter: "+name);
+        }
+      }
+    }
+    
+    private DataTransformer getTransformer(String id) {
+      if (_transformers == null) return null;
+      return Stream.of(_transformers).filter(t -> t.id().equals(id)).findFirst().orElse(null);
+    }
+
+    @Override
+    protected Parameters cloneImpl() throws CloneNotSupportedException {
+      PipelineParameters clone = (PipelineParameters) super.cloneImpl();
+      clone._transformers = _transformers == null ? null : _transformers.clone();
+      clone._estimatorParams = _estimatorParams == null ? null : _estimatorParams.clone();
+      return clone;
+    }
+
+    @Override
+    public long checksum(Set<String> ignoredFields) {
+      Set<String> ignored = ignoredFields == null ? new HashSet<>() : new HashSet<>(ignoredFields);
+      ignored.add("_transformers");
+      ignored.add("_estimatorParams");
+      long xs = super.checksum(ignored);
+      xs ^= (_estimatorParams == null ? 47 : _estimatorParams.checksum());
+      return xs;
     }
   }
   

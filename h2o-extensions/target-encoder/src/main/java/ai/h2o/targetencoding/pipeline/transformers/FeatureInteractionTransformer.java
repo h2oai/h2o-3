@@ -1,6 +1,7 @@
 package ai.h2o.targetencoding.pipeline.transformers;
 
 import ai.h2o.targetencoding.interaction.InteractionSupport;
+import hex.pipeline.DataTransformer;
 import hex.pipeline.transformers.FeatureTransformer;
 import hex.pipeline.PipelineContext;
 import water.fvec.Frame;
@@ -20,6 +21,11 @@ public class FeatureInteractionTransformer extends FeatureTransformer<FeatureInt
   public FeatureInteractionTransformer(String[] columns, String interactionColumn) {
     _columns = columns;
     _interaction_column = interactionColumn;
+  }
+
+  @Override
+  protected DataTransformer makeDefaults() {
+    return new FeatureInteractionTransformer(null);
   }
 
   @Override

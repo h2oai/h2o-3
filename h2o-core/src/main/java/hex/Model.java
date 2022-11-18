@@ -13,6 +13,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.grid.Grid;
 import hex.quantile.QuantileModel;
 import org.joda.time.DateTime;
 import water.*;
@@ -345,7 +346,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
-  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters {
+  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, Parameterizable {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
 
@@ -808,6 +809,62 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public DistributionFamily getDistributionFamily() {
       return _distribution;
     }
+
+    @Override
+    public boolean hasParameter(String name) {
+      try {
+        getParameter(name);
+        return true;
+      } catch (Exception e) {
+        return false;
+      }
+    }
+
+    @Override
+    public Object getParameter(String name) {
+      return PojoUtils.getFieldValue(this, name);
+    }
+
+    @Override
+    public void setParameter(String name, Object value) {
+      PojoUtils.setField(this, name, value);
+    }
+    
+    @Override
+    public boolean isParameterSetToDefault(String name) {
+      Object val = getParameter(name);
+      Object defaultVal = getParameterDefaultValue(name);
+      return Objects.deepEquals(val, defaultVal);
+    }
+
+    @Override
+    public Object getParameterDefaultValue(String name) {
+      return getDefaults().getParameter(name);
+    }
+
+    @Override
+    public boolean isValidHyperParameter(String name) {
+      return "_seed".equals(name) || isParameterSetToDefault(name);
+    }
+
+    /** private use only to avoid this getting mutated. */
+    private transient Parameters _defaults;
+
+    /** private use only to avoid this getting mutated. */
+    private Parameters getDefaults() {
+      if (_defaults == null) {
+        _defaults = ModelBuilder.makeParameters(algoName());
+      }
+      return _defaults;
+    }
+
+    /**
+     * callback called during grid search if it failed building a model with current parameters.
+     * When this is called, the failure instance is already extended with the last failure details/params.
+     * @param searchFailure
+     * @param grid
+     */
+    public void addSearchFailureDetails(Grid.SearchFailure searchFailure, Grid grid) {}
   }
 
   public ModelMetrics addModelMetrics(final ModelMetrics mm) {

@@ -1,8 +1,8 @@
 package hex;
 
-import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceWalker;
+import hex.grid.SimpleParametersBuilderFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
@@ -48,7 +48,7 @@ public class HyperSpaceWalkerTest extends TestUtil {
         searchParams.put("_max_delta_step", new Float[]{0f, 5f, 10f});
 
         HyperSpaceWalker.RandomDiscreteValueWalker rdvw = new HyperSpaceWalker.RandomDiscreteValueWalker<>(new DummyXGBoostModelParameters(),
-                searchParams, new GridSearch.SimpleParametersBuilderFactory<>(), new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria());
+                searchParams, new SimpleParametersBuilderFactory<>(), new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria());
         HyperSpaceWalker.HyperSpaceIterator hsi = rdvw.iterator();
         try {
             while (hsi.hasNext()) {

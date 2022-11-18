@@ -4,7 +4,7 @@ import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineContext;
 import water.fvec.Frame;
 
-public abstract class FilteringTransformer<T extends DataTransformer> extends DataTransformer<T> {
+public abstract class FilteringTransformer<S extends DataTransformer> extends DataTransformer<S> {
   
   //same logic as with caching but there we want to be able to transform full frame once, 
   // and then just filter rows if frame is a subframe of the full one (can we determine this quickly?)

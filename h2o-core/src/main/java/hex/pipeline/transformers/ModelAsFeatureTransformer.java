@@ -2,16 +2,22 @@ package hex.pipeline.transformers;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineContext;
 import water.Futures;
 import water.Key;
+import water.KeyGen;
+import water.KeyGen.PatternKeyGen;
 import water.Keyed;
 import water.fvec.Frame;
 
-public class ModelAsFeatureTransformer<T extends ModelAsFeatureTransformer, M extends Model<M, MP, ?>, MP extends Model.Parameters> extends FeatureTransformer<T> {
+import java.util.Objects;
+
+public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M extends Model<M, MP, ?>, MP extends Model.Parameters> extends FeatureTransformer<S> {
   
-  protected final MP _params;
-  private Key<M> _modelKey; 
+  protected MP _params;
+  private Key<M> _modelKey;
+  private final KeyGen _modelKeyGen = new PatternKeyGen("{0}_{n}_model");
 
   public ModelAsFeatureTransformer(MP params) {
     this(params, null);
@@ -20,9 +26,6 @@ public class ModelAsFeatureTransformer<T extends ModelAsFeatureTransformer, M ex
   public ModelAsFeatureTransformer(MP params, Key<M> modelKey) {
     _params = params;
     _modelKey = modelKey;
-    if (_params != null) {
-      excludeColumns(_params.getNonPredictors()); //FIXME: shouldn't it be in prepare?
-    }
   }
 
   public M getModel() {
@@ -30,9 +33,46 @@ public class ModelAsFeatureTransformer<T extends ModelAsFeatureTransformer, M ex
   }
 
   @Override
+  public Object getParameter(String name) {
+    try {
+      return _params.getParameter(name);
+    } catch (IllegalArgumentException iae) {
+      return super.getParameter(name);
+    }
+  }
+
+  @Override
+  public void setParameter(String name, Object value) {
+    try {
+      if (_modelKey != null) {
+        Object current = _params.getParameter(name);
+        if (!Objects.deepEquals(current, value)) reset(); //consider this as a completely new transformer as we're trying new hyper-parameters.
+      }
+      _params.setParameter(name, value);
+    } catch (IllegalArgumentException iae) {
+      super.setParameter(name, value);
+    }
+  }
+
+  @Override
+  public Object getParameterDefaultValue(String name) {
+    try {
+      return _params.getParameterDefaultValue(name);
+    } catch (IllegalArgumentException iae) {
+      return super.getParameterDefaultValue(name);
+    }
+  }
+
+  @Override
+  protected DataTransformer makeDefaults() {
+    return new ModelAsFeatureTransformer(null);
+  }
+
+  @Override
   protected void doPrepare(PipelineContext context) {
-    if (_modelKey == null) _modelKey = Key.make(id()+"_model");
+    if (_modelKey == null) _modelKey = _modelKeyGen.make(id());
     if (getModel() != null) return;;
+    excludeColumns(_params.getNonPredictors());
     prepareModelParams(context);
     ModelBuilder<M, MP, ?> mb = ModelBuilder.make(_params, _modelKey);
     mb.trainModel().get();
@@ -60,6 +100,12 @@ public class ModelAsFeatureTransformer<T extends ModelAsFeatureTransformer, M ex
   }
 
   @Override
+  protected void reset() {
+    _modelKey = null;
+    super.reset();
+  }
+
+  @Override
   protected void doCleanup(Futures fs) {
     Keyed.removeQuietly(_modelKey);
   }
@@ -72,5 +118,12 @@ public class ModelAsFeatureTransformer<T extends ModelAsFeatureTransformer, M ex
   
   protected void validateTransform() {
     assert getModel() != null;
+  }
+
+  @Override
+  protected S cloneImpl() throws CloneNotSupportedException {
+    ModelAsFeatureTransformer<S, M, MP> clone = super.cloneImpl();
+    clone._params = (MP) _params.clone();
+    return (S) clone;
   }
 }

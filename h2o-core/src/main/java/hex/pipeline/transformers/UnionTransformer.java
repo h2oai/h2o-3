@@ -20,6 +20,21 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
   }
 
   @Override
+  public Object getParameter(String name) {
+    return super.getParameter(name); //TODO similar logic as in PipelineParameters (use ModelParametersAccessor)
+  }
+
+  @Override
+  public void setParameter(String name, Object value) {
+    super.setParameter(name, value);
+  }
+
+  @Override
+  protected DataTransformer makeDefaults() {
+    return new UnionTransformer(null, null);
+  }
+
+  @Override
   protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     Frame result = null;
     switch (_strategy) {

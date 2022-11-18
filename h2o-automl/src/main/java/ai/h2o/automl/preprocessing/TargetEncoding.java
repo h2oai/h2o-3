@@ -19,6 +19,7 @@ import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.nbhm.NonBlockingHashMap;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.ArrayUtils;
 
@@ -204,7 +205,8 @@ public class TargetEncoding implements PreprocessingStep {
         return _teModel;
     }
     
-    DataTransformer[] asTransformers() {
+    @Override
+    public DataTransformer[] pipelineTransformers() {
       List<DataTransformer> dts = new ArrayList<>();
       TargetEncoderParameters teParams = (TargetEncoderParameters) getDefaultParams().clone();
       Frame train = _aml.getTrainingFrame();
@@ -221,6 +223,15 @@ public class TargetEncoding implements PreprocessingStep {
       }
       dts.add(new TargetEncoderFeatureTransformer(teParams).id("default_TE"));
       return dts.toArray(new DataTransformer[0]);
+    }
+
+    @Override
+    public Map<String, Object[]> pipelineTransformersHyperParams() {
+        Map<String, Object[]> hp = new HashMap<>();
+        hp.put("default_TE._enabled", new Boolean[] {Boolean.TRUE, Boolean.FALSE});
+        hp.put("default_TE._keep_original_categorical_columns", new Boolean[] {Boolean.TRUE, Boolean.FALSE});
+        hp.put("default_TE._blending", new Boolean[] {Boolean.TRUE, Boolean.FALSE});
+        return hp;
     }
 
     private static void register(Frame fr, String keyPrefix, boolean force) {

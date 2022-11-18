@@ -26,13 +26,4 @@ public class PreprocessingStepDefinition extends Iced<PreprocessingStepDefinitio
                 throw new IllegalStateException();
         }
     }
-    
-    public DataTransformer[] asTransformers(AutoML aml) {
-      switch (_type) {
-        case TargetEncoding:
-          return new TargetEncoding(aml).asTransformers();
-        default:
-          throw new IllegalArgumentException("unsupported preprocessing transformation "+_type);
-      }
-    }
 }

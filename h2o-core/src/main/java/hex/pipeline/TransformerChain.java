@@ -51,8 +51,13 @@ public class TransformerChain extends DataTransformer<TransformerChain> {
   }
 
   @Override
+  protected DataTransformer makeDefaults() {
+    return new TransformerChain(new DataTransformer[0]);
+  }
+
+  @Override
   protected void doPrepare(PipelineContext context) {
-    reset();
+    resetIteration();
     nextPrepare(context);
   }
   
@@ -77,7 +82,7 @@ public class TransformerChain extends DataTransformer<TransformerChain> {
   }
   
   <R> R transform(Frame[] frames, FrameType[] types, PipelineContext context, Completer<R> completer) {
-    reset();
+    resetIteration();
     return nextTransform(frames, types, context, completer);
   }
   
@@ -97,7 +102,7 @@ public class TransformerChain extends DataTransformer<TransformerChain> {
     return _transformers[_index++];
   }
   
-  private void reset() {
+  private void resetIteration() {
     _index = 0;
   }
   

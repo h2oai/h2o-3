@@ -38,8 +38,8 @@ public interface ModelParametersBuilderFactory<MP extends Model.Parameters> {
    *
    * @param <MP>  type of produced model parameters object
    */
-   interface ModelParametersBuilder<MP extends Model.Parameters> {
-
+  interface ModelParametersBuilder<MP extends Model.Parameters> {
+    
     ModelParametersBuilder<MP> set(String name, Object value);
 
     MP build();

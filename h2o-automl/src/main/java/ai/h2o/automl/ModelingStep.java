@@ -23,10 +23,13 @@ import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceWalker;
 import hex.leaderboard.Leaderboard;
+import hex.ModelParametersDelegateBuilderFactory;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
+import water.KeyGen.ConstantKeyGen;
+import water.KeyGen.PatternKeyGen;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Countdown;
@@ -67,20 +70,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         assert baseParams != null;
         assert hyperParams.size() > 0;
         assert searchCriteria != null;
-        applyPreprocessing(baseParams);
-        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
+        GridSearch.Builder builder = makeGridBuilder(resultKey, baseParams, hyperParams, searchCriteria);
+        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+builder.dest()+" hyperparameter search")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
-        return GridSearch.create(
-                resultKey, 
-                HyperSpaceWalker.BaseWalker.WalkerFactory.create(
-                        baseParams, 
-                        hyperParams,
-                        new GridSearch.SimpleParametersBuilderFactory<>(), 
-                        searchCriteria
-                ))
-                .withParallelism(GridSearch.SEQUENTIAL_MODEL_BUILDING)
-                .withMaxConsecutiveFailures(aml()._maxConsecutiveModelFailures)
-                .start();
+        return builder.start();
     }
 
     @SuppressWarnings("unchecked")
@@ -106,9 +99,29 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         return builder.trainModelOnH2ONode();
     }
     
+    protected <MP extends Model.Parameters> GridSearch.Builder makeGridBuilder(Key<Grid> resultKey,
+                                                                               MP baseParams,
+                                                                               Map<String, Object[]> hyperParams,
+                                                                               HyperSpaceSearchCriteria searchCriteria) {
+      applyPreprocessing(baseParams);
+      Model.Parameters finalParams = applyPipeline(resultKey, baseParams, hyperParams);
+      if (finalParams instanceof PipelineParameters) resultKey = Key.make(PIPELINE_KEY_PREFIX+resultKey);
+      return GridSearch.create(
+                      resultKey,
+                      HyperSpaceWalker.BaseWalker.WalkerFactory.create(
+                              finalParams,
+                              hyperParams,
+                              new ModelParametersDelegateBuilderFactory<>(),
+                              searchCriteria
+                      ))
+              .withParallelism(GridSearch.SEQUENTIAL_MODEL_BUILDING)
+              .withMaxConsecutiveFailures(aml()._maxConsecutiveModelFailures);
+    }
+    
+    
     protected <MP extends Model.Parameters> ModelBuilder makeBuilder(Key<M> resultKey, MP params) {
       applyPreprocessing(params);
-      Model.Parameters finalParams = applyPipeline(resultKey, params);
+      Model.Parameters finalParams = applyPipeline(resultKey, params, null);
       if (finalParams instanceof PipelineParameters) resultKey = Key.make(PIPELINE_KEY_PREFIX+resultKey);
       
       Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
@@ -428,14 +441,23 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
     }
     
-    protected Model.Parameters applyPipeline(Key<M> estimatorResult, Model.Parameters params) {
+    protected Model.Parameters applyPipeline(Key resultKey, Model.Parameters params, Map<String, Object[]> hyperParams) {
       if (aml().getPipelineParams() == null) return params;
       PipelineParameters pparams = (PipelineParameters) aml().getPipelineParams().clone();
       setCommonModelBuilderParams(pparams);
       pparams._seed = params._seed;
       pparams._max_runtime_secs = params._max_runtime_secs;
       pparams._estimatorParams = params;
-      pparams._estimatorResult = (Key<Model>) estimatorResult;
+      pparams._estimatorKeyGen = hyperParams == null ? new ConstantKeyGen(resultKey) : new PatternKeyGen("{0}|s/"+PIPELINE_KEY_PREFIX+"//");
+      if (hyperParams != null) {
+        Map<String, Object[]> pipelineHyperParams = new HashMap<>();
+        for (Map.Entry<String, Object[]> e : hyperParams.entrySet()) {
+          pipelineHyperParams.put("estimator."+e.getKey(), e.getValue());
+        }
+        hyperParams.clear();
+        hyperParams.putAll(pipelineHyperParams);
+        hyperParams.putAll(aml().getPipelineHyperParams());
+      }
       return pparams;
     }
     

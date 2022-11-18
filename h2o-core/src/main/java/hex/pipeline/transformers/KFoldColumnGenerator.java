@@ -40,6 +40,11 @@ public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator> 
   }
 
   @Override
+  protected DataTransformer makeDefaults() {
+    return new KFoldColumnGenerator();
+  }
+
+  @Override
   protected void doPrepare(PipelineContext context) {
     assert context != null;
     assert context._params != null;

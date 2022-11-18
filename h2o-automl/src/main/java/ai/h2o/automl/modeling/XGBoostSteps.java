@@ -9,6 +9,7 @@ import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import hex.grid.SequentialWalker;
+import hex.grid.SimpleParametersBuilderFactory;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.Job;
@@ -196,10 +197,10 @@ public class XGBoostSteps extends ModelingSteps {
 //            searchParams.put("_tree_method", new XGBoostParameters.TreeMethod[]{XGBoostParameters.TreeMethod.auto});
             searchParams.put("_booster", new XGBoostParameters.Booster[]{ // include gblinear? cf. https://github.com/h2oai/h2o-3/issues/8381
                     XGBoostParameters.Booster.gbtree, //default, let's use it more often: note that some combinations may be trained multiple time by the RGS then.
-                    XGBoostParameters.Booster.gbtree,
                     XGBoostParameters.Booster.dart
             });
-
+            searchParams.put("_booster$weights", new Integer[] {2, 1});
+            
             searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
             searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
 
@@ -324,7 +325,7 @@ public class XGBoostSteps extends ModelingSteps {
                             new SequentialWalker<>(
                                     params,
                                     hyperParams,
-                                    new GridSearch.SimpleParametersBuilderFactory<>(),
+                                    new SimpleParametersBuilderFactory<>(),
                                     new SequentialSearchCriteria(StoppingCriteria.create()
                                             .maxRuntimeSecs((int)maxRuntimeSecs)
                                             .stoppingMetric(params._stopping_metric)

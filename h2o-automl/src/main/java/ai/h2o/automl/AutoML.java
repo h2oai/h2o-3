@@ -12,6 +12,7 @@ import ai.h2o.automl.leaderboard.ModelGroup;
 import ai.h2o.automl.leaderboard.ModelProvider;
 import ai.h2o.automl.leaderboard.ModelStep;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
+import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
@@ -167,10 +168,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Vec[] _originalTrainingFrameVecs;
   private String[] _originalTrainingFrameNames;
   private long[] _originalTrainingFrameChecksums;
-  private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
+  private transient Map<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
   private transient PipelineParameters _pipelineParams;
+  private transient Map<String, Object[]> _pipelineHyperParams;
   transient StepResultState[] _stepsResults;
 
   private boolean _useAutoBlending;
@@ -395,13 +397,25 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     final AutoMLBuildModels build = _buildSpec.build_models;
     _pipelineParams = build.preprocessing == null || !build._pipelineEnabled ? null : new PipelineParameters();
     if (_pipelineParams == null) return;
-    _pipelineParams._transformers = Arrays.stream(build.preprocessing)
-            .flatMap(def -> Arrays.stream(def.asTransformers(this)))
-            .toArray(DataTransformer[]::new);
-    if (_pipelineParams._transformers.length == 0) _pipelineParams = null;
+    List<DataTransformer> transformers = new ArrayList<>();
+    Map<String, Object[]> hyperParams = new NonBlockingHashMap<>();
+    for (PreprocessingStepDefinition def : build.preprocessing) {
+      PreprocessingStep step = def.newPreprocessingStep(this);
+      transformers.addAll(Arrays.asList(step.pipelineTransformers()));
+      Map<String, Object[]> hp = step.pipelineTransformersHyperParams();
+      if (hp != null) hyperParams.putAll(hp);
+    }
+    if (transformers.isEmpty()) {
+      _pipelineParams = null;
+      _pipelineHyperParams = null;
+    } else {
+      _pipelineParams._transformers = transformers.toArray(new DataTransformer[0]);
+      _pipelineHyperParams = hyperParams;
+    }
     
     //TODO: given that a transformer can reference a model (e.g. TE), 
-    // and multiple transformers can refer to the same model, 
+    // and multiple transformers can refer 
+      // to the same model, 
     // then we should be careful when deleting a transformer (resp. an entire pipeline) 
     // as we may delete sth that is still in use by another transformer (resp. pipeline).
     // --> ref count?
@@ -414,6 +428,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   
   PipelineParameters getPipelineParams() {
     return _pipelineParams;
+  }
+  
+  Map<String, Object[]> getPipelineHyperParams() {
+    return _pipelineHyperParams;
   }
 
   private void initPreprocessing() {

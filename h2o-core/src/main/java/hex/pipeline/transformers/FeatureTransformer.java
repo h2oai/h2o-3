@@ -5,7 +5,7 @@ import hex.pipeline.DataTransformer;
 /**
  * a DataTransformer that never modifies the response column
  */
-public abstract class FeatureTransformer<T extends FeatureTransformer> extends DataTransformer<T> {
+public abstract class FeatureTransformer<S extends FeatureTransformer> extends DataTransformer<S> {
   
   private String[] _excluded_columns;
 

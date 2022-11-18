@@ -54,7 +54,6 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       error("_estimator", "Pipeline can use cross validation only if provided with an estimator.");
     }
     if (_parms._transformers == null) _parms._transformers = new DataTransformer[0];
-    if (_parms._estimatorResult == null) _parms._estimatorResult = Key.make(_result+"_estimator");
   }
 
   @Override
@@ -102,7 +101,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                   new FrameType[]{FrameType.Training, FrameType.Validation},
                   context,
                   (frames, ctxt) -> {
-                    ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorResult, _parms._estimatorParams, frames[0], frames[1]);
+                    ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorKeyGen.make(_result), _parms._estimatorParams, frames[0], frames[1]);
                     Keyed res = mb.trainModelNested(null);
                     return res == null ? null : res.getKey();
                   }
@@ -140,7 +139,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                 new FrameType[]{FrameType.Training, FrameType.Validation},
                 context,
                 (frames, ctxt) -> {
-                  ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorResult, _parms._estimatorParams, frames[0], frames[1]);
+                  ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorKeyGen.make(_result), _parms._estimatorParams, frames[0], frames[1]);
                   mb.setCallbacks(new ModelBuilderCallbacks() {
                     /**
                      * Using this callback, the transformations are applied at the time the CV model training is triggered,
@@ -190,6 +189,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                 }
         );
       }
+      model.setInputParms(_input_parms);
     } finally {
       if (model != null) {
         model._output.sync();

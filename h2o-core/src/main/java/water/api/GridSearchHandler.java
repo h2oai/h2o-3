@@ -7,14 +7,13 @@ import hex.faulttolerance.Recovery;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
-import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
+import static hex.grid.HyperSpaceWalker.SUBSPACES;
 import hex.schemas.*;
 import water.H2O;
 import water.Job;
 import water.Key;
 import water.TypeMap;
 import water.api.schemas3.JobV3;
-import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
@@ -68,7 +67,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     Recovery<Grid> recovery = getRecovery(gss);
     Job<Grid> gsJob = GridSearch.resumeGridSearch(
         jobKey, grid,
-        new DefaultModelParametersBuilderFactory<MP, P>(),
+        new APIModelParametersBuilderFactory<MP, P>(),
         recovery
     ); 
     gss.hyper_parameters = null;
@@ -139,7 +138,7 @@ public class GridSearchHandler<G extends Grid<MP>,
         destKey,
         params,
         sortedMap,
-        new DefaultModelParametersBuilderFactory<MP, P>(),
+        new APIModelParametersBuilderFactory<MP, P>(),
         (HyperSpaceSearchCriteria) gss.search_criteria.createAndFillImpl(),
         recovery,
         GridSearch.getParallelismLevel(gss.parallelism)
@@ -205,7 +204,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     }
   }
 
-  public static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
+  public static class APIModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory<MP> {
 
     @Override

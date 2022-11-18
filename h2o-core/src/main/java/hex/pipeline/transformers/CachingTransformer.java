@@ -10,7 +10,7 @@ import water.util.FrameUtils;
 
 import java.util.Collection;
 
-public class CachingTransformer<T extends DataTransformer> extends DelegateTransformer<T> {
+public class CachingTransformer<S extends CachingTransformer, T extends DataTransformer> extends DelegateTransformer<S, T> {
   
   boolean _cacheEnabled = true;
   private final NonBlockingHashMap<Object, Key<Frame>> _cache = new NonBlockingHashMap<>();
@@ -26,7 +26,12 @@ public class CachingTransformer<T extends DataTransformer> extends DelegateTrans
   boolean isCacheEnabled() {
     return _cacheEnabled;
   }
-  
+
+  @Override
+  protected DataTransformer makeDefaults() {
+    return new CachingTransformer(null);
+  }
+
   private Object makeCachingKey(Frame fr, FrameType type, PipelineContext context) {
     // this way, works only for simple transformations, not if it is type/context-sensitive. 
     // The most important is to have something that would prevent transformation again and again:
