@@ -2,6 +2,31 @@
 
 ## H2O
 
+### Zygmund (3.38.0.3) - 11/22/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/3/index.html</a>
+
+#### Bug
+- [[PUBDEV-8909]](https://h2oai.atlassian.net/browse/PUBDEV-8909) - Enforced DkvClassLoader while accessing Python resources through JythonCFuncLoader.
+- [[PUBDEV-8908]](https://h2oai.atlassian.net/browse/PUBDEV-8908) - Closed open file descriptors from H2OConnection.
+- [[PUBDEV-8903]](https://h2oai.atlassian.net/browse/PUBDEV-8903) - Fixed incorrect value indicator for a partial dependence plot for its current row.
+- [[PUBDEV-8901]](https://h2oai.atlassian.net/browse/PUBDEV-8901) - Fixed GBM model with `interaction_constraints` only building single-depth trees.
+- [[PUBDEV-8876]](https://h2oai.atlassian.net/browse/PUBDEV-8876) - Fixed slow estimator validation when training model with wide datasets.
+- [[PUBDEV-8865]](https://h2oai.atlassian.net/browse/PUBDEV-8865) - Fixed GAM failure when `numknots=2` for I-spline.
+
+
+#### Task
+- [[PUBDEV-8836]](https://h2oai.atlassian.net/browse/PUBDEV-8836) - Verified the minimum number of knots each spline type can support for GAM.
+
+
+#### Docs
+- [[PUBDEV-8910]](https://h2oai.atlassian.net/browse/PUBDEV-8910) - Updated site logo, favicon, and color scheme to reflect H2O’s brand kit.
+- [[PUBDEV-8904]](https://h2oai.atlassian.net/browse/PUBDEV-8904) - Updated booklet links for GBM, GLM, and Deep Learning on their respective algorithm pages.
+- [[PUBDEV-8897]](https://h2oai.atlassian.net/browse/PUBDEV-8897) - Fixed typo in Model Selection for `build_glm_model` parameter.
+- [[PUBDEV-8892]](https://h2oai.atlassian.net/browse/PUBDEV-8892) - Updated links in the provided bibliography in the FAQ.
+- [[PUBDEV-8879]](https://h2oai.atlassian.net/browse/PUBDEV-8879) - Removed Sparkling Water booklet link from the download page.
+- [[PUBDEV-8869]](https://h2oai.atlassian.net/browse/PUBDEV-8869) - Added optional Python plotting requirement `matplotlib` to the download page.
+
 ### Zygmund (3.38.0.2) - 10/27/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/2/index.html</a>
