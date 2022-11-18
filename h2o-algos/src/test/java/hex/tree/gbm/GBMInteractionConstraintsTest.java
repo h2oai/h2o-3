@@ -19,6 +19,7 @@ import water.util.IcedHashSet;
 import water.util.IcedInt;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @CloudSize(1)
@@ -177,6 +178,9 @@ public class GBMInteractionConstraintsTest extends TestUtil {
             parms._categorical_encoding = encoding;
             
             GBMModel model = new GBM(parms).trainModel().get();
+
+            System.out.println("model = " + model);
+
             Scope.track_generic(model);
             
             String[] names = Arrays.copyOfRange(fr.names(), 2, fr.names().length);
@@ -218,20 +222,20 @@ public class GBMInteractionConstraintsTest extends TestUtil {
     private boolean checkBranches(SharedTreeNode root, GlobalInteractionConstraints ics){
         List<List<Integer>> allBranches = new ArrayList<>();
         collectBranchIndices(root, new ArrayList<>(), allBranches);
-        IcedHashSet<IcedInt> allowed;
+        HashSet<IcedInt> allowed;
         for(List<Integer> branch : allBranches){
-            allowed = ics.getAllowedInteractionForIndex(branch.get(0));
+            allowed = new HashSet<>(ics.getAllowedInteractionForIndex(branch.get(0)));
             for (int i = 1; i < branch.size(); i++){
                 int colIndex = branch.get(i);
-                if (!allowed.contains(colIndex)) {
+                if (!allowed.contains(new IcedInt(colIndex))) {
                     System.out.println("Constraint violated: allowed indices "+Arrays.toString(allowed.toArray())+" index is: "+colIndex);
                     return false;
                 }
                 if (i < branch.size() - 1) {
-                    IcedHashSet<IcedInt> interception = new IcedHashSet<>();
+                    HashSet<IcedInt> interception = new HashSet<>();
                     interception.addAll(allowed);
                     interception.retainAll(ics.getAllowedInteractionForIndex(colIndex));
-                    allowed = new IcedHashSet<>();
+                    allowed = new HashSet<>();
                     allowed.addAll(interception);
                 }
             }
