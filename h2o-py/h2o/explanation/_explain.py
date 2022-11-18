@@ -1202,7 +1202,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
     return fig, data
 
 
-def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index,
+def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, row_value,
                 output_graphing_data, nbins, show_rug, **kwargs):
     color = plt.get_cmap(colormap)(0)
     data = model.partial_plot(frame, cols=[column], plot=False,
@@ -1235,10 +1235,10 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.ylabel("log(odds)" if show_logodds else "Mean Response")
     else:
         if is_factor:
-            plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
+            plt.axvline(factor_map([row_value]), c="k", linestyle="dotted",
                         label="Instance value")
         else:
-            row_val = frame[row_index, column]
+            row_val = row_value
             if frame.type(column) == "time":
                 row_val = _timestamp_to_mpl_datetime(row_val)
             plt.axvline(row_val, c="k", linestyle="dotted", label="Instance value")
@@ -1330,6 +1330,7 @@ def pd_ice_common(
                                 output_graphing_data, nbins)
 
     factor_map = None
+    row_value = frame[row_index, column] if row_index is not None else None # get the value before we filter out irrelevant categories
     if is_factor:
         if centered:
             warnings.warn("Centering is not supported for factor columns!")
@@ -1359,7 +1360,7 @@ def pd_ice_common(
                               show_pdp, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
         else:
             res = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map,
-                              row_index, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
+                              row_index, row_value, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
 
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)

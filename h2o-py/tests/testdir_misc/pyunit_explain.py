@@ -797,6 +797,43 @@ def test_pareto_front_corner_cases():
     assert (df.loc[list(br), "name"] == "bottom right").all()
 
 
+def test_pd_plot_row_value():
+    import random
+    import matplotlib.pyplot as plt
+    def assert_row_value(fig, row_val, col):
+        lines = [line for line in fig.axes[0].lines if len(line._y) == 2 and line.get_linestyle() == ":"]
+        assert len(lines) == 1
+        indicator_line = lines[0]
+        if isinstance(row_val, float):
+            print(col, "=>", indicator_line._x[0], "==", row_val)
+            assert indicator_line._x[0] == row_val
+        else:
+            print(col, "=>", fig.axes[0].get_xticklabels()[int(indicator_line._x[0])].get_text(), "==", row_val)
+            assert fig.axes[0].get_xticklabels()[int(indicator_line._x[0])].get_text() == row_val
+        plt.close()
+
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    train["name"] = train["name"].asfactor()
+    y = "fare"
+
+    gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model")
+    gbm.train(y=y, training_frame=train)
+
+    for _ in range(20):
+        i = random.randrange(train.nrows)
+        print("\ntrain[" ,i, ", :]")
+        assert_row_value(gbm.pd_plot(train, "name", row_index=i).figure(), train[i, "name"], "name")
+        assert_row_value(gbm.pd_plot(train, "age", row_index=i).figure(), train[i, "age"], "age")
+
+    i = 408  # Male
+    print("\ntrain[" ,i, ", :]")
+    assert_row_value(gbm.pd_plot(train, "sex", row_index=i).figure(), train[i, "sex"], "sex")
+
+    i = 533  # Female
+    print("\ntrain[" ,i, ", :]")
+    assert_row_value(gbm.pd_plot(train, "sex", row_index=i).figure(), train[i, "sex"], "sex")
+
+
 pyunit_utils.run_tests([
     test_get_xy,
     test_varimp,
@@ -814,5 +851,6 @@ pyunit_utils.run_tests([
     test_explanation_automl_pareto_front,
     test_explanation_grid_pareto_front,
     test_explanation_some_dataframe_pareto_front,
-    test_pareto_front_corner_cases
+    test_pareto_front_corner_cases,
+    test_pd_plot_row_value,
     ])
