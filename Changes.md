@@ -16,10 +16,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/3/inde
 
 
 #### Task
+- [[PUBDEV-8877]](https://h2oai.atlassian.net/browse/PUBDEV-8877) - Ensured non-negative will not overwrite `splines_non_negative` for GAM I-spline.
 - [[PUBDEV-8836]](https://h2oai.atlassian.net/browse/PUBDEV-8836) - Verified the minimum number of knots each spline type can support for GAM.
 
 
 #### Docs
+- [[PUBDEV-8912]](https://h2oai.atlassian.net/browse/PUBDEV-8912) - Updated `compute_p_value` documentation for GLM and GAM to reflect that p-values and z-values can now be computed with regularization.
 - [[PUBDEV-8910]](https://h2oai.atlassian.net/browse/PUBDEV-8910) - Updated site logo, favicon, and color scheme to reflect H2O’s brand kit.
 - [[PUBDEV-8904]](https://h2oai.atlassian.net/browse/PUBDEV-8904) - Updated booklet links for GBM, GLM, and Deep Learning on their respective algorithm pages.
 - [[PUBDEV-8897]](https://h2oai.atlassian.net/browse/PUBDEV-8897) - Fixed typo in Model Selection for `build_glm_model` parameter.
