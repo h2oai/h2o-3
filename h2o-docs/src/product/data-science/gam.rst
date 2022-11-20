@@ -450,7 +450,7 @@ where:
 
 **M-splines:** :math:`M_{i,k}(t)`
 
-M-splines serve two functions: they are part of the construction of I-splines and they are normal (non-monotonic) splines that are implemented separate of the monotone spline as part of the GAM toolbox. You must set ``bs = 3`` for M-splines. ``spline_orders`` must also be set where the polynomials used to generate the splines will be equal to ``spline_orders``-1.
+M-splines serve two functions: they are part of the construction of I-splines and they are normal (non-monotonic) splines that are implemented separate of the monotone spline as part of the GAM toolbox. You must set ``bs = 3`` for M-splines. ``spline_orders`` must also be set where the polynomials used to generate the splines will be equal to ``spline_orders``-1. If you set ``spline_orders = 1`` then you must set ``num_knots >= 3``.
 
 The B-spline function can be normalized and denoted as :math:`M_{i,k}(t)` where it has an integration of 1 over the range of interest and is non-zero. This is the normalized B-spline Type I, and it is defined as:
 
@@ -525,12 +525,12 @@ The penalty matrix written in terms of the second derivative of M-spline as:
 
 .. math::
    
-   penaltyMat_{m,n} = \int_{t_0}^{t_N} \frac{dM_{m,k}^2 (t)}{dt^2} \frac{dM_{n,k} (t)}{dt^2}dt
+   penaltyMat_{m,n} = \int_{t_0}^{t_N} \frac{d^2M_{m,k} (t)}{dt^2} \frac{d^2M_{n,k} (t)}{dt^2}dt
 
 Instead of using the recursive expression, look at the coefficients associated with :math:`M_{m,k}(t)`, take the second derivative, and go from there. This is the procedure to use:
 
 - generate the coefficients of :math:`\frac{d^2M_{i,k}(t)}{dt^2}`;
-- implement multiplication of coefficients of :math:`\frac{dM_{i,k}^2 (t)}{dt^2} \frac{dM_{j,k} (t)}{dt^2}dt`. Due to the commutative property, :math:`\frac{dM_{i,k}^2 (t)}{dt^2} \frac{dM_{j,k} (t)}{dt^2}dt = \frac{dM_{j,k} (t)}{dt^2}dt \frac{dM_{i,k}^2 (t)}{dt^2}`, so you only need to perform the multiplication once and the :math:`penaltyMat_{m,n}` is symmetrical;
+- implement multiplication of coefficients of :math:`\frac{d^2M_{i,k} (t)}{dt^2} \frac{d^2M_{j,k} (t)}{dt^2}dt`. Due to the commutative property, :math:`\frac{d^2M_{i,k} (t)}{dt^2} \frac{d^2M_{j,k} (t)}{dt^2}dt = \frac{d^2M_{j,k} (t)}{dt^2}dt \frac{d^2M_{i,k} (t)}{dt^2}`, so you only need to perform the multiplication once and the :math:`penaltyMat_{m,n}` is symmetrical;
 - implement the integration of :math:`\frac{d^2M_{i,k}(t)}{dt^2} \frac{d^2M_{j,k}(t)}{dt^2}` by easy integration of the coefficients.
 
 .. _scenario6:
