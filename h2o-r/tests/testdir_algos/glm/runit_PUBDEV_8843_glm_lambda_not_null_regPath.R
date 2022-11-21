@@ -10,7 +10,6 @@ test.glm_reg_path <- function() {
     regpath = h2o.getGLMFullRegularizationPath(m)
   
     expect_true(length(alphaArray)==length(regpath$alphas))
-    expect_true(length(alphaArray)==length(regpath$p_values))
 }
 
 doTest("GLM p-values calculation with regularization on", test.glm_reg_path)
