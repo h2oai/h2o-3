@@ -325,7 +325,6 @@ class Fairness:
         from h2o.explanation import H2OExplanation
         from h2o.explanation._explain import NumpyFrame
         from h2o.explanation._explain import _density
-        from h2o.model.model_base import ModelBase
         from h2o.utils.typechecks import assert_is_type
 
         assert_is_type(frame, h2o.H2OFrame)

@@ -250,5 +250,7 @@ h2o.infogram_train_subset_models <-
           training_frame = training_frame,
           ...
         )))
-    h2o.disparate_analysis(models, test_frame, protected_columns, reference, favorable_class = favorable_class)
+    if (missing(protected_columns) || length(protected_columns) == 0)
+      return(h2o.make_leaderboard(models, test_frame))
+    return(h2o.disparate_analysis(models, test_frame, protected_columns, reference, favorable_class = favorable_class))
   }

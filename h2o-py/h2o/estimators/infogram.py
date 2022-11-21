@@ -1103,8 +1103,8 @@ class H2OInfogram(H2OEstimator):
             return [model]
 
 
-    def train_subset_models(self, model_class, y, training_frame, test_frame, protected_columns, reference,
-                            favorable_class, feature_selection_metrics=None, metric="euclidean", **kwargs):
+    def train_subset_models(self, model_class, y, training_frame, test_frame, protected_columns=None, reference=None,
+                            favorable_class=None, feature_selection_metrics=None, metric="euclidean", **kwargs):
         """
         Train models using different feature subsets selected by infogram.
 
@@ -1147,7 +1147,7 @@ class H2OInfogram(H2OEstimator):
         >>>
         >>> ig.train_subset_models(H2OGradientBoostingEstimator, y, train, test, protected_columns, reference, favorable_class)
         """
-        from h2o import H2OFrame
+        from h2o import H2OFrame, make_leaderboard
         from h2o.explanation import disparate_analysis
         from h2o.utils.typechecks import assert_is_type
 
@@ -1188,4 +1188,6 @@ class H2OInfogram(H2OEstimator):
         for x in subsets:
             models.extend(self._train_and_get_models(model_class, x, y, training_frame, **kwargs))
 
+        if protected_columns is None or len(protected_columns) == 0:
+            return make_leaderboard(models, leaderboard_frame=test_frame)
         return disparate_analysis(models, test_frame, protected_columns, reference, favorable_class)
