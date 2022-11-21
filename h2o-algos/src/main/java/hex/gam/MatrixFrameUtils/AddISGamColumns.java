@@ -8,8 +8,8 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 
 /**
- * class to gamified all gam_columns with bs set to 2.  For details regarding I-spline, please refer to doc in 
- * JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8398
+ * class to gamified all gam_columns with bs set to 2.  For details regarding I-spline, please refer to doc I in 
+ * JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8398.  This one performs gamification only.
  */
 public class AddISGamColumns extends MRTask<AddISGamColumns> {
     double[][][] _knotsMat; // knots without duplication for I-spline
@@ -70,7 +70,7 @@ public class AddISGamColumns extends MRTask<AddISGamColumns> {
     }
 
     /***
-     * Perform gamification of one column using I-spline basis function described in Section V of doc.
+     * Perform gamification of one column using I-spline basis function described in Section V of doc I.
      */
     public void generateOneISGAMCols(int colInd, int colOffset, double[] basisVals, ISplines isBasis, double xval,
                                      NewChunk[] newChunks) {

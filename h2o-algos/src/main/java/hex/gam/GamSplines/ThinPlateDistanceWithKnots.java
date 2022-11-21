@@ -102,7 +102,7 @@ public class ThinPlateDistanceWithKnots extends MRTask<ThinPlateDistanceWithKnot
     return fr;
   }
   
-  public double[][] generatePenalty(double[][] qmat) {
+  public double[][] generatePenalty() {
     double[][] penaltyMat = new double[_knotNum][_knotNum];
     double[][] knotsTranspose = transpose(_knots);
     double[] tempVal = MemoryManager.malloc8d(_knotNum);

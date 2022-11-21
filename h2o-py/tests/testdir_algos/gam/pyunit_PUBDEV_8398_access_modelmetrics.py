@@ -30,7 +30,7 @@ def buildModelMetricsCheck(train_data, y, gamX, family):
     numKnots = [5,6,7]
     x=["C1","C2"]
     h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [1,1,1], num_knots=numKnots, 
-                                                standardize=True, Lambda=[0], alpha=[0], max_iterations=3, bs=[2,2,2])
+                                                standardize=True, Lambda=[0], alpha=[0], max_iterations=3, bs=[0,2,3])
     h2o_model.train(x=x, y=y, training_frame=train_data)
     if family=='binomial':
         h2o_model.auc()

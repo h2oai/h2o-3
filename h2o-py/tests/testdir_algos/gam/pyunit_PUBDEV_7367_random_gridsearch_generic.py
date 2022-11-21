@@ -20,10 +20,10 @@ class test_random_gam_gridsearch_generic:
     myY = []
     h2o_model = []
     search_criteria = {'strategy': 'RandomDiscrete', "max_models": 8, "seed": 1}
-    hyper_parameters = {'scale': [[1, 1], [2, 2]], 'gam_columns': [["C11", "C12"], ["C12", "C13"]], 'lambda': [0, 0.01]}
+    hyper_parameters = {'scale': [[1, 1], [2, 2]], 'gam_columns': [["C11", "C12"], ["C12", "C13"]], 'lambda': [0.01]}
     manual_gam_models = []
     num_grid_models = 0
-    num_expected_models = 8
+    num_expected_models = 4
 
     def __init__(self):
         self.setup_data()

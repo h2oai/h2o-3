@@ -1,43 +1,50 @@
 package hex.gam.MatrixFrameUtils;
 
 import hex.gam.GAMModel;
-import hex.genmodel.algos.gam.ISplines;
+import hex.genmodel.algos.gam.MSplines;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 
-import static hex.gam.GamSplines.NBSplinesTypeIDerivative.genISPenaltyMatrix;
+import static hex.gam.GamSplines.NBSplinesTypeIDerivative.genMSPenaltyMatrix;
+import static hex.gam.MatrixFrameUtils.GenCSSplineGamOneColumn.generateZTransp;
 
-/**
- * Gamified one gam column at a time using I-spline.  See doc in JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8398.
- * This one is different from AddISGamColumns because it generates the penalty matrix, zTranform if applicable and
- * perform scaling of the penalty matrix apart from performing gamification.
- */
-public class GenISplineGamOneColumn extends MRTask<GenISplineGamOneColumn> {
-    private final double[] _knots;      // knots without duplication
-    private final int _order;
-    double[] _maxAbsRowSum;             // store maximum row sum
+public class GenMSplineGamOneColumn extends MRTask<GenMSplineGamOneColumn> {
+    private final double[] _knots;  // knots without duplication/extension
+    private final int _order;       // actual polynomial spline has order _order-1
+    double[] _maxAbsRowSum;
     public double _s_scale;
     private final int _gamColNChunks;
+    public double[][] _ZTransp;         // store Z matrix transpose, keep for now
     public double[][] _penaltyMat;      // store penalty matrix
     public final int _numBasis;
     public final int _totKnots;
-    
-    public GenISplineGamOneColumn(GAMModel.GAMParameters parm, double[] knots, int gamColIndex, Frame gamCol, 
+
+    /**
+     * Perform gamification on one predictor.
+     * 
+     * @param parm: GAM parameters
+     * @param knots: double array of knots without duplication
+     * @param gamColIndex: index of which sorted gam columns we are dealing with.
+     * @param gamCol: frame containing predictor to be gamified
+     * @param nBasis: number of basis function
+     * @param totKnots: total number of knots with duplication
+     */
+    public GenMSplineGamOneColumn(GAMModel.GAMParameters parm, double[] knots, int gamColIndex, Frame gamCol,
                                   int nBasis, int totKnots) {
         _knots = knots;
         _order = parm._spline_orders_sorted[gamColIndex];
         _numBasis = nBasis > 0 ? nBasis : knots.length+_order-2;
         _totKnots = totKnots > 0 ? totKnots : knots.length+2*_order-2;
         _gamColNChunks = gamCol.vec(0).nChunks();
-        _penaltyMat = genISPenaltyMatrix(knots, parm._spline_orders_sorted[gamColIndex]);
+        _penaltyMat = genMSPenaltyMatrix(knots, parm._spline_orders_sorted[gamColIndex]);
     }
 
     @Override
     public void map(Chunk[] chk, NewChunk[] newGamCols) {
-        ISplines basisFuncs = new ISplines(_order, _knots);
+        MSplines basisFuncs = new MSplines(_order, _knots);
         _maxAbsRowSum = new double[_gamColNChunks];
         double[] basisVals = new double[_numBasis]; // array to hold each gamified row
         int cIndex = chk[0].cidx();
@@ -68,7 +75,7 @@ public class GenISplineGamOneColumn extends MRTask<GenISplineGamOneColumn> {
     }
 
 
-    public void reduce(GenISplineGamOneColumn other) {
+    public void reduce(GenMSplineGamOneColumn other) {
         ArrayUtils.add(_maxAbsRowSum, other._maxAbsRowSum);
     }
 
@@ -80,4 +87,10 @@ public class GenISplineGamOneColumn extends MRTask<GenISplineGamOneColumn> {
             ArrayUtils.mult(_penaltyMat, _s_scale);
         _s_scale = 1.0/ _s_scale;
     }
+    
+    public Frame centralizeFrame(Frame fr, String colNameStart, GAMModel.GAMParameters parms) {
+        _ZTransp = generateZTransp(fr, _numBasis);
+        return  GenCSSplineGamOneColumn.centralizeFrame(fr, colNameStart, parms, _ZTransp);
+    }
+    
 }

@@ -85,7 +85,8 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
     writekv("_d", model._parms._gamPredSize);
     writekv("num_CS_col", model._cubicSplineNum);
     writekv("num_IS_col", model._iSplineNum);
-    if (model._iSplineNum > 0) {
+    writekv("num_MS_col", model._mSplineNum);
+    if (model._iSplineNum > 0 || model._mSplineNum > 0) {
       writekv("spline_orders_sorted", model._parms._spline_orders_sorted);
       writekv("spline_orders", model._parms._spline_orders);
     }

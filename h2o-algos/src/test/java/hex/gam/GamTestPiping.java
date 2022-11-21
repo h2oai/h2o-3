@@ -6,7 +6,6 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMTask;
 import hex.gram.Gram;
-import org.jheaps.annotations.Beta;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -368,7 +367,6 @@ public class GamTestPiping extends TestUtil {
       params._standardize = standardize;
       params._knot_ids = knotsKey;
       params._scale = scale;
-      params._family = family;
       params._response_column = responseColumn;
       params._max_iterations = 3;
       params._bs = bstypes;

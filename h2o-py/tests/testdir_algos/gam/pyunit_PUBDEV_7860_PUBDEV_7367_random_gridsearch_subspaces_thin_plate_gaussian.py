@@ -15,19 +15,17 @@ class test_random_gam_gridsearch_specific:
     myX = []
     myY = []
     h2o_model = []
-    search_criteria = {'strategy': 'RandomDiscrete', "max_models": 16, "seed": 1}
+    search_criteria = {'strategy': 'RandomDiscrete', "max_models": 8, "seed": 1}
     hyper_parameters = {'lambda': [100, 200],
                         'subspaces': [{'scale': [[1, 1, 1], [2, 2, 2]],
-                                         'num_knots': [[5, 5, 5], [6, 6, 6]],
                                          'bs':[[1,1,1]],
                                          'gam_columns': [[["C11", "C12"], ["C13", "C14"], ["C15", "C16"]]]},
                                         {'scale': [[1, 1], [2, 2]],
                                          'bs':[[1, 1]],
-                                         'num_knots': [[6, 6], [5, 5]],
                                          'gam_columns': [[["C11"], ["C14"]]]}]}
     manual_gam_models = []
     num_grid_models = 0
-    num_expected_models = 16
+    num_expected_models = 8
     manual_model_count = 0
 
     def __init__(self):
@@ -54,13 +52,11 @@ class test_random_gam_gridsearch_specific:
             for subspace in self.hyper_parameters["subspaces"]:
                 for scale in subspace['scale']:
                     for gam_columns in subspace['gam_columns']:
-                        for num_knots in subspace['num_knots']:
                             for bsVal in subspace['bs']:
                                 self.manual_model_count += 1
                                 self.manual_gam_models.append(H2OGeneralizedAdditiveEstimator(family="gaussian", 
                                                                                               gam_columns=gam_columns,
                                                                                               scale=scale,
-                                                                                              num_knots=num_knots,
                                                                                               bs=bsVal,
                                                                                               lambda_=lambda_,
                                                                                               seed=1234
@@ -78,13 +74,11 @@ class test_random_gam_gridsearch_specific:
         for model in self.manual_gam_models:
             scale = model.actual_params['scale']
             gam_columns = model.actual_params['gam_columns']
-            num_knots = model.actual_params['num_knots']
             lambda_ = model.actual_params['lambda']
             bsVal = model.actual_params['bs']
             for grid_search_model in self.h2o_model.models:
                 if grid_search_model.actual_params['gam_columns'] == gam_columns \
                     and grid_search_model.actual_params['scale'] == scale \
-                    and grid_search_model.actual_params['num_knots'] == num_knots \
                     and grid_search_model.actual_params['bs'] == bsVal \
                     and grid_search_model.actual_params['lambda'] == lambda_:
                     self.num_grid_models += 1
