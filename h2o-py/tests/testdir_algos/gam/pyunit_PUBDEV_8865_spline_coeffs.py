@@ -7,6 +7,7 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 
+# check and make sure centering has no effect on I-spline coeffs
 def test_GAM_coeffs_check():
     h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
     h2o_data["C1"] = h2o_data["C1"].asfactor()
@@ -33,6 +34,7 @@ def test_GAM_coeffs_check():
     model_coef = h2o_model.coef()
     gam_coef_table = h2o_model._model_json["output"]["coefficients_table_no_centering"]._cell_values
     table_len = len(gam_coef_table)
+    print(table_len)
     for cName in gam_is_coef_names:
         for index in range(0, table_len):
             if gam_coef_table[index][0] == cName:
