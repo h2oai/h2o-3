@@ -99,6 +99,7 @@ def test_train_subset_models_taiwan():
     assert da.nrows == 3 * len(x)
     assert ((da[:, "cair"] > 0.8) & (da[:, "cair"] < 1.25)).any()  # four-fifths rule
 
+
 def test_train_subset_models_metrics():
     data = h2o.import_file(pyunit_utils.locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
     x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
@@ -148,29 +149,29 @@ def test_train_subset_models_metrics():
     assert da.nrows == len(x)
 
     # Core, admissible_index
-    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test, protected_columns, reference, favorable_class)
+    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test)
     assert da.nrows == len(x)
 
     # Core, total_information + admissible_index
-    da = ig_core.train_subset_models(H2OGradientBoostingEstimator,y, train, test, protected_columns, reference, favorable_class,
+    da = ig_core.train_subset_models(H2OGradientBoostingEstimator,y, train, test,
                                       feature_selection_metrics=["total_information", "admissible_index"])
     assert da.nrows == len(x)
 
     # Core, admissible_index, manhattan distance
-    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test, protected_columns, reference, favorable_class, metric="manhattan")
+    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test, metric="manhattan")
     assert da.nrows == len(x)
 
     # Core, total_information + admissible_index, manhattan distance
-    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test, protected_columns, reference, favorable_class,
+    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test,
                                       feature_selection_metrics=["total_information", "admissible_index"], metric="manhattan")
     assert da.nrows == len(x)
 
     # Core, admissible_index, maximum distance
-    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test, protected_columns, reference, favorable_class, metric="maximum")
+    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test, metric="maximum")
     assert da.nrows == len(x)
 
     # Core, total_information + admissible_index, maximum distance
-    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test, protected_columns, reference, favorable_class,
+    da = ig_core.train_subset_models(H2OGradientBoostingEstimator, y, train, test,
                                       feature_selection_metrics=["total_information", "admissible_index"], metric="maximum")
     assert da.nrows == len(x)
 

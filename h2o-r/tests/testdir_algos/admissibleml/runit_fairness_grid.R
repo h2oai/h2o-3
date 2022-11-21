@@ -451,31 +451,31 @@ infogram_train_subset_models_works_with_multiple_metrics_test <- function () {
   expect_equal(nrow(da), length(x))
 
   # Basic core
-  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0")
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y)
   expect_equal(nrow(da), length(x))
 
   # core with total information
-  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y,
                                          feature_selection_metrics = "total_information")
   expect_equal(nrow(da), length(x))
 
   # Core with total and net information
-  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y,
                                          feature_selection_metrics = c("total_information", "net_information"))
   expect_equal(nrow(da), length(x))
 
   # Core with total and net information and cmi_raw
-  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y,
                                          feature_selection_metrics = c("total_information", "net_information", "cmi_raw"))
   expect_equal(nrow(da), length(x))
 
   # Core with total and manhattan distance
-  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y,
                                          feature_selection_metrics = "total_information", metric = "manhattan")
   expect_equal(nrow(da), length(x))
 
   # Core with total and net information and manhattan distance
-  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y, protected_columns = protected_cols, reference = reference, favorable_class = "0",
+  da <- h2o.infogram_train_subset_models(ig_core, h2o.gbm, training_frame = train, test_frame = test, y = y,
                                          feature_selection_metrics = c("total_information", "net_information"), metric = "manhattan")
   expect_equal(nrow(da), length(x))
 }
