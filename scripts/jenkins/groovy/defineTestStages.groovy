@@ -65,7 +65,7 @@ def call(final pipelineContext) {
 
   def SMOKE_PR_STAGES = [
     [
-      stageName: 'Py3.7 Changed Only', target: 'test-py-changed', pythonVersion: '3.7', timeoutValue: 20,
+      stageName: 'Py3.7 Changed Only', target: 'test-py-changed', pythonVersion: '3.7',timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ]
   ]

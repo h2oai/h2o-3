@@ -7,6 +7,7 @@ import hex.gam.GAMModel.GAMParameters;
 import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
+import org.apache.commons.lang.NotImplementedException;
 import water.DKV;
 import water.Key;
 import water.MemoryManager;
@@ -22,8 +23,11 @@ import java.util.*;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.calculateM;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.calculatem;
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.*;
+import static hex.genmodel.algos.gam.GamMojoModel.*;
 
 public class GamUtils {
+  public final static String SPLINENOTIMPL = "Spline type not implemented.";
+  public static final double EPS = 1e-12;
 
   // allocate 3D array to store various information;
   public static double[][][] allocate3DArrayCS(int num2DArrays, GAMParameters parms, AllocateType fileMode) {
@@ -40,13 +44,17 @@ public class GamUtils {
 
   public static double[][][] allocate3DArray(int num2DArrays, GAMParameters parms, AllocateType fileMode) {
     double[][][] array3D = new double[num2DArrays][][];
-
     for (int frameIdx = 0; frameIdx < num2DArrays; frameIdx++) {
-      if (parms._bs_sorted[frameIdx] != 2) { // cs spline
-        array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]);
-      } else { // I-splines
+      if (parms._bs_sorted[frameIdx] == IS_SPLINE_TYPE) { // I-spline, no centering needed
         int totBasis = parms._num_knots_sorted[frameIdx] + parms._spline_orders_sorted[frameIdx] - 2; // I-spline order=NBSplineTypeII order
         array3D[frameIdx] = allocate2DArray(fileMode, totBasis);
+      } else { // centering needed for other spline types
+        if (parms._bs_sorted[frameIdx] == MS_SPLINE_TYPE) {
+          int totBasis = parms._num_knots_sorted[frameIdx] + parms._spline_orders_sorted[frameIdx] - 2;
+          array3D[frameIdx] = allocate2DArray(fileMode, totBasis);
+        } else {
+          array3D[frameIdx] = allocate2DArray(fileMode, parms._num_knots_sorted[frameIdx]);
+        }
       }
     }
     return array3D;
@@ -58,7 +66,7 @@ public class GamUtils {
   public static void removeCenteringIS(double[][][] penaltyMatCenter, GAMParameters parms) {
     int numGamCol = parms._bs_sorted.length;
     for (int index=0; index<numGamCol; index++)
-      if (parms._bs_sorted[index]==2) {
+      if (parms._bs_sorted[index]==IS_SPLINE_TYPE) {
         int numBasis = parms._num_knots_sorted[index]+parms._spline_orders_sorted[index]-2;
         penaltyMatCenter[index] = allocate2DArray(AllocateType.sameOrig, numBasis);
       }
@@ -70,7 +78,7 @@ public class GamUtils {
     int gamColCount = 0;
     int numGamCols = parms._gam_columns.length;
     for (int frameIdx = 0; frameIdx < numGamCols; frameIdx++) {
-      if (parms._bs_sorted[frameIdx] == 1) {
+      if (parms._bs_sorted[frameIdx] == TP_SPLINE_TYPE) {
         array3D[gamColCount] = MemoryManager.malloc8d(secondDim[gamColCount], thirdDim[gamColCount]);
         gamColCount++;
       }
@@ -266,9 +274,9 @@ public class GamUtils {
     parms._bs = new int[parms._gam_columns.length];
     for (int index = 0; index < parms._bs.length; index++) {
       if (parms._gam_columns[index].length > 1) {
-        parms._bs[index] = 1;
+        parms._bs[index] = TP_SPLINE_TYPE;
       } else {
-        parms._bs[index] = 0;
+        parms._bs[index] = CS_SPLINE_TYPE;
       }
     }
   }
@@ -287,17 +295,21 @@ public class GamUtils {
       }
     }
   }
-  
-  public static void setGamPredSize(GAMParameters parms, int csOffset) {
+
+  /***
+   * For each spline type, calculate the gam columns in each gam column group.  For thin-plate splines, this can be 1,
+   * 2, or ....  However, for all other spline types, this can only be one.
+   */
+  public static void setGamPredSize(GAMParameters parms, int singleSplineOffset) {
     int numGamCols = parms._gam_columns.length;
-    int tpCount = csOffset;
-    int csCount = 0;
+    int tpCount = singleSplineOffset;
+    int singleSplineCount = 0;
     parms._gamPredSize = MemoryManager.malloc4(numGamCols);
     for (int index = 0; index < numGamCols; index++) {
-      if (parms._gam_columns[index].length == 1) { // CS
-        parms._gamPredSize[csCount++] = 1;
-      } else {  // TP
+      if (parms._bs[index] == TP_SPLINE_TYPE) { // tp
         parms._gamPredSize[tpCount++] = parms._gam_columns[index].length;
+      } else {  // single predictor gam column
+        parms._gamPredSize[singleSplineCount++] = 1;
       }
     }
   }
@@ -321,6 +333,9 @@ public class GamUtils {
       QuantileModel qModel = new Quantile(parms).trainModel().get();
       DKV.remove(tempFrame._key);
       Scope.track_generic(qModel);
+      // make boundary values to be slightly wider
+      qModel._output._quantiles[0][0] -= EPS;
+      qModel._output._quantiles[0][qModel._output._quantiles[0].length-1] += EPS;
       System.arraycopy(qModel._output._quantiles[0], 0, knots, 0, knotNum);
     } finally {
       Scope.exit();
@@ -330,8 +345,8 @@ public class GamUtils {
 
   // grab all predictors to build a smoother
   public static Frame prepareGamVec(int gam_column_index, GAMParameters parms, Frame fr) {
-    final Vec weights_column = (parms._weights_column == null) ? Scope.track(Vec.makeOne(fr.numRows()))
-            : fr.vec(parms._weights_column);
+    final Vec weights_column = ((parms._weights_column == null) || (fr.vec(parms._weights_column) == null))
+            ? Scope.track(Vec.makeOne(fr.numRows())) : fr.vec(parms._weights_column);
     final Frame predictVec = new Frame();
     int numPredictors = parms._gam_columns_sorted[gam_column_index].length;
     for (int colInd = 0; colInd < numPredictors; colInd++)
@@ -343,23 +358,21 @@ public class GamUtils {
 
   public static String[] generateGamColNames(int gamColIndex, GAMParameters parms) {
     String[] newColNames = null;
-    if (parms._bs_sorted[gamColIndex] == 0)
+    if (parms._bs_sorted[gamColIndex] == CS_SPLINE_TYPE)
       newColNames = new String[parms._num_knots_sorted[gamColIndex]];
     else
       newColNames = new String[parms._num_knots_sorted[gamColIndex]+parms._spline_orders_sorted[gamColIndex]-2];
-
-/*    StringBuffer nameStub = new StringBuffer();
-    int numPredictors = parms._gam_columns_sorted[gamColIndex].length;
-    for (int predInd = 0; predInd < numPredictors; predInd++) {
-      nameStub.append(parms._gam_columns_sorted[gamColIndex][predInd]+"_");
-    }*/
     String stubName = parms._gam_columns_sorted[gamColIndex][0]+"_";
-    if (parms._bs_sorted[gamColIndex]==0)
+    if (parms._bs_sorted[gamColIndex]==CS_SPLINE_TYPE)
       stubName += "cr_";
-    else if (parms._bs_sorted[gamColIndex]==2)
+    else if (parms._bs_sorted[gamColIndex]==IS_SPLINE_TYPE)
       stubName += "is_";
-    else
+    else if (parms._bs_sorted[gamColIndex]==MS_SPLINE_TYPE)
+      stubName += "ms_";
+    else if (parms._bs_sorted[gamColIndex]==TP_SPLINE_TYPE)
       stubName += "tp_";
+    else
+      throw new NotImplementedException(SPLINENOTIMPL);
     for (int knotIndex = 0; knotIndex < newColNames.length; knotIndex++) {
       newColNames[knotIndex] = stubName+knotIndex;
     }
@@ -438,26 +451,36 @@ public class GamUtils {
    * gam_columns, bs, scale, num_knots.
    * The array knots have already been moved with CS spline/I-spline in the front and TP splines in the back
    */
-  public static void sortGAMParameters(GAMParameters parms, int csGamCol, int isGamCol) {
+  public static void sortGAMParameters(GAMParameters parms, int csGamCol, int isGamCol, int msGamCol) {
     int gamColNum = parms._gam_columns.length;  // all gam cols regardless of types
     int csIndex = 0;
     int isIndex = csGamCol;
-    int tpIndex = csGamCol+isGamCol;
+    int msIndex = isIndex+isGamCol;
+    int tpIndex = msIndex+msGamCol;
     parms._gam_columns_sorted = new String[gamColNum][];
     parms._num_knots_sorted = MemoryManager.malloc4(gamColNum);
     parms._scale_sorted = MemoryManager.malloc8d(gamColNum);
     parms._bs_sorted = MemoryManager.malloc4(gamColNum);
     parms._gamPredSize = MemoryManager.malloc4(gamColNum);
     parms._spline_orders_sorted = MemoryManager.malloc4(gamColNum);
+    if (parms._splines_non_negative == null) {
+      parms._splines_non_negative = new boolean[parms._gam_columns.length];
+      Arrays.fill(parms._splines_non_negative, true);
+    }
     parms._splines_non_negative_sorted = MemoryManager.mallocZ(gamColNum);
     for (int index = 0; index < gamColNum; index++) {
-      if (parms._bs[index] == 0) { // CS spline
+      if (parms._bs[index] == CS_SPLINE_TYPE) { // CS spline
         setGamParameters(parms, index, csIndex++);
-      } else if (parms._bs[index] == 2) {
+      } else if (parms._bs[index] == IS_SPLINE_TYPE) {
         setGamParameters(parms, index, isIndex);
         parms._spline_orders_sorted[isIndex++] = parms._spline_orders[index];
-      } else { // thin plate spline
+      } else if (parms._bs[index] == MS_SPLINE_TYPE) {
+        setGamParameters(parms, index, msIndex);
+        parms._spline_orders_sorted[msIndex++] = parms._spline_orders[index];
+      } else if (parms._bs[index] == TP_SPLINE_TYPE) { // thin plate spline
         setGamParameters(parms, index, tpIndex++);
+      } else {
+        throw new NotImplementedException(SPLINENOTIMPL);
       }
     }
   }

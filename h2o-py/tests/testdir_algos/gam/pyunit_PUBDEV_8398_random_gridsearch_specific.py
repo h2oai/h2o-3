@@ -23,7 +23,7 @@ class test_random_gam_gridsearch_specific:
     hyper_parameters = {'scale': [[1, 1, 1], [2, 2, 2]],
                         'gam_columns': [["C16", "C17", "C18"]],
                         'num_knots': [[5, 5, 5], [6, 6, 6]],
-                        'bs':[[2,2,2],[0,2,0]]}
+                        'bs':[[2,3,2],[0,2,3]]}
     manual_gam_models = []
     num_grid_models = 0
     num_expected_models = 4

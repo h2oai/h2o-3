@@ -33,7 +33,8 @@ def test_gam_model_predict():
     h2o_data["C21"] = h2o_data["C21"].asfactor()
 
     nfold = random.randint(3,8)
-    h2o_model = H2OGeneralizedAdditiveEstimator(family = 'binomial', gam_columns = ["C11"],  scale = [0.0001],
+    h2o_model = H2OGeneralizedAdditiveEstimator(family = 'binomial', gam_columns = ["C11", "C12", "C13", "C14"],  
+                                                bs = [0, 1, 2, 3],
                                                 nfolds = nfold,
                                                 keep_cross_validation_models = True,
                                                 keep_cross_validation_predictions = True,

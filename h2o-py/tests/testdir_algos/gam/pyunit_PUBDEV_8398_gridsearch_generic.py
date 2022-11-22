@@ -43,12 +43,12 @@ class test_gam_gridsearch:
                 self.manual_gam_models.append(H2OGeneralizedAdditiveEstimator(family = "gaussian", gam_columns=["C11", "C12", "C13"],
                                                                               keep_gam_cols = True, scale = [1,1,1], num_knots = [5,5,5],
                                                                               alpha = alpha_param, lambda_ = lambda_param,
-                                                                              bs=[2,0,2]))
+                                                                              bs=[2,0,3]))
 
     def train_models(self):
         self.h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="gaussian", gam_columns=["C11", "C12", "C13"],
                                                                   keep_gam_cols=True, scale = [1,1,1], num_knots=[5,5,5],
-                                                                       bs=[2,0,2]), self.hyper_parameters)
+                                                                       bs=[2,0,3]), self.hyper_parameters)
         self.h2o_model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
         for model in self.manual_gam_models:
             model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)

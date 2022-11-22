@@ -23,7 +23,7 @@ test.model.gam.random.gridsearch.dual.modes <- function() {
     subspace1 <- list()
     subspace1$scale <- list(c(0.001, 0.001, 0.001), c(0.002, 0.002, 0.002))
     subspace1$num_knots <- list(c(5, 10, 12), c(6, 11, 13))
-    subspace1$bs <- list(c(0, 2, 1), c(2, 0, 1))
+    subspace1$bs <- list(c(0, 2, 1), c(2, 3, 1))
     subspace1$gam_columns <- list(list("c_0", c("c_1"), c("c_3", "c_4", "c_5")), 
                                   list("c_1", c("c_2"), c("c_4", "c_5", "c_6")))
     hyper_parameters$subspaces <- list(subspace1)
@@ -36,7 +36,7 @@ test.model.gam.random.gridsearch.dual.modes <- function() {
     subspace2 <- list()
     subspace2$scale <- list(c(0.001, 0.001, 0.001), c(0.002, 0.002, 0.002))
     subspace2$num_knots <- list(c(5, 10, 12), c(6, 11, 13))
-    subspace2$bs <- list(c(0, 2, 1), c(2, 0, 1))
+    subspace2$bs <- list(c(0, 2, 1), c(2, 3, 1))
     subspace2$gam_columns <- list(list(c("c_0"), c("c_1"), c("c_3", "c_4", "c_5")), 
                                   list(c("c_1"), c("c_2"), c("c_4", "c_5", "c_6")))
     hyper_parameters2$subspaces <- list(subspace2)

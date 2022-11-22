@@ -18,20 +18,17 @@ class test_random_gam_gridsearch_specific:
     myX = []
     myY = []
     h2o_model = []
-    search_criteria = {'strategy': 'RandomDiscrete', "max_models": 40, "seed": 1}
+    search_criteria = {'strategy': 'RandomDiscrete', "max_models": 20, "seed": 1}
     hyper_parameters = {'lambda': [0, 0.01],
                         'subspaces': [{'scale': [[1, 1, 1], [2, 2, 2]],
-                                         'num_knots': [[5, 5, 5], [5, 6, 7]],
                                          'gam_columns': [["C6", "C7", "C8"]]},
                                         {'scale': [[1, 1], [2, 2]],
-                                         'num_knots': [[5, 5], [6, 6]],
                                          'gam_columns': [["C6", "C7"], ["C7", "C8"]]},
                                         {'scale': [[1, 1], [2, 2]],
-                                         'num_knots': [[5, 5], [6, 6]],
                                          'gam_columns': [["C6", "C7"], ["C7", "C8"]]}]}
     manual_gam_models = []
     num_grid_models = 0
-    num_expected_models = 40
+    num_expected_models = 20
 
     def __init__(self):
         self.setup_data()
@@ -52,14 +49,12 @@ class test_random_gam_gridsearch_specific:
             for subspace in self.hyper_parameters["subspaces"]:
                 for scale in subspace['scale']:
                     for gam_columns in subspace['gam_columns']:
-                        for num_knots in subspace['num_knots']:
-                            self.manual_gam_models.append(H2OGeneralizedAdditiveEstimator(family="multinomial",
-                                                                                          gam_columns=gam_columns,
-                                                                                          keep_gam_cols=True,
-                                                                                          scale=scale,
-                                                                                          num_knots=num_knots,
-                                                                                          lambda_=lambda_
-                                                                                          ))
+                        self.manual_gam_models.append(H2OGeneralizedAdditiveEstimator(family="multinomial",
+                                                                                      gam_columns=gam_columns,
+                                                                                      keep_gam_cols=True,
+                                                                                      scale=scale,
+                                                                                      lambda_=lambda_
+                                                                                      ))
 
     def train_models(self):
         self.h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="multinomial",
@@ -72,12 +67,10 @@ class test_random_gam_gridsearch_specific:
         for model in self.manual_gam_models:
             scale = model.actual_params['scale']
             gam_columns = model.actual_params['gam_columns']
-            num_knots = model.actual_params['num_knots']
             lambda_ = model.actual_params['lambda']
             for grid_search_model in self.h2o_model.models:
                 if grid_search_model.actual_params['gam_columns'] == gam_columns \
                     and grid_search_model.actual_params['scale'] == scale \
-                    and grid_search_model.actual_params['num_knots'] == num_knots \
                     and grid_search_model.actual_params['lambda'] == lambda_:
                     self.num_grid_models += 1
                     assert grid_search_model.coef() == model.coef(), "coefficients should be equal"

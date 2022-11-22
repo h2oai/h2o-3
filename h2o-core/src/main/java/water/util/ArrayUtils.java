@@ -358,16 +358,17 @@ public class ArrayUtils {
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
   }
+  public static double[][] mult(double[][] ary, double n) {
+    if(ary == null) return null;
+    for (double[] row : ary) mult(row, n);
+    return ary;
+  }
+
   public static double[] mult(double[] nums, double n) {
 //    assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
     if (nums != null)
       for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
-  }
-  public static double[][] mult(double[][] ary, double n) {
-    if(ary == null) return null;
-    for (double[] row : ary) mult(row, n);
-    return ary;
   }
 
   public static double[] mult(double[] nums, double[] nums2) {

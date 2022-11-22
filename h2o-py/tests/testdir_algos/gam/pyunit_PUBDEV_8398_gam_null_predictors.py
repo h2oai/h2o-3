@@ -10,26 +10,32 @@ from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 def test_gam_null_predictors():
     print("Checking null predictor run for binomial")
     h2o_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/gamBinomial1Col.csv"))
-    buildModelMetricsCheck(h2o_data, 'binomial')
+    buildModelMetricsCheck(h2o_data, 'binomial',[0])
+    buildModelMetricsCheck(h2o_data, 'binomial',[1])
+    buildModelMetricsCheck(h2o_data, 'binomial',[2])
+    buildModelMetricsCheck(h2o_data, 'binomial',[3])
 
     print("Checking null predictor for gaussian")
     h2o_data = h2o.import_file(
     path=pyunit_utils.locate("smalldata/gam_test/gamGaussian1Col.csv"))
-    buildModelMetricsCheck(h2o_data, 'gaussian')
+    buildModelMetricsCheck(h2o_data, 'gaussian', [0])
+    buildModelMetricsCheck(h2o_data, 'gaussian', [1])
+    buildModelMetricsCheck(h2o_data, 'gaussian', [2])
+    buildModelMetricsCheck(h2o_data, 'gaussian', [3])
     
     print("gam modelmetrics test completed successfully")    
     
-def buildModelMetricsCheck(train_data, family):
+def buildModelMetricsCheck(train_data, family, bs):
     x = []
     y = "response"
     if not(family == 'gaussian'):
         train_data[y] = train_data[y].asfactor()
     frames = train_data.split_frame(ratios=[0.9], seed=12345)
     
-    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=["C1"], bs=[2], seed=12345)
+    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=["C1"], bs=bs, seed=12345)
     h2o_model.train(x=x, y=y, training_frame=frames[0], validation_frame=frames[1])
 
-    h2o_model2 = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=["C1"], bs=[2], seed=12345)
+    h2o_model2 = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=["C1"], bs=bs, seed=12345)
     h2o_model2.train(x=x, y=y, training_frame=frames[0], validation_frame=frames[1])
 
     # check and make sure coefficient does not contain predictor column
