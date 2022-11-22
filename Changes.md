@@ -24,7 +24,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/3/inde
 
 #### Docs
 - [[PUBDEV-8912]](https://h2oai.atlassian.net/browse/PUBDEV-8912) - Updated `compute_p_value` documentation for GLM and GAM to reflect that p-values and z-values can now be computed with regularization.
-- [[PUBDEV-8911]](https://h2oai.atlassian.net/browse/PUBDEV-8911) - Documented GAM M-splines
+- [[PUBDEV-8911]](https://h2oai.atlassian.net/browse/PUBDEV-8911) - Documented GAM M-splines.
 - [[PUBDEV-8910]](https://h2oai.atlassian.net/browse/PUBDEV-8910) - Updated site logo, favicon, and color scheme to reflect H2O’s brand kit.
 - [[PUBDEV-8904]](https://h2oai.atlassian.net/browse/PUBDEV-8904) - Updated booklet links for GBM, GLM, and Deep Learning on their respective algorithm pages.
 - [[PUBDEV-8897]](https://h2oai.atlassian.net/browse/PUBDEV-8897) - Fixed typo in Model Selection for `build_glm_model` parameter.
