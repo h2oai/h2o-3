@@ -32,7 +32,8 @@ public final class ComputationState {
   double _alpha;
   double[] _ymu;
   double [] _u;
-  double [] _z;
+  private double [] _zValues;
+  private boolean _dispersionEstimated;
   boolean _allIn;
   int _iter;
   int _iterHGLM_GLMMME; // keep track of iterations used in estimating fixed/random coefficients
@@ -179,7 +180,12 @@ public final class ComputationState {
       _ubeta = new double[len];
     System.arraycopy(ubeta, startIdx, _ubeta, 0, len);
   }
-  
+
+  public void setZValues(double[] zValues, boolean dispersionEstimated) {
+    _zValues = zValues;
+    _dispersionEstimated = dispersionEstimated;
+  }
+
   public double[] get_psi() {
     return _psi;
   }
@@ -219,6 +225,8 @@ public final class ComputationState {
   public GLMGradientSolver gslvr(){return _gslvr;}
   public double lambda(){return _lambda;}
   public double alpha() {return _alpha;}
+  public double[] zValues() {return _zValues;}
+  public boolean dispersionEstimated() {return _dispersionEstimated;}
   public void setLambdaMax(double lmax) {
     _lambdaMax = lmax;
   }

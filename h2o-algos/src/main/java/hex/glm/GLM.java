@@ -127,6 +127,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private boolean _doInit = true;  // flag setting whether or not to run init
   private double [] _xval_deviances;  // store cross validation average deviance
   private double [] _xval_sd;         // store the standard deviation of cross-validation
+  private double [][] _xval_zValues;  // store cross validation average p-values
   private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True
   private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_historty=True
   private int[] _xval_iters_generate_SH; // store cv iterations combined from the various cv models
@@ -312,6 +313,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       _xval_deviances = new double[lmin_max];
       _xval_sd = new double[lmin_max];
+      _xval_zValues = new double[lmin_max][_state._nbetas];
 
       int lidx = 0; // index into submodel
       int bestId = 0;   // submodel indedx with best Deviance from xval
@@ -319,6 +321,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (; lidx < lmin_max; ++lidx) { // search through submodel with same lambda and alpha values
         double testDev = 0;
         double testDevSq = 0;
+        double[] zValues = new double[_state._nbetas];
+        double[] zValuesSq = new double[_state._nbetas];
         for (int i = 0; i < cvModelBuilders.length; ++i) {  // run cv for each lambda value
           GLM g = (GLM) cvModelBuilders[i];
           if (g._model._output._submodels[lidx] == null) {
@@ -337,11 +341,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
           testDev += g._model._output._submodels[lidx].devianceValid;
           testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
+          if(g._model._output._submodels[lidx].zValues != null) {
+            for (int z = 0; z < zValues.length; z++) {
+              zValues[z] += g._model._output._submodels[lidx].zValues[z];
+              zValuesSq[z] += g._model._output._submodels[lidx].zValues[z] * g._model._output._submodels[lidx].zValues[z];
+            }
+          }
         }
         double testDevAvg = testDev / cvModelBuilders.length; // average testDevAvg for fixed submodel index
         double testDevSE = testDevSq - testDevAvg * testDev;
+        double[] zValuesAvg = Arrays.stream(zValues).map(z -> z / cvModelBuilders.length).toArray();
         _xval_sd[lidx] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
         _xval_deviances[lidx] = testDevAvg;
+        _xval_zValues[lidx] = zValuesAvg;
         if (testDevAvg < bestTestDev) {
           bestTestDev = testDevAvg;
           bestId = lidx;
@@ -406,6 +418,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _bestCVSubmodel = newBestId;
         _xval_deviances = Arrays.copyOfRange(_xval_deviances, bestId-newBestId, lmin_max + 1);
         _xval_sd = Arrays.copyOfRange(_xval_sd, bestId-newBestId, lmin_max + 1);
+        _xval_zValues = Arrays.copyOfRange(_xval_zValues, bestId-newBestId, lmin_max + 1);
       } else {
         _parms._lambda = new double[]{alphasAndLambdas[numOfSubmodels + bestId]};
         _model._output._selected_submodel_idx = 0; // set best submodel id here
@@ -2423,7 +2436,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _vcov = inv;
         for (int i = 0; i < zvalues.length; ++i)
           zvalues[i] = beta[i] / Math.sqrt(inv[i][i]);
+        // set z-values for the final model (might be overwritten later)
         _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
+        // save z-values to assign to the new submodel
+        _state.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), seEst);
       }
     }
 
@@ -2789,12 +2805,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sm = _model._output._submodels[i];
         else
           _model.addSubmodel(i, sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain,
-                  nullDevValid, _betaInfo.totalBetaLength()));
+                  nullDevValid, _betaInfo.totalBetaLength(), null, false));
       } else {  // this is also the path for HGLM model
         if (continueFromPreviousSubmodel) {
           sm = _model._output._submodels[i];
         } else {
-          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1, _betaInfo.totalBetaLength());// restart from last run
+          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1,
+                  _betaInfo.totalBetaLength(), _state.zValues(), _state.dispersionEstimated());// restart from last run
           if (_parms._HGLM) // add random coefficients for random effects/columns
             sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
           _model.addSubmodel(i, sm);
@@ -2834,7 +2851,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if (_parms._HGLM) {
           sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, nullDevTrain, nullDevValid,
-                  _betaInfo.totalBetaLength());
+                  _betaInfo.totalBetaLength(), _state.zValues(), _state.dispersionEstimated());
           sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
           _model.updateSubmodel(i, sm);
         } else {
@@ -2855,7 +2872,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), 
                     _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
           _model.updateSubmodel(i, sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
-                  trainDev, validDev, _betaInfo.totalBetaLength()));
+                  trainDev, validDev, _betaInfo.totalBetaLength(), _state.zValues(), _state.dispersionEstimated()));
         }
       }
       return sm;

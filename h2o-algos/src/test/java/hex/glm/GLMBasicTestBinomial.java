@@ -1281,15 +1281,6 @@ public class GLMBasicTestBinomial extends TestUtil {
     } catch(H2OModelBuilderIllegalArgumentException t) {
     }
     params._solver = Solver.IRLSM;
-    try {
-      params._lambda = new double[]{1};
-      job0 = new GLM(params);
-      GLMModel model = job0.trainModel().get();
-      assertFalse("should've thrown, p-values only supported with no regularization",true);
-    } catch(H2OModelBuilderIllegalArgumentException t) {
-    }
-    params._lambda_search = false;
-    params._lambda = new double[]{0};
     GLM job = new GLM(params);
     GLMModel model = null;
     Frame predictTrain = null;
@@ -1483,7 +1474,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       parms._lambda = new double[]{0};
       GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
-      double[] standardErr = manualGenSE(trainFrame, model);
+      double[] standardErr = manualGenSE(trainFrame, model._output.beta());
       assertStandardErr(model, standardErr, 1, 1e-3, 1e-4, 1e-2);
     } finally {
       Scope.exit();
@@ -1516,7 +1507,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       parms._lambda = new double[]{0};
       GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
-      double[] standardErr = manualGenSE(trainFrame, model);
+      double[] standardErr = manualGenSE(trainFrame, model._output.beta());
       assertStandardErr(model, standardErr, 1, 1e-2, 1e-2, 1e-4);
     } finally {
       Scope.exit();
@@ -1589,7 +1580,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       Scope.exit();
     }
   }
-  
+
   public void assertCorrectCoeffs(GLMModel model, Frame trainFrame, String response, double[] betaOld, boolean standardize) {
     double[] modelCoef = standardize ? model._output.getNormBeta() : model._output.beta();
     double[] manualCoef = genBinomialCoeff(trainFrame, response, model._output.coefficientNames(), betaOld, standardize);
@@ -1735,9 +1726,9 @@ public class GLMBasicTestBinomial extends TestUtil {
     double[] pValues = model._output.pValues();
     double[] zValuesManual = genZValues(model._output.beta(), manualStdErr, reg);
     double[] pValuesManual = genPValues(zValuesManual);
-    assertArrayEquals(zValues, zValuesManual, tot1);
-    assertArrayEquals(stdErr, manualStdErr, tot2);
-    assertArrayEquals(pValues, pValuesManual, tot3);
+    assertArrayEquals(zValuesManual, zValues, tot1);
+    assertArrayEquals(manualStdErr, stdErr, tot2);
+    assertArrayEquals(pValuesManual, pValues, tot3);
   }
   
   public static double[] genPValues(double[] zValues) {
@@ -1756,9 +1747,9 @@ public class GLMBasicTestBinomial extends TestUtil {
     return zValues;
   }
   
-  public static double[] manualGenSE(Frame trainFrame, GLMModel model) {
-    double[] betaDeriv = genBetaDeriv2(trainFrame, model); // generate d2l(b)/db2
-    double[][] xcov = genXCOV(betaDeriv, trainFrame, model);
+  public static double[] manualGenSE(Frame trainFrame, double[] beta) {
+    double[] betaDeriv = genBetaDeriv2(trainFrame, beta); // generate d2l(b)/db2
+    double[][] xcov = genXCOV(betaDeriv, trainFrame, beta.length);
     double[] xcovDiag = genXCOVInvDiag(xcov);
     return getStdErr(xcovDiag);
   }
@@ -1781,8 +1772,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     return xcovInvDiag;
   }
   
-  public static double[][] genXCOV(double[] betaDeriv2, Frame trainFrame, GLMModel model) {
-    int betaLen = model._output.beta().length;
+  public static double[][] genXCOV(double[] betaDeriv2, Frame trainFrame, int betaLen) {
     int numRows = (int) trainFrame.numRows();
     int dataLen = betaLen-1; // exclude intercept
     double[][] xcov = new double[betaLen][betaLen];
@@ -1800,8 +1790,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     return xcov;
   }
   
-  public static double[] genBetaDeriv2(Frame trainFrame, GLMModel model) {
-    double[] beta = model._output.beta();
+  public static double[] genBetaDeriv2(Frame trainFrame, double[] beta) {
     int numData = (int) trainFrame.numRows();
     double[] betaDeriv = new double[numData];
     for (int index=0; index<numData; index++) { // generate W
