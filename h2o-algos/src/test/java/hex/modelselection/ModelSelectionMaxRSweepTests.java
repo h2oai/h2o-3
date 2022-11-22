@@ -10,10 +10,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.Log;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,9 +20,9 @@ import java.util.stream.Stream;
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.modelselection.ModelSelectionMaxRTests.compareResultFModelSummary;
-import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.*;
+import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.maxr;
+import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.maxrsweep;
 import static hex.modelselection.ModelSelectionUtils.*;
-import static hex.modelselection.ModelSelectionUtils.mapPredIndex2CPMIndices;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -192,10 +190,10 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         SweepVector[][] sweepVectors = sweepCPM(smallCPM, sweepIndices, true);
         double[][] rightSizeCPM = addNewPred2CPM(allCPM, smallCPM, allPreds, pred2CPMIndices, hasIntercept);
         if (newPredCPMLength == 1) {
-            applySweepVectors2NewPred(sweepVectors, rightSizeCPM, newPredCPMLength);
+            applySweepVectors2NewPred(sweepVectors, rightSizeCPM, newPredCPMLength, null);
         } else {
             SweepVector[][] newSweepVec = mapBasicVector2Multiple(sweepVectors, newPredCPMLength);
-            applySweepVectors2NewPred(newSweepVec, rightSizeCPM, newPredCPMLength);
+            applySweepVectors2NewPred(newSweepVec, rightSizeCPM, newPredCPMLength, null);
         }
         assert2DArraysEqual(correctCPM, rightSizeCPM, 1e-6);
     }
@@ -233,6 +231,40 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             assertTrue(Math.abs(rSweepVector[index]-sweepVec[index]._value)<1e-6);
         }
     }
+    
+    @Test
+    public void testGenNewSV() {
+        final double[][] cpmOnePred = new double[][]{{50000.0, -7.958078640513122E-13, 122346.71425169753}, 
+                {-7.958078640513122E-13, 49999.0, -1852537.2069261894},{122346.71425169753, -1852537.2069261894, 
+                4.542312022970976E9}};
+        final double[][] cpmTwoPred = new double[][]{{50000.0, -7.958078640513122E-13, 3.979039320256561E-13, 
+                122346.71425169753},{-7.958078640513122E-13, 49999.0, -345.6139787378465, -1852537.2069261894},
+                {3.979039320256561E-13, -345.6139787378465, 49999.00000000001, 1815126.8928365733}, 
+                {122346.71425169753, -1852537.2069261894, 1815126.8928365733, 4.542312022970976E9}};
+        SweepVector[][] sVectorsOnePred = sweepCPM(cpmOnePred, new int[]{0, 1}, true);
+        final double[][] sweptCPMTwoPred = new double[][]{{2.0E-5, 3.1832951221076914E-22, 3.979039320256561E-13, 
+                2.4469342850339504},{3.1832951221076914E-22, 2.000040000800016E-5, -345.6139787378465, 
+                -37.05148516822715},{3.979039320256561E-13, -345.6139787378465, 49999.00000000001, 1815126.8928365733}, 
+                {-2.4469342850339504, 37.05148516822715, 1815126.8928365733, 4.473373393755198E9}};
+        SweepVector[][] sVectorsTwoPred = sweepCPM(cpmTwoPred, new int[]{0, 1}, true);
+        int numSV = sVectorsOnePred.length;
+        for (int index=0; index<numSV; index++) {
+            SweepVector[] newSV = genNewSV(sVectorsOnePred[index], sweptCPMTwoPred, 1, index);
+            assertEqualSV(newSV, sVectorsTwoPred[index]);
+        }
+    }
+    
+    public static void assertEqualSV(SweepVector[] sv1, SweepVector[] sv2) {
+        int svLen = sv1.length;
+        for (int index=0; index<svLen; index++) {
+            assertTrue("Expected row: "+sv1[index]._row+", actual row: "+sv2[index]._row+" and they are " +
+                    "different.", sv1[index]._row == sv2[index]._row);
+            assertTrue("Expected col: "+sv1[index]._column+", actual col: "+sv2[index]._column+" and they are " +
+                    "different.", sv1[index]._column == sv2[index]._column);
+            assertTrue("Expected value: "+sv1[index]._value+", actual value: "+sv2[index]._value+" and they are " +
+                    "different.", Math.abs(sv1[index]._column - sv2[index]._column) < 1e-6);
+        }
+     }
 
     @Test
     public void testPerformAllSweepingNoSweepVector() {
@@ -272,6 +304,27 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         assertCorrectSweeping(clone2DArray(cpm), new int[]{1,3,0,2}, cpmAfterSweep0N1N2N3);
         assertCorrectSweeping(clone2DArray(cpm), new int[]{2,3,1,0}, cpmAfterSweep0N1N2N3);
         assertCorrectSweeping(clone2DArray(cpm), new int[]{2,1,0,3}, cpmAfterSweep0N1N2N3);
+    }
+
+    @Test
+    public void testPerformSweepingMSEOnly() {
+        final double[][] cpm = new double[][]{{10.000000, -3.925113,  1.192877, -2.675484,  3.657043},
+                {-3.925113,  9.961056,  4.638419,  1.719902, -2.373317},
+                {1.192877,  4.638419,  9.649718, -1.855625,  3.444272},
+                {-2.675484,  1.719902, -1.855625,  6.197150, -3.117239},
+                {3.657043, -2.373317,  3.444272, -3.117239,  3.636824}};
+        assertCorrectSweepMSE(clone2DArray(cpm), new int[]{0});
+        assertCorrectSweepMSE(clone2DArray(cpm), new int[]{0, 1});
+        assertCorrectSweepMSE(clone2DArray(cpm), new int[]{0, 1, 2});
+        assertCorrectSweepMSE(clone2DArray(cpm), new int[]{0, 1, 2, 3});
+    }
+
+    public static void assertCorrectSweepMSE(double[][] cpm, int[] sweepIndice) {
+        double[][] subsetCPM = clone2DArray(cpm);
+        sweepCPM(cpm, sweepIndice, false);
+        double mse = sweepMSE(subsetCPM, Arrays.stream(sweepIndice).boxed().collect(Collectors.toList()));
+        assertTrue("Expected MSE: "+cpm[cpm.length-1][cpm.length-1]+" Actual: "+mse + " and they are not " +
+                "equal", Math.abs(mse-cpm[cpm.length-1][cpm.length-1]) < 1e-12);
     }
 
     public static void assertCorrectAllSweeping(double[][] cpm, int[] sweepIndice, double[][] correctCPM) {
@@ -560,6 +613,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         Scope.enter();
         try {
             Frame origF = Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));
+            //Frame origF = Scope.track(parseTestFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gaussian_20cols_10000Rows.csv"));
             int[] eCol = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
             Arrays.stream(eCol).forEach(x -> origF.replace(x, origF.vec(x).toCategoricalVec()).remove());
             DKV.put(origF);

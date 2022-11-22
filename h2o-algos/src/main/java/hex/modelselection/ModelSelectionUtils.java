@@ -17,7 +17,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static hex.gam.MatrixFrameUtils.GamUtils.copy2DArray;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 
 public class ModelSelectionUtils {
@@ -233,21 +232,19 @@ public class ModelSelectionUtils {
      * for maxrsweep2
      */
     public static double[] generateAllErrorVariances(final double[][] allCPM, final SweepVector[][] sweepVec, double[][] prevCPM,
-                                                     String[] predictorNames, List<Integer> currSubsetIndices,
-                                                     List<Integer> validSubsets, Set<BitSet> usedCombo,
-                                                     final int[][] pred2CPMIndices, final boolean hasIntercept,
-                                                     List<Integer[]> allSubsetList) {
+                                                     List<Integer> currSubsetIndices,
+                                                     List<Integer> validSubsets, Set<BitSet> usedCombo, BitSet tempIndices,
+                                                     final int[][] pred2CPMIndices, final boolean hasIntercept, 
+                                                     int predPos, int removedPred, int[] sweepIndices) {
         int[] allPreds = new int[currSubsetIndices.size() + 1];   // store the bigger predictor subset
         int lastPredInd = allPreds.length - 1;
-        int lastTruePredInd = lastPredInd - 1;
+
         if (currSubsetIndices.size() > 0)   // copy over last best predictor subset with smaller subset size
             System.arraycopy(currSubsetIndices.stream().mapToInt(Integer::intValue).toArray(), 0, allPreds,
                     0, allPreds.length - 1);
-        int predNum = predictorNames.length;
-        BitSet tempIndices = new BitSet(predNum);
         int predSizes = allPreds.length;
         int maxModelCount = validSubsets.size();
-        int[] trueAllPreds = null;
+
         RecursiveAction[] resA = new RecursiveAction[maxModelCount];
         final double[] subsetMSE = Arrays.stream(new double[maxModelCount]).map(x -> Double.MAX_VALUE).toArray();
         int modelCount = 0;
@@ -256,16 +253,14 @@ public class ModelSelectionUtils {
             if (predSizes > 1) {
                 tempIndices.clear();
                 setBitSet(tempIndices, allPreds);
-
                 if (usedCombo.add((BitSet) tempIndices.clone())) {
-                    allSubsetList.add(IntStream.of(allPreds).boxed().toArray(Integer[]::new));
                     final int resCount = modelCount++;
-                    genMSE4MorePreds(pred2CPMIndices, allCPM, sweepVec, allPreds, prevCPM, subsetMSE, resA, resCount, hasIntercept);
+                    genMSE4MorePreds(pred2CPMIndices, allCPM, sweepVec, allPreds, prevCPM, subsetMSE, resA, resCount, 
+                            hasIntercept, predPos, removedPred, sweepIndices);
                 }
-                // } else if (predSizes > 1 && maxRsweepReplacement) {
             } else {    // start from first predictor
                 final int resCount = modelCount++;
-                genMSE1stPred(pred2CPMIndices, allCPM, allPreds, allSubsetList, subsetMSE, resA, resCount, hasIntercept);
+                genMSE1stPred(pred2CPMIndices, allCPM, allPreds, subsetMSE, resA, resCount, hasIntercept);
             }
         }
         ForkJoinTask.invokeAll(Arrays.stream(resA).filter(Objects::nonNull).toArray(RecursiveAction[]::new));
@@ -274,8 +269,13 @@ public class ModelSelectionUtils {
 
     public static void genMSE4MorePreds(final int[][] pred2CPMIndices, final double[][] allCPM, SweepVector[][] sweepVec,
                                         final int[] allPreds, double[][] prevCPM, final double[] subsetMSE, RecursiveAction[] resA,
-                                        final int resCount, final boolean hasIntercept) {
-        final int[] subsetIndices = allPreds.clone();
+                                        final int resCount, final boolean hasIntercept, int predPos, int removedPred, int [] sweepIndices) {
+        List<Integer> predList = null;
+        if (predPos >= 0) {
+            predList = IntStream.of(allPreds).boxed().collect(Collectors.toList());
+            predList.add(predPos, removedPred);
+        }
+        final int[] subsetIndices = predPos >= 0 ? predList.stream().mapToInt(x->x).toArray() : allPreds.clone();
         resA[resCount] = new RecursiveAction() {
             @Override
             protected void compute() {
@@ -285,25 +285,112 @@ public class ModelSelectionUtils {
                 int lastPredInd = subsetIndices[subsetIndices.length - 1];
                 int newPredCPMLength = pred2CPMIndices[lastPredInd].length;
                 if (newPredCPMLength == 1) { // perform sweeping with sweep vector when one new row/column is added
-                    subsetMSE[resCount] = applySweepVectors2NewPred(sweepVec, subsetCPM, newPredCPMLength);
+                    applySweepVectors2NewPred(sweepVec, subsetCPM, newPredCPMLength, sweepIndices);
                 } else {    // when multiple rows/columns are added due to new enum column
                     SweepVector[][] newSweepVec = mapBasicVector2Multiple(sweepVec, newPredCPMLength);
-                    subsetMSE[resCount] = applySweepVectors2NewPred(newSweepVec, subsetCPM, newPredCPMLength);
+                    applySweepVectors2NewPred(newSweepVec, subsetCPM, newPredCPMLength, sweepIndices);
                 }
                 // apply new sweeps to CPM due to addition of the new rows/columns
-                int lastSubsetIndex = subsetCPM.length - 1;
-                int[] sweepIndices = IntStream.range(0, newPredCPMLength).map(x -> x + lastSweepIndex).toArray();
-                sweepCPM(subsetCPM, sweepIndices, false);
-                subsetMSE[resCount] = subsetCPM[lastSubsetIndex][lastSubsetIndex];
+                List<Integer> sweepIndices = IntStream.range(0, newPredCPMLength).map(x -> x + lastSweepIndex).boxed().collect(Collectors.toList());
+                // only apply the sweepIndices to only the last element of the CPM
+                subsetMSE[resCount] = sweepMSE(subsetCPM, sweepIndices);
             }
         };
     }
     
+    public static double sweepMSE(double[][] subsetCPM, List<Integer> sweepIndices) {
+        int sweepLen = sweepIndices.size();
+        int cpmLen = subsetCPM.length;
+        int lastInd = cpmLen-1;
+        if (sweepLen == 1) {    // quick stop for one sweep only
+            int sweepInd = sweepIndices.get(0);
+            return subsetCPM[lastInd][lastInd]
+                    -subsetCPM[lastInd][sweepInd]*subsetCPM[sweepInd][lastInd]/subsetCPM[sweepInd][sweepInd];
+        } 
+        Set<SweepElement>[] sweepElements = new Set[sweepLen];
+        List<SweepElement> tempElements = new ArrayList<>();
+        tempElements.add(new SweepElement(lastInd, lastInd, new ArrayList<>(sweepIndices)));
+        while (tempElements.size() > 0) {
+            SweepElement oneEle = tempElements.remove(0);
+            if (oneEle._sweepIndices.size() == 1) {
+                if (sweepElements[0] == null)
+                    sweepElements[0] = new HashSet<>();
+                sweepElements[0].add(oneEle);
+            } else { // sweepIndices size > 1
+                int arrIndex = oneEle._sweepIndices.size() - 1;
+                if (sweepElements[arrIndex] == null)
+                    sweepElements[arrIndex] = new HashSet<>();
+                sweepElements[arrIndex].add(oneEle);
+                process(oneEle, tempElements);
+            }
+        }
+        sweepCPMElements(sweepElements, subsetCPM);
+        return subsetCPM[lastInd][lastInd];
+    }
+
+    public static void sweepCPMElements(Set<SweepElement>[] sweepElements, double[][] subsetCPM) {
+        int numSweeps = sweepElements.length;
+        int row, col, oneIndex;
+        for (int index = 0; index < numSweeps; index++) {
+            Set<SweepElement> oneSweepAction = sweepElements[index];
+            for (SweepElement oneElement : oneSweepAction) {
+                oneIndex = oneElement._sweepIndices.get(oneElement._sweepIndices.size() - 1);
+                row = oneElement._row;
+                col = oneElement._col;
+                subsetCPM[row][col] = subsetCPM[row][col] -
+                        subsetCPM[row][oneIndex] * subsetCPM[oneIndex][col] / subsetCPM[oneIndex][oneIndex];
+            }
+        }
+    }
+
+    /***
+     * This method will generate all the elements that are needed to perform sweeping on the currEle.  The
+     * formula for sweeping is:
+     *  subsetCPM[row][col] = subsetCPM[row][col]-subsetCPM[row][sweepInd]*subsetCPM[sweepInd][row]/subsetCPM[sweepInd][sweepInd]
+     *  
+     *  We are not performing the actual sweeping here but rather to remember the elements of subsetCPM that we need
+     *  to perform sweeping on.  From the formula, each currEle will generate three more new SweepElements
+     */
+    public static void process(SweepElement currEle, List<SweepElement> tempList) {
+        List<Integer> newSweepIndices = new ArrayList<>(currEle._sweepIndices);
+        int sweepIndex = newSweepIndices.remove(newSweepIndices.size()-1);  // remove last sweepIndices
+        tempList.add(new SweepElement(currEle._row, currEle._col, newSweepIndices));
+        tempList.add(new SweepElement(currEle._row, sweepIndex, newSweepIndices));
+        tempList.add(new SweepElement(sweepIndex, currEle._col, newSweepIndices));
+        tempList.add(new SweepElement(sweepIndex, sweepIndex, newSweepIndices));
+    }
+    
+    static class SweepElement {
+        final int _row;
+        final int _col;
+        final List<Integer> _sweepIndices;
+        
+        public SweepElement(int row, int col, List<Integer> sweepInd) {
+            _row = row;
+            _col = col;
+            _sweepIndices = sweepInd;
+        }
+        
+        @Override
+        public boolean equals(Object o) {
+            if (o instanceof SweepElement) {
+                if (_row == ((SweepElement) o)._row && _col == ((SweepElement) o)._col) {
+                    if (_sweepIndices.equals(((SweepElement) o)._sweepIndices))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return _row+(_col+1)*10+_sweepIndices.hashCode();
+        }
+    }
     public static void genMSE1stPred(final int[][] pred2CPMIndices, final double[][] allCPM, final int[] allPreds, 
-                                     List<Integer[]> allSubsetList,  final double[] subsetMSE, RecursiveAction[] resA,
+                                     final double[] subsetMSE, RecursiveAction[] resA,
                                      final int resCount, final boolean hasIntercept) {
         final int[] subsetIndices = allPreds.clone();
-        allSubsetList.add(IntStream.of( allPreds ).boxed().toArray( Integer[]::new ));
         resA[resCount] = new RecursiveAction() {
             @Override
             protected void compute() {
@@ -311,54 +398,9 @@ public class ModelSelectionUtils {
                 double[][] subsetCPM = extractPredSubsetsCPM(allCPM, subsetIndices, pred2CPMIndices, hasIntercept);
                 int lastSubsetIndex = subsetCPM.length-1;
                 // perform sweeping action and record the sweeping vector and save the changed cpm
-                sweepCPM(subsetCPM, IntStream.range(0, lastSubsetIndex).toArray(), false);
-                // copy over the CPM after sweeping and sweeping vector to main program
-                subsetMSE[resCount] = subsetCPM[lastSubsetIndex][lastSubsetIndex];
+                subsetMSE[resCount] = sweepMSE(subsetCPM, IntStream.range(0, lastSubsetIndex).boxed().collect(Collectors.toList()));
             }
         };
-    }
-    
-    public static double[] generateAllErrorVariances(final double[][] origCPM, String[] predictorNames,
-                                                     List<Integer> currSubsetIndices, List<Integer> validSubsets,
-                                                     Set<BitSet> usedCombo, List<Integer[]> allSubsetList, 
-                                                     int[][] predInd2CPMInd, final int predPos) {
-        int[] allPreds = new int[currSubsetIndices.size() + 1];   // store the bigger predictor subset
-        if (currSubsetIndices.size() > 0) {  // copy over predictors to larger array
-            int[] temp = currSubsetIndices.stream().mapToInt(Integer::intValue).toArray();
-            if (predPos != 0)
-                System.arraycopy(temp, 0, allPreds, 0, predPos);
-            if (temp.length > predPos)
-                System.arraycopy(temp, predPos, allPreds, predPos+1, currSubsetIndices.size()-predPos);
-        }
-        BitSet tempIndices = new BitSet(predictorNames.length);
-        int maxModelCount = validSubsets.size();
-        RecursiveAction[] resA = new RecursiveAction[maxModelCount];
-        final int cpmLen = origCPM.length;
-        final int lastCPMIndex = cpmLen-1;
-        final double[] subsetMSE = Arrays.stream(new double[maxModelCount]).map(x -> Double.MAX_VALUE).toArray();
-        int modelCount = 0;
-        for (int predIndex : validSubsets) {  // consider valid predictor indices only
-            allPreds[predPos] = predIndex;
-            tempIndices.clear();
-            setBitSet(tempIndices, allPreds);
-            if (usedCombo.add((BitSet) tempIndices.clone())) {  // returns true if subset is not a duplicate
-                allSubsetList.add(IntStream.of(allPreds).boxed().toArray(Integer[]::new));
-                final int resCount = modelCount++;
-                final int[] subsetIndices = allPreds.clone();
-                resA[resCount] = new RecursiveAction() {
-                    @Override
-                    protected void compute() {
-                        int changedPredInd = subsetIndices[predPos];
-                        double[][] currCPM = new double[cpmLen][cpmLen];
-                        copy2DArray(origCPM, currCPM);
-                        sweepCPM(currCPM, predInd2CPMInd[changedPredInd], false);
-                        subsetMSE[resCount] = currCPM[lastCPMIndex][lastCPMIndex];
-                    }
-                };
-            }
-        }
-        ForkJoinTask.invokeAll(Arrays.stream(resA).filter(Objects::nonNull).toArray(RecursiveAction[]::new));
-        return subsetMSE;
     }
 
     /***
@@ -398,19 +440,27 @@ public class ModelSelectionUtils {
 
     /***
      * This method will sweep the rows/columns added to the CPM due to the addition of the new predictor using sweep
-     * vector arrays.  See Step 3 of section V.II.IV of doc.  The sweep vectors should contains sweeping for predictor
+     * vector arrays.  See Step 3 of section V.II.IV of doc.  The sweep vectors should contain sweeping for predictor
      * 0, for predictor 2, .... predictor s of the predictor subset.
      */
-    public static double applySweepVectors2NewPred(SweepVector[][] sweepVec, double[][] subsetCPM, int numNewRows) {
-        int lastSubsetCPMInd = subsetCPM.length-1;
+    public static void applySweepVectors2NewPred(SweepVector[][] sweepVec, double[][] subsetCPM, int numNewRows, 
+                                                 int[] sweepMat) {
         int numSweep = sweepVec.length; // number of sweeps that we need to do
         int sweepVecLen = sweepVec[0].length;
         int[][] elementAccessMatrix = new int[sweepVecLen][sweepVecLen];
-        for (int sweepInd=0; sweepInd < numSweep; sweepInd++) {
-            zeroFill2DArrays(elementAccessMatrix);
-            oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM, sweepInd, numNewRows, elementAccessMatrix);
+        if (sweepMat == null) {
+            for (int sweepInd=0; sweepInd < numSweep; sweepInd++) {
+                zeroFill2DArrays(elementAccessMatrix);
+                oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM, sweepInd, numNewRows, elementAccessMatrix);
+            }
+        } else {
+            int sweepInd;
+            for (int index = 0; index < numSweep; index++) {
+                sweepInd = sweepMat[index];
+                zeroFill2DArrays(elementAccessMatrix);
+                oneSweepWSweepVector(sweepVec[index], subsetCPM, sweepInd, numNewRows, elementAccessMatrix);
+            }
         }
-        return subsetCPM[lastSubsetCPMInd][lastSubsetCPMInd];
     }
     
     public static void zeroFill2DArrays(int[][] elementArray) {
@@ -531,6 +581,86 @@ public class ModelSelectionUtils {
         
         return newCPM;
     }
+
+    /***
+     * Given the predictor subset stored in subsetPred, the newest predictor index is the last element of subsetPred.
+     * The subsetCPM contains the swept rows/cols corresponding to the predictors stored in subsetPred except the last
+     * predictor.  Here, we need to update the sweep vectors for the sweeping of a new predictor in the future.
+     */
+    public static SweepVector[][] updateSweepVectors(double[][] subsetCPM, SweepVector[][] sweepVector, 
+                                                     int[] subsetPred, int[][] predInd2CPMInd, boolean hasIntercept) {
+        int subsetSize = subsetCPM.length;
+        int newPred = subsetPred[subsetPred.length-1];
+        int numSV = sweepVector.length;
+        int newNumSweeps = predInd2CPMInd[newPred].length;
+        SweepVector[][] currSV = newNumSweeps > 1 ? mapBasicVector2Multiple(sweepVector, newNumSweeps) : sweepVector;
+        SweepVector[][] newSweepVector = new SweepVector[subsetSize-1][];
+        int sweepVecLen = currSV[0].length;
+        int[][] elementAccessMatrix = new int[sweepVecLen][sweepVecLen];
+        for (int sweepInd=0; sweepInd < numSV; sweepInd++) {
+            // copy over sweepVector to newSV
+            newSweepVector[sweepInd] = genNewSV(currSV[sweepInd], subsetCPM, newNumSweeps, sweepInd);
+            // perform sweeping of sweepInd using sweep vectors
+            zeroFill2DArrays(elementAccessMatrix);
+            oneSweepWSweepVector(currSV[sweepInd], subsetCPM, sweepInd, newNumSweeps, elementAccessMatrix);
+        }
+        // generate new sweep vectors associated with newly added predictor and copy it over to newSV
+        SweepVector[][] newPredSV =  sweepCPM(subsetCPM, IntStream.range(0, newNumSweeps).map(x -> x+numSV).toArray(), true);
+        for (int index=0; index < newNumSweeps; index++)
+            newSweepVector[index+numSV] = newPredSV[index];
+        return newSweepVector;
+    }
+    
+    public static int[] extractSweepIndices(List<Integer> currSubsetIndices, int predPos, int predRemoved, 
+                                     int[][] predInd2CPMIndices, boolean hasIntercept) {
+        int predRemovedLen = predInd2CPMIndices[predRemoved].length;
+        int totalSize = IntStream.range(0, predPos).map(x->predInd2CPMIndices[currSubsetIndices.get(x)].length).sum()
+                + (hasIntercept ? 1 : 0);
+        return IntStream.range(0, predRemovedLen).map(x -> x+totalSize).toArray();
+    }
+    
+    public static SweepVector[][] mergeSV(SweepVector[][] sweepVector, SweepVector[][] removedPredSV) {
+        int oldSVLen = sweepVector.length;
+        int svLen = oldSVLen + removedPredSV.length;
+        SweepVector[][] mergedSV = new SweepVector[svLen][];
+        for (int index=0; index<oldSVLen; index++)
+            mergedSV[index] = sweepVector[index];
+        for (int index=oldSVLen; index<svLen; index++) 
+            mergedSV[index] = removedPredSV[index-oldSVLen];
+        return mergedSV;
+    }
+    
+    public static SweepVector[] genNewSV(SweepVector[] currSV, double[][] subsetCPM, int newPredLen, int sweepInd) {
+        int halfOldSVLen = currSV.length/2;
+        int oldSVInd = halfOldSVLen-2;
+        int halfSVLen = halfOldSVLen+newPredLen;
+        int lastSVInd = halfSVLen-2;
+        int lastCPMInd = subsetCPM.length-1;
+        int lastOldSVInd = halfOldSVLen-1;
+        SweepVector[] newSV = new SweepVector[halfSVLen*2];
+        double oneOverPivot = currSV[sweepInd]._value;
+        for (int index=0; index<halfSVLen; index++) {
+            if (index < oldSVInd && index != sweepInd) { // copy over from currSV
+                newSV[index] = new SweepVector(index, lastSVInd, currSV[index]._value);
+                newSV[index + halfSVLen] = new SweepVector(lastSVInd, index, currSV[index + halfOldSVLen]._value);
+            } else if (index == sweepInd) { // element corresponding to sweepIndex
+                newSV[index] = new SweepVector(index, lastSVInd, oneOverPivot);
+                newSV[index + halfSVLen] = new SweepVector(lastSVInd, index, -oneOverPivot);
+            } else if (index >= oldSVInd) { // exceed old SV 
+                if (index == lastSVInd) {    // row index == col index
+                    newSV[index] = new SweepVector(index, index, oneOverPivot);
+                    newSV[index+halfSVLen] = newSV[index];
+                } else if (index <= lastCPMInd){
+                    newSV[index] = new SweepVector(index, lastSVInd, subsetCPM[index][sweepInd]*oneOverPivot);
+                    newSV[index+halfSVLen] = new SweepVector(lastSVInd, index, subsetCPM[sweepInd][index]*oneOverPivot);
+                } else {
+                    newSV[index] = new SweepVector(index, lastCPMInd, currSV[lastOldSVInd]._value);
+                    newSV[index+halfSVLen] = new SweepVector(lastCPMInd, index, currSV[lastOldSVInd+halfOldSVLen]._value);
+                }
+            }
+        }
+        return newSV;
+    }
     
     public static List<Integer> extractCPMIndexFromPred(double[][] allCPM, int[][] pred2CPMIndices, int[] newPredList, 
                                                         boolean hasIntercept) {
@@ -555,6 +685,8 @@ public class ModelSelectionUtils {
         // perform sweeping action and record the sweeping vector and save the changed cpm
         bestModel._sweepVector = sweepCPM(subsetCPM, IntStream.range(0, subsetCPM.length-1).toArray(), true);
         bestModel._CPM = subsetCPM;
+        int lastInd = subsetCPM.length-1;
+        bestModel._errorVariance = subsetCPM[lastInd][lastInd];
     }
 
     /***
@@ -652,6 +784,18 @@ public class ModelSelectionUtils {
             newArray[index] = array[offset+index].clone();
         return newArray;
     }
+    
+    public static double[][] copy2D(double[][] original) {
+        int dim1 = original.length;
+        double[][] copy = new double[dim1][];
+        int dim2;
+        for (int index=0; index<dim1; index++) {
+            dim2 = original[index].length;
+            copy[index] = new double[dim2];
+            System.arraycopy(original[index], 0, copy[index], 0, dim2);
+        }
+        return copy;
+    }
 
     public static Key[] shrinkKeyArray(Key[] array, int numModels) {
         int arrLen = array.length;
@@ -666,32 +810,6 @@ public class ModelSelectionUtils {
         for (int index=0; index < arrLen; index++)
             strVal[index] = Double.toString(val[index]);
         return String.join(", ", strVal);
-    }
-    /**
-     * Given an array GLMModel built, find the one with the highest R2 value that exceeds lastBestR2.  If found, return
-     * the index where the best model is.  Else return -1
-     * 
-     * @param lastBestR2
-     * @param bestR2Models
-     * @return
-     */
-    public static int findBestR2Model(double lastBestR2, GLMModel[] bestR2Models) {
-        int numModel = bestR2Models.length;
-        int bestIndex = 0;
-        double currBestR2 = lastBestR2;
-        for (int index=0; index < numModel; index++) {
-            if (bestR2Models[index] != null) {
-                double bestR2 = bestR2Models[index].r2();
-                if (bestR2 > currBestR2) {
-                    bestR2Models[bestIndex].delete();
-                    bestIndex = index;
-                    currBestR2 = bestR2;
-                } else {
-                    bestR2Models[index].delete();
-                }
-            }
-        }
-        return currBestR2 > lastBestR2 ? bestIndex : -1;
     }
     
     public static GLMModel.GLMParameters[] generateGLMParameters(Frame[] trainingFrames,
@@ -891,16 +1009,6 @@ public class ModelSelectionUtils {
                 coefUsed.add(coefName);
         }
         return coefUsed;
-    }
-    
-    public static void updateValidSubset(List<Integer> validSubset, List<Integer> originalSubset, 
-                                         List<Integer> currSubsetIndices) {
-        List<Integer> onlyInOriginal = new ArrayList<>(originalSubset);
-        onlyInOriginal.removeAll(currSubsetIndices);
-        List<Integer> onlyInCurr = new ArrayList<>(currSubsetIndices);
-        onlyInCurr.removeAll(originalSubset);
-        validSubset.addAll(onlyInOriginal);
-        validSubset.removeAll(onlyInCurr);
     }
 
     /***
