@@ -334,8 +334,10 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                polynomial basis + 2.
                Defaults to ``None``.
         :type num_knots: List[int], optional
-        :param spline_orders: Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If
-               specified, must be the same size as gam_columns.  Values for bs=0 or 1 will be ignored.
+        :param spline_orders: Order of I-splines or NBSplineTypeI M-splines used for gam predictors. If specified, must
+               be the same size as gam_columns.  For I-splines, the spline_orders will be the same as the polynomials
+               used to generate the splines.  For M-splines, the polynomials used to generate the splines will be
+               spline_order-1.  Values for bs=0 or 1 will be ignored.
                Defaults to ``None``.
         :type spline_orders: List[int], optional
         :param knot_ids: Array storing frame keys of knots.  One for each gam column set specified in gam_columns
@@ -352,7 +354,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                Defaults to ``False``.
         :type scale_tp_penalty_mat: bool
         :param bs: Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for
-               monotone splines.  If specified, must be the same size as gam_columns
+               monotone I-splines, 3 for NBSplineTypeI M-splines (refer to doc here:
+               https://h2oai.atlassian.net/browse/PUBDEV-8835).  If specified, must be the same size as gam_columns
                Defaults to ``None``.
         :type bs: List[int], optional
         :param scale: Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
@@ -1287,8 +1290,10 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     @property
     def spline_orders(self):
         """
-        Only valid for bs=2 monotone I splines.  Order of I-splines used for gam predictors. If specified, must be the
-        same size as gam_columns.  Values for bs=0 or 1 will be ignored.
+        Order of I-splines or NBSplineTypeI M-splines used for gam predictors. If specified, must be the same size as
+        gam_columns.  For I-splines, the spline_orders will be the same as the polynomials used to generate the splines.
+        For M-splines, the polynomials used to generate the splines will be spline_order-1.  Values for bs=0 or 1 will
+        be ignored.
 
         Type: ``List[int]``.
         """
@@ -1362,7 +1367,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def bs(self):
         """
         Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for monotone
-        splines.  If specified, must be the same size as gam_columns
+        I-splines, 3 for NBSplineTypeI M-splines (refer to doc here: https://h2oai.atlassian.net/browse/PUBDEV-8835).
+        If specified, must be the same size as gam_columns
 
         Type: ``List[int]``.
         """

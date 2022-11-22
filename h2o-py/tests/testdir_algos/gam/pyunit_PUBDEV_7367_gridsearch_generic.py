@@ -18,7 +18,7 @@ class test_gam_gridsearch:
     h2o_data = []
     myX = []
     myY = []
-    hyper_parameters = {'alpha': [0.1, 0.9], 'lambda':[0, 0.01]}
+    hyper_parameters = {'alpha': [0.1, 0.9], 'lambda':[0.01]}
     manual_gam_models = []
     h2o_model = []
     num_grid_models = 0
@@ -42,12 +42,12 @@ class test_gam_gridsearch:
         for lambda_param in self.hyper_parameters['lambda']:
             for alpha_param in self.hyper_parameters['alpha']:
                 self.manual_gam_models.append(H2OGeneralizedAdditiveEstimator(family = "multinomial", gam_columns=["C6", "C7", "C8"],
-                                                                              keep_gam_cols = True, scale = [1,1,1], num_knots = [5,5,5],
+                                                                              keep_gam_cols = True, bs = [0, 1, 3], seed=1234, 
                                                                               alpha = alpha_param, lambda_ = lambda_param))
 
     def train_models(self):
         self.h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="multinomial", gam_columns=["C6", "C7", "C8"],
-                                                                  keep_gam_cols=True, scale = [1,1,1], num_knots=[5,5,5]), self.hyper_parameters)
+                                                                  keep_gam_cols=True, bs = [0, 1, 3], seed=1234), self.hyper_parameters)
         self.h2o_model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
         for model in self.manual_gam_models:
             model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)

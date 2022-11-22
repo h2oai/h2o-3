@@ -9,7 +9,7 @@ import numpy as np
 from tests import pyunit_utils
 
 
-def gam_train_metrics_recalculate(family):
+def gam_train_metrics_recalculate(family, bs):
     np.random.seed(1234)
     n_rows = 1000
 
@@ -29,6 +29,7 @@ def gam_train_metrics_recalculate(family):
                                                 weights_column="W",
                                                 lambda_=0,
                                                 tweedie_variance_power=1.5,
+                                                bs = bs,
                                                 tweedie_link_power=0)
     h2o_model.train(x=["X1", "X2"], y="Y", training_frame=train)
 
@@ -44,20 +45,16 @@ def gam_train_metrics_recalculate(family):
 
 
 def gam_train_metrics_recalculate_poisson():
-    gam_train_metrics_recalculate("poisson")
-
+    gam_train_metrics_recalculate("poisson", [0])
 
 def gam_train_metrics_recalculate_tweedie():
-    gam_train_metrics_recalculate("tweedie")
-
+    gam_train_metrics_recalculate("tweedie", [1])
 
 def gam_train_metrics_recalculate_gamma():
-    gam_train_metrics_recalculate("gamma")
-
+    gam_train_metrics_recalculate("gamma", [2])
 
 def gam_train_metrics_recalculate_gaussian():
-    gam_train_metrics_recalculate("gaussian")
-
+    gam_train_metrics_recalculate("gaussian", [3])
 
 pyunit_utils.run_tests([
     gam_train_metrics_recalculate_poisson,

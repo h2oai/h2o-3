@@ -74,6 +74,20 @@ public class ArrayUtils {
     return cumsumR;
   }
 
+  public static double[] mult(double[] nums, double n) {
+    assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
+    if (nums != null)
+      for (int i=0; i<nums.length; i++) nums[i] *= n;
+    return nums;
+  }
+
+  public static int[] arrayInitRange(int arrayLen, int startIndex) {
+    int[] newArr = new int[arrayLen];
+    for (int index=0; index<arrayLen; index++)
+      newArr[index] = index+startIndex;
+    return newArr;
+  }
+  
   /**
    * Check to see if a column is a boolean column.  A boolean column should contains only two
    * levels and the string describing the domains should be true/false
