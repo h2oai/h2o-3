@@ -101,7 +101,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                   new FrameType[]{FrameType.Training, FrameType.Validation},
                   context,
                   (frames, ctxt) -> {
-                    ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorKeyGen.make(_result), _parms._estimatorParams, frames[0], frames[1]);
+                    // use params from the context as they may have been modified during chain preparation
+                    ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorKeyGen.make(_result), ctxt._params._estimatorParams, ctxt._params, frames[0], frames[1]);
                     Keyed res = mb.trainModelNested(null);
                     return res == null ? null : res.getKey();
                   }
@@ -139,7 +140,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                 new FrameType[]{FrameType.Training, FrameType.Validation},
                 context,
                 (frames, ctxt) -> {
-                  ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorKeyGen.make(_result), _parms._estimatorParams, frames[0], frames[1]);
+                  ModelBuilder mb = makeEstimatorBuilder(_parms._estimatorKeyGen.make(_result), ctxt._params._estimatorParams, ctxt._params, frames[0], frames[1]);
                   mb.setCallbacks(new ModelBuilderCallbacks() {
                     /**
                      * Using this callback, the transformations are applied at the time the CV model training is triggered,
@@ -167,7 +168,6 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                                   track(cvFrames[1], true);
                                   reassign(cvFrames[0], params._train, _job.getKey());
                                   reassign(cvFrames[1], params._valid, _job.getKey());
-//                                  System.out.println("before cv model:\n"+ScopeInspect.dataKeysToString());
                                   // re-init & re-validate the builder in case we produced a bad frame 
                                   // (although this should have been detected earlier as a similar transformation was already applied to main training frame)
                                   builder._input_parms = params.clone();
@@ -180,7 +180,6 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
                                 }
                         );
                         compute.run();
-//                        System.out.println("after cv compute:\n"+ScopeInspect.dataKeysToString());
                       }
                     }
                   });
@@ -196,11 +195,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
         model.update(_job);
         model.unlock(_job);
       }
-//      System.out.println("before cleanup:\n"+ScopeInspect.dataKeysToString());
       cleanUp();
-//      System.out.println("before exit:\n"+ScopeInspect.dataKeysToString());
       Scope.exit();
-//      System.out.println("after exit:\n"+ScopeInspect.dataKeysToString());
     }
   }
   
@@ -251,17 +247,17 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     return chain;
   }
   
-  private ModelBuilder makeEstimatorBuilder(Key<Model> eKey, Model.Parameters eParams, Frame train, Frame valid) {
+  private ModelBuilder makeEstimatorBuilder(Key<Model> eKey, Model.Parameters eParams, PipelineParameters pParams, Frame train, Frame valid) {
     eParams._train = train == null ? null : train.getKey();
     eParams._valid = valid == null ? null : valid.getKey();
-    eParams._response_column = _parms._response_column;
-    eParams._weights_column = _parms._weights_column;
-    eParams._offset_column = _parms._offset_column;
-    eParams._ignored_columns = _parms._ignored_columns;
-    eParams._fold_column = _parms._fold_column;
-    eParams._fold_assignment = _parms._fold_assignment;
-    eParams._nfolds= _parms._nfolds;
-    eParams._max_runtime_secs = _parms._max_runtime_secs > 0 ? remainingTimeSecs() : _parms._max_runtime_secs;
+    eParams._response_column = pParams._response_column;
+    eParams._weights_column = pParams._weights_column;
+    eParams._offset_column = pParams._offset_column;
+    eParams._ignored_columns = pParams._ignored_columns;
+    eParams._fold_column = pParams._fold_column;
+    eParams._fold_assignment = pParams._fold_assignment;
+    eParams._nfolds= pParams._nfolds;
+    eParams._max_runtime_secs = pParams._max_runtime_secs > 0 ? remainingTimeSecs() : pParams._max_runtime_secs;
     
     ModelBuilder mb = ModelBuilder.make(eParams, eKey);
     mb._job = _job;

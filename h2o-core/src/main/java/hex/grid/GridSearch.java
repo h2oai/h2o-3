@@ -639,7 +639,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     if (fr == null || fr._key == null) {
       throw new IllegalArgumentException("The frame being grid-searched over must have a Key");
     }
-    return Key.make("Grid_" + modelName + "_" + fr._key.toString() + H2O.calcNextUniqueModelId(""));
+    return Key.make("Grid_" + modelName + "_" + fr._key + H2O.calcNextUniqueModelId(""));
   }
 
   /**

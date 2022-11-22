@@ -11,6 +11,7 @@ import water.*;
 import water.KeyGen.PatternKeyGen;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
+import water.util.ArrayUtils;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -249,7 +250,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     @Override
     protected Parameters cloneImpl() throws CloneNotSupportedException {
       PipelineParameters clone = (PipelineParameters) super.cloneImpl();
-      clone._transformers = _transformers == null ? null : _transformers.clone();
+      clone._transformers = _transformers == null ? null : ArrayUtils.deepClone(_transformers);
       clone._estimatorParams = _estimatorParams == null ? null : _estimatorParams.clone();
       return clone;
     }
@@ -258,9 +259,10 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     public long checksum(Set<String> ignoredFields) {
       Set<String> ignored = ignoredFields == null ? new HashSet<>() : new HashSet<>(ignoredFields);
       ignored.add("_transformers");
-      ignored.add("_estimatorParams");
-      long xs = super.checksum(ignored);
-      xs ^= (_estimatorParams == null ? 47 : _estimatorParams.checksum());
+//      ignored.add("_estimatorParams");
+      long xs = super.checksum(ignoredFields);
+//      xs ^= (_transformers == null ? 47 : _transformers.checksum());
+//      xs ^= (_estimatorParams == null ? 47 : _estimatorParams.checksum());
       return xs;
     }
   }

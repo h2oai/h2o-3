@@ -346,7 +346,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
-  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, Parameterizable {
+  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters, Parameterizable, Checksumable {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
 
@@ -617,6 +617,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     
     public boolean hasCustomMetricFunc() { return _custom_metric_func != null; }
 
+    @Override
     public long checksum() {
       return checksum(null);
     }
@@ -631,66 +632,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @return checksum A 64-bit long representing the checksum of the {@link Parameters} object
      */
     public long checksum(final Set<String> ignoredFields) {
-      long xs = 0x600DL;
-      int count = 0;
-      Field[] fields = Weaver.getWovenFields(this.getClass());
-      Arrays.sort(fields, Comparator.comparing(Field::getName));
-      for (Field f : fields) {
-        if (ignoredFields != null && ignoredFields.contains(f.getName())) {
-          // Do not include ignored fields in the final hash
-          continue;
-        }
-        final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
-        Class<?> c = f.getType();
-        if (c.isArray()) {
-          try {
-            f.setAccessible(true);
-            if (f.get(this) != null) {
-              if (c.getComponentType() == Integer.TYPE){
-                int[] arr = (int[]) f.get(this);
-                xs = xs * P  + (long) Arrays.hashCode(arr);
-              } else if (c.getComponentType() == Float.TYPE) {
-                float[] arr = (float[]) f.get(this);
-                xs = xs * P + (long) Arrays.hashCode(arr);
-              } else if (c.getComponentType() == Double.TYPE) {
-                double[] arr = (double[]) f.get(this);
-                xs = xs * P + (long) Arrays.hashCode(arr);
-              } else if (c.getComponentType() == Long.TYPE){
-                long[] arr = (long[]) f.get(this);
-                xs = xs * P + (long) Arrays.hashCode(arr);
-              } else if (c.getComponentType() == Boolean.TYPE){
-                boolean[] arr = (boolean[]) f.get(this);
-                xs = xs * P + (long) Arrays.hashCode(arr);
-              } else {
-                Object[] arr = (Object[]) f.get(this);
-                xs = xs * P + (long) Arrays.deepHashCode(arr);
-              } //else lead to ClassCastException
-            } else {
-              xs = xs * P;
-            }
-          } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-          } catch (ClassCastException t) {
-            throw H2O.fail("Failed to calculate checksum for the parameter object", t); //no support yet for int[][] etc.
-          }
-        } else {
-          try {
-            f.setAccessible(true);
-            Object value = f.get(this);
-            if (value instanceof Enum) {
-              // use string hashcode for enums, otherwise the checksum would be different each run
-              xs = xs * P + (long)(value.toString().hashCode());
-            } else if (value != null) {
-              xs = xs * P + (long)(value.hashCode());
-            } else {
-              xs = xs * P + P;
-            }
-          } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-          }
-        }
-        count++;
-      }
+      long xs = Checksum.checksum(this, ignoredFields);
       xs ^= (train() == null ? 43 : train().checksum()) * (valid() == null ? 17 : valid().checksum());
       return xs;
     }

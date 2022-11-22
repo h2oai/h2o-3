@@ -4,13 +4,12 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineContext;
-import water.Futures;
-import water.Key;
-import water.KeyGen;
+import water.*;
 import water.KeyGen.PatternKeyGen;
-import water.Keyed;
 import water.fvec.Frame;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M extends Model<M, MP, ?>, MP extends Model.Parameters> extends FeatureTransformer<S> {
@@ -18,6 +17,10 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   protected MP _params;
   private Key<M> _modelKey;
   private final KeyGen _modelKeyGen = new PatternKeyGen("{0}_{n}_model");
+  
+  private final int _model_type;
+  
+  private final transient Map<Long, Key<M>> _modelsCache = new HashMap<>();
 
   public ModelAsFeatureTransformer(MP params) {
     this(params, null);
@@ -26,11 +29,25 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   public ModelAsFeatureTransformer(MP params, Key<M> modelKey) {
     _params = params;
     _modelKey = modelKey;
+    _model_type = TypeMap.getIcedId(params.javaName());
   }
 
   public M getModel() {
     return _modelKey == null ? null : _modelKey.get();
   }
+
+  @SuppressWarnings("unchecked")
+  protected Key<M> lookupModel(MP params) {
+    long cs = params.checksum();
+    Key<M> k = _modelsCache.get(cs);
+    if (k != null && k.get() != null) return k;
+    return KeySnapshot.globalSnapshot().findFirst(ki -> {
+      if (ki._type != _model_type) return false;
+      M m = (M) ki._key.get();
+      return m != null && m._parms != null && m._output != null && m._output._end_time > 0 && cs == m._parms.checksum();
+    });
+  }
+
 
   @Override
   public Object getParameter(String name) {
@@ -44,10 +61,7 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   @Override
   public void setParameter(String name, Object value) {
     try {
-      if (_modelKey != null) {
-        Object current = _params.getParameter(name);
-        if (!Objects.deepEquals(current, value)) reset(); //consider this as a completely new transformer as we're trying new hyper-parameters.
-      }
+      _modelKey = null; //consider this as a completely new transformer as soon as we're trying new hyper-parameters.
       _params.setParameter(name, value);
     } catch (IllegalArgumentException iae) {
       super.setParameter(name, value);
@@ -70,12 +84,18 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
 
   @Override
   protected void doPrepare(PipelineContext context) {
-    if (_modelKey == null) _modelKey = _modelKeyGen.make(id());
-    if (getModel() != null) return;;
-    excludeColumns(_params.getNonPredictors());
+    if (getModel() != null) return; // if modelKey was provided, use it immediately. TODO: use a constant keygen to handle this case
     prepareModelParams(context);
-    ModelBuilder<M, MP, ?> mb = ModelBuilder.make(_params, _modelKey);
-    mb.trainModel().get();
+    excludeColumns(_params.getNonPredictors());
+    Key<M> km = lookupModel(_params);
+    if (km == null || (_modelKey != null && !km.equals(_modelKey))) {
+      if (_modelKey == null) _modelKey = _modelKeyGen.make(id());
+      ModelBuilder<M, MP, ?> mb = ModelBuilder.make(_params, _modelKey);
+      mb.trainModel().get();
+      _modelsCache.put(_params.checksum(), _modelKey);
+    } else {
+      _modelKey = km;
+    }
   }
   
   protected void prepareModelParams(PipelineContext context) {
@@ -100,14 +120,12 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   }
 
   @Override
-  protected void reset() {
-    _modelKey = null;
-    super.reset();
-  }
-
-  @Override
   protected void doCleanup(Futures fs) {
     Keyed.removeQuietly(_modelKey);
+    for (Key k : _modelsCache.values()) {
+      Keyed.removeQuietly(k);
+    }
+    _modelsCache.clear();
   }
 
   @Override

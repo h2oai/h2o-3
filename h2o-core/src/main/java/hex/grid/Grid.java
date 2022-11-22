@@ -284,8 +284,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     return mKey;
   }
 
-  /* FIXME:  should pass model parameters instead of checksum, but model
-   * parameters are not imutable and model builder modifies them! */
+  /* FIXME: should pass model parameters instead of checksum, but model
+   * parameters are not immutable and model builder modifies them! */
   /* package */
   synchronized Key<Model> putModel(long checksum, Key<Model> modelKey) {
     return _models.put(IcedLong.valueOf(checksum), modelKey);

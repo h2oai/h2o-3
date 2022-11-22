@@ -108,7 +108,7 @@ public class PipelineContext implements Cloneable {
   }
   
   public PipelineContext(PipelineParameters params, FrameTracker tracker) {
-    _params = params;
+    _params = (PipelineParameters) params.clone();
     _tracker = tracker;
   }
   

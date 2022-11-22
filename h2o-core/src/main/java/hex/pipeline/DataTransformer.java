@@ -2,16 +2,18 @@ package hex.pipeline;
 
 import hex.Parameterizable;
 import hex.pipeline.TransformerChain.Completer;
+import water.Checksumable;
 import water.Futures;
 import water.Iced;
 import water.Key;
 import water.fvec.Frame;
+import water.util.Checksum;
 import water.util.PojoUtils;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class DataTransformer<SELF extends DataTransformer> extends Iced<SELF> implements Parameterizable {
+public abstract class DataTransformer<SELF extends DataTransformer> extends Iced<SELF> implements Parameterizable, Checksumable {
   
   public enum FrameType {
     Training,
@@ -21,7 +23,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
 
   public boolean _enabled = true;  // flag allowing to enable/disable transformers dynamically esp. in pipelines (can be used as a pipeline hyperparam in grids).
   private String _id;
-  private AtomicInteger refCount;
+  private AtomicInteger refCount = new AtomicInteger(0);
 
   public DataTransformer() {
     this(null);
@@ -29,7 +31,6 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   
   public DataTransformer(String id) {
     _id = id == null ? getClass().getSimpleName().toLowerCase()+Key.rand() : id;
-    reset();
   }
   
   @SuppressWarnings("unchecked")
@@ -129,10 +130,6 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   }
   protected void doCleanup(Futures futures) {}
   
-  protected void reset() {
-    refCount = new AtomicInteger(0);
-  }
-  
   public Frame transform(Frame fr) {
     return transform(fr, FrameType.Scoring, null);
   }
@@ -170,7 +167,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   }
 
   @Override
-  public int hashCode() {
-    return 42; // FIXME !!! needed to get the checksum verification right in grids: externalizreuse logic in params.checksum
+  public long checksum() {
+    return Checksum.checksum(this);
   }
 }

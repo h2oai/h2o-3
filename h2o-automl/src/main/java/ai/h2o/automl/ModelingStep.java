@@ -71,6 +71,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         assert hyperParams.size() > 0;
         assert searchCriteria != null;
         GridSearch.Builder builder = makeGridBuilder(resultKey, baseParams, hyperParams, searchCriteria);
+        aml().trackKeys(builder.dest());
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+builder.dest()+" hyperparameter search")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         return builder.start();
@@ -448,7 +449,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
       pparams._seed = params._seed;
       pparams._max_runtime_secs = params._max_runtime_secs;
       pparams._estimatorParams = params;
-      pparams._estimatorKeyGen = hyperParams == null ? new ConstantKeyGen(resultKey) : new PatternKeyGen("{0}|s/"+PIPELINE_KEY_PREFIX+"//");
+      pparams._estimatorKeyGen = hyperParams == null 
+              ? new ConstantKeyGen(resultKey) 
+              : new PatternKeyGen("{0}|s/"+PIPELINE_KEY_PREFIX+"//")  // in case of grid, remove the Pipeline prefix to obtain the estimator key, this allows naming compatibility with the classic mode.
+              ;
       if (hyperParams != null) {
         Map<String, Object[]> pipelineHyperParams = new HashMap<>();
         for (Map.Entry<String, Object[]> e : hyperParams.entrySet()) {
@@ -686,7 +690,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setSearchCriteria(searchCriteria, baseParms);
 
             if (null == key) key = makeKey(_provider, true);
-            aml().trackKeys(key);
 
             Log.debug("Hyperparameter search: " + _provider + ", time remaining (ms): " + aml().timeRemainingMs());
             aml().eventLog().debug(Stage.ModelTraining, searchCriteria.max_runtime_secs() == 0
