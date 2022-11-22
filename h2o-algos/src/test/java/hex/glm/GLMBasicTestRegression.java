@@ -677,21 +677,6 @@ public class GLMBasicTestRegression extends TestUtil {
       } catch (H2OModelBuilderIllegalArgumentException t) {
       }
       params._solver = Solver.IRLSM;
-      GLM glm = new GLM(params);
-      try {
-        params._lambda = new double[]{1};
-        glm.trainModel().get();
-        assertFalse("should've thrown, p-values only supported with no regularization", true);
-      } catch (H2OModelBuilderIllegalArgumentException t) {
-      }
-      params._lambda = new double[]{0};
-      try {
-        params._lambda_search = true;
-        glm.trainModel().get();
-        assertFalse("should've thrown, p-values only supported with no regularization (i.e. no lambda search)", true);
-      } catch (H2OModelBuilderIllegalArgumentException t) {
-      }
-      params._lambda_search = false;
       GLMModel model = null;
       Frame predict = null;
       try {
