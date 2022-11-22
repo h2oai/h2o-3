@@ -31,6 +31,9 @@ python3 -m pip install recommonmark
 python3 -m pip install sphinx_prompt==1.1.0
 python3 -m pip install sphinx-tabs==1.1.12
 python3 -m pip install sphinx_substitution_extensions==2019.6.15.0
+python3 -m pip install docutils==0.16
+python3 -m pip install future
+python3 -m pip install "jinja2<3.1"
 ```
 
 The makefile for building the docs is in the **/src/product** folder. Run the following to build the H2O-3 User Guide.
