@@ -1569,7 +1569,7 @@ Examples:
         #split the data into training and validation sets:
         cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
         train <- cars_splits[[1]]
-        valid <- cars_splits[[2]
+        valid <- cars_splits[[2]]
 
         # build and train the model using the deviance stopping metric:
         cars_gbm <- h2o.gbm(x = predictors, y = response, 
@@ -1620,15 +1620,15 @@ Examples:
 
         # set the predictors and response columns:
         predictors <- c("economy", "cylinders", "displacement", "power", "weight")
-        response = "acceleration"
+        response = "acceleration" # Stopping metric cannot be mean_per_class_error for this continous target variable
 
         #split the data into training and validation sets:
         cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
         train <- cars_splits[[1]]
-        valid <- cars_splits[[2]
+        valid <- cars_splits[[2]]
 
         # build and train the model using the mean_per_class_error stopping metric:
-        cars_gbm <- h2o.gbm(x = predictors, y = repsonse, 
+        cars_gbm <- h2o.gbm(x = predictors, y = response, 
                             training_frame = train, validation_frame = test, 
                             stopping_metric = "mean_per_class_error", stopping_rounds = 3, 
                             stopping_tolerance = 1e-2, seed = 1234)
