@@ -1572,7 +1572,7 @@ Examples:
         valid <- cars_splits[[2]
 
         # build and train the model using the deviance stopping metric:
-        cars_gbm <- h2o.gbm(x = predictors, y = repsonse, 
+        cars_gbm <- h2o.gbm(x = predictors, y = response, 
                             training_frame = train, validation_frame = valid, 
                             stopping_metric = "deviance", stopping_rounds = 3, 
                             stopping_tolerance = 1e-2, seed = 1234)
