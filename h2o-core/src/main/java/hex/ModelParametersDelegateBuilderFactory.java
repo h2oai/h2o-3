@@ -2,6 +2,11 @@ package hex;
 
 import water.util.PojoUtils.FieldNaming;
 
+/**
+ * This {@link ModelParametersBuilderFactory} delegates the hyper-parameters building logic 
+ * to the initial {@link Model.Parameters} instance itself, using the {@link Parameterizable} methods.
+ * This allows better control for complex parameters objects that may this way accept nested hyper-parameters.
+ */
 public class ModelParametersDelegateBuilderFactory<MP extends Model.Parameters> implements ModelParametersBuilderFactory<MP> {
   
   protected final FieldNaming fieldNaming;
@@ -34,6 +39,11 @@ public class ModelParametersDelegateBuilderFactory<MP extends Model.Parameters> 
     protected DelegateParamsBuilder(MP params, FieldNaming fieldNaming) {
       this.params = params;
       this.fieldNaming = fieldNaming;
+    }
+
+    @Override
+    public boolean isAssignable(String name) {
+      return this.params.isParameterAssignable(fieldNaming.toDest(name));
     }
 
     @Override

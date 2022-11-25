@@ -5,20 +5,21 @@ import hex.ModelBuilder;
 import hex.ModelBuilderCallbacks;
 import hex.ModelCategory;
 import hex.pipeline.DataTransformer.FrameType;
-import hex.pipeline.PipelineContext.CompositeFrameTracker;
-import hex.pipeline.PipelineContext.ConsistentKeyTracker;
-import hex.pipeline.PipelineContext.ScopeTracker;
+import hex.pipeline.trackers.CompositeFrameTracker;
+import hex.pipeline.trackers.ConsistentKeyTracker;
+import hex.pipeline.trackers.ScopeTracker;
 import hex.pipeline.PipelineModel.PipelineOutput;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.ArrayUtils;
 
 import static hex.pipeline.PipelineHelper.reassign;
 
 
+/**
+ * The {@link ModelBuilder} for {@link PipelineModel}s.
+ */
 public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, PipelineOutput> {
   
   public Pipeline(PipelineParameters parms) {
@@ -82,9 +83,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   public class PipelineDriver extends Driver {
     @Override
     public void computeImpl() {
-      init(true);
+      init(true); //also protects original train+valid frames
       PipelineOutput output = new PipelineOutput(Pipeline.this);
-      output._transformers = _parms._transformers.clone();
       PipelineModel model = new PipelineModel(dest(), _parms, output);
       model.delete_and_lock(_job);
       
@@ -94,6 +94,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
         setTrain(context.getTrain());
         setValid(context.getValid());
         Scope.track(train(), valid()); //chain preparation may have provided extended/modified train/valid frames.
+        output._transformers = _parms._transformers.clone();
         if (_parms._estimatorParams == null) return;
         try (Scope.Safe inner = Scope.safe(train(), valid())) {
           output._model = chain.transform(
@@ -122,9 +123,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     PipelineModel model = null;
     try {
       Scope.enter();
-      init(true); //also protects train+valid frames
+      init(true); //also protects original train+valid frames
       PipelineOutput output = new PipelineOutput(Pipeline.this);
-      output._transformers = _parms._transformers.clone();
       model = new PipelineModel(dest(), _parms, output);
       model.delete_and_lock(_job);
       
@@ -133,8 +133,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       setTrain(context.getTrain());
       setValid(context.getValid());
       Scope.track(train(), valid()); //chain preparation may have provided extended/modified train/valid frames.
-//      initWorkspace(true);
       try (Scope.Safe mainModelScope = Scope.safe(train(), valid())) {
+        output._transformers = _parms._transformers.clone();
         output._model = chain.transform(
                 new Frame[]{train(), valid()},
                 new FrameType[]{FrameType.Training, FrameType.Validation},
@@ -201,10 +201,10 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   }
   
   private PipelineContext newCVContext(PipelineContext context, Model.Parameters cvParams) {
-    PipelineParameters pparams = (PipelineParameters) context._params.clone();
+    PipelineContext cvContext = new PipelineContext(context._params, context._tracker);
+    PipelineParameters pparams = cvContext._params;
     pparams._is_cv_model = cvParams._is_cv_model;
     pparams._cv_fold = cvParams._cv_fold;
-    PipelineContext cvContext = new PipelineContext(pparams, context._tracker);
     Frame baseFrame = new Frame(Key.make(_result.toString()+"_cv_"+(pparams._cv_fold+1)), train().names(), train().vecs());
     if ( pparams._weights_column != null ) baseFrame.remove( pparams._weights_column );
     Frame cvTrainOld = cvParams.train();
@@ -223,9 +223,9 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   
   private PipelineContext newContext() {
     return new PipelineContext(_parms, new CompositeFrameTracker(
-            new PipelineContext.FrameTracker() {
+            new FrameTracker() {
               @Override
-              public void apply(Frame transformed, Frame frame, FrameType type, PipelineContext context, DataTransformer transformer) {
+              public void apply(Frame transformed, Frame original, FrameType type, PipelineContext context, DataTransformer transformer) {
                 if (stop_requested()) throw new Job.JobCancelledException(_job);
               }
             },

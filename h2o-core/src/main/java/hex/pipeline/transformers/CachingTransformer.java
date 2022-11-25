@@ -15,6 +15,8 @@ public class CachingTransformer<S extends CachingTransformer, T extends DataTran
   boolean _cacheEnabled = true;
   private final NonBlockingHashMap<Object, Key<Frame>> _cache = new NonBlockingHashMap<>();
 
+  protected CachingTransformer() {}
+
   public CachingTransformer(T transformer) {
     super(transformer);
   }
@@ -25,11 +27,6 @@ public class CachingTransformer<S extends CachingTransformer, T extends DataTran
   
   boolean isCacheEnabled() {
     return _cacheEnabled;
-  }
-
-  @Override
-  protected DataTransformer makeDefaults() {
-    return new CachingTransformer(null);
   }
 
   private Object makeCachingKey(Frame fr, FrameType type, PipelineContext context) {

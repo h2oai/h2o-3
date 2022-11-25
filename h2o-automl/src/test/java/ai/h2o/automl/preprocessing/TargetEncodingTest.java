@@ -271,6 +271,10 @@ public class TargetEncodingTest {
 //      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.StackedEnsemble, Algo.GLM};
 //      autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.GLM};
 //      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
+//      autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
+//              new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),
+//              new StepDefinition(Algo.GBM.name(), StepDefinition.Alias.grids),
+//      };
 
       aml = AutoML.startAutoML(autoMLBuildSpec); Scope.track_generic(aml);
       aml.get();

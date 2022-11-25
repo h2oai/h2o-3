@@ -14,6 +14,9 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
   private DataTransformer[] _transformers;
   private UnionStrategy _strategy;
 
+
+  protected UnionTransformer() {}
+
   public UnionTransformer(DataTransformer[] transformers, UnionStrategy strategy) {
     _transformers = transformers;
     _strategy = strategy;
@@ -27,11 +30,6 @@ public class UnionTransformer extends DataTransformer<UnionTransformer> {
   @Override
   public void setParameter(String name, Object value) {
     super.setParameter(name, value);
-  }
-
-  @Override
-  protected DataTransformer makeDefaults() {
-    return new UnionTransformer(null, null);
   }
 
   @Override

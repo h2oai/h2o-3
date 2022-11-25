@@ -28,7 +28,7 @@ public final class ModelParametersAccessor implements Parameterizable {
   }
 
   @Override
-  public boolean isValidHyperParameter(String name) {
+  public boolean isParameterAssignable(String name) {
     return false;
   }
 }

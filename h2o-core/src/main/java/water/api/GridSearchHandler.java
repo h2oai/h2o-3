@@ -240,6 +240,11 @@ public class GridSearchHandler<G extends Grid<MP>,
       fields = new ArrayList<>(7);
     }
 
+    @Override
+    public boolean isAssignable(String name) {
+      return params.isParameterAssignable(name);
+    }
+
     public ModelParametersFromSchemaBuilder<MP, PS> set(String name, Object value) {
       try {
         Field f = paramsSchema.getClass().getField(name);

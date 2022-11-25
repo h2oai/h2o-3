@@ -4,8 +4,10 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelMetrics;
 import hex.pipeline.DataTransformer.FrameType;
-import hex.pipeline.PipelineContext.CompositeFrameTracker;
+import hex.pipeline.trackers.CompositeFrameTracker;
 import hex.pipeline.TransformerChain.UnaryCompleter;
+import hex.pipeline.trackers.ConsistentKeyTracker;
+import hex.pipeline.trackers.ScopeTracker;
 import org.apache.commons.lang.StringUtils;
 import water.*;
 import water.KeyGen.PatternKeyGen;
@@ -19,6 +21,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+/**
+ * A {@link PipelineModel} encapsulates in a single model a collection of transformations applied to train/validation
+ * before training a final delegate model (here called `estimator` to avoid confusion).
+ * For scoring, the same transformations are first applied to the test data and the result is used by the estimator model to provide the final score.
+ */
 public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineParameters, PipelineModel.PipelineOutput> {
 
 
@@ -105,8 +112,8 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
   
   private PipelineContext newContext(Frame fr) {
     return new PipelineContext(_parms, new CompositeFrameTracker(
-            new PipelineContext.ConsistentKeyTracker(fr),
-            new PipelineContext.ScopeTracker()
+            new ConsistentKeyTracker(fr),
+            new ScopeTracker()
     ));
   }
 
@@ -204,17 +211,17 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     }
 
     @Override
-    public boolean isValidHyperParameter(String name) {
+    public boolean isParameterAssignable(String name) {
       String[] tokens = parseParameterName(name);
       if (tokens.length > 1) {
         String tok0 = tokens[0];
-        if ("estimator".equals(tok0)) return _estimatorParams == null ? null : _estimatorParams.isValidHyperParameter(tokens[1]);
+        if ("estimator".equals(tok0)) return _estimatorParams == null ? null : _estimatorParams.isParameterAssignable(tokens[1]);
         DataTransformer dt = getTransformer(tok0);
         // for now allow transformers hyper params on non-defaults
         return dt != null && dt.hasParameter(tokens[1]); 
 //        return dt != null && dt.isValidHyperParameter(tokens[1]);
       }
-      return super.isValidHyperParameter(name);
+      return super.isParameterAssignable(name);
     }
 
     private static final Pattern TRANSFORMER_PAT = Pattern.compile("transformers\\[(\\w+)]");

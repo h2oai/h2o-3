@@ -2,15 +2,13 @@ package hex.pipeline.transformers;
 
 import hex.Model;
 import hex.ModelBuilder;
-import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineContext;
 import water.*;
 import water.KeyGen.PatternKeyGen;
 import water.fvec.Frame;
+import water.nbhm.NonBlockingHashMap;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M extends Model<M, MP, ?>, MP extends Model.Parameters> extends FeatureTransformer<S> {
   
@@ -20,7 +18,11 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   
   private final int _model_type;
   
-  private final transient Map<Long, Key<M>> _modelsCache = new HashMap<>();
+  private final transient Map<Long, Key<M>> _modelsCache = new NonBlockingHashMap<>();
+
+  protected ModelAsFeatureTransformer() {
+    this(null);
+  }
 
   public ModelAsFeatureTransformer(MP params) {
     this(params, null);
@@ -29,7 +31,7 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   public ModelAsFeatureTransformer(MP params, Key<M> modelKey) {
     _params = params;
     _modelKey = modelKey;
-    _model_type = TypeMap.getIcedId(params.javaName());
+    _model_type = params == null ? TypeMap.NULL : TypeMap.getIcedId(params.javaName());
   }
 
   public M getModel() {
@@ -77,12 +79,6 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
     }
   }
 
-  @Override
-  protected DataTransformer makeDefaults() {
-    return new ModelAsFeatureTransformer(null);
-  }
-
-  @Override
   protected void doPrepare(PipelineContext context) {
     if (getModel() != null) return; // if modelKey was provided, use it immediately. TODO: use a constant keygen to handle this case
     prepareModelParams(context);

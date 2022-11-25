@@ -182,7 +182,7 @@ public class PipelineTest {
     System.out.println(tracker.transformations);
     assertEquals(2*nfolds+1, tracker.transformations.size()); // nfolds * 2 [train+valid] + 1 [final model, train only]
     assertNotEquals(fr.getKey().toString(), tracker.transformations.get(0).frameId); // training frame for final model transformed first
-    assertEquals(fr.getKey().toString()+"@@Training_trf_by_add_bar", tracker.transformations.get(0).frameId); 
+    assertTrue(tracker.transformations.get(0).frameId.startsWith(fr.getKey().toString()+"@@Training_trf_by_add_bar")); 
     assertEquals(DataTransformer.FrameType.Training, tracker.transformations.get(0).type);
     assertFalse(tracker.transformations.get(0).is_cv);
     assertEquals(nfolds*2, tracker.transformations.stream().filter(t -> t.is_cv).count());
@@ -250,7 +250,7 @@ public class PipelineTest {
     System.out.println(tracker.transformations);
     assertEquals(1, tracker.transformations.size()); // only one transformation, once and for all, as no transformer is CV-sensitive
     assertNotEquals(fr.getKey().toString(), tracker.transformations.get(0).frameId); 
-    assertEquals(fr.getKey().toString()+"@@Training_trf_by_add_bar", tracker.transformations.get(0).frameId); 
+    assertTrue(tracker.transformations.get(0).frameId.startsWith(fr.getKey().toString()+"@@Training_trf_by_add_bar")); 
     assertEquals(DataTransformer.FrameType.Training, tracker.transformations.get(0).type);
     assertFalse(tracker.transformations.get(0).is_cv);
     checkFrameState(fr);

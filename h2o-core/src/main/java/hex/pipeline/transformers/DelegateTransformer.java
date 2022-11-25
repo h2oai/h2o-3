@@ -7,6 +7,8 @@ import water.fvec.Frame;
 public abstract class DelegateTransformer<S extends DelegateTransformer, T extends DataTransformer> extends DataTransformer<S> {
   
   T _transformer;
+  
+  protected DelegateTransformer() {}
 
   public DelegateTransformer(T transformer) {
     _transformer = transformer;

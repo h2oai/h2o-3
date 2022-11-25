@@ -5,7 +5,6 @@ import hex.ModelParametersBuilderFactory.ModelParametersBuilder;
 import hex.grid.HyperSpaceSearchCriteria.CartesianSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.Strategy;
-import org.apache.commons.lang.StringUtils;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
@@ -345,6 +344,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     private void validateHyperParams(Map<String, Object[]> hyperParams, boolean isSubspace) {
       // if a parameter is specified in both model parameter and hyper-parameter, this is only allowed if the
       // parameter value is set to be default.  Otherwise, an exception will be thrown.
+      ModelParametersBuilder paramsBuilder = _paramsBuilderFactory.get((MP)_params.clone());
       
       for (Map.Entry<String, Object[]> e : hyperParams.entrySet()) {
         // Throw if the user passed an empty value list:
@@ -356,10 +356,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                   "both the subspaces and in the hyperparameters map.  This is ambiguous; set it in one place" +
                   " or the other, not both.");
         }
-        
-        if (!_params.isValidHyperParameter(_paramsBuilderFactory.getFieldNamingStrategy().toDest(e.getKey())))
-          throw new H2OIllegalArgumentException("Grid search model parameter '"+e.getKey()+"' is invalid or set both in the model parameters and in the hyperparameters map. " +
+        if (!paramsBuilder.isAssignable(e.getKey())) {
+          throw new H2OIllegalArgumentException("Grid search model parameter '"+e.getKey()+"' is invalid or set both in the model parameters and in the hyperparameters map. "+
                   "This is ambiguous; set it in one place or the other, not both.");
+        }
       }
     }
   }

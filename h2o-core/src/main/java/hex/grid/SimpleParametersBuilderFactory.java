@@ -46,6 +46,11 @@ public class SimpleParametersBuilderFactory<MP extends Model.Parameters>
     }
 
     @Override
+    public boolean isAssignable(String name) {
+      return params.isParameterAssignable(name);
+    }
+
+    @Override
     public ModelParametersBuilder<MP> set(String name, Object value) {
       PojoUtils.setField(params, name, value, PojoUtils.FieldNaming.CONSISTENT);
       return this;

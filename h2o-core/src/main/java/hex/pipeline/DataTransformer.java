@@ -25,7 +25,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   private String _id;
   private AtomicInteger refCount = new AtomicInteger(0);
 
-  public DataTransformer() {
+  protected DataTransformer() {
     this(null);
   }
   
@@ -84,7 +84,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   }
 
   @Override
-  public boolean isValidHyperParameter(String name) {
+  public boolean isParameterAssignable(String name) {
     return isParameterSetToDefault(name);
   }
   
@@ -99,7 +99,13 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
     return _defaults;
   }
   
-  protected abstract DataTransformer makeDefaults();
+  protected DataTransformer makeDefaults() {
+    try {
+      return getClass().newInstance();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   /**
    * @return true iff the transformer needs to be applied in a specific way to training/validation frames during cross-validation.
@@ -108,35 +114,39 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
     return false;
   }
   
-  public void prepare(PipelineContext context) {
+  public final void prepare(PipelineContext context) {
     if (_enabled) doPrepare(context);
     refCount.incrementAndGet();
   }
   
   protected void doPrepare(PipelineContext context) {} 
   
-  void prepare(PipelineContext context, TransformerChain chain) {
+  final void prepare(PipelineContext context, TransformerChain chain) {
     assert chain != null;
     prepare(context);
     chain.nextPrepare(context);
   }
   
-  public void cleanup() {
+  public final void cleanup() {
     cleanup(new Futures());
   }
 
-  public void cleanup(Futures futures) {
+  public final void cleanup(Futures futures) {
     if (refCount.decrementAndGet() <= 0) doCleanup(futures);
   }
   protected void doCleanup(Futures futures) {}
   
-  public Frame transform(Frame fr) {
+  public final Frame transform(Frame fr) {
     return transform(fr, FrameType.Scoring, null);
   }
   
-  public Frame transform(Frame fr, FrameType type, PipelineContext context) {
-    if (!_enabled) return fr;
-    return doTransform(fr, type, context);
+  public final Frame transform(Frame fr, FrameType type, PipelineContext context) {
+    if (!_enabled || fr == null) return fr;
+    Frame trfr = doTransform(fr, type, context);
+    if (context != null && context._tracker != null) {
+      context._tracker.apply(trfr, fr, type, context, this);
+    } 
+    return trfr;
   }
 
   /**
@@ -148,7 +158,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
    */
   protected abstract Frame doTransform(Frame fr, FrameType type, PipelineContext context);
   
-  <R> R transform(Frame[] frames, FrameType[] types, PipelineContext context, Completer<R> completer, TransformerChain chain) {
+  final <R> R transform(Frame[] frames, FrameType[] types, PipelineContext context, Completer<R> completer, TransformerChain chain) {
     assert frames != null;
     assert types != null;
     assert frames.length == types.length;
@@ -157,11 +167,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
     for (int i=0; i<frames.length; i++) {
       Frame fr = frames[i];
       FrameType type = types[i];
-      Frame trfr = fr == null ? null : transform(fr, type, context);
-      if (context != null && context._tracker != null) {
-        context._tracker.apply(trfr, fr, type, context, this);
-      } 
-      transformed[i] = trfr;
+      transformed[i] = transform(fr, type, context);
     }
     return chain.nextTransform(transformed, types, context, completer);
   }

@@ -785,7 +785,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override
-    public boolean isValidHyperParameter(String name) {
+    public boolean isParameterAssignable(String name) {
       return "_seed".equals(name) || isParameterSetToDefault(name);
     }
 

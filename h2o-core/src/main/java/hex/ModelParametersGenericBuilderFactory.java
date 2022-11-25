@@ -3,6 +3,7 @@ package hex;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
+import water.util.Log;
 import water.util.PojoUtils;
 import water.util.PojoUtils.FieldNaming;
 
@@ -16,12 +17,15 @@ import java.util.Map;
  * that will be used to provide the standard params for all type of algos.
  * 
  * Otherwise, if there's no {@value #ALGO_PARAM} hyper-parameter, this factory behaves similarly to {@link ModelParametersBuilderFactory}.
- * 
  */
 public class ModelParametersGenericBuilderFactory extends ModelParametersDelegateBuilderFactory<Model.Parameters> {
   
   public static final String ALGO_PARAM = "algo";
-  
+
+  /**
+   * A generic class containing only common {@link Model.Parameters} that can be used as initial common parameters 
+   * when searching over multiple algos.
+   */
   public static class CommonModelParameters extends Model.Parameters {
     @Override
     public String algoName() {
@@ -74,14 +78,20 @@ public class ModelParametersGenericBuilderFactory extends ModelParametersDelegat
     @Override
     public Model.Parameters build() {
       Model.Parameters result = params;
+      String algo = null;
       if (hyperParams.containsKey(ALGO_PARAM)) {
-        result = ModelBuilder.makeParameters((String) hyperParams.get(ALGO_PARAM));
+        algo = (String) hyperParams.get(ALGO_PARAM);
+        result = ModelBuilder.makeParameters(algo);
         //add values from init params
         PojoUtils.copyProperties(result, params, FieldNaming.CONSISTENT);
       }
       for (Map.Entry<String, Object> e : hyperParams.entrySet()) {
         if (ALGO_PARAM.equals(e.getKey())) continue;
-        result.setParameter(fieldNaming.toDest(e.getKey()), e.getValue());
+        if (algo == null || result.hasParameter(fieldNaming.toDest(e.getKey()))) { // no check for `result.hasParameter` in case of strict algo, so that we can fail on invalid param
+          result.setParameter(fieldNaming.toDest(e.getKey()), e.getValue());
+        } else { // algo hyper-param was provided and this hyper-param is incompatible with it
+          Log.debug("Ignoring hyper-parameter `"+e.getKey()+"` unsupported by `"+algo+"`.");
+        }
       }
       return result;
     }

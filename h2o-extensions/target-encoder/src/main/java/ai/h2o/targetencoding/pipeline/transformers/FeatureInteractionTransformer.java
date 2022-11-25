@@ -8,11 +8,12 @@ import water.fvec.Frame;
 
 public class FeatureInteractionTransformer extends FeatureTransformer<FeatureInteractionTransformer> {
 
-  private final String[] _columns;
-  private final String _interaction_column;
+  private String[] _columns;
+  private String _interaction_column;
   
   private String[] _interaction_domain;
 
+  protected FeatureInteractionTransformer() {}
 
   public FeatureInteractionTransformer(String[] columns) {
     this(columns, null);
@@ -21,11 +22,6 @@ public class FeatureInteractionTransformer extends FeatureTransformer<FeatureInt
   public FeatureInteractionTransformer(String[] columns, String interactionColumn) {
     _columns = columns;
     _interaction_column = interactionColumn;
-  }
-
-  @Override
-  protected DataTransformer makeDefaults() {
-    return new FeatureInteractionTransformer(null);
   }
 
   @Override

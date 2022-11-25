@@ -3,11 +3,9 @@ package hex.pipeline;
 import hex.pipeline.DataTransformer.FrameType;
 import hex.pipeline.DataTransformerTest.AddRandomColumnTransformer;
 import hex.pipeline.DataTransformerTest.FrameTrackerAsTransformer;
-import org.junit.Rule;
+import hex.pipeline.PipelineModel.PipelineParameters;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import water.Key;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
@@ -108,14 +106,14 @@ public class TransformerChainTest {
       };
       List<String> dtIds = Arrays.stream(dts).map(DataTransformer::id).collect(Collectors.toList());
       final AtomicInteger dtIdx = new AtomicInteger(0);
-      PipelineContext context = new PipelineContext(null, new PipelineContext.FrameTracker() {
+      PipelineContext context = new PipelineContext(new PipelineParameters(), new FrameTracker() {
         @Override
-        public void apply(Frame transformed, Frame frame, FrameType type, PipelineContext context, DataTransformer transformer) {
+        public void apply(Frame transformed, Frame original, FrameType type, PipelineContext context, DataTransformer transformer) {
           assertTrue(dtIds.contains(transformer.id()));
           switch (transformer.id()) {
             case "add_foo":
               assertEquals(0, dtIdx.getAndIncrement());
-              assertEquals(fr, frame);
+              assertEquals(fr, original);
               assertArrayEquals(ArrayUtils.append(fr.names(), new String[]{"foo"}), transformed.names());
               break;
             case "add_bar":
