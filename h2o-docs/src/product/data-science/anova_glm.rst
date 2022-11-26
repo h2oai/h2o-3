@@ -101,7 +101,7 @@ ANOVA GLM uses a similar set of parameters to GLM.
 
 -  `solver <algo-params/solver.html>`__: Specify the solver to use (``AUTO``, ``IRLSM`` (default), ``L_BFGS``, ``COORDINATE_DESCENT_NAIVE``, ``COORDINATE_DESCENT``, ``GRADIENT_DESCENT_LH``, or ``GRADIENT_DESCENT_SQERR``). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family. AUTO will set the solver based on the given data and other parameters.
 
--  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2. The default value of alpha is 0 when ``solver = 'L-BFGS'``, overwise it is 0.5.
+-  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2. The default value of alpha is 0 when ``solver = 'L-BFGS'``, otherwise it is 0.5.
 
 -  `lambda <algo-params/lambda.html>`__: Specify the regularization strength. Defaults to ``[0.0]``.
 
