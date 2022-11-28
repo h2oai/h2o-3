@@ -306,6 +306,47 @@ class H2OAutoMLBaseMixin:
                                             optimum=optimum,
                                             **kwargs)
 
+    def download_automl(self, path, filename=None):
+        """
+        Download an H2O AutoML object to the machine this python session is currently connected to.
+        The owner of the file saved is the user by which python session was executed.
+
+        :param path: a path to the directory where the H2OAutoML should be saved.
+        :param filename: a filename for the saved H2OAutoML
+
+        :returns: the path of the downloaded automl
+        """
+        import os
+        assert_is_type(path, str)
+        assert_is_type(filename, None, str)
+        if filename is None:
+            filename = self.key
+        path = os.path.join(os.getcwd() if path == "" else path, filename)
+
+        return h2o.api("GET /99/AutoML.fetch.bin/{}".format(self.key), save_to=path)
+
+    def save_automl(self, path, filename=None, force=False):
+        """
+        Save an H2O AutoML object to disk.
+        The owner of the file saved is the user by which H2O cluster was executed.
+
+        :param path: a path to save the H2OAutoML at (hdfs, s3, local)
+        :param filename: a filename for the saved H2OAutoML
+        :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+
+        :returns: the path of the saved model
+
+        """
+        import os
+        assert_is_type(path, str)
+        assert_is_type(filename, None, str)
+        assert_is_type(force, bool)
+        if filename is None:
+            filename = self.key
+        path = os.path.join(os.getcwd() if path == "" else path, filename)
+        return h2o.api("GET /99/AutoML.bin/{}".format(self.key), data=dict(dir=path, force=force))["dir"]
+
+
 
 def _fetch_leaderboard(aml_id, extensions=None):
     assert_is_type(extensions, None, str, [str])

@@ -6,6 +6,8 @@ water.automl.api.schemas3.AutoMLBuildSpecV99$AutoMLInputV99
 water.automl.api.schemas3.AutoMLBuildSpecV99$AutoMLStoppingCriteriaV99
 water.automl.api.schemas3.AutoMLV99
 water.automl.api.schemas3.AutoMLV99$AutoMLKeyV3
+water.automl.api.schemas3.AutoMLExportV99
+water.automl.api.schemas3.AutoMLImportV99
 water.automl.api.schemas3.LeaderboardsV99
 water.automl.api.schemas3.LeaderboardV99
 water.automl.api.schemas3.EventLogEntryV99

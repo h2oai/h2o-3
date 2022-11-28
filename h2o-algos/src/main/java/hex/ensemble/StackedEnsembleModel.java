@@ -403,20 +403,20 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   /** Write out models (base + metalearner) */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     //Metalearner
-    ab.putKey(_output._metalearner._key);
+    PersistenceContext.putKey(ab, _output._metalearner._key);
     //Base Models
     for (Key<Model> ks : _parms._base_models)
-        ab.putKey(ks);
+      PersistenceContext.putKey(ab, ks);
     return super.writeAll_impl(ab);
   }
 
   /** Read in models (base + metalearner) */
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     //Metalearner
-    ab.getKey(_output._metalearner._key,fs);
+    PersistenceContext.loadKey(ab, fs, _output._metalearner._key);
     //Base Models
     for (Key<Model> ks : _parms._base_models)
-      ab.getKey(ks,fs);
+      PersistenceContext.loadKey(ab, fs, ks);
     return super.readAll_impl(ab,fs);
   }
 
