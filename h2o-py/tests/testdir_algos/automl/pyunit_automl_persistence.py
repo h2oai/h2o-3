@@ -30,6 +30,8 @@ def test_automl_save_load():
         loaded_leaderboard = loaded_aml.leaderboard.as_data_frame(False, False)
         loaded_extended_leaderboard = loaded_aml.get_leaderboard(["training_time_ms", "algo"]).as_data_frame(False,
                                                                                                              False)
+        assert not loaded_aml.get_leaderboard("ALL")["predict_time_per_row_ms"].isna().any()
+        assert (loaded_aml.get_leaderboard("ALL")["predict_time_per_row_ms"] > 0).all()
 
         assert training_info == loaded_training_info
         assert leaderboard == loaded_leaderboard
@@ -56,6 +58,9 @@ def test_automl_download_upload():
         loaded_leaderboard = loaded_aml.leaderboard.as_data_frame(False, False)
         loaded_extended_leaderboard = loaded_aml.get_leaderboard(["training_time_ms", "algo"]).as_data_frame(False,
                                                                                                              False)
+
+        assert not loaded_aml.get_leaderboard("ALL")["predict_time_per_row_ms"].isna().any()
+        assert (loaded_aml.get_leaderboard("ALL")["predict_time_per_row_ms"] > 0).all()
 
         assert training_info == loaded_training_info
         assert leaderboard == loaded_leaderboard

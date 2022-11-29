@@ -931,6 +931,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, 
 
 
   protected AutoBuffer writeAutoML(AutoBuffer ab) {
+    // force calculation of all leaderboard values
+    _leaderboard.toTwoDimTable(new String[]{"ALL"});
     try (PersistenceContext pc = PersistenceContext.begin()) {
       ab.put(_key);
       ab.put(_buildSpec);

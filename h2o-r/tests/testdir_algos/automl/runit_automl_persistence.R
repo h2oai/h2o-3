@@ -30,6 +30,9 @@ automl_save_load_test <- function() {
     pt_idx <- which(names(loaded_extended_leaderboard) == "predict_time_per_row_ms")
     expect_equal(extended_leaderboard[, -pt_idx], loaded_extended_leaderboard[, -pt_idx])
 
+    expect_true(!any(is.na(loaded_extended_leaderboard[, pt_idx])))
+    expect_true(all(loaded_extended_leaderboard[, pt_idx] > 0))
+
     train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame = "training_frame")
     loaded_extended_leaderboard_made <- as.data.frame(h2o.make_leaderboard(aml, train, extra_columns = "ALL"))
 
@@ -70,6 +73,9 @@ automl_download_upload_test <- function() {
     pt_idx <- which(names(loaded_extended_leaderboard) == "predict_time_per_row_ms")
     expect_equal(extended_leaderboard[, -pt_idx], loaded_extended_leaderboard[, -pt_idx])
 
+    expect_true(!any(is.na(loaded_extended_leaderboard[, pt_idx])))
+    expect_true(all(loaded_extended_leaderboard[, pt_idx] > 0))
+
     train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame = "training_frame")
     loaded_extended_leaderboard_made <- as.data.frame(h2o.make_leaderboard(aml, train, extra_columns = "ALL"))
 
@@ -108,6 +114,9 @@ automl_download_load_test <- function() {
     # predict_time_per_row_ms is filled with NAs in the loaded extended leaderboard since there is no training frame to compute it on
     pt_idx <- which(names(loaded_extended_leaderboard) == "predict_time_per_row_ms")
     expect_equal(extended_leaderboard[, -pt_idx], loaded_extended_leaderboard[, -pt_idx])
+
+    expect_true(!any(is.na(loaded_extended_leaderboard[, pt_idx])))
+    expect_true(all(loaded_extended_leaderboard[, pt_idx] > 0))
 
     train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame = "training_frame")
     loaded_extended_leaderboard_made <- as.data.frame(h2o.make_leaderboard(aml, train, extra_columns = "ALL"))
