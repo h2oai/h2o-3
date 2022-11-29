@@ -21,7 +21,6 @@ H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H
 * [Sparkling Water](#Sparkling)
 * [Documentation](#Documentation)
 * [Citing H2O](#Citing)
-* [Roadmap](#Roadmap)
 * [Community](#Community) / [Advisors](#Advisors) / [Investors](#Investors)
 
 <a name="Downloading"></a>
@@ -708,31 +707,8 @@ Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Dee
 
 Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>.
 
-<a name="Roadmap"></a>
-## 10. Roadmap
-
-### H2O 3.36.0.1 - Winter 2021
-
-* [[PUBDEV-4940]](https://h2oai.atlassian.net/browse/PUBDEV-4940) Uplift Trees
-* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - Infogram
-* RuleFit improvements (multinomial support, rule deduplication and consolidation)
-* Backward elimination in MAXR
-* Improved support for CDP (S3A with IDBroker)
-* Support for Java 16 and 17, Python 3.8
-
-### H2O 3.38.0.1 - Spring 2022
-
-* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - stage 2 (algos)
-* Multi-Output Regression in Deep Learning
-* GAM Improvements (support for Monotonic Splines)
-* XGBoost Upgrade
-* Data Ingest Improvements (Secured Hive in Standalone/K8S)
-* Extended Isolation Forest MOJO
-* Uplift MOJO
-* New features ICE plots
-
 <a name="Community"></a>
-## 11. Community
+## 10. Community
 
 H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
 
