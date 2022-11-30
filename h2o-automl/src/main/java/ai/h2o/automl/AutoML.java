@@ -79,9 +79,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, 
       public LeaderboardCell[] createExtensions(Model model) {
         final AutoML aml = amlKey.get();
         ModelingStep step = aml.session().getModelingStep(model.getKey());
+        final int scoringSampleSize = 10000;
+        // The magic number 2*scoringSampleSize is the worst case - a frame with scoringSampleSize rows being resampled and scored
+        if (aml.getLeaderboardFrame() == null && aml._scoringTimePerRowFrame == null && aml._trainingFrame.numRows() > 2 * scoringSampleSize)
+          aml._scoringTimePerRowFrame = MRUtils.sampleFrame(aml.getTrainingFrame(), scoringSampleSize, aml._buildSpec.build_control.stopping_criteria.seed());
         return new LeaderboardCell[] {
                 new TrainingTime(model),
-                new ScoringTimePerRow(model, aml.getLeaderboardFrame() == null ? aml.getTrainingFrame() : aml.getLeaderboardFrame()),
+                new ScoringTimePerRow(model, aml.getLeaderboardFrame() == null ? (aml._scoringTimePerRowFrame == null ? aml.getTrainingFrame() : aml._scoringTimePerRowFrame) : aml.getLeaderboardFrame()),
 //                new ModelSize(model._key)
                 new AlgoName(model),
                 new ModelProvider(model, step),
@@ -146,7 +150,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, 
   Frame _validationFrame;  // optional validation frame; the training_frame is split automatically if it's not specified.
   Frame _blendingFrame;    // optional blending frame for SE (usually if xval is disabled).
   Frame _leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics.
-
+  Frame _scoringTimePerRowFrame; // optionally created to speed up predict_time_per_row_ms calculation
   Vec _responseColumn;
   Vec _foldColumn;
   Vec _weightsColumn;
@@ -858,6 +862,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, 
     }
     if (_trainingFrame != null && _origTrainingFrame != null)
       Frame.deleteTempFrameAndItsNonSharedVecs(_trainingFrame, _origTrainingFrame);
+    if (_scoringTimePerRowFrame != null) _scoringTimePerRowFrame.delete(jobKey, fs, true);
     if (leaderboard() != null) leaderboard().remove(fs, cascade);
     if (eventLog() != null) eventLog().remove(fs, cascade);
     if (session() != null) session().remove(fs, cascade);
@@ -938,7 +943,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, 
       ab.put(_buildSpec);
       ab.putKey(_leaderboard._key);
       ab.putKey(_eventLog._key);
-//      ab.putKey(_trainingFrame._key);
       for (Model m : leaderboard().getModels()) {
         PersistenceContext.putKey(ab, m._key);
         if (_buildSpec.build_control.keep_cross_validation_predictions)
@@ -949,8 +953,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, 
             PersistenceContext.putKey(ab,k);
         if (_buildSpec.build_control.keep_cross_validation_fold_assignment)
           PersistenceContext.putKey(ab,m._output._cross_validation_fold_assignment_frame_id);
-//        if (m instanceof StackedEnsembleModel)
-//          PersistenceContext.putKey(ab, ((StackedEnsembleModel)m)._output._metalearner._parms._train);
       }
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -963,7 +965,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, 
       AutoML aml = new AutoML(ab.get(), null, ab.get(), false);
       aml._leaderboard = (Leaderboard) ab.getKey(fs);
       aml._eventLog = (EventLog) ab.getKey(fs);
-//      aml._trainingFrame = (Frame) ab.getKey(fs);
       fs.blockForPending();
       for (Key mk : aml.leaderboard().getModelKeys()) {
         Model m = (Model) PersistenceContext.getKey(ab, fs, mk);
@@ -975,8 +976,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, 
             PersistenceContext.loadKey(ab, fs, k);
         if (aml._buildSpec.build_control.keep_cross_validation_fold_assignment)
           PersistenceContext.loadKey(ab,fs ,m._output._cross_validation_fold_assignment_frame_id);
-//        if (m instanceof StackedEnsembleModel)
-//          PersistenceContext.loadKey(ab, fs, ((StackedEnsembleModel)m)._output._metalearner._parms._train);
       }
       DKV.put(aml);
       return aml;
