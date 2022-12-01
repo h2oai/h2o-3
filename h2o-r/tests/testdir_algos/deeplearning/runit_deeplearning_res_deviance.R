@@ -60,7 +60,7 @@ test <- function() {
                        train_samples_per_iteration = -1,validation_frame = fre,activation = "Tanh",distribution = "poisson", score_training_samples=0)
         p = h2o.predict(hh,newdata = fre)[,1]
         nr <- nrow(p)
-        mean_deviance = 2*sum(fre$ClaimNb*log(fre$ClaimNb/p) - fre$ClaimNb + p)/nr ## Poisson deviance
+        mean_deviance = 2*sum(fre$ClaimNb * (log(fre$ClaimNb) - log(p)) - fre$ClaimNb + p)/nr ## Poisson deviance
 
   print("---------------------------------------------------------poisson-----------------------------------------------")
         print(mean_deviance)
