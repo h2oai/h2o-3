@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 
@@ -291,11 +292,51 @@ public class ModelSelectionUtils {
                     applySweepVectors2NewPred(newSweepVec, subsetCPM, newPredCPMLength, sweepIndices);
                 }
                 // apply new sweeps to CPM due to addition of the new rows/columns
-                List<Integer> sweepIndices = IntStream.range(0, newPredCPMLength).map(x -> x + lastSweepIndex).boxed().collect(Collectors.toList());
+                List<Integer> sweepIndices = IntStream.range(0, newPredCPMLength).map(x -> x + 
+                        lastSweepIndex).boxed().collect(Collectors.toList());
                 // only apply the sweepIndices to only the last element of the CPM
                 subsetMSE[resCount] = sweepMSE(subsetCPM, sweepIndices);
             }
         };
+    }
+
+    /***
+     * Given CPM, sweep vector from forward model and the new predictor, this function aims to do the following:
+     * 1. Replace CPM with new predictor at the locations in the sweepIndicesRemovedPred;
+     * 2. Going into a for loop over all the sweep vectors to do the following:
+     *    - update sweep vector for sweep index specified by the for loop;
+     *    - use the updated sweep vector to sweep the replaced cols/rows of CPM due to the replaced pred;
+     */
+    public static void updateCPMSV(ModelSelection.SweepModel bestModel, double[][] origCPM, int[][] predInd2CPMInd,
+                                   boolean hasIntercept, int[] sweepIndicesRemovedPred, int predPos) {
+        int[] predSubset = bestModel._predSubset;
+        int newPred = predSubset[predSubset.length-1];
+        double[][] subsetCPM = replaceCPMwNewPred(bestModel._CPM, origCPM, predInd2CPMInd, newPred, 
+                sweepIndicesRemovedPred, predSubset, hasIntercept, predPos);
+        SweepVector[][] sv = bestModel._sweepVector;
+        
+    }
+    
+    public static double[][] replaceCPMwNewPred(double[][] cpm, double[][] allCPM, int[][] pred2CPM, int newPred, 
+                                                int[] oldSweepIndices, int[] predSubset, boolean hasIntercept, int predPos) {
+        int newPredCPMLen = pred2CPM[newPred].length;
+        List<Integer> currSubsetIndices = IntStream.of(predSubset).boxed().collect(Collectors.toList());
+        int[] newSweepIndices = extractSweepIndices(IntStream.of(predSubset).boxed().collect(Collectors.toList()), 
+                predPos, newPred, pred2CPM, hasIntercept);
+        double[][] newCPM = extractPredSubsetsCPM(allCPM, predSubset, pred2CPM, hasIntercept);  // grep non-swept CPM
+        // replace non-swept cpm with swept cpm
+        int firstCopyLen = oldSweepIndices[0]-1;
+        int firstCopyIndStart = oldSweepIndices[0];
+        int cpmLen = newCPM.length;
+        int secondCopyIndStart = oldSweepIndices[newSweepIndices.length-1]+1;
+        int secondCopyIndStartN = newSweepIndices[newPredCPMLen-1]+1;
+        int secondCopyLen = cpmLen-secondCopyIndStart;
+        for (int cInd=0; cInd<firstCopyIndStart; cInd++) { // copy first rows above changed row
+            System.arraycopy(cpm[cInd], 0, newCPM[cInd], 0, firstCopyLen);
+            System.arraycopy(cpm[cInd], secondCopyIndStart, newCPM[cInd], secondCopyIndStartN, secondCopyLen);
+        }
+        for (int cInd = secondCopyIndStart; cInd < )
+        return newCPM;
     }
     
     public static double sweepMSE(double[][] subsetCPM, List<Integer> sweepIndices) {
@@ -610,7 +651,11 @@ public class ModelSelectionUtils {
             newSweepVector[index+numSV] = newPredSV[index];
         return newSweepVector;
     }
-    
+
+    /**
+     * Given predRemoved (the predictor that is to be removed and replaced in the forward step), this method will
+     * calculate the locations of the CPM rows/columns associated with it.
+     */
     public static int[] extractSweepIndices(List<Integer> currSubsetIndices, int predPos, int predRemoved, 
                                      int[][] predInd2CPMIndices, boolean hasIntercept) {
         int predRemovedLen = predInd2CPMIndices[predRemoved].length;

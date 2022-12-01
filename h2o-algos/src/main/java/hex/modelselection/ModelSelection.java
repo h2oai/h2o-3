@@ -589,11 +589,11 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                                           double bestErrVar, int predPos, int predRemoved) {
         // generate all models
         double[][] subsetCPMO = copy2D(bestModel._CPM);
-        int[] sweepIndices = extractSweepIndices(currSubsetIndices, predPos, predRemoved, predInd2CPMInd, hasIntercept);
-        SweepVector[][] removedPredSV = sweepCPM(subsetCPMO, sweepIndices, true);   // SVs from removed pred
+        int[] sweepIndicesRemovedPred = extractSweepIndices(currSubsetIndices, predPos, predRemoved, predInd2CPMInd, hasIntercept);
+        SweepVector[][] removedPredSV = sweepCPM(subsetCPMO, sweepIndicesRemovedPred, true);   // SVs from removed pred
         SweepVector[][] newSV = mergeSV(bestModel._sweepVector, removedPredSV);
         List<Integer> allSweepIndices = IntStream.range(0, subsetCPMO.length-1).boxed().collect(Collectors.toList());
-        allSweepIndices.addAll(IntStream.of(sweepIndices).boxed().collect(Collectors.toList()));
+        allSweepIndices.addAll(IntStream.of(sweepIndicesRemovedPred).boxed().collect(Collectors.toList()));
         double[] subsetErrVar = generateAllErrorVariances(origCPM, newSV, subsetCPMO, currSubsetIndices, 
                 validSubsets, usedCombo, predIndices, predInd2CPMInd, hasIntercept, predPos, predRemoved, 
                 allSweepIndices.stream().mapToInt(x->x).toArray());
@@ -613,7 +613,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             currSubsetIndices.add(predPos, validSubsets.get(bestInd));
             int[] subsetPred = currSubsetIndices.stream().mapToInt(x->x).toArray();
             bestModel._predSubset = subsetPred;
-            genBestSweepVector(bestModel, origCPM, predInd2CPMInd, hasIntercept);
+            updateCPMSV(bestModel, origCPM, predInd2CPMInd, hasIntercept, sweepIndicesRemovedPred, predPos);
+           // genBestSweepVector(bestModel, origCPM, predInd2CPMInd, hasIntercept);
             return bestModel;
         }
     }
