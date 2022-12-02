@@ -1,7 +1,7 @@
 ``autoencoder``
 ---------------
 
-- available in: Deep Learning
+- Available in: Deep Learning
 - Hyperparameter: no
 
 Description
@@ -18,9 +18,7 @@ Autoencoders are useful for:
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- ``pretrained_autoencoder``
-- ``average_activation``
-- ``sparsity_beta``
+- None
 
 Example
 ~~~~~~~
@@ -31,52 +29,99 @@ Example
 		library(h2o)
 		h2o.init()
 
-		# import the MNIST bigdata dataset:
+		# Import the MNIST train and test datasets:
 		train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+		test <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
 
-		# set the predictors and response:
-		predictors <- c(1:784)
-		resp <- 785
-		train[,resp] <- as.factor(train[,resp])
+		# Set the predictors and response:
+		predictors = c(1:784)
+		response = 785
+		train[response] <- as.factor(train[response])
 
-		# split the training data:
-		data_split <- h2o.splitFrame(data = train, ratios = 0.5, seed = 1234)
-		training_data <- data_split[[1]]
-		valid_data <- data_split[[2]]
+		# Split the training data:
+		sid <- h2o.runif(train, seed=0)
+		training_data <- train[sid>=0.5,]
+		valid_data <- train[sid<0.5,]
 
-		# build and train the model: 
+		# Build and train an unsupervised autoencoder model:
 		ae_model <- h2o.deeplearning(x = predictors, 
-					     training_frame = training_data[-resp], 
+					     training_frame = training_data, 
 					     activation = "Tanh", 
+					     ignore_const_cols = FALSE, 
 					     autoencoder = TRUE, 
 					     hidden = c(20), 
 					     epochs = 1, 
 					     reproducible = TRUE, 
 					     seed = 1234, 
-					     ignore_const_cols = FALSE)
+					     model_id = "ae_model")
 
-		# retrieve something :)
+		# Evaluate the model performance:
+		h2o.performance(ae_model)
+
+		# Use that pretrained unsupervised autoencoder model to
+		# initialize a supervised Deep Learning model:
+		pretrained_model <- h2o.deeplearning(x = predictors, 
+						     y = response, 
+						     training_frame = valid_data, 
+						     validation_frame = test, 
+						     ignore_const_cols = FALSE, 
+						     hidden = c(20), 
+						     epochs = 1, 
+						     reproducible = TRUE, 
+						     seed = 1234, 
+						     pretrained_autoencoder = "ae_model")
+
+		# Evaluate the performance again:
+		h2o.performance(pretrained_model)
+
 
 
 	.. code-tab:: python
 
 		import h2o
-		from h2o.estimators import H2ODeepLearningEstimator
+		from h2o.estimators import H2OAutoEncoderEstimator, H2ODeepLearningEstimator
 		h2o.init()
 
-		# import the MNIST bigdata dataset:
+		# Import the MNIST train and test datasets:
 		train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+		test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
 
-		# set the predictors and response:
+		# Set the predictors and response:
 		predictors = train.columns[0:783]
-		response = 784
+		response = train.columns[784]
 		train[response] = train[response].asfactor()
 
-		# split the training data:
+		# Split the training data:
 		training_data, valid_data = train.split_frame(ratios=[0.5])
 
-		# build and train the model:
-		ae_model = H2ODeepLearningEstimator(activation="tanh", ignore_const_cols=False, autoencoder=True, hidden=[20], epochs=1, reproducible=True, seed=1234)
+		# Build and train an unsupervised autoencoder model:
+		ae_model = H2OAutoEncoderEstimator(activation="tanh", 
+						   ignore_const_cols=False, 
+						   autoencoder=True, hidden=[20], 
+						   epochs=1, 
+						   reproducible=True, 
+						   seed=1234, 
+						   model_id="ae_model")
+		ae_model.train(x=predictors, y=response, training_frame=training_data)
+
+		# Evaluate the model performance:
+		ae_model.model_performance()
+
+		# Now, use that pretrained unsupervised autoencoder model to
+		# initialize a supervised Deep Learning model:
+		pretrained_model = H2ODeepLearningEstimator(ignore_const_cols=False, 
+							    hidden=[20], 
+							    epochs=1, 
+							    reproducible=True, 
+							    seed=1234, 
+							    pretrained_autoencoder="ae_model")
+		pretrained_model.train(x=predictors, 
+				       y=response, 
+				       training_frame=valid_data, 
+				       validation_frame=test)
+
+		# Evaluate the model performance again:
+		pretrained_model.model_performance()
 
 
 
