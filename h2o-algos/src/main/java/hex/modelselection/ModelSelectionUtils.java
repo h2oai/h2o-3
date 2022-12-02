@@ -83,9 +83,10 @@ public class ModelSelectionUtils {
                                          String foldColumn) {
         final Frame predVecs = new Frame(Key.make());
         final Frame train = parms.train();
-        int numPreds = predIndices.length;
+        boolean usePredIndices = predIndices != null;
+        int numPreds = usePredIndices? predIndices.length : predNames.length;
         for (int index = 0; index < numPreds; index++) {
-            int predVecNum = predIndices[index];
+            int predVecNum = usePredIndices ? predIndices[index] : index;
             predVecs.add(predNames[predVecNum], train.vec(predNames[predVecNum]));
         }
         if (parms._weights_column != null)
@@ -802,10 +803,8 @@ public class ModelSelectionUtils {
         
         // choose the min z-value from numerical and categorical predictors and return its index in predNames
         if (categoricalPred._minZVal >= 0 && categoricalPred._minZVal < numericalPred._minZVal) { // categorical pred has minimum z-value
-            catPredNames.remove(catPredNames.indexOf(categoricalPred._predName));
             return predNames.indexOf(categoricalPred._predName);
         } else {    // numerical pred has minimum z-value
-            numPredNames.remove(numPredNames.indexOf(numericalPred._predName));
             return predNames.indexOf(numericalPred._predName);
         }
     }
@@ -819,8 +818,8 @@ public class ModelSelectionUtils {
                 int eleInd = coeffNames.indexOf(predName);
                 double oneZValue = zValList.get(eleInd);
                 if (Double.isNaN(oneZValue)) {
-                    zValList.set(eleInd, 0.0);
-                    numZValues.add(0.0);    // NaN corresponds to coefficient of 0.0
+                    zValList.set(eleInd, Double.POSITIVE_INFINITY);
+                    numZValues.add(Double.POSITIVE_INFINITY);    // NaN corresponds to coefficient of 0.0
                 } else {
                     numZValues.add(oneZValue);
                 }
@@ -855,8 +854,8 @@ public class ModelSelectionUtils {
                 for (int eleInd = catOffsets[catInd]; eleInd < nextCatOffset; eleInd++) {   // check z-value for each level
                     double oneZVal = zValList.get(eleInd);
                     if (Double.isNaN(oneZVal)) {
-                        zValList.set(eleInd, 0.0);
-                        catZValues.add(0.0);
+                        zValList.set(eleInd, Double.POSITIVE_INFINITY);
+                        catZValues.add(Double.POSITIVE_INFINITY);
                     } else {
                         catZValues.add(oneZVal);
                     }
