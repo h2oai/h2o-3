@@ -164,7 +164,7 @@ public class AstFairnessMetrics extends AstPrimitive {
                     result.append("NaN");
                 }
             }
-            return result.toString();
+            return result.toString().replaceAll("[^A-Za-z0-9,]", "_");
         }
 
         @Override
