@@ -192,8 +192,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'cox2': [
                 [10, "cpu"]: [
-                    'train_time_min': 62,
-                    'train_time_max': 1514
+                    'train_time_min': 1275,
+                    'train_time_max': 1464
                 ]
             ],
             'cox2-20m': [
