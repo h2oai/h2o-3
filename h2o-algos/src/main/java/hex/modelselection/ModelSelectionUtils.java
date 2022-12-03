@@ -7,6 +7,7 @@ import hex.glm.GLMModel;
 import hex.glm.GLMTask;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
+import org.apache.commons.lang.NotImplementedException;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
@@ -16,7 +17,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 
@@ -310,32 +310,130 @@ public class ModelSelectionUtils {
     public static void updateCPMSV(ModelSelection.SweepModel bestModel, double[][] origCPM, int[][] predInd2CPMInd,
                                    boolean hasIntercept, int[] sweepIndicesRemovedPred, int predPos) {
         int[] predSubset = bestModel._predSubset;
-        int newPred = predSubset[predSubset.length-1];
-        double[][] subsetCPM = replaceCPMwNewPred(bestModel._CPM, origCPM, predInd2CPMInd, newPred, 
-                sweepIndicesRemovedPred, predSubset, hasIntercept, predPos);
+        int newPred = predSubset[predPos];
+        int[] newSweepIndices = extractSweepIndices(IntStream.of(predSubset).boxed().collect(Collectors.toList()),
+                predPos, newPred, predInd2CPMInd, hasIntercept); // cpm indices of new predictor only
+        List<Integer> newSweepList = Arrays.stream(newSweepIndices).boxed().collect(Collectors.toList());
+        double[][] subsetCPM = replaceCPMwNewPred(bestModel._CPM, origCPM, predInd2CPMInd, 
+                sweepIndicesRemovedPred, newSweepIndices, predSubset, hasIntercept);
+        // for loop to go over all sweepVectors from bestModel, sweeping the new predictors 
+        int numSweep = bestModel._sweepVector.length;
+        int oldSweepLen = sweepIndicesRemovedPred.length;
+        int newSweepLen = newSweepIndices.length;
         SweepVector[][] sv = bestModel._sweepVector;
-        
+        int svLenHalfPerSweep = sv[0].length/2;
+        int lastSVIndex = svLenHalfPerSweep-2;
+        for (int index=0; index<numSweep; index++) {
+            if (oldSweepLen == newSweepLen) {
+                sv[index] = updateSV4NewPred(sv[index], subsetCPM, newSweepList, index, svLenHalfPerSweep, lastSVIndex);
+                sweepCPMNewPred(subsetCPM, index, sv[index], newSweepIndices); // sweep newly replaced predictor
+            } else {
+                throw new NotImplementedException("Not implemented when new/old predictors have different size yet!");
+            }
+        }
+        bestModel._CPM = subsetCPM;
+        bestModel._sweepVector = sv;
+    }
+
+    /**
+     * This method will perform sweeping on the rows/columns of CPM corresponding to the newly replaced predictor.  sv
+     * is longer than the sweepvector we need by 2.
+     */
+    public static void sweepCPMNewPred(double[][] subsetCPM, int sweepIndex, SweepVector[] sv, int[] newSweepIndices) {
+        int halfSVLen = subsetCPM.length/2;
+        int lastSVInd = halfSVLen-1;
+        int halfLongSV = sv.length/2;
+        int lastSVLongInd = halfLongSV-1;
+        double oneOverPivot = sv[halfLongSV-2]._value;
+        int newSweepLen = newSweepIndices.length;
+        double[] rows = new double[newSweepLen];
+        double[] cols = new double[newSweepLen];
+        int cpmIndex;
+        for (int cIndex=0; cIndex<newSweepLen; cIndex++) {
+            cpmIndex = newSweepIndices[cIndex];
+            for (int index = 0; index < halfSVLen; index++) {
+                if (index != sweepIndex && index != lastSVInd) {  // do this element at the end
+                    subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex]-subsetCPM[sweepIndex][index]*sv[index]._value;
+                    subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index]-subsetCPM[cpmIndex][sweepIndex]*sv[index+halfLongSV]._value;
+
+                } else if (index == lastSVInd) { // dealing with last element of new pred
+                    subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex]-subsetCPM[sweepIndex][cpmIndex]*sv[lastSVLongInd]._value;
+                    subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index]-subsetCPM[cpmIndex][sweepIndex]*sv[lastSVLongInd+halfLongSV]._value;
+                } else if (index == sweepIndex) {
+                    rows[cIndex] = subsetCPM[sweepIndex][cpmIndex]*oneOverPivot;
+                    cols[cIndex] = -subsetCPM[cpmIndex][sweepIndex]*oneOverPivot;
+                }
+            }
+        }
+        for (int cIndex=0; cIndex < newSweepLen; cIndex++) {
+            cpmIndex = newSweepIndices[cIndex];
+            subsetCPM[sweepIndex][cpmIndex] = rows[cIndex];
+            subsetCPM[cpmIndex][sweepIndex] = cols[cIndex];
+        }
+    }
+
+    /***
+     * Given new subsetCPM with replaced predictor, the sweep vector for one sweep.  There is where
+     * the updating is done.
+     */
+    static SweepVector[] updateSV4NewPred(SweepVector[] vector2Change, double[][] subsetCPM,
+                                            List<Integer> newSweepList, int sweepIndex, int svSize, int lastSVIndex) {
+        double oneOverPivot = newSweepList.contains(sweepIndex) ? 1.0/subsetCPM[sweepIndex][sweepIndex] :
+                vector2Change[lastSVIndex]._value;
+        SweepVector sv, svNext;
+        int lastCPMInd = subsetCPM.length - 1;
+        for (int index=0; index<svSize; index++) {
+            sv = vector2Change[index];
+            svNext = vector2Change[index+svSize];
+            if (newSweepList.contains(sweepIndex)) {
+                if (sv._row == sweepIndex) {
+                    sv._value = oneOverPivot;
+                    svNext._value = -oneOverPivot;
+                } else if (index==lastSVIndex) {
+                    sv._value = oneOverPivot;
+                    svNext._value = oneOverPivot;
+                } else {
+                    if (index > lastCPMInd) {
+                        sv._value = subsetCPM[lastCPMInd][sweepIndex] * oneOverPivot;
+                        svNext._value = subsetCPM[sweepIndex][lastCPMInd] * oneOverPivot;
+                    } else {
+                        sv._value = subsetCPM[index][sweepIndex] * oneOverPivot;
+                        svNext._value = subsetCPM[sweepIndex][index] * oneOverPivot;
+                    }
+                }
+            } else {    // normal sweepVector
+                if (newSweepList.contains(index)) {
+                    sv._value = subsetCPM[index][sweepIndex]*oneOverPivot;
+                    svNext._value = subsetCPM[sweepIndex][index]*oneOverPivot;
+                }
+            }
+        }
+        return vector2Change;
     }
     
-    public static double[][] replaceCPMwNewPred(double[][] cpm, double[][] allCPM, int[][] pred2CPM, int newPred, 
-                                                int[] oldSweepIndices, int[] predSubset, boolean hasIntercept, int predPos) {
-        int newPredCPMLen = pred2CPM[newPred].length;
-        List<Integer> currSubsetIndices = IntStream.of(predSubset).boxed().collect(Collectors.toList());
-        int[] newSweepIndices = extractSweepIndices(IntStream.of(predSubset).boxed().collect(Collectors.toList()), 
-                predPos, newPred, pred2CPM, hasIntercept);
+    public static double[][] replaceCPMwNewPred(double[][] cpm, double[][] allCPM, int[][] pred2CPM, 
+                                                int[] oldSweepIndices, int[] newSweepIndices, int[] predSubset, 
+                                                boolean hasIntercept) {
+        int newPredCPMLen = newSweepIndices.length;
         double[][] newCPM = extractPredSubsetsCPM(allCPM, predSubset, pred2CPM, hasIntercept);  // grep non-swept CPM
         // replace non-swept cpm with swept cpm
-        int firstCopyLen = oldSweepIndices[0]-1;
         int firstCopyIndStart = oldSweepIndices[0];
-        int cpmLen = newCPM.length;
-        int secondCopyIndStart = oldSweepIndices[newSweepIndices.length-1]+1;
+        int secondCopyIndStart = oldSweepIndices[oldSweepIndices.length-1]+1;
         int secondCopyIndStartN = newSweepIndices[newPredCPMLen-1]+1;
+        int cpmLen = cpm.length;
         int secondCopyLen = cpmLen-secondCopyIndStart;
-        for (int cInd=0; cInd<firstCopyIndStart; cInd++) { // copy first rows above changed row
-            System.arraycopy(cpm[cInd], 0, newCPM[cInd], 0, firstCopyLen);
+        for (int cInd=0; cInd<firstCopyIndStart; cInd++) {
+                // copy first rows above changed row, and columns to the left of replaced predictor
+                System.arraycopy(cpm[cInd], 0, newCPM[cInd], 0, firstCopyIndStart);
+                // copy first rows above changed row, and columns to the right of replaced predictor
+                System.arraycopy(cpm[cInd], secondCopyIndStart, newCPM[cInd], secondCopyIndStartN, secondCopyLen);
+        }
+        for (int cInd = secondCopyIndStart; cInd < cpmLen; cInd++) {
+            // copy rows below changed row and columns to the left of replaced predictor
+            System.arraycopy(cpm[cInd], 0, newCPM[cInd], 0, firstCopyIndStart);
+            // copy rows below changed row and columns to the right of replaced predictor 
             System.arraycopy(cpm[cInd], secondCopyIndStart, newCPM[cInd], secondCopyIndStartN, secondCopyLen);
         }
-        for (int cInd = secondCopyIndStart; cInd < )
         return newCPM;
     }
     
