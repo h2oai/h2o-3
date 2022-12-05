@@ -47,7 +47,7 @@ Using Unsupported Java Versions
 
 We recommend that only power users force an unsupported Java version. Unsupported Java versions can only be used for experiments. For production versions, we only guarantee the Java versions from the supported list.
 
-To force an unsupported Java version: 
+To force an unsupported Java version:
 
 ::
    
