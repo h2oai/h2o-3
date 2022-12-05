@@ -340,35 +340,50 @@ public class ModelSelectionUtils {
      * is longer than the sweepvector we need by 2.
      */
     public static void sweepCPMNewPred(double[][] subsetCPM, int sweepIndex, SweepVector[] sv, int[] newSweepIndices) {
-        int halfSVLen = subsetCPM.length;
-        int lastSVInd = halfSVLen-1;
-        int halfLongSV = sv.length/2;
-        int lastSVLongInd = halfLongSV-1;
-        double oneOverPivot = sv[halfLongSV-2]._value;
-        int newSweepLen = newSweepIndices.length;
-        double[] rows = new double[newSweepLen];
-        double[] cols = new double[newSweepLen];
-        int cpmIndex;
-        for (int cIndex=0; cIndex<newSweepLen; cIndex++) {
-            cpmIndex = newSweepIndices[cIndex];
-            for (int index = 0; index < halfSVLen; index++) {
-                if (index != sweepIndex && index != lastSVInd) {  // do this element at the end
-                    subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex]-subsetCPM[sweepIndex][cpmIndex]*sv[index]._value;
-                    subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index]-subsetCPM[cpmIndex][sweepIndex]*sv[index+halfLongSV]._value;
-                } else if (index == lastSVInd) { // dealing with last element of new pred
-                    subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex]-subsetCPM[sweepIndex][cpmIndex]*sv[lastSVLongInd]._value;
-                    subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index]-subsetCPM[cpmIndex][sweepIndex]*sv[lastSVLongInd+halfLongSV]._value;
-                } else if (index == sweepIndex) {
-                    rows[cIndex] = subsetCPM[sweepIndex][cpmIndex]*oneOverPivot;
-                    cols[cIndex] = -subsetCPM[cpmIndex][sweepIndex]*oneOverPivot;
-                }
+      int halfSVLen = subsetCPM.length;
+      int lastSVInd = halfSVLen - 1;
+      int halfLongSV = sv.length / 2;
+      int lastSVLongInd = halfLongSV - 1;
+      double oneOverPivot = sv[halfLongSV - 2]._value;
+      int newSweepLen = newSweepIndices.length;
+      double[] rows = new double[newSweepLen];
+      double[] cols = new double[newSweepLen];
+      int cpmIndex;
+      boolean sweptNotIdenticalRowCol;
+      for (int cIndex = 0; cIndex < newSweepLen; cIndex++) {
+        cpmIndex = newSweepIndices[cIndex];
+        for (int index = 0; index < halfSVLen; index++) {
+          if (cpmIndex == sweepIndex) { // sweeping replaced row/cols\
+            if (index == sweepIndex) {
+              subsetCPM[index][cpmIndex] = oneOverPivot;
+            } else {
+              subsetCPM[index][cpmIndex] = -subsetCPM[index][cpmIndex] * oneOverPivot;
+              subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index] * oneOverPivot;
             }
+          } else {
+            sweptNotIdenticalRowCol = index != cpmIndex;
+            if (index == sweepIndex) {
+              rows[cIndex] = subsetCPM[sweepIndex][cpmIndex] * oneOverPivot;
+              cols[cIndex] = -subsetCPM[cpmIndex][sweepIndex] * oneOverPivot;
+            } else if (index != sweepIndex && index != lastSVInd) {  // do this element at the end
+              subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex] - subsetCPM[sweepIndex][cpmIndex] * sv[index]._value;
+              if (sweptNotIdenticalRowCol)
+                subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index] - subsetCPM[cpmIndex][sweepIndex] * sv[index + halfLongSV]._value;
+            } else if (index == lastSVInd) { // dealing with last element of new pred
+              subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex] - subsetCPM[sweepIndex][cpmIndex] * sv[lastSVLongInd]._value;
+              if (sweptNotIdenticalRowCol)
+                subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index] - subsetCPM[cpmIndex][sweepIndex] * sv[lastSVLongInd + halfLongSV]._value;
+            }
+          }
         }
-        for (int cIndex=0; cIndex < newSweepLen; cIndex++) {
-            cpmIndex = newSweepIndices[cIndex];
-            subsetCPM[sweepIndex][cpmIndex] = rows[cIndex];
-            subsetCPM[cpmIndex][sweepIndex] = cols[cIndex];
+      }
+      for (int cIndex = 0; cIndex < newSweepLen; cIndex++) {
+        cpmIndex = newSweepIndices[cIndex];
+        if (cpmIndex != sweepIndex) {
+          subsetCPM[sweepIndex][cpmIndex] = rows[cIndex];
+          subsetCPM[cpmIndex][sweepIndex] = cols[cIndex];
         }
+      }
     }
 
     /***

@@ -288,7 +288,17 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
                 1797504.437143965, -1768751.0314145735, -1755817.796321408, 1747644.8783670785, -1691641.472797731,
                 1684727.2390496698, 4.542312022970976E9}};
         int[] replacementPredIndices = new int[]{77, 96, 74, 75, 87, 88, 85, 6};
+
+        int numSweep = sweepIndices.length;
+        double[][][] correctSVM = new double[numSweep+1][][];
+        double[][] startCPM  = copy2D(CPMNoSweptReplaced100);
+        correctSVM[0] = copy2D(startCPM);
+        for (int index=0; index<numSweep; index++) {
+            sweepCPM(startCPM, new int[]{index}, false);
+            correctSVM[index+1] = copy2D(startCPM);
+        }
         SweepVector[][] correctSV = sweepCPM(CPMNoSweptReplaced100, sweepIndices, true);
+        
         
         double[][] cpmSweptReplaced100 = new double[][]{{2.0E-5, 3.196101465161939E-22, -1.5058688521666574E-22,
                 -8.904229499644892E-23, -4.692995897186566E-22, -1.8837700701293293E-22, 1.822590868023714E-22,
@@ -315,21 +325,33 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
                 33.60876880907906}, {-2.446934285033952, 36.49279626012891, -36.241413366137415, -35.96436844793575,
                 35.3268979933469, 34.59794521081789, -34.77941766646261, -1691641.472797731, -33.60876880907906, 
                 4.0483385894687824E9}};
-        
-        int numSweep = sweepIndices.length;
+
         int[] newPredSweepIndex = new int[]{7};
         List<Integer> newSweepList = Arrays.stream(newPredSweepIndex).boxed().collect(Collectors.toList());
         int svLenHalfPerSweep = originalSV[0].length/2;
         int lastSVIndex = svLenHalfPerSweep-2;
-        double[][] cpmSweptReplaced100Alt = copy2D(cpmSweptReplaced100);
         for (int index=0; index<numSweep; index++) {
             SweepVector[] newSV = updateSV4NewPred(originalSV[index], cpmSweptReplaced100, newSweepList, index, svLenHalfPerSweep, lastSVIndex);
-            sweepCPMNewPred(cpmSweptReplaced100, index, newSV, newPredSweepIndex); // sweep newly replaced predictor
-            sweepCPMNewPred(cpmSweptReplaced100Alt, index, correctSV[index], newPredSweepIndex);
-            assert2DArraysEqual(cpmSweptReplaced100Alt, cpmSweptReplaced100, 1e-12);
             assertEqualSV(newSV, correctSV[index]);
+            sweepCPMNewPred(cpmSweptReplaced100, index, newSV, newPredSweepIndex); // sweep newly replaced predictor
+            sweepCPMNewPred(correctSVM[index], index, correctSV[index], newPredSweepIndex);
+            assertCorrectReplacedPred(correctSVM[index+1], cpmSweptReplaced100, newPredSweepIndex, 1e-12);
         }
-        assert2DArraysEqual(cpmSweptReplaced100, CPMNoSweptReplaced100, 1e-12);
+        assert2DArraysEqual(cpmSweptReplaced100, correctSVM[correctSVM.length-1], 1e-12);
+    }
+    
+    public void assertCorrectReplacedPred(double[][] cpm1, double[][] cpm2, int[] predIndices, double tol) {
+        int predLen = predIndices.length;
+        int cpmLen = cpm1.length;
+        for (int index=0; index<predLen; index++) {
+            int cInd = predIndices[index];
+            for (int rInd=0; rInd<cpmLen; rInd++) {
+                assertTrue("Expected: " + cpm1[rInd][cInd]+" Actual: "+cpm2[rInd][cInd] + " at row "+rInd+
+                        " and col "+cInd, Math.abs(cpm1[rInd][cInd]-cpm2[rInd][cInd])<tol);
+                assertTrue("Expected: " + cpm1[cInd][rInd]+" Actual: "+cpm2[cInd][rInd] + " at row "+cInd+"" +
+                        " and col "+rInd, Math.abs(cpm1[cInd][rInd]-cpm2[cInd][rInd])<tol);
+            }
+        }
     }
     
     @Test
