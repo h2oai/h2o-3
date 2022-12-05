@@ -226,7 +226,7 @@ FAQ
 
 - **How does the algorithm handle missing values during training?**
 
-    When correctly imported, Isolation Forest handles missing values the same way as DRF. Missing values are interpreted as containing information (as opposed to missing information at random). Missing values are counted during splits when splitting for Feature and Value. They can either go to the left or right branch.
+    When correctly imported, Isolation Forest handles missing values the same way as DRF. Missing values are interpreted as containing information (i.e., missing for a reason). Missing values are counted during splits when splitting for Feature and Value. They can either go to the left or right branch.
 
 References
 ~~~~~~~~~~
