@@ -31,7 +31,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
     DataInfo _dinfo;
     String[] _coefNames;
     int[][] _predictorIndex2CPMIndices;    // map predictor indices to the corresponding Gram matrix indices
-    double[][] _crossProdcutMatrix;
+    double[][] _crossProductMatrix;
     public int _numPredictors;
     public String[] _predictorNames;
     public int _glmNFolds = 0;
@@ -260,8 +260,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         List<Integer> buildMaxRSweepModels(ModelSelectionModel model) {
             _coefNames = _dinfo.coefNames();
             // generate cross-product matrix (CPM) as in section III of doc
-            _crossProdcutMatrix = createCrossProductMatrix(_job._key, _dinfo);
-            checkMemoryFootPrint(_crossProdcutMatrix.length);
+            _crossProductMatrix = createCrossProductMatrix(_job._key, _dinfo);
+            checkMemoryFootPrint(_crossProductMatrix.length);
             // generate mapping of predictor index to CPM indices due to enum columns add multiple rows/columns to CPM
             double r2Scale = 1.0/calR2Scale(train(), _parms._response_column);
             CoeffNormalization coefNorm = generateScale(_dinfo, _parms._standardize);
@@ -277,12 +277,12 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             for (int predNum = 1; predNum <= _parms._max_predictor_number; predNum++) { // find best predictor subset for each subset size
                 Set<BitSet> usedCombos = new HashSet<>();
                 if (bestModel == null) {
-                    bestModel = forwardStep(currSubsetIndices, validSubset, usedCombos, predictorIndices, 
-                            _crossProdcutMatrix, _predictorIndex2CPMIndices, null, 
+                    bestModel = forwardStep(currSubsetIndices, validSubset, usedCombos, predictorIndices,
+                            _crossProductMatrix, _predictorIndex2CPMIndices, null, 
                             _parms._intercept);
                 } else {
-                    bestModel = forwardStep(currSubsetIndices, validSubset, usedCombos, predictorIndices, 
-                            _crossProdcutMatrix, _predictorIndex2CPMIndices, bestModel, _parms._intercept);
+                    bestModel = forwardStep(currSubsetIndices, validSubset, usedCombos, predictorIndices,
+                            _crossProductMatrix, _predictorIndex2CPMIndices, bestModel, _parms._intercept);
                 }
                 validSubset.removeAll(currSubsetIndices);
                 _job.update(predNum, "Finished forward step with "+predNum+" predictors.");
@@ -654,7 +654,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 ArrayList<Integer> oneLessSubset = new ArrayList<>(currSubsetIndices);
                 int removedSubInd = oneLessSubset.remove(index);
                 currModel._predSubset = oneLessSubset.stream().mapToInt(x -> x).toArray();
-                tempModel = forwardStepR(oneLessSubset, validSubset, usedCombos, predIndices, _crossProdcutMatrix, 
+                tempModel = forwardStepR(oneLessSubset, validSubset, usedCombos, predIndices, _crossProductMatrix, 
                         _predictorIndex2CPMIndices, currModel, _parms._intercept, errorVarianceMin, index, removedSubInd);
                 if (tempModel._CPM != null && errorVarianceMin > tempModel._errorVariance) {
                     currModel = tempModel;

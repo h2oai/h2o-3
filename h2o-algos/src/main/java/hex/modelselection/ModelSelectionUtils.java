@@ -340,7 +340,7 @@ public class ModelSelectionUtils {
      * is longer than the sweepvector we need by 2.
      */
     public static void sweepCPMNewPred(double[][] subsetCPM, int sweepIndex, SweepVector[] sv, int[] newSweepIndices) {
-        int halfSVLen = subsetCPM.length/2;
+        int halfSVLen = subsetCPM.length;
         int lastSVInd = halfSVLen-1;
         int halfLongSV = sv.length/2;
         int lastSVLongInd = halfLongSV-1;
@@ -353,9 +353,8 @@ public class ModelSelectionUtils {
             cpmIndex = newSweepIndices[cIndex];
             for (int index = 0; index < halfSVLen; index++) {
                 if (index != sweepIndex && index != lastSVInd) {  // do this element at the end
-                    subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex]-subsetCPM[sweepIndex][index]*sv[index]._value;
+                    subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex]-subsetCPM[sweepIndex][cpmIndex]*sv[index]._value;
                     subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index]-subsetCPM[cpmIndex][sweepIndex]*sv[index+halfLongSV]._value;
-
                 } else if (index == lastSVInd) { // dealing with last element of new pred
                     subsetCPM[index][cpmIndex] = subsetCPM[index][cpmIndex]-subsetCPM[sweepIndex][cpmIndex]*sv[lastSVLongInd]._value;
                     subsetCPM[cpmIndex][index] = subsetCPM[cpmIndex][index]-subsetCPM[cpmIndex][sweepIndex]*sv[lastSVLongInd+halfLongSV]._value;
@@ -377,19 +376,20 @@ public class ModelSelectionUtils {
      * the updating is done.
      */
     static SweepVector[] updateSV4NewPred(SweepVector[] vector2Change, double[][] subsetCPM,
-                                            List<Integer> newSweepList, int sweepIndex, int svSize, int lastSVIndex) {
-        double oneOverPivot = newSweepList.contains(sweepIndex) ? 1.0/subsetCPM[sweepIndex][sweepIndex] :
-                vector2Change[lastSVIndex]._value;
+                                            List<Integer> newSweepList, int sweepIndex, int svSize, int svIndexEqualRowCol) {
+        boolean sweepIndexInList = newSweepList.contains(sweepIndex);
+        double oneOverPivot = sweepIndexInList ? 1.0/subsetCPM[sweepIndex][sweepIndex] :
+                vector2Change[svIndexEqualRowCol]._value;
         SweepVector sv, svNext;
         int lastCPMInd = subsetCPM.length - 1;
         for (int index=0; index<svSize; index++) {
             sv = vector2Change[index];
             svNext = vector2Change[index+svSize];
-            if (newSweepList.contains(sweepIndex)) {
-                if (sv._row == sweepIndex) {
+            if (sweepIndexInList) {    // sweeping with cpm of replaced CPM
+                if (index == sweepIndex) {
                     sv._value = oneOverPivot;
                     svNext._value = -oneOverPivot;
-                } else if (index==lastSVIndex) {
+                } else if (index==svIndexEqualRowCol) {
                     sv._value = oneOverPivot;
                     svNext._value = oneOverPivot;
                 } else {
