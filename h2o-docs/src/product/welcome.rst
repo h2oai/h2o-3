@@ -34,13 +34,24 @@ At a minimum, we recommend the following for compatibility with H2O:
 Java Requirements
 ~~~~~~~~~~~~~~~~~
 
-H2O can run on Java. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
+H2O runs on Java. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
 
 H2O supports the following versions of Java: 
 
 - Java SE 17, 16, 15, 14, 13, 12, 11, 10, 9, 8
 
 Click `here <https://jdk.java.net/archive/>`__ to download the latest supported version.
+
+Using Unsupported Java Versions
+'''''''''''''''''''''''''''''''
+
+We recommend that only power users force an unsupported Java version. Unsupported Java versions can only be used for experiments. For production versions, we only guarantee the Java versions from the supported list.
+
+To force an unsupported Java version:
+
+::
+   
+   java -jar -Dsys.ai.h2o.debug.allowJavaVersions=19 h2o.jar
 
 Running H2O on Hadoop
 '''''''''''''''''''''
