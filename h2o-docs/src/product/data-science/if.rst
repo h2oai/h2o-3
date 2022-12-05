@@ -221,6 +221,12 @@ Below is a simple example showing how to build an Isolation Forest model.
         # Predict the leaf node assignment
         ln_pred = model.predict_leaf_node_assignment(test, "Path")
 
+FAQ
+~~~
+
+- **How does the algorithm handle missing values during training?**
+
+    When correctly imported, Isolation Forest handles missing values the same way as `DRF <drf.html#faq>`__. Missing values are interpreted as containing information (i.e., missing for a reason). Missing values are counted during splits when splitting for Feature and Value. They can either go to the left or right branch.
 
 References
 ~~~~~~~~~~
