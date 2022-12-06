@@ -264,6 +264,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         int[] forwardPredIndices = new int[]{77, 96, 74, 75, 87, 88, 100, 6};
         int[] sweepIndices = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
         SweepVector[][] originalSV =  sweepCPM(forwardCPMOrig, sweepIndices, true);
+        int cpmIndex = forwardCPMOrig.length-1;
 
         double[][] CPMNoSweptReplaced100 = new double[][]{{50000.0, -7.958078640513122E-13, 3.979039320256561E-13, 
                 2.2737367544323206E-13, 1.1652900866465643E-12, 4.689582056016661E-13, -4.547473508864641E-13, 
@@ -288,6 +289,8 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
                 1797504.437143965, -1768751.0314145735, -1755817.796321408, 1747644.8783670785, -1691641.472797731,
                 1684727.2390496698, 4.542312022970976E9}};
         int[] replacementPredIndices = new int[]{77, 96, 74, 75, 87, 88, 85, 6};
+        ModelSelection.SweepModel bestModel = new ModelSelection.SweepModel(replacementPredIndices, forwardCPMOrig,
+                originalSV, forwardCPMOrig[cpmIndex][cpmIndex]);
 
         int numSweep = sweepIndices.length;
         double[][][] correctSVM = new double[numSweep+1][][];
@@ -330,14 +333,22 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         List<Integer> newSweepList = Arrays.stream(newPredSweepIndex).boxed().collect(Collectors.toList());
         int svLenHalfPerSweep = originalSV[0].length/2;
         int lastSVIndex = svLenHalfPerSweep-2;
-        for (int index=0; index<numSweep; index++) {
+        double[][] cpmSweptReplaced100_2 = copy2D(cpmSweptReplaced100);
+
+        for (int index=0; index<newPredSweepIndex[0]; index++) {
             SweepVector[] newSV = updateSV4NewPred(originalSV[index], cpmSweptReplaced100, newSweepList, index, svLenHalfPerSweep, lastSVIndex);
+            sweepCPMNewPredwSVs(cpmSweptReplaced100, index, newSV, newSweepList); // sweep newly replaced predictor
+            sweepCPMNewPredwSVs(correctSVM[index], index, correctSV[index], newSweepList);
             assertEqualSV(newSV, correctSV[index]);
-            sweepCPMNewPred(cpmSweptReplaced100, index, newSV, newPredSweepIndex); // sweep newly replaced predictor
-            sweepCPMNewPred(correctSVM[index], index, correctSV[index], newPredSweepIndex);
             assertCorrectReplacedPred(correctSVM[index+1], cpmSweptReplaced100, newPredSweepIndex, 1e-12);
         }
-        assert2DArraysEqual(cpmSweptReplaced100, correctSVM[correctSVM.length-1], 1e-12);
+        updateCPMSV(bestModel, cpmSweptReplaced100_2, newPredSweepIndex, newPredSweepIndex,
+                Arrays.stream(sweepIndices).boxed().collect(Collectors.toList()), newPredSweepIndex[0]);
+        for (int index=0; index<correctSV.length; index++) {
+            System.out.println("sweeping index "+index);
+            assertEqualSV(correctSV[index], bestModel._sweepVector[index]);
+        }
+        assert2DArraysEqual(cpmSweptReplaced100_2, correctSVM[correctSVM.length-1], 1e-12);
     }
     
     public void assertCorrectReplacedPred(double[][] cpm1, double[][] cpm2, int[] predIndices, double tol) {
@@ -384,7 +395,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             assertTrue("Expected col: "+sv1[index]._column+", actual col: "+sv2[index]._column+" and they are " +
                     "different.", sv1[index]._column == sv2[index]._column);
             assertTrue("Expected value: "+sv1[index]._value+", actual value: "+sv2[index]._value+" and they are " +
-                    "different at index ."+index, Math.abs(sv1[index]._value - sv2[index]._value) < 1e-12);
+                    "different at index "+index, Math.abs(sv1[index]._value - sv2[index]._value) < 1e-12);
         }
      }
 

@@ -613,11 +613,16 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             currSubsetIndices.add(predPos, validSubsets.get(bestInd));
             int[] subsetPred = currSubsetIndices.stream().mapToInt(x->x).toArray();
             bestModel._predSubset = subsetPred;
-            updateCPMSV(bestModel, origCPM, predInd2CPMInd, hasIntercept, sweepIndicesRemovedPred, predPos);
+            double[][] subsetCPM = unsweptPredAfterReplacedPred(bestModel, origCPM, predInd2CPMInd, hasIntercept, 
+                    predPos, sweepIndicesRemovedPred);
+            int[] newSweepIndices = extractSweepIndices(currSubsetIndices, predPos, subsetPred[predPos], predInd2CPMInd, hasIntercept);
+            updateCPMSV(bestModel, subsetCPM, newSweepIndices, newAllSweepIndices, sweepIndicesRemovedPred);
+
            // genBestSweepVector(bestModel, origCPM, predInd2CPMInd, hasIntercept);
             return bestModel;
         }
     }
+    
 
     /**
      * consider the predictors in subset as pred0, pred1, pred2 (using subset size 3 as example):
