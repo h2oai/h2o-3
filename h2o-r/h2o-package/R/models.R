@@ -3,6 +3,7 @@
 #'
 #' @importFrom graphics strwidth par legend polygon arrows points grid
 #' @importFrom grDevices dev.copy dev.off png rainbow adjustcolor
+#' @include classes.R
 
 NULL
 
