@@ -887,7 +887,6 @@ class H2OConnection(h2o_meta()):
 
 
 class H2OResponse(dict):
-    """Temporary..."""
 
     def __new__(cls, keyvals):
         # This method is called by the simplejson.json(object_pairs_hook=<this>)
@@ -901,9 +900,10 @@ class H2OResponse(dict):
             if k == "__schema" and is_type(v, str):
                 schema = v
                 break
-        handler = get_schema_handler(schema)
-        if handler: 
-            return handler(keyvals)
+        if schema is not None:        
+            handler = get_schema_handler(schema)
+            if handler is not None: 
+                return handler(keyvals)
         return super(H2OResponse, cls).__new__(cls, keyvals)
 
     # def __getattr__(self, key):

@@ -48,7 +48,7 @@ class H2OPipeline(H2OEstimator):
 class DataTransformer(H2ODisplay):
     @classmethod
     def make(cls, kvs):
-        dt = DataTransformer({k: v for k, v in kvs if k not in H2OSchema._ignored_schema_keys_})
+        dt = DataTransformer(**{k: v for k, v in kvs if k not in H2OSchema._ignored_schema_keys_})
         dt._json = kvs
         return dt
 
@@ -59,7 +59,7 @@ class DataTransformer(H2ODisplay):
     def _repr_(self):
         return repr(self._json)
 
-    def _str_(self):
+    def _str_(self, verbosity=None):
         return repr_def(self)
 
 
