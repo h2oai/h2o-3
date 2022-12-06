@@ -176,6 +176,12 @@ Below is a simple example showing how to build an Extended Isolation Forest mode
         # Average path length  of the point in Isolation Trees from root to the leaf
         mean_length = eif_result["mean_length"]
 
+FAQ
+~~~
+
+- **How does the algorithm handle missing values during training?**
+
+    Extended Isolation Forest cannot handle missing values. You have to put 0 in for those values.
 
 References
 ~~~~~~~~~~
