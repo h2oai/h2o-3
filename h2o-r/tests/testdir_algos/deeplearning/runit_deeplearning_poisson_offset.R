@@ -60,7 +60,7 @@ test <- function() {
 	expect_equal(304397, mean_deviance, tolerance=1)
 	expect_equal(169750, mean(ph[,1]), tolerance=1)
 	expect_equal(2202, min(ph[,1]), tolerance=1)
-	expect_equal(2233753, max(ph[,1]), tolerance=1e)
+	expect_equal(2233753, max(ph[,1]), tolerance=1)
 
 	
 }
