@@ -11,6 +11,7 @@ import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -342,8 +343,8 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             assertEqualSV(newSV, correctSV[index]);
             assertCorrectReplacedPred(correctSVM[index+1], cpmSweptReplaced100, newPredSweepIndex, 1e-12);
         }
-        updateCPMSV(bestModel, cpmSweptReplaced100_2, newPredSweepIndex, newPredSweepIndex,
-                Arrays.stream(sweepIndices).boxed().collect(Collectors.toList()), newPredSweepIndex[0]);
+        
+        updateCPMSV(bestModel, cpmSweptReplaced100_2, newPredSweepIndex, new ArrayList<>(Arrays.asList(0,1,2,3,4,5,6,7,8)), newPredSweepIndex);
         for (int index=0; index<correctSV.length; index++) {
             System.out.println("sweeping index "+index);
             assertEqualSV(correctSV[index], bestModel._sweepVector[index]);
