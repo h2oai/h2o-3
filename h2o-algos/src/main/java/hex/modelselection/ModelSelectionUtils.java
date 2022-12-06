@@ -221,21 +221,16 @@ public class ModelSelectionUtils {
         return trainFramesList.stream().toArray(Frame[]::new);
     }
 
-    public static double[][] unsweptPredAfterReplacedPred(ModelSelection.SweepModel bestModel, double[][] origCPM,
+    public static double[][] unsweptPredAfterReplacedPred(int[] predSubset, double[][] subsetCPM, double[][] origCPM,
                                                           int[][] predInd2CPMInd, boolean hasIntercept, int predPos,
-                                                          int[] sweepIndicesRemovedPred) {
-        int[] predSubset = bestModel._predSubset;
-        // for loop to go over all sweepVectors from bestModel, sweeping the new predictors
-        List<Integer> newAllSweepIndices = extractCPMIndexFromPred(origCPM, predInd2CPMInd, bestModel._predSubset,
-                hasIntercept);
+                                                          int[] sweepIndicesRemovedPred, List<Integer> newAllSweepIndices) {
         int[] newSweepIndices = extractSweepIndices(IntStream.of(predSubset).boxed().collect(Collectors.toList()),
                 predPos, predSubset[predPos], predInd2CPMInd, hasIntercept); // cpm indices of new predictor only
-        SweepVector[][] sv = bestModel._sweepVector;
         final int lastReplacedIndex = newSweepIndices[newSweepIndices.length-1];
         List<Integer> unsweptIndicesList = newAllSweepIndices.stream().filter(x -> (x > lastReplacedIndex)).collect(Collectors.toList());
         if (unsweptIndicesList != null && unsweptIndicesList.size() > 0) // exclude replaced rows/columns
-            sweepCPM(bestModel._CPM, unsweptIndicesList.stream().mapToInt(x->x).toArray(), false); // undo sweeping of later rows/columns
-        return replaceCPMwNewPred(bestModel._CPM, origCPM, predInd2CPMInd,
+            sweepCPM(subsetCPM, unsweptIndicesList.stream().mapToInt(x->x).toArray(), false); // undo sweeping of later rows/columns
+        return replaceCPMwNewPred(subsetCPM, origCPM, predInd2CPMInd,
                 sweepIndicesRemovedPred, newSweepIndices, predSubset, hasIntercept);
     }
 

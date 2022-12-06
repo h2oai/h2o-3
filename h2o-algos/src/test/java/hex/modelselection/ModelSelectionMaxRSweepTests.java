@@ -262,7 +262,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
                 49998.99999999999, 1684727.2390496698}, {122346.71425169753, -1852537.2069261894, 1815126.8928365733,
                 1797504.437143965, -1768751.0314145735, -1755817.796321408, 1747644.8783670785, -1634928.905372516,
                 1684727.2390496698, 4.542312022970976E9}};
-        int[] forwardPredIndices = new int[]{77, 96, 74, 75, 87, 88, 100, 6};
+
         int[] sweepIndices = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
         SweepVector[][] originalSV =  sweepCPM(forwardCPMOrig, sweepIndices, true);
         int cpmIndex = forwardCPMOrig.length-1;
@@ -303,6 +303,31 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         }
         SweepVector[][] correctSV = sweepCPM(CPMNoSweptReplaced100, sweepIndices, true);
         
+        double[][] cpmSweptReplaced100UnsweptPredBehindReplaced = new double[][]{{2.0E-5, 3.1884592113562873E-22, 
+                -1.5191506706563679E-22, -8.804978540886543E-23, -4.704117602551933E-22, -1.8696003148980365E-22,
+                1.8144772492630451E-22, -5.826450433232822E-13, 1.3221539464648531E-17, 2.4469342850339526}, 
+                {3.1884592113562873E-22, 2.000313806176919E-5, 1.3707406381638313E-7, 8.278782486074658E-8, 
+                -1.0028586613798682E-7, -1.230107694794555E-7, -2.314572654467643E-8, -114.69387539976455, 
+                0.0028897221632011565, -36.395676256023414}, {-1.5191506706563679E-22, 1.3707406381638313E-7, 
+                2.0004467913482063E-5, -2.007492704625192E-9, 3.4176705219648664E-8, 4.5338016215416675E-8, 
+                6.573202442267597E-8, 88.65144562616075, 0.005022178827526953, 36.41020261326962}, 
+                {-8.804978540886543E-23, 8.278782486074658E-8, -2.007492704625192E-9, 2.0002108593530523E-5, 
+                -3.8420375770734045E-8, -7.222317299400186E-8, -1.3480724709202943E-7, -208.96637046945852,
+                -0.0037529203103783488, 35.83823741686535}, {-4.704117602551933E-22, -1.0028586613798682E-7,
+                3.4176705219648664E-8, -3.8420375770734045E-8, 2.0003101451046967E-5, -9.34845044372479E-8, 
+                7.015128376251134E-8, 386.5044736700327, 0.0042053874817825024, -35.185560097719076}, 
+                {-1.8696003148980365E-22, -1.230107694794555E-7, 4.5338016215416675E-8, -7.222317299400186E-8, 
+                -9.34845044372479E-8, 2.0002051222660756E-5, -2.995981378628529E-8, -85.20464948988825, 
+                -0.00535792932036885, -34.77801861864155}, {1.8144772492630451E-22, -2.314572654467643E-8, 
+                6.573202442267597E-8, -1.3480724709202943E-7, 7.015128376251134E-8, -2.995981378628529E-8, 
+                2.0001953732497858E-5, -71.27696079239956, 0.0030679567249036364, 34.88252791474615}, 
+                {-5.826450433232822E-13, -114.69387539976455, 88.65144562616075, -208.96637046945852, 
+                386.5044736700327, -85.20464948988825, -71.27696079239956, 49999.00000000001, 431.326600219485, 
+                -1691641.472797731}, {-1.3221539464648531E-17, -0.0028897221632011565, -0.005022178827526953, 
+                0.0037529203103783488, -0.0042053874817825024, 0.00535792932036885, -0.0030679567249036364, 
+                431.326600219485, 49993.858610634554, 1680232.0359186032}, {-2.4469342850339526, 36.395676256023414,
+                -36.41020261326962, -35.83823741686535, 35.185560097719076, 34.77801861864155, -34.88252791474615,
+                -1691641.472797731, 1680232.0359186032, 4.104809119509579E9}};
         
         double[][] cpmSweptReplaced100 = new double[][]{{2.0E-5, 3.196101465161939E-22, -1.5058688521666574E-22,
                 -8.904229499644892E-23, -4.692995897186566E-22, -1.8837700701293293E-22, 1.822590868023714E-22,
@@ -334,7 +359,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         List<Integer> newSweepList = Arrays.stream(newPredSweepIndex).boxed().collect(Collectors.toList());
         int svLenHalfPerSweep = originalSV[0].length/2;
         int lastSVIndex = svLenHalfPerSweep-2;
-        double[][] cpmSweptReplaced100_2 = copy2D(cpmSweptReplaced100);
+        double[][] cpmSweptReplaced100_2 = copy2D(cpmSweptReplaced100UnsweptPredBehindReplaced);
 
         for (int index=0; index<newPredSweepIndex[0]; index++) {
             SweepVector[] newSV = updateSV4NewPred(originalSV[index], cpmSweptReplaced100, newSweepList, index, svLenHalfPerSweep, lastSVIndex);
@@ -349,7 +374,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             System.out.println("sweeping index "+index);
             assertEqualSV(correctSV[index], bestModel._sweepVector[index]);
         }
-        assert2DArraysEqual(cpmSweptReplaced100_2, correctSVM[correctSVM.length-1], 1e-12);
+        assert2DArraysEqual(bestModel._CPM, correctSVM[correctSVM.length-1], 1e-12);
     }
     
     public void assertCorrectReplacedPred(double[][] cpm1, double[][] cpm2, int[] predIndices, double tol) {

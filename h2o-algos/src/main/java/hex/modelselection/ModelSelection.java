@@ -613,10 +613,10 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             currSubsetIndices.add(predPos, validSubsets.get(bestInd));
             int[] subsetPred = currSubsetIndices.stream().mapToInt(x->x).toArray();
             bestModel._predSubset = subsetPred;
-            double[][] subsetCPM = unsweptPredAfterReplacedPred(bestModel, origCPM, predInd2CPMInd, hasIntercept, 
-                    predPos, sweepIndicesRemovedPred);
-            int[] newSweepIndices = extractSweepIndices(currSubsetIndices, predPos, subsetPred[predPos], predInd2CPMInd, hasIntercept);
-            List<Integer> newAllSweepIndices = extractCPMIndexFromPred(origCPM, predInd2CPMInd, bestModel._predSubset,
+            List<Integer> newAllSweepIndices = IntStream.range(0, bestModel._CPM.length-1).boxed().collect(Collectors.toList());
+            double[][] subsetCPM = unsweptPredAfterReplacedPred(subsetPred, subsetCPMO, origCPM, predInd2CPMInd, 
+                    hasIntercept, predPos, sweepIndicesRemovedPred, newAllSweepIndices);
+            int[] newSweepIndices = extractSweepIndices(currSubsetIndices, predPos, subsetPred[predPos], predInd2CPMInd,
                     hasIntercept);
             updateCPMSV(bestModel, subsetCPM, newSweepIndices, newAllSweepIndices, sweepIndicesRemovedPred);
 
