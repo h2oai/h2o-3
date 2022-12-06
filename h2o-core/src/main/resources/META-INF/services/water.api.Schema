@@ -1,4 +1,5 @@
 hex.schemas.ClusteringModelBuilderSchema
+hex.schemas.DataTransformerV3
 hex.schemas.GridSchemaV99
 hex.schemas.GridSearchSchema
 hex.schemas.HyperSpaceSearchCriteriaV99

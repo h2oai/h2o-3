@@ -744,4 +744,3 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(validation_response_column, None, str)
         self._parms["validation_response_column"] = validation_response_column
 
-

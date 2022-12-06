@@ -243,10 +243,10 @@ public class TargetEncoding implements PreprocessingStep {
     }
 
     public static Vec createFoldColumn(Frame fr,
-                                        FoldAssignmentScheme fold_assignment,
-                                        int nfolds,
-                                        String responseColumn,
-                                        long seed) {
+                                       FoldAssignmentScheme fold_assignment,
+                                       int nfolds,
+                                       String responseColumn,
+                                       long seed) {
         Vec foldColumn;
         switch (fold_assignment) {
             default:

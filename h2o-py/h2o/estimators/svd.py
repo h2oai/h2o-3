@@ -432,7 +432,6 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
     def init_for_pipeline(self):
         """
         Returns H2OSVD object which implements fit and transform method to be used in sklearn.Pipeline properly.
@@ -458,3 +457,4 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         var_names = list(dict(inspect.getmembers(H2OSVD.__init__.__code__))['co_varnames'])
         parameters = {k: v for k, v in self._parms.items() if k in var_names}
         return H2OSVD(**parameters)
+

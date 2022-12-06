@@ -773,7 +773,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         assert_is_type(type, None, int)
         self._parms["type"] = type
 
-
     @property
     def Lambda(self):
         """DEPRECATED. Use ``self.lambda_`` instead"""
@@ -789,3 +788,4 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
+

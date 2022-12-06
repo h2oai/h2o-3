@@ -75,7 +75,7 @@ public class PipelineTest {
     assertNotNull(pmodel);
     PipelineOutput output = pmodel._output;
     assertNotNull(output);
-    assertNull(output._model);
+    assertNull(output._estimator);
     assertNotNull(output._transformers);
     assertEquals(3, output._transformers.length);
     assertEquals(0, tracker.transformations.size());
@@ -124,8 +124,8 @@ public class PipelineTest {
     assertNotNull(pmodel);
     PipelineOutput output = pmodel._output;
     assertNotNull(output);
-    assertNotNull(output._model);
-    Model emodel = output._model.get();
+    assertNotNull(output._estimator);
+    Model emodel = output._estimator.get();
     assertNotNull(emodel);
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
@@ -173,8 +173,8 @@ public class PipelineTest {
     assertNotNull(pmodel);
     PipelineOutput output = pmodel._output;
     assertNotNull(output);
-    assertNotNull(output._model);
-    Model emodel = output._model.get();
+    assertNotNull(output._estimator);
+    Model emodel = output._estimator.get();
     assertNotNull(emodel);
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
@@ -241,8 +241,8 @@ public class PipelineTest {
     assertNotNull(pmodel);
     PipelineOutput output = pmodel._output;
     assertNotNull(output);
-    assertNotNull(output._model);
-    Model emodel = output._model.get();
+    assertNotNull(output._estimator);
+    Model emodel = output._estimator.get();
     assertNotNull(emodel);
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
@@ -289,8 +289,8 @@ public class PipelineTest {
     assertNotNull(pmodel);
     PipelineOutput output = pmodel._output;
     assertNotNull(output);
-    assertNotNull(output._model);
-    Model emodel = output._model.get();
+    assertNotNull(output._estimator);
+    Model emodel = output._estimator.get();
     assertNotNull(emodel);
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
@@ -336,8 +336,8 @@ public class PipelineTest {
     assertNotNull(pmodel);
     PipelineOutput output = pmodel._output;
     assertNotNull(output);
-    assertNotNull(output._model);
-    Model emodel = output._model.get();
+    assertNotNull(output._estimator);
+    Model emodel = output._estimator.get();
     assertNotNull(emodel);
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[] {"one", "two", "foo", "bar", "target"}, emodel._output._names);
@@ -379,8 +379,8 @@ public class PipelineTest {
     assertNotNull(pmodel);
     PipelineOutput output = pmodel._output;
     assertNotNull(output);
-    assertNotNull(output._model);
-    Model emodel = output._model.get();
+    assertNotNull(output._estimator);
+    Model emodel = output._estimator.get();
     assertNotNull(emodel);
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[][] {{"a", "b", "c"}, {"a", "b", "c"}, {"no", "yes"}}, pmodel._output._domains);
@@ -435,8 +435,8 @@ public class PipelineTest {
     assertNotNull(pmodel);
     PipelineOutput output = pmodel._output;
     assertNotNull(output);
-    assertNotNull(output._model);
-    Model emodel = output._model.get();
+    assertNotNull(output._estimator);
+    Model emodel = output._estimator.get();
     assertNotNull(emodel);
     assertTrue(emodel instanceof DummyModel);
     assertArrayEquals(new String[][] {{"a", "b", "c", "d"}, {"a", "b", "c", "d"}, {"n", "y"}}, pmodel._output._domains);

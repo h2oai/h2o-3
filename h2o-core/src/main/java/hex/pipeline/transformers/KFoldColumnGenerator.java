@@ -4,8 +4,6 @@ import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineContext;
 import water.DKV;
-import water.Futures;
-import water.Key;
 import water.KeyGen;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -25,7 +23,7 @@ public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator> 
   
   private String _response_column;
   
-  private final KeyGen _trainKeyGen = new KeyGen.PatternKeyGen("{0}_wfoldc");
+  private final KeyGen _trainWFoldKeyGen = new KeyGen.PatternKeyGen("{0}_wfoldc");
 
   public KFoldColumnGenerator() {
     this(null);
@@ -63,7 +61,7 @@ public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator> 
     
     if (context.getTrain().find(_fold_column) < 0) {
       Frame withFoldC = doTransform(context.getTrain(), FrameType.Training, context);
-      withFoldC._key = _trainKeyGen.make(context.getTrain()._key);
+      withFoldC._key = _trainWFoldKeyGen.make(context.getTrain()._key);
       DKV.put(withFoldC);
       context.setTrain(withFoldC);
     }

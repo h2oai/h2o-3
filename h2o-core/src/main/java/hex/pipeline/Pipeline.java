@@ -14,6 +14,8 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 
+import java.util.Arrays;
+
 import static hex.pipeline.PipelineHelper.reassign;
 
 
@@ -40,6 +42,8 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
   public void init(boolean expensive) {
     if (expensive) {
       earlyValidateParams();
+      if (_parms._transformers == null) _parms._transformers = new DataTransformer[0];
+      _parms._transformers = Arrays.stream(_parms._transformers).filter(DataTransformer::enabled).toArray(DataTransformer[]::new);
     }
     super.init(expensive);
   }
@@ -54,7 +58,6 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
     if (_parms._estimatorParams == null && nFoldCV()) {
       error("_estimator", "Pipeline can use cross validation only if provided with an estimator.");
     }
-    if (_parms._transformers == null) _parms._transformers = new DataTransformer[0];
   }
 
   @Override
@@ -97,7 +100,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
         output._transformers = _parms._transformers.clone();
         if (_parms._estimatorParams == null) return;
         try (Scope.Safe inner = Scope.safe(train(), valid())) {
-          output._model = chain.transform(
+          output._estimator = chain.transform(
                   new Frame[]{train(), valid()},
                   new FrameType[]{FrameType.Training, FrameType.Validation},
                   context,
@@ -110,7 +113,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
           );
         }
       } finally {
-        model._output.sync();
+        model.syncOutput();
         model.update(_job);
         model.unlock(_job);
       }
@@ -135,7 +138,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       Scope.track(train(), valid()); //chain preparation may have provided extended/modified train/valid frames.
       try (Scope.Safe mainModelScope = Scope.safe(train(), valid())) {
         output._transformers = _parms._transformers.clone();
-        output._model = chain.transform(
+        output._estimator = chain.transform(
                 new Frame[]{train(), valid()},
                 new FrameType[]{FrameType.Training, FrameType.Validation},
                 context,
@@ -191,7 +194,7 @@ public class Pipeline extends ModelBuilder<PipelineModel, PipelineParameters, Pi
       model.setInputParms(_input_parms);
     } finally {
       if (model != null) {
-        model._output.sync();
+        model.syncOutput();
         model.update(_job);
         model.unlock(_job);
       }

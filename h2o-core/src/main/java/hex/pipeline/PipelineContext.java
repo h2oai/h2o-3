@@ -2,7 +2,6 @@ package hex.pipeline;
 
 import hex.pipeline.PipelineModel.PipelineParameters;
 import water.fvec.Frame;
-import water.util.Countdown;
 
 /**
  * A context object passed to the {@link DataTransformer}s (usually through a {@link TransformerChain} 

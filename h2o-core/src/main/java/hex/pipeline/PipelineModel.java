@@ -89,12 +89,12 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       Frame result = newChain().transform(fr, FrameType.Scoring, context, new UnaryCompleter<Frame>() {
         @Override
         public Frame apply(Frame frame, PipelineContext context) {
-          if (_output._model == null) {
+          if (_output._estimator == null) {
             return new Frame(Key.make(destination_key), frame.names(), frame.vecs());
           }
-          Frame result = _output._model.get().score(frame, destination_key, j, computeMetrics, customMetricFunc);
+          Frame result = _output._estimator.get().score(frame, destination_key, j, computeMetrics, customMetricFunc);
           if (computeMetrics) {
-            ModelMetrics mm = ModelMetrics.getFromDKV(_output._model.get(), frame);
+            ModelMetrics mm = ModelMetrics.getFromDKV(_output._estimator.get(), frame);
             if (mm != null) addModelMetrics(mm.deepCloneWithDifferentModelAndFrame(PipelineModel.this, fr));
           }
           return result;
@@ -125,12 +125,28 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
           dt.cleanup(fs);
         }
       }
-      if (_output._model != null) {
-        Keyed.remove(_output._model, fs, cascade);
+      if (_output._estimator != null) {
+        Keyed.remove(_output._estimator, fs, cascade);
       }
     }
     return super.remove_impl(fs, cascade);
   }
+  
+  void syncOutput() {
+    PipelineModel.PipelineOutput pmo = this._output;
+    if (pmo.getEstimatorModel() == null) return;
+    Model.Output mo = pmo.getEstimatorModel()._output;
+    if (mo._training_metrics != null) pmo._training_metrics = addModelMetrics(mo._training_metrics.deepCloneWithDifferentModelAndFrame(this, this._parms.train()));
+    if (mo._validation_metrics != null) pmo._validation_metrics = addModelMetrics(mo._validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._parms.valid()));
+    if (mo._cross_validation_metrics != null) pmo._cross_validation_metrics = addModelMetrics(mo._cross_validation_metrics.deepCloneWithDifferentModelAndFrame(this, this._parms.train()));
+    pmo._cross_validation_metrics_summary = mo._cross_validation_metrics_summary;
+    pmo._cross_validation_fold_assignment_frame_id = mo._cross_validation_fold_assignment_frame_id;
+    pmo._cross_validation_holdout_predictions_frame_id = mo._cross_validation_holdout_predictions_frame_id;
+    pmo._cross_validation_predictions = mo._cross_validation_predictions;
+    pmo._cross_validation_models = mo._cross_validation_models; // FIXME: ideally, should be PipelineModels (build pipeline output pointing at CV model, use it for new pipeline model, etc.)
+    //...???
+  }
+
   
   /*
   public class PipelinePredictScoreResult extends PredictScoreResult {
@@ -277,7 +293,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
   public static class PipelineOutput extends Model.Output {
     
     DataTransformer[] _transformers;
-    Key<Model> _model;
+    Key<Model> _estimator;
 
     public PipelineOutput(ModelBuilder b) {
       super(b);
@@ -287,24 +303,10 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       return _transformers == null ? null : _transformers.clone();
     }
     
-    public Model getModel() {
-      return _model == null ? null : _model.get();
+    public Model getEstimatorModel() {
+      return _estimator == null ? null : _estimator.get();
     }
     
-    void sync() {
-      Model m = getModel();
-      if (m == null) return;
-      _training_metrics = m._output._training_metrics;
-      _validation_metrics = m._output._validation_metrics;
-      _cross_validation_metrics = m._output._cross_validation_metrics;
-      _cross_validation_metrics_summary = m._output._cross_validation_metrics_summary;
-      _cross_validation_fold_assignment_frame_id = m._output._cross_validation_fold_assignment_frame_id;
-      _cross_validation_holdout_predictions_frame_id = m._output._cross_validation_holdout_predictions_frame_id;
-      _cross_validation_predictions = m._output._cross_validation_predictions;
-      _cross_validation_models = m._output._cross_validation_models; // FIXME: ideally, should be PipelineModels (build pipeline output pointing at Cv model, use it for new pipeline model, etc.)
-      //...???
-    }
-
   }
   
 }

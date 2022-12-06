@@ -314,16 +314,19 @@ def gen_module(schema, algo):
             yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         
-    for old, new in deprecated_params.items():
-        new_name = new[0] if isinstance(new, tuple) else new
-        yield "    %s = deprecated_property('%s', %s)" % (old, old, new)
-        
-    yield ""
+    if deprecated_params:
+        for old, new in deprecated_params.items():
+            new_name = new[0] if isinstance(new, tuple) else new
+            yield "    %s = deprecated_property('%s', %s)" % (old, old, new)
+        yield ""
+
     if class_extras:
         yield reformat_block(code_as_str(class_extras), 4)
+        yield ""
     if module_extras:
         yield ""
         yield reformat_block(code_as_str(module_extras))
+        yield ""
 
 
 def algo_to_classname(algo):
@@ -352,6 +355,7 @@ def algo_to_classname(algo):
     if algo == "modelselection": return "H2OModelSelectionEstimator"
     if algo == "isotonicregression": return "H2OIsotonicRegressionEstimator"
     if algo == "adaboost": return "H2OAdaBoostEstimator"
+    if algo == "pipeline": return "H2OPipeline"
     return "H2O" + algo.capitalize() + "Estimator"
 
 
