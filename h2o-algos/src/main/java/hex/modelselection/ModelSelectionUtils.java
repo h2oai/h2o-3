@@ -889,12 +889,8 @@ public class ModelSelectionUtils {
         int currSubsetCPMSize = subsetCPM.length;
         int numSweep = sweepIndices.length;
         SweepVector[][] sweepVecs = new SweepVector[numSweep][2*(currSubsetCPMSize+1)];
-        for (int index=0; index < numSweep; index++) {
-            if (index >= subsetCPM.length) {
-                System.out.println("Dead");
-                performOneSweep(subsetCPM, sweepVecs[index], sweepIndices[index], genSweepVector);
-            }
-        }
+        for (int index=0; index < numSweep; index++) 
+            performOneSweep(subsetCPM, sweepVecs[index], sweepIndices[index], genSweepVector);
         return sweepVecs;
     }
 
