@@ -7,7 +7,6 @@ import hex.glm.GLMModel;
 import hex.glm.GLMTask;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
-import org.apache.commons.lang.NotImplementedException;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
@@ -323,28 +322,22 @@ public class ModelSelectionUtils {
     public static void updateCPMSV(ModelSelection.SweepModel bestModel, double[][] subsetCPM, int[] newSweepIndices,
                                    List<Integer> newAllSweepIndices, int[] sweepIndicesRemovedPred) {
         List<Integer> newSweepList = Arrays.stream(newSweepIndices).boxed().collect(Collectors.toList());
-        int oldSweepLen = sweepIndicesRemovedPred.length;
-        int newSweepLen = newSweepIndices.length;
         SweepVector[][] sv = bestModel._sweepVector;
         int svLenHalfPerSweep = sv[0].length / 2;
         int lastSVIndex = svLenHalfPerSweep - 2;
         int firstReplacedIndex = newSweepIndices[0];
-        final int lastReplacedIndex = newSweepIndices[newSweepIndices.length-1];
+        final int lastReplacedIndex = newSweepIndices[newSweepIndices.length - 1];
         List<Integer> unsweptIndicesList = newAllSweepIndices.stream().filter(x -> (x > lastReplacedIndex)).collect(Collectors.toList());
-        if (newSweepLen == oldSweepLen) {
-            for (int index = 0; index < firstReplacedIndex; index++) {    // sweep vector at and before replaced rows/columns
-                sv[index] = updateSV4NewPred(sv[index], subsetCPM, newSweepList, index, svLenHalfPerSweep, lastSVIndex);
-                sweepCPMNewPredwSVs(subsetCPM, index, sv[index], newSweepList); // sweep newly replaced predictor
-            }
-            if (unsweptIndicesList == null)
-                unsweptIndicesList = new ArrayList<>();
-            unsweptIndicesList.addAll(0, newSweepList);
-            SweepVector[][] modifiedSV = sweepCPM(subsetCPM, unsweptIndicesList.stream().mapToInt(x->x).toArray(), true);
-            // copy over new SweepVectors
-            replaceSweepVectors(sv, modifiedSV, firstReplacedIndex);
-        } else {
-            throw new NotImplementedException("old and new predictors must contains the same number of CPM rows/columns.");
+        for (int index = 0; index < firstReplacedIndex; index++) {    // sweep vector at and before replaced rows/columns
+            sv[index] = updateSV4NewPred(sv[index], subsetCPM, newSweepList, index, svLenHalfPerSweep, lastSVIndex);
+            sweepCPMNewPredwSVs(subsetCPM, index, sv[index], newSweepList); // sweep newly replaced predictor
         }
+        if (unsweptIndicesList == null)
+            unsweptIndicesList = new ArrayList<>();
+        unsweptIndicesList.addAll(0, newSweepList);
+        SweepVector[][] modifiedSV = sweepCPM(subsetCPM, unsweptIndicesList.stream().mapToInt(x -> x).toArray(), true);
+        // copy over new SweepVectors
+        replaceSweepVectors(sv, modifiedSV, firstReplacedIndex);
         bestModel._CPM = subsetCPM;
         bestModel._sweepVector = sv;
     }

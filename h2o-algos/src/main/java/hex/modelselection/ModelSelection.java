@@ -618,9 +618,10 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     hasIntercept, predPos, sweepIndicesRemovedPred, newAllSweepIndices);
             int[] newSweepIndices = extractSweepIndices(currSubsetIndices, predPos, subsetPred[predPos], predInd2CPMInd,
                     hasIntercept);
-            updateCPMSV(bestModel, subsetCPM, newSweepIndices, newAllSweepIndices, sweepIndicesRemovedPred);
-
-           // genBestSweepVector(bestModel, origCPM, predInd2CPMInd, hasIntercept);
+            if (newSweepIndices.length == sweepIndicesRemovedPred.length)
+                updateCPMSV(bestModel, subsetCPM, newSweepIndices, newAllSweepIndices, sweepIndicesRemovedPred);
+            else
+                genBestSweepVector(bestModel, origCPM, predInd2CPMInd, hasIntercept);
             return bestModel;
         }
     }
