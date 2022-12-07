@@ -62,7 +62,10 @@ test <- function() {
         nr <- nrow(p)
 		# min value of logarithm due to hex.LogExpUtil.MIN_LOG
 		min_log = -19.0
-        mean_deviance = 2*sum(fre$ClaimNb * (max(min_log, log(fre$ClaimNb)) - max(min_log, log(p))) - fre$ClaimNb + p)/nr ## Poisson deviance
+		sum_deviance = 0
+		for (i in 1: nr)
+			sum_deviance = sum_deviance + (fre$ClaimNb[i] * (max(min_log, log(fre$ClaimNb[i])) - max(min_log, log(p[i]))) - fre$ClaimNb[i] + p[i])
+        mean_deviance = 2*sum_deviance/nr ## Poisson deviance
 
   print("---------------------------------------------------------poisson-----------------------------------------------")
         print(mean_deviance)
