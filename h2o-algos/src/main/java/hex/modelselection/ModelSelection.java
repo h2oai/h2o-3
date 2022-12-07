@@ -669,7 +669,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     validSubset.remove(oneLessSubset.get(lastCurrPredIndex));
                     errorVarianceMin = currModel._errorVariance;
                     lastBestErrVarPosIndex = index;
-                    bestErrVarModel = new SweepModel(currModel._predSubset.clone(), copy2D(currModel._CPM), currModel._sweepVector,
+                    bestErrVarModel = new SweepModel(currModel._predSubset, currModel._CPM, currModel._sweepVector,
                             currModel._errorVariance);
                     validSubset.add(removedSubInd);
                 }
