@@ -103,5 +103,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="Checkpoint the model after every so many trees. Parameter is used only when in_training_checkpoints_dir is defined", level = API.Level.expert, gridable = false)
     public int in_training_checkpoints_tree_interval;
+
+    @API(help="Enable rows to tree assignment output", level = API.Level.expert)
+    public boolean enable_row_to_tree_assignment;
   }
 }

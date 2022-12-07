@@ -110,6 +110,7 @@
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param interaction_constraints A set of allowed column interactions.
+#' @param enable_row_to_tree_assignment \code{Logical}. Enable rows to tree assignment output Defaults to FALSE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -189,6 +190,7 @@ h2o.gbm <- function(x,
                     gainslift_bins = -1,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                     interaction_constraints = NULL,
+                    enable_row_to_tree_assignment = FALSE,
                     verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -338,6 +340,8 @@ h2o.gbm <- function(x,
     parms$auc_type <- auc_type
   if (!missing(interaction_constraints))
     parms$interaction_constraints <- interaction_constraints
+  if (!missing(enable_row_to_tree_assignment))
+    parms$enable_row_to_tree_assignment <- enable_row_to_tree_assignment
 
   # Error check and build model
   model <- .h2o.modelJob('gbm', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -404,6 +408,7 @@ h2o.gbm <- function(x,
                                     gainslift_bins = -1,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     interaction_constraints = NULL,
+                                    enable_row_to_tree_assignment = FALSE,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -557,6 +562,8 @@ h2o.gbm <- function(x,
     parms$auc_type <- auc_type
   if (!missing(interaction_constraints))
     parms$interaction_constraints <- interaction_constraints
+  if (!missing(enable_row_to_tree_assignment))
+    parms$enable_row_to_tree_assignment <- enable_row_to_tree_assignment
 
   # Build segment-models specific parameters
   segment_parms <- list()

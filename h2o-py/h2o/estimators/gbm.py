@@ -97,6 +97,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  interaction_constraints=None,  # type: Optional[List[List[str]]]
+                 enable_row_to_tree_assignment=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -324,6 +325,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param interaction_constraints: A set of allowed column interactions.
                Defaults to ``None``.
         :type interaction_constraints: List[List[str]], optional
+        :param enable_row_to_tree_assignment: Enable rows to tree assignment output
+               Defaults to ``False``.
+        :type enable_row_to_tree_assignment: bool
         """
         super(H2OGradientBoostingEstimator, self).__init__()
         self._parms = {}
@@ -390,6 +394,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
         self.interaction_constraints = interaction_constraints
+        self.enable_row_to_tree_assignment = enable_row_to_tree_assignment
 
     @property
     def training_frame(self):
@@ -2218,5 +2223,19 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def interaction_constraints(self, interaction_constraints):
         assert_is_type(interaction_constraints, None, [[str]])
         self._parms["interaction_constraints"] = interaction_constraints
+
+    @property
+    def enable_row_to_tree_assignment(self):
+        """
+        Enable rows to tree assignment output
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("enable_row_to_tree_assignment")
+
+    @enable_row_to_tree_assignment.setter
+    def enable_row_to_tree_assignment(self, enable_row_to_tree_assignment):
+        assert_is_type(enable_row_to_tree_assignment, None, bool)
+        self._parms["enable_row_to_tree_assignment"] = enable_row_to_tree_assignment
 
 

@@ -2,9 +2,7 @@ package hex.schemas;
 
 import hex.tree.SharedTreeModel;
 import water.api.API;
-import water.api.schemas3.ModelOutputSchemaV3;
-import water.api.schemas3.ModelSchemaV3;
-import water.api.schemas3.TwoDimTableV3;
+import water.api.schemas3.*;
 
 public class SharedTreeModelV3<M extends SharedTreeModel<M, P, O>,
                                         S extends SharedTreeModelV3<M, S, P, PS, O, OS>,
@@ -20,5 +18,8 @@ public class SharedTreeModelV3<M extends SharedTreeModel<M, P, O>,
 
     @API(help="The Intercept term, the initial model function value to which trees make adjustments", direction=API.Direction.OUTPUT)
     double init_f;
+
+    @API(help="Frame with information which row goes to which tree", direction=API.Direction.OUTPUT)
+    KeyV3 row_to_tree_assignment;
   }
 }

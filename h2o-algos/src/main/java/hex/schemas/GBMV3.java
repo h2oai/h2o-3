@@ -72,7 +72,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "check_constant_response",
       "gainslift_bins", 
       "auc_type", 
-      "interaction_constraints"
+      "interaction_constraints",
+      "enable_row_to_tree_assignment"
     };
 
     // Input fields
