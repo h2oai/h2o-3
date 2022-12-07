@@ -340,6 +340,8 @@ public class ModelSelectionUtils {
         replaceSweepVectors(sv, modifiedSV, firstReplacedIndex);
         bestModel._CPM = subsetCPM;
         bestModel._sweepVector = sv;
+        int lastInd = subsetCPM.length-1;
+        bestModel._errorVariance = subsetCPM[lastInd][lastInd];
     }
     
     public static void replaceSweepVectors(SweepVector[][] origSV, SweepVector[][] newSV, int startIndex) {
@@ -623,26 +625,17 @@ public class ModelSelectionUtils {
                                                  int[] sweepMat) {
         int numSweep = sweepVec.length; // number of sweeps that we need to do
         int sweepVecLen = sweepVec[0].length;
-        int[][] elementAccessMatrix = new int[sweepVecLen][sweepVecLen];
         if (sweepMat == null) {
             for (int sweepInd=0; sweepInd < numSweep; sweepInd++) {
-                zeroFill2DArrays(elementAccessMatrix);
-                oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM, sweepInd, numNewRows, elementAccessMatrix);
+                oneSweepWSweepVector(sweepVec[sweepInd], subsetCPM, sweepInd, numNewRows);
             }
         } else {
             int sweepInd;
             for (int index = 0; index < numSweep; index++) {
                 sweepInd = sweepMat[index];
-                zeroFill2DArrays(elementAccessMatrix);
-                oneSweepWSweepVector(sweepVec[index], subsetCPM, sweepInd, numNewRows, elementAccessMatrix);
+                oneSweepWSweepVector(sweepVec[index], subsetCPM, sweepInd, numNewRows);
             }
         }
-    }
-    
-    public static void zeroFill2DArrays(int[][] elementArray) {
-        int width = elementArray.length;
-        for (int index=0; index<width; index++)
-            Arrays.fill(elementArray[index], 0);
     }
 
     /***
@@ -657,7 +650,7 @@ public class ModelSelectionUtils {
      * temporary elements back to the CPM at the end.
      */
     public static void oneSweepWSweepVector(SweepVector[] sweepVec, double[][] subsetCPM, int sweepIndex,
-                                            int colRowsAdded, int[][] elementAccessCount) {
+                                            int colRowsAdded) {
         int sweepVecLen = sweepVec.length / 2;
         int newLastCPMInd = sweepVecLen - 1;
         int oldSweepVec = sweepVecLen - colRowsAdded;
@@ -670,54 +663,33 @@ public class ModelSelectionUtils {
             for (int svInd = 0; svInd < sweepVecLen; svInd++) { // working on each additional row/col
                 int svIndOffset = svInd + sweepVecLen;
                 if (sweepVec[svInd]._row == sweepIndex) {  // take care of both row and column elements
-                    if (elementAccessCount[sweepIndex][rowColInd] == 0) {
-                        rowSweeps[rcInd] = sweepVec[svInd]._value * subsetCPM[sweepIndex][rowColInd];
-                        elementAccessCount[sweepIndex][rowColInd] = 1;
-                    }
-                    if (elementAccessCount[rowColInd][sweepIndex]==0) {
-                        colSweeps[rcInd] = sweepVec[svIndOffset]._value * subsetCPM[rowColInd][sweepIndex];
-                        elementAccessCount[rowColInd][sweepIndex] = 1;
-                    }
+                    rowSweeps[rcInd] = sweepVec[svInd]._value * subsetCPM[sweepIndex][rowColInd];
+                    colSweeps[rcInd] = sweepVec[svIndOffset]._value * subsetCPM[rowColInd][sweepIndex];
+
                 } else if (sweepVec[svInd]._row == newLastCPMInd) {
-                    if (elementAccessCount[newLastCPMInd][rowColInd] == 0) {
-                        subsetCPM[newLastCPMInd][rowColInd] = subsetCPM[newLastCPMInd][rowColInd] -
-                                sweepVec[svInd]._value * subsetCPM[sweepIndex][rowColInd];
-                        elementAccessCount[newLastCPMInd][rowColInd] = 1;
-                    }
-                    if (elementAccessCount[rowColInd][newLastCPMInd]==0) {
+                    subsetCPM[newLastCPMInd][rowColInd] = subsetCPM[newLastCPMInd][rowColInd] -
+                            sweepVec[svInd]._value * subsetCPM[sweepIndex][rowColInd];
+                    if (rowColInd != newLastCPMInd) {
                         subsetCPM[rowColInd][newLastCPMInd] = subsetCPM[rowColInd][newLastCPMInd] -
                                 sweepVec[svIndOffset]._value * subsetCPM[rowColInd][sweepIndex];
-                        elementAccessCount[rowColInd][newLastCPMInd] = 1;
                     }
                 } else if (sweepVec[svInd]._row == rowColInd) {
-                    if (elementAccessCount[rowColInd][rowColInd] == 0) {
-                        subsetCPM[rowColInd][rowColInd] = subsetCPM[rowColInd][rowColInd] -
-                                subsetCPM[rowColInd][sweepIndex] * subsetCPM[sweepIndex][rowColInd] * sweepVec[svInd]._value;
-                        elementAccessCount[rowColInd][rowColInd] = 1;
-                    }
+                    subsetCPM[rowColInd][rowColInd] = subsetCPM[rowColInd][rowColInd] -
+                            subsetCPM[rowColInd][sweepIndex] * subsetCPM[sweepIndex][rowColInd] * sweepVec[svInd]._value;
                 } else if (sweepVec[svInd]._row < oldLastCPMInd) {
-                    if (elementAccessCount[sweepVec[svInd]._row][rowColInd] == 0) {
-                        subsetCPM[sweepVec[svInd]._row][rowColInd] = subsetCPM[sweepVec[svInd]._row][rowColInd] -
-                                subsetCPM[sweepIndex][rowColInd] * sweepVec[svInd]._value;
-                        elementAccessCount[sweepVec[svInd]._row][rowColInd] = 1;
-                    }
-                    if (elementAccessCount[rowColInd][sweepVec[svIndOffset]._column]==0) {
+                    subsetCPM[sweepVec[svInd]._row][rowColInd] = subsetCPM[sweepVec[svInd]._row][rowColInd] -
+                            subsetCPM[sweepIndex][rowColInd] * sweepVec[svInd]._value;
+                    if (rowColInd != sweepVec[svIndOffset]._column) {
                         subsetCPM[rowColInd][sweepVec[svIndOffset]._column] =
                                 subsetCPM[rowColInd][sweepVec[svIndOffset]._column] - subsetCPM[rowColInd][sweepIndex] *
                                         sweepVec[svIndOffset]._value;
-                        elementAccessCount[rowColInd][sweepVec[svIndOffset]._column] = 1;
                     }
                 } else { // considering rows/columns >= oldSweepVec
-                    if (elementAccessCount[sweepVec[svInd]._row][rowColInd] == 0) {
-                        subsetCPM[sweepVec[svInd]._row][rowColInd] = subsetCPM[sweepVec[svInd]._row][rowColInd] -
-                                subsetCPM[sweepVec[svInd]._row][sweepIndex] * subsetCPM[sweepIndex][rowColInd] * sweepVec[svInd]._value;
-                        elementAccessCount[sweepVec[svInd]._row][rowColInd] = 1;
-                    }
-                    if (elementAccessCount[rowColInd][sweepVec[svIndOffset]._column]==0) {
+                    subsetCPM[sweepVec[svInd]._row][rowColInd] = subsetCPM[sweepVec[svInd]._row][rowColInd] -
+                            subsetCPM[sweepVec[svInd]._row][sweepIndex] * subsetCPM[sweepIndex][rowColInd] * sweepVec[svInd]._value;
+                    if (rowColInd != sweepVec[svIndOffset]._column) {
                         subsetCPM[rowColInd][sweepVec[svIndOffset]._column] = subsetCPM[rowColInd][sweepVec[svIndOffset]._column]
                                 - subsetCPM[rowColInd][sweepIndex] * subsetCPM[sweepIndex][sweepVec[svIndOffset]._column] * sweepVec[svIndOffset]._value;
-
-                        elementAccessCount[rowColInd][sweepVec[svIndOffset]._column] = 1;
                     }
                 }
             }
@@ -772,13 +744,11 @@ public class ModelSelectionUtils {
         SweepVector[][] currSV = newNumSweeps > 1 ? mapBasicVector2Multiple(sweepVector, newNumSweeps) : sweepVector;
         SweepVector[][] newSweepVector = new SweepVector[subsetSize-1][];
         int sweepVecLen = currSV[0].length;
-        int[][] elementAccessMatrix = new int[sweepVecLen][sweepVecLen];
         for (int sweepInd=0; sweepInd < numSV; sweepInd++) {
             // copy over sweepVector to newSV
             newSweepVector[sweepInd] = genNewSV(currSV[sweepInd], subsetCPM, newNumSweeps, sweepInd);
             // perform sweeping of sweepInd using sweep vectors
-            zeroFill2DArrays(elementAccessMatrix);
-            oneSweepWSweepVector(currSV[sweepInd], subsetCPM, sweepInd, newNumSweeps, elementAccessMatrix);
+            oneSweepWSweepVector(currSV[sweepInd], subsetCPM, sweepInd, newNumSweeps);
         }
         // generate new sweep vectors associated with newly added predictor and copy it over to newSV
         SweepVector[][] newPredSV =  sweepCPM(subsetCPM, IntStream.range(0, newNumSweeps).map(x -> x+numSV).toArray(), true);

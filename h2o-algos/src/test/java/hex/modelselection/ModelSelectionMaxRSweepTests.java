@@ -213,11 +213,10 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         double[][] rightSizeCPM = addNewPred2CPM(allCPM, smallCPM, allPreds, pred2CPMIndices, hasIntercept);
         if (pred2CPMIndices[newPredInd].length > 1) {
             SweepVector[][] newSweepVec = mapBasicVector2Multiple(sweepVectors, newPredCPMLength);
-            int[][] elementAccessed = new int[newSweepVec[0].length/2][newSweepVec[0].length/2];
-            oneSweepWSweepVector(newSweepVec[0], rightSizeCPM, sweepIndices[0], newPredCPMLength, elementAccessed);
+            oneSweepWSweepVector(newSweepVec[0], rightSizeCPM, sweepIndices[0], newPredCPMLength);
         } else {
             int[][] elementAccessed = new int[sweepVectors[0].length/2][sweepVectors[0].length/2];
-            oneSweepWSweepVector(sweepVectors[0], rightSizeCPM, sweepIndices[0], newPredCPMLength, elementAccessed);
+            oneSweepWSweepVector(sweepVectors[0], rightSizeCPM, sweepIndices[0], newPredCPMLength);
         }
         // compare CPM generated manually and by program
         assert2DArraysEqual(correctCPM, rightSizeCPM, 1e-6);
