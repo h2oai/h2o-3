@@ -164,7 +164,7 @@ public abstract class SharedTree<
     if (_parms._min_split_improvement < 0)
       error("_min_split_improvement", "min_split_improvement must be >= 0, but is " + _parms._min_split_improvement + ".");
     if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
-      error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval ]0,1] but it is " + _parms._col_sample_rate_per_tree + ".");
+      error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval [0,1] but it is " + _parms._col_sample_rate_per_tree + ".");
     if( !(0. < _parms._col_sample_rate_change_per_level && _parms._col_sample_rate_change_per_level <= 2) )
       error("_col_sample_rate_change_per_level", "col_sample_rate_change_per_level must be > 0" +
               " and <= 2");
