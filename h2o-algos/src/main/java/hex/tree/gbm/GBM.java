@@ -639,6 +639,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         }
       }
 
+      if (_parms.provideRowToTreeAssignment()) {
+        if (_recordFrame == null) {
+          _recordFrame = new Vec[]{Vec.makeSeq(0, _train.numRows())};
+          _recordFrameHeader = new String[]{"row_id"};
+        }
+        Vec nidsCopy = copyNIDsToRowToTreeAssignment(vec_nids(_train, 0)); // Always pick the zero one multinomial trees use the same subsample
+        _recordFrame = ArrayUtils.append(_recordFrame, nidsCopy);
+        _recordFrameHeader =  ArrayUtils.append(_recordFrameHeader, "tree_" + (_model._output._ntrees + 1));
+      }
       // ----
       // ESL2, page 387.  Step 2b ii.
       // One Big Loop till the ktrees are of proper depth.
@@ -1520,6 +1529,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     return new GbmPojoWriter(genericModel, gbmMojoModel.getCategoricalEncoding(), binomialOpt, trees,
             gbmMojoModel._init_f, gbmMojoModel._balanceClasses, gbmMojoModel._family,
             LinkFunctionFactory.getLinkFunction(gbmMojoModel._link_function));
+  }
+
+  private Vec copyNIDsToRowToTreeAssignment(Vec nidVector) {
+    Vec ret = _train.vec(0).makeCopy();
+    return new CopyNIDsToRowToTreeAssignmentTask()
+            .doAll(ret, nidVector)
+            ._fr
+            .vec(0).toCategoricalVec();
+  }
+
+  private static class CopyNIDsToRowToTreeAssignmentTask extends MRTask<CopyNIDsToRowToTreeAssignmentTask> {
+
+    @Override public void map(Chunk out, Chunk in){
+      for(int row = 0; row < in._len; row++){
+        out.set(row, in.atd(row) == -2 ? 0 : 1);
+      }
+    }
   }
 
 }

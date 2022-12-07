@@ -5,7 +5,6 @@ import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import org.apache.log4j.Logger;
 import water.*;
@@ -73,6 +72,8 @@ public abstract class SharedTreeModel<
 
     public boolean _build_tree_one_node = false;
 
+    public boolean _enable_row_to_tree_assignment = false;
+
     public int _score_tree_interval = 0; // score every so many trees (no matter what)
 
     public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
@@ -85,6 +86,10 @@ public abstract class SharedTreeModel<
 
     public boolean useRowSampling() {
       return _sample_rate < 1 || _sample_rate_per_class != null;
+    }
+
+    public boolean provideRowToTreeAssignment() {
+      return _enable_row_to_tree_assignment && useRowSampling();
     }
 
     // Platt scaling (by default)
@@ -195,6 +200,9 @@ public abstract class SharedTreeModel<
 
     public ScoreKeeper[/*ntrees+1*/] _scored_train;
     public ScoreKeeper[/*ntrees+1*/] _scored_valid;
+
+    public Key<Frame> _row_to_tree_assignment;
+
     public ScoreKeeper[] scoreKeepers() {
       ArrayList<ScoreKeeper> skl = new ArrayList<>();
       ScoreKeeper[] ska = _validation_metrics != null ? _scored_valid : _scored_train;
@@ -829,6 +837,7 @@ public abstract class SharedTreeModel<
         Keyed.remove(k, fs, true);
     if (_output._calib_model != null)
       _output._calib_model.remove(fs);
+    Keyed.remove(_output._row_to_tree_assignment, fs, true);
     return super.remove_impl(fs, cascade);
   }
 
@@ -840,6 +849,7 @@ public abstract class SharedTreeModel<
     for (Key<CompressedTree>[] ks : _output._treeKeysAux)
       for (Key<CompressedTree> k : ks)
         ab.putKey(k);
+    ab.putKey(_output._row_to_tree_assignment);
     return super.writeAll_impl(ab);
   }
 
@@ -850,6 +860,7 @@ public abstract class SharedTreeModel<
     for (Key<CompressedTree>[] ks : _output._treeKeysAux)
       for (Key<CompressedTree> k : ks)
         ab.getKey(k,fs);
+    ab.getKey(_output._row_to_tree_assignment, fs);
     return super.readAll_impl(ab,fs);
   }
 

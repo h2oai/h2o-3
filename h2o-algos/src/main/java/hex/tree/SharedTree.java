@@ -45,6 +45,9 @@ public abstract class SharedTree<
   protected int _mtry;
   protected int _mtry_per_tree;
   
+  protected String[] _recordFrameHeader;
+  protected Vec[] _recordFrame;
+
   protected GlobalInteractionConstraints _ics;
 
   public static final int MAX_NTREES = 100000;
@@ -201,6 +204,9 @@ public abstract class SharedTree<
       if (!H2O.getPM().isWritableDirectory(_parms._in_training_checkpoints_dir)) {
         error("_in_training_checkpoints_dir", "In training checkpoints directory path must point to a writable path.");
       }
+    }
+    if (_parms._enable_row_to_tree_assignment && !_parms.useRowSampling()) {
+      warn("_enable_row_to_tree_assignment", "enable_row_to_tree_assignment should be set to true only if row sampling is applied. All rows are used in all trees and row_to_tree_assignment is not provided.");
     }
   }
 
@@ -403,6 +409,16 @@ public abstract class SharedTree<
         initializeModelSpecifics();
         resumeFromCheckpoint(SharedTree.this);
         scoreAndBuildTrees(doOOBScoring());
+
+        if (_parms.provideRowToTreeAssignment()) {
+          Frame rowToTreeAssignmentsFrame = new Frame(Key.make("row_to_tree_assignment_for_" + _model._key.toString()), _recordFrameHeader, _recordFrame.clone());
+          for (Vec vec : rowToTreeAssignmentsFrame.vecs()) {
+            Scope.untrack(vec._key);
+          }
+          DKV.put(rowToTreeAssignmentsFrame);
+          Scope.untrack(rowToTreeAssignmentsFrame);
+          _model._output._row_to_tree_assignment = rowToTreeAssignmentsFrame._key;
+        }
         postProcessModel();
       } finally {
         if (_eventPublisher != null) {
