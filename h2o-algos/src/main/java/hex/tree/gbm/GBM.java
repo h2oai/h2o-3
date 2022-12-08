@@ -1536,7 +1536,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     return new CopyNIDsToRowToTreeAssignmentTask()
             .doAll(ret, nidVector)
             ._fr
-            .vec(0).toCategoricalVec();
+            .vec(0);
   }
 
   private static class CopyNIDsToRowToTreeAssignmentTask extends MRTask<CopyNIDsToRowToTreeAssignmentTask> {
