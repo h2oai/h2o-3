@@ -413,6 +413,7 @@ public abstract class SharedTree<
         if (_parms.provideRowToTreeAssignment()) {
           Frame rowToTreeAssignmentsFrame = new Frame(Key.make("row_to_tree_assignment_for_" + _model._key.toString()), _recordFrameHeader, _recordFrame.clone());
           for (Vec vec : rowToTreeAssignmentsFrame.vecs()) {
+            DKV.put(vec);
             Scope.untrack(vec._key);
           }
           DKV.put(rowToTreeAssignmentsFrame);
@@ -437,6 +438,13 @@ public abstract class SharedTree<
         if (_trainPredsCache != null) {
           _trainPredsCache.remove();
           _trainPredsCache = null;
+        }
+        if (_parms.provideRowToTreeAssignment()) {
+          Frame rowToTreeAssignmentsFrame = DKV.getGet(_model._output._row_to_tree_assignment);
+          for (Vec vec : rowToTreeAssignmentsFrame.vecs()) {
+            Scope.untrack(vec._key);
+          }
+          Scope.untrack(rowToTreeAssignmentsFrame);
         }
       }
     }
