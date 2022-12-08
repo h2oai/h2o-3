@@ -12,7 +12,7 @@ from h2o.estimators.model_selection import H2OModelSelectionEstimator as modelSe
 # without extra columns.
 def test_modelselection_drop_redundant_columns():
     d = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/gaussian_20Cols_10kRows_3Extra.csv"))
-    d2 = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/gaussian_20Cols_10000Rows.csv"))
+    d2 = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))
     d["C1"] = d["C1"].asfactor()
     d["C2"] = d["C2"].asfactor()
     d["C3"] = d["C3"].asfactor()
