@@ -920,6 +920,32 @@ case_insensitive_match_arg <- function(arg, choices) {
                                      "of the model, i.e., prediction before applying inverse link function. H2O ",
                                      "implements TreeSHAP which when the features are correlated, can increase ",
                                      "contribution of a feature that had no influence on the prediction."),
+           fairness_metrics = paste0("The following table shows fairness metrics for intersections determined using ",
+                                     "the protected_columns. Apart from the fairness metrics, there is a p-value ",
+                                     "from Fisher's exact test or G-test (depends on the size of the intersections) ",
+                                     "for hypothesis that being selected (positive response) is independent to ",
+                                     "being in the reference group or a particular protected group.\n\n",
+                                     "After the table there are two kinds of plot. The first kind starts with AIR prefix ",
+                                     "which stands for Adverse Impact Ratio. These plots show values relative to the ",
+                                     "reference group and also show two dashed lines corresponding to 0.8 and 1.25 ",
+                                     "(the four-fifths rule). \n The second kind is showing the absolute value of given ",
+                                     "metrics. The reference group is shown by using a different colored bar."),
+           fairness_roc = paste0("The following plot shows a Receiver Operating Characteristic (ROC) for each ",
+                                 "intersection. This plot could be used for selecting different threshold of the ",
+                                 "classifier to make it more fair in some sense this is described in, e.g., ",
+                                 "HARDT, Moritz, PRICE, Eric and SREBRO, Nathan, 2016. Equality of Opportunity in ",
+                                 "Supervised Learning. arXiv:1610.02413."),
+           fairness_prc = paste0("The following plot shows a Precision-Recall Curve for each intersection."),
+           fairness_varimp = paste0("Permutation variable importance is obtained by measuring the distance between ",
+                                    "prediction errors before and after a feature is permuted; only one feature at ",
+                                    "a time is permuted."),
+           fairness_pdp = paste0("The following plots show partial dependence for each intersection separately. ",
+                                 "This plot can be used to see how the membership to a particular intersection ",
+                                 "influences the dependence on a given feature."),
+           fairness_shap = paste0("The following plots show SHAP contributions for individual intersections and ",
+                                  "one feature at a time. ",
+                                  "This plot can be used to see how the membership to a particular intersection ",
+                                  "influences the dependence on a given feature."),
            stop("Unknown model explanation \"", explanation, "\".")
     )
   )
@@ -4236,11 +4262,11 @@ h2o.explain_row <- function(object,
 #'
 #' gbm <- h2o.gbm(x, y, training_frame = train)
 #'
-#' h2o.pd_fair_plot(gbm, test, protected_columns, "AGE")
+#' h2o.fair_pd_plot(gbm, test, protected_columns, "AGE")
 #' }
 #'
 #' @export
-h2o.pd_fair_plot <- function(model, newdata, protected_columns, column, autoscale = TRUE) {
+h2o.fair_pd_plot <- function(model, newdata, protected_columns, column, autoscale = TRUE) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -4287,7 +4313,8 @@ h2o.pd_fair_plot <- function(model, newdata, protected_columns, column, autoscal
   use_log <-
     autoscale &&
       (max(maxes, na.rm = TRUE) - min(maxes, na.rm = TRUE) > 1) &&
-      !is.factor(newdata[[column]])
+      !is.factor(newdata[[column]]) &&
+      min(newdata[[column]], na.rm = TRUE) > 0
   p <-
     ggplot2::ggplot(
       pdps,
@@ -4352,11 +4379,11 @@ h2o.pd_fair_plot <- function(model, newdata, protected_columns, column, autoscal
 #'
 #' gbm <- h2o.gbm(x, y, training_frame = train)
 #'
-#' h2o.shap_fair_plot(gbm, test, protected_columns, "AGE")
+#' h2o.fair_shap_plot(gbm, test, protected_columns, "AGE")
 #' }
 #'
 #' @export
-h2o.shap_fair_plot <- function(model, newdata, protected_columns, column, autoscale = TRUE) {
+h2o.fair_shap_plot <- function(model, newdata, protected_columns, column, autoscale = TRUE) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -4375,7 +4402,9 @@ h2o.shap_fair_plot <- function(model, newdata, protected_columns, column, autosc
   use_log <-
     autoscale &&
       (max(maxes, na.rm = TRUE) - min(maxes, na.rm = TRUE) > 1) &&
-      !is.factor(newdata[[column]])
+      !is.factor(newdata[[column]]) &&
+      min(newdata[[column]], na.rm = TRUE) > 0
+
   h2o.no_progress({
     contr <- as.data.frame(h2o.predict_contributions(model, newdata))
   })
@@ -4438,12 +4467,12 @@ h2o.shap_fair_plot <- function(model, newdata, protected_columns, column, autosc
 #'
 #' gbm <- h2o.gbm(x, y, training_frame = train)
 #'
-#' h2o.roc_fair_plot(gbm, test, protected_columns = protected_columns,
+#' h2o.fair_roc_plot(gbm, test, protected_columns = protected_columns,
 #'                   reference = reference, favorable_class = favorable_class)
 #' }
 #'
 #' @export
-h2o.roc_fair_plot <- function(model, newdata, protected_columns, reference, favorable_class) {
+h2o.fair_roc_plot <- function(model, newdata, protected_columns, reference, favorable_class) {
   .check_for_ggplot2()
   .data <- NULL
   fair <- h2o.calculate_fairness_metrics(
@@ -4475,6 +4504,7 @@ h2o.roc_fair_plot <- function(model, newdata, protected_columns, reference, favo
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_continuous(expand = c(0, 0.01)) +
     ggplot2::labs(title = "ROC for protected groups") +
+    ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1)) +
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   return(p)
@@ -4515,11 +4545,11 @@ h2o.roc_fair_plot <- function(model, newdata, protected_columns, reference, favo
 #'
 #' gbm <- h2o.gbm(x, y, training_frame = train)
 #'
-#' h2o.pr_fair_plot(gbm, test, protected_columns = protected_columns,
+#' h2o.fair_pr_plot(gbm, test, protected_columns = protected_columns,
 #'                  reference = reference, favorable_class = favorable_class)
 #' }
 #' @export
-h2o.pr_fair_plot <- function(model, newdata, protected_columns, reference, favorable_class) {
+h2o.fair_pr_plot <- function(model, newdata, protected_columns, reference, favorable_class) {
   .check_for_ggplot2()
   .data <- NULL
   fair <- h2o.calculate_fairness_metrics(
@@ -4551,6 +4581,7 @@ h2o.pr_fair_plot <- function(model, newdata, protected_columns, reference, favor
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_continuous(expand = c(0, 0.01)) +
     ggplot2::labs(title = "Precision-Recall Curve for protected groups") +
+    ggplot2::coord_cartesian(xlim = c(0, 1), ylim = c(0, 1)) +
     ggplot2::theme_bw() +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
   return(q)
@@ -4621,7 +4652,8 @@ h2o.inspect_model_fairness <-
       intersect(c(metrics, paste0("AIR_", metrics)), names(fair$overview))
     da <- fair$overview
     result[["overview"]] <- list(
-      header = .h2o_explanation_header("Overview"),
+      header = .h2o_explanation_header(paste("Overview for model", h2o.keyof(model))),
+      description = .describe("fairness_metrics"),
       data = da[, c(protected_columns, cols_to_show)],
       metrics = list()
     )
@@ -4640,7 +4672,7 @@ h2o.inspect_model_fairness <-
           ggplot2::labs(title = metric) +
           ggplot2::xlab("protected_group") +
           ggplot2::theme_bw() +
-          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45),
+          ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90),
                          plot.title = ggplot2::element_text(hjust = 0.5))
       if (startsWith(metric, "AIR")) {
         transf <- scales::trans_new(
@@ -4674,29 +4706,41 @@ h2o.inspect_model_fairness <-
 
     result[["ROC"]] <- list(
       header = .h2o_explanation_header("ROC"),
-      plot = h2o.roc_fair_plot(model, newdata, protected_columns, reference, favorable_class)
+      description = .describe("fairness_roc"),
+      plot = h2o.fair_roc_plot(model, newdata, protected_columns, reference, favorable_class)
     )
     result[["PR"]] <- list(
       header = .h2o_explanation_header("Precision-Recall Curve"),
-      plot = h2o.pr_fair_plot(model, newdata, protected_columns, reference, favorable_class)
+      description = .describe("fairness_prc"),
+      plot = h2o.fair_pr_plot(model, newdata, protected_columns, reference, favorable_class)
     )
 
     suppressWarnings(
       pi <-
-        h2o.permutation_importance_plot(model, newdata = newdata, n_repeats = 15)
+        h2o.permutation_importance(model, newdata = newdata)
     )
 
-    result[["permutation_importance"]] <- pi
+    result[["permutation_importance"]] <- list(
+      header = .h2o_explanation_header("Permutation Variable Importance"),
+      description = .describe("fairness_varimp"),
+      data = pi)
 
-    result[["PDP"]] <- list()
-    for (v in rev(pi$Variable)) {
-      result[["PDP"]][[v]] <- h2o.pd_fair_plot(model, newdata, protected_columns, v)
+    result[["PDP"]] <- list(
+      header = .h2o_explanation_header("Partial Dependence Plots for Individual Protected Groups"),
+      description = .describe("fairness_pdp"),
+      plots = list()
+    )
+    for (v in pi$Variable) {
+      result[["PDP"]][["plots"]][[v]] <- h2o.fair_pd_plot(model, newdata, protected_columns, v)
     }
-    if (.is_h2o_tree_model(model))
-      result[["SHAP"]] <- list()
-    for (v in rev(pi$Variable)) {
-      if (.is_h2o_tree_model(model)) {
-          result[["SHAP"]][[v]] <- h2o.shap_fair_plot(model, newdata, protected_columns, v)
+    if (.is_h2o_tree_model(model)) {
+      result[["SHAP"]] <- list(
+        header = .h2o_explanation_header("SHAP plot for Individual Protected Groups"),
+        description = .describe("fairness_shap"),
+        plots = list()
+      )
+      for (v in pi$Variable) {
+          result[["SHAP"]][["plots"]][[v]] <- h2o.fair_shap_plot(model, newdata, protected_columns, v)
       }
     }
     class(result) <- "H2OExplanation"

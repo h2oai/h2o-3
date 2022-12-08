@@ -2,6 +2,9 @@ import numpy as np
 from collections import defaultdict
 from itertools import product
 
+from h2o.explanation import Description
+from h2o.utils.threading import local_context
+
 
 class Fairness:
 
@@ -65,7 +68,7 @@ class Fairness:
 
         return {n: _get_tracked_frame(f["key"]["name"]) for n, f in zip(res.map_keys["string"], res.frames)}
 
-    def pd_fair_plot(self, frame, column, protected_columns, figsize=(16, 9), autoscale=True):
+    def fair_pd_plot(self, frame, column, protected_columns, figsize=(16, 9), autoscale=True):
         """
         Partial dependence plot per protected group.
 
@@ -97,7 +100,7 @@ class Fairness:
         >>> gbm = H2OGradientBoostingEstimator()
         >>> gbm.train(x, y, training_frame=train)
         >>>
-        >>> gbm.pd_fair_plot(test, "AGE", protected_columns)
+        >>> gbm.fair_pd_plot(test, "AGE", protected_columns)
         """
         import h2o
         from h2o.explanation._explain import no_progress_block
@@ -284,7 +287,7 @@ class Fairness:
         plt.title("Precision-Recall Curve")
         return plt.gcf()
 
-    def shap_fair_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1):
+    def fair_shap_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1):
         """
         SHAP summary plot for one feature with protected groups on y-axis.
 
@@ -318,7 +321,7 @@ class Fairness:
         >>> gbm = H2OGradientBoostingEstimator()
         >>> gbm.train(x, y, training_frame=train)
         >>>
-        >>> gbm.shap_fair_plot(test, "AGE", protected_columns)
+        >>> gbm.fair_shap_plot(test, "AGE", protected_columns)
         """
         import h2o
         from h2o.explanation._explain import no_progress_block
@@ -362,6 +365,10 @@ class Fairness:
         for contr_column, result in results.items():
             plt.figure(figsize=figsize)
             for i, (pg, contr, vals) in enumerate(result):
+                indices = np.arange(len(contr))
+                np.random.shuffle(indices)
+                contr = contr[indices]
+                vals = vals[indices]
                 dens = _density(contr)
                 plt.scatter(x=contr, y=i + dens * np.random.uniform(-jitter, jitter, size=len(contr)),
                             label=", ".join(pg), alpha=alpha, c=np.log1p(vals) if autoscale else vals)
@@ -443,8 +450,10 @@ class Fairness:
 
         result = H2OExplanation()
         result["overview"] = H2OExplanation()
-        result["overview"]["header"] = display(Header("Overview"))
-        result["overview"]["data"] = display(overview[:, protected_columns + cols_to_show])
+        result["overview"]["header"] = display(Header("Overview for model " + self.model_id))
+        result["overview"]["description"] = display(Description("fairness_metrics"))
+        with local_context(rows=overview.nrow):
+            result["overview"]["data"] = display(overview[:, protected_columns + cols_to_show])
 
         groups = [", ".join(r) for r in overview[:, protected_columns].as_data_frame(False, False)]
         reference_name = ", ".join(reference)
@@ -471,38 +480,47 @@ class Fairness:
             else:
                 plt.bar(groups, _permute(overview[col]), color=["C1" if g == reference_name else "C0" for g in groups])
             plt.grid()
-            plt.xticks(rotation=45)
+            plt.xticks(rotation=90)
             result["overview"]["plots"][col] = display(plt.gcf())
 
         # ROC
-        result["ROC"] = display(
+        result["ROC"] = H2OExplanation()
+        result["ROC"]["header"] = display(Header("ROC"))
+        result["ROC"]["description"] = display(Description("fairness_roc"))
+        result["ROC"]["plot"] = display(
             self.fair_roc_plot(frame, protected_columns, reference, favorable_class, figsize=figsize))
 
         # PR
-        result["PR"] = display(
+        result["PR"] = H2OExplanation()
+        result["PR"]["header"] = display(Header("Precision-Recall Curve"))
+        result["PR"]["description"] = display(Description("fairness_prc"))
+        result["PR"]["plot"] = display(
             self.fair_pr_plot(frame, protected_columns, reference, favorable_class, figsize=figsize))
 
         # permutation varimp
         perm = self.permutation_importance(frame)
         result["permutation_importance"] = H2OExplanation()
         result["permutation_importance"]["header"] = display(Header("Permutation Variable Importance"))
+        result["permutation_importance"]["description"] = display(Description("fairness_varimp"))
         result["permutation_importance"]["data"] = display(perm)
         sorted_features = list(perm["Variable"])
 
         # PDP per group
         result["pdp"] = H2OExplanation()
-        result["pdp"]["header"] = display(Header("Partial Dependence Plots"))
+        result["pdp"]["header"] = display(Header("Partial Dependence Plots for Individual Protected Groups"))
+        result["pdp"]["description"] = display(Description("fairness_pdp"))
         result["pdp"]["plots"] = H2OExplanation()
         for col in sorted_features:
-            result["pdp"]["plots"][col] = display(self.pd_fair_plot(frame, col, protected_columns, figsize=figsize))
+            result["pdp"]["plots"][col] = display(self.fair_pd_plot(frame, col, protected_columns, figsize=figsize))
 
         # SHAP per group
         if has_extension(self, "Contributions"):
             result["shap"] = H2OExplanation()
-            result["shap"]["header"] = display(Header("SHAP per protected group"))
+            result["shap"]["header"] = display(Header("SHAP for Individual Protected Groups"))
+            result["shap"]["description"] = display(Description("fairness_shap"))
             result["shap"]["plots"] = H2OExplanation()
             for col in sorted_features:
                 result["shap"]["plots"][col] = display(
-                    self.shap_fair_plot(frame, col, protected_columns, figsize=figsize))
+                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize))
 
         return result

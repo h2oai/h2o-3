@@ -5,8 +5,6 @@ import warnings
 from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
 
-from h2o.utils.typechecks import is_type, Enum, assert_is_type
-
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
 except:
@@ -37,7 +35,7 @@ def _display(object):
     if isinstance(object, matplotlib.figure.Figure):
         plt.close(object)
         print("\n")
-    if (is_decorated_plot_result(object) and (object.figure() is not None)):
+    if is_decorated_plot_result(object) and (object.figure() is not None):
         plt.close(object.figure())
         print("\n")
     return object
@@ -134,6 +132,32 @@ class Description:
                          "the model, i.e., prediction before applying inverse link function. H2O implements "
                          "TreeSHAP which when the features are correlated, can increase contribution of a feature "
                          "that had no influence on the prediction.",
+        fairness_metrics="The following table shows fairness metrics for intersections determined using "
+                         "the protected_columns. Apart from the fairness metrics, there is a p-value "
+                         "from Fisher's exact test or G-test (depends on the size of the intersections) "
+                         "for hypothesis that being selected (positive response) is independent to "
+                         "being in the reference group or a particular protected group.\n\n"
+                         "After the table there are two kinds of plot. The first kind starts with AIR prefix "
+                         "which stands for Adverse Impact Ratio. These plots show values relative to the "
+                         "reference group and also show two dashed lines corresponding to 0.8 and 1.25 "
+                         "(the four-fifths rule). \n The second kind is showing the absolute value of given "
+                         "metrics. The reference group is shown by using a different colored bar.",
+        fairness_roc="The following plot shows a Receiver Operating Characteristic (ROC) for each "
+                     "intersection. This plot could be used for selecting different threshold of the "
+                     "classifier to make it more fair in some sense this is described in, e.g., "
+                     "HARDT, Moritz, PRICE, Eric and SREBRO, Nathan, 2016. Equality of Opportunity in "
+                     "Supervised Learning. arXiv:1610.02413.",
+        fairness_prc="The following plot shows a Precision-Recall Curve for each intersection.",
+        fairness_varimp="Permutation variable importance is obtained by measuring the distance between "
+                        "prediction errors before and after a feature is permuted; only one feature at "
+                        "a time is permuted.",
+        fairness_pdp="The following plots show partial dependence for each intersection separately. "
+                     "This plot can be used to see how the membership to a particular intersection "
+                     "influences the dependence on a given feature.",
+        fairness_shap="The following plots show SHAP contributions for individual intersections and "
+                      "one feature at a time. "
+                      "This plot can be used to see how the membership to a particular intersection "
+                      "influences the dependence on a given feature.",
     )
 
     def __init__(self, for_what):
@@ -1126,7 +1150,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
         encoded_col = tmp.columns[0]
         orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
         orig_vals = _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model,
-                                       frame, index, column, colors[i], percentile_string, factor_map, orig_value)
+                                        frame, index, column, colors[i], percentile_string, factor_map, orig_value)
         orig_row = NumpyFrame(orig_vals)
         if frame.type(column) == "time":
             tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
@@ -1885,7 +1909,7 @@ def _get_xy(model):
                 (model.actual_params.get("fold_column") or {}).get("column_name"),
                 (model.actual_params.get("weights_column") or {}).get("column_name"),
                 (model.actual_params.get("offset_column") or {}).get("column_name"),
-             ] + (model.actual_params.get("ignored_columns") or [])
+            ] + (model.actual_params.get("ignored_columns") or [])
     x = [feature for feature in names if feature not in not_x]
     return x, y
 
@@ -2498,8 +2522,8 @@ def learning_curve_plot(
                            "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae"]
         allowed_metrics = [m for m in allowed_metrics
                            if m in scoring_history.col_header or
-                              "training_{}".format(m) in scoring_history.col_header or
-                              "{}_train".format(m) in scoring_history.col_header]
+                           "training_{}".format(m) in scoring_history.col_header or
+                           "{}_train".format(m) in scoring_history.col_header]
     elif model.algo == "glrm":
         allowed_metrics = ["objective"]
         allowed_timesteps = ["iterations"]
@@ -2664,7 +2688,7 @@ def learning_curve_plot(
         if lbl in labels_and_handles:
             labels_and_handles_ordered[lbl] = labels_and_handles[lbl]
     plt.legend(list(labels_and_handles_ordered.values()), list(labels_and_handles_ordered.keys()))
-    
+
     if save_plot_path is not None:
         plt.savefig(fname=save_plot_path)
 
@@ -3140,9 +3164,9 @@ def explain(
                     Header(model.model_id, 2))
                 result["confusion_matrix"]["subexplanations"][model.model_id]["plots"] = H2OExplanation()
                 result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
-                        model.model_performance(
-                            **_custom_args(plot_overrides.get("confusion_matrix"), test_data=frame)
-                        ).confusion_matrix()
+                    model.model_performance(
+                        **_custom_args(plot_overrides.get("confusion_matrix"), test_data=frame)
+                    ).confusion_matrix()
                 )
     else:
         if "residual_analysis" in explanations:
@@ -3251,10 +3275,10 @@ def explain(
                 result["pdp"]["plots"][column] = H2OExplanation()
                 for target in targets:
                     fig = pd_plot(models_to_show[0], column=column, target=target,
-                        **_custom_args(plot_overrides.get("pdp"),
-                                       frame=frame,
-                                       figsize=figsize,
-                                       colormap=qualitative_colormap))
+                                  **_custom_args(plot_overrides.get("pdp"),
+                                                 frame=frame,
+                                                 figsize=figsize,
+                                                 colormap=qualitative_colormap))
                     if target is None:
                         result["pdp"]["plots"][column] = display(fig)
                     else:
@@ -3396,9 +3420,9 @@ def explain_row(
         result["leaderboard"]["header"] = display(Header("Leaderboard"))
         result["leaderboard"]["description"] = display(Description("leaderboard_row"))
         result["leaderboard"]["data"] = display(_get_leaderboard(models, row_index=row_index,
-                                                         **_custom_args(
-                                                             plot_overrides.get("leaderboard"),
-                                                             frame=frame)))
+                                                                 **_custom_args(
+                                                                     plot_overrides.get("leaderboard"),
+                                                                     frame=frame)))
 
     if len(tree_models_to_show) > 0 and not multinomial_classification and \
             "shap_explain_row" in explanations:
@@ -3446,7 +3470,7 @@ def _corrected_variance(accuracy, total):
     return max(0, np.var(accuracy - np.mean(accuracy * (1 - accuracy) / total)))
 
 
-def disparate_analysis(models, frame, protected_columns, reference, favorable_class):
+def disparate_analysis(models, frame, protected_columns, reference, favorable_class, air_metric="selectedRatio", alpha=0.05):
     """
      Create a frame containing aggregations of intersectional fairness across the models.
 
@@ -3457,6 +3481,9 @@ def disparate_analysis(models, frame, protected_columns, reference, favorable_cl
     :param reference: List of values corresponding to a reference for each protected columns.
                       If set to ``None``, it will use the biggest group as the reference.
     :param favorable_class: Positive/favorable outcome class of the response.
+    :param air_metric: Metric used for Adverse Impact Ratio calculation. Defaults to ``selectedRatio``.
+    :param alpha: The alpha level is the probability of rejecting the null hypothesis that the protected group
+                  and the reference came from the same population when the null hypothesis is true.
 
     :return: H2OFrame
 
@@ -3488,21 +3515,36 @@ def disparate_analysis(models, frame, protected_columns, reference, favorable_cl
     from collections import defaultdict
     leaderboard = h2o.make_leaderboard(models, frame, extra_columns="ALL")
     additional_columns = defaultdict(list)
-    for model in models:
+    models_dict = {m.model_id: m for m in models} if isinstance(models, list) else dict()
+    for model_id in leaderboard[:, "model_id"].as_data_frame(False, False):
+        model = models_dict.get(model_id[0], h2o.get_model(model_id[0]))
+        additional_columns["num_of_features"].append(len(_get_xy(model)[0]))
         fm = model.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference, favorable_class=favorable_class)
         overview = NumpyFrame(fm["overview"])
         additional_columns["var"].append(np.var(overview["accuracy"]))
         additional_columns["corrected_var"].append(_corrected_variance(overview["accuracy"], overview["total"]))
 
-        air = overview["AIR_selectedRatio"]
+        selected_air_metric = "AIR_{}".format(air_metric)
+        if selected_air_metric not in overview.columns:
+            raise ValueError(
+                "Metric {} is not present in the result of model.fairness_metrics. Please specify one of {}.".format(
+                    air_metric,
+                    ", ".join([m for m in overview.columns if m.startswith("AIR")])
+                ))
+
+        air = overview[selected_air_metric]
         additional_columns["air_min"].append(np.min(air))
         additional_columns["air_mean"].append(np.mean(air))
         additional_columns["air_median"].append(np.median(air))
         additional_columns["air_max"].append(np.max(air))
         additional_columns["cair"].append(np.sum([w * x for w, x in
                                                   zip(overview["relativeSize"], air)]))
-
         pvalue = overview["p.value"]
+        additional_columns["significant_air_min"].append(np.min(air[pvalue < alpha]))
+        additional_columns["significant_air_mean"].append(np.mean(air[pvalue < alpha]))
+        additional_columns["significant_air_median"].append(np.median(air[pvalue < alpha]))
+        additional_columns["significant_air_max"].append(np.max(air[pvalue < alpha]))
+
         additional_columns["p.value_min"].append(np.min(pvalue))
         additional_columns["p.value_mean"].append(np.mean(pvalue))
         additional_columns["p.value_median"].append(np.median(pvalue))

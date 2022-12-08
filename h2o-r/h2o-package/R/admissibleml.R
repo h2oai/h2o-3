@@ -74,6 +74,9 @@ h2o.calculate_fairness_metrics <- function(model, frame, protected_columns, refe
 #' @param reference List of values corresponding to a reference for each protected columns.
 #'                  If set to NULL, it will use the biggest group as the reference.
 #' @param favorable_class Positive/favorable outcome class of the response.
+#' @param air_metric Metric used for Adverse Impact Ratio calculation. Defaults to ``selectedRatio``.
+#' @param alpha The alpha level is the probability of rejecting the null hypothesis that the protected group
+#'              and the reference came from the same population when the null hypothesis is true.
 #' @return frame containing aggregations of intersectional fairness across the models
 #'
 #' @examples
@@ -108,17 +111,20 @@ h2o.disparate_analysis <-
            newdata,
            protected_columns,
            reference,
-           favorable_class) {
+           favorable_class,
+           air_metric = "selectedRatio",
+           alpha = 0.05
+  ) {
     models_info <- .process_models_or_automl(
         models,
         newdata,
         check_x_y_consistency = FALSE,
         require_multiple_models = TRUE
       )
-    y <- models_info$y
+    leaderboard <- .create_leaderboard(models_info, newdata, top_n = Inf)
     return(cbind(
-      .create_leaderboard(models_info, newdata, top_n = Inf),
-      t(sapply(lapply(models_info$model_ids, models_info$get_model), function(model) {
+     leaderboard,
+      t(sapply(lapply(leaderboard$model_id, models_info$get_model), function(model) {
         capture.output({
           dm <-
             h2o.calculate_fairness_metrics(
@@ -129,15 +135,26 @@ h2o.disparate_analysis <-
               favorable_class = favorable_class
             )$overview
         })
+        selected_air_metric <- paste0("AIR_", air_metric)
+        if (!selected_air_metric %in% names(dm)) {
+          stop(paste0("Metric ", air_metric, " is not present in the result of h2o.calculate_fairness_metrics. ",
+                      "Please specify one of ", paste(Filter(function (m) startsWith(m, "AIR_"),
+                                                             names(dm)), collapse = ", "), "."))
+        }
         return(
           c(
+            num_of_features = length(models_info$x),
             var = var(dm[["accuracy"]], na.rm = TRUE),
             corrected_var = .get_corrected_variance(dm),
-            air_min = min(dm$AIR_selectedRatio, na.rm = TRUE),
-            air_mean = mean(dm$AIR_selectedRatio, na.rm = TRUE),
-            air_median = stats::median(dm$AIR_selectedRatio, na.rm = TRUE),
-            air_max = max(dm$AIR_selectedRatio, na.rm = TRUE),
-            cair = stats::weighted.mean(dm$AIR_selectedRatio, dm$relativeSize, na.rm = TRUE),
+            air_min = min(dm[[selected_air_metric]], na.rm = TRUE),
+            air_mean = mean(dm[[selected_air_metric]], na.rm = TRUE),
+            air_median = stats::median(dm[[selected_air_metric]], na.rm = TRUE),
+            air_max = max(dm[[selected_air_metric]], na.rm = TRUE),
+            cair = stats::weighted.mean(dm[[selected_air_metric]], dm$relativeSize, na.rm = TRUE),
+            significant_air_min = min(dm[[selected_air_metric]][dm[["p.value"]] < alpha], na.rm = TRUE),
+            significant_air_mean = mean(dm[[selected_air_metric]][dm[["p.value"]] < alpha], na.rm = TRUE),
+            significant_air_median = stats::median(dm[[selected_air_metric]][dm[["p.value"]] < alpha], na.rm = TRUE),
+            significant_air_max = max(dm[[selected_air_metric]][dm[["p.value"]] < alpha], na.rm = TRUE),
             `p.value_min` = min(dm[["p.value"]], na.rm = TRUE),
             `p.value_median` = stats::median(dm[["p.value"]], na.rm = TRUE),
             `p.value_mean` = mean(dm[["p.value"]], na.rm = TRUE),
@@ -175,6 +192,9 @@ h2o.disparate_analysis <-
 #' @param favorable_class Positive/favorable outcome class of the response.
 #' @param feature_selection_metrics One or more columns from the infogram@admissible_score.
 #' @param metric Metric supported by stats::dist which is used to sort the features.
+#' @param air_metric Metric used for Adverse Impact Ratio calculation. Defaults to ``selectedRatio``.
+#' @param alpha The alpha level is the probability of rejecting the null hypothesis that the protected group
+#'              and the reference came from the same population when the null hypothesis is true.
 #' @param ... Parameters that are passed to the model_fun.
 #' @return frame containing aggregations of intersectional fairness across the models
 #'
@@ -224,6 +244,8 @@ h2o.infogram_train_subset_models <-
            favorable_class,
            feature_selection_metrics = c("safety_index"),
            metric = "euclidean",
+           air_metric = "selectedRatio",
+           alpha = 0.05,
            ...
   ) {
     score <- as.data.frame(ig@admissible_score)
@@ -252,5 +274,9 @@ h2o.infogram_train_subset_models <-
         )))
     if (missing(protected_columns) || length(protected_columns) == 0)
       return(h2o.make_leaderboard(models, test_frame))
-    return(h2o.disparate_analysis(models, test_frame, protected_columns, reference, favorable_class = favorable_class))
+    return(h2o.disparate_analysis(models, test_frame, protected_columns, reference,
+                                  favorable_class = favorable_class,
+                                  air_metric = air_metric,
+                                  alpha = alpha
+    ))
   }
