@@ -724,7 +724,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       rowHeaders.add("Metalearner fold_column");
       rowValues.add(_model._output._metalearner._parms._fold_column);
       rowHeaders.add("Custom metalearner hyperparameters");
-      rowValues.add(_model._parms._metalearner_params);
+      rowValues.add(_model._parms._metalearner_params.isEmpty()? "None" : _model._parms._metalearner_params);
 
       TwoDimTable ms = new TwoDimTable("Model Summary for Stacked Ensemble", "",
               rowHeaders.toArray(new String[]{}),
