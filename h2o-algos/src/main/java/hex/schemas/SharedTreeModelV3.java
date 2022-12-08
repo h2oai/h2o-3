@@ -20,6 +20,6 @@ public class SharedTreeModelV3<M extends SharedTreeModel<M, P, O>,
     double init_f;
 
     @API(help="Frame with information which row goes to which tree", direction=API.Direction.OUTPUT)
-    KeyV3 row_to_tree_assignment;
+    KeyV3.FrameKeyV3 row_to_tree_assignment;
   }
 }
