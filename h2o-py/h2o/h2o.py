@@ -214,7 +214,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     assert_is_type(jvm_custom_args, [str], None)
     assert_is_type(bind_to_localhost, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
-                            "force_connect": bool, "as_port": bool, "off_heap_memory_ratio": float})
+                            "force_connect": bool, "as_port": bool, "off_heap_memory_ratio": U(None, float)})
 
     def get_mem_size(mmint, mmgb):
         if not mmint:  # treat 0 and "" as if they were None

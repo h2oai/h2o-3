@@ -64,7 +64,7 @@ class H2OLocalServer(object):
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
               ice_root=None, log_dir=None, log_level=None, max_log_file_size=None, port="54321+", name=None, extra_classpath=None,
-              verbose=True, jvm_custom_args=None, bind_to_localhost=True, off_heap_memory_ratio=2.0/3):
+              verbose=True, jvm_custom_args=None, bind_to_localhost=True, off_heap_memory_ratio=None):
         """
         Start new H2O server on the local machine.
 
@@ -111,6 +111,7 @@ class H2OLocalServer(object):
         assert_is_type(extra_classpath, None, [str])
         assert_is_type(jvm_custom_args, list, None)
         assert_is_type(bind_to_localhost, bool)
+        assert_is_type(off_heap_memory_ratio, float, None)
         if jar_path:
             assert_satisfies(jar_path, jar_path.endswith("h2o.jar"))
 
@@ -267,7 +268,7 @@ class H2OLocalServer(object):
         yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
 
     def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost, 
-                       log_dir=None, log_level=None, max_log_file_size=None, off_heap_memory_ratio=2.0/3):
+                       log_dir=None, log_level=None, max_log_file_size=None, off_heap_memory_ratio=None):
         """Actually start the h2o.jar executable (helper method for `.start()`)."""
         self._ip = "127.0.0.1"
 
@@ -313,7 +314,8 @@ class H2OLocalServer(object):
         cmd += ["-ice_root", self._ice_root]
         cmd += ["-nthreads", str(nthreads)] if nthreads > 0 else []
 
-        cmd += ["-off_heap_memory_ratio", str(off_heap_memory_ratio)]
+        if off_heap_memory_ratio is not None:
+            cmd += ["-off_heap_memory_ratio", str(off_heap_memory_ratio)]
 
         if log_dir:
             cmd += ["-log_dir", log_dir]

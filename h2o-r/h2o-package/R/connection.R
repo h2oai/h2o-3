@@ -36,7 +36,7 @@
 #' @param extra_classpath (Optional) A vector of paths to libraries to be added to the Java classpath when H2O is started from R.
 #' @param jvm_custom_args (Optional) A \code{character} list of custom arguments for the JVM where new H2O instance is going to run, if started. Ignored when connecting to an existing instance.
 #' @param bind_to_localhost (Optional) A \code{logical} flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network. Only applicable when H2O is started from R.
-#' @param off_heap_memory_ratio (Optional) How much memory is expected to be necessary for use outside of JVM, typically for XGBoost.
+#' @param off_heap_memory_ratio (Optional) How much memory is expected to be necessary for use outside of JVM, typically for XGBoost. Set to 0 to disable the check.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
