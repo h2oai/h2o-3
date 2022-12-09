@@ -69,6 +69,9 @@ def test_ordinal():
                                                 remove_collinear_columns=True, seed=1)
     glm_freq.train(x=predictors, y=response_col, training_frame=X_freq, weights_column=weight_col)
     glm_relevel.train(x=predictors, y=response_col, training_frame=X_relevel, weights_column=weight_col)
+    
+    pred1 = glm_relevel.predict(X_freq)
+    pred2 = glm_relevel.predict(X_relevel)
 
     print('GLM with the reference level set using relevel_by_frequency()')
     print(glm_freq._model_json['output']['coefficients_table'])
