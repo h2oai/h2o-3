@@ -145,8 +145,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 # Export/Import AutoML Endpoints
 .h2o.__SAVE_AUTOML <- function(aml) paste0("AutoML.bin/", h2o.keyof(aml))
 .h2o.__FETCH_AUTOML <- function(aml) paste0("AutoML.fetch.bin/", h2o.keyof(aml))
-.h2o.__LOAD_AUTOML <- "AutoML.bin/"
-.h2o.__UPLOAD_AUTOML <- "AutoML.upload.bin/"
+.h2o.__LOAD_AUTOML <- "AutoML.bin"
+.h2o.__UPLOAD_AUTOML <- "AutoML.upload.bin"
 
 # Export/Import Frame Endpoints
 .h2o.__SAVE_FRAME <- function(frame_id) paste0("Frames/", frame_id, "/save")

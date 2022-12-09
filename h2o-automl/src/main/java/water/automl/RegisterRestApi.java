@@ -32,10 +32,10 @@ public class RegisterRestApi extends AbstractRegister {
             "GET /99/AutoML.fetch.bin/{automl_id}", AutoMLHandler.class, "fetchBinaryAutoML",
             "Fetch AutoML as a binary object.");
     context.registerEndpoint("importAutoML",
-            "POST /99/AutoML.bin/{automl_id}", AutoMLHandler.class, "importBinaryAutoML",
+            "POST /99/AutoML.bin", AutoMLHandler.class, "importBinaryAutoML",
             "Import AutoML as a binary object.");
     context.registerEndpoint("uploadAutoML",
-            "POST /99/AutoML.upload.bin/{automl_id}", AutoMLHandler.class, "uploadBinaryAutoML",
+            "POST /99/AutoML.upload.bin", AutoMLHandler.class, "uploadBinaryAutoML",
             "Upload AutoML as a binary object.");
   }
 
