@@ -49,7 +49,7 @@ def test_modelselection_drop_redundant_columns():
     dropped_predictors = model.get_predictors_removed_per_step()
     dropped_extra_predictors = model_extra.get_predictors_removed_per_step()
     # dropped coefficients are the same as well except the first one with redundant columns should also be removed
-    assert len(dropped_extra_predictors[len(dropped_predictors)-1]) > 1, \
+    assert len(dropped_extra_predictors[len(dropped_extra_predictors)-1]) > 1, \
     "Dropped columns for redundant columns should exceed 1."
     lastInd = len(model_coefs)-1
     # coefficients and dropped predictors (except the last one) should equal between the two models
