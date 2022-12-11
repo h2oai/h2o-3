@@ -9,7 +9,6 @@ import water.HeartBeat;
 import water.Key;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.PrettyPrint;
 
 import java.lang.reflect.Field;
@@ -19,7 +18,6 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static hex.gam.MatrixFrameUtils.GamUtils.copy2DArray;
 import static hex.genmodel.utils.MathUtils.combinatorial;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.*;
@@ -380,17 +378,15 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
          * https://h2oai.atlassian.net/browse/PUBDEV-8428
          */
         private int buildBackwardModels(ModelSelectionModel model) {
-            List<String> coefNames = new ArrayList<>(Arrays.asList(_predictorNames));
-            List<Integer> coefIndice = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList());
+            List<String> predNames = new ArrayList<>(Arrays.asList(_predictorNames));
             Frame train = DKV.getGet(_parms._train);
-            List<String> numPredNames = coefNames.stream().filter(x -> train.vec(x).isNumeric()).collect(Collectors.toList());
-            List<String> catPredNames = coefNames.stream().filter(x -> !numPredNames.contains(x)).collect(Collectors.toList());
+            List<String> numPredNames = predNames.stream().filter(x -> train.vec(x).isNumeric()).collect(Collectors.toList());
+            List<String> catPredNames = predNames.stream().filter(x -> !numPredNames.contains(x)).collect(Collectors.toList());
             int numModelsBuilt = 0;
-            String[] coefName = coefNames.toArray(new String[0]);
+            String[] coefName = predNames.toArray(new String[0]);
             for (int predNum = _numPredictors; predNum >= _parms._min_predictor_number; predNum--) {
                 int modelIndex = predNum-1;
-                int[] coefInd = coefIndice.stream().mapToInt(Integer::intValue).toArray();
-                Frame trainingFrame = generateOneFrame(coefInd, _parms, coefName, _foldColumn);
+                Frame trainingFrame = generateOneFrame(null, _parms, coefName, _foldColumn);
                 DKV.put(trainingFrame);
                 GLMModel.GLMParameters[] glmParam = generateGLMParameters(new Frame[]{trainingFrame}, _parms, 
                         _glmNFolds, _foldColumn, _foldAssignment);
@@ -399,10 +395,11 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
 
                 // evaluate which variable to drop for next round of testing and store corresponding values
                 // if p_values_threshold is specified, model building may stop
-                model._output.extractPredictors4NextModel(glmModel, modelIndex, coefNames, coefIndice, numPredNames, 
+                model._output.extractPredictors4NextModel(glmModel, modelIndex, predNames, numPredNames, 
                         catPredNames);
                 numModelsBuilt++;
                 DKV.remove(trainingFrame._key);
+                coefName = predNames.toArray(new String[0]);
                 _job.update(predNum, "Finished building all models with "+predNum+" predictors.");
                 if (_parms._p_values_threshold > 0) {   // check if p-values are used to stop model building
                     if (DoubleStream.of(model._output._coef_p_values[modelIndex])
@@ -410,6 +407,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                             .allMatch(x -> x <= _parms._p_values_threshold))
                         break;
                 }
+                if (predNames.size() == 0)    // no more predictors available to build models with
+                    break;
             }
             return numModelsBuilt;
         }
