@@ -83,9 +83,10 @@ public class ModelSelectionUtils {
                                          String foldColumn) {
         final Frame predVecs = new Frame(Key.make());
         final Frame train = parms.train();
-        int numPreds = predIndices.length;
+        boolean usePredIndices = predIndices != null;
+        int numPreds = usePredIndices? predIndices.length : predNames.length;
         for (int index = 0; index < numPreds; index++) {
-            int predVecNum = predIndices[index];
+            int predVecNum = usePredIndices ? predIndices[index] : index;
             predVecs.add(predNames[predVecNum], train.vec(predNames[predVecNum]));
         }
         if (parms._weights_column != null)
@@ -802,10 +803,8 @@ public class ModelSelectionUtils {
         
         // choose the min z-value from numerical and categorical predictors and return its index in predNames
         if (categoricalPred._minZVal >= 0 && categoricalPred._minZVal < numericalPred._minZVal) { // categorical pred has minimum z-value
-            catPredNames.remove(catPredNames.indexOf(categoricalPred._predName));
             return predNames.indexOf(categoricalPred._predName);
         } else {    // numerical pred has minimum z-value
-            numPredNames.remove(numPredNames.indexOf(numericalPred._predName));
             return predNames.indexOf(numericalPred._predName);
         }
     }
@@ -819,8 +818,8 @@ public class ModelSelectionUtils {
                 int eleInd = coeffNames.indexOf(predName);
                 double oneZValue = zValList.get(eleInd);
                 if (Double.isNaN(oneZValue)) {
-                    zValList.set(eleInd, 0.0);
-                    numZValues.add(0.0);    // NaN corresponds to coefficient of 0.0
+                    zValList.set(eleInd, Double.POSITIVE_INFINITY);
+                    numZValues.add(Double.POSITIVE_INFINITY);    // NaN corresponds to inactive predictors
                 } else {
                     numZValues.add(oneZValue);
                 }
@@ -847,25 +846,30 @@ public class ModelSelectionUtils {
         String catPredMinZ = null;
         if (catOffsets != null) {
             minCatVal = Double.MAX_VALUE;
-            int numCatCol = catOffsets.length-1;
+            int numCatCol = catOffsets.length - 1;
 
-            for (int catInd = 0; catInd < numCatCol; catInd++) {    // go through each categorical column
-                List<Double> catZValues = new ArrayList<>();
-                int nextCatOffset = catOffsets[catInd+1];
-                for (int eleInd = catOffsets[catInd]; eleInd < nextCatOffset; eleInd++) {   // check z-value for each level
-                    double oneZVal = zValList.get(eleInd);
-                    if (Double.isNaN(oneZVal)) {
-                        zValList.set(eleInd, 0.0);
-                        catZValues.add(0.0);
-                    } else {
-                        catZValues.add(oneZVal);
+            int numNaN = (int) zValList.stream().filter(x -> Double.isNaN(x)).count();
+            if (numNaN == zValList.size()) {    // if all levels are NaN, this predictor is redundant
+                new PredNameMinZVal(catPredMinZ, Double.POSITIVE_INFINITY);
+            } else {
+                for (int catInd = 0; catInd < numCatCol; catInd++) {    // go through each categorical column
+                    List<Double> catZValues = new ArrayList<>();
+                    int nextCatOffset = catOffsets[catInd + 1];
+                    for (int eleInd = catOffsets[catInd]; eleInd < nextCatOffset; eleInd++) {   // check z-value for each level
+                        double oneZVal = zValList.get(eleInd);
+                        if (Double.isNaN(oneZVal)) {    // one level is inactivity, let other levels be used
+                            zValList.set(eleInd, 0.0);
+                            catZValues.add(0.0);
+                        } else {
+                            catZValues.add(oneZVal);
+                        }
                     }
-                }
-                if (catZValues.size() > 0) {
-                    double oneCatMinZ = catZValues.stream().max(Double::compare).get(); // choose the best z-value here
-                    if (oneCatMinZ < minCatVal) {
-                        minCatVal = oneCatMinZ;
-                        catPredMinZ = columnNames[catInd];
+                    if (catZValues.size() > 0) {
+                        double oneCatMinZ = catZValues.stream().max(Double::compare).get(); // choose the best z-value here
+                        if (oneCatMinZ < minCatVal) {
+                            minCatVal = oneCatMinZ;
+                            catPredMinZ = columnNames[catInd];
+                        }
                     }
                 }
             }
@@ -891,16 +895,6 @@ public class ModelSelectionUtils {
                 coefUsed.add(coefName);
         }
         return coefUsed;
-    }
-    
-    public static void updateValidSubset(List<Integer> validSubset, List<Integer> originalSubset, 
-                                         List<Integer> currSubsetIndices) {
-        List<Integer> onlyInOriginal = new ArrayList<>(originalSubset);
-        onlyInOriginal.removeAll(currSubsetIndices);
-        List<Integer> onlyInCurr = new ArrayList<>(currSubsetIndices);
-        onlyInCurr.removeAll(originalSubset);
-        validSubset.addAll(onlyInOriginal);
-        validSubset.removeAll(onlyInCurr);
     }
 
     /***
