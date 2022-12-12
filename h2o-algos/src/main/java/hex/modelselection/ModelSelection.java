@@ -618,11 +618,43 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     hasIntercept, predPos, sweepIndicesRemovedPred, newAllSweepIndices);
             int[] newSweepIndices = extractSweepIndices(currSubsetIndices, predPos, subsetPred[predPos], predInd2CPMInd,
                     hasIntercept);
-            if (newSweepIndices.length == sweepIndicesRemovedPred.length)
+            SweepModel model = new SweepModel(subsetPred.clone(), null, null, 0);
+            genBestSweepVector(model, origCPM, predInd2CPMInd, hasIntercept);
+            if (newSweepIndices.length == sweepIndicesRemovedPred.length) {
                 updateCPMSV(bestModel, subsetCPM, newSweepIndices, newAllSweepIndices, sweepIndicesRemovedPred);
-            else
+                System.out.println("subset size "+subsetPred.length+" replacement pos "+predPos);
+                assertEqualSV(model._sweepVector, bestModel._sweepVector);
+                assertEqualCPM(model._CPM, bestModel._CPM);
+            } else
                 genBestSweepVector(bestModel, origCPM, predInd2CPMInd, hasIntercept);
             return bestModel;
+        }
+    }
+    
+    public static void assertEqualCPM(double[][] cpm1, double[][] cpm2) {
+        int len1 = cpm1.length;
+        for (int index=0; index<len1; index++) {
+            for (int index2=index; index2 < len1; index2++) {
+                boolean equalEle = (Math.abs(cpm1[index][index2]-cpm2[index][index2])/Math.max(1, Math.abs(cpm1[index][index2])))<1e-12;
+                if (!equalEle) {
+                    System.out.println("Element differ at row "+index+" column "+index2);
+                    throw new RuntimeException("first element "+cpm1[index][index2]+" second element "+cpm2[index][index2]);
+                }
+            }
+        }
+    }
+
+    public static void assertEqualSV(SweepVector[][] sv1, SweepVector[][] sv2) {
+        int svLen = sv1.length;
+        for (int index1=0; index1<svLen; index1++) {
+            int svLen2 = sv1[index1].length;
+        for (int index=0; index<svLen2; index++) {
+            boolean allEq = sv1[index1][index]._row == sv2[index1][index]._row &&  sv1[index1][index]._column == sv2[index1][index]._column && Math.abs(sv1[index1][index]._value - sv2[index1][index]._value) < 1e-12;
+            if (!allEq) {
+                System.out.println("sweep vector differe at sweepIndex "+index1+" and index "+index+" val1 "+sv1[index1][index]._value + " val2 "+sv2[index1][index]._value);
+                throw new RuntimeException("sweep vector values different!");
+            }
+        }
         }
     }
     
