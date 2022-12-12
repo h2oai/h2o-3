@@ -425,9 +425,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _bestCVSubmodel = 0;
       }
 
+      // set max_iteration
+      _parms._max_iterations = (int) Math.ceil(1 + // iter >= max_iter => stop; so +1 to be able to get to the same iteration value
+              Arrays.stream(cvModelBuilders)
+                      .mapToDouble(cv -> ((GLM) cv)._model._output._submodels[finalBestId].iteration)
+                      .filter(Double::isFinite)
+                      .max()
+                      .orElse(_parms._max_iterations)
+      );
     if (_parms._generate_scoring_history)
       generateCVScoringHistory(cvModelBuilders);
-    
+
     for (int i = 0; i < cvModelBuilders.length; ++i) {
       GLM g = (GLM) cvModelBuilders[i];
       GLMModel gm = g._model;
