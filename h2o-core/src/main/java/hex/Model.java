@@ -208,6 +208,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  public interface RowToTreeAssignment {
+
+    Frame rowToTreeAssignment(Frame frame, Key<Frame> destination_key, Job<Frame> j);
+  }
+
   public interface ExemplarMembers {
     Frame scoreExemplarMembers(Key<Frame> destination_key, int exemplarIdx);
   }
