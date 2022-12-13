@@ -22,10 +22,6 @@ import java.util.stream.Stream;
  * Single Decision Tree
  */
 public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel.SDTOutput> {
-    /**
-     * Max depth - parameter for building.
-     */
-    private int _maxDepth;
 
     /**
      * Minimum number of samples to split the set.
@@ -56,7 +52,6 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     public SDT(SDTModel.SDTParameters parameters) {
         super(parameters);
-        _maxDepth = parameters._maxDepth;
         _limitNumSamplesForSplit = parameters._limitNumSamplesForSplit;
         _nodesCount = 0;
         _tree = null;
@@ -188,7 +183,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         // compute node depth
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
         // stop building from this node, the node will be list
-        if ((nodeDepth >= _maxDepth)
+        if ((nodeDepth >= _parms._max_depth)
                 || (classesCount._1() <= _limitNumSamplesForSplit)
                 || (classesCount._2() <= _limitNumSamplesForSplit)
 //                || zeroRatio > 0.999 || zeroRatio < 0.001
@@ -280,7 +275,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
          */
         private void buildSDT() {
             buildSDTIteratively();
-            Log.debug("depth: " + _maxDepth + ", nodes count: " + _nodesCount);
+            Log.debug("depth: " + _parms._max_depth + ", nodes count: " + _nodesCount);
 
             CompressedSDT compressedSDT = new CompressedSDT(_tree);
 
@@ -288,6 +283,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             DKV.put(compressedSDT);
             _job.update(1);
             _model.update(_job);
+            System.out.println("Tree: " + compressedSDT.toString());
             Log.debug("Tree:");
             Log.debug(Arrays.deepToString(_tree));
         }
@@ -296,11 +292,12 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
          * Build the tree iteratively starting from the root node.
          */
         private void buildSDTIteratively() {
-            _tree = new double[(int) Math.pow(2, _maxDepth + 1)][2];
+            _tree = new double[(int) Math.pow(2, _parms._max_depth + 1)][2];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits(_train));
-            // build each node of the tree by picking limits from the queue and storing children's limits to the queue.
-            // Tree must not be perfect. Missing nodes are empty elements and their limits in queue are null.
+            // build iteratively each node of the tree (each cell of the array) by picking limits from the queue
+            // and storing children's limits to the queue.
+            // Tree will not be perfect. Missing nodes are empty elements and their limits in queue are null.
             for (int nodeIndex = 0; nodeIndex < _tree.length; nodeIndex++) {
                 buildNextNode(limitsQueue, nodeIndex);
             }

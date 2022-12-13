@@ -42,14 +42,14 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
     }
 
     public static class SDTOutput extends Model.Output {
-        public int _maxDepth;
+        public int _max_depth;
         public int _limitNumSamplesForSplit;
 
         public Key<CompressedSDT> _treeKey;
 
         public SDTOutput(SDT sdt) {
             super(sdt);
-            _maxDepth = sdt._parms._maxDepth;
+            _max_depth = sdt._parms._max_depth;
             _limitNumSamplesForSplit = sdt._parms._limitNumSamplesForSplit;
         }
 
@@ -78,13 +78,13 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
         /**
          * Depth (max depth) of the tree
          */
-        public int _maxDepth;
+        public int _max_depth;
 
         public int _limitNumSamplesForSplit;
 
         public SDTParameters() {
             super();
-            _maxDepth = 20;
+            _max_depth = 20;
             _limitNumSamplesForSplit = 10;
         }
 

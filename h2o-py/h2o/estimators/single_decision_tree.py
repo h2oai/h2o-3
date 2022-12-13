@@ -28,7 +28,7 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
                  ignore_const_cols=True,  # type: bool
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  response_column=None,  # type: Optional[str]
-                 max_depth=0,  # type: int
+                 max_depth=20,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -51,7 +51,7 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
                Defaults to ``None``.
         :type response_column: str, optional
         :param max_depth: Max depth of tree.
-               Defaults to ``0``.
+               Defaults to ``20``.
         :type max_depth: int
         """
         super(H2OSingleDecisionTreeEstimator, self).__init__()
@@ -139,7 +139,7 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
         """
         Max depth of tree.
 
-        Type: ``int``, defaults to ``0``.
+        Type: ``int``, defaults to ``20``.
         """
         return self._parms.get("max_depth")
 

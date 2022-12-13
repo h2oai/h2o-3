@@ -4,6 +4,9 @@ import org.apache.commons.math3.util.Precision;
 import water.Key;
 import water.Keyed;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 
 /**
  * Compressed SDT class containing tree as array.
@@ -47,6 +50,11 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
         } else {
             return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 2);
         }
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.stream(_nodes).map(n -> "(" + n[0] + "," + n[1] + ")").collect(Collectors.joining(";"));
     }
 
 }

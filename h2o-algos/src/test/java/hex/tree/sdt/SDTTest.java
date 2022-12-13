@@ -55,7 +55,7 @@ public class SDTTest extends TestUtil {
                     new SDTModel.SDTParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._maxDepth = 5;
+            p._max_depth = 5;
             p._limitNumSamplesForSplit = 2;
             p._response_column = "Prediction";
 
@@ -124,7 +124,7 @@ public class SDTTest extends TestUtil {
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p._maxDepth = 5;
+        p._max_depth = 5;
         p._response_column = "CAPSULE";
 
         DRFModel.DRFParameters p1 =
@@ -149,7 +149,7 @@ public class SDTTest extends TestUtil {
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p._maxDepth = 3;
+        p._max_depth = 3;
         p._response_column = "IsDepDelayed";
 
         DRFModel.DRFParameters p1 =
@@ -175,7 +175,7 @@ public class SDTTest extends TestUtil {
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p._maxDepth = 3;
+        p._max_depth = 3;
         p._response_column = "label";
 
         DRFModel.DRFParameters p1 =
@@ -199,7 +199,7 @@ public class SDTTest extends TestUtil {
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p._maxDepth = 5;
+        p._max_depth = 5;
         p._response_column = "Class";
 
         DRFModel.DRFParameters p1 =
@@ -223,7 +223,7 @@ public class SDTTest extends TestUtil {
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p._maxDepth = 5;
+        p._max_depth = 5;
         p._response_column = "label";
 
         DRFModel.DRFParameters p1 =
