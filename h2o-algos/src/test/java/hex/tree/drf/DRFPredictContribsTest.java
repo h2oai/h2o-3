@@ -172,7 +172,7 @@ public class DRFPredictContribsTest {
                 parms._distribution = bernoulli;
                 parms._response_column = "survived";
                 parms._ntrees = 5;
-                parms._max_depth = 4;
+                parms._max_depth = 8;
                 parms._min_rows = 1;
                 parms._nbins = 50;
                 parms._score_each_iteration = true;
@@ -194,7 +194,7 @@ public class DRFPredictContribsTest {
                 if (!Boolean.getBoolean("reproduce.PUBDEV-8264")) { // FIXME - works only by chance - fails on full data
                     options._fraction = 0.1;
                 }
-                options._abs_epsilon = 1e-7;
+                options._abs_epsilon = 1e-5;
                 assertTrue(drf.testJavaScoring(fr, predsFromContribs, 1e-5, options));
 
                 // Now test MOJO scoring
