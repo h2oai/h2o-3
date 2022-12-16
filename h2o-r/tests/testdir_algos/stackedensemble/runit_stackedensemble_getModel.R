@@ -49,7 +49,7 @@ stackedensemble.getModel.test <- function() {
   observed <- captureOutput(print(get_stack0))
 
   # Make sure we have model summary
-  expect_true(any(grepl("Number of Base Models", expected, fixed = TRUE)))
+  expect_true(any(grepl("Number of base models", expected, fixed = TRUE)))
   expect_equal(observed, expected)
 
 }

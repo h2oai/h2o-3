@@ -20,6 +20,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.ReflectionUtils;
+import water.util.TwoDimTable;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -691,6 +692,53 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       return preds;
     }
 
+    TwoDimTable generateModelSummary() {
+      HashMap<String, Integer> baseModelTypes = new HashMap<>();
+      HashMap<String, Integer> usedBaseModelTypes = new HashMap<>();
+
+      for (Key bmk : _model._parms._base_models) {
+        Model bm = (Model) bmk.get();
+        if (_model.isUsefulBaseModel(bmk))
+          usedBaseModelTypes.put(bm._parms.algoName(), usedBaseModelTypes.containsKey(bm._parms.algoName()) ? usedBaseModelTypes.get(bm._parms.algoName()) + 1 : 1);
+        baseModelTypes.put(bm._parms.algoName(), baseModelTypes.containsKey(bm._parms.algoName()) ? baseModelTypes.get(bm._parms.algoName()) + 1 : 1);
+      }
+      List<String> rowHeaders = new ArrayList<>();
+      List<String> rowValues = new ArrayList<>();
+      rowHeaders.add("Stacking strategy");
+      rowValues.add(_model._output._stacking_strategy.toString());
+      rowHeaders.add("Number of base models (used / total)");
+      rowValues.add(Arrays.stream(_model._parms._base_models).filter(_model::isUsefulBaseModel).count() + "/" + _model._parms._base_models.length);
+      for (Map.Entry<String, Integer> baseModelType : baseModelTypes.entrySet()) {
+        rowHeaders.add("# " + baseModelType.getKey() + " base models (used / total)");
+        rowValues.add(((usedBaseModelTypes.containsKey(baseModelType.getKey())) ?
+                usedBaseModelTypes.get(baseModelType.getKey()) : "0") + "/" + baseModelType.getValue());
+      }
+
+      // Metalearner
+      rowHeaders.add("Metalearner algorithm");
+      rowValues.add(_model._output._metalearner._parms.algoName());
+      rowHeaders.add("Metalearner fold assignment scheme");
+      rowValues.add(_model._output._metalearner._parms._fold_assignment == null ? "AUTO" : _model._output._metalearner._parms._fold_assignment.name());
+      rowHeaders.add("Metalearner nfolds");
+      rowValues.add(""+_model._output._metalearner._parms._nfolds);
+      rowHeaders.add("Metalearner fold_column");
+      rowValues.add(_model._output._metalearner._parms._fold_column);
+      rowHeaders.add("Custom metalearner hyperparameters");
+      rowValues.add(_model._parms._metalearner_params.isEmpty()? "None" : _model._parms._metalearner_params);
+
+      TwoDimTable ms = new TwoDimTable("Model Summary for Stacked Ensemble", "",
+              rowHeaders.toArray(new String[]{}),
+              new String[]{"Value"},
+              new String[]{"string"},
+              new String[]{"%s"},
+              "Key"
+              );
+      int i = 0;
+      for (String val : rowValues){
+        ms.set(i++, 0, val);
+      }
+      return ms;
+    }
     protected abstract StackedEnsembleModel.StackingStrategy strategy();
 
     /**
@@ -764,6 +812,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       }
       if (_model.evalAutoParamsEnabled && _model._parms._metalearner_algorithm == Metalearner.Algorithm.AUTO)
         _model._parms._metalearner_algorithm = metalearnerAlgoImpl;
+      _model._output._model_summary = generateModelSummary();
     } // computeImpl
   }
 
