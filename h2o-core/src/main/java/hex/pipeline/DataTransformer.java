@@ -23,6 +23,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
 
   public boolean _enabled = true;  // flag allowing to enable/disable transformers dynamically esp. in pipelines (can be used as a pipeline hyperparam in grids).
   private String _id;
+  private String _description;
   private AtomicInteger refCount = new AtomicInteger(0);
 
   protected DataTransformer() {
@@ -30,9 +31,14 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   }
   
   public DataTransformer(String id) {
-    _id = id == null ? getClass().getSimpleName().toLowerCase()+Key.rand() : id;
+    this(id, null);
   }
-  
+
+  public DataTransformer(String id, String description) {
+    _id = id == null ? getClass().getSimpleName().toLowerCase()+Key.rand() : id;
+    _description = description == null ? getClass().getSimpleName().toLowerCase() : description;
+  }
+
   @SuppressWarnings("unchecked")
   public SELF id(String id) {
     _id = id;
@@ -41,6 +47,16 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   
   public String id() {
     return _id;
+  }
+
+  @SuppressWarnings("unchecked")
+  public SELF description(String description) {
+    _description = description;
+    return (SELF) this;
+  }
+  
+  public String description() {
+    return _description;
   }
 
   @SuppressWarnings("unchecked")

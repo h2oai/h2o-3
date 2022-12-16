@@ -146,8 +146,8 @@ def gen_module(schema, algo, module):
                         "verbose",
                         "destination_key"] # destination_key is only for SVD
     bulk_params = list(zip(*filter(lambda t: not t[0] in bulk_pnames_skip, zip(sig_pnames, sig_params))))
-    bulk_pnames = list(bulk_params[0])
-    sig_bulk_params = list(bulk_params[1])
+    bulk_pnames = list(bulk_params[0]) if bulk_params else []
+    sig_bulk_params = list(bulk_params[1]) if bulk_params else []
     sig_bulk_params.append("segment_columns = NULL")
     sig_bulk_params.append("segment_models_id = NULL")
     sig_bulk_params.append("parallelism = 1")

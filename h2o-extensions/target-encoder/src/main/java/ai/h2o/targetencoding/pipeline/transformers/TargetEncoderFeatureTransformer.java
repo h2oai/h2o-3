@@ -26,6 +26,14 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
   }
 
   @Override
+  protected void prepareModelParams(PipelineContext context) {
+    super.prepareModelParams(context);
+    // TODO: future improvement: move some of the decision logic in `ai.h2o.automl.preprocessing.TargetEncoding` to this class
+    //  especially the logic related with the dynamic column selection based on cardinality.
+    //  By parametrizing this here, it allows us to consider parameters like `_columnCardinalityThreshold` as hyper-parameters in pipeline grids.
+  }
+
+  @Override
   protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     assert type != null;
     assert context != null || type == FrameType.Scoring;

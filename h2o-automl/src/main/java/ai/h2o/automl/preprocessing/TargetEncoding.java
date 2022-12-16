@@ -218,10 +218,14 @@ public class TargetEncoding implements PreprocessingStep {
               .filter(col -> !teColumns.contains(col) && !ArrayUtils.contains(keep, col))
               .toArray(String[]::new);
       if (_aml.isCVEnabled()) {
-        dts.add(new KFoldColumnGenerator().id("add_fold_column"));
+        dts.add(new KFoldColumnGenerator()
+                .id("add_fold_column")
+                .description("If cross-validation is enabled, generates (if needed) a fold column used by Target Encoder and for the final estimator"));
         teParams._data_leakage_handling = DataLeakageHandlingStrategy.KFold;
       }
-      dts.add(new TargetEncoderFeatureTransformer(teParams).id("default_TE"));
+      dts.add(new TargetEncoderFeatureTransformer(teParams)
+              .id("default_TE")
+              .description("Applies Target Encoding to selected categorical features"));
       return dts.toArray(new DataTransformer[0]);
     }
 
