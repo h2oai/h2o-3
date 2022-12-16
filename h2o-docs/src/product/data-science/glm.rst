@@ -563,7 +563,7 @@ The  negative log likelihood :math:`L(y_i,\mu_i)` function is:
 
 .. math::
 
-   L(y_i,\mu_i) = \frac{-1}{N} \sum^{N-1}_{i=0} \big(\log \big(\Gamma (y_i + \theta^{-1}) \big) - \log \big(\Gamma (\theta^{-1}) \big) - \log \big(\Gamma (y_i + 1) \big) + y_i \log(\theta \mu_i) - (y_i + \theta - 1) \log (1 + \theta \mu_i) \big)
+   ^\text{max}_{\beta,\beta_0} \bigg[ \frac{-1}{N} \sum_{i=1}^{N}  \bigg \{ \bigg( \sum_{j=0}^{y_i-1} \text{log}(j + \theta^{-1} ) \bigg) - \text{log} (\Gamma (y_i + 1)) - (y_i + \theta^{-1}) \text{log} (1 + \theta\mu_i) + y_i \text{log}(\mu_i) + y_i \text{log} (\theta) \bigg \} \bigg]
 
 The final penalized negative log likelihood is used to find the coefficients :math:`\beta, \beta_0` given a fixed :math:`\theta` value:
 
