@@ -2,14 +2,8 @@ package hex.schemas;
 
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
-import water.DKV;
-import water.Key;
-import water.Value;
 import water.api.API;
 import water.api.schemas3.FrameV3;
-import water.api.schemas3.KeyV3;
-import water.fvec.Frame;
-import water.util.PojoUtils;
 
 public class IsolationForestV3 extends SharedTreeV3<IsolationForest, IsolationForestV3, IsolationForestV3.IsolationForestParametersV3> {
 
