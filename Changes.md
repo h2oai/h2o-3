@@ -6,14 +6,18 @@
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html</a>
 
+#### Bug
+- [[PUBDEV-8916]](https://h2oai.atlassian.net/browse/PUBDEV-8916) - Fixed a ModelSelection replacement error stopping too early and implemented incremental forward step and incremental replacement step for numerical predictors.
+
 #### Task
+- [[PUBDEV-8935]](https://h2oai.atlassian.net/browse/PUBDEV-8935) -  Resolved hyperparameters amongst the algorithms.
 - [[PUBDEV-8927]](https://h2oai.atlassian.net/browse/PUBDEV-8927) - Removed redundant predictors found in `mode=“backward”` for ModelSelection
 
 #### Docs
 - [[PUBDEV-8929]](https://h2oai.atlassian.net/browse/PUBDEV-8929) - Added how users can force an unsupported Java version.
 - [[PUBDEV-8928]](https://h2oai.atlassian.net/browse/PUBDEV-8928) - Fixed broken links on the H2O Release page.
 - [[PUBDEV-8924]](https://h2oai.atlassian.net/browse/PUBDEV-8924) - Added information on how Isolation Forest and Extended Isolation Forest handle missing values.
-- [[PUBDEV-8919]](https://h2oai.atlassian.net/browse/PUBDEV-8919) - Removed outdated roadmap from readme file.
+- [[PUBDEV-8919]](https://h2oai.atlassian.net/browse/PUBDEV-8919) - Removed outdated roadmap from Readme file.
 
 ### Zygmund (3.38.0.3) - 11/23/2022
 
