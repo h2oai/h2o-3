@@ -150,7 +150,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Perform scoring for every score_iteration_interval iterations", level = Level.secondary)
     public int score_iteration_interval;
 
-    @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
+    @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical, gridable = true)
     public boolean standardize;
 
     @API(help = "Only applicable to multiple alpha/lambda values.  If false, build the next model for next set of " +
