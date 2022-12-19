@@ -7,14 +7,15 @@
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html</a>
 
 #### Bug
+- [[PUBDEV-8936]](https://h2oai.atlassian.net/browse/PUBDEV-8936) -  Fixed error in SHAP values report for DRF. 
 - [[PUBDEV-8916]](https://h2oai.atlassian.net/browse/PUBDEV-8916) - Fixed a ModelSelection replacement error stopping too early and implemented incremental forward step and incremental replacement step for numerical predictors.
 
 #### Task
-- [[PUBDEV-8935]](https://h2oai.atlassian.net/browse/PUBDEV-8935) -  Resolved hyperparameters amongst the algorithms.
-- [[PUBDEV-8927]](https://h2oai.atlassian.net/browse/PUBDEV-8927) - Removed redundant predictors found in `mode=“backward”` for ModelSelection
+- [[PUBDEV-8935]](https://h2oai.atlassian.net/browse/PUBDEV-8935) - Resolved hyperparameters amongst the algorithms.
+- [[PUBDEV-8927]](https://h2oai.atlassian.net/browse/PUBDEV-8927) - Removed redundant predictors found in `mode=“backward”` for ModelSelection.
 
 #### Docs
-- [[PUBDEV-8940]](https://h2oai.atlassian.net/browse/PUBDEV-8940): Fixed log likelihood of negative binomial for GLM.
+- [[PUBDEV-8940]](https://h2oai.atlassian.net/browse/PUBDEV-8940) - Fixed log likelihood of negative binomial for GLM.
 - [[PUBDEV-8929]](https://h2oai.atlassian.net/browse/PUBDEV-8929) - Added how users can force an unsupported Java version.
 - [[PUBDEV-8928]](https://h2oai.atlassian.net/browse/PUBDEV-8928) - Fixed broken links on the H2O Release page.
 - [[PUBDEV-8924]](https://h2oai.atlassian.net/browse/PUBDEV-8924) - Added information on how Isolation Forest and Extended Isolation Forest handle missing values.
