@@ -7,7 +7,7 @@
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html</a>
 
 #### Bug
-- [[PUBDEV-8936]](https://h2oai.atlassian.net/browse/PUBDEV-8936) -  Fixed error in SHAP values report for DRF. 
+- [[PUBDEV-8936]](https://h2oai.atlassian.net/browse/PUBDEV-8936) - Fixed error in SHAP values report for DRF. 
 - [[PUBDEV-8916]](https://h2oai.atlassian.net/browse/PUBDEV-8916) - Fixed a ModelSelection replacement error stopping too early and implemented incremental forward step and incremental replacement step for numerical predictors.
 
 #### Task
