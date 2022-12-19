@@ -9,6 +9,8 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.RegressionModelPrediction;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
 import water.test.util.NaiveTreeSHAP;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -27,237 +29,244 @@ import static hex.genmodel.utils.DistributionFamily.bernoulli;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 
-public class DRFPredictContribsTest extends TestUtil {
+/**
+ * @author Navdeep Gill
+ */
+@RunWith(Enclosed.class)
+public class DRFPredictContribsTest {
 
-    @BeforeClass
-    public static void stall() {
-        stall_till_cloudsize(1);
-    }
+    public static class DRFPredictContribsNormalTest extends TestUtil {
 
-    @Test
-    public void testPredictContribsGaussian() {
-        try {
-            Scope.enter();
-            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
-            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-            parms._train = fr._key;
-            parms._distribution = gaussian;
-            parms._response_column = "age";
-            parms._ntrees = 5;
-            parms._max_depth = 4;
-            parms._min_rows = 1;
-            parms._nbins = 50;
-            parms._score_each_iteration = true;
-            parms._seed = 42;
-
-            DRF job = new DRF(parms);
-            DRFModel drf = job.trainModel().get();
-            Scope.track_generic(drf);
-
-            Frame adapted = new Frame(fr);
-            drf.adaptTestForTrain(adapted, true, false);
-
-            for (int i = 0; i < parms._ntrees; i++) {
-                new hex.tree.drf.DRFPredictContribsTest.CheckTreeSHAPTask(drf, i).doAll(adapted);
-            }
-        } finally {
-            Scope.exit();
+        @BeforeClass
+        public static void stall() {
+            stall_till_cloudsize(1);
         }
-    }
 
-    @Test
-    public void testScoreContributionsGaussian() throws IOException, PredictException {
-        try {
-            Scope.enter();
-            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
-            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-            parms._train = fr._key;
-            parms._distribution = gaussian;
-            parms._response_column = "age";
-            parms._ntrees = 5;
-            parms._max_depth = 4;
-            parms._min_rows = 1;
-            parms._nbins = 50;
-            parms._score_each_iteration = true;
-            parms._seed = 42;
+        @Test
+        public void testPredictContribsGaussian() {
+            try {
+                Scope.enter();
+                Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+                DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+                parms._train = fr._key;
+                parms._distribution = gaussian;
+                parms._response_column = "age";
+                parms._ntrees = 5;
+                parms._max_depth = 4;
+                parms._min_rows = 1;
+                parms._nbins = 50;
+                parms._score_each_iteration = true;
+                parms._seed = 42;
 
-            DRF job = new DRF(parms);
-            DRFModel drf = job.trainModel().get();
-            Scope.track_generic(drf);
+                DRF job = new DRF(parms);
+                DRFModel drf = job.trainModel().get();
+                Scope.track_generic(drf);
 
-            Frame contributions = drf.scoreContributions(fr, Key.<Frame>make("contributions_regression_titanic"));
-            Scope.track(contributions);
+                Frame adapted = new Frame(fr);
+                drf.adaptTestForTrain(adapted, true, false);
 
-            Frame contribsAggregated = new DRFPredictContribsTest.RowSumTask()
-                    .doAll(Vec.T_NUM, contributions)
-                    .outputFrame(null, new String[]{"predict"}, null);
-            Scope.track(contribsAggregated);
-            
-            assertTrue(drf.testJavaScoring(fr, contribsAggregated, 1e-5));
-
-            // Now test MOJO scoring
-            EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
-                    .setModel(drf.toMojo())
-                    .setEnableContributions(true);
-            EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
-            assertArrayEquals(contributions.names(), wrapper.getContributionNames());
-
-            for (long row = 0; row < fr.numRows(); row++) {
-                RowData rd = toRowData(fr, drf._output._names, row);
-                RegressionModelPrediction pr = wrapper.predictRegression(rd);
-                for (int c = 0; c < contributions.numCols(); c++) {
-                    assertArrayEquals("Contributions should match, row=" + row,
-                            toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+                for (int i = 0; i < parms._ntrees; i++) {
+                    new hex.tree.drf.DRFPredictContribsTest.CheckTreeSHAPTask(drf, i).doAll(adapted);
                 }
+            } finally {
+                Scope.exit();
             }
-        } finally {
-            Scope.exit();
         }
-    }
 
-    @Test
-    public void testPredictContribsBinomial() {
-        try {
-            Scope.enter();
-            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
-            int ci = fr.find("survived"); // Change survived to categorical
-            fr.toCategoricalCol(ci);
-            
-            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-            
-            parms._train = fr._key;
-            parms._distribution = bernoulli;
-            parms._response_column = "survived";
-            parms._ntrees = 5;
-            parms._max_depth = 4;
-            parms._min_rows = 1;
-            parms._nbins = 50;
-            parms._score_each_iteration = true;
-            parms._seed = 42;
+        @Test
+        public void testScoreContributionsGaussian() throws IOException, PredictException {
+            try {
+                Scope.enter();
+                Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+                DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+                parms._train = fr._key;
+                parms._distribution = gaussian;
+                parms._response_column = "age";
+                parms._ntrees = 5;
+                parms._max_depth = 4;
+                parms._min_rows = 1;
+                parms._nbins = 50;
+                parms._score_each_iteration = true;
+                parms._seed = 42;
 
-            DRF job = new DRF(parms);
-            DRFModel drf = job.trainModel().get();
-            Scope.track_generic(drf);
+                DRF job = new DRF(parms);
+                DRFModel drf = job.trainModel().get();
+                Scope.track_generic(drf);
 
-            Frame adapted = new Frame(fr);
-            drf.adaptTestForTrain(adapted, true, false);
+                Frame contributions = drf.scoreContributions(fr, Key.<Frame>make("contributions_regression_titanic"));
+                Scope.track(contributions);
 
-            for (int i = 0; i < parms._ntrees; i++) {
-                new hex.tree.drf.DRFPredictContribsTest.CheckTreeSHAPTask(drf, i).doAll(adapted);
-            }
-        } finally {
-            Scope.exit();
-        }
-    }
+                Frame contribsAggregated = new DRFPredictContribsTest.RowSumTask()
+                        .doAll(Vec.T_NUM, contributions)
+                        .outputFrame(null, new String[]{"predict"}, null);
+                Scope.track(contribsAggregated);
 
-    @Test
-    public void testScoreContributionsBinomial() throws IOException, PredictException {
-        try {
-            Scope.enter();
-            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
-            int ci = fr.find("survived"); // Change survived to categorical
-            fr.toCategoricalCol(ci);
-            
-            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-            
-            parms._train = fr._key;
-            parms._distribution = bernoulli;
-            parms._response_column = "survived";
-            parms._ntrees = 5;
-            parms._max_depth = 4;
-            parms._min_rows = 1;
-            parms._nbins = 50;
-            parms._score_each_iteration = true;
-            parms._seed = 42;
+                assertTrue(drf.testJavaScoring(fr, contribsAggregated, 1e-5));
 
-            DRF job = new DRF(parms);
-            DRFModel drf = job.trainModel().get();
-            Scope.track_generic(drf);
+                // Now test MOJO scoring
+                EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
+                        .setModel(drf.toMojo(true))
+                        .setEnableContributions(true);
+                EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+                assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
-            Frame contributions = drf.scoreContributions(fr, Key.<Frame>make("contributions_binomial_titanic"));
-            Scope.track(contributions);
-
-            Frame predsFromContribs = new DRFPredictContribsTest.BinomAggregateTask()
-                    .doAll(new byte[]{Vec.T_CAT, Vec.T_NUM, Vec.T_NUM}, contributions)
-                    .outputFrame(null, new String[]{"predict", "p0", "p1"}, new String[][]{new String[]{"0", "1"}, null, null});
-            Scope.track(predsFromContribs);
-
-            Model.JavaScoringOptions options = new Model.JavaScoringOptions();
-            if (!Boolean.getBoolean("reproduce.PUBDEV-8264")) { // FIXME - works only by chance - fails on full data
-                options._fraction = 0.1;
-            }
-            options._abs_epsilon = 1e-7;
-            assertTrue(drf.testJavaScoring(fr, predsFromContribs, 1e-5, options));
-
-            // Now test MOJO scoring
-            EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
-                    .setModel(drf.toMojo())
-                    .setEnableContributions(true);
-            EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
-            assertArrayEquals(contributions.names(), wrapper.getContributionNames());
-
-            for (long row = 0; row < fr.numRows(); row++) {
-                RowData rd = toRowData(fr, drf._output._names, row);
-                BinomialModelPrediction pr = wrapper.predictBinomial(rd);
-                for (int c = 0; c < contributions.numCols(); c++) {
-                    assertArrayEquals("Contributions should match, row=" + row,
-                            toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+                for (long row = 0; row < fr.numRows(); row++) {
+                    RowData rd = toRowData(fr, drf._output._names, row);
+                    RegressionModelPrediction pr = wrapper.predictRegression(rd);
+                    for (int c = 0; c < contributions.numCols(); c++) {
+                        assertArrayEquals("Contributions should match, row=" + row,
+                                toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+                    }
                 }
+            } finally {
+                Scope.exit();
             }
-        } finally {
-            Scope.exit();
         }
-    }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testScoreContributionsBinomialDoubleTreesFail() {
-        try {
-            Scope.enter();
-            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
-            fr.toCategoricalCol("survived");
+        @Test
+        public void testPredictContribsBinomial() {
+            try {
+                Scope.enter();
+                Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+                int ci = fr.find("survived"); // Change survived to categorical
+                fr.toCategoricalCol(ci);
 
-            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+                DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
 
-            parms._train = fr._key;
-            parms._response_column = "survived";
-            parms._ntrees = 1;
-            parms._max_depth = 4;
-            parms._binomial_double_trees = true;
-            parms._seed = 42;
+                parms._train = fr._key;
+                parms._distribution = bernoulli;
+                parms._response_column = "survived";
+                parms._ntrees = 5;
+                parms._max_depth = 4;
+                parms._min_rows = 1;
+                parms._nbins = 50;
+                parms._score_each_iteration = true;
+                parms._seed = 42;
 
-            DRF job = new DRF(parms);
-            DRFModel drf = job.trainModel().get();
-            Scope.track_generic(drf);
+                DRF job = new DRF(parms);
+                DRFModel drf = job.trainModel().get();
+                Scope.track_generic(drf);
 
-            drf.scoreContributions(fr, Key.make("contributions_binomial_titanic"));
-        } finally {
-            Scope.exit();
+                Frame adapted = new Frame(fr);
+                drf.adaptTestForTrain(adapted, true, false);
+
+                for (int i = 0; i < parms._ntrees; i++) {
+                    new hex.tree.drf.DRFPredictContribsTest.CheckTreeSHAPTask(drf, i).doAll(adapted);
+                }
+            } finally {
+                Scope.exit();
+            }
         }
-    }
 
-    @Test(expected = IOException.class)
-    public void testScoreContributionsBinomialDoubleTreesMojoFail() throws IOException {
-        try {
-            Scope.enter();
-            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
-            fr.toCategoricalCol("survived");
+        @Test
+        public void testScoreContributionsBinomial() throws IOException, PredictException {
+            try {
+                Scope.enter();
+                Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+                int ci = fr.find("survived"); // Change survived to categorical
+                fr.toCategoricalCol(ci);
 
-            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+                DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
 
-            parms._train = fr._key;
-            parms._response_column = "survived";
-            parms._ntrees = 1;
-            parms._max_depth = 4;
-            parms._binomial_double_trees = true;
-            parms._seed = 42;
+                parms._train = fr._key;
+                parms._distribution = bernoulli;
+                parms._response_column = "survived";
+                parms._ntrees = 5;
+                parms._max_depth = 4;
+                parms._min_rows = 1;
+                parms._nbins = 50;
+                parms._score_each_iteration = true;
+                parms._seed = 42;
 
-            DRFModel drf = Scope.track_generic(new DRF(parms).trainModel().get());
+                DRF job = new DRF(parms);
+                DRFModel drf = job.trainModel().get();
+                Scope.track_generic(drf);
 
-            new EasyPredictModelWrapper.Config()
-                    .setModel(drf.toMojo())
-                    .setEnableContributions(true);
-        } finally {
-            Scope.exit();
+                Frame contributions = drf.scoreContributions(fr, Key.<Frame>make("contributions_binomial_titanic"));
+                Scope.track(contributions);
+
+                Frame predsFromContribs = new DRFPredictContribsTest.BinomAggregateTask()
+                        .doAll(new byte[]{Vec.T_CAT, Vec.T_NUM, Vec.T_NUM}, contributions)
+                        .outputFrame(null, new String[]{"predict", "p0", "p1"}, new String[][]{new String[]{"0", "1"}, null, null});
+                Scope.track(predsFromContribs);
+
+                Model.JavaScoringOptions options = new Model.JavaScoringOptions();
+                if (!Boolean.getBoolean("reproduce.PUBDEV-8264")) { // FIXME - works only by chance - fails on full data
+                    options._fraction = 0.1;
+                }
+                options._abs_epsilon = 1e-7;
+                assertTrue(drf.testJavaScoring(fr, predsFromContribs, 1e-5, options));
+
+                // Now test MOJO scoring
+                EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
+                        .setModel(drf.toMojo(true))
+                        .setEnableContributions(true);
+                EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+                assertArrayEquals(contributions.names(), wrapper.getContributionNames());
+
+                for (long row = 0; row < fr.numRows(); row++) {
+                    RowData rd = toRowData(fr, drf._output._names, row);
+                    BinomialModelPrediction pr = wrapper.predictBinomial(rd);
+                    for (int c = 0; c < contributions.numCols(); c++) {
+                        assertArrayEquals("Contributions should match, row=" + row,
+                                toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+                    }
+                }
+            } finally {
+                Scope.exit();
+            }
+        }
+
+        @Test(expected = UnsupportedOperationException.class)
+        public void testScoreContributionsBinomialDoubleTreesFail() {
+            try {
+                Scope.enter();
+                Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+                fr.toCategoricalCol("survived");
+
+                DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+
+                parms._train = fr._key;
+                parms._response_column = "survived";
+                parms._ntrees = 1;
+                parms._max_depth = 4;
+                parms._binomial_double_trees = true;
+                parms._seed = 42;
+
+                DRF job = new DRF(parms);
+                DRFModel drf = job.trainModel().get();
+                Scope.track_generic(drf);
+
+                drf.scoreContributions(fr, Key.make("contributions_binomial_titanic"));
+            } finally {
+                Scope.exit();
+            }
+        }
+
+        @Test(expected = IOException.class)
+        public void testScoreContributionsBinomialDoubleTreesMojoFail() throws IOException {
+            try {
+                Scope.enter();
+                Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+                fr.toCategoricalCol("survived");
+
+                DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+
+                parms._train = fr._key;
+                parms._response_column = "survived";
+                parms._ntrees = 1;
+                parms._max_depth = 4;
+                parms._binomial_double_trees = true;
+                parms._seed = 42;
+
+                DRFModel drf = Scope.track_generic(new DRF(parms).trainModel().get());
+
+                new EasyPredictModelWrapper.Config()
+                        .setModel(drf.toMojo())
+                        .setEnableContributions(true);
+            } finally {
+                Scope.exit();
+            }
         }
     }
 
