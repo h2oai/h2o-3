@@ -120,8 +120,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
             if (_output.nclasses() == 1) { //Regression
                 nc[i].addNum(contribs[i] /_output._ntrees);
             } else { //Binomial
-                float featurePlusBiasRatio = (float)1 / (_output.nfeatures() + 1); // + 1 for bias term
-                nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _output._ntrees));
+              float featurePlusBiasRatio = (float)1 / (_output._varimp.numberOfUsedVariables() + 1); // + 1 for bias term
+              nc[i].addNum(contribs[i] != 0 ? (featurePlusBiasRatio - (contribs[i] / _output._ntrees)) : 0);
             }
         }
     }

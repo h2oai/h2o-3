@@ -62,4 +62,14 @@ public class VariableImportances implements Serializable {
         });
         return Arrays.copyOfRange(sortedImportances, 0, n);
     }
+
+    public int numberOfUsedVariables() {
+        int numberOfUsedVariables = 0;
+        for (double importance : _importances) {
+            if (importance != 0) {
+                numberOfUsedVariables++;
+            }
+        }
+        return numberOfUsedVariables;
+    }
 }
