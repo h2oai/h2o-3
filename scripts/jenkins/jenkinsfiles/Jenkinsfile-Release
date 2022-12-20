@@ -539,8 +539,8 @@ EOF
 
                 if (params.BUILD_H2O_DOCKER) {
                     def assemblies = [
-                        main: "open-source",
-                        steam: "steam"
+                        main: "h2o-open-source-k8s",
+                        steam: "h2o-open-source-k8s-minimal"
                     ]
                     assemblies.each { assemblyName, imageType ->
                         def BUILD_H2O_DOCKER_STAGE_NAME = "Build H2O Docker container (${imageType})"
@@ -556,7 +556,7 @@ EOF
                                       ]) {
                                     env["H2O_ASSEMBLY"] = assemblyName
                                     if (params.TEST_RELEASE) {
-                                        env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-${imageType}-k8s-test"
+                                        env["DOCKER_IMAGE_NAME"] = "opsh2oai/${imageType}-test"
                                         // Test release goes to opsh2oai namespace
                                         env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
                                         // the most recent test build is always latest
@@ -567,7 +567,7 @@ EOF
                                           make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
                                         """
                                     } else {
-                                        env["DOCKER_IMAGE_NAME"] = "h2oai/h2o-${imageType}-k8s"
+                                        env["DOCKER_IMAGE_NAME"] = "h2oai/${imageType}"
                                         // Normal releases go to h2oai/ namespace
                                         if (env.NIGHTLY_BUILD) {
                                             // If the build is not a test build and is nightly, then re-write the latest nightly
