@@ -199,14 +199,14 @@ def wait_on_master():
                 break
         except requests.exceptions.ConnectionError:
             counter += 1
-            if at_least_one_true or counter > 10:
+            if at_least_one_true or counter > 100:
                 break
-        time.sleep(10)
+        time.sleep(1)
 
 
 def wait_for_cluster_to_be_formed(resource_params):
     cluster_up = False
-    for try_number in range(10):
+    for try_number in range(100):
         all_nodes_running = []
         for host in resource_params["hosts"]:
             try:
@@ -218,13 +218,12 @@ def wait_for_cluster_to_be_formed(resource_params):
         if cluster_up:
             break
         else:
-            time.sleep(10)
+            time.sleep(1)
     if not cluster_up:
         raise ConnectionError("Cluster cannot start because of unknown reason")
 
 
 def main():
-    print("New version 5")
     hyperparameters, resource_params = helper_functions._get_parameters()
     helper_functions._create_h2o_cluster(resource_params)
     if resource_params["current_host"] == "algo-1":
