@@ -187,24 +187,53 @@ def _train_model(hyperparameters={}):
         sys.exit(255)
 
 
+def wait_on_master():
+    print("Wait till the algo-1 finish training")
+    at_least_one_true = False
+    counter = 0
+    while True:
+        try:
+            r = requests.get("http://algo-1:54321")
+            at_least_one_true = r.ok
+            if not r.ok:
+                break
+        except requests.exceptions.ConnectionError:
+            counter += 1
+            if at_least_one_true or counter > 10:
+                break
+        time.sleep(10)
+
+
+def wait_for_cluster_to_be_formed(resource_params):
+    cluster_up = False
+    for try_number in range(10):
+        all_nodes_running = []
+        for host in resource_params["hosts"]:
+            try:
+                r = requests.get(f"http://{host}:54321")
+                all_nodes_running.append(r.ok)
+            except requests.exceptions.ConnectionError:
+                all_nodes_running.append(False)
+        cluster_up = all(item is True for item in all_nodes_running)
+        if cluster_up:
+            break
+        else:
+            time.sleep(10)
+    if not cluster_up:
+        raise ConnectionError("Cluster cannot start because of unknown reason")
+
+
 def main():
+    print("New version 5")
     hyperparameters, resource_params = helper_functions._get_parameters()
     helper_functions._create_h2o_cluster(resource_params)
-    time.sleep(20)
     if resource_params["current_host"] == "algo-1":
+        wait_for_cluster_to_be_formed(resource_params)
         _connect_to_cluster()
         _train_model(hyperparameters)
         h2o.cluster().shutdown()
     else:
-        print("Wait till the algo-1 finish training")
-        while True:
-            try:
-                r = requests.get("http://algo-1:54321")
-                if r.status_code != 200:
-                    break
-                time.sleep(10)
-            except requests.exceptions.ConnectionError:
-                break
+        wait_on_master()
         print("Finished")
 
 
