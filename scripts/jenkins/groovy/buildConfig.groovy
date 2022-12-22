@@ -175,11 +175,11 @@ class BuildConfig {
     def jobProperties = [
       context.buildDiscarder(context.logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '25'))
     ]
-    if (context.env.BRANCH_NAME.startsWith('PR')) {
-      jobProperties += context.parameters([
-        context.booleanParam(name: 'executeFailedOnly', defaultValue: false, description: 'If checked, execute only failed stages')
-      ])
-    }
+
+    jobProperties += context.parameters([
+      context.booleanParam(name: 'executeFailedOnly', defaultValue: false, description: 'If checked, execute only failed stages')
+    ])
+    
     if (customProperties != null) {
       jobProperties += customProperties
     }
