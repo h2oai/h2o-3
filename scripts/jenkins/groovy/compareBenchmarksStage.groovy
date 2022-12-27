@@ -4,18 +4,18 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'gbm': [
             'paribas': [
                 50: [
-                    'train_time_min':  7,
+                    'train_time_min':  5,
                     'train_time_max': 10
                 ],
                 200: [
-                    'train_time_min': 29,
+                    'train_time_min': 26,
                     'train_time_max': 32
                 ]
             ],
             'homesite': [
                 50: [
                     'train_time_min': 8,
-                    'train_time_max': 10
+                    'train_time_max': 11
                 ],
                 200: [
                     'train_time_min': 35,
@@ -24,11 +24,11 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'redhat': [
                 50: [
-                    'train_time_min': 23,
+                    'train_time_min': 21,
                     'train_time_max': 26
                 ],
                 200: [
-                    'train_time_min': 104,
+                    'train_time_min': 90,
                     'train_time_max': 110
                 ]
             ],
@@ -39,16 +39,16 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ],
                 200: [
                     'train_time_min': 475,
-                    'train_time_max': 510
+                    'train_time_max': 568
                 ]
             ],
             'higgs': [
                 50: [
-                    'train_time_min': 73,
-                    'train_time_max': 76
+                    'train_time_min': 72,
+                    'train_time_max': 77
                 ],
                 200: [
-                    'train_time_min': 370,
+                    'train_time_min': 345,
                     'train_time_max': 390
                 ]
             ]
@@ -142,7 +142,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 65
                 ],
                 IRLSM: [
-                    'train_time_min': 159,
+                    'train_time_min': 150,
                     'train_time_max': 173
                 ]
             ]
@@ -150,7 +150,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'xgb': [
             'airlines-1m': [
                 [100, "cpu"]: [
-                    'train_time_min': 8,
+                    'train_time_min': 6,
                     'train_time_max': 15
                 ],
                 [100, "ext"]: [
@@ -172,17 +172,17 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 73
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 31,
+                    'train_time_min': 28,
                     'train_time_max': 52
                 ]
             ],
             'higgs': [
                 [100, "cpu"]: [
-                    'train_time_min': 91,
+                    'train_time_min': 55,
                     'train_time_max': 94
                 ],
                 [100, "ext"]: [
-                    'train_time_min': 93,
+                    'train_time_min': 90,
                     'train_time_max': 100
                 ],
                 [100, "gpu"]: [
@@ -257,7 +257,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'fileSize10millionRows2ColsallxyTF': [
                 [10000000, 2]: [
                     'train_time_min': 4,
-                    'train_time_max': 9
+                    'train_time_max': 10
                 ]
             ],
             'fileSize100millionRows2ColsallxyFF': [
@@ -269,14 +269,14 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'fileSize10millionRows2ColsallxyFF': [
                 [10000000, 2]: [
                     'train_time_min': 4,
-                    'train_time_max': 9
+                    'train_time_max': 10
                 ]
             ]
         ],
         'sort': [
             'fileSize100millionRows2Cols': [
                 [100000000, 2]: [
-                    'train_time_min': 9,
+                    'train_time_min': 8,
                     'train_time_max': 14
                 ]
             ],
@@ -290,32 +290,32 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'rulefit': [
             'redhat': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 307,
-                        'train_time_max': 330
+                        'train_time_min': 40,
+                        'train_time_max': 50
                 ]
             ],
             'homesite': [
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 9,
-                        'train_time_max': 12
+                        'train_time_max': 15
                 ]
             ],
             'springleaf': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 81,
-                        'train_time_max': 84
+                        'train_time_min': 90,
+                        'train_time_max': 96
                 ]
             ],
             'paribas': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 4,
-                        'train_time_max': 6
+                        'train_time_min': 11,
+                        'train_time_max': 16
                 ]
             ],
             'higgs': [
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 22,
-                        'train_time_max': 25
+                        'train_time_max': 27
                 ]
             ]
         ]    

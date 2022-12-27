@@ -12,7 +12,6 @@ def test_maxrsweep_replacement():
                           ["C78","C97","C75","C76","C88","C89","C7","C86",'Intercept'],
                           ["C78","C97","C75","C76","C88","C89","C7","C86","C101",'Intercept'],
                           ["C78","C97","C75","C76","C88","C89","C7","C86","C101","C4",'Intercept']]
-    #train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/model_selection/maxrglm200Cols50KRows.csv")
     train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/model_selection/maxrglm200Cols50KRows.csv"))
     response="response"
     predictors = train.names

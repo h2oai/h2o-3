@@ -11,7 +11,10 @@ import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -328,6 +331,15 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
             updateAddedRemovedPredictors(index);
         }
 
+        void extractCoeffs(GLMModel model, int index) {
+            _coefficient_names[index] = model._output.coefficientNames().clone(); // all coefficients
+            ArrayList<String> coeffNames = new ArrayList<>(Arrays.asList(model._output.coefficientNames()));
+            _coefficient_names[index] = coeffNames.toArray(new String[0]); // without intercept
+            List<String> predNames = Stream.of(model.names()).collect(Collectors.toList());
+            predNames.remove(model._parms._response_column);
+            _best_predictors_subset[index] = predNames.stream().toArray(String[]::new);
+        }
+
         void updateBestModels(String[] predictorNames, List<String> allCoefNames, int index, boolean hasIntercept, 
                               int actualCPMSize, int[] predsubset, double[][] lastCPM, double r2Scale, 
                               CoeffNormalization coeffN, int[][] pred2CPMIndex, DataInfo dinfo) {
@@ -453,28 +465,88 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
             _predictors_added_per_step[index] = new String[]{""};
         }
 
-        void extractCoeffs(GLMModel model, int index) {
-            _coefficient_names[index] = model._output.coefficientNames().clone(); // all coefficients
-            ArrayList<String> coeffNames = new ArrayList<>(Arrays.asList(model._output.coefficientNames()));
-            _coefficient_names[index] = coeffNames.toArray(new String[0]); // without intercept
-            List<String> predNames = Stream.of(model.names()).collect(Collectors.toList());
-            predNames.remove(model._parms._response_column);
-            _best_predictors_subset[index] = predNames.stream().toArray(String[]::new);
+        /**
+         * Method to remove redundant predictors at the beginning of backward method.
+         */
+        void resetCoeffs(GLMModel model, List<String> predNames, List<String> numPredNames, List<String> catPredNames) {
+            final String[] coeffName = model._output.coefficientNames();
+            int[] idxs = model._output.bestSubmodel().idxs;
+            if (idxs == null) // no redundant predictors
+                return;
+            List<String> coeffNames = Arrays.stream(idxs).mapToObj(x -> coeffName[x]).collect(Collectors.toList());
+            resetAllPreds(predNames, catPredNames, numPredNames, model, coeffNames); // remove redundant preds
+        }
+        
+        void resetAllPreds(List<String> predNames, List<String> catPredNames, List<String> numPredNames, 
+                           GLMModel model, List<String> coeffNames) {
+            if (model._output.bestSubmodel().idxs.length == model.coefficients().size())  // no redundant predictors
+                return;
+            resetNumPredNames(numPredNames, coeffNames);
+            resetCatPredNames(model.dinfo(), model._output.bestSubmodel().idxs, catPredNames);
+            if (predNames.size() > (numPredNames.size() + catPredNames.size())) {
+                predNames.clear();
+                predNames.addAll(catPredNames);
+                predNames.addAll(numPredNames);
+            }
+        }
+        
+        public void resetNumPredNames(List<String> numPredNames, List<String> coeffNames) {
+            List<String> newNumPredNames = numPredNames.stream().filter(x -> coeffNames.contains(x)).collect(Collectors.toList());
+            numPredNames.clear();
+            numPredNames.addAll(newNumPredNames);
+        }
+        
+        public void resetCatPredNames(DataInfo dinfo, int[] idxs, List<String> catPredNames) {
+            List<String> newCatPredNames = new ArrayList<>();
+            List<Integer> idxsList = Arrays.stream(idxs).boxed().collect(Collectors.toList());
+            int[] catOffset = dinfo._catOffsets;
+            int catIndex = catOffset.length;
+            int maxCatOffset = catOffset[catIndex-1];
+            for (int index=1; index<catIndex; index++) {
+                int offsetedIndex = index-1;
+                List<Integer> currCatList = IntStream.range(catOffset[offsetedIndex], catOffset[index]).boxed().collect(Collectors.toList());
+                if (currCatList.stream().filter(x -> idxsList.contains(x)).count() > 0 && currCatList.get(currCatList.size()-1) < maxCatOffset) {
+                    newCatPredNames.add(catPredNames.get(offsetedIndex));
+                }
+            }
+            if (newCatPredNames.size() < catPredNames.size()) {
+                catPredNames.clear();
+                catPredNames.addAll(newCatPredNames);
+            }
         }
 
         /***
          * Eliminate predictors with lowest z-value (z-score) magnitude as described in III of 
          * ModelSelectionTutorial.pdf in https://h2oai.atlassian.net/browse/PUBDEV-8428
          */
-        void extractPredictors4NextModel(GLMModel model, int index, List<String> predNames, List<Integer> predIndices,
-                                         List<String> numPredNames, List<String> catPredNames) {
+        void extractPredictors4NextModel(GLMModel model, int index, List<String> predNames, List<String> numPredNames, 
+                                         List<String> catPredNames) {
+            boolean firstRun = (index+1) == predNames.size();
+            List<String> oldPredNames = firstRun ? new ArrayList<>(predNames) : null;
             extractCoeffs(model, index);
-            _best_model_ids[index] = model.getKey();
             int predIndex2Remove = findMinZValue(model, numPredNames, catPredNames, predNames);
-            _predictors_removed_per_step[index] = new String[] {predNames.get(predIndex2Remove)};
-            predIndices.remove(predIndices.indexOf(predIndex2Remove));
+            String pred2Remove = predNames.get(predIndex2Remove);
+            if (firstRun) // remove redundant predictors if present
+                resetCoeffs(model, predNames, numPredNames, catPredNames);
+            List<String> redundantPred = firstRun ? 
+                    oldPredNames.stream().filter(x -> !predNames.contains(x)).collect(Collectors.toList()) : null;
+            _best_model_ids[index] = model.getKey();
+
+            if (redundantPred != null && redundantPred.size() > 0) {
+                redundantPred = redundantPred.stream().map(x -> x+"(redundant_predictor)").collect(Collectors.toList());
+                redundantPred.add(pred2Remove);
+                _predictors_removed_per_step[index] = redundantPred.stream().toArray(String[]::new);
+            } else {
+                _predictors_removed_per_step[index] = new String[]{pred2Remove};
+            }
+
             _z_values[index] = model._output.zValues().clone();
             _coef_p_values[index] = model._output.pValues().clone();
+            predNames.remove(pred2Remove);
+            if (catPredNames.contains(pred2Remove))
+                catPredNames.remove(pred2Remove);
+            else
+                numPredNames.remove(pred2Remove);      
         }
     }
 

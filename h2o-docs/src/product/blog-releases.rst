@@ -5,12 +5,12 @@ H2O Release 3.36 (Zorn)
 -----------------------
 .. image:: /images/blog/rel-zorn.png
 
-There's a new major release of H2O, and it's packed with new features and fixes! This release includes the `official support of Java 17 </welcome.html#java-requirements>`__, the ability to `import GAM MOJO models </save-and-load-model.html#supported-mojos>`__, and the ability to import old MOJO models into newer versions of H2O. Read about all of Rel-Zorn's new features and fixes `here <https://h2o.ai/blog/h2o-release-3-36-zorn/>`__.
+There's a new major release of H2O, and it's packed with new features and fixes! This release includes the `official support of Java 17 <welcome.html#java-requirements>`__, the ability to `import GAM MOJO models <save-and-load-model.html#supported-mojos>`__, and the ability to import old MOJO models into newer versions of H2O. Read about all of Rel-Zorn's new features and fixes `here <https://h2o.ai/blog/h2o-release-3-36-zorn/>`__.
 
 Distributed Uplift Random Forest
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`Distributed Uplift Random Forest (Uplift DRF) </data-science/upliftdrf.html>`__ is a classification tool for modeling uplift: the incremental impact of a treatment. This tool is very useful in marketing and medicine, and this machine learning approach is inspired by the A/B testing method. 
+`Distributed Uplift Random Forest (Uplift DRF) <data-science/upliftdrf.html>`__ is a classification tool for modeling uplift: the incremental impact of a treatment. This tool is very useful in marketing and medicine, and this machine learning approach is inspired by the A/B testing method. 
 
 Demo
 ''''
@@ -114,7 +114,7 @@ Example
 Infogram & Admissible Machine Learning
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `Infogram </admissible.html>`__ reduces bias in built models by taking protected variables (e.g., race and gender) into account. It does this by measuring the admissibility of a variable. This is determined by a safety and relevancy index which serves as a diagnostic tool for fairness. When variables are determined to be unsafe, they will be considered inadmissible.
+The `Infogram <admissible.html>`__ reduces bias in built models by taking protected variables (e.g., race and gender) into account. It does this by measuring the admissibility of a variable. This is determined by a safety and relevancy index which serves as a diagnostic tool for fairness. When variables are determined to be unsafe, they will be considered inadmissible.
 
 Example
 '''''''
@@ -194,7 +194,7 @@ Example
 Model Selection
 ~~~~~~~~~~~~~~~
 
-`Model Selection </data-science/model_selection.html>`__ will help you select the best predictor subsets from your dataset when building GLM regression models. 
+`Model Selection <data-science/model_selection.html>`__ will help you select the best predictor subsets from your dataset when building GLM regression models. 
 
 Example
 '''''''
@@ -250,7 +250,7 @@ Example
 RuleFit Improvements
 ~~~~~~~~~~~~~~~~~~~~
 
-For `RuleFit </data-science/rulefit.html>`__, the new ``h2o.predict_rules()`` method evaluates the validity of given rules on the given data. The ``lambda`` parameter, specified during model building, has also been exposed giving you better control over the regularization strength.
+For `RuleFit <data-science/rulefit.html>`__, the new ``h2o.predict_rules()`` method evaluates the validity of given rules on the given data. The ``lambda`` parameter, specified during model building, has also been exposed giving you better control over the regularization strength.
 
 Example
 '''''''
@@ -317,7 +317,7 @@ Example
 AutoML Improvements
 ~~~~~~~~~~~~~~~~~~~
 
-Under resource-constrained environments, `AutoML's </automl.html>`__ validation and stacking strategy has updated to speed up processing: with datasets that are large in comparison to their available computation resources, we shifted to a blending strategy using holdout frames (this is an automated version of using the ``blending_frame`` argument). We have also improved error handling: your AutoML model will detect and fail earlier when there are problems with your data. This allows you to debug more quickly.
+Under resource-constrained environments, `AutoML's <automl.html>`__ validation and stacking strategy has updated to speed up processing: with datasets that are large in comparison to their available computation resources, we shifted to a blending strategy using holdout frames (this is an automated version of using the ``blending_frame`` argument). We have also improved error handling: your AutoML model will detect and fail earlier when there are problems with your data. This allows you to debug more quickly.
 
 Prior Release Blogs
 -------------------

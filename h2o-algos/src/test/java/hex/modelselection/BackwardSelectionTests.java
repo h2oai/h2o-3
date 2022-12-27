@@ -2,10 +2,12 @@ package hex.modelselection;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.*;
+import water.DKV;
+import water.IcedWrapper;
+import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
@@ -15,12 +17,10 @@ import water.util.TwoDimTable;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.modelselection.ModelSelectionMaxRTests.compareResultFModelSummary;
-import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.allsubsets;
 import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.backward;
 import static org.junit.Assert.assertTrue;
 
@@ -107,7 +107,13 @@ public class BackwardSelectionTests extends TestUtil {
             List<String> modelCoefsLow = Arrays.asList(allModelCoefs[modInd-1]);
             double[] modelZValues = allModelZValues[modInd];
             List<String> removedPredName = extractRemovedPredictors(modelCoefsHigh, modelCoefsLow);
-            assertCorrectMinZRemoved(modelCoefsHigh, modelZValues, removedPredName, catPreds, catCoeffs);
+            List<String> redundantPredictors = new ArrayList<>();
+            if (modInd==maxModelIndex) {
+                List<String> redundantPreds = Arrays.stream(fullModel._output._predictors_removed_per_step[maxModelIndex]).
+                        filter(x->x.contains("(redundant_predictor)")).map(x -> x.substring(0, x.indexOf('('))).collect(Collectors.toList());
+                redundantPredictors = removedPredName.stream().filter(x -> !redundantPreds.contains((x+"(redundant_predictor)"))).collect(Collectors.toList());
+            }
+            assertCorrectMinZRemoved(modelCoefsHigh, modelZValues, removedPredName, catPreds, catCoeffs, redundantPredictors);
         }
     }
     
@@ -119,26 +125,30 @@ public class BackwardSelectionTests extends TestUtil {
         }
         return removedCoeffNames;
     }
-    
-    public static void assertCorrectMinZRemoved(List<String> modelCoefs, double[] modelZValues, 
-                                                List<String> removedPreds, List<String> catPreds, List<String> catCoeffs) {
+
+    public static void assertCorrectMinZRemoved(List<String> modelCoefs, double[] modelZValues,
+                                                List<String> removedPreds, List<String> catPreds, List<String> catCoeffs, 
+                                                List<String> redundantPreds) {
         double[] removedZValues = new double[removedPreds.size()];
         int counter = 0;
         for (String removedPred : removedPreds) {
-            double zVal = modelZValues[modelCoefs.indexOf(removedPred)];
-            if (Double.isNaN(zVal))
-                removedZValues[counter++] = 0.0;
-            else
-                removedZValues[counter++] = Math.abs(zVal);
+            if (!redundantPreds.contains(removedPred)) {
+                double zVal = modelZValues[modelCoefs.indexOf(removedPred)];
+                if (Double.isNaN(zVal))
+                    removedZValues[counter++] = 0.0;
+                else
+                    removedZValues[counter++] = Math.abs(zVal);
+            }
         }
         double minZMag = ArrayUtils.maxValue(removedZValues);
+        Log.info(" predictor size " + modelCoefs.size());
         for (String name : modelCoefs) {
             Log.info("coefficient ", name);
             if (!name.equals("Intercept")) {    // exclude Intercept term
                 double modelZVal = extractModelZVal(name, modelCoefs, modelZValues, catPreds, catCoeffs);
                 if (Double.isNaN(modelZVal))
                     modelZVal = 0.0;
-                assertTrue("Wrong predictor is eliminated with higher z-value.",
+                assertTrue("Wrong predictor " + name + " is eliminated with higher z-value.",
                         Math.abs(modelZVal) >= minZMag);
             }
         }

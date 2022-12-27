@@ -21,4 +21,13 @@ public class VarImp extends Iced {
     }
     return varImpMap;
   }
+  public int numberOfUsedVariables() {
+    int numberOfUsedVariables = 0;
+    for (float varimp : _varimp) {
+      if (varimp != 0) {
+        numberOfUsedVariables++;
+      }
+    }
+    return numberOfUsedVariables;
+  }
 }
