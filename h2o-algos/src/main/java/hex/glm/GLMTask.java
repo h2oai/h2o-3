@@ -26,8 +26,8 @@ import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
 import static hex.glm.GLMUtils.updateGradGam;
 import static hex.glm.GLMUtils.updateGradGamMultinomial;
-import static org.apache.commons.math3.special.Gamma.digamma;
-import static org.apache.commons.math3.special.Gamma.trigamma;
+import static org.apache.commons.math3.special.Gamma.*;
+import static org.apache.commons.math3.special.Gamma.logGamma;
 
 /**
  * All GLM related distributed tasks:
@@ -693,10 +693,13 @@ public abstract class GLMTask  {
 
   static double sumOper(double y, double multiplier, int opVal) {
     double summation = 0.0;
-      for (int val = 0; val < y; val++) {
-        double temp = opVal==0?Math.log((val+multiplier)/(val+1)):1.0/(val*multiplier*multiplier+multiplier);
-        summation += opVal==0?temp:(opVal==1?temp:(opVal==2?temp*temp*(2*val*multiplier+1):Math.log(multiplier+val)));
-      }
+    if (opVal == 0){
+      return logGamma(y + multiplier - 1) - logGamma(multiplier - 2) - logGamma(y);
+    }
+    for (int val = 0; val < y; val++) {
+      double temp = 1.0/(val*multiplier*multiplier+multiplier);
+      summation += opVal==1?temp:(opVal==2?temp*temp*(2*val*multiplier+1):Math.log(multiplier+val));
+    }
     return summation;
   }
   
