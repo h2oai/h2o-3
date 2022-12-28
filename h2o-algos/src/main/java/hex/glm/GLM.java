@@ -49,8 +49,7 @@ import java.util.stream.IntStream;
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
-import static hex.glm.DispersionUtils.estimateGammaMLSE;
-import static hex.glm.DispersionUtils.estimateTweedieDispersionOnly;
+import static hex.glm.DispersionUtils.*;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.*;
@@ -902,7 +901,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             warn("_family", "Poisson and Negative Binomial expect non-negative integer response," +
                     " got floats.");
           if (Family.negativebinomial.equals(_parms._family))
-            if (_parms._theta <= 0 || _parms._theta > 1)
+            if (_parms._theta <= 0)// || _parms._theta > 1)
               error("_family", "Illegal Negative Binomial theta value.  Valid theta values be > 0" +
                       " and <= 1.");
             else
@@ -1021,10 +1020,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 " does not work with " + _parms._family + " family.");
       }
       // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
-      if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family) && !tweedie.equals(_parms._family))
-        error("dispersion_parameter_mode", " ml can only be used for family gamma, tweedie.");
+      if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family) && !tweedie.equals(_parms._family) && !negativebinomial.equals(_parms._family))
+        error("dispersion_parameter_mode", " ml can only be used for family gamma, tweedie, negative binomial.");
       
       if (ml.equals(_parms._dispersion_parameter_method)) {
+        if ((_parms._lambda == null && _parms._lambda_search) ||
+             _parms._lambda != null && Arrays.stream(_parms._lambda).anyMatch(v -> v != 0)) {
+          error("dispersion_parameter_method", "ML is supported only without regularization!");
+        }
         if (_parms._fix_dispersion_parameter)
           if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
             error("fix_dispersion_parameter", " is only supported for gamma, tweedie, " +
@@ -2120,10 +2123,49 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               bc.applyAllBounds(betaCnd);
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           }
+          if (_model._parms._dispersion_parameter_method.equals(ml)) {
+            if (negativebinomial.equals(_parms._family)) {
+              Vec weights = _dinfo._weights
+                      ? _dinfo.getWeightsVec()
+                      : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
+              Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
+
+             //   for (int i = 0; i < Math.max(1, _parms._max_iterations_dispersion); i++) {
+                  DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+                          1, Vec.T_NUM, _dinfo._adaptedFrame);
+                  Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+
+                  double theta = _parms._theta;
+
+                  NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
+
+                  double grad = nbGrad._grad;
+                  double hess = nbGrad._hess;
+                 // if (Double.isNaN(grad)) break;  // diverged
+                  theta = Math.abs(theta - _parms._dispersion_learning_rate * grad / hess);
+                  if (Math.abs(theta - _parms._theta) < _parms._dispersion_epsilon){
+                    updateTheta(theta);
+                  //  break;
+                  }
+                  updateTheta(theta);
+                }
+            //}
+          }
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
       }
+    }
+
+    private void updateTheta(double theta){
+      if (_state._glmw != null) {
+         _state._glmw._theta = theta;
+         _state._glmw._invTheta = 1./theta;
+      }
+      _parms._theta = theta;
+      _parms._invTheta =1./theta;
+      _model._parms._theta = theta;
+      _model._parms._invTheta = 1./theta;
     }
 
     private void fitLBFGS() {
@@ -2414,11 +2456,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
               double oneOverSe = estimateGammaMLSE(mlCT, 1.0 / se, beta, _parms, _state, _job, _model);
               se = 1.0 / oneOverSe;
+            } else if (negativebinomial.equals(_parms._family)) {
+              se = estimateNegBinomialDispersionFisherScoring(_parms, _model, _job, beta, _state.activeData());
             } else if (_tweedieDispersionOnly) {
               se = estimateTweedieDispersionOnly(_parms, _model, _job, beta, _state.activeData());
-            } else {  // negative binomial
-              throw new UnsupportedOperationException("Dipsersion parameter estimation using ML for negative binomial" +
-                      " family is not implemented yet.  Please stay tuned.");
             }
           }
         }
