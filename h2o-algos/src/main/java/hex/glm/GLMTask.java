@@ -694,7 +694,7 @@ public abstract class GLMTask  {
   static double sumOper(double y, double multiplier, int opVal) {
     double summation = 0.0;
     if (opVal == 0){
-      return logGamma(y + multiplier - 1) - logGamma(multiplier - 2) - logGamma(y);
+      return logGamma(y + multiplier) - logGamma(multiplier) - logGamma(y + 1);
     }
     for (int val = 0; val < y; val++) {
       double temp = 1.0/(val*multiplier*multiplier+multiplier);
