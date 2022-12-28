@@ -89,6 +89,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  mode="maxr",  # type: Literal["allsubsets", "maxr", "maxrsweep", "backward"]
                  build_glm_model=True,  # type: bool
                  p_values_threshold=0.0,  # type: float
+                 influence=None,  # type: Optional[Literal["dfbetas"]]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -320,6 +321,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
                all coefficientsp-values drop below this threshold
                Defaults to ``0.0``.
         :type p_values_threshold: float
+        :param influence: If set to dfbetas will calculate the difference in beta when a datarow is included and
+               excluded in the dataset.
+               Defaults to ``None``.
+        :type influence: Literal["dfbetas"], optional
         """
         super(H2OModelSelectionEstimator, self).__init__()
         self._parms = {}
@@ -381,6 +386,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         self.mode = mode
         self.build_glm_model = build_glm_model
         self.p_values_threshold = p_values_threshold
+        self.influence = influence
 
     @property
     def training_frame(self):
@@ -1219,6 +1225,57 @@ class H2OModelSelectionEstimator(H2OEstimator):
         assert_is_type(p_values_threshold, None, numeric)
         self._parms["p_values_threshold"] = p_values_threshold
 
+    @property
+    def influence(self):
+        """
+        If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the dataset.
+
+        Type: ``Literal["dfbetas"]``.
+        """
+        return self._parms.get("influence")
+
+    @influence.setter
+    def influence(self, influence):
+        assert_is_type(influence, None, Enum("dfbetas"))
+        self._parms["influence"] = influence
+
+
+    def get_regression_influence_diagnostics(self, predictor_size=None):
+        """
+        Get the regression influence diagnostics frames for all models with different number of predictors.  If a 
+        predictor size is specified, only one frame is returned for that predictor size.
+
+        :param predictor_size: predictor subset size, will return regression influence diagnostics frame of that size
+        :return: list of H2OFrames or just one frame that contains predictors, response and DFBETA_ predictors
+        """
+        if self.actual_params["mode"] == "maxrsweep" and not(self.actual_params["build_glm_model"]):
+            raise H2OValueError("get_regression_influence_diagnostics can only be called if glm models are built."
+                                "  For mode == 'maxrsweep', build_glm_model should be set to True.")
+        model_ids = self._model_json["output"]["best_model_ids"]
+        num_models = len(model_ids)
+        if self.actual_params["influence"] == "dfbetas":
+            if predictor_size is None or len(predictor_size) == 0:
+                frame_list = [None]*num_models
+                for index in range(0, num_models):
+                    one_model = h2o.get_model(model_ids[index]['name'])
+                    frame_list[index] = h2o.get_frame(one_model._model_json["output"]["regression_influence_diagnostics"]["name"])
+                return frame_list
+            else:
+                max_pred_numbers = len(self._model_json["output"]["best_predictors_subset"][num_models-1])
+                if predictor_size <= 0 or predictor_size > max_pred_numbers:
+                    raise H2OValueError("predictor_size must be between 1 and the maximum number of predictors in"
+                                        " the model {0}".format(max_pred_numbers))
+                if mode == 'backward':
+                    offset = max_pred_numbers - predictor_size
+                    one_model = h2o.get_model(model_ids[num_models-1-offset]['name'])
+                else:
+                    one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
+                return h2o.get_frame(one_model._model_json["output"]["regression_influence_diagnostics"]["name"])
+        else:
+            raise H2OValueError("influence must be set to dfbetas in order to enable regression influence "
+                                "diagnostics generation.")
+
+
 
     def coef_norm(self, predictor_size=None):
         """
@@ -1232,7 +1289,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
             coef_names = self._model_json["output"]["coefficient_names"]
             coef_values = self._model_json["output"]["coefficient_values_normalized"]
             num_models = len(coef_names)
-            if predictor_size==None:
+            if predictor_size is None or len(predictor_size) == 0:
                 coefs = [None]*num_models
                 for index in range(0, num_models):
                     coef_name = coef_names[index]
@@ -1250,7 +1307,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         else:
             model_numbers = len(model_ids)
             mode = self.get_params()['mode']
-            if predictor_size==None:
+            if predictor_size is None:
                 coefs = [None]*model_numbers
                 for index in range(0, model_numbers):
                     one_model = h2o.get_model(model_ids[index]['name'])
@@ -1284,7 +1341,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
             coef_names = self._model_json["output"]["coefficient_names"]
             coef_values = self._model_json["output"]["coefficient_values"]
             num_models = len(coef_names)
-            if predictor_size==None:
+            if predictor_size is None:
                 coefs = [None]*num_models
                 for index in range(0, num_models):
                     coef_name = coef_names[index]
@@ -1306,7 +1363,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
             else:
                 model_numbers = len(model_ids)
                 mode = self.get_params()['mode']
-                if predictor_size==None:
+                if predictor_size is None:
                     coefs = [None]*model_numbers
                     for index in range(0, model_numbers):
                         one_model = h2o.get_model(model_ids[index]['name'])

@@ -18,16 +18,15 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.MathUtils.BasicStats;
+
 import java.util.Arrays;
 
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.deviance;
-import static hex.glm.GLMModel.GLMParameters.DispersionMethod.pearson;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
 import static hex.glm.GLMUtils.updateGradGam;
 import static hex.glm.GLMUtils.updateGradGamMultinomial;
 import static org.apache.commons.math3.special.Gamma.*;
-import static org.apache.commons.math3.special.Gamma.logGamma;
 
 /**
  * All GLM related distributed tasks:
@@ -1520,7 +1519,7 @@ public abstract class GLMTask  {
     private transient GLMWeights _w;
     private transient GLMWeightsFun _glmfTweedie; // only needed for Tweedie
     //    final double _lambda;
-    double wsum, wsumu;
+    double wsum, sumOfRowWeights;
     double _sumsqe;
     int _c = -1;
     
@@ -1574,7 +1573,7 @@ public abstract class GLMTask  {
       if(r.isBad() || r.weight == 0) return;
       ++_nobs;
       double y = r.response(0);
-      _yy += y*y;
+      _yy += r.weight*y*y;
       final int numStart = _dinfo.numStart();
       double wz,w;
       if(_glmf._family == Family.multinomial) {
@@ -1601,7 +1600,7 @@ public abstract class GLMTask  {
         wz = w*(y - r.offset);
       }
       wsum+=w;
-      wsumu+=r.weight; // just add the user observation weight for the scaling.
+      sumOfRowWeights +=r.weight; // just add the user observation weight for the scaling.
       for(int i = 0; i < r.nBins; ++i)
         _xy[r.binIds[i]] += wz;
       for(int i = 0; i < r.nNums; ++i){
@@ -1623,7 +1622,7 @@ public abstract class GLMTask  {
       _gram.add(git._gram);
       _nobs += git._nobs;
       wsum += git.wsum;
-      wsumu += git.wsumu;
+      sumOfRowWeights += git.sumOfRowWeights;
       _likelihood += git._likelihood;
       _sumsqe += git._sumsqe;
       _yy += git._yy;

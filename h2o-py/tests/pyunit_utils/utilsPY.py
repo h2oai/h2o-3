@@ -3623,45 +3623,42 @@ def compute_frame_diff(f1, f2):
 
 def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     '''
-    Compare two h2o frames and make sure they are equal.  However, we do not compare uuid column at this point
-    :param f1:
-    :param f2:
-    :param prob:
-    :param tol:
-    :param returnResult:
-    :return:
+    Compare two h2o frames and make sure they are equal.  However, we do not compare uuid column at this point.  Note
+    that the column names may not be the same but the contents of the two frame should be the same for the first
+    columns, second columns, third columns, ...
+
     '''
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  They are " \
                                                       "of different sizes.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
     typeDict = f1.types
     frameNames = f1.names
 
-    for colInd in range(f1.ncol):
+    for colInd, colName in enumerate(frameNames):
         if (typeDict[frameNames[colInd]]==u'enum'):
             if returnResult:
-                result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
+                result = compare_frames_local_onecolumn_NA_enum(f1[colName], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
                 if not(result) and returnResult:
                     return False
             else:
-                result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
+                result = compare_frames_local_onecolumn_NA_enum(f1[colName], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
                 if not(result) and returnResult:
                     return False
         elif (typeDict[frameNames[colInd]]==u'string'):
             if returnResult:
-                result =  compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
+                result =  compare_frames_local_onecolumn_NA_string(f1[colName], f2[colInd], prob=prob, returnResult=returnResult)
                 if not(result) and returnResult:
                     return False
             else:
-                compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
+                compare_frames_local_onecolumn_NA_string(f1[colName], f2[colInd], prob=prob, returnResult=returnResult)
         elif (typeDict[frameNames[colInd]]==u'uuid'):
             continue    # do nothing here
         else:
             if returnResult:
-                result = compare_frames_local_onecolumn_NA(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
+                result = compare_frames_local_onecolumn_NA(f1[colName], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
                 if not(result) and returnResult:
                     return False
             else:
-                compare_frames_local_onecolumn_NA(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
+                compare_frames_local_onecolumn_NA(f1[colName], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
 
     if returnResult:
         return True

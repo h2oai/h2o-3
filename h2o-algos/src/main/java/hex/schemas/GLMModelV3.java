@@ -4,6 +4,7 @@ import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import water.MemoryManager;
 import water.api.API;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
 import water.api.schemas3.TwoDimTableV3;
@@ -65,6 +66,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     
     @API(help = "predictor variable inflation factors.")
     double[] variable_inflation_factors;
+
+    @API(help="Contains the original dataset and the dfbetas calculated for each predictor.")
+    KeyV3.FrameKeyV3 regression_influence_diagnostics;
 
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)

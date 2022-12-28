@@ -150,6 +150,7 @@ reference:
       - h2o.get_best_model_predictors
       - h2o.get_predictor_added_per_step
       - h2o.get_predictor_removed_per_step
+      - h2o.get_regression_influence_diagnostics
       - h2o.get_variable_inflation_factors
       - h2o.glm
       - h2o.glrm

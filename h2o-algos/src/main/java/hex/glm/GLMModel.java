@@ -56,6 +56,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _nobs = nobs;
     _nullDOF = nobs - (parms._intercept?1:0);
   }
+  
+  public Frame getRIDFrame() {
+    if (_output._regression_influence_diagnostics != null)
+      return DKV.getGet(_output._regression_influence_diagnostics);
+    else 
+      return null;
+  }
 
   @Override
   public void initActualParamValues() {
@@ -417,6 +424,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_series_index = 5000;
     public boolean _debugTDispersionOnly = false;  // debug only and will slow down model building
     public double _dispersion_learning_rate = 0.5;
+    public Influence _influence;  // if set to dfbetas will calculate the difference of betas obtained from including and excluding a data row
+    public boolean _keepBetaDiffVar = false;  // if true, will keep the frame generating the beta without from i and the variance estimation
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -800,6 +809,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public enum DispersionMethod {pearson, ml, deviance} // methods used to estimate dispersion parameter, ML = maximum likelhood
     public static enum GLMType {glm, gam, hglm} // special functions are performed depending on GLMType.  Internal use
     public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit, ologlog}
+    public static enum Influence {dfbetas};
 
     public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, GRADIENT_DESCENT_SQERR}
 
@@ -1338,6 +1348,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _selected_submodel_idx;  // submodel index with best deviance
     public int _best_submodel_idx;      // submodel index with best deviance
     public int _best_lambda_idx;        // the same as best_submodel_idx, kept to ensure backward compatibility
+    public Key<Frame> _regression_influence_diagnostics;
+    public Key<Frame> _betadiff_var;  // for debugging only, no need to serialize
     public double lambda_best(){return _submodels.length == 0 ? -1 : _submodels[_best_submodel_idx].lambda_value;}
     public double dispersion(){ return _dispersion;}
     public boolean dispersionEstimated() {return _dispersionEstimated;}
@@ -2193,4 +2205,24 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return isFeatureUsedInPredict(featureIdx, _output._global_beta);
     }
   }
+
+  @Override
+  protected Futures remove_impl(Futures fs, boolean cascade) {
+    super.remove_impl(fs, cascade);
+    Keyed.remove(_output._regression_influence_diagnostics, fs, cascade);
+    return fs;
+  }
+
+  @Override
+  protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    if (_output._regression_influence_diagnostics != null) ab.putKey(_output._regression_influence_diagnostics);
+    return super.writeAll_impl(ab);
+  }
+
+  @Override
+  protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    if (_output._regression_influence_diagnostics!= null)
+      ab.getKey(_output._regression_influence_diagnostics, fs);
+    return super.readAll_impl(ab, fs);
+  }  
 }

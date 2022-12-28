@@ -21,7 +21,7 @@ h2o.get_best_r2_values<- function(model) {
 #' @export   
 h2o.get_predictors_added_per_step<- function(model) {
   if( is(model, "H2OModel") && (model@algorithm=='modelselection')) {
-    if (model@allparameters$mode != 'backard') {
+    if (model@allparameters$mode != 'backward') {
       return(model@model$predictors_added_per_step)
     } else {
       stop("h2o.get_predictors_added_per_step can not be called with model = backward")

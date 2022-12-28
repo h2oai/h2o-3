@@ -2377,6 +2377,74 @@ grabOneModelCoef <- function(modelIDs, index, standardized) {
   }
 }
 
+
+#' Extracts a list of H2OFrames containing regression influence diagnostics for predictor subsets of various sizes or
+#' just one H2OFrame containing regression influence diagnostics for predictor subsets of one fixed size
+#'
+#' @param model is a H2OModel with algorithm name of modelselection
+#' @param predictorSize: number of predictorss used in building a GLM model
+#'
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "acceleration"
+#' cars_model <- h2o.modelSelection(y=response, 
+#'                                  x=predictors, 
+#'                                  training_frame = cars, 
+#'                                  min_predictor_number=2, 
+#'                                  mode="backward", 
+#'                                  influence="dfbetas",
+#'                                  lambda=0.0,
+#'                                  family="gaussian")
+#' rid_frame <- h2o.get_regression_influence_diagnostics(cars_model, predictorSize = 3)
+#' }
+#' @export   
+h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) {
+    mode <- model@allparameters$mode
+    if( is(model, "H2OModel") && (model@algorithm=='modelselection')) {
+        if ((mode == 'maxrsweep') && (model@allparameters$build_glm_model==FALSE)) {
+            stop("regression influence diagnostics are only available when GLM models are built.  For mode='maxrsweep', make
+      sure build_glm_model to TRUE.")
+        } else {
+            if (model@allparameters$influence == "dfbetas") {
+                modelIDs <- model@model$best_model_ids
+                numModels <- length(modelIDs)
+                if (predictorSize < 0) {    # return a list of frames
+                    ridFrames <- vector("list", numModels)
+                    for (index in seq(numModels)) {
+                        oneModel <- h2o.getModel(modelIDs[[index]]$name)
+                        ridFrames[[index]] <- h2o.getFrame(oneModel@model$regression_influence_diagnostics$name)
+                    }
+                    return(ridFrames)
+                } else {  # only return one frame
+                    maxPredNumbers <- numModels
+                    index <- predictorSize
+                    if (mode == "backwards") {
+                        maxPredNumbers <- length(model@model$best_predictors_subset[[numModels]])
+                        index <- numModels-(maxPredNumbers-predictorSize)
+                    }
+                    oneModel <- h2o.getModel(modelIDs[[index]]$name)
+                    return(h2o.getFrame(oneModel@model$regression_influence_diagnostics$name))
+                }
+           } else {
+                stop("regression influence diagnostic is only available when infuence='dfbetas' for GLM binomial and
+                 gaussian families.")
+            }
+        }
+    } else if (is(model, "H2OModel") && (model@algorithm=="glm")) {
+        if (model@allparameters$influence == 'dfbetas') {
+            return(h2o.getFrame(model@model$regression_influence_diagnostics$name))
+        } else {
+            stop("influence needs to be set to 'dfbetas'.")
+        }
+    }
+}
+
 #'
 #' Return coefficients fitted on the standardized data (requires standardize = True, which is on by default). These coefficients can be used to evaluate variable importance.
 #'

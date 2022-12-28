@@ -85,6 +85,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public double[] _lambda = new double[]{0.0};
         public boolean _use_all_factor_levels = false;
         public boolean _build_glm_model = true;
+        public GLMModel.GLMParameters.Influence _influence;  // if set to dfbetas will calculate the difference of betas obtained from including and excluding a data row
         
         public enum Mode {
             allsubsets, // use combinatorial, exponential runtime

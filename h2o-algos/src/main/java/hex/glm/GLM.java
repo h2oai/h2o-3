@@ -47,6 +47,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static hex.ModelMetrics.calcVarImp;
+import static hex.gam.MatrixFrameUtils.GamUtils.copy2DArray;
+import static hex.gam.MatrixFrameUtils.GamUtils.keepFrameKeys;
 import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
 import static hex.glm.DispersionUtils.estimateGammaMLSE;
@@ -56,6 +58,8 @@ import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.*;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
+import static hex.glm.GLMModel.GLMParameters.Influence.dfbetas;
+import static hex.glm.GLMModel.GLMParameters.Solver.IRLSM;
 import static hex.glm.GLMUtils.*;
 import static water.fvec.Vec.T_NUM;
 
@@ -536,7 +540,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
   
   protected void checkMemoryFootPrint(DataInfo activeData) {
-    if (_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT) {
+    if (IRLSM.equals(_parms._solver)|| Solver.COORDINATE_DESCENT.equals(_parms._solver)) {
       int p = activeData.fullN();
       HeartBeat hb = H2O.SELF._heartbeat;
       long mem_usage = (long) (hb._cpus_allowed * (p * p + activeData.largestCat()) * 8/*doubles*/ * (1 + .5 * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.))); //one gram per core
@@ -865,6 +869,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
+    if (_parms._influence != null && (_parms._nfolds > 0 || _parms._fold_column != null)) {
+      error("influence", " cross-validation is not allowed when influence is set to dfbetas.");
+    }
+    
     _parms.validate(this);
     if(_response != null) {
       if(!isClassifier() && _response.isCategorical())
@@ -1147,7 +1155,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       boolean betaContsOn = _parms._beta_constraints != null || _parms._non_negative;
       _betaConstraintsOn = (betaContsOn && (Solver.AUTO.equals(_parms._solver) ||
-              Solver.COORDINATE_DESCENT.equals(_parms._solver) || Solver.IRLSM.equals(_parms._solver )||
+              Solver.COORDINATE_DESCENT.equals(_parms._solver) || IRLSM.equals(_parms._solver )||
               Solver.L_BFGS.equals(_parms._solver)));
       if (_parms._beta_constraints != null && !_enumInCS) { // will happen here if there is no CV
         if (findEnumInBetaCS(_parms._beta_constraints.get(), _parms)) {
@@ -1260,11 +1268,34 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms.hasCheckpoint()) {
         if (!Family.gaussian.equals(_parms._family))  // Gaussian it not iterative and therefore don't care
           _checkPointFirstIter = true;  // mark the first iteration during iteration process of training
-        if (!Solver.IRLSM.equals(_parms._solver))
+        if (!IRLSM.equals(_parms._solver))
           error("_checkpoint", "GLM checkpoint is supported only for IRLSM.  Please specify it " +
                   "explicitly.  Do not use AUTO or default");
         Value cv = DKV.get(_parms._checkpoint);
         CheckpointUtils.getAndValidateCheckpointModel(this, CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
+      }
+
+      if (_parms._influence != null) {
+        if (!(gaussian.equals(_parms._family) || binomial.equals(_parms._family)))
+          error("influence", " can only be specified for the gaussian and binomial families.");
+        
+        if (_parms._lambda == null)
+          _parms._lambda = new double[]{0.0};
+        
+        if (_parms._lambda != null && Arrays.stream(_parms._lambda).filter(x -> x>0).count() > 0) 
+          error("regularization", "regularization is not allowed when influence is set to dfbetas.  " +
+                  "Please set all lambdas to 0.0.");
+        
+        if (_parms._lambda_search)
+          error("lambda_search", "lambda_search and regularization are not allowed when influence is set to dfbetas.");
+        
+        if (Solver.AUTO.equals(_parms._solver))
+          _parms._solver = IRLSM;
+        else if (!Solver.IRLSM.equals(_parms._solver))
+          error("solver", "regression influence diagnostic is only calculated for IRLSM solver.");
+        
+        _parms._compute_p_values = true;  // automatically turned these on
+        _parms._remove_collinear_columns = true;
       }
       buildModel();
     }
@@ -1500,6 +1531,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public final class GLMDriver extends Driver implements ProgressMonitor {
     private long _workPerIteration;
     private transient double[][] _vcov;
+    private transient GLMTask.GLMIterationTask _gramInfluence;
+    private transient double[][] _cholInvInfluence;
 
     private void doCleanup() {
       try {
@@ -2394,7 +2427,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._compute_p_values) { // compute p-values, standard error, estimate dispersion parameters...
         double se = _parms._init_dispersion_parameter;
         boolean seEst = false;
-        double[] beta = _state.beta();
+        double[] beta = _state.beta();  // standardized if _parms._standardize=true, original otherwise
         Log.info("estimating dispersion parameter using method: " + _parms._dispersion_parameter_method);
         if (_parms._family != binomial && _parms._family != Family.poisson && !_parms._fix_dispersion_parameter) {
           seEst = true;
@@ -2423,24 +2456,31 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
         double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
+       // double[][] inv = cholInv(); // from non-standardized predictors
         Cholesky chol = _chol;
         DataInfo activeData = _state.activeData();
         if (_parms._standardize) { // compute non-standardized t(X)%*%W%*%X
           double[] beta_nostd = activeData.denormalizeBeta(beta);
           DataInfo.TransformType transform = activeData._predictor_transform;
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
-          Gram g = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          _gramInfluence = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta_nostd).doAll(activeData._adaptedFrame);
           activeData.setPredictorTransform(transform); // just in case, restore the transform
-          g.mul(_parms._obj_reg);
-          chol = g.cholesky(null);
           beta = beta_nostd;
         } else {  // just rebuild gram with latest GLM coefficients
-          Gram g = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta).doAll(activeData._adaptedFrame)._gram;
-          g.mul(_parms._obj_reg);
-          chol = g.cholesky(null);
+          _gramInfluence = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta).doAll(activeData._adaptedFrame);
         }
+        Gram g = _gramInfluence._gram;
+        g.mul(_parms._obj_reg);
+        chol = g.cholesky(null);
         double[][] inv = chol.getInv();
+        if (_parms._influence != null) {
+          _cholInvInfluence = new double[inv.length][inv.length];
+          copy2DArray(inv, _cholInvInfluence);
+          ArrayUtils.mult(_cholInvInfluence, _parms._obj_reg);
+          g.mul(1.0/_parms._obj_reg);
+        }
         ArrayUtils.mult(inv, _parms._obj_reg * se);
+        
         _vcov = inv;
         for (int i = 0; i < zvalues.length; ++i)
           zvalues[i] = beta[i] / Math.sqrt(inv[i][i]);
@@ -2895,7 +2935,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           DKV.remove(_betaConstraints._key);
           _betaConstraints.delete();
         }
-        if (_model != null) _model.unlock(_job);
+        if (_model != null) {
+          if (_parms._influence != null) {
+            final List<Key> keep = new ArrayList<>();
+            keepFrameKeys(keep, _model._output._regression_influence_diagnostics);
+            if (_parms._keepBetaDiffVar)
+              keepFrameKeys(keep, _model._output._betadiff_var);
+            Scope.untrack(keep.toArray(new Key[keep.size()]));
+          }
+          _model.unlock(_job);
+        }
       }
     }
     
@@ -3063,6 +3112,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (!_parms._HGLM)  // no need to do for HGLM
         scoreAndUpdateModel();
+      
+      if (dfbetas.equals(_parms._influence))
+        genRID();
+      
       if (_parms._generate_variable_inflation_factors) {
         _model._output._vif_predictor_names = _model.buildVariableInflationFactors(_train, _dinfo);
       }// build variable inflation factors for numerical predictors
@@ -3091,6 +3144,71 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+    /***
+     * Generate the regression influence diagnostic for gaussian and binomial families.  It takes the following steps:
+     * 1. generate the inverse of gram matrix;
+     * 2. generate sum of all columns of gram matrix;
+     * 3. task is called to generate the hat matrix equation 2 or equation 6 and the diagnostic in equation 3 or 7.
+     * 
+     * Note that redundant predictors are excluded.
+     */
+    public void genRID() {
+      final double[] beta = _dinfo.denormalizeBeta(_state.beta());// if standardize=true, standardized coeff, else non-standardized coeff
+      final double[] stdErr = _model._output.stdErr().clone();
+      final String[] names = genDfbetasNames(_model); // exclude redundant predictors
+      DataInfo.TransformType transform = DataInfo.TransformType.NONE;
+      // concatenate RIDFrame to the training data frame
+      if (_parms._standardize) {  // remove standardization
+        transform = _dinfo._predictor_transform;
+        _dinfo.setPredictorTransform(DataInfo.TransformType.NONE);
+      }
+      Frame RIDFrame = gaussian.equals(_parms._family) ? genRIDGaussian(_model._output.beta(), _cholInvInfluence, names) : 
+              genRIDBinomial(beta, _cholInvInfluence, stdErr, names);
+      Scope.track(RIDFrame);
+      Frame combinedFrame = buildRIDFrame(_parms, _train.deepCopy(Key.make().toString()), RIDFrame);
+      _model._output._regression_influence_diagnostics = combinedFrame.getKey();
+      DKV.put(combinedFrame);
+      if (_parms._standardize)
+        _dinfo.setPredictorTransform(transform);
+    }
+    
+    private Frame genRIDBinomial(double[] beta, double[][] inv, double[] stdErr, String[] names) {
+      RegressionInfluenceDiagnosticsTasks.RegressionInfluenceDiagBinomial ridBinomial = 
+              new RegressionInfluenceDiagnosticsTasks.RegressionInfluenceDiagBinomial(_job, beta, inv, _parms, _dinfo, stdErr);
+      ridBinomial.doAll(names.length, Vec.T_NUM, _dinfo._adaptedFrame);
+      return ridBinomial.outputFrame(Key.make(), names, new String[names.length][]);
+    }
+    
+    private Frame genRIDGaussian(final double[] beta, final double[][] inv, final String[] names) {
+      final double[] stdErr = _model._output.stdErr();
+      final double[][] gramMat = _gramInfluence._gram.getXX(); // not scaled by parms._obj_reg
+      RegressionInfluenceDiagnosticsTasks.ComputeNewBetaVarEstimatedGaussian betaMinusOne =
+              new RegressionInfluenceDiagnosticsTasks.ComputeNewBetaVarEstimatedGaussian(inv, _gramInfluence._xy, _job,
+                      _dinfo, gramMat, _gramInfluence.sumOfRowWeights, _gramInfluence._yy, stdErr);
+      betaMinusOne.doAll(names.length+1, Vec.T_NUM, _dinfo._adaptedFrame);
+      String[] namesVar = new String[names.length+1];
+      System.arraycopy(names, 0, namesVar, 0, names.length);
+      namesVar[names.length] = "varEstimate";
+      Frame newBetasVarEst = betaMinusOne.outputFrame(Key.make(), namesVar, new String[namesVar.length][]);
+      if (_parms._keepBetaDiffVar) {
+        DKV.put(newBetasVarEst);
+        _model._output._betadiff_var = newBetasVarEst._key;
+      } else {
+        Scope.track(newBetasVarEst);
+      }                      
+      double[] betaReduced; // exclude redundant predictors if present
+      if (names.length==beta.length) {  // no redundant column
+        betaReduced = beta;
+      } else {
+        betaReduced = new double[names.length];
+        removeRedCols(beta, betaReduced, stdErr);
+      }
+      RegressionInfluenceDiagnosticsTasks.RegressionInfluenceDiagGaussian genRid =
+              new RegressionInfluenceDiagnosticsTasks.RegressionInfluenceDiagGaussian(inv, betaReduced, _job);
+      genRid.doAll(names.length, Vec.T_NUM, newBetasVarEst);
+      return genRid.outputFrame(Key.make(), names, new String[names.length][]);
+    }
+    
     private boolean betaConstraintsCheckEnabled() {
       return Boolean.parseBoolean(getSysProperty("glm.beta.constraints.checkEnabled", "true")) &&
               !multinomial.equals(_parms._family) && !ordinal.equals(_parms._family);
@@ -3218,7 +3336,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _earlyStop = _earlyStopEnabled && updateEarlyStop();
       }
     }
-
     // update user visible progress
     protected void updateProgress(boolean canScore) {
       assert !_parms._lambda_search || _parms._generate_scoring_history;
@@ -3243,7 +3360,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
   
   private Solver defaultSolver() {
-    Solver s = Solver.IRLSM;
+    Solver s = IRLSM;
     if (_parms._remove_collinear_columns) { // choose IRLSM if remove_collinear_columns is true
       Log.info(LogMsg("picked solver " + s));
       _parms._solver = s;
