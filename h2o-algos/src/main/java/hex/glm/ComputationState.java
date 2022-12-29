@@ -27,7 +27,7 @@ import static hex.glm.GLMUtils.copyGInfo;
 public final class ComputationState {
   final boolean _intercept;
   final int _nbetas;
-  private final GLMParameters _parms;
+  final GLMParameters _parms;
   private BetaConstraint _bc;
   double _alpha;
   double[] _ymu;

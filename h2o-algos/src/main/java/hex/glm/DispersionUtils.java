@@ -13,8 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.apache.commons.math3.special.Gamma.digamma;
-import static org.apache.commons.math3.special.Gamma.trigamma;
+import static org.apache.commons.math3.special.Gamma.*;
 
 public class DispersionUtils {
     /***
@@ -164,7 +163,7 @@ public class DispersionUtils {
         double _hess;
         double _theta;
         double _invTheta;
-        double _weightSum;
+        double _llh;
 
         NegativeBinomialGradientAndHessian(double theta) {
             _theta = theta;
@@ -205,7 +204,8 @@ public class DispersionUtils {
                                 ) * _invTheta * _invTheta
 
                 );
-                _weightSum += w;
+                _llh += logGamma(y + _invTheta) - logGamma(_invTheta) - logGamma(y + 1) +
+                        y * Math.log(_theta * mu) - (y+_invTheta) * Math.log(1 + _theta * mu);
             }
         }
 
@@ -213,7 +213,7 @@ public class DispersionUtils {
         public void reduce(NegativeBinomialGradientAndHessian mrt) {
             _grad += mrt._grad;
             _hess += mrt._hess;
-            _weightSum += mrt._weightSum;
+            _llh += mrt._llh;
         }
     };
 

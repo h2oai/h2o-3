@@ -2075,6 +2075,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int iterCnt = _checkPointFirstIter ? _state._iter : 0;
       boolean firstIter = iterCnt == 0;
       final BetaConstraint bc = _state.activeBC();
+      double thetaLLH = Double.NEGATIVE_INFINITY;
+      boolean thetaImproved = false;
       try {
         while (true) {
           iterCnt++;
@@ -2085,7 +2087,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
             _state._lsNeeded = true;
           } else {
-            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
+            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter && !thetaImproved) {
               Log.info("DONE after " + (iterCnt - 1) + " iterations (1)");
               _model._betaCndCheckpoint = betaCnd;
               return;
@@ -2102,19 +2104,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
                       ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
                       : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
-            double[] oldBetaCnd = ls.getX();
-            if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
-              betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
-            }
-            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
-              Log.info(LogMsg("Ls failed " + ls));
-              return;
-            }
-            betaCnd = ls.getX();
+              double[] oldBetaCnd = ls.getX();
+              if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
+                betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+              }
+              if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd)) && !thetaImproved) { // ls.getX() get the old beta value
+                Log.info(LogMsg("Ls failed " + ls));
+                return;
+              }
+              betaCnd = ls.getX();
+
             if (_betaConstraintsOn)
               bc.applyAllBounds(betaCnd);
 
-            if (!progress(betaCnd, ls.ginfo()))
+            if (!progress(betaCnd, ls.ginfo()) && !thetaImproved)
               return;
             long t4 = System.currentTimeMillis();
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
@@ -2130,26 +2133,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
               Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
 
-             //   for (int i = 0; i < Math.max(1, _parms._max_iterations_dispersion); i++) {
-                  DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
-                          1, Vec.T_NUM, _dinfo._adaptedFrame);
-                  Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+              DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(_state.beta(), _model, _dinfo).doAll(
+                      1, Vec.T_NUM, _dinfo._adaptedFrame);
+              Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
 
-                  double theta = _parms._theta;
+              double theta = _parms._theta;
 
-                  NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
+              NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
 
-                  double grad = nbGrad._grad;
-                  double hess = nbGrad._hess;
-                 // if (Double.isNaN(grad)) break;  // diverged
-                  theta = Math.abs(theta - _parms._dispersion_learning_rate * grad / hess);
-                  if (Math.abs(theta - _parms._theta) < _parms._dispersion_epsilon){
-                    updateTheta(theta);
-                  //  break;
-                  }
-                  updateTheta(theta);
-                }
-            //}
+              thetaImproved = (thetaLLH < nbGrad._llh);
+              theta = Math.abs(theta - _parms._dispersion_learning_rate * nbGrad._grad / nbGrad._hess);
+              updateTheta(theta);
+              thetaLLH = Math.max(thetaLLH, nbGrad._llh);
+            }
           }
         }
       } catch (NonSPDMatrixException e) {
@@ -2161,6 +2157,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_state._glmw != null) {
          _state._glmw._theta = theta;
          _state._glmw._invTheta = 1./theta;
+      }
+      if (_state._parms != null) {
+        _state._parms._theta = theta;
+        _state._parms._invTheta = 1./theta;
       }
       _parms._theta = theta;
       _parms._invTheta =1./theta;
