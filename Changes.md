@@ -14,6 +14,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/inde
 - [[PUBDEV-8935]](https://h2oai.atlassian.net/browse/PUBDEV-8935) - Resolved hyperparameters amongst the algorithms.
 - [[PUBDEV-8927]](https://h2oai.atlassian.net/browse/PUBDEV-8927) - Removed redundant predictors found in `mode=“backward”` for ModelSelection.
 
+#### Engineering Story
+- [[PUBDEV-8943]](https://h2oai.atlassian.net/browse/PUBDEV-8943) - Renamed the docker image `h2o-steam-k8s` to `h2o-open-source-k8s-minimal`.
+
 #### Docs
 - [[PUBDEV-8940]](https://h2oai.atlassian.net/browse/PUBDEV-8940) - Fixed log likelihood of negative binomial for GLM.
 - [[PUBDEV-8929]](https://h2oai.atlassian.net/browse/PUBDEV-8929) - Added how users can force an unsupported Java version.
