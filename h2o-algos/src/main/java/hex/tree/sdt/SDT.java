@@ -45,7 +45,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     transient Random _rand;
 
     //    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 2; // todo - make a parameter with default value
-    public final static double EPSILON = 0.000001d;
+    public final static double EPSILON = 1e-6;
 
     private static final Logger LOG = Logger.getLogger(SDT.class);
 
@@ -141,14 +141,30 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
     /**
+     * Calculates a probability of predicted value for list.
+     *
+     * @param zeroRatio #zero/#one in list
+     * @return probability of decision value (in current case - major 0 or 1)
+     */
+    private double calculateProbability(double zeroRatio) {
+        if (zeroRatio >= 0.5) {
+            return zeroRatio;
+        } else {
+            return 1 - zeroRatio;
+        }
+    }
+
+
+    /**
      * Set decision value to the node.
      *
      * @param zeroRatio #zero/#one in list
      * @param nodeIndex node index
      */
     public void makeListFromNode(double zeroRatio, int nodeIndex) {
-        _tree[nodeIndex][0] = -1; // indicates list
+        _tree[nodeIndex][0] = 1; // indicates list
         _tree[nodeIndex][1] = selectDecisionValue(zeroRatio);
+        _tree[nodeIndex][2] = calculateProbability(zeroRatio);
         // nothing to return, node is modified inplace
     }
 
@@ -211,8 +227,10 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             return;
         }
 
-        _tree[nodeIndex][0] = bestSplitInfo._splitFeatureIndex;
-        _tree[nodeIndex][1] = bestSplitInfo._threshold;
+        // flag that node is not a list
+        _tree[nodeIndex][0] = 0;
+        _tree[nodeIndex][1] = bestSplitInfo._splitFeatureIndex;
+        _tree[nodeIndex][2] = bestSplitInfo._threshold;
 
         DataFeaturesLimits limitsLeft = actualLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
         DataFeaturesLimits limitsRight = actualLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
@@ -283,7 +301,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             DKV.put(compressedSDT);
             _job.update(1);
             _model.update(_job);
-            System.out.println("Tree: " + compressedSDT.toString());
+//            System.out.println("Tree: " + compressedSDT.toString());
+            System.out.println("Rules: " + String.join("\n", compressedSDT.getListOfRules()));
             Log.debug("Tree:");
             Log.debug(Arrays.deepToString(_tree));
         }
@@ -292,7 +311,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
          * Build the tree iteratively starting from the root node.
          */
         private void buildSDTIteratively() {
-            _tree = new double[(int) Math.pow(2, _parms._max_depth + 1)][2];
+            _tree = new double[(int) Math.pow(2, _parms._max_depth + 1)][3];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits(_train));
             // build iteratively each node of the tree (each cell of the array) by picking limits from the queue

@@ -37,8 +37,11 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
         assert _output._treeKey != null : "Output has no tree, check if tree is properly set to the output.";
         // compute score for given point
         CompressedSDT tree = DKV.getGet(_output._treeKey);
-        int predictionValue = tree.predictRowStartingFromNode(data, 0);
-        return new double[]{predictionValue};
+        SDTPrediction prediction = tree.predictRowStartingFromNode(data, 0);
+        preds[0] = prediction.classPrediction;
+        preds[1] = prediction.probability;
+        System.out.println(prediction.classPrediction);
+        return preds;
     }
 
     public static class SDTOutput extends Model.Output {
