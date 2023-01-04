@@ -1026,7 +1026,7 @@ public final class ComputationState {
     int [] activeCols = activeData.activeCols();
     int [] zeros = gt._gram.findZeroCols();
     GramXY res;
-    if(_parms._family != Family.multinomial && zeros.length > 0) {
+    if(_parms._family != Family.multinomial && zeros.length > 0 && zeros.length < activeData.activeCols().length) {
       gt._gram.dropCols(zeros);
       removeCols(zeros);
       res = new ComputationState.GramXY(gt._gram,ArrayUtils.removeIds(gt._xy, zeros),null,gt._beta == null?null:ArrayUtils.removeIds(gt._beta, zeros),activeData().activeCols(),null,gt._yy,gt._likelihood);

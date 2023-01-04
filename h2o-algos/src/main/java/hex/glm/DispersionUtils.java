@@ -262,6 +262,51 @@ public class DispersionUtils {
         }
     };
 
+    public static double estimateNegBinomialDispersionMomentMethod(GLMModel.GLMParameters parms, GLMModel model, Job job,
+                                                                   double[] beta, DataInfo dinfo) {
+        Vec weights = dinfo._weights
+                ? dinfo.getWeightsVec()
+                : dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(dinfo._adaptedFrame.numRows())))[0];
+
+        final double nRows = weights == null
+                ? dinfo._adaptedFrame.numRows()
+                : weights.mean() * weights.length();
+
+        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
+                1, Vec.T_NUM, dinfo._adaptedFrame);
+        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        Vec response = dinfo._adaptedFrame.vec(dinfo.responseChunkId(0));
+        class MomentMethodThetaEstimation extends MRTask<MomentMethodThetaEstimation> {
+            double _muSqSum;
+            double _sSqSum;
+            double _muSum;
+            double _wSum;
+            @Override
+            public void map(Chunk[] cs) {
+                // mu, y, w
+                for (int i = 0; i < cs[0]._len; i++) {
+                    final double w = cs[2].atd(i);
+                    _muSqSum += w * Math.pow(cs[0].atd(i), 2);
+                    _sSqSum += w * Math.pow(cs[1].atd(i) - cs[0].atd(i), 2);
+                    _muSum += w * cs[0].atd(i);
+                    _wSum += w;
+                }
+            }
+
+            @Override
+            public void reduce(MomentMethodThetaEstimation mrt) {
+                _muSqSum += mrt._muSqSum;
+                _sSqSum += mrt._sSqSum;
+                _muSum += mrt._muSum;
+                _wSum += mrt._wSum;
+            }
+        };
+        MomentMethodThetaEstimation mm = new MomentMethodThetaEstimation().doAll(mu, response, weights);
+
+        return mm._muSqSum/(mm._sSqSum - mm._muSum/mm._wSum);
+    }
+
+
     public static double estimateNegBinomialDispersionFisherScoring(GLMModel.GLMParameters parms, GLMModel model, Job job,
                                                        double[] beta, DataInfo dinfo) {
         Vec weights = dinfo._weights
