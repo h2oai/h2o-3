@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zygmund (3.38.0.4) - 1/4/2023
+### Zygmund (3.38.0.4) - 1/5/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html</a>
 
