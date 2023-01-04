@@ -2077,6 +2077,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       final BetaConstraint bc = _state.activeBC();
       double thetaLLH = Double.NEGATIVE_INFINITY;
       boolean thetaImproved = false;
+      boolean converged = false;
+      boolean estimatedTheta = false;
+      double bestTheta = 1e-10;
       try {
         while (true) {
           iterCnt++;
@@ -2108,17 +2111,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
                 betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
               }
-              if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd)) && !thetaImproved) { // ls.getX() get the old beta value
+              if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
                 Log.info(LogMsg("Ls failed " + ls));
-                return;
+                if (!thetaImproved && converged) return;
               }
               betaCnd = ls.getX();
 
             if (_betaConstraintsOn)
               bc.applyAllBounds(betaCnd);
 
-            if (!progress(betaCnd, ls.ginfo()) && !thetaImproved)
-              return;
+            if (!progress(betaCnd, ls.ginfo()) ){
+              if (!converged) converged = true;
+              else if (!thetaImproved) return;
+            }
             long t4 = System.currentTimeMillis();
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           } else {
@@ -2127,7 +2132,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           }
           if (_model._parms._dispersion_parameter_method.equals(ml)) {
-            if (negativebinomial.equals(_parms._family)) {
+            if (negativebinomial.equals(_parms._family) && converged) {
+              if (!estimatedTheta) {
+                updateTheta(estimateNegBinomialDispersionFisherScoring(_parms, _model, _job, betaCnd, _dinfo));
+
+                estimatedTheta = true;
+                continue;
+              }
               Vec weights = _dinfo._weights
                       ? _dinfo.getWeightsVec()
                       : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
@@ -2141,10 +2152,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
               NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
 
-              thetaImproved = (thetaLLH < nbGrad._llh);
-              theta = Math.abs(theta - _parms._dispersion_learning_rate * nbGrad._grad / nbGrad._hess);
-              updateTheta(theta);
-              thetaLLH = Math.max(thetaLLH, nbGrad._llh);
+              thetaImproved = thetaLLH < nbGrad._llh;
+              if (thetaImproved) {
+                theta = Math.abs(theta - nbGrad._grad / nbGrad._hess);
+                updateTheta(theta);
+              } else {
+                updateTheta(bestTheta);
+              }
+              if (thetaLLH < nbGrad._llh) {
+                thetaLLH = nbGrad._llh;
+                bestTheta = nbGrad._theta;
+              }
             }
           }
         }
