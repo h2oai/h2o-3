@@ -1575,6 +1575,7 @@ Examples:
         cars_gbm <- h2o.gbm(x = predictors, y = response, 
                             training_frame = train, validation_frame = valid, 
                             stopping_metric = "deviance", stopping_rounds = 3, 
+                            score_tree_interval = 5,
                             stopping_tolerance = 1e-2, seed = 1234)
 
         # retrieve the mse value:
@@ -1598,6 +1599,7 @@ Examples:
         cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "deviance", 
                                                 stopping_rounds = 3, 
                                                 stopping_tolerance = 1e-2, 
+                                                score_tree_interval = 5,
                                                 seed = 1234)
         cars_gbm.train(x = predictors, y = response, 
                        training_frame = train, validation_frame = valid)
@@ -1615,51 +1617,56 @@ Examples:
 .. tabs::
    .. code-tab:: r R
 
-        # import the cars dataset:
-        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-
+        # import the prostate dataset:
+        prostate <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        
         # set the predictors and response columns:
-        predictors <- c("economy", "cylinders", "displacement", "power", "weight")
-        response = "acceleration" # Stopping metric cannot be mean_per_class_error for this continous target variable
-
+        prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+        predictors <- c("AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
+        response <- "CAPSULE"
+        
         #split the data into training and validation sets:
-        cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
-        train <- cars_splits[[1]]
-        valid <- cars_splits[[2]]
-
+        prostate_splits <- h2o.splitFrame(data = prostate, ratio = 0.8, seed = 1234)
+        
+        train <- prostate_splits[[1]]
+        valid <- prostate_splits[[2]]
+                             
         # build and train the model using the mean_per_class_error stopping metric:
-        cars_gbm <- h2o.gbm(x = predictors, y = response, 
-                            training_frame = train, validation_frame = test, 
-                            stopping_metric = "mean_per_class_error", stopping_rounds = 3, 
-                            stopping_tolerance = 1e-2, seed = 1234)
-
+        prostate_gbm <- h2o.gbm(x = predictors, y = response,
+                           training_frame = train, validation_frame = valid,
+                           stopping_metric = "mean_per_class_error", stopping_rounds = 3,
+                           score_tree_interval = 5,
+                           stopping_tolerance = 1e-2, seed = 1234)
+        
         # retrieve the mse value:
-        h2o.mse(cars_gbm, valid = TRUE)
+        h2o.mse(prostate_gbm, valid = TRUE)
 
 
    .. code-tab:: python
 
-        # import H2OGradientBoostingEstimator and the cars dataset:
+        # import H2OGradientBoostingEstimator and the prostate dataset:
         from h2o.estimators import H2OGradientBoostingEstimator
-        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        prostate = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
         # set the predictors and response columns:
-        predictors = ["economy","cylinders","displacement","power","weight"]
-        response = "acceleration"
+        prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+        predictors = ["AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"]
+        response = "CAPSULE"
 
         # split the data into training and validation sets:
-        train, valid = cars.split_frame(ratios=[.8],seed=1234)
+        train, valid = prostate.split_frame(ratios=[.8],seed=1234)
 
         # build and train the model using the meanperclasserror stopping metric:
-        cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "meanperclasserror", 
+        prostate_gbm = H2OGradientBoostingEstimator(stopping_metric = "meanperclasserror", 
                                                 stopping_rounds = 3, 
                                                 stopping_tolerance = 1e-2, 
+                                                score_tree_interval = 5,
                                                 seed = 1234)
-        cars_gbm.train(x=predictors, y=repsonse, 
+        prostate_gbm.train(x=predictors, y=response, 
                        training_frame=train, validation_frame=valid)
 
         # retrieve the mse value:
-        cars_gbm.mse(valid = True)
+        prostate_gbm.mse(valid = True)
 
 In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can also be used as the stopping metric. 
 
