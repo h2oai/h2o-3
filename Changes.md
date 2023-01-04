@@ -18,11 +18,15 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/inde
 - [[PUBDEV-8943]](https://h2oai.atlassian.net/browse/PUBDEV-8943) - Renamed the docker image `h2o-steam-k8s` to `h2o-open-source-k8s-minimal`.
 
 #### Docs
+- [[PUBDEV-8951]](https://h2oai.atlassian.net/browse/PUBDEV-8951) - Updated download page by adding options for steam jar and python client without h2o backend.
 - [[PUBDEV-8940]](https://h2oai.atlassian.net/browse/PUBDEV-8940) - Fixed log likelihood of negative binomial for GLM.
 - [[PUBDEV-8929]](https://h2oai.atlassian.net/browse/PUBDEV-8929) - Added how users can force an unsupported Java version.
 - [[PUBDEV-8928]](https://h2oai.atlassian.net/browse/PUBDEV-8928) - Fixed broken links on the H2O Release page.
 - [[PUBDEV-8924]](https://h2oai.atlassian.net/browse/PUBDEV-8924) - Added information on how Isolation Forest and Extended Isolation Forest handle missing values.
 - [[PUBDEV-8919]](https://h2oai.atlassian.net/browse/PUBDEV-8919) - Removed outdated roadmap from Readme file.
+
+#### Security
+- [[PUBDEV-8950]](https://h2oai.atlassian.net/browse/PUBDEV-8950) - Addressed CVE-2022-3509 by upgrading `google-cloud-storage`.
 
 ### Zygmund (3.38.0.3) - 11/23/2022
 
