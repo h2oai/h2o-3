@@ -42,7 +42,6 @@ def test_megan_failure():
         
         # assert z-values removed has smallest magnitude
         x = best_predictor_subset[ind]
-        x = [y for y in x if not (y in redundantPredictors)]
         assert_smallest_z_removed(back_coef[ind], z_values_list, z_values_removed, pred_large, predictor_removed, x, y, df)
         
         counter += 1
@@ -108,13 +107,12 @@ def assert_equal_z_values(back_coef, curr_coef, z_values_backward, coeff_backwar
             assert math.isnan(model_z_value), "Expected z-value to be nan but is {0} for predictor" \
                                               " {1}".format(model_z_value, coeff)
         else:
-            if abs(back_coef[coeff]-curr_coef[coeff]) < 1e-6: # only compare when coefficients are equal
-                if math.isnan(model_z_value):
-                    assert False, "Expected z-value should not be nan for predictor {0}".format(coeff)
-                else:
-                    assert abs(backward_z_value-model_z_value) < 1e-12, \
-                        "Expected z-value: {0}.  Actual z_value: {1}. They are very different." \
-                        "".format(backward_z_value, model_z_value)
+            if math.isnan(model_z_value):
+                assert False, "Expected z-value should not be nan for predictor {0}".format(coeff)
+            else:
+                assert abs(backward_z_value-model_z_value) < 1e-12, \
+                    "Expected z-value: {0}.  Actual z_value: {1}. They are very different." \
+                    "".format(backward_z_value, model_z_value)
 
  
 def extract_z_removed(pred_large, predictor_removed, z_values_large):
