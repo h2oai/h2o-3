@@ -23,6 +23,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/inde
 - [[PUBDEV-8929]](https://h2oai.atlassian.net/browse/PUBDEV-8929) - Added how users can force an unsupported Java version.
 - [[PUBDEV-8928]](https://h2oai.atlassian.net/browse/PUBDEV-8928) - Fixed broken links on the H2O Release page.
 - [[PUBDEV-8924]](https://h2oai.atlassian.net/browse/PUBDEV-8924) - Added information on how Isolation Forest and Extended Isolation Forest handle missing values.
+- [[PUBDEV-8921]](https://h2oai.atlassian.net/browse/PUBDEV-8921) - Fixed typos and made examples work on performance-and-prediction.html.
 - [[PUBDEV-8919]](https://h2oai.atlassian.net/browse/PUBDEV-8919) - Removed outdated roadmap from Readme file.
 
 #### Security
