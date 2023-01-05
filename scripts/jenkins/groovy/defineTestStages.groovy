@@ -959,6 +959,8 @@ private void invokeStage(final pipelineContext, final body) {
               echo "######### NodeLabel: ${nodeLabel} #########"
               node(nodeLabel) {
                 echo "###### Unstash scripts. ######"
+                echo "${env.NODE_NAME}"
+                sh "env"
                 pipelineContext.getUtils().unstashScripts(this)
 
                 healthCheckPassed = config.healthCheckSuppressed || pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
