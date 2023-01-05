@@ -163,6 +163,12 @@ do
   name=${f##*/}
 done
 
+client_name=""
+for f in h2o-py/build/client/dist/*
+do
+  client_name=${f##*/}
+done
+
 cp h2o-py/build/dist/*whl target/Python
 cp h2o-py/build/client/dist/*whl target/Python
 
@@ -187,6 +193,7 @@ cp h2o-dist/* target/ 2>/dev/null || true
 # Create index file.
 cat h2o-dist/index.html \
   | sed -e "s/SUBST_WHEEL_FILE_NAME/${name}/g" \
+  | sed -e "s/SUBST_CLIENT_WHEEL_FILE_NAME/${client_name}/g" \
   | sed -e "s/SUBST_PROJECT_VERSION/${PROJECT_VERSION}/g" \
   | sed -e "s/SUBST_LAST_COMMIT_HASH/${LAST_COMMIT_HASH}/g" \
   > target/index.html
