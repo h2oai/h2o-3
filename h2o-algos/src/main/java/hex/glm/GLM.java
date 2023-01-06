@@ -1027,6 +1027,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if ((_parms._lambda == null && _parms._lambda_search) ||
              _parms._lambda != null && Arrays.stream(_parms._lambda).anyMatch(v -> v != 0)) {
           error("dispersion_parameter_method", "ML is supported only without regularization!");
+        } else {
+          if (_parms._lambda == null) {
+            info("lambda", "Setting lambda to 0 to disable regularization which is unsupported with ML dispersion estimation.");
+            _parms._lambda = new double[]{0.0};
+          }
         }
         if (_parms._fix_dispersion_parameter)
           if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
@@ -2124,7 +2129,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double delta;
       if (!initialDispersionEstimate) {
         double theta = estimateNegBinomialDispersionMomentMethod(_parms, _model, _job, _state.beta(), _dinfo);
-        // theta =  estimateNegBinomialDispersionFisherScoring(_parms, _model, _job, _state.beta(), _dinfo);
+       // theta =  estimateNegBinomialDispersionFisherScoring(_parms, _model, _job, _state.beta(), _dinfo);
         delta = theta - _parms._theta;
         updateTheta(theta);
       } else {
@@ -2141,23 +2146,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
         NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
 
-//        if (_state.likelihood() > previousLLH)
-//           _parms._dispersion_learning_rate *= lmFactor;
-//        else if (_state.likelihood() < previousLLH)
-//           _parms._dispersion_learning_rate /= lmFactor;
-
-
-
-        delta = _parms._dispersion_learning_rate * nbGrad._grad / nbGrad._hess;
-        theta = Math.abs(theta - delta);
+        delta = nbGrad._grad / nbGrad._hess;
+        theta = (theta - delta) < 0 ? theta/2 : theta - delta;
 
         updateTheta(theta);
       }
       double d1 = Math.sqrt(2*Math.max(1, _dinfo._adaptedFrame.numRows() - _state._nbetas));
-      double lm0 = Double.isInfinite(previousLLH) ? _state.likelihood() + 2 * d1 : previousLLH;
-      double lm = _state.likelihood();
+      double lm0 = Double.isInfinite(previousLLH) ? -_state.likelihood() + 2 * d1 : -previousLLH;
+      double lm = -_state.likelihood();
       // abs(Lm0 - Lm)/d1 + abs(del)/d2)
-      converged = Math.abs(lm0 - lm)/d1 + Math.abs(delta) < 1e-10 || iterCnt > _parms._max_iterations_dispersion;
+      converged = Math.abs(lm0 - lm)/d1 + Math.abs(delta) < 1e-8 || iterCnt > _parms._max_iterations_dispersion;
       return converged;
     }
 
@@ -2174,7 +2172,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           iterCnt++;
           converged = fitIRLSMInnerLoop(s, betaCnd, iterCnt, bc);
           if (_model._parms._dispersion_parameter_method.equals(ml)) {
-            if (negativebinomial.equals(_parms._family) ){//&& (converged || initialDispersionEstimate)) {
+            if (negativebinomial.equals(_parms._family)){
               converged = updateNegativeBinomialDispersion(iterCnt, initialDispersionEstimate, previousLLH) && converged;
               initialDispersionEstimate = true;
             }
