@@ -51,7 +51,7 @@ def test_gam_cv_fold_columns():
     h2o_model.train(x=x, y=y, training_frame=train)
 
     # create a fold column for train
-    fold_numbers = train.kfold_column(n_folds=5, seed=1234)
+    fold_numbers = train.modulo_kfold_column(n_folds=5)
     # rename the column "fold_numbers"
     fold_numbers.set_names(["fold_numbers"])
     train = train.cbind(fold_numbers)
