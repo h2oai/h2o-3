@@ -3,9 +3,7 @@ import h2o_cloud_extensions
 import h2o_mlops_client
 import time
 from .connect import *
-from .publish import PUBLISHED_MODEL_ATTRIBUTE_NAME, PUBLISHED_ARTIFACT_ATTRIBUTE_NAME
-
-DEPLOYED_MODEL_DICT_ATTRIBUTE_NAME="_h2o_cloud_extensions_deployed_model_dict"
+from .utils import *
 
 def deploy(self, environment = None):
     if environment is None:

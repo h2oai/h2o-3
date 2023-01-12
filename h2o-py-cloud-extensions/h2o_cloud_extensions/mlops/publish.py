@@ -1,14 +1,17 @@
 # -*- encoding: utf-8 -*-
 from .connect import *
+from .utils import *
+from .deploy import deploy
 import warnings
 import os
 import mimetypes
 import h2o_mlops_client
+import h2o_cloud_extensions
 
-PUBLISHED_MODEL_ATTRIBUTE_NAME="_h2o_cloud_extensions_published_model_id"
-PUBLISHED_ARTIFACT_ATTRIBUTE_NAME="_h2o_cloud_extensions_published_artifact"
-TEMPORARY_DIRECTORY_FOR_MOJO_MODELS="/tmp"
-
+def publish_estimator_automatically(self):
+    if h2o_cloud_extensions.settings.mlops.automatic_publishing:
+        publish_estimator(self)
+        
 def publish_estimator(self):
     if self.model_id is None:
         warnings.warn("No model has been trained yet!")
@@ -29,6 +32,8 @@ def publish_estimator(self):
     else:    
         warnings.warn("The model '%s' has already been published." % published_model)
         return
+    if h2o_cloud_extensions.settings.mlops.automatic_deployment:
+        deploy(self)
     
 def upload_artifact(mlops_connection, project, mojo_file_path):
     artifact = mlops_connection.storage.artifact.create_artifact(
