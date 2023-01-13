@@ -5,7 +5,7 @@ from .publish import *
 from .deploy import *
 from h2o.estimators.estimator_base import H2OEstimator
 
-def with_function_called_after(original_function, method_called_after):
+def _with_function_called_after(original_function, method_called_after):
     @functools.wraps(original_function)
     def run(self, *args, **kwargs):
         result = original_function(self, *args, **kwargs)
@@ -14,8 +14,10 @@ def with_function_called_after(original_function, method_called_after):
     return run
 
 H2OEstimator.publish = publish_estimator
+H2OEstimator.is_published = is_model_published
 H2OEstimator.deploy = deploy
-H2OEstimator.train = with_function_called_after(H2OEstimator.train, publish_estimator_automatically)
+H2OEstimator.is_deployed = is_model_deployed
+H2OEstimator.train = _with_function_called_after(H2OEstimator.train, publish_estimator_automatically)
 
 
     

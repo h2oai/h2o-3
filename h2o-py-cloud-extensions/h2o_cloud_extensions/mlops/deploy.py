@@ -2,6 +2,7 @@
 import h2o_cloud_extensions
 import h2o_mlops_client
 import time
+from .status import _is_model_deployed, _is_model_published
 from .connect import *
 from .utils import *
 
@@ -11,41 +12,41 @@ def deploy(self, environment = None):
     elif isinstance(environment, str):
         environment = [environment,]
     assert isinstance(environment, list)
-    published_model = getattr(self, PUBLISHED_MODEL_ATTRIBUTE_NAME, None)
-    if published_model is None:
-        warnings.warn("No model has been published yet!")
+    
+    mlops_connection = create_mlops_connection()
+    project = get_or_create_project(mlops_connection)
+    
+    if not _is_model_published(mlops_connection, project, self.model_id):
+        warnings.warn("The model '%s' has not been published yet!" % self.model_id)
         return
-    deployed_model = getattr(self, DEPLOYED_MODEL_DICT_ATTRIBUTE_NAME, None)
-    if deployed_model is None:
-        deployed_model = dict()
-        setattr(self,DEPLOYED_MODEL_DICT_ATTRIBUTE_NAME, deployed_model)
-    deployed_environment_predicate = \
-        lambda e: deployed_model.get(e) is not None and deployed_model.get(e) == published_model
-    deployed_environements = [e for e in environment if deployed_environment_predicate(e)]
-    undeployed_environements = list([e for e in environment if not deployed_environment_predicate(e)])
-    
-    for e in deployed_environements:
-        warnings.warn("The model '%s' has already been deployed to %s environment." % (published_model, e))
-    
-    if len(undeployed_environements) > 0:
-        mlops_connection = create_mlops_connection()
-        project = get_or_create_project(mlops_connection)
-        environments = resolve_environments(mlops_connection, project, undeployed_environements)
-        artifact = getattr(self, PUBLISHED_ARTIFACT_ATTRIBUTE_NAME, None)
-        deployments = \
-            [(deploy_artifact(mlops_connection, artifact, project, env, published_model), env) for env in environments]
-        for (deployment, env) in deployments:
-            max_wait_time_secs = 300 # 5 minutes
-            if wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_time_secs):
-                deployed_model[env.display_name] = published_model
-                print("Model '%s' was successfully deployed to %s environment." % (published_model, env.display_name))
-            else:
-                warnings.warn(
-                    "Deployment of model '%s' to %s environment failed." \
-                    % (published_model, env.display_name))
+
+    environments = _resolve_environments(mlops_connection, project, environment)
+    experiment =  _get_experiment(mlops_connection, project, self.model_id)
+    artifact = _get_artifact(mlops_connection, experiment)
+    deployments = []
+    for env in environments:
+        if _is_model_deployed(mlops_connection, project, self.model_id + "_" + env.display_name):
+            warnings.warn("The model '%s' has already been deployed to %s environment." % (self.model_id, e))
+        else:
+            deployments.append((_deploy_artifact(mlops_connection, artifact, project, env, self.model_id), env))
+    for (deployment, env) in deployments:
+        max_wait_time_secs = 300 # 5 minutes
+        if _wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_time_secs):
+            print("Model '%s' was successfully deployed to %s environment." % (self.model_id, env.display_name))
+        else:
+            warnings.warn(
+                "Deployment of model '%s' to %s environment failed. "
+                "Go to MLOps UI to remove failed deployment with id '%s'." \
+                % (self.model_id, env.display_name, deployment.id))
+            
+def is_model_deployed(self, environment):
+    assert isinstance(environment, str)
+    mlops_connection = create_mlops_connection()
+    project = get_or_create_project(mlops_connection)
+    return _is_model_deployed(mlops_connection, project, environment)
 
 
-def resolve_environments(mlops_connection, project, environment_names):
+def _resolve_environments(mlops_connection, project, environment_names):
     all_environments = mlops_connection.storage.deployment_environment.list_deployment_environments(
         h2o_mlops_client.StorageListDeploymentEnvironmentsRequest(project.id)
     )
@@ -63,7 +64,7 @@ def resolve_environments(mlops_connection, project, environment_names):
     
     return environments
 
-def deploy_artifact(mlops_connection, artifact, project, environment, model_name):
+def _deploy_artifact(mlops_connection, artifact, project, environment, model_name):
     composition = h2o_mlops_client.DeployDeploymentComposition(
         experiment_id=artifact.entity_id,
         artifact_id=artifact.id,
@@ -84,7 +85,7 @@ def deploy_artifact(mlops_connection, artifact, project, environment, model_name
     ).deployment
     return deployed_deployment
 
-def wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_time_secs):
+def _wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_time_secs):
     svc = mlops_connection.deployer.deployment_status
     status: h2o_mlops_client.DeployDeploymentStatus
     deadline = time.monotonic() + max_wait_time_secs
@@ -100,3 +101,33 @@ def wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_ti
         ):
             break
     return status.state == h2o_mlops_client.DeployDeploymentState.HEALTHY
+
+
+def _get_experiment(mlops_connection, project, model_id):
+    experiments = mlops_connection.storage.experiment.list_experiments(
+        h2o_mlops_client.StorageListExperimentsRequest(
+            project_id=project.id,
+            filter=QueryUtils.filter_by("display_name", model_id)
+        )
+    ).experiment
+    if len(experiments) == 0:
+        return None
+    if len(experiments) > 1:
+        warnings.warn("The MLops instance contains more experiments with "
+                      "display_name '%s'. Choosing an experiment with id '%s'." % (model_id, experiments[0].id))
+    return experiments[0]
+
+def _get_artifact(mlops_connection, experiment):
+    if not experiment:
+        return None
+    artifacts = mlops_connection.storage.artifact.list_entity_artifacts(
+        h2o_mlops_client.StorageListEntityArtifactsRequest(
+            entity_id=experiment.id,
+        )
+    ).artifact
+    if len(artifacts) == 0:
+        return None
+    if len(artifacts) > 1:
+        warnings.warn("The MLops instance contains more artifact for the experiment with display_name '%s'. "
+                      "Choosing an artifact with id '%s'." % (experiment.display_name, artifacts[0].id))
+    return artifacts[0]

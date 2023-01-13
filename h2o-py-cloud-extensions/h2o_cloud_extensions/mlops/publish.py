@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 from .connect import *
 from .utils import *
+from .status import _is_model_published
 from .deploy import deploy
 import warnings
 import os
@@ -16,26 +17,28 @@ def publish_estimator(self):
     if self.model_id is None:
         warnings.warn("No model has been trained yet!")
         return
-    published_model = getattr(self, PUBLISHED_MODEL_ATTRIBUTE_NAME, None)
-    if published_model is None or published_model != self.model_id:
-        mlops_connection = create_mlops_connection()
-        project = get_or_create_project(mlops_connection)
+    mlops_connection = create_mlops_connection()
+    project = get_or_create_project(mlops_connection)
+    if not _is_model_published(mlops_connection, project, self.model_id):
         mojo_file_path = self.save_mojo(TEMPORARY_DIRECTORY_FOR_MOJO_MODELS)
         try:
-            artifact = upload_artifact(mlops_connection, project, mojo_file_path)
-            artifact = create_experiment(self, mlops_connection, project, artifact)
-            setattr(self, PUBLISHED_MODEL_ATTRIBUTE_NAME, self.model_id)
-            setattr(self, PUBLISHED_ARTIFACT_ATTRIBUTE_NAME, artifact)
+            artifact = _upload_artifact(mlops_connection, project, mojo_file_path)
+            _create_experiment(self, mlops_connection, project, artifact)
             print("The model '%s' has been published to MLOps instance." % self.model_id)
         finally:
             os.remove(mojo_file_path)
     else:    
-        warnings.warn("The model '%s' has already been published." % published_model)
+        warnings.warn("The model '%s' has already been published." % self.model_id)
         return
     if h2o_cloud_extensions.settings.mlops.automatic_deployment:
         deploy(self)
+
+def is_model_published(self):
+    mlops_connection = create_mlops_connection()
+    project = get_or_create_project(mlops_connection)
+    return _is_model_published(mlops_connection, project, self.model_id)
     
-def upload_artifact(mlops_connection, project, mojo_file_path):
+def _upload_artifact(mlops_connection, project, mojo_file_path):
     artifact = mlops_connection.storage.artifact.create_artifact(
         h2o_mlops_client.StorageCreateArtifactRequest(
             h2o_mlops_client.StorageArtifact(
@@ -51,7 +54,7 @@ def upload_artifact(mlops_connection, project, mojo_file_path):
 
     return artifact
 
-def convert_metadata(input: h2o_mlops_client.IngestMetadata) -> h2o_mlops_client.StorageMetadata:
+def _convert_metadata(input: h2o_mlops_client.IngestMetadata) -> h2o_mlops_client.StorageMetadata:
     values = {}
     for k, v in input.values.items():
         i: h2o_mlops_client.IngestMetadataValue = v
@@ -70,7 +73,7 @@ def convert_metadata(input: h2o_mlops_client.IngestMetadata) -> h2o_mlops_client
 
     return h2o_mlops_client.StorageMetadata(values=values)
 
-def to_storage_value(value):
+def _to_storage_value(value):
     if value is None:
         return h2o_mlops_client.StorageValue(string_value='')
     elif isinstance(value, bool):
@@ -83,11 +86,11 @@ def to_storage_value(value):
         return h2o_mlops_client.StorageValue(string_value=str(value))
 
 
-def resolve_metrics_metadata(self):
+def _resolve_metrics_metadata(self):
     def get_metrics(prefix, metric_type):
         is_valid = lambda key, val: isinstance(val,(type(None), bool, float, int)) and not str(key).endswith("checksum")
         items = self._model_json["output"][metric_type]._metric_json.items()
-        return {prefix + str(key): to_storage_value(val) for key, val in items if is_valid(key, val)}
+        return {prefix + str(key): _to_storage_value(val) for key, val in items if is_valid(key, val)}
     
     output =self._model_json["output"]
     metrics = get_metrics("h2o3/metrics/training/", "training_metrics")
@@ -99,7 +102,7 @@ def resolve_metrics_metadata(self):
         metrics = dict(metrics, **cross_validation_metrics)
     return metrics
 
-def create_experiment(self, mlops_connection, project, artifact):
+def _create_experiment(self, mlops_connection, project, artifact):
     ingestion = mlops_connection.ingest.model.create_model_ingestion(
         h2o_mlops_client.IngestModelIngestion(artifact_id=artifact.id)
     ).ingestion
@@ -109,11 +112,11 @@ def create_experiment(self, mlops_connection, project, artifact):
         weight_column=self.actual_params["weights_column"],
         fold_column=self.actual_params["fold_column"],
     )
-    mlops_metadata_object = convert_metadata(ingestion.model_metadata)
+    mlops_metadata_object = _convert_metadata(ingestion.model_metadata)
     parameters_for_metadata = \
-        {"h2o3/parameters/" + str(key): to_storage_value(val) for key, val in self.actual_params.items()}
+        {"h2o3/parameters/" + str(key): _to_storage_value(val) for key, val in self.actual_params.items()}
     all_metadata = dict(mlops_metadata_object.values, **parameters_for_metadata)
-    all_metadata.update(resolve_metrics_metadata(self))
+    all_metadata.update(_resolve_metrics_metadata(self))
     all_metadata_object = h2o_mlops_client.StorageMetadata(values=all_metadata)
 
     experiment = mlops_connection.storage.experiment.create_experiment(

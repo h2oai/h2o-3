@@ -2,6 +2,7 @@
 import h2o_cloud_extensions
 import h2o_mlops_client
 import warnings
+from .utils import *
 
 def create_mlops_connection():
     mlops_token_provider = h2o_mlops_client.TokenProvider(
@@ -18,11 +19,13 @@ def create_mlops_connection():
     return mlops_client
 
 def get_or_create_project(mlops_connection: h2o_mlops_client.Client):
-
     project_name = h2o_cloud_extensions.settings.mlops.project_name
     project_description = h2o_cloud_extensions.settings.mlops.project_description
-    all_projects = mlops_connection.storage.project.list_projects(body={}).project
-    projects = list(filter(lambda p: p.display_name == project_name, all_projects))
+    projects = mlops_connection.storage.project.list_projects(
+        h2o_mlops_client.StorageListProjectsRequest(
+            filter=QueryUtils.filter_by("display_name", project_name)
+        )
+    ).project
     if len(projects) > 1:
         warnings.warn("The mlops instance contains more projects with display_name '%s':\n%s" %(project_name, projects))
         warnings.warn("Selecting project with id '%s'" %(projects[0].id,))
