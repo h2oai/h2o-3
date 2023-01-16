@@ -17,8 +17,5 @@ def _is_model_deployed(mlops_connection, project, deployment_name):
             project_id=project.id,
         )
     ).deployment
-    print(*deployments)
     relevant_deployments=list([deployment for deployment in deployments if deployment.display_name==deployment_name])
-    print("Relevant:")
-    print(*relevant_deployments)
     return len(relevant_deployments) > 0

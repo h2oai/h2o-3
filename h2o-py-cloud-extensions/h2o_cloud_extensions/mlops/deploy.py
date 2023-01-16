@@ -26,7 +26,8 @@ def deploy(self, environment = None):
     deployments = []
     for env in environments:
         if _is_model_deployed(mlops_connection, project, self.model_id + "_" + env.display_name):
-            warnings.warn("The model '%s' has already been deployed to %s environment." % (self.model_id, e))
+            warnings.warn("The model '%s' has already been deployed to %s environment." 
+                          % (self.model_id, env.display_name))
         else:
             deployments.append((_deploy_artifact(mlops_connection, artifact, project, env, self.model_id), env))
     for (deployment, env) in deployments:
@@ -39,11 +40,15 @@ def deploy(self, environment = None):
                 "Go to MLOps UI to remove failed deployment with id '%s'." \
                 % (self.model_id, env.display_name, deployment.id))
             
-def is_model_deployed(self, environment):
-    assert isinstance(environment, str)
+def is_model_deployed(self, environment=None):
+    if environment is None:
+        environment = h2o_cloud_extensions.settings.mlops.deployment_environment
+    elif isinstance(environment, str):
+        environment = [environment,]
+    assert isinstance(environment, list)
     mlops_connection = create_mlops_connection()
     project = get_or_create_project(mlops_connection)
-    return _is_model_deployed(mlops_connection, project, environment)
+    return all([_is_model_deployed(mlops_connection, project, self.model_id + "_" + env) for env in environment])
 
 
 def _resolve_environments(mlops_connection, project, environment_names):
