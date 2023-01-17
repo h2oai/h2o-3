@@ -7,15 +7,12 @@ from .connect import *
 from .utils import *
 
 def deploy(self, environment = None):
-    if environment is None:
-        environment = h2o_cloud_extensions.settings.mlops.deployment_environment
-    elif isinstance(environment, str):
-        environment = [environment,]
-    assert isinstance(environment, list)
-    
+    environment = _check_environemt(environment)
     mlops_connection = create_mlops_connection()
     project = get_or_create_project(mlops_connection)
-    
+    _deploy(self, mlops_connection, project, environment)
+
+def _deploy(self, mlops_connection, project, environment):
     if not _is_model_published(mlops_connection, project, self.model_id):
         warnings.warn("The model '%s' has not been published yet!" % self.model_id)
         return
@@ -40,6 +37,15 @@ def deploy(self, environment = None):
                 "Go to MLOps UI to remove failed deployment with id '%s'." \
                 % (self.model_id, env.display_name, deployment.id))
             
+            
+def _check_environemt(environment):
+    if environment is None:
+        environment = h2o_cloud_extensions.settings.mlops.deployment_environment
+    elif isinstance(environment, str):
+        environment = [environment,]
+    assert isinstance(environment, list)
+    return environment
+            
 def is_model_deployed(self, environment=None):
     if environment is None:
         environment = h2o_cloud_extensions.settings.mlops.deployment_environment
@@ -48,7 +54,11 @@ def is_model_deployed(self, environment=None):
     assert isinstance(environment, list)
     mlops_connection = create_mlops_connection()
     project = get_or_create_project(mlops_connection)
+    return _is_model_deployed(self, mlops_connection, project, environment)
+
+def _is_model_deployed(self, mlops_connection, project, environment):
     return all([_is_model_deployed(mlops_connection, project, self.model_id + "_" + env) for env in environment])
+
 
 
 def _resolve_environments(mlops_connection, project, environment_names):
@@ -136,3 +146,54 @@ def _get_artifact(mlops_connection, experiment):
         warnings.warn("The MLops instance contains more artifact for the experiment with display_name '%s'. "
                       "Choosing an artifact with id '%s'." % (experiment.display_name, artifacts[0].id))
     return artifacts[0]
+
+def is_grid_search_deployed(self, environment = None):
+    if environment is None:
+        environment = h2o_cloud_extensions.settings.mlops.deployment_environment
+    elif isinstance(environment, str):
+        environment = [environment,]
+    assert isinstance(environment, list)
+    if self.models is None or len(self.models) == 0:
+        warnings.warn("The grid search instance doesn't contain any trained model.")
+    else:
+        mlops_connection = create_mlops_connection()
+        project = get_or_create_project(mlops_connection)
+        return all([_is_model_deployed(model, mlops_connection, project, environment) for model in self.models])
+
+def deploy_grid_search(self, environment = None):
+    if is_grid_search_deployed(self, environment):
+        warnings.warn("All models of grid_search have already been deployed.") 
+    else:
+        environment = _check_environemt(environment)
+        mlops_connection = create_mlops_connection()
+        project = get_or_create_project(mlops_connection)
+        for model in self.models:
+            _deploy(model, mlops_connection, project, environment)
+
+def _get_published_automl_models(self, mlops_connection, project):
+    if not self.leader:
+        warnings.warn("AutoML leaderboard doesn't contain any model.")
+        return True
+    model_ids = [item for sublist in h2o.as_list(self.leaderboard['model_id'])
+                 for item in sublist if item != 'model_id']
+    published_models = \
+        [h2o.get_model(model_id) for model_id in model_ids if _is_model_published(mlops_connection, project, model_id)]
+    return published_models
+
+def is_automl_deployed(self, environment = None):
+    environment = _check_environemt(environment)
+    mlops_connection = create_mlops_connection()
+    project = get_or_create_project(mlops_connection)
+    published_models = _get_published_automl_models(self, mlops_connection, project)
+    return all([_is_model_deployed(model, mlops_connection, project, environment) for model in published_models])
+
+def deploy_automl(self, environment = None):
+    environment = _check_environemt(environment)
+    mlops_connection = create_mlops_connection()
+    project = get_or_create_project(mlops_connection)
+    published_models = _get_published_automl_models(self, mlops_connection, project)
+    if all([_is_model_deployed(model, mlops_connection, project, environment) for model in published_models]):
+        warnings.warn("All published models of automl instance have already been deployed.")
+    else:
+        for model in self.models:
+            _deploy(model, mlops_connection, project, environment)

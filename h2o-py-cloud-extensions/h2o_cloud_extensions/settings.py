@@ -38,9 +38,10 @@ class H2OCloudMLOpsSettings:
         self._api_url = None
         self._project_name = None
         self._project_description = None
-        self._automatic_publishing = False
-        self._automatic_deployment = False
         self._deployment_environment = []
+        self._estimator = H2OCloudMLOpsEntitySettings()
+        self._grid_search = H2OCloudMLOpsEntitySettings()
+        self._automl = H2OCloudMLOpsAutoMLSettings()
 
     @property
     def api_url(self):
@@ -70,24 +71,6 @@ class H2OCloudMLOpsSettings:
         self._project_description = value
 
     @property
-    def automatic_publishing(self):
-        return self._automatic_publishing
-
-    @automatic_publishing.setter
-    def automatic_publishing(self, value):
-        assert isinstance(value, bool)
-        self._automatic_publishing = value
-
-    @property
-    def automatic_deployment(self):
-        return self._automatic_deployment
-
-    @automatic_deployment.setter
-    def automatic_deployment(self, value):
-        assert isinstance(value, bool)
-        self._automatic_deployment = value
-
-    @property
     def deployment_environment(self):
         return self._deployment_environment
 
@@ -99,6 +82,72 @@ class H2OCloudMLOpsSettings:
             "The value must be string or list of strings!"
         self._deployment_environment = value
 
+    @property
+    def estimator(self):
+        return self._estimator
+
+    @estimator.setter
+    def estimator(self, value):
+        assert isinstance(value, H2OCloudMLOpsEntitySettings)
+        self._estimator = value
+
+    @property
+    def grid_search(self):
+        return self._grid_search
+
+    @estimator.setter
+    def grid_search(self, value):
+        assert isinstance(value, H2OCloudMLOpsEntitySettings)
+        self._grid_search = value
+
+    @property
+    def automl(self):
+        return self._automl
+
+    @estimator.setter
+    def automl(self, value):
+        assert isinstance(value, H2OCloudMLOpsAutoMLSettings)
+        self._automl = value
+    
+
+class H2OCloudMLOpsEntitySettings:
+
+    def __init__(self):
+        _automatic_publishing = False
+        _automatic_deployment = False
+        
+    @property
+    def automatic_publishing(self):
+        return self._automatic_publishing
+    
+    @automatic_publishing.setter
+    def automatic_publishing(self, value):
+        assert isinstance(value, bool)
+        self._automatic_publishing = value
+    
+    @property
+    def automatic_deployment(self):
+        return self._automatic_deployment
+    
+    @automatic_deployment.setter
+    def automatic_deployment(self, value):
+        assert isinstance(value, bool)
+        self._automatic_deployment = value
+
+class H2OCloudMLOpsAutoMLSettings(H2OCloudMLOpsEntitySettings):
+
+    def __init__(self):
+        self._automatic_publishing = "best"
+        super(H2OCloudMLOpsEntitySettings, self)
+    
+    @property
+    def publishing_strategy(self):
+        return self._automatic_publishing
+
+    @publishing_strategy.setter
+    def publishing_strategy(self, value):
+        assert isinstance(value, str)
+        self._automatic_publishing = value
 
 class H2OCloudExtensionSettings:
 

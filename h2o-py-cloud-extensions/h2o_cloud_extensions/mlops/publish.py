@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import h2o.h2o
 from .connect import *
 from .utils import *
 from .status import _is_model_published
@@ -10,7 +11,7 @@ import h2o_mlops_client
 import h2o_cloud_extensions
 
 def publish_estimator_automatically(self):
-    if h2o_cloud_extensions.settings.mlops.automatic_publishing:
+    if h2o_cloud_extensions.settings.mlops.estimator.automatic_publishing:
         publish_estimator(self)
         
 def publish_estimator(self):
@@ -19,19 +20,23 @@ def publish_estimator(self):
         return
     mlops_connection = create_mlops_connection()
     project = get_or_create_project(mlops_connection)
+    published = _publish_estimator(self, mlops_connection, project)
+    if published and h2o_cloud_extensions.settings.mlops.estimator.automatic_deployment:
+        deploy(self)
+
+def _publish_estimator(self, mlops_connection, project):
     if not _is_model_published(mlops_connection, project, self.model_id):
         mojo_file_path = self.save_mojo(TEMPORARY_DIRECTORY_FOR_MOJO_MODELS)
         try:
             artifact = _upload_artifact(mlops_connection, project, mojo_file_path)
             _create_experiment(self, mlops_connection, project, artifact)
             print("The model '%s' has been published to MLOps instance." % self.model_id)
+            return True
         finally:
             os.remove(mojo_file_path)
-    else:    
+    else:
         warnings.warn("The model '%s' has already been published." % self.model_id)
-        return
-    if h2o_cloud_extensions.settings.mlops.automatic_deployment:
-        deploy(self)
+    return False
 
 def is_model_published(self):
     mlops_connection = create_mlops_connection()
@@ -142,8 +147,70 @@ def _create_experiment(self, mlops_connection, project, artifact):
     return artifact
 
 def publish_grid_search(self):
-    print("publish_grid_search")
-    
-def publish_automl(self):
-    print("publish_automl_leader")
-    
+    if self.models is None or len(self.models) == 0:
+        warnings.warn("The grid search instance doesn't contain any trained model.")
+    else:
+        mlops_connection = create_mlops_connection()
+        project = get_or_create_project(mlops_connection)
+        published_models=[]
+        for model in self.models:
+            if _publish_estimator(model, mlops_connection, project):
+                published_models.append(model)
+        if h2o_cloud_extensions.settings.mlops.grid_search.automatic_deployment:
+            for published_model in published_models:
+                deploy(published_model)
+
+def is_grid_search_published(self):
+    if self.models is None or len(self.models) == 0:
+        warnings.warn("The grid search instance doesn't contain any trained model.")
+    else:
+        mlops_connection = create_mlops_connection()
+        project = get_or_create_project(mlops_connection)
+        all([_is_model_published(mlops_connection, project, model.model_id) for model in self.models])
+
+def publish_grid_search_automatically(self):
+    if h2o_cloud_extensions.settings.mlops.grid_search.automatic_publishing:
+        publish_grid_search(self)
+        
+def _get_automl_models(self, strategy):
+    if not strategy:
+        strategy = h2o_cloud_extensions.settings.mlops.automl.publishing_strategy
+    strategy = strategy.lower()
+    if not self.leader:
+        warnings.warn("AutoML leaderboard doesn't contain any model for publishing.")
+        return None
+    if strategy == "best":
+        return [self.leader, ]
+    elif strategy == "all":
+        model_ids = [item for sublist in h2o.as_list(self.leaderboard['model_id'])
+                     for item in sublist if item != 'model_id']
+        return [h2o.get_model(model_id) for model_id in model_ids]
+    else:
+        warnings.warn("'%s' is not valid strategy for AutoML model publishing." % strategy)
+        return None
+
+def publish_automl(self, strategy = None):
+    models_to_publish=_get_automl_models(self, strategy)
+    if models_to_publish:
+        mlops_connection = create_mlops_connection()
+        project = get_or_create_project(mlops_connection)
+        published_models = []
+        for model in models_to_publish:
+            if _publish_estimator(model, mlops_connection, project):
+                published_models.append(model)
+        if h2o_cloud_extensions.settings.mlops.automl.automatic_deployment:
+            for published_model in published_models:
+                deploy(published_model)
+
+def publish_automl_automatically(self):
+    if h2o_cloud_extensions.settings.mlops.automl.automatic_publishing:
+        publish_automl(self)
+
+def is_automl_published(self, strategy = None):
+    models_to_publish=_get_automl_models(self, strategy)
+    if models_to_publish:
+        mlops_connection = create_mlops_connection()
+        project = get_or_create_project(mlops_connection)
+        return all([_is_model_published(mlops_connection, project, model.model_id) for model in models_to_publish])
+    else:
+        return True
