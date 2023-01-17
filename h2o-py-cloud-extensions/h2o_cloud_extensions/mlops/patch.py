@@ -18,7 +18,7 @@ def _with_function_called_after(original_function, method_called_after):
 H2OEstimator.publish = publish_estimator
 H2OEstimator.is_published = is_model_published
 H2OEstimator.deploy = deploy
-H2OEstimator.is_deployed = is_model_deployed
+H2OEstimator.is_deployed = is_deployed
 H2OEstimator.train = _with_function_called_after(H2OEstimator.train, publish_estimator_automatically)
 
 H2OGridSearch.publish = publish_grid_search

@@ -15,6 +15,9 @@ def _is_model_deployed(mlops_connection, project, deployment_name):
     deployments=mlops_connection.deployer.deployment.list_project_deployments(
         h2o_mlops_client.DeployListProjectDeploymentsRequest(
             project_id=project.id,
+            paging=h2o_mlops_client.DeployPagingRequest(
+                page_size=1000000
+            )
         )
     ).deployment
     relevant_deployments=list([deployment for deployment in deployments if deployment.display_name==deployment_name])

@@ -46,7 +46,7 @@ def _check_environemt(environment):
     assert isinstance(environment, list)
     return environment
             
-def is_model_deployed(self, environment=None):
+def is_deployed(self, environment=None):
     if environment is None:
         environment = h2o_cloud_extensions.settings.mlops.deployment_environment
     elif isinstance(environment, str):
@@ -54,9 +54,9 @@ def is_model_deployed(self, environment=None):
     assert isinstance(environment, list)
     mlops_connection = create_mlops_connection()
     project = get_or_create_project(mlops_connection)
-    return _is_model_deployed(self, mlops_connection, project, environment)
+    return _is_deployed(self, mlops_connection, project, environment)
 
-def _is_model_deployed(self, mlops_connection, project, environment):
+def _is_deployed(self, mlops_connection, project, environment):
     return all([_is_model_deployed(mlops_connection, project, self.model_id + "_" + env) for env in environment])
 
 
@@ -155,10 +155,11 @@ def is_grid_search_deployed(self, environment = None):
     assert isinstance(environment, list)
     if self.models is None or len(self.models) == 0:
         warnings.warn("The grid search instance doesn't contain any trained model.")
+        return True
     else:
         mlops_connection = create_mlops_connection()
         project = get_or_create_project(mlops_connection)
-        return all([_is_model_deployed(model, mlops_connection, project, environment) for model in self.models])
+        return all([_is_deployed(model, mlops_connection, project, environment) for model in self.models])
 
 def deploy_grid_search(self, environment = None):
     if is_grid_search_deployed(self, environment):
@@ -185,7 +186,7 @@ def is_automl_deployed(self, environment = None):
     mlops_connection = create_mlops_connection()
     project = get_or_create_project(mlops_connection)
     published_models = _get_published_automl_models(self, mlops_connection, project)
-    return all([_is_model_deployed(model, mlops_connection, project, environment) for model in published_models])
+    return all([_is_deployed(model, mlops_connection, project, environment) for model in published_models])
 
 def deploy_automl(self, environment = None):
     environment = _check_environemt(environment)
