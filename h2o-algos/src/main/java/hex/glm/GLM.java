@@ -27,6 +27,7 @@ import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.BMulTask;
 import hex.util.LinearAlgebraUtils.FindMaxIndex;
 import jsr166y.CountedCompleter;
+import org.apache.commons.math3.exception.ConvergenceException;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -2124,14 +2125,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     private boolean updateNegativeBinomialDispersion(int iterCnt, boolean initialDispersionEstimate, double previousLLH) {
-      final double lmFactor = 1;
       boolean converged = false;
       double delta;
-      if (!initialDispersionEstimate) {
-        double theta = estimateNegBinomialDispersionMomentMethod(_parms, _model, _job, _state.beta(), _dinfo);
-       // theta =  estimateNegBinomialDispersionFisherScoring(_parms, _model, _job, _state.beta(), _dinfo);
-        delta = theta - _parms._theta;
-        updateTheta(theta);
+      double theta;
+      if (!initialDispersionEstimate || !Double.isFinite(_parms._theta)) {
+        theta = estimateNegBinomialDispersionMomentMethod(_parms, _model, _job, _state.beta(), _dinfo);
+        delta = _parms._theta - theta;
       } else {
         Vec weights = _dinfo._weights
                 ? _dinfo.getWeightsVec()
@@ -2142,20 +2141,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 1, Vec.T_NUM, _dinfo._adaptedFrame);
         Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
 
-        double theta = _parms._theta;
+        theta = _parms._theta;
 
         NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
-
         delta = nbGrad._grad / nbGrad._hess;
         theta = (theta - delta) < 0 ? theta/2 : theta - delta;
-
-        updateTheta(theta);
       }
+      if (!Double.isFinite(theta))
+        throw new H2OFailException("Dispersion estimation diverged!");
+      updateTheta(theta);
       double d1 = Math.sqrt(2*Math.max(1, _dinfo._adaptedFrame.numRows() - _state._nbetas));
       double lm0 = Double.isInfinite(previousLLH) ? -_state.likelihood() + 2 * d1 : -previousLLH;
       double lm = -_state.likelihood();
       // abs(Lm0 - Lm)/d1 + abs(del)/d2)
-      converged = Math.abs(lm0 - lm)/d1 + Math.abs(delta) < 1e-8 || iterCnt > _parms._max_iterations_dispersion;
+      converged = Math.abs(lm0 - lm)/d1 + Math.abs(delta) < _parms._dispersion_epsilon || iterCnt > _parms._max_iterations_dispersion;
+      converged = Math.abs(delta) < _parms._dispersion_epsilon || iterCnt > _parms._max_iterations_dispersion;
       return converged;
     }
 
@@ -2488,7 +2488,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               double oneOverSe = estimateGammaMLSE(mlCT, 1.0 / se, beta, _parms, _state, _job, _model);
               se = 1.0 / oneOverSe;
             } else if (negativebinomial.equals(_parms._family)) {
-              se = estimateNegBinomialDispersionFisherScoring(_parms, _model, _job, beta, _state.activeData());
+              se = _parms._theta;
             } else if (_tweedieDispersionOnly) {
               se = estimateTweedieDispersionOnly(_parms, _model, _job, beta, _state.activeData());
             }

@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.deviance;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
+import static hex.glm.GLMModel.GLMParameters.Family.negativebinomial;
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
 import static hex.glm.GLMUtils.updateGradGam;
 import static hex.glm.GLMUtils.updateGradGamMultinomial;

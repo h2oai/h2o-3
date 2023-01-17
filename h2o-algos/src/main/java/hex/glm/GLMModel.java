@@ -935,7 +935,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case ologit:
           return (x-x*x);
         case log:
-          return Math.max(x, Double.MIN_NORMAL);
+          return Math.max(Math.min(x, Double.MAX_VALUE), Double.MIN_NORMAL);
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return -1 / (xx * xx);
@@ -952,7 +952,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case identity:
           return 0;
         case log:
-          return Math.max(x, Double.MIN_NORMAL);
+          return Math.max(Math.min(x, Double.MAX_VALUE), Double.MIN_NORMAL);//Math.max(x, Double.MIN_NORMAL);
         case tweedie:
           return _link_power==0?Math.max(x, Double.MIN_NORMAL):x*_oneOLinkPower*(_oneOLinkPower-1)*_oneOetaSquare;
         default:
@@ -1002,7 +1002,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case logit:
           return 1.0 / (Math.exp(-x) + 1.0);
         case log:
-          return Math.exp(x);
+          return  Math.max(Math.min(Math.exp(x), Double.MAX_VALUE), Double.MIN_NORMAL);
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
@@ -1158,18 +1158,41 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       double var = variance(x.mu);//Math.max(1e-5, variance(x.mu)); // avoid numerical problems with 0 variance
       double d = linkDeriv(x.mu);
       if (_family.equals(Family.negativebinomial)) {
+        if (linkInvDeriv(x.mu) != 0) {
+          x.w = (w*linkInvDeriv(x.mu) * linkInvDeriv(x.mu) / var);
+          x.z = eta + (y-x.mu)/linkInvDeriv(x.mu);
+        } else {
+          x.w = 0;
+          x.z = 0;
+        }
+        boolean DEBUG_LOG = false;
         double invSum = 1.0/(1+_theta*x.mu);
         double d2 = linkInvDeriv(x.mu);
         if (y>0 && (x.mu>0)) {
           double sumr = 1.0+_theta*y;
-          d = (y/(x.mu*x.mu)-_theta*sumr*invSum*invSum) * d2 * d2 + (sumr*invSum-y/x.mu) * linkInvDeriv2(x.mu); //CHECKED-log/CHECKED-identity
+          d = Math.min(1e6, Math.max(1e-6, (y/(x.mu*x.mu)-_theta*sumr*invSum*invSum) * d2 * d2 + (sumr*invSum-y/x.mu) * linkInvDeriv2(x.mu))); //CHECKED-log/CHECKED-identity
+          if (DEBUG_LOG)
+            Log.info(":WEI:"+(y)+","+(x.mu)+","+(eta)+","+(_theta)+","+x.w+","+(w*d)+","+x.z+","+(eta + (y-x.mu) *invSum * d2/(d*x.mu))+","+linkInvDeriv(x.mu)+","+d+
+                  ","+linkDeriv(x.mu)+","+linkInvDeriv2(x.mu)+","+invSum+","+sumr);
           x.w = w*d;
-          x.z = eta + (y-x.mu) *invSum * d2/(d*x.mu); // CHECKED-identity
+          x.z = eta + (y-x.mu) *invSum * d2/(d*x.mu);
         } else if (y==0 && x.mu > 0) {
-          d = linkInvDeriv2(x.mu)*invSum-_theta*invSum*invSum*d2*d2; // CHECKED
+          d = Math.min(1e10, Math.max(1e-10, linkInvDeriv2(x.mu)*invSum-_theta*invSum*invSum*d2*d2)); // CHECKED
+          if (DEBUG_LOG)
+            Log.info(":WEI:"+(y)+","+(x.mu)+","+(eta)+","+(_theta)+","+x.w+","+(w*d)+","+x.z+","+(eta - invSum*d2/d)+","+linkInvDeriv(x.mu)+","+d+
+                  ","+linkDeriv(x.mu)+","+linkInvDeriv2(x.mu)+","+invSum+","+-1);
           x.w = w*d;
           x.z = eta - invSum*d2/d;
+          x.w = (w*linkInvDeriv(x.mu) * linkInvDeriv(x.mu) / var);
+          x.z = eta + (y-x.mu)/linkInvDeriv(x.mu);
         } else {
+          if (DEBUG_LOG)
+            Log.info(":WEI:"+(y)+","+(x.mu)+","+(eta)+","+(_theta)+","+x.w+","+0+","+x.z+","+0+","+linkInvDeriv(x.mu)+","+(-1),
+                  ","+linkDeriv(x.mu)+","+linkInvDeriv2(x.mu)+","+invSum+","+-1);
+          x.w = 0;
+          x.z = 0;
+        }
+        if (!Double.isFinite(x.w) || !Double.isFinite(x.z)) {
           x.w = 0;
           x.z = 0;
         }

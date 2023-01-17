@@ -321,22 +321,22 @@ public class DispersionUtils {
                 1, Vec.T_NUM, dinfo._adaptedFrame);
         Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
         Vec response = dinfo._adaptedFrame.vec(dinfo.responseChunkId(0));
-        double theta = nRows / new CalculateInitialTheta().doAll(mu, response, weights)._theta0;
+        double invTheta = nRows / new CalculateInitialTheta().doAll(mu, response, weights)._theta0;
         double delta = 1;
         int i = 0;
         for (; i < parms._max_iterations_dispersion; i++) {
             if (Math.abs(delta) < parms._dispersion_epsilon) break;
-            theta = Math.abs(theta);
-            CalculateNegativeBinomialScoreAndInfo si = new CalculateNegativeBinomialScoreAndInfo(theta).doAll(mu, response, weights);
+            invTheta = Math.abs(invTheta);
+            CalculateNegativeBinomialScoreAndInfo si = new CalculateNegativeBinomialScoreAndInfo(invTheta).doAll(mu, response, weights);
             delta = si._score/si._info;
-            theta += delta;
+            invTheta += delta;
         }
 
-        if (theta < 0)
+        if (invTheta < 0)
             Log.warn("Dispersion estimate truncated at zero.");
         if (i == parms._max_iterations_dispersion)
             Log.warn("Iteration limit reached.");
-        return theta;
+        return 1./invTheta;
     }
     
     public static double dispersionLS(DispersionTask.ComputeMaxSumSeriesTsk computeTsk,
