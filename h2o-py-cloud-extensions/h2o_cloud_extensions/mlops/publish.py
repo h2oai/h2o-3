@@ -163,10 +163,11 @@ def publish_grid_search(self):
 def is_grid_search_published(self):
     if self.models is None or len(self.models) == 0:
         warnings.warn("The grid search instance doesn't contain any trained model.")
+        return True
     else:
         mlops_connection = create_mlops_connection()
         project = get_or_create_project(mlops_connection)
-        all([_is_model_published(mlops_connection, project, model.model_id) for model in self.models])
+        return all([_is_model_published(mlops_connection, project, model.model_id) for model in self.models])
 
 def publish_grid_search_automatically(self):
     if h2o_cloud_extensions.settings.mlops.grid_search.automatic_publishing:
