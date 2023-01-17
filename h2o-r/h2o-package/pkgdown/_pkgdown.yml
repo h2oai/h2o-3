@@ -398,6 +398,7 @@ reference:
       - predict.H2OAutoML 
       - predict.H2OModel
       - predict_contributions.H2OModel 
+      - row_to_tree_assignment.H2OModel 
       - predict_leaf_node_assignment.H2OModel
       - print.H2OFrame 
       - print.H2OTable 

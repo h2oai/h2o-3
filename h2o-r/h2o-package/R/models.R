@@ -918,6 +918,59 @@ predict_contributions.H2OModel <- function(object, newdata, output_format = c("o
 #' @export
 h2o.predict_contributions <- predict_contributions.H2OModel
 
+#' Output row to tree assignment for the model and provided training data.
+#'
+#' Output is frame of size nrow = nrow(original_training_data) and ncol = number_of_trees_in_model+1 in format: 
+#'     row_id    tree_1    tree_2    tree_3
+#'          0         0         1         1
+#'          1         1         1         1
+#'          2         1         0         0
+#'          3         1         1         0
+#'          4         0         1         1
+#'          5         1         1         1
+#'          6         1         0         0
+#'          7         0         1         0
+#'          8         0         1         1
+#'          9         1         0         0
+#' 
+#' Where 1 in the tree_{number} cols means row is used in the tree and 0 means that row is not used.
+#' The structure of the output depends on sample_rate or sample_size parameter setup.
+#'
+#' Note: Multinomial classification generate tree for each category, each tree use the same sample of the data.
+#'
+#' @param object a fitted \linkS4class{H2OModel} object
+#' @param original_training_data An H2OFrame object that was used for model training. Currently there is no validation of the input.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame contain row to tree assignment for each tree and row.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' prostate_gbm <- h2o.gbm(4:9, "AGE", prostate, sample_rate = 0.6)
+#' # Get row to tree assignment
+#' h2o.row_to_tree_assignment(prostate_gbm, prostate)
+#' }
+#' @export
+row_to_tree_assignment.H2OModel <- function(object, original_training_data, ...) {
+    if (missing(original_training_data)) {
+        stop("row_to_tree_assignment with a missing `original_training_data` argument is not implemented yet")
+    }
+    params <- list(row_to_tree_assignment = TRUE)
+    url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(original_training_data))
+    res <- .h2o.__remoteSend(url, method = "POST", .params = params, h2oRestApiVersion = 4)
+    job_key <- res$key$name
+    dest_key <- res$dest$name
+    .h2o.__waitOnJob(job_key)
+    h2o.getFrame(dest_key)
+}
+
+#' @rdname row_to_tree_assignment.H2OModel
+#' @export
+h2o.row_to_tree_assignment <- row_to_tree_assignment.H2OModel
+
+
 #' Retrieve the number of occurrences of each feature for given observations 
 #  on their respective paths in a tree ensemble model.
 #' Available for GBM, Random Forest and Isolation Forest models.
