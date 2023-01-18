@@ -25,10 +25,10 @@ H2OGridSearch.publish = publish_grid_search
 H2OGridSearch.is_published = is_grid_search_published
 H2OGridSearch.deploy = deploy_grid_search
 H2OGridSearch.is_deployed = is_grid_search_deployed
-H2OGridSearch.train = _with_function_called_after(H2OGridSearch.train, publish_estimator_automatically)
+H2OGridSearch.train = _with_function_called_after(H2OGridSearch.train, publish_grid_search_automatically)
 
 H2OAutoML.publish = publish_automl
 H2OAutoML.is_published = is_automl_published
 H2OAutoML.deploy = deploy_automl
 H2OAutoML.is_deployed = is_automl_deployed
-H2OAutoML.train = _with_function_called_after(H2OAutoML.train, publish_estimator_automatically)
+H2OAutoML.train = _with_function_called_after(H2OAutoML.train, publish_automl_automatically)

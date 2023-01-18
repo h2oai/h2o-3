@@ -113,9 +113,9 @@ def _create_experiment(self, mlops_connection, project, artifact):
     ).ingestion
 
     model_params = h2o_mlops_client.StorageExperimentParameters(
-        target_column=self.actual_params["response_column"],
-        weight_column=self.actual_params["weights_column"],
-        fold_column=self.actual_params["fold_column"],
+        target_column=self.actual_params.get("response_column", None),
+        weight_column=self.actual_params.get("weights_column", None),
+        fold_column=self.actual_params.get("fold_column", None),
     )
     mlops_metadata_object = _convert_metadata(ingestion.model_metadata)
     parameters_for_metadata = \

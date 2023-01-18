@@ -95,7 +95,7 @@ class H2OCloudMLOpsSettings:
     def grid_search(self):
         return self._grid_search
 
-    @estimator.setter
+    @grid_search.setter
     def grid_search(self, value):
         assert isinstance(value, H2OCloudMLOpsEntitySettings)
         self._grid_search = value
@@ -104,7 +104,7 @@ class H2OCloudMLOpsSettings:
     def automl(self):
         return self._automl
 
-    @estimator.setter
+    @automl.setter
     def automl(self, value):
         assert isinstance(value, H2OCloudMLOpsAutoMLSettings)
         self._automl = value
@@ -113,8 +113,8 @@ class H2OCloudMLOpsSettings:
 class H2OCloudMLOpsEntitySettings:
 
     def __init__(self):
-        _automatic_publishing = False
-        _automatic_deployment = False
+        self._automatic_publishing = False
+        self._automatic_deployment = False
         
     @property
     def automatic_publishing(self):
@@ -137,17 +137,18 @@ class H2OCloudMLOpsEntitySettings:
 class H2OCloudMLOpsAutoMLSettings(H2OCloudMLOpsEntitySettings):
 
     def __init__(self):
-        self._automatic_publishing = "best"
-        super(H2OCloudMLOpsEntitySettings, self)
+        self._publishing_strategy = "best"
+        self._automatic_publishing = False
+        self._automatic_deployment = False
     
     @property
     def publishing_strategy(self):
-        return self._automatic_publishing
+        return self._publishing_strategy
 
     @publishing_strategy.setter
     def publishing_strategy(self, value):
         assert isinstance(value, str)
-        self._automatic_publishing = value
+        self._publishing_strategy = value
 
 class H2OCloudExtensionSettings:
 
