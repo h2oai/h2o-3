@@ -2,6 +2,7 @@
 import h2o_cloud_extensions
 import h2o_mlops_client
 import time
+import h2o
 from .status import _is_model_deployed, _is_model_published
 from .connect import *
 from .utils import *
@@ -193,8 +194,8 @@ def deploy_automl(self, environment = None):
     mlops_connection = create_mlops_connection()
     project = get_or_create_project(mlops_connection)
     published_models = _get_published_automl_models(self, mlops_connection, project)
-    if all([_is_model_deployed(model, mlops_connection, project, environment) for model in published_models]):
+    if all([_is_deployed(model, mlops_connection, project, environment) for model in published_models]):
         warnings.warn("All published models of automl instance have already been deployed.")
     else:
-        for model in self.models:
+        for model in published_models:
             _deploy(model, mlops_connection, project, environment)
