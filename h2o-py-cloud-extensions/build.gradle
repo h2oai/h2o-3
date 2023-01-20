@@ -34,7 +34,6 @@ task copySrcFiles(type: Copy) {
     from ("${projectDir}") {
         include "setup.py"
         include "setup.cfg"
-        include "DESCRIPTION.rst"
         include "h2o_cloud_extensions/**"
         include "README.md"
     }
