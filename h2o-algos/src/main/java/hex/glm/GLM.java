@@ -2074,113 +2074,137 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.updateState(beta, l);
     }
 
-    private boolean fitIRLSMInnerLoop(Solver s, double[][] betaCnd, int iterCnt, BetaConstraint bc) {
-      LineSearchSolver ls = null;
-      long t1 = System.currentTimeMillis();
-      ComputationState.GramXY gram = _state.computeGram(betaCnd[0], s);
-      long t2 = System.currentTimeMillis();
-      if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) >
-              _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
-        _state._lsNeeded = true;
-      } else {
-        if (iterCnt > 1 && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
-          Log.info("DONE after " + (iterCnt - 1) + " iterations (1)");
-          _model._betaCndCheckpoint = betaCnd[0];
-          return true;
-        }
-        if (!_checkPointFirstIter)
-          betaCnd[0] = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
-                  : ADMM_solve(gram.gram, gram.xy); // this will shrink betaCnd if needed but this call may be skipped
-      }
-      _checkPointFirstIter = false;
-      long t3 = System.currentTimeMillis();
-      if (_state._lsNeeded) {
-        ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-                ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
-                : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
-        double[] oldBetaCnd = ls.getX();
-        if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
-          betaCnd[0] = extractSubRange(betaCnd[0].length, 0, _state.activeData()._activeCols, betaCnd[0]);
-        }
-        if (!ls.evaluate(ArrayUtils.subtract(betaCnd[0], oldBetaCnd, betaCnd[0]))) { // ls.getX() get the old beta value
-          Log.info(LogMsg("Ls failed " + ls));
-          return true;
-        }
-        betaCnd[0] = ls.getX();
-
-        if (_betaConstraintsOn)
-          bc.applyAllBounds(betaCnd[0]);
-
-        if (!progress(betaCnd[0], ls.ginfo()) ){
-          return true;
-        }
-        long t4 = System.currentTimeMillis();
-        Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
-      } else {
-        if (_betaConstraintsOn) // apply beta constraints without LS
-          bc.applyAllBounds(betaCnd[0]);
-        Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
-      }
-      return false;
-    }
-
-    private boolean updateNegativeBinomialDispersion(int iterCnt, boolean initialDispersionEstimate, double previousLLH) {
-      boolean converged = false;
-      double delta;
-      double theta;
-      if (!initialDispersionEstimate || !Double.isFinite(_parms._theta)) {
-        theta = estimateNegBinomialDispersionMomentMethod(_parms, _model, _job, _state.beta(), _dinfo);
-        delta = _parms._theta - theta;
-      } else {
-        Vec weights = _dinfo._weights
-                ? _dinfo.getWeightsVec()
-                : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
-        Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
-
-        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(_state.beta(), _model, _dinfo).doAll(
-                1, Vec.T_NUM, _dinfo._adaptedFrame);
-        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
-
-        theta = _parms._theta;
-
-        NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
-        delta = nbGrad._grad / nbGrad._hess;
-        theta = (theta - delta) < 0 ? theta/2 : theta - delta;
-      }
-      if (!Double.isFinite(theta))
-        throw new H2OFailException("Dispersion estimation diverged!");
-      updateTheta(theta);
-      double d1 = Math.sqrt(2*Math.max(1, _dinfo._adaptedFrame.numRows() - _state._nbetas));
-      double lm0 = Double.isInfinite(previousLLH) ? -_state.likelihood() + 2 * d1 : -previousLLH;
-      double lm = -_state.likelihood();
-      // abs(Lm0 - Lm)/d1 + abs(del)/d2)
-      converged = Math.abs(lm0 - lm)/d1 + Math.abs(delta) < _parms._dispersion_epsilon || iterCnt > _parms._max_iterations_dispersion;
-      converged = Math.abs(delta) < _parms._dispersion_epsilon || iterCnt > _parms._max_iterations_dispersion;
-      return converged;
-    }
-
     private void fitIRLSM(Solver s) {
-      double[][] betaCnd = new double[1][];
-      betaCnd[0] = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      GLMWeightsFun glmw = new GLMWeightsFun(_parms);
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      LineSearchSolver ls = null;
       int iterCnt = _checkPointFirstIter ? _state._iter : 0;
+      boolean firstIter = iterCnt == 0;
       final BetaConstraint bc = _state.activeBC();
-      boolean converged = false;
-      boolean initialDispersionEstimate = false;
-      double previousLLH = Double.NEGATIVE_INFINITY;
       try {
-        while (!converged) {
+        while (true) {
           iterCnt++;
-          converged = fitIRLSMInnerLoop(s, betaCnd, iterCnt, bc);
-          if (_model._parms._dispersion_parameter_method.equals(ml)) {
-            if (negativebinomial.equals(_parms._family)){
-              converged = updateNegativeBinomialDispersion(iterCnt, initialDispersionEstimate, previousLLH) && converged;
-              initialDispersionEstimate = true;
+          long t1 = System.currentTimeMillis();
+          ComputationState.GramXY gram = _state.computeGram(betaCnd, s);
+          long t2 = System.currentTimeMillis();
+          if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) >
+                  _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
+            _state._lsNeeded = true;
+          } else {
+            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
+              Log.info("DONE after " + (iterCnt - 1) + " iterations (1)");
+              _model._betaCndCheckpoint = betaCnd;
+              return;
             }
+            if (!_checkPointFirstIter)
+              betaCnd = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
+                      : ADMM_solve(gram.gram, gram.xy); // this will shrink betaCnd if needed but this call may be skipped
           }
-          previousLLH = _state.likelihood();
+          firstIter = false;
+          _checkPointFirstIter = false;
+          long t3 = System.currentTimeMillis();
+          if (_state._lsNeeded) {
+            if (ls == null)
+              ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+                      ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
+                      : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
+            double[] oldBetaCnd = ls.getX();
+            if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
+              betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+            }
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
+              Log.info(LogMsg("Ls failed " + ls));
+              return;
+            }
+            betaCnd = ls.getX();
+            if (_betaConstraintsOn)
+              bc.applyAllBounds(betaCnd);
+
+            if (!progress(betaCnd, ls.ginfo()))
+              return;
+            long t4 = System.currentTimeMillis();
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } else {
+            if (_betaConstraintsOn) // apply beta constraints without LS
+              bc.applyAllBounds(betaCnd);
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          }
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+      }
+    }
+
+
+
+    private void fitIRLSMML(Solver s) {
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      LineSearchSolver ls = null;
+      int iterCnt = _checkPointFirstIter ? _state._iter : 0;
+      boolean firstIter = iterCnt == 0;
+      final BetaConstraint bc = _state.activeBC();
+      double previousLLH = Double.POSITIVE_INFINITY;
+      boolean converged = false;
+      try {
+        while (!converged && iterCnt < _parms._max_iterations_dispersion) {
+          iterCnt++;
+          long t1 = System.currentTimeMillis();
+          ComputationState.GramXY gram = _state.computeGram(betaCnd, s);
+          long t2 = System.currentTimeMillis();
+          if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) >
+                  _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
+            _state._lsNeeded = true;
+          } else {
+            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
+              Log.info("DONE after " + (iterCnt - 1) + " iterations (1)");
+              _model._betaCndCheckpoint = betaCnd;
+              converged = true;
+            }
+            if (!_checkPointFirstIter)
+              betaCnd = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
+                      : ADMM_solve(gram.gram, gram.xy); // this will shrink betaCnd if needed but this call may be skipped
+          }
+          firstIter = false;
+          _checkPointFirstIter = false;
+          long t3 = System.currentTimeMillis();
+          if (_state._lsNeeded) {
+            if (ls == null)
+              ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+                      ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
+                      : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
+            double[] oldBetaCnd = ls.getX();
+            if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
+              betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+            }
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
+              Log.info(LogMsg("Ls failed " + ls));
+              converged = true;
+            }
+            betaCnd = ls.getX();
+            if (_betaConstraintsOn)
+              bc.applyAllBounds(betaCnd);
+
+            if (!progress(betaCnd, ls.ginfo()))
+              converged = true;
+            long t4 = System.currentTimeMillis();
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } else {
+            if (_betaConstraintsOn) // apply beta constraints without LS
+              bc.applyAllBounds(betaCnd);
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          }
+
+          // Dispersion estimation part
+          if (negativebinomial.equals(_parms._family)){
+            converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH) && converged;
+          }
+         // converged = converged && ((previousLLH - gram.likelihood)/Math.max(previousLLH, gram.likelihood) <= _parms._dispersion_epsilon);
+
+          previousLLH = gram.likelihood;
+        }
+      } catch (NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+        throw e; // TODO: Decide if we want to return a bad model or no model at all.
       }
     }
 
@@ -2189,14 +2213,44 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
          _state._glmw._theta = theta;
          _state._glmw._invTheta = 1./theta;
       }
-      if (_state._parms != null) {
-        _state._parms._theta = theta;
-        _state._parms._invTheta = 1./theta;
-      }
       _parms._theta = theta;
       _parms._invTheta =1./theta;
       _model._parms._theta = theta;
       _model._parms._invTheta = 1./theta;
+    }
+
+    private boolean updateNegativeBinomialDispersion(int iterCnt, double[] betaCnd, double previousLLH) {
+      double delta;
+      double theta;
+      boolean converged = false;
+      if (iterCnt == 1) {
+        theta = estimateNegBinomialDispersionMomentMethod(_parms, _model, _job, betaCnd, _dinfo);
+      } else {
+        theta = _parms._theta;
+        Vec weights = _dinfo._weights
+                ? _dinfo.getWeightsVec()
+                : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
+        Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
+        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+                1, Vec.T_NUM, _dinfo._adaptedFrame);
+        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+
+        NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
+        delta = nbGrad._grad / nbGrad._hess;
+       // delta = Math.signum(delta) * Math.min(1e5, Math.abs(delta));
+        theta = (theta - delta) < 0 ? theta / 2 : theta - delta;
+        converged = (nbGrad._llh + previousLLH) <= _parms._dispersion_epsilon || !Double.isFinite(theta);
+      }
+      delta = _parms._theta - theta;
+      if (!Double.isFinite(theta) || (Math.abs(delta/_parms._theta) > 1e5 || Math.abs(delta) > 1e10) && iterCnt > 1) {
+        updateTheta(1e-10);
+        //updateNegativeBinomialDispersion(1, _state.beta(), previousLLH);
+        return false;
+      }
+      updateTheta(theta);
+      converged = converged &&  (Math.abs(delta) / Math.max(_parms._theta, theta) < _parms._dispersion_epsilon);
+      //converged =  Math.abs(delta) < _parms._dispersion_epsilon || iterCnt > _parms._max_iterations_dispersion;
+      return converged;
     }
 
     private void fitLBFGS() {
@@ -2445,8 +2499,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               fitIRLSM_ordinal_default(solver);
             else if (gaussian.equals(_parms._family) && Link.identity.equals(_parms._link))
               fitLSM(solver);
-            else
-              fitIRLSM(solver);
+            else {
+              if (_parms._dispersion_parameter_method.equals(ml) && _parms._family.equals(negativebinomial))
+                fitIRLSMML(solver);
+              else
+                fitIRLSM(solver);
+            }
             break;
           case GRADIENT_DESCENT_LH:
           case GRADIENT_DESCENT_SQERR:

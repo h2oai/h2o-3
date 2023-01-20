@@ -268,9 +268,6 @@ public class DispersionUtils {
                 ? dinfo.getWeightsVec()
                 : dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(dinfo._adaptedFrame.numRows())))[0];
 
-        final double nRows = weights == null
-                ? dinfo._adaptedFrame.numRows()
-                : weights.mean() * weights.length();
 
         DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
                 1, Vec.T_NUM, dinfo._adaptedFrame);
