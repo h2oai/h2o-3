@@ -36,6 +36,7 @@ task copySrcFiles(type: Copy) {
         include "setup.cfg"
         include "h2o_cloud_extensions/**"
         include "README.md"
+        include "DESCRIPTION.rst"
     }
     into "${buildDir}"
 }

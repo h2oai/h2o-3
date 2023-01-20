@@ -7,14 +7,14 @@ The library currently supports integration with:
 ## Install
 Install prerequisites to your Python environment (Jupyter kernel):
 ```
-pip install h2o==SUBST_PROJECT_VERSION
+pip install h2o
 pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/mlops/rel-0.58.0/5/h2o_mlops_client-0.58.0%2B42d986c.rel0.58.0.5-py2.py3-none-any.whl
 ```
 
 Install the library:
 ```
 # TODO UPDATE url:
-pip install http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/Python/h2o_cluod_extensions-SUBST_PROJECT_VERSION-py2.py3-none-any.whl
+pip install https://h2o-release.s3.amazonaws.com/h2o/cloud-extensions/h2o_cloud_extensions-3.39.0.99999-py2.py3-none-any.whl
 ``` 
 ## Configure
 Open a Python environment and import h2o with cloud extensions and create or connect to h2o cluster

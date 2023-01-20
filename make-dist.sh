@@ -165,7 +165,6 @@ done
 
 cp h2o-py/build/dist/*whl target/Python
 cp h2o-py/build/client/dist/*whl target/Python
-cp h2o-py-cloud-extensions/build/dist/*whl target/Python
 
 # Add Java bindings Jar to target.
 mkdir -p target/bindings/java
