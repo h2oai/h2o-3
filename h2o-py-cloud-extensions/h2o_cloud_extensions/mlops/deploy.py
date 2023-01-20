@@ -11,7 +11,7 @@ def deploy(self, environment = None):
     environment = _check_environemt(environment)
     mlops_connection = create_mlops_connection()
     project = get_or_create_project(mlops_connection)
-    _deploy(self, mlops_connection, project, environment)
+    return _deploy(self, mlops_connection, project, environment)
 
 def _deploy(self, mlops_connection, project, environment):
     if not _is_model_published(mlops_connection, project, self.model_id):
@@ -30,8 +30,15 @@ def _deploy(self, mlops_connection, project, environment):
             deployments.append((_deploy_artifact(mlops_connection, artifact, project, env, self.model_id), env))
     for (deployment, env) in deployments:
         max_wait_time_secs = 300 # 5 minutes
-        if _wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_time_secs):
+        result = _wait_for_deployment_become_healthy(
+            mlops_connection,
+            deployment,
+            max_wait_time_secs,
+            self.model_id,
+            env.display_name)
+        if result:
             print("Model '%s' was successfully deployed to %s environment." % (self.model_id, env.display_name))
+            return result
         else:
             warnings.warn(
                 "Deployment of model '%s' to %s environment failed. "
@@ -101,7 +108,7 @@ def _deploy_artifact(mlops_connection, artifact, project, environment, model_nam
     ).deployment
     return deployed_deployment
 
-def _wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_time_secs):
+def _wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_time_secs, model_name, environment):
     svc = mlops_connection.deployer.deployment_status
     status: h2o_mlops_client.DeployDeploymentStatus
     deadline = time.monotonic() + max_wait_time_secs
@@ -116,7 +123,16 @@ def _wait_for_deployment_become_healthy(mlops_connection, deployment, max_wait_t
             or time.monotonic() > deadline
         ):
             break
-    return status.state == h2o_mlops_client.DeployDeploymentState.HEALTHY
+    if status.state == h2o_mlops_client.DeployDeploymentState.HEALTHY:
+        return {
+            "model_name": model_name,
+            "environment": environment,
+            "score_url" : status.scorer.score.url,
+            "sample_request_url" : status.scorer.sample_request.url,
+            "schema_url" : status.scorer.score.url[0:-5] + "schema"
+        }
+    else:
+        None
 
 
 def _get_experiment(mlops_connection, project, model_id):
@@ -165,12 +181,12 @@ def is_grid_search_deployed(self, environment = None):
 def deploy_grid_search(self, environment = None):
     if is_grid_search_deployed(self, environment):
         warnings.warn("All models of grid_search have already been deployed.") 
+        return None
     else:
         environment = _check_environemt(environment)
         mlops_connection = create_mlops_connection()
         project = get_or_create_project(mlops_connection)
-        for model in self.models:
-            _deploy(model, mlops_connection, project, environment)
+        return [_deploy(model, mlops_connection, project, environment) for model in self.models]
 
 def _get_published_automl_models(self, mlops_connection, project):
     if not self.leader:
@@ -196,6 +212,6 @@ def deploy_automl(self, environment = None):
     published_models = _get_published_automl_models(self, mlops_connection, project)
     if all([_is_deployed(model, mlops_connection, project, environment) for model in published_models]):
         warnings.warn("All published models of automl instance have already been deployed.")
+        return None
     else:
-        for model in published_models:
-            _deploy(model, mlops_connection, project, environment)
+        return [_deploy(model, mlops_connection, project, environment) for model in published_models]
