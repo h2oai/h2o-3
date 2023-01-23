@@ -161,12 +161,13 @@ test_fuzz100 <- function() {
 }
 
 test_custom <- function() {
-    helper_test_glm(get_data(990.018368070014, seed=7))
+    #helper_test_glm(get_data(990.018368070014, seed=7))
+    helper_test_glm(get_data(266.394033934921, seed=2))
 }
 
 # doTest("Custom test used for debugging divergence", test_custom)
 
-
+#
 doSuite("Negative Binomial Dispersion Estimation tests",
         makeSuite(
             test_dispersion_002,
