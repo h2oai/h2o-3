@@ -237,6 +237,44 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             err_msg += " You can plot standardized coefficient magnitudes by calling std_coef_plot() on the model."
         raise H2OTypeError(message=err_msg)
 
+    def row_to_tree_assignment(self, original_training_data):
+        """
+        Output row to tree assignment for the model and provided training data.
+
+        Output is frame of size nrow = nrow(original_training_data) and ncol = number_of_trees_in_model+1 in format:
+         row_id    tree_1    tree_2    tree_3
+              0         0         1         1
+              1         1         1         1
+              2         1         0         0
+              3         1         1         0
+              4         0         1         1
+              5         1         1         1
+              6         1         0         0
+              7         0         1         0
+              8         0         1         1
+              9         1         0         0
+
+        :param H2OFrame original_training_data: Data that was used for model training. Currently there is no validation
+            of the input.
+        :returns: A new H2OFrame made of row to tree assignment output.
+
+        **Note**: Multinomial classification generate tree for each category, each tree use the same sample of the data.
+
+        :examples:
+
+        >>> prostate = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv"
+        >>> fr = h2o.import_file(prostate)
+        >>> predictors = list(range(2, fr.ncol))
+        >>> m = H2OGradientBoostingEstimator(ntrees=10, seed=1234, sample_rate=0.6)
+        >>> m.train(x=predictors, y=1, training_frame=fr)
+        >>> # Output row to tree assignment
+        >>> m.row_to_tree_assignment(fr)
+        """
+        if has_extension(self, 'RowToTreeAssignment'):
+            return self._row_to_tree_assignment(original_training_data)
+        err_msg = "This model doesn't support calculation of row to tree assignment."
+        raise H2OTypeError(message=err_msg)
+
     def feature_frequencies(self, test_data):
         """
         Retrieve the number of occurrences of each feature for given observations 
