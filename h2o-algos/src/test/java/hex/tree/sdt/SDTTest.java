@@ -80,7 +80,8 @@ public class SDTTest extends TestUtil {
                     .build();
             Scope.track_generic(test);
 
-            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output._treeKey))._nodes));
+            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output._treeKey)).getNodes()));
+            System.out.println(String.join("\n", ((CompressedSDT) DKV.getGet(model._output._treeKey)).getListOfRules()));
 
             Frame prediction = model.score(test);
             Scope.track_generic(prediction);
@@ -117,20 +118,20 @@ public class SDTTest extends TestUtil {
     public void testProstateSmallData() {
 
         Scope.enter();
-        Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate_train.csv"));
-        Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate_test.csv"));
+        Frame train = Scope.track(parseTestFile("smalldata/testng/prostate_train.csv"));
+        Frame test = Scope.track(parseTestFile("smalldata/testng/prostate_test.csv"));
 
         SDTModel.SDTParameters p =
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p._max_depth = 5;
+        p._max_depth = 12;
         p._response_column = "CAPSULE";
 
         DRFModel.DRFParameters p1 =
                 new DRFModel.DRFParameters();
         p1._ntrees = 1;
-        p1._max_depth = 5;
+        p1._max_depth = 12;
         p1._response_column = "CAPSULE";
         p1._train = train._key;
         p1._seed = 0xDECAF;
@@ -149,13 +150,13 @@ public class SDTTest extends TestUtil {
                 new SDTModel.SDTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
-        p._max_depth = 3;
+        p._max_depth = 12;
         p._response_column = "IsDepDelayed";
 
         DRFModel.DRFParameters p1 =
                 new DRFModel.DRFParameters();
         p1._ntrees = 1;
-        p1._max_depth = 10;
+        p1._max_depth = 12;
         p1._response_column = "IsDepDelayed";
         p1._train = train._key;
         p1._seed = 0xDECAF;
@@ -258,7 +259,7 @@ public class SDTTest extends TestUtil {
 
             writePredictionsToFile("./predictions_" + datasetName + "_sdt.csv", out.vec(0).toCategoricalVec(), p._response_column);
 
-            System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
+//            System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
 //            System.out.println(test.vec(p._response_column));
             if(out.vec(0).length() < 100000) {
                 System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0).toCategoricalVec())));
@@ -270,11 +271,11 @@ public class SDTTest extends TestUtil {
                     out.vec(0).toCategoricalVec());
             System.out.println("SDT:");
             System.out.println("Accuracy: " + cm.accuracy());
-            System.out.println("Precision: " + cm.precision());
-            System.out.println("Recall: " + cm.recall());
-            System.out.println("Specificity: " + cm.specificity());
+//            System.out.println("Precision: " + cm.precision());
+//            System.out.println("Recall: " + cm.recall());
+//            System.out.println("Specificity: " + cm.specificity());
             System.out.println("F1: " + cm.f1());
-            System.out.println("F2: " + cm.f2());
+//            System.out.println("F2: " + cm.f2());
 
 //            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));
 
@@ -297,7 +298,7 @@ public class SDTTest extends TestUtil {
             assertEquals(test.numRows(), out1.numRows());
             writePredictionsToFile("./predictions_" + datasetName + "_drf.csv", out1.vec(0).toCategoricalVec(), p1._response_column);
             
-            System.out.println("Scoring: " + model1.testJavaScoring(test, out1, 1e-3));
+//            System.out.println("Scoring: " + model1.testJavaScoring(test, out1, 1e-3));
 //            System.out.println(test.vec(p._response_column));
 //            System.out.println(Arrays.toString(FrameUtils.asInts(out1.vec(0))));
 //            System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p1._response_column))));
@@ -307,23 +308,23 @@ public class SDTTest extends TestUtil {
                     out1.vec(0).toCategoricalVec());
             System.out.println("DRF:");
             System.out.println("Accuracy: " + cm1.accuracy());
-            System.out.println("Precision: " + cm1.precision());
-            System.out.println("Recall: " + cm1.recall());
-            System.out.println("Specificity: " + cm1.specificity());
+//            System.out.println("Precision: " + cm1.precision());
+//            System.out.println("Recall: " + cm1.recall());
+//            System.out.println("Specificity: " + cm1.specificity());
             System.out.println("F1: " + cm1.f1());
-            System.out.println("F2: " + cm1.f2());
+//            System.out.println("F2: " + cm1.f2());
 
             
             
-            System.out.println("Training sdt Time in milli seconds: "
-                    + (end_training_sdt - start_training_sdt));
-            System.out.println("Prediction sdt Time in milli seconds: "
-                    + (end_predicting_sdt - start_predicting_sdt));
-
-            System.out.println("Training drf Time in milli seconds: "
-                    + (end_training_drf - start_training_drf));
-            System.out.println("Prediction drf Time in milli seconds: "
-                    + (end_predicting_drf - start_predicting_drf));
+//            System.out.println("Training sdt Time in milli seconds: "
+//                    + (end_training_sdt - start_training_sdt));
+//            System.out.println("Prediction sdt Time in milli seconds: "
+//                    + (end_predicting_sdt - start_predicting_sdt));
+//
+//            System.out.println("Training drf Time in milli seconds: "
+//                    + (end_training_drf - start_training_drf));
+//            System.out.println("Prediction drf Time in milli seconds: "
+//                    + (end_predicting_drf - start_predicting_drf));
             
         } finally {
             Scope.exit();
