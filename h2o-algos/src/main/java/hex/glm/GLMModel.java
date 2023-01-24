@@ -952,7 +952,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case identity:
           return 0;
         case log:
-          return Math.max(x, Double.MIN_NORMAL);//Math.max(x, Double.MIN_NORMAL);
+          return Math.max(x, Double.MIN_NORMAL);
         case tweedie:
           return _link_power==0?Math.max(x, Double.MIN_NORMAL):x*_oneOLinkPower*(_oneOLinkPower-1)*_oneOetaSquare;
         default:
@@ -1002,7 +1002,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case logit:
           return 1.0 / (Math.exp(-x) + 1.0);
         case log:
-          return  Math.max(Math.exp(x), Double.MIN_NORMAL);
+          return  Math.exp(x);
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
@@ -1162,7 +1162,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           double sumr = 1.0+_theta*y;
           d = (y/(x.mu*x.mu)-_theta*sumr*invSum*invSum) * d2 * d2 + (sumr*invSum-y/x.mu) * linkInvDeriv2(x.mu); //CHECKED-log/CHECKED-identity
           x.w = w*d;
-          x.z = eta + (y-x.mu) *invSum * d2/(d*x.mu);
+          x.z = eta + (y-x.mu) *invSum * d2/(d*x.mu); // CHECKED-identity
         } else if (y==0 && x.mu > 0) {
           d = Math.min(1e10, Math.max(1e-10, linkInvDeriv2(x.mu)*invSum-_theta*invSum*invSum*d2*d2)); // CHECKED
           x.w = w*d;
