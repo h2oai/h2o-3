@@ -166,6 +166,7 @@ public class DispersionUtils {
         double _llh;
 
         NegativeBinomialGradientAndHessian(double theta) {
+            assert theta > 0;
             _theta = theta;
             _invTheta = 1./theta;
         }

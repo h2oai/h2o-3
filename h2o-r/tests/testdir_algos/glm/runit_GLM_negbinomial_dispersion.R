@@ -1,6 +1,9 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
+
+FUZZ_COUNT <- 100
+
 get_data <- function(dispersion, link = "log", nrows = 1000, ncols = 5, seed = 1234) {
     suppressWarnings({
         set.seed(seed)
@@ -47,12 +50,17 @@ get_h2o_likelihood <- function(hglm, hdata, data) {
 
 helper_test_glm <- function(data_env) {
     attach(data_env)
+    cat("Dispersion:", 1/dispersion, "; seed:", seed, "\n")
     tolerance <- 1.01 # 1.05 == 5% tolerance, 1.005 = 0.5% etc.
-
+    h2o.no_progress()
     suppressWarnings({
         rglm <- tryCatch(MASS::glm.nb(result ~ ., data), error = function(e) NULL)
     })
-    if (is.null(rglm)) return()
+    if (is.null(rglm)) {
+        #print(summary(data))
+        cat("R model training failed...\n")
+        return()
+    }
     rdiff <- abs(coefficients(rglm) - c(intercept, coefs))
     rdiff_mean <- mean(rdiff)
 
@@ -60,6 +68,10 @@ helper_test_glm <- function(data_env) {
     hglm <- tryCatch(h2o.glm(y = "result", training_frame = hdata, family = "negativebinomial", link = "log", dispersion_parameter_method = "ml", standardize = FALSE),
                      error = function(e) NULL)
     expect_true(!is.null(hglm))
+    if (is.null(hglm)) {
+        print(summary(data))
+        return()
+    }
 
     hdiff <- abs(hglm@model$coefficients_table$coefficients - c(intercept, coefs))
     hdiff_mean <- mean(hdiff)
@@ -108,8 +120,20 @@ helper_test_glm <- function(data_env) {
     #expect_true(coef_test)
 }
 
+test_dispersion_001 <- function() {
+    helper_test_glm(get_data(0.01))
+}
+
 test_dispersion_002 <- function() {
     helper_test_glm(get_data(0.02))
+}
+
+test_dispersion_005 <- function() {
+    helper_test_glm(get_data(0.05))
+}
+
+test_dispersion_01 <- function() {
+    helper_test_glm(get_data(0.1))
 }
 
 test_dispersion_02 <- function() {
@@ -136,51 +160,93 @@ test_dispersion_10 <- function() {
     helper_test_glm(get_data(10))
 }
 
+test_dispersion_20 <- function() {
+    helper_test_glm(get_data(20))
+}
+
+test_dispersion_50 <- function() {
+    helper_test_glm(get_data(50))
+}
+
+test_dispersion_100 <- function() {
+    helper_test_glm(get_data(100))
+}
+
+
+test_dispersion_200 <- function() {
+    helper_test_glm(get_data(200))
+}
+
+
+test_dispersion_500 <- function() {
+    helper_test_glm(get_data(500))
+}
+
+
+test_dispersion_1000 <- function() {
+    helper_test_glm(get_data(1000))
+}
+
 test_fuzz0 <- function() {
-  for (i in seq_len(10)) helper_test_glm(get_data(runif(1, 0, 0.001), seed = i))
+  for (i in seq_len(FUZZ_COUNT)) helper_test_glm(get_data(runif(1, 0, 0.001), seed = i))
 }
 
 test_fuzz0p001 <- function() {
-  for (i in seq_len(10)) helper_test_glm(get_data(runif(1, 0.001, 0.1), seed = i))
+  for (i in seq_len(FUZZ_COUNT)) helper_test_glm(get_data(runif(1, 0.001, 0.1), seed = i))
 }
 
 test_fuzz0p1 <- function() {
-  for (i in seq_len(10)) helper_test_glm(get_data(runif(1, 0.1, 1), seed = i))
+  for (i in seq_len(FUZZ_COUNT)) helper_test_glm(get_data(runif(1, 0.1, 1), seed = i))
 }
 
 test_fuzz1 <- function() {
-  for (i in seq_len(10)) helper_test_glm(get_data(runif(1, 1, 10), seed = i))
+  for (i in seq_len(FUZZ_COUNT)) helper_test_glm(get_data(runif(1, 1, 10), seed = i))
 }
 
 test_fuzz10 <- function() {
-  for (i in seq_len(10)) helper_test_glm(get_data(runif(1, 10, 100), seed = i))
+  for (i in seq_len(FUZZ_COUNT)) helper_test_glm(get_data(runif(1, 10, 100), seed = i))
 }
 
 test_fuzz100 <- function() {
-  for (i in seq_len(10)) helper_test_glm(get_data(runif(1, 100, 1000), seed = i))
+  for (i in seq_len(FUZZ_COUNT)) helper_test_glm(get_data(runif(1, 100, 1000), seed = i))
 }
 
-test_custom <- function() {
-    #helper_test_glm(get_data(990.018368070014, seed=7))
-    helper_test_glm(get_data(266.394033934921, seed=2))
+test_fuzz1000 <- function() {
+  for (i in seq_len(FUZZ_COUNT)) helper_test_glm(get_data(runif(1, 1000, 100000), seed = i))
 }
+
+
+# test_custom <- function() {
+#     #helper_test_glm(get_data(990.018368070014, seed=7))
+#     helper_test_glm(get_data(266.394033934921, seed=2))
+# }
 
 # doTest("Custom test used for debugging divergence", test_custom)
 
 #
 doSuite("Negative Binomial Dispersion Estimation tests",
         makeSuite(
+            #test_dispersion_001, # R fails to build a model
             test_dispersion_002,
+            #test_dispersion_005, # R fails to build a model
+            test_dispersion_01,
             test_dispersion_02,
             test_dispersion_05,
-            test_dispersion_1,
+            #test_dispersion_1, # R fails to build a model
             test_dispersion_2,
             test_dispersion_5,
-            test_dispersion_10
+            test_dispersion_10,
+            test_dispersion_20,
+            test_dispersion_50,
+            test_dispersion_100,
+            test_dispersion_200,
+            test_dispersion_500,
+            test_dispersion_1000
              ,test_fuzz0,
              test_fuzz0p001,
              test_fuzz0p1,
              test_fuzz1,
              test_fuzz10,
-             test_fuzz100
+             test_fuzz100,
+#              test_fuzz1000
         ))

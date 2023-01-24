@@ -2246,9 +2246,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double bestTheta = theta;
         int bestInt = 0;
 
+        delta = Double.isFinite(delta) ? delta : 1; // NaN can occur in extreme datasets so try to get out of this neighborhood just by linesearch
+
         // Golden section search for the optimal size of delta
-        double lowerBound = -10; //Double.isFinite(delta) ? 0 : -10; // NaN can occur in extreme datasets so try to get out of this neighborhood just by linesearch
-        delta = Double.isFinite(delta) ? delta : 1;
+        // Set lowerbound to -10 or lowest value that will keep theta > 0 which ever is bigger
+        // Negative value here helps with datasets where we use to diverge, I'm not sure yet if it's caused by some
+        // numerical issues or if the likelihood can get multimodal for some cases.
+        double lowerBound = (theta + 10 * delta < 0) ? (1 - 1e-15) * theta / delta : -10;
         double upperBound = (theta - 1e3 * delta < 0) ? (1 - 1e-15) * theta / delta : 1e3;
         double d = upperBound - lowerBound;
 
@@ -2272,35 +2276,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               bestTheta = nbUpper._theta;
             }
           }
-          if (Math.abs((upperBoundProposal - lowerBoundProposal)*delta)/Math.max(_parms._theta, bestTheta) < _parms._dispersion_epsilon) {
+          if (Math.abs((upperBoundProposal - lowerBoundProposal) * Math.max(1, delta / Math.max(_parms._theta, bestTheta))) < _parms._dispersion_epsilon) {
             bestInt = i;
             break;
           }
         }
 
-//        for (int i = -1000; i <1000 ; i++,i++) {
-//          NegativeBinomialGradientAndHessian nb = new NegativeBinomialGradientAndHessian((theta - delta*i/nTries) < 0 ? theta / 2 : theta - delta*i/nTries).doAll(mu, response, weights);
-//          if (nb._llh >= bestLLH) {
-//            bestTheta = nb._theta;
-//            bestLLH = nb._llh;
-//            bestInt =i;
-//          }
-//        }
-
-        Log.warn(":!!!!!: iterCnt: "+iterCnt+"; i: "+bestInt+ "; lower: "+lowerBound+"; upper: "+upperBound+"; theta: "+bestTheta + "; LLH: "+bestLLH);
+        Log.warn(":!!!!!: iterCnt: "+iterCnt+"; i: "+bestInt+ "; lower: "+lowerBound+"; upper: "+upperBound+"; theta: "+bestTheta +"; prevTheta: "+_parms._theta+ "; LLH: "+bestLLH);
 
         theta = bestTheta;
-      //  theta = (theta - delta) < 0 ? theta / 2 : theta - delta;
         converged = (nbGrad._llh + previousNLLH) <= _parms._objective_epsilon || !Double.isFinite(theta);
       }
       delta = _parms._theta - theta;
-//      if (!Double.isFinite(theta) || (Math.abs(delta/_parms._theta) > 1e5 || Math.abs(delta) > 1e10) && iterCnt > 1) {
-//        updateTheta(1e-10);
-//        //updateNegativeBinomialDispersion(1, _state.beta(), previousLLH);
-//        return false;
-//      }
       converged = converged &&  (Math.abs(delta) / Math.max(_parms._theta, theta) < _parms._dispersion_epsilon);
-      //converged =  Math.abs(delta) < _parms._dispersion_epsilon || iterCnt > _parms._max_iterations_dispersion;
 
       updateTheta(theta);
       return converged;
