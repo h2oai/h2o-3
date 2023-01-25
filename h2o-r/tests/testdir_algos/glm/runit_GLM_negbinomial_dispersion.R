@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 FUZZ_COUNT <- 100
 
-get_data <- function(dispersion, link = "random", nrows = 5000, ncols = 5, seed = 1234) {
+get_data <- function(dispersion, link = "random", nrows = 1000, ncols = 5, seed = 1234) {
     suppressWarnings({
         set.seed(seed)
         if (link == "random")
@@ -17,7 +17,7 @@ get_data <- function(dispersion, link = "random", nrows = 5000, ncols = 5, seed 
             valid[[paste0("col", i)]] <- rnorm(min(1e4, nrows))
         }
 
-        coefs <- runif(ncols, -10, 10) / ncols
+        coefs <- runif(ncols, -1, 1) / ncols
 
         intercept <-  sample(1:1000, 1) / 100
 

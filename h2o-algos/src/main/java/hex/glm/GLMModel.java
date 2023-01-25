@@ -1002,7 +1002,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case logit:
           return 1.0 / (Math.exp(-x) + 1.0);
         case log:
-          return  Math.exp(x);
+          return Math.exp(x);
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
@@ -1164,7 +1164,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           x.w = w*d;
           x.z = eta + (y-x.mu) *invSum * d2/(d*x.mu); // CHECKED-identity
         } else if (y==0 && x.mu > 0) {
-          d = Math.min(1e10, Math.max(1e-10, linkInvDeriv2(x.mu)*invSum-_theta*invSum*invSum*d2*d2)); // CHECKED
+          d = linkInvDeriv2(x.mu)*invSum-_theta*invSum*invSum*d2*d2; // CHECKED
+          //d = Math.min(1e10, Math.max(1e-10, d));
           x.w = w*d;
           x.z = eta - invSum*d2/d;
         } else {

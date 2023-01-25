@@ -27,7 +27,6 @@ import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.BMulTask;
 import hex.util.LinearAlgebraUtils.FindMaxIndex;
 import jsr166y.CountedCompleter;
-import org.apache.commons.math3.exception.ConvergenceException;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -2243,7 +2242,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         delta = _parms._dispersion_learning_rate * nbGrad._grad / nbGrad._hess;
         double bestLLH = Math.max(-previousNLLH, nbGrad._llh);
         double bestTheta = theta;
-        //int bestInt = 0;
 
         delta = Double.isFinite(delta) ? delta : 1; // NaN can occur in extreme datasets so try to get out of this neighborhood just by linesearch
 
@@ -2276,12 +2274,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
           }
           if (Math.abs((upperBoundProposal - lowerBoundProposal) * Math.max(1, delta / Math.max(_parms._theta, bestTheta))) < _parms._dispersion_epsilon || _job.stop_requested()) {
-            //bestInt = i;
             break;
           }
         }
-
-        //        Log.warn(":!!!!!: iterCnt: "+iterCnt+"; i: "+bestInt+ "; lower: "+lowerBound+"; upper: "+upperBound+"; theta: "+bestTheta +"; prevTheta: "+_parms._theta+ "; LLH: "+bestLLH);
 
         theta = bestTheta;
         converged = (nbGrad._llh + previousNLLH) <= _parms._objective_epsilon || !Double.isFinite(theta);
