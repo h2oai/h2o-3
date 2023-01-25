@@ -509,9 +509,8 @@ FAQ
 
   AutoML includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
 
-  - XGBoost is not available on Windows machines.
+  - XGBoost is not currently available on Windows machines, or on OS X with the new Apple M1 chip.  Please check the JIRA tickets for `Windows <https://h2oai.atlassian.net/browse/PUBDEV-8523>`__ and `Apple M1 <https://h2oai.atlassian.net/browse/PUBDEV-8482>`__ for updates. 
   - XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__. You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
-
 
 -   **Why doesn't AutoML use all the time that it's given?** 
 

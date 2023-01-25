@@ -283,19 +283,21 @@ This section provides a list of XGBoost limitations - some of which will be addr
 
 The list of limitations include:
 
-  - XGBoost is not supported on Windows.
+  - XGBoost is not currently supported on Windows or on the new Apple M1 chip.  Please check the JIRA tickets for `Windows <https://h2oai.atlassian.net/browse/PUBDEV-8523>`__ and `Apple M1 <https://h2oai.atlassian.net/browse/PUBDEV-8482>`__ for updates. 
 
   - The list of supported platforms includes:
  
-    +----------+-----------------+-----+-----+----------------+
-    | Platform | Minimal XGBoost | OMP | GPU | Compilation OS |
-    +==========+=================+=====+=====+================+
-    |Linux     | yes             | yes | yes | CentOS 7       |
-    +----------+-----------------+-----+-----+----------------+
-    |OS X      | yes             | no  | no  | OS X 10.11     |
-    +----------+-----------------+-----+-----+----------------+
-    |Windows   | no              | no  | no  | NA             |
-    +----------+-----------------+-----+-----+----------------+
+    +------------+-----------------+-----+-----+----------------+
+    | Platform   | Minimal XGBoost | OMP | GPU | Compilation OS |
+    +============+=================+=====+=====+================+
+    |Linux       | yes             | yes | yes | CentOS 7       |
+    +------------+-----------------+-----+-----+----------------+
+    |OS X (Intel)| yes             | no  | no  | OS X 10.11     |
+    +------------+-----------------+-----+-----+----------------+
+    |OS X (M1)   | no              | no  | no  | NA             |
+    +------------+-----------------+-----+-----+----------------+
+    |Windows     | no              | no  | no  | NA             |
+    +------------+-----------------+-----+-----+----------------+
 
     **Notes**:
 
