@@ -15,13 +15,15 @@ public class NodeHelper {
     }
 
     public static boolean isEqual(RegTreeNode left, RegTreeNode right) {
-        return left.getParentIndex() == right.getParentIndex() 
+        return left == right || (   // also covers null case
+                left.getParentIndex() == right.getParentIndex() 
                 && left.getLeftChildIndex() == right.getLeftChildIndex() 
                 && left.getRightChildIndex() == right.getRightChildIndex()
                 && left.getSplitIndex() == right.getSplitIndex()
                 && Float.compare(left.getLeafValue(), right.getLeafValue()) == 0 
                 && Float.compare(left.getSplitCondition(), right.getSplitCondition()) == 0
-                && left.default_left() == right.default_left();
+                && left.default_left() == right.default_left()
+        );
     }
 
 }
