@@ -392,7 +392,7 @@ Can I access the row to tree assignments for my model?
 
       # Build and train the model:
       gbm_model = H2OGradientBoostingEstimator(ntrees=3, sample_rate=0.6, seed=1234)
-      gbm_model.train(y=target, training_frame=fr)
+      gbm_model.train(y=response, training_frame=prostate)
 
       # Access the row to tree assignments:
-      gbm.row_to_tree_assignment(prostate)
+      gbm_model.row_to_tree_assignment(prostate)
