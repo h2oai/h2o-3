@@ -163,12 +163,14 @@ public class DispersionUtils {
         double _hess;
         double _theta;
         double _invTheta;
+        double _invThetaSq;
         double _llh;
 
         NegativeBinomialGradientAndHessian(double theta) {
             assert theta > 0;
             _theta = theta;
             _invTheta = 1./theta;
+            _invThetaSq = _invTheta*_invTheta;
         }
 
         @Override
@@ -202,8 +204,7 @@ public class DispersionUtils {
                                                                 trigamma(_invTheta)
                                                 ) * _invTheta
                                         ) * _invTheta
-                                ) * _invTheta * _invTheta
-
+                                ) * _invThetaSq
                 );
                 _llh += logGamma(y + _invTheta) - logGamma(_invTheta) - logGamma(y + 1) +
                         y * Math.log(_theta * mu) - (y+_invTheta) * Math.log(1 + _theta * mu);
@@ -263,17 +264,10 @@ public class DispersionUtils {
         }
     };
 
-    public static double estimateNegBinomialDispersionMomentMethod(GLMModel.GLMParameters parms, GLMModel model, Job job,
-                                                                   double[] beta, DataInfo dinfo) {
-        Vec weights = dinfo._weights
-                ? dinfo.getWeightsVec()
-                : dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(dinfo._adaptedFrame.numRows())))[0];
-
-
+    public static double estimateNegBinomialDispersionMomentMethod(GLMModel model, double[] beta, DataInfo dinfo, Vec weights, Vec response) {
         DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
                 1, Vec.T_NUM, dinfo._adaptedFrame);
         Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
-        Vec response = dinfo._adaptedFrame.vec(dinfo.responseChunkId(0));
         class MomentMethodThetaEstimation extends MRTask<MomentMethodThetaEstimation> {
             double _muSqSum;
             double _sSqSum;
@@ -305,7 +299,7 @@ public class DispersionUtils {
     }
 
 
-    public static double estimateNegBinomialDispersionFisherScoring(GLMModel.GLMParameters parms, GLMModel model, Job job,
+    public static double estimateNegBinomialDispersionFisherScoring(GLMModel.GLMParameters parms, GLMModel model,
                                                        double[] beta, DataInfo dinfo) {
         Vec weights = dinfo._weights
                 ? dinfo.getWeightsVec()

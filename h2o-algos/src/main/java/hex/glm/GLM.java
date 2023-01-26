@@ -2145,6 +2145,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double previousLLH = Double.POSITIVE_INFINITY;
       boolean converged = false;
       int sameLLH = 0;
+      Vec weights = _dinfo._weights
+              ? _dinfo.getWeightsVec()
+              : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
+      Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
       try {
         while (!converged && iterCnt < _parms._max_iterations_dispersion && !_job.stop_requested()) {
           iterCnt++;
@@ -2196,7 +2200,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
           // Dispersion estimation part
           if (negativebinomial.equals(_parms._family)){
-            converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH) && converged;
+            converged = updateNegativeBinomialDispersion(iterCnt, betaCnd, previousLLH, weights, response) && converged;
           }
           if (Math.abs(previousLLH - gram.likelihood) < _parms._objective_epsilon)
             sameLLH ++;
@@ -2222,18 +2226,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _model._parms._invTheta = 1./theta;
     }
 
-    private boolean updateNegativeBinomialDispersion(int iterCnt, double[] betaCnd, double previousNLLH) {
+    private boolean updateNegativeBinomialDispersion(int iterCnt, double[] betaCnd, double previousNLLH, Vec weights, Vec response) {
       double delta;
       double theta;
       boolean converged = false;
       if (iterCnt == 1) {
-        theta = estimateNegBinomialDispersionMomentMethod(_parms, _model, _job, betaCnd, _dinfo);
+        theta = estimateNegBinomialDispersionMomentMethod(_model, betaCnd, _dinfo, weights, response);
       } else {
         theta = _parms._theta;
-        Vec weights = _dinfo._weights
-                ? _dinfo.getWeightsVec()
-                : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
-        Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
         DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
                 1, Vec.T_NUM, _dinfo._adaptedFrame);
         Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);

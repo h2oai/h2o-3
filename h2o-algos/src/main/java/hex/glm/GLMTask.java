@@ -18,7 +18,6 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.MathUtils.BasicStats;
-
 import java.util.Arrays;
 
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.deviance;

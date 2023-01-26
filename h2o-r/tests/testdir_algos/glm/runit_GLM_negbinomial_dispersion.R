@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 FUZZ_COUNT <- 100
 
-get_data <- function(dispersion, link = "random", nrows = 1000, ncols = 5, seed = 1234) {
+get_data <- function(dispersion, link = "random", nrows = 5000, ncols = 5, seed = 1234) {
     suppressWarnings({
         set.seed(seed)
         if (link == "random")
@@ -14,7 +14,7 @@ get_data <- function(dispersion, link = "random", nrows = 1000, ncols = 5, seed 
         valid <- data.frame(col0 = rnorm(min(1e4,nrows)))
         for (i in seq_len(ncols - 1)) {
             df[[paste0("col", i)]] <- rnorm(nrows)
-            valid[[paste0("col", i)]] <- rnorm(min(1e4, nrows))
+            valid[[paste0("col", i)]] <- rnorm(nrows)
         }
 
         coefs <- runif(ncols, -1, 1) / ncols
@@ -51,7 +51,7 @@ get_h2o_likelihood <- function(hglm, hdata, data) {
 
 helper_test_glm <- function(data_env) {
     attach(data_env)
-    cat("Dispersion:", 1/dispersion, "; seed:", seed, "; link:", link, "\n")
+    cat("Dispersion:", 1/dispersion, "; seed:", seed, "; link:", link, "; msg:", msg, "\n")
     tolerance <- 1.01 # 1.05 == 5% tolerance, 1.005 = 0.5% etc.
     h2o.no_progress()
     suppressWarnings({
@@ -222,11 +222,12 @@ test_fuzz1000 <- function() {
 }
 
 
-#  test_custom <- function() {
-#      #helper_test_glm(get_data(990.018368070014, seed=7))
-#      #helper_test_glm(get_data(266.394033934921, seed=2))
-#      helper_test_glm(get_data(0.000760774315800518, nrows=1000, ncols=5, link="log", seed=86))
-#  }
+  test_custom <- function() {
+      #helper_test_glm(get_data(990.018368070014, seed=7))
+      #helper_test_glm(get_data(266.394033934921, seed=2))
+      #helper_test_glm(get_data(0.000760774315800518, nrows=1000, ncols=5, link="log", seed=86))
+      helper_test_glm(get_data(0.000218159678624943, nrows=1314, ncols=80, seed=55, link="log"))
+  }
 
 # doTest("Custom test used for debugging divergence", test_custom)
 
