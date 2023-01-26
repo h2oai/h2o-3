@@ -1,0 +1,88 @@
+description = "H2O-3 Cloud Extensions Package"
+
+dependencies {}
+
+def buildVersion = new H2OBuildVersion(rootDir, version)
+
+ext {
+    PROJECT_VERSION = buildVersion.getProjectVersion()
+    pythonexe = findProperty("pythonExec") ?: "python"
+    pipexe = findProperty("pipExec") ?: "pip"
+    if (System.env.VIRTUAL_ENV) {
+        pythonexe = "${System.env.VIRTUAL_ENV}/bin/python".toString()
+        pipexe = "${System.env.VIRTUAL_ENV}/bin/pip".toString()
+    }
+    testsPath = file("tests")
+}
+
+//
+// Create a file with version for Python dist task
+//
+task createVersionFiles() {
+    doLast {
+        file("${buildDir}/h2o_cloud_extensions/").mkdirs()
+        File version_file = new File("${buildDir}/h2o_cloud_extensions/", "version.txt")
+        version_file.write(PROJECT_VERSION)
+
+        File build_file = new File("${buildDir}/h2o_cloud_extensions/", "buildinfo.txt")
+        build_file.write(buildVersion.toString())
+    }
+}
+
+
+task copySrcFiles(type: Copy) {
+    from ("${projectDir}") {
+        include "setup.py"
+        include "setup.cfg"
+        include "h2o_cloud_extensions/**"
+        include "README.md"
+        include "DESCRIPTION.rst"
+    }
+    into "${buildDir}"
+}
+
+task buildDist(type: Exec, dependsOn: [createVersionFiles, copySrcFiles]) {
+    workingDir buildDir
+    doFirst {
+        file("${buildDir}/tmp").mkdirs()
+        standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o-py_buildDist.out"))
+    }
+    commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
+}
+
+task copyMainDist(type: Copy, dependsOn: [buildDist]) {
+    from ("${buildDir}/main/") {
+        include "dist/**"
+    }
+    into "${buildDir}"
+}
+
+task pythonVersion(type: Exec) {
+    doFirst {
+        println(System.env.VIRTUAL_ENV)
+        println(environment)
+    }
+    commandLine getOsSpecificCommandLine([pythonexe, "--version"])
+}
+
+
+task cleanUpTestResults(type: Delete) {
+    delete file("${testsPath}/results")
+    doLast {
+        mkdir file("${testsPath}/results")
+    }
+}
+
+task cleanBuild(type: Delete) {
+    doFirst {
+        println "Cleaning..."
+    }
+    delete file("build/")
+    delete fileTree(dir: "$projectDir/h2o" , include: '**/*.pyc')
+}
+
+//
+// Define the dependencies
+//
+clean.dependsOn cleanBuild, cleanUpTestResults
+build.dependsOn copyMainDist
