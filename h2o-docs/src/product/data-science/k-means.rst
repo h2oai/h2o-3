@@ -72,7 +72,7 @@ Defining a K-Means Model
  - ``Furthest``: initialization chooses one initial center at random and then chooses the next center to be the point furthest away in terms of Euclidean distance.
  - ``User``: initialization requires the corresponding ``user_points`` parameter. Note that the user-specified points dataset must have the same number of columns as the training dataset.
 
-**Note**: This parameter is ignored if ``estimate_k=True`` because the algorithm will determine the initial cluster centers on its own. 
+**Note**: ``init`` is ignored if ``estimate_k=True`` because the algorithm will determine the initial cluster centers on its own. 
 
 - `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This value is set to 0 (disabled) by default.
 
