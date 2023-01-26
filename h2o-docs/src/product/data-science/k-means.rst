@@ -65,14 +65,14 @@ Defining a K-Means Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `init <algo-params/init1.html>`__: Specify the initialization mode. The options are Random, Furthest (default), PlusPlus, or User.
+-  `init <algo-params/init1.html>`__: Specify the initialization mode. The options are: 
 
- - Random initialization randomly samples the k-specified value of the rows of the training data as cluster centers.
- - PlusPlus initialization chooses one initial center at random and weights the random selection of subsequent centers so that points furthest from the first center are more likely to be chosen.
- - Furthest initialization chooses one initial center at random and then chooses the next center to be the point furthest away in terms of Euclidean distance.
- - User initialization requires the corresponding ``user_points`` parameter. Note that the user-specified points dataset must have the same number of columns as the training dataset.
+ - ``Random``: initialization randomly samples the k-specified value of the rows of the training data as cluster centers.
+ - ``PlusPlus``: initialization chooses one initial center at random and weights the random selection of subsequent centers so that points furthest from the first center are more likely to be chosen. If ``PlusPlus`` is specified, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+ - ``Furthest``: initialization chooses one initial center at random and then chooses the next center to be the point furthest away in terms of Euclidean distance.
+ - ``User``: initialization requires the corresponding ``user_points`` parameter. Note that the user-specified points dataset must have the same number of columns as the training dataset.
 
- **Note**: If PlusPlus is specified, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+**Note**: This parameter is ignored if ``estimate_k=True`` because the algorithm will determine the initial cluster centers on its own. 
 
 - `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This value is set to 0 (disabled) by default.
 
