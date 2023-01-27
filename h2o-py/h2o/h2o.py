@@ -270,7 +270,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
                                      auth=auth, proxy=proxy, cookies=cookies, verbose=True,
-                                     msgs=("Checking whether there is an H2O instance running at {url} ",
+                                     msgs=("Checking whether there is an H2O instance running at {url}",
                                            "connected.", "not found."),
                                      strict_version_check=svc)
     except H2OConnectionError:
