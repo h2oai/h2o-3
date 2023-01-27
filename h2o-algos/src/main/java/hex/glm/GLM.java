@@ -2150,7 +2150,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
       Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
       try {
-        while (!converged && iterCnt < _parms._max_iterations_dispersion && !_job.stop_requested()) {
+        while (!converged && iterCnt < _parms._max_iterations && !_job.stop_requested()) {
           iterCnt++;
           long t1 = System.currentTimeMillis();
           ComputationState.GramXY gram = _state.computeGram(betaCnd, s);

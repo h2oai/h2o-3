@@ -10,6 +10,7 @@ get_data <- function(dispersion, link = "random", nrows = 5000, ncols = 5, seed 
         if (link == "random")
            link <- sample(c("log", "identity"), 1, prob = c(0.9, 0.1)) # R fails often with identity link without starting values
         msg <- paste0("Generated data with theta=", dispersion," link=", link, " nrows=", nrows, " ncols=", ncols," seed=", seed,  "\n")
+#        msg <- paste0("get_data(",dispersion,", nrows=",nrows,", ncols=",ncols,", seed=", seed, ", link=\"",link,"\")")
         df <- data.frame(col0 = rnorm(nrows))
         valid <- data.frame(col0 = rnorm(min(1e4,nrows)))
         for (i in seq_len(ncols - 1)) {
@@ -227,9 +228,10 @@ test_fuzz1000 <- function() {
       #helper_test_glm(get_data(266.394033934921, seed=2))
       #helper_test_glm(get_data(0.000760774315800518, nrows=1000, ncols=5, link="log", seed=86))
       helper_test_glm(get_data(0.000218159678624943, nrows=1314, ncols=80, seed=55, link="log"))
+      helper_test_glm(get_data(31370.0821006205, nrows=4842, ncols=70, seed=10, link="log"))
   }
 
-# doTest("Custom test used for debugging divergence", test_custom)
+#doTest("Custom test used for debugging divergence", test_custom)
 
 #
 doSuite("Negative Binomial Dispersion Estimation tests",
