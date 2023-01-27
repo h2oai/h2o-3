@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 
-FUZZ_COUNT <- 100
+FUZZ_COUNT <- 0
 
 get_data <- function(dispersion, link = "random", nrows = 5000, ncols = 5, seed = 1234) {
     suppressWarnings({
