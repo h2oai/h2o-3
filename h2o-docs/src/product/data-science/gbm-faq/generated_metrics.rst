@@ -9,8 +9,10 @@ What evaluation metrics are available for GBM?
 - MAE
 - RMSLE
 - Mean Residual Deviance
+- Mean Residual Deviance Not Optimized
 
-**Notes**: MSE = Mean Residual Deviance for Gaussian distributions. Also, look at Mean Residual Deviance when using quantile distributions.
+**Notes**: MSE = Mean Residual Deviance for Gaussian distributions. Also, look at Mean Residual Deviance when using quantile distributions. Mean Residual Deviance Not Optimized is currently only implemented for Poisson distribution. Mean Residual Deviance Not Optimized is calculated from the original deviance formula. Mean Residual Deviance uses an optimized deviance formula for some distributions which provides a different output than the original deviance formula would. 
+
 
 How is variable importance determined?
 ######################################
