@@ -2200,7 +2200,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
           // Dispersion estimation part
           if (negativebinomial.equals(_parms._family)){
-            converged = updateNegativeBinomialDispersion(iterCnt, betaCnd, previousLLH, weights, response) && converged;
+            converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH, weights, response) && converged;
           }
           if (Math.abs(previousLLH - gram.likelihood) < _parms._objective_epsilon)
             sameLLH ++;
