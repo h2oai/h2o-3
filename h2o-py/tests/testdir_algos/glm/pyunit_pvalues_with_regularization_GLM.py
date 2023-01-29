@@ -145,8 +145,12 @@ def test_p_value_for_maximum_likelihood():
     model_ml = glm(family='gamma', lambda_=0, compute_p_values=True, dispersion_parameter_method="ml")
     model_ml.train(training_frame=training_data, x=x, y=Y)
 
-    model_ml_reg = glm(family='gamma', lambda_=0.0000000001, compute_p_values=True, dispersion_parameter_method="ml")
-    model_ml_reg.train(training_frame=training_data, x=x, y=Y)
+    try:
+        model_ml_reg = glm(family='gamma', lambda_=0.0000000001, compute_p_values=True, dispersion_parameter_method="ml")
+        model_ml_reg.train(training_frame=training_data, x=x, y=Y)
+        assert False, "Regularization is not supported with dispersion_parameter_method=\"ML\""
+    except (OSError, EnvironmentError):
+        return
 
     dispersion_factor_ml_estimated = model_ml._model_json["output"]["dispersion"]
     dispersion_factor_ml_reg_estimated = model_ml_reg._model_json["output"]["dispersion"]

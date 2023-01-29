@@ -2254,7 +2254,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double d = upperBound - lowerBound;
 
         for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
-          d *= 0.618;
+          d *= 0.618;  // division by golden ratio
           final double lowerBoundProposal = upperBound - d;
           final double upperBoundProposal = lowerBound + d;
           NegativeBinomialGradientAndHessian nbLower = new NegativeBinomialGradientAndHessian(theta - lowerBoundProposal * delta).doAll(mu, response, weights);
