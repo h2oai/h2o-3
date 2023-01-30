@@ -2,12 +2,18 @@ package hex.glm;
 
 import hex.DataInfo;
 import water.Job;
+import water.Key;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static org.apache.commons.math3.special.Gamma.*;
 
 public class DispersionUtils {
     /***
@@ -150,6 +156,179 @@ public class DispersionUtils {
         }
         else
             return dispersionCurr;
+    }
+
+    static class NegativeBinomialGradientAndHessian extends MRTask<NegativeBinomialGradientAndHessian> {
+        double _grad;
+        double _hess;
+        double _theta;
+        double _invTheta;
+        double _invThetaSq;
+        double _llh;
+
+        NegativeBinomialGradientAndHessian(double theta) {
+            assert theta > 0;
+            _theta = theta;
+            _invTheta = 1./theta;
+            _invThetaSq = _invTheta*_invTheta;
+        }
+
+        @Override
+        public void map(Chunk[] cs) {
+            // mu, y, w
+            for (int i = 0; i < cs[0]._len; i++) {
+                final double mu = cs[0].atd(i);
+                final double y = cs[1].atd(i);
+                final double w = cs[2].atd(i);
+                _grad += w * (
+                        -mu*(y+_invTheta)/(mu*_theta+1) +
+                                (
+                                        y +
+                                                (
+                                                        Math.log(mu*_theta + 1) -
+                                                                digamma(y+_invTheta) +
+                                                                digamma(_invTheta)
+                                                ) * _invTheta
+
+                                ) * _invTheta
+                );
+                _hess += w * (
+                        (mu*mu*(y+_invTheta)/Math.pow(mu*_theta+1, 2)) +
+                                (-y +
+                                        (2 * mu) / (mu*_theta+1) +
+                                        ((-2 * Math.log(mu*_theta + 1)) +
+                                                2*digamma(y + _invTheta) -
+                                                2*digamma(_invTheta) +
+                                                (
+                                                        trigamma(y+_invTheta) -
+                                                                trigamma(_invTheta)
+                                                ) * _invTheta
+                                        ) * _invTheta
+                                ) * _invThetaSq
+                );
+                _llh += logGamma(y + _invTheta) - logGamma(_invTheta) - logGamma(y + 1) +
+                        y * Math.log(_theta * mu) - (y+_invTheta) * Math.log(1 + _theta * mu);
+            }
+        }
+
+        @Override
+        public void reduce(NegativeBinomialGradientAndHessian mrt) {
+            _grad += mrt._grad;
+            _hess += mrt._hess;
+            _llh += mrt._llh;
+        }
+    };
+
+    static class CalculateNegativeBinomialScoreAndInfo extends MRTask<CalculateNegativeBinomialScoreAndInfo> {
+        double _score;
+        double _info;
+        double _theta;
+
+        CalculateNegativeBinomialScoreAndInfo(double theta) {
+            _theta = theta;
+        }
+
+        @Override
+        public void map(Chunk[] cs) {
+            // mu, y, w
+            for (int i = 0; i < cs[0]._len; i++) {
+                final double w = cs[2].atd(i);
+                _score += w * (digamma(_theta + cs[1].atd(i)) - digamma(_theta) + Math.log(_theta) + 1 -
+                        Math.log(_theta + cs[0].atd(i)) - (cs[1].atd(i) + _theta) / (cs[0].atd(i) + _theta));
+                _info += w * (-trigamma(_theta + cs[1].atd(i)) + trigamma(_theta) -
+                        1/_theta + 2/(cs[0].atd(i) + _theta) - (cs[1].atd(i) + _theta)/
+                        Math.pow(cs[0].atd(i) + _theta, 2));
+            }
+        }
+
+        @Override
+        public void reduce(CalculateNegativeBinomialScoreAndInfo mrt) {
+            _score += mrt._score;
+            _info += mrt._info;
+        }
+    };
+
+    static class CalculateInitialTheta extends MRTask<CalculateInitialTheta> {
+        double _theta0;
+        @Override
+        public void map(Chunk[] cs) {
+            // mu, y, w
+            for (int i = 0; i < cs[0]._len; i++) {
+                _theta0 += cs[2].atd(i) * Math.pow(cs[1].atd(i)/cs[0].atd(i) - 1, 2);
+            }
+        }
+
+        @Override
+        public void reduce(CalculateInitialTheta mrt) {
+            _theta0 += mrt._theta0;
+        }
+    };
+
+    public static double estimateNegBinomialDispersionMomentMethod(GLMModel model, double[] beta, DataInfo dinfo, Vec weights, Vec response) {
+        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
+                1, Vec.T_NUM, dinfo._adaptedFrame);
+        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        class MomentMethodThetaEstimation extends MRTask<MomentMethodThetaEstimation> {
+            double _muSqSum;
+            double _sSqSum;
+            double _muSum;
+            double _wSum;
+            @Override
+            public void map(Chunk[] cs) {
+                // mu, y, w
+                for (int i = 0; i < cs[0]._len; i++) {
+                    final double w = cs[2].atd(i);
+                    _muSqSum += w * Math.pow(cs[0].atd(i), 2);
+                    _sSqSum += w * Math.pow(cs[1].atd(i) - cs[0].atd(i), 2);
+                    _muSum += w * cs[0].atd(i);
+                    _wSum += w;
+                }
+            }
+
+            @Override
+            public void reduce(MomentMethodThetaEstimation mrt) {
+                _muSqSum += mrt._muSqSum;
+                _sSqSum += mrt._sSqSum;
+                _muSum += mrt._muSum;
+                _wSum += mrt._wSum;
+            }
+        };
+        MomentMethodThetaEstimation mm = new MomentMethodThetaEstimation().doAll(mu, response, weights);
+
+        return mm._muSqSum/(mm._sSqSum - mm._muSum/mm._wSum);
+    }
+
+
+    public static double estimateNegBinomialDispersionFisherScoring(GLMModel.GLMParameters parms, GLMModel model,
+                                                       double[] beta, DataInfo dinfo) {
+        Vec weights = dinfo._weights
+                ? dinfo.getWeightsVec()
+                : dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(dinfo._adaptedFrame.numRows())))[0];
+
+        final double nRows = weights == null
+                ? dinfo._adaptedFrame.numRows()
+                : weights.mean() * weights.length();
+
+        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
+                1, Vec.T_NUM, dinfo._adaptedFrame);
+        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        Vec response = dinfo._adaptedFrame.vec(dinfo.responseChunkId(0));
+        double invTheta = nRows / new CalculateInitialTheta().doAll(mu, response, weights)._theta0;
+        double delta = 1;
+        int i = 0;
+        for (; i < parms._max_iterations_dispersion; i++) {
+            if (Math.abs(delta) < parms._dispersion_epsilon) break;
+            invTheta = Math.abs(invTheta);
+            CalculateNegativeBinomialScoreAndInfo si = new CalculateNegativeBinomialScoreAndInfo(invTheta).doAll(mu, response, weights);
+            delta = si._score/si._info;
+            invTheta += delta;
+        }
+
+        if (invTheta < 0)
+            Log.warn("Dispersion estimate truncated at zero.");
+        if (i == parms._max_iterations_dispersion)
+            Log.warn("Iteration limit reached.");
+        return 1./invTheta;
     }
     
     public static double dispersionLS(DispersionTask.ComputeMaxSumSeriesTsk computeTsk,

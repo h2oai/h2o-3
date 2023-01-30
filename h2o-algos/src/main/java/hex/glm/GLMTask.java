@@ -21,13 +21,11 @@ import water.util.MathUtils.BasicStats;
 import java.util.Arrays;
 
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.deviance;
-import static hex.glm.GLMModel.GLMParameters.DispersionMethod.pearson;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
 import static hex.glm.GLMUtils.updateGradGam;
 import static hex.glm.GLMUtils.updateGradGamMultinomial;
 import static org.apache.commons.math3.special.Gamma.*;
-import static org.apache.commons.math3.special.Gamma.logGamma;
 
 /**
  * All GLM related distributed tasks:
