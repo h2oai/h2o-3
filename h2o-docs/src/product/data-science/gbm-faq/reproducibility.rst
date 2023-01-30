@@ -376,7 +376,7 @@ The **Node Information** subtable stores monitoring information for each node. T
 Can I access the row to tree assignments for my model?
 ######################################################
 
-``row_to_tree_assignment`` provides the row to tree assignments for the model and the provided training data. This feature allows you to debug the model and assists with replicating the model. 
+``row_to_tree_assignment`` provides the row to tree assignments for the model and the provided training data. This feature allows you to debug the model and assists with replicating the model.
 
 **Note**: Multinomial classification models generate a tree for each category, and each tree uses the same sample of data.
 
