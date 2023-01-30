@@ -28,7 +28,9 @@ public class XGBoostModelMetrics {
         Frame data,
         Frame originalData,
         boolean isTrain,
-        XGBoostModel model
+        XGBoostModel model,
+        int skippedTrees,
+        Frame predictionCache
     ) {
         _output = output;
         _data = data;
@@ -36,7 +38,7 @@ public class XGBoostModelMetrics {
         _model = model;
 
         _task = new XGBoostScoreTask(
-            _output, _data.find(_model._parms._weights_column), isTrain, _model
+            _output, _data.find(_model._parms._weights_column), isTrain, _model, skippedTrees, predictionCache
         );
     }
 

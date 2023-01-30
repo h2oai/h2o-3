@@ -67,7 +67,8 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
   }
 
   @Override
-  public float[][] predict(Chunk[] cs) {
+  public float[][] predict(Chunk[] cs, float[][] cache) {
+    assert cache == null; // we don't support partial/iterative scoring in native predict
     return scoreChunk(cs, OutputType.PREDICT);
   }
 

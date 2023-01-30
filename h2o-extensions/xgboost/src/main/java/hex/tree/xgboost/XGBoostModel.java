@@ -26,6 +26,7 @@ import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
+import java.io.Closeable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -55,7 +56,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       depthwise, lossguide
     }
     public enum Booster {
-      gbtree, gblinear, dart
+      gbtree, gblinear, dart;
+
+      public boolean isTreeBased() {
+        return this == gbtree || this == dart;
+      }
     }
     public enum DartSampleType {
       uniform, weighted
@@ -145,6 +150,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     public String _eval_metric;
     public boolean _score_eval_metric_only;
+
+    // for testing: caching predictions made during training can be explicitly disabled by setting the flag to false
+    public boolean _cache_training_predictions = true;
 
     public String algoName() { return "XGBoost"; }
     public String fullName() { return "XGBoost"; }
@@ -600,23 +608,82 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostMojoWriter(this);
   }
 
-  private ModelMetrics makeMetrics(Frame data, Frame originalData, boolean isTrain, String description) {
+  private ModelMetrics makeMetrics(Frame data, Frame originalData, 
+                                   boolean isTrain, String description,
+                                   int lastCachedIteration, Frame predictionCache) {
     LOG.debug("Making metrics: " + description);
-    return new XGBoostModelMetrics(_output, data, originalData, isTrain, this).compute();
+    return new XGBoostModelMetrics(_output, data, originalData, isTrain, this,
+            lastCachedIteration, predictionCache).compute();
+  }
+
+  final ScoringContext makeScoringContext(XGBoostParameters parms, Frame train, Frame valid) {
+    boolean useCache = !parms._score_eval_metric_only // disable if XGBoost is doing the scoring (the cache would be unused) 
+            && _output.nclasses() <= 2                // only for regression/binomial models (for now, multinomial cache might be too large)
+            && _parms._offset_column == null          // case with offset column not (yet) implemented 
+            && _parms._booster.isTreeBased()          // only for boosted trees (linear scoring is not iterative)
+            && PredictConfiguration.useJavaScoring()  // only for XGBoost Java Predictor (native predictor cannot skip trees)
+            && _parms._cache_training_predictions;
+    if (useCache) {
+      return new ScoringContext(train, valid, _output.nclasses() == 2 ? 1 : _output.nclasses());
+    } else 
+      return new ScoringContext();
   }
 
   final void doScoring(Frame train, Frame trainOrig, CustomMetric trainCustomMetric,
-                       Frame valid, Frame validOrig, CustomMetric validCustomMetric) {
-    ModelMetrics mm = makeMetrics(train, trainOrig, true, "Metrics reported on training frame");
+                       Frame valid, Frame validOrig, CustomMetric validCustomMetric,
+                       int scoringIteration, ScoringContext scoringContext) {
+    ModelMetrics mm = makeMetrics(train, trainOrig, true, "Metrics reported on training frame", 
+            scoringContext._lastCachedIteration, scoringContext._trainCache);
     _output._training_metrics = mm;
     _output._scored_train[_output._ntrees].fillFrom(mm, trainCustomMetric);
     addModelMetrics(mm);
     // Optional validation part
     if (valid != null) {
-      mm = makeMetrics(valid, validOrig, false, "Metrics reported on validation frame");
+      mm = makeMetrics(valid, validOrig, false, "Metrics reported on validation frame",
+              scoringContext._lastCachedIteration, scoringContext._validCache);
       _output._validation_metrics = mm;
       _output._scored_valid[_output._ntrees].fillFrom(mm, validCustomMetric);
       addModelMetrics(mm);
+    }
+    scoringContext.iterationScored(scoringIteration);
+  }
+
+  final static class ScoringContext implements Closeable {
+    final Frame _trainCache;
+    final Frame _validCache;
+    private int _lastCachedIteration = -1;
+
+    ScoringContext() {
+      _trainCache = null;
+      _validCache = null;
+    }
+
+    ScoringContext(Frame train, Frame valid, int cacheSize) {
+      _trainCache = new Frame(train.anyVec().makeVolatileFloats(cacheSize));
+      _validCache = valid != null ? new Frame(valid.anyVec().makeVolatileFloats(cacheSize)) : null;
+    }
+
+    boolean hasCache() {
+      return _trainCache != null;
+    }
+
+    void iterationScored(int iteration) {
+      if (hasCache()) {
+        assert iteration > _lastCachedIteration;
+        _lastCachedIteration = iteration;
+      }
+    }
+
+    @Override
+    public void close() {
+      Futures fs = new Futures();
+      if (_trainCache != null) {
+        _trainCache.remove(fs);
+      }
+      if (_validCache != null) {
+        _validCache.remove(fs);
+      }
+      fs.blockForPending();
     }
   }
 
@@ -650,12 +717,12 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   protected XGBoostBigScorePredict setupBigScorePredict(BigScore bs) {
-    return setupBigScorePredict(false);
+    return setupBigScorePredict(false, 0);
   }
 
-  public XGBoostBigScorePredict setupBigScorePredict(boolean isTrain) {
+  public XGBoostBigScorePredict setupBigScorePredict(boolean isTrain, int skippedTrees) {
     DataInfo di = model_info().scoringInfo(isTrain); // always for validation scoring info for scoring (we are not in the training phase)
-    return PredictConfiguration.useJavaScoring() ? setupBigScorePredictJava(di) : setupBigScorePredictNative(di);
+    return PredictConfiguration.useJavaScoring() ? setupBigScorePredictJava(di, skippedTrees) : setupBigScorePredictNative(di);
   }
 
   private XGBoostBigScorePredict setupBigScorePredictNative(DataInfo di) {
@@ -663,8 +730,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostNativeBigScorePredict(model_info, _parms, _output, di, boosterParms, defaultThreshold());
   }
 
-  private XGBoostBigScorePredict setupBigScorePredictJava(DataInfo di) {
-    return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold());
+  private XGBoostBigScorePredict setupBigScorePredictJava(DataInfo di, int skippedTrees) {
+    return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold(), skippedTrees);
   }
   
   public XGBoostVariableImportance setupVarImp() {
@@ -957,7 +1024,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   Predictor makePredictor(boolean scoringOnly) {
-    return PredictorFactory.makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes(), scoringOnly);
+    return PredictorFactory.makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes(), scoringOnly, 0);
   }
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {

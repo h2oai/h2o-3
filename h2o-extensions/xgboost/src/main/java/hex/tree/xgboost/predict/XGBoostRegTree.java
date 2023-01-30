@@ -14,10 +14,10 @@ import java.io.InputStream;
  */
 public class XGBoostRegTree implements RegTree {
 
-  private static final int NODE_SIZE = 20;
-  private static final int STATS_SIZE = 16;
+  static final int NODE_SIZE = 20;
+  static final int STATS_SIZE = 16;
 
-  private byte[] _nodes;
+  private final byte[] _nodes;
 
   /**
    * Loads model from stream.
@@ -90,7 +90,7 @@ public class XGBoostRegTree implements RegTree {
     throw new UnsupportedOperationException("Scoring-optimized trees don't contain node stats");
   }
 
-  private static int readNumNodes(ModelReader reader) throws IOException {
+  static int readNumNodes(ModelReader reader) throws IOException {
     int numRoots = reader.readInt();
     assert numRoots == 1;
     int numNodes = reader.readInt();

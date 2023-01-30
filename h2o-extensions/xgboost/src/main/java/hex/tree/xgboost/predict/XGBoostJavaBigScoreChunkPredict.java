@@ -59,9 +59,11 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
     return XGBoostMojoModel.toPreds(tmp, out, preds, _output.nclasses(), _output._priorClassDist, _threshold);
   }
 
-  public float[][] predict(Chunk[] cs) {
+  @Override
+  public float[][] predict(Chunk[] cs, float[][] cache) {
     final float[][] preds = new float[cs[0]._len][];
     final double[] tmp = new double[_output.nfeatures()];
+    final float baseScore = _predictor.getBaseScore();
     for (int row = 0; row < cs[0]._len; row++) {
       for (int col = 0; col < tmp.length; col++) {
         if (_usedColumns == null || _usedColumns[col]) {
@@ -72,6 +74,12 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
       if (_offsetIndex >= 0) {
         float offset = (float) cs[_offsetIndex].atd(row);
         preds[row] = _predictor.predict(_row, offset);
+      } else if (cache != null) {
+        assert cache.length == 1;
+        float[] prevPreds = cache[0];
+        final float rawPred = _predictor.predictSingle(_row, prevPreds[row], true);
+        preds[row] = new float[]{_predictor.getObjective().predTransform(baseScore + rawPred)};
+        prevPreds[row] = rawPred;
       } else {
         preds[row] = _predictor.predict(_row);
       }

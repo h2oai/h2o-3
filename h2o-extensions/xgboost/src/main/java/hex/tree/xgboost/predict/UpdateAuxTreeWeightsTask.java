@@ -26,7 +26,7 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
 
     public UpdateAuxTreeWeightsTask(DistributionFamily dist, DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output) {
         _dist = dist;
-        _p = PredictorFactory.makePredictor(modelInfo._boosterBytes, null, false);
+        _p = PredictorFactory.makePredictor(modelInfo._boosterBytes, null, false, 0);
         _di = di;
         _sparse = output._sparse;
 

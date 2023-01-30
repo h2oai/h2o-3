@@ -39,6 +39,7 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Cali
     return _validation_metrics != null || _useValidForScoreKeeping;
   }
   public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
+  public long _total_scoring_time_ms;
   public TwoDimTable _variable_importances; // gain
   @Override
   public TwoDimTable getVariableImportances() {

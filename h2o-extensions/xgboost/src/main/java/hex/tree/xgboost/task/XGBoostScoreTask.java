@@ -10,8 +10,7 @@ import hex.tree.xgboost.predict.XGBoostBigScorePredict;
 import hex.tree.xgboost.predict.XGBoostPredict;
 import water.MRTask;
 import water.MemoryManager;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
+import water.fvec.*;
 
 public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to score model metrics
 
@@ -20,7 +19,9 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
     private final XGBoostModel _model;
     private final boolean _isTrain;
     private final double _threshold;
-
+    private final int _skippedTrees;
+    private final Frame _predictionCache;
+    
     public ModelMetrics.MetricBuilder _metricBuilder;
 
     private transient XGBoostBigScorePredict _predict;
@@ -29,13 +30,17 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
         final XGBoostOutput output,
         final int weightsChunkId,
         final boolean isTrain,
-        final XGBoostModel model
+        final XGBoostModel model,
+        final int skippedTrees,
+        final Frame predictionCache
     ) {
         _output = output;
         _weightsChunkId = weightsChunkId;
         _model = model;
         _isTrain = isTrain;
         _threshold = model.defaultThreshold();
+        _skippedTrees = skippedTrees;
+        _predictionCache = predictionCache;
     }
 
     /**
@@ -58,14 +63,15 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
 
     @Override
     protected void setupLocal() {
-        _predict = _model.setupBigScorePredict(_isTrain);
+        _predict = _model.setupBigScorePredict(_isTrain, _skippedTrees);
     }
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
         _metricBuilder = createMetricsBuilder(_output.nclasses(), _output.classNames());
         final XGBoostPredict predictor = _predict.initMap(_fr, cs);
-        final float[][] preds = predictor.predict(cs);
+        float[][] cache = sliceCache(cs[0].cidx());
+        final float[][] preds = predictor.predict(cs, cache);
         if (preds.length == 0) return;
         assert preds.length == cs[0]._len;
         
@@ -118,10 +124,26 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to scor
         }
     }
 
+    float[][] sliceCache(int cidx) {
+        if (_predictionCache == null) {
+            return null;
+        }
+        float[][] cache = new float[_predictionCache.numCols()][];
+        for (int i = 0; i < cache.length; i++) {
+            cache[i] = ((C4FVolatileChunk) _predictionCache.vec(i).chunkForChunkIdx(cidx)).getValues();
+        }
+        return cache;
+    }
+
     @Override
     public void reduce(XGBoostScoreTask mrt) {
         super.reduce(mrt);
         _metricBuilder.reduce(mrt._metricBuilder);
+    }
+
+    @Override
+    protected boolean modifiesVolatileVecs() {
+        return _predictionCache != null;
     }
 
 }
