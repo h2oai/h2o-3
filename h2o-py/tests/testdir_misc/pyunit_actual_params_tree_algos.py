@@ -2,6 +2,7 @@ from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
+import os
 from tests import pyunit_utils, assert_equals
 
 from h2o.estimators import H2ORandomForestEstimator, H2OGradientBoostingEstimator, H2OIsolationForestEstimator, H2OXGBoostEstimator
@@ -48,7 +49,14 @@ def test_early_stopping_and_cross_validation_correctly_set_actual_params():
     build_model_and_check(xgb, train, valid, response, ntrees)
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_early_stopping_and_cross_validation_correctly_set_actual_params)
-else:
+def test_with_use_best_cv_iteration():
+    os.environ["sharedtree.crossvalidation.useBestCVIteration"] = "FALSE"
     test_early_stopping_and_cross_validation_correctly_set_actual_params()
+    os.environ["sharedtree.crossvalidation.useBestCVIteration"] = "TRUE"
+    test_early_stopping_and_cross_validation_correctly_set_actual_params()
+
+
+if __name__ == "__main__":
+    pyunit_utils.standalone_test(test_with_use_best_cv_iteration)
+else:
+    test_with_use_best_cv_iteration()

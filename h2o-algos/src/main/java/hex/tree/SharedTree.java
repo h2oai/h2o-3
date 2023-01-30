@@ -500,7 +500,7 @@ public abstract class SharedTree<
                 _model._output.trimTo(bestNTrees);
                 _model.update(_job);
               }
-            } else {
+            } else if (!_parms._is_cv_model) {
               LOG.info("Stopping early and setting actual ntrees to the " + _model._output._ntrees);
               _parms._ntrees = _model._output._ntrees;
             }
