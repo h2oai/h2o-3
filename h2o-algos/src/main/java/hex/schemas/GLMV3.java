@@ -93,7 +93,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "fix_dispersion_parameter",
             "generate_variable_inflation_factors",
             "fix_tweedie_variance_power",
-            "dispersion_learning_rate"
+            "dispersion_learning_rate",
+            "influence"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -160,6 +161,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "Handling of missing values. Either MeanImputation, Skip or PlugValues.", values = { "MeanImputation", "Skip", "PlugValues" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public GLMParameters.MissingValuesHandling missing_values_handling;
+    
+    @API(help = "If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in " +
+            "the dataset.", values = { "dfbetas" }, level = API.Level.expert, gridable = false)
+    public GLMParameters.Influence influence;
 
     @API(help = "Plug Values (a single row frame containing values that will be used to impute missing values of the training/validation frame, use with conjunction missing_values_handling = PlugValues)", direction = API.Direction.INPUT)
     public FrameKeyV3 plug_values;

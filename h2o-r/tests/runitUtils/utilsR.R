@@ -1,5 +1,6 @@
 #'
 #'
+#'
 #' ----------------- Additional Runit Utilities -----------------
 #'
 #'
@@ -1008,18 +1009,21 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6, enum2String=
   expect_true(nrow(frame1) == nrow(frame2) && ncol(frame1) == ncol(frame2), info="frame1 and frame2 are different in size.")
   rframe1 <- as.data.frame(frame1)
   rframe2 <- as.data.frame(frame2)
+  hNames <- colnames(frame1)
+  cNames <- colnames(rframe1)
   for (colInd in c(1:ncol(frame1))) {
-    notNumericCols = !(h2o.isnumeric(frame1[,colInd]) && h2o.isnumeric(frame2[,colInd]))
+    colName <- cNames[[colInd]]
+    notNumericCols = !(h2o.isnumeric(frame1[hNames[colInd]]))
     if (notNumericCols) {
       if (enum2String) {
-        temp1 <- as.character(rframe1[, colInd])
-        temp2 <- as.character(rframe2[, colInd])
+        temp1 <- as.character(rframe1[,colName])
+        temp2 <- as.character(rframe2[,colInd])
       } else {
-        temp1 <- as.factor(rframe1[, colInd])
-        temp2 <- as.factor(rframe2[, colInd])
+        temp1 <- as.factor(rframe1[,colName])
+        temp2 <- as.factor(rframe2[,colInd])
       }
     } else { 
-      temp1 <- as.numeric(rframe1[,colInd])
+      temp1 <- as.numeric(rframe1[,colName])
       temp2 <- as.numeric(rframe2[,colInd])
     }
     for (rowInd in c(1:nrow(frame1))) {

@@ -93,7 +93,12 @@ public class ArrayUtils {
   }
 
   public static double[][] outerProduct(double[] x, double[] y){
-    double[][] result = new double[x.length][y.length];
+    return outerProduct(null, x, y);
+  }
+  
+  public static double[][] outerProduct(double[][] result, double[] x, double[] y) {
+    if (result == null)
+      result = new double[x.length][y.length];
     for(int i = 0; i < x.length; i++) {
       for(int j = 0; j < y.length; j++)
         result[i][j] = x[i] * y[j];

@@ -70,7 +70,8 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "min_predictor_number",
                 "mode", // naive, maxr, maxrsweep, backward
                 "build_glm_model",
-                "p_values_threshold"
+                "p_values_threshold",
+                "influence"
         };
 
         @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -279,6 +280,10 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         @API(help = "For mode='backward' only.  If specified, will stop the model building process when all coefficients" +
                 "p-values drop below this threshold ", level = API.Level.expert)
         public double p_values_threshold;
+
+        @API(help = "If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in " +
+                "the dataset.", values = { "dfbetas" }, level = API.Level.expert, gridable = false)
+        public GLMModel.GLMParameters.Influence influence;
     }
 
     public static final class ModelSelectionModeProvider extends EnumValuesProvider<ModelSelectionModel.ModelSelectionParameters.Mode> {

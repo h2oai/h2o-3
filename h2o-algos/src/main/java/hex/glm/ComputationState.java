@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.IntStream;
 
+import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.glm.GLMUtils.calSmoothNess;
 import static hex.glm.GLMUtils.copyGInfo;
 
@@ -109,7 +110,7 @@ public final class ComputationState {
     setAlpha(modelOutput._submodels[submodelInd].alpha_value);
 
     if (submodelInd > 0) {
-      int preCurrSubmodelInd = Family.gaussian.equals(_parms._family) ? submodelInd : (submodelInd - 1);
+      int preCurrSubmodelInd = gaussian.equals(_parms._family) ? submodelInd : (submodelInd - 1);
       _activeData._activeCols = modelOutput._submodels[preCurrSubmodelInd].idxs;
       double[] betaExpand = Family.multinomial.equals(_parms._family)
               ? ArrayUtils.expandAndScatter(modelOutput._submodels[preCurrSubmodelInd].beta, coefLen, _activeData._activeCols)
@@ -122,7 +123,7 @@ public final class ComputationState {
       setLambdaSimple(_parms._lambda[preCurrSubmodelInd]);
     }
     // this part must be done for single model before setting coefficients
-    if (!Family.gaussian.equals(_parms._family))  // will build for new lambda for gaussian
+    if (!gaussian.equals(_parms._family))  // will build for new lambda for gaussian
       setLambda(modelOutput._submodels[submodelInd].lambda_value);
 
     // update _state with last submodelInd coefficients
@@ -937,6 +938,7 @@ public final class ComputationState {
     private double [] grads;
     public double yy;
     public final double likelihood;
+    public double sumOfRowWeights;  // sum of all r.weight
 
 
 
@@ -1031,7 +1033,8 @@ public final class ComputationState {
       removeCols(zeros);
       res = new ComputationState.GramXY(gt._gram,ArrayUtils.removeIds(gt._xy, zeros),null,gt._beta == null?null:ArrayUtils.removeIds(gt._beta, zeros),activeData().activeCols(),null,gt._yy,gt._likelihood);
     } else res = new GramXY(gt._gram,gt._xy,null,beta == null?null:beta,activeCols,null,gt._yy,gt._likelihood);
-
+    if (gaussian.equals(_parms._family))
+      res.sumOfRowWeights = gt.sumOfRowWeights;
     return res;
   }
 
@@ -1053,8 +1056,8 @@ public final class ComputationState {
   // get cached gram or incrementally update or compute new one
   public GramXY computeGram(double [] beta, GLMParameters.Solver s){
     double obj_reg = _parms._obj_reg;
-    boolean weighted = _parms._family != Family.gaussian || _parms._link != GLMParameters.Link.identity;
-    if(_parms._family == Family.multinomial) // no caching
+    boolean weighted = !gaussian.equals(_parms._family) || !GLMParameters.Link.identity.equals(_parms._link);
+    if(Family.multinomial.equals(_parms._family)) // no caching
       return computeNewGram(activeDataMultinomial(_activeClass),beta,s); // activeDataMultinomial(_activeClass) returns all predictors
     if(s != GLMParameters.Solver.COORDINATE_DESCENT)
       // only cache for solver==COD

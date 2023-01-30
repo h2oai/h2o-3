@@ -247,7 +247,7 @@ public class LinearAlgebraUtils {
       };
     }
     ForkJoinTask.invokeAll(ras);
-    return result;
+    return ArrayUtils.transpose(result);
   }
 
   /**

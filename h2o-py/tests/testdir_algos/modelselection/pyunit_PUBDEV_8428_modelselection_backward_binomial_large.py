@@ -39,8 +39,8 @@ def test_modelselection_backward_gaussian():
         counter += 1
         coefs = model_backward.coef(len(pred_large)) # check coefficients result correct length
         assert len(coefs) == len(pred_large), "Expected coef length: {0}, Actual: {1}".format(len(coefs), len(pred_large))
-    common_elimination = list(set(predictor_elimination_order) & set(pred_ele))
-    assert len(common_elimination) == len(pred_ele)
+    assert pred_ele == predictor_elimination_order, "Expected predictor elimination order: {0}.  Actual: " \
+                                                    "{1}".format(predictor_elimination_order, pred_ele)
     pyunit_utils.equal_two_arrays(pred_pvalue, eliminated_p_values, tolerance=1e-6)
     
 if __name__ == "__main__":

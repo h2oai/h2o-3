@@ -9,7 +9,9 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -313,5 +315,54 @@ public class GLMUtils {
       smoothval += calSmoothNess(beta[classInd], penaltyMatrix, gamColIndices);
     }
     return smoothval;
+  }
+  
+  public static String[] genDfbetasNames(GLMModel model) {
+    double[] stdErr = model._output.stdErr();
+    String[] names = Arrays.stream(model._output.coefficientNames()).map(x -> "DFBETA_"+x).toArray(String[]::new);
+    List<String> namesList = new ArrayList<>();
+    int numCoeff = names.length;
+    for (int index=0; index<numCoeff; index++)
+      if (!Double.isNaN(stdErr[index]))
+        namesList.add(names[index]);
+    return namesList.stream().toArray(String[]::new);
+  }
+  
+  public static double[] genNewBeta(int newBetaLength, double[] beta, double[] stdErr) {
+    double[] newBeta = new double[newBetaLength];
+    int oldLen = stdErr.length;
+    int count = 0;
+    for (int index=0; index<oldLen; index++)
+      if (!Double.isNaN(stdErr[index]))
+        newBeta[count++] = beta[index];
+
+    return newBeta;
+  }
+
+  public static void removeRedCols(double[] row2Array, double[] reducedArray, double[] stdErr) {
+    int count=0;
+    int betaSize = row2Array.length;
+    for (int index=0; index<betaSize; index++)
+      if (!Double.isNaN(stdErr[index]))
+        reducedArray[count++] = row2Array[index];
+  }
+  
+  public static Frame buildRIDFrame(GLMModel.GLMParameters parms, Frame train, Frame RIDFrame) {
+    Vec responseVec = train.remove(parms._response_column);
+    Vec weightsVec = null;
+    Vec offsetVec = null;
+    Vec foldVec = null;
+    if (parms._offset_column != null)
+      offsetVec = train.remove(parms._offset_column);
+    if (parms._weights_column != null) // move weight vector to be the last vector before response variable
+      weightsVec = train.remove(parms._weights_column);
+      train.add(RIDFrame.names(), RIDFrame.removeAll());
+    if (weightsVec != null)
+      train.add(parms._weights_column, weightsVec);
+    if (offsetVec != null)
+      train.add(parms._offset_column, offsetVec);
+    if (responseVec != null)
+      train.add(parms._response_column, responseVec);
+    return train;
   }
 }
