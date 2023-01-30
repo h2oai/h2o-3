@@ -2377,13 +2377,13 @@ grabOneModelCoef <- function(modelIDs, index, standardized) {
   }
 }
 
-
+#'
 #' Extracts a list of H2OFrames containing regression influence diagnostics for predictor subsets of various sizes or
 #' just one H2OFrame containing regression influence diagnostics for predictor subsets of one fixed size
 #'
-#' @param model is a H2OModel with algorithm name of modelselection
-#' @param predictorSize: number of predictorss used in building a GLM model
-#'
+#' @param model an \linkS4class{H2OModel} object.
+#' @param predictorSize predictor subset size.  If specified, will only return model coefficients of that subset size.  If
+#'          not specified will return a lists of model coefficient dicts for all predictor subset size.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -2401,7 +2401,7 @@ grabOneModelCoef <- function(modelIDs, index, standardized) {
 #'                                  influence="dfbetas",
 #'                                  lambda=0.0,
 #'                                  family="gaussian")
-#' rid_frame <- h2o.get_regression_influence_diagnostics(cars_model, predictorSize = 3)
+#' rid_frame <- h2o.get_regression_influence_diagnostics(cars_model, predictorSize=3)
 #' }
 #' @export   
 h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) {
