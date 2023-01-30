@@ -3157,7 +3157,7 @@ h2o.learning_curve_plot <- function(model,
   }
 
   selected_timestep_value <- switch(timestep,
-                                    number_of_trees = model@model$model_summary$number_of_trees,
+                                    number_of_trees = model@params$actual$ntrees,
                                     iterations = model@model$model_summary$number_of_iterations,
                                     iteration = model@model$model_summary$number_of_iterations,
                                     epochs = model@allparameters$epochs,

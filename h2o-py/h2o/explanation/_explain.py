@@ -2553,7 +2553,7 @@ def learning_curve_plot(
 
     selected_timestep_value = None
     if "number_of_trees" == timestep:
-        selected_timestep_value = model.summary()["number_of_trees"][0]
+        selected_timestep_value = model.actual_params["ntrees"]
     elif timestep in ["iteration", "iterations"]:
         if "coxph" == model.algo:
             selected_timestep_value = model._model_json["output"]["iter"]
