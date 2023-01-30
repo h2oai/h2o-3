@@ -3540,10 +3540,16 @@ def disparate_analysis(models, frame, protected_columns, reference, favorable_cl
         additional_columns["cair"].append(np.sum([w * x for w, x in
                                                   zip(overview["relativeSize"], air)]))
         pvalue = overview["p.value"]
-        additional_columns["significant_air_min"].append(np.min(air[pvalue < alpha]))
-        additional_columns["significant_air_mean"].append(np.mean(air[pvalue < alpha]))
-        additional_columns["significant_air_median"].append(np.median(air[pvalue < alpha]))
-        additional_columns["significant_air_max"].append(np.max(air[pvalue < alpha]))
+
+        def NaN_if_empty(agg, arr):
+            if len(arr) == 0:
+                return float("nan")
+            return agg(arr)
+
+        additional_columns["significant_air_min"].append(NaN_if_empty(np.min, air[pvalue < alpha]))
+        additional_columns["significant_air_mean"].append(NaN_if_empty(np.mean, air[pvalue < alpha]))
+        additional_columns["significant_air_median"].append(NaN_if_empty(np.median, air[pvalue < alpha]))
+        additional_columns["significant_air_max"].append(NaN_if_empty(np.max, air[pvalue < alpha]))
 
         additional_columns["p.value_min"].append(np.min(pvalue))
         additional_columns["p.value_mean"].append(np.mean(pvalue))
