@@ -2,7 +2,34 @@
 
 ## H2O
 
-### Zygmund (3.38.0.3) - 11/22/2022
+### Zygmund (3.38.0.4) - 1/5/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html</a>
+
+#### Bug
+- [[PUBDEV-8936]](https://h2oai.atlassian.net/browse/PUBDEV-8936) - Fixed error in SHAP values report for DRF. 
+- [[PUBDEV-8916]](https://h2oai.atlassian.net/browse/PUBDEV-8916) - Fixed a ModelSelection replacement error stopping too early and implemented incremental forward step and incremental replacement step for numerical predictors.
+
+#### Task
+- [[PUBDEV-8935]](https://h2oai.atlassian.net/browse/PUBDEV-8935) - Resolved hyperparameters amongst the algorithms.
+- [[PUBDEV-8927]](https://h2oai.atlassian.net/browse/PUBDEV-8927) - Removed redundant predictors found in `mode=“backward”` for ModelSelection.
+
+#### Engineering Story
+- [[PUBDEV-8943]](https://h2oai.atlassian.net/browse/PUBDEV-8943) - Renamed the docker image `h2o-steam-k8s` to `h2o-open-source-k8s-minimal`.
+
+#### Docs
+- [[PUBDEV-8951]](https://h2oai.atlassian.net/browse/PUBDEV-8951) - Updated download page by adding options for steam jar and python client without h2o backend.
+- [[PUBDEV-8940]](https://h2oai.atlassian.net/browse/PUBDEV-8940) - Fixed log likelihood of negative binomial for GLM.
+- [[PUBDEV-8929]](https://h2oai.atlassian.net/browse/PUBDEV-8929) - Added how users can force an unsupported Java version.
+- [[PUBDEV-8928]](https://h2oai.atlassian.net/browse/PUBDEV-8928) - Fixed broken links on the H2O Release page.
+- [[PUBDEV-8924]](https://h2oai.atlassian.net/browse/PUBDEV-8924) - Added information on how Isolation Forest and Extended Isolation Forest handle missing values.
+- [[PUBDEV-8921]](https://h2oai.atlassian.net/browse/PUBDEV-8921) - Fixed typos and made examples work on performance-and-prediction.html.
+- [[PUBDEV-8919]](https://h2oai.atlassian.net/browse/PUBDEV-8919) - Removed outdated roadmap from Readme file.
+
+#### Security
+- [[PUBDEV-8950]](https://h2oai.atlassian.net/browse/PUBDEV-8950) - Addressed CVE-2022-3509 by upgrading `google-cloud-storage`.
+
+### Zygmund (3.38.0.3) - 11/23/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/3/index.html</a>
 

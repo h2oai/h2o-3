@@ -4435,7 +4435,7 @@ def assertEqualRegPaths(keys, pathList, index, onePath, tol=1e-6):
 
 def assertEqualCoeffDicts(coef1Dict, coef2Dict, tol = 1e-6):
     assert len(coef1Dict) == len(coef2Dict), "Length of first coefficient dict: {0}, length of second coefficient " \
-                                             "dict: {1} and they are different.".format(len(coef1Dict, len(coef2Dict)))
+                                             "dict: {1} and they are different.".format(len(coef1Dict), len(coef2Dict))
     for key in coef1Dict:
         val1 = coef1Dict[key]
         val2 = coef2Dict[key]
@@ -4552,6 +4552,8 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
         val2 = coeff[key]
         assert type(val1)==type(val2), "type of coeff1: {0}, type of coeff2: {1}".format(type(val1), type(val2))
         diff = abs(val1-val2)
+        if diff >= tol:
+            print("coefName: {0}, value: {1}, value2: {2} are very different.".format(key, val1, val2))
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
 
 

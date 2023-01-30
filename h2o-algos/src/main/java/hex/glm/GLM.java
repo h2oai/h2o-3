@@ -49,8 +49,7 @@ import java.util.stream.IntStream;
 import static hex.ModelMetrics.calcVarImp;
 import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
-import static hex.glm.DispersionUtils.estimateGammaMLSE;
-import static hex.glm.DispersionUtils.estimateTweedieDispersionOnly;
+import static hex.glm.DispersionUtils.*;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMModel.GLMParameters.DispersionMethod.*;
@@ -902,7 +901,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             warn("_family", "Poisson and Negative Binomial expect non-negative integer response," +
                     " got floats.");
           if (Family.negativebinomial.equals(_parms._family))
-            if (_parms._theta <= 0 || _parms._theta > 1)
+            if (_parms._theta <= 0)// || _parms._theta > 1)
               error("_family", "Illegal Negative Binomial theta value.  Valid theta values be > 0" +
                       " and <= 1.");
             else
@@ -1021,10 +1020,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 " does not work with " + _parms._family + " family.");
       }
       // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
-      if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family) && !tweedie.equals(_parms._family))
-        error("dispersion_parameter_mode", " ml can only be used for family gamma, tweedie.");
+      if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family) && !tweedie.equals(_parms._family) && !negativebinomial.equals(_parms._family))
+        error("dispersion_parameter_mode", " ml can only be used for family gamma, tweedie, negative binomial.");
       
       if (ml.equals(_parms._dispersion_parameter_method)) {
+        if ((_parms._lambda == null && _parms._lambda_search) ||
+             _parms._lambda != null && Arrays.stream(_parms._lambda).anyMatch(v -> v != 0)) {
+          error("dispersion_parameter_method", "ML is supported only without regularization!");
+        } else {
+          if (_parms._lambda == null) {
+            info("lambda", "Setting lambda to 0 to disable regularization which is unsupported with ML dispersion estimation.");
+            _parms._lambda = new double[]{0.0};
+          }
+        }
         if (_parms._fix_dispersion_parameter)
           if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
             error("fix_dispersion_parameter", " is only supported for gamma, tweedie, " +
@@ -2126,6 +2134,160 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+
+
+    private void fitIRLSMML(Solver s) {
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      LineSearchSolver ls = null;
+      int iterCnt = _checkPointFirstIter ? _state._iter : 0;
+      boolean firstIter = iterCnt == 0;
+      final BetaConstraint bc = _state.activeBC();
+      double previousLLH = Double.POSITIVE_INFINITY;
+      boolean converged = false;
+      int sameLLH = 0;
+      Vec weights = _dinfo._weights
+              ? _dinfo.getWeightsVec()
+              : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
+      Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
+      try {
+        while (!converged && iterCnt < _parms._max_iterations && !_job.stop_requested()) {
+          iterCnt++;
+          long t1 = System.currentTimeMillis();
+          ComputationState.GramXY gram = _state.computeGram(betaCnd, s);
+          long t2 = System.currentTimeMillis();
+          if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) >
+                  _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
+            _state._lsNeeded = true;
+          } else {
+            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
+              Log.info("DONE after " + (iterCnt - 1) + " iterations (1)");
+              _model._betaCndCheckpoint = betaCnd;
+              converged = true;
+            }
+            if (!_checkPointFirstIter)
+              betaCnd = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
+                      : ADMM_solve(gram.gram, gram.xy); // this will shrink betaCnd if needed but this call may be skipped
+          }
+          firstIter = false;
+          _checkPointFirstIter = false;
+          long t3 = System.currentTimeMillis();
+          if (_state._lsNeeded) {
+            if (ls == null)
+              ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+                      ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
+                      : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
+            double[] oldBetaCnd = ls.getX();
+            if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
+              betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+            }
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
+              Log.info(LogMsg("Ls failed " + ls));
+              converged = true;
+            }
+            betaCnd = ls.getX();
+            if (_betaConstraintsOn)
+              bc.applyAllBounds(betaCnd);
+
+            if (!progress(betaCnd, ls.ginfo()))
+              converged = true;
+            long t4 = System.currentTimeMillis();
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } else {
+            if (_betaConstraintsOn) // apply beta constraints without LS
+              bc.applyAllBounds(betaCnd);
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          }
+
+          // Dispersion estimation part
+          if (negativebinomial.equals(_parms._family)){
+            converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH, weights, response) && converged;
+          }
+          if (Math.abs(previousLLH - gram.likelihood) < _parms._objective_epsilon)
+            sameLLH ++;
+          else
+            sameLLH = 0;
+          converged = converged || sameLLH > 10;
+          previousLLH = gram.likelihood;
+        }
+      } catch (NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+        throw e; // TODO: Decide if we want to return a bad model or no model at all.
+      }
+    }
+
+    private void updateTheta(double theta){
+      if (_state._glmw != null) {
+         _state._glmw._theta = theta;
+         _state._glmw._invTheta = 1./theta;
+      }
+      _parms._theta = theta;
+      _parms._invTheta =1./theta;
+      _model._parms._theta = theta;
+      _model._parms._invTheta = 1./theta;
+    }
+
+    private boolean updateNegativeBinomialDispersion(int iterCnt, double[] betaCnd, double previousNLLH, Vec weights, Vec response) {
+      double delta;
+      double theta;
+      boolean converged = false;
+      if (iterCnt == 1) {
+        theta = estimateNegBinomialDispersionMomentMethod(_model, betaCnd, _dinfo, weights, response);
+      } else {
+        theta = _parms._theta;
+        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+                1, Vec.T_NUM, _dinfo._adaptedFrame);
+        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+
+        NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
+        delta = _parms._dispersion_learning_rate * nbGrad._grad / nbGrad._hess;
+        double bestLLH = Math.max(-previousNLLH, nbGrad._llh);
+        double bestTheta = theta;
+
+        delta = Double.isFinite(delta) ? delta : 1; // NaN can occur in extreme datasets so try to get out of this neighborhood just by linesearch
+
+        // Golden section search for the optimal size of delta
+        // Set lowerbound to -10 or lowest value that will keep theta > 0 which ever is bigger
+        // Negative value here helps with datasets where we use to diverge, I'm not sure yet if it's caused by some
+        // numerical issues or if the likelihood can get multimodal for some cases.
+        double lowerBound = (theta + 10 * delta < 0) ? (1 - 1e-15) * theta / delta : -10;
+        double upperBound = (theta - 1e3 * delta < 0) ? (1 - 1e-15) * theta / delta : 1e3;
+        double d = upperBound - lowerBound;
+
+        for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
+          d *= 0.618;  // division by golden ratio
+          final double lowerBoundProposal = upperBound - d;
+          final double upperBoundProposal = lowerBound + d;
+          NegativeBinomialGradientAndHessian nbLower = new NegativeBinomialGradientAndHessian(theta - lowerBoundProposal * delta).doAll(mu, response, weights);
+          NegativeBinomialGradientAndHessian nbUpper = new NegativeBinomialGradientAndHessian(theta - upperBoundProposal * delta).doAll(mu, response, weights);
+
+          if (nbLower._llh >= nbUpper._llh) {
+            upperBound = upperBoundProposal;
+            if (nbLower._llh > bestLLH) {
+              bestLLH = nbLower._llh;
+              bestTheta = nbLower._theta;
+            }
+          } else {
+            lowerBound = lowerBoundProposal;
+            if (nbUpper._llh > bestLLH) {
+              bestLLH = nbUpper._llh;
+              bestTheta = nbUpper._theta;
+            }
+          }
+          if (Math.abs((upperBoundProposal - lowerBoundProposal) * Math.max(1, delta / Math.max(_parms._theta, bestTheta))) < _parms._dispersion_epsilon || _job.stop_requested()) {
+            break;
+          }
+        }
+
+        theta = bestTheta;
+        converged = (nbGrad._llh + previousNLLH) <= _parms._objective_epsilon || !Double.isFinite(theta);
+      }
+      delta = _parms._theta - theta;
+      converged = converged &&  (Math.abs(delta) / Math.max(_parms._theta, theta) < _parms._dispersion_epsilon);
+
+      updateTheta(theta);
+      return converged;
+    }
+
     private void fitLBFGS() {
       double[] beta = _state.beta();
       final double l1pen = _state.l1pen();
@@ -2372,8 +2534,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               fitIRLSM_ordinal_default(solver);
             else if (gaussian.equals(_parms._family) && Link.identity.equals(_parms._link))
               fitLSM(solver);
-            else
-              fitIRLSM(solver);
+            else {
+              if (_parms._dispersion_parameter_method.equals(ml) && _parms._family.equals(negativebinomial))
+                fitIRLSMML(solver);
+              else
+                fitIRLSM(solver);
+            }
             break;
           case GRADIENT_DESCENT_LH:
           case GRADIENT_DESCENT_SQERR:
@@ -2414,11 +2580,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
               double oneOverSe = estimateGammaMLSE(mlCT, 1.0 / se, beta, _parms, _state, _job, _model);
               se = 1.0 / oneOverSe;
+            } else if (negativebinomial.equals(_parms._family)) {
+              se = _parms._theta;
             } else if (_tweedieDispersionOnly) {
               se = estimateTweedieDispersionOnly(_parms, _model, _job, beta, _state.activeData());
-            } else {  // negative binomial
-              throw new UnsupportedOperationException("Dipsersion parameter estimation using ML for negative binomial" +
-                      " family is not implemented yet.  Please stay tuned.");
             }
           }
         }

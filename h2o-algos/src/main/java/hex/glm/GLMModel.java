@@ -1131,7 +1131,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return ((yr>0 && ym>0)?
                   (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
                           yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
-                  ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything 
+                  ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
         case gamma:
           if (yr == 0) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
@@ -1165,6 +1165,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           x.z = eta + (y-x.mu) *invSum * d2/(d*x.mu); // CHECKED-identity
         } else if (y==0 && x.mu > 0) {
           d = linkInvDeriv2(x.mu)*invSum-_theta*invSum*invSum*d2*d2; // CHECKED
+          //d = Math.min(1e10, Math.max(1e-10, d));
           x.w = w*d;
           x.z = eta - invSum*d2/d;
         } else {

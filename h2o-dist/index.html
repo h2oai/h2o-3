@@ -263,6 +263,8 @@
         var kubernetesTab = document.getElementById('quickstart-kubernetes-tab');
         var mavenPanel = document.getElementById('quickstart-maven');
         var kubernetesPanel = document.getElementById('quickstart-kubernetes');
+        var otherArtifactsTab = document.getElementById('quickstart-other-artifacts-tab');
+        var otherArtifactsPanel = document.getElementById('quickstart-other-artifacts');
         var showZipTab = function() {
           zipPanel.style.display = 'block';
           zipTab.className = 'active';
@@ -276,6 +278,8 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
         var showRTab = function() {
           zipPanel.style.display = 'none';
@@ -290,6 +294,8 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
         var showPyTab = function() {
           zipPanel.style.display = 'none';
@@ -304,6 +310,8 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
         var showHadoopTab = function(){
           zipPanel.style.display = 'none';
@@ -318,6 +326,8 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
         var showMavenTab = function(){
           zipPanel.style.display = 'none';
@@ -332,6 +342,8 @@
           mavenTab.className = 'active';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
       var showKubernetesTab = function(){
           zipPanel.style.display = 'none';
@@ -346,13 +358,32 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'block';
           kubernetesTab.className = 'active';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
       };
+      var showOtherArtifactsTab = function(){
+          zipPanel.style.display = 'none';
+          zipTab.className = '';
+          rPanel.style.display = 'none';
+          rTab.className = '';
+          pyPanel.style.display = 'none';
+          pyTab.className = '';
+          hadoopPanel.style.display = 'none';
+          hadoopTab.className = '';
+          mavenPanel.style.display = 'none';
+          mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'block';
+          otherArtifactsTab.className = 'active';
+      };      
         zipTab.onclick = showZipTab;
         rTab.onclick = showRTab;
         pyTab.onclick= showPyTab;
         hadoopTab.onclick = showHadoopTab;
         mavenTab.onclick = showMavenTab;
         kubernetesTab.onclick = showKubernetesTab;
+        otherArtifactsTab.onclick = showOtherArtifactsTab;
         var hash = window.location.hash;
         if(hash && hash.indexOf('#R') == 0) {
           showRTab();
@@ -365,6 +396,12 @@
         }
         if (hash && hash.indexOf('#Maven') == 0) {
           showMavenTab();
+        }
+        if (hash && hash.indexOf('#Kubernetes') == 0) {
+          showKubernetesTab();
+        }
+        if (hash && hash.indexOf('#OtherArtifacts') == 0) {
+          showOtherArtifactsTab();
         }
       }
       <!-- DOM 0 style without jquery -->
@@ -516,6 +553,7 @@
           <span id = "quickstart-hadoop-tab">Install on Hadoop</span>
           <span id = "quickstart-maven-tab">Use from Maven</span>
           <span id = "quickstart-kubernetes-tab">Kubernetes</span>
+          <span id = "quickstart-other-artifacts-tab">Other Artifacts</span>
         </div>
         <div id="panels">
           <div id="quickstart-zip">
@@ -548,7 +586,7 @@
                     pip install future
                 </p>
                 <p> Optional: install `matplotlib` (required for plotting in Python):</p>
-                  <button class="btn copy_button" id="btnCopy8" data-clipboard-target='#to_copy12'></button>
+                  <button class="btn copy_button" id="btnCopy12" data-clipboard-target='#to_copy12'></button>
                 <p class="terminal" id="to_copy12">
                     pip install matplotlib<br/>
                 </p>
@@ -747,7 +785,33 @@ spec:
                 <p>4. (Optional) Adjust the YAML file to spawn more nodes or allocate more resources for the H2O cluster.</p>
                 
             </div>
-
+            <div id="quickstart-other-artifacts" style="display:none">
+              <h2>A lightweight assembly jar with minimum dependencies</h2>
+              <p>1. Download the <a href="h2o-steam-SUBST_PROJECT_VERSION.jar" target="_blank">h2o-steam-SUBST_PROJECT_VERSION.jar</a> artifact or from terminal, run:</p>
+                <button class="btn copy_button" id="btnCopyOther1" data-clipboard-target='#to_copy_other1'></button>
+                <p class="terminal" id="to_copy_other1">
+                    wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-steam-SUBST_PROJECT_VERSION.jar<br/>
+                </p>
+              <p>2. From your terminal, run:</p>
+              <button class="btn copy_button" id="btnCopyOther2" data-clipboard-target='#to_copy_other2'></button>
+              <p class="terminal" id="to_copy_other2">
+                  java -jar h2o-steam-SUBST_PROJECT_VERSION.jar<br/>
+              </p>
+              <p>3. Point your browser to <a href="http://localhost:54321/" target="_blank">http://localhost:54321</a>
+                
+              <h2>A Python client without H<sub>2</sub>O backend</h2>
+                <p>1. To remove any previously installed form of the H<sub>2</sub>O Python client, run:</p>
+                <button class="btn copy_button" id="btnCopyOther3" data-clipboard-target='#to_copy_other3'></button>
+                <p class="terminal" id="to_copy_other3">
+                    pip uninstall h2o_client<br/>
+                    pip uninstall h2o<br/>
+                </p>
+                <p>2. Install a backendless H<sub>2</sub>O-3 Python client by running the following:</p>
+                <button class="btn copy_button" id="btnCopyOther4" data-clipboard-target='#to_copy_other4'></button>
+                <p class="terminal" id="to_copy_other4">
+                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/Python/SUBST_CLIENT_WHEEL_FILE_NAME<br/>
+                </p>
+            </div>
         </div>
         <div id="documentation">
           <h2>User Documentation</h2>

@@ -14,6 +14,7 @@ from .trees import Trees
 from .supervised_trees import SupervisedTrees
 from .varimp import VariableImportance
 from .contributions import Contributions
+from .row_to_tree_assignment import RowToTreeAssignment
 
 module = sys.modules[__name__]
 
@@ -54,4 +55,5 @@ __all__ = [  # mainly useful here for the generated documentation
     'VariableImportance',
     'Contributions',
     'Fairness',
+    'RowToTreeAssignment'
 ]

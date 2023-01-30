@@ -22,7 +22,6 @@ def test_megan_failure():
     backward_model.train(x=x, y=y, training_frame=df)    
     coefficient_orders = backward_model._model_json['output']['coefficient_names']
     predictor_z_values = backward_model._model_json['output']['z_values']
-
     num_models = len(coefficient_orders)
     # verify that deleted predictors have minimum abs(z-values)
     redundantPredictors = backward_model.get_predictors_removed_per_step()[num_models-1]
@@ -31,6 +30,7 @@ def test_megan_failure():
     best_predictor_subset = backward_model.get_best_model_predictors()
 
     counter = 0
+    back_coef = backward_model.coef()
     for ind in list(range(num_models-1, 0, -1)):
         pred_large = coefficient_orders[ind]
         pred_small = coefficient_orders[ind-1]
@@ -42,12 +42,11 @@ def test_megan_failure():
         
         # assert z-values removed has smallest magnitude
         x = best_predictor_subset[ind]
-        x = [y for y in x if not (y in redundantPredictors)]
-        assert_smallest_z_removed(z_values_list, z_values_removed, pred_large, predictor_removed, x, y, df)
+        assert_smallest_z_removed(back_coef[ind], z_values_list, z_values_removed, pred_large, predictor_removed, x, y, df)
         
         counter += 1
 
-def assert_smallest_z_removed(z_values_backward, z_values_removed, coeff_backward, predictor_removed, x, y, df):
+def assert_smallest_z_removed(back_coef, z_values_backward, z_values_removed, coeff_backward, predictor_removed, x, y, df):
     glm_model = H2OGeneralizedLinearEstimator(seed=1234, remove_collinear_columns=True, lambda_=0.0, compute_p_values=True)
     glm_model.train(x=x, y=y, training_frame=df)
     cat_predictors = extractCatCols(df, x)
@@ -55,7 +54,8 @@ def assert_smallest_z_removed(z_values_backward, z_values_removed, coeff_backwar
     # compare both models are the same model by comparing the z-values
     model_z_values = glm_model._model_json["output"]["coefficients_table"]["z_value"]
     model_coeffs = glm_model._model_json["output"]["coefficients_table"]["names"]
-    assert_equal_z_values(z_values_backward, coeff_backward, model_z_values, model_coeffs)
+    
+    assert_equal_z_values(back_coef, glm_model.coef(), z_values_backward, coeff_backward, model_z_values, model_coeffs)
     min_z_value = min(z_values_removed)
     # check that predictor with smallest z-value magnitude is removed
     assert_smallest_z_value_numerical(num_predictors, min_z_value, model_coeffs, model_z_values)
@@ -98,10 +98,11 @@ def extractCatCols(df, x):
             cat_pred.append(name)
     return cat_pred
     
-def assert_equal_z_values(z_values_backward, coeff_backward, model_z_values, glm_coeff):
+def assert_equal_z_values(back_coef, curr_coef, z_values_backward, coeff_backward, model_z_values, glm_coeff):
     for coeff in glm_coeff:
         backward_z_value = z_values_backward[coeff_backward.index(coeff)]
         model_z_value = model_z_values[glm_coeff.index(coeff)]
+        print("for coeff: {0}, backward z-value: {1}, glm model z-value: {2}".format(coeff, backward_z_value, model_z_value))
         if (backward_z_value=='NaN'):
             assert math.isnan(model_z_value), "Expected z-value to be nan but is {0} for predictor" \
                                               " {1}".format(model_z_value, coeff)

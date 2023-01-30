@@ -31,7 +31,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                                       'h2o.model.extensions.SupervisedTrees',
                                       'h2o.model.extensions.HStatistic',
                                       'h2o.model.extensions.Contributions',
-                                      'h2o.model.extensions.Fairness'],
+                                      'h2o.model.extensions.Fairness',
+                                      'h2o.model.extensions.RowToTreeAssignment'],
                  'verbose': True}
 
     def __init__(self,

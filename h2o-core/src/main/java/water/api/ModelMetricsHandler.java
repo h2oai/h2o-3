@@ -137,6 +137,9 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Predict the feature contributions - Shapley values (optional, only for DRF, GBM and XGBoost models)", json = false)
     public boolean predict_contributions;
 
+    @API(help = "Return which row is used in which tree (optional, only for GBM models)", json = false)
+    public boolean row_to_tree_assignment;
+
     @API(help = "Specify how to output feature contributions in XGBoost - XGBoost by default outputs contributions for 1-hot encoded features, " +
             "specifying a Compact output format will produce a per-feature contribution", values = {"Original", "Compact"}, json = false)
     public Model.Contributions.ContributionsOutputFormat predict_contributions_output_format;
@@ -446,6 +449,15 @@ class ModelMetricsHandler extends Handler {
     }
     return (Model.Contributions) model;
   }
+
+  private Model.RowToTreeAssignment getModelRowToTreeAssignmentObject(ModelMetricsList params) {
+    Model model = params._model;
+    if (! (model instanceof Model.RowToTreeAssignment)) {
+      String errorMessage = "Model type " + model._parms.algoName() + " doesn't support calculating row to tree assignment.";
+      throw new H2OIllegalArgumentException(errorMessage);
+    }
+    return (Model.RowToTreeAssignment) model;
+  }
   
   /**
    * Score a frame with the given model and return a Job that output a frame with predictions.
@@ -470,6 +482,10 @@ class ModelMetricsHandler extends Handler {
       workAmount = parms._frame.anyVec().length();
       if (null == parms._predictions_name)
         parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+    } else if (s.row_to_tree_assignment) {
+      workAmount = parms._frame.anyVec().length();
+      if (null == parms._predictions_name)
+        parms._predictions_name = "row_to_tree_assignment_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
     } else if (s.deep_features_hidden_layer > 0 || s.deep_features_hidden_layer_name != null) {
       if (null == parms._predictions_name)
         parms._predictions_name = "deep_features" + Key.make().toString().substring(0, 5) + "_" +
@@ -493,6 +509,9 @@ class ModelMetricsHandler extends Handler {
                   .setBottomN(parms._bottom_n)
                   .setCompareAbs(parms._compare_abs);
           mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
+        } else if (s.row_to_tree_assignment) {
+          Model.RowToTreeAssignment mc = getModelRowToTreeAssignmentObject(parms);
+          mc.rowToTreeAssignment(parms._frame, Key.make(parms._predictions_name), j);
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
         } else if (s.deep_features_hidden_layer_name != null){
@@ -543,7 +562,7 @@ class ModelMetricsHandler extends Handler {
     Frame predictions;
     Frame deviances = null;
     if (!s.reconstruction_error && !s.reconstruction_error_per_feature && s.deep_features_hidden_layer < 0 &&
-        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && !s.predict_staged_proba && !s.predict_contributions && !s.feature_frequencies && s.exemplar_index < 0) {
+        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && !s.predict_staged_proba && !s.predict_contributions && !s.row_to_tree_assignment && !s.feature_frequencies && s.exemplar_index < 0) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       String customMetricFunc = s.custom_metric_func;
@@ -614,6 +633,11 @@ class ModelMetricsHandler extends Handler {
                 Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
         Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
         predictions = mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), null, options);
+      } else if(s.row_to_tree_assignment) {
+        Model.RowToTreeAssignment mc = getModelRowToTreeAssignmentObject(parms);
+        if (null == parms._predictions_name)
+          parms._predictions_name = "row_to_tree_assignment" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+        predictions = mc.rowToTreeAssignment(parms._frame, Key.make(parms._predictions_name), null);
       } else if(s.exemplar_index >= 0) {
         assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)
