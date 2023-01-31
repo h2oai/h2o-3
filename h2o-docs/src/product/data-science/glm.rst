@@ -337,7 +337,7 @@ The DFBETAS for the :math:`k\text{th}` coefficient due to the absence of data ro
 
 where:
 
-- :math:`s_{(l)}^2 = \frac{1}{N-1-p} \sum_{i = 0 \text{ & } i \neq l}^{N-1} \big( y_i - x_i^T \hat{\beta}(l) \big)^2` is for a non-weighted dataset. Regression influence diagnostics work for both weighted and non-weighted datasets.
+- :math:`s_{(l)}^2 = \frac{1}{N-1-p} \sum_{i = 0 \text{ & } i \neq l}^{N-1} \big( y_i - x_i^T \hat{\beta}(l) \big)^2` is for a non-weighted dataset. We have implemented the version of :math:`s_{(l)}^2` that works with both weighted and non-weighted datasets.
 - :math:`(X^TX)_{kk}^{-1}` is the diagonal of the gram matrix inverse.
 
 To find the regression diagnostics for the Binomial family, the output is
