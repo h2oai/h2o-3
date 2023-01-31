@@ -2499,6 +2499,71 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 }
 
 #'
+#' Extracts the final training negative log likelihood of a GLM model.
+#'
+#' @param model an \linkS4class{H2OModel} object.
+#' 
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "acceleration"
+#' cars_model <- h2o.glm((y=response, 
+#'                        x=predictors, 
+#'                        training_frame = cars, 
+#'                        family="gaussian",
+#'                        generate_scoring_history=TRUE)
+#' objValue <- h2o.negative_log_likelihood(cars_model)
+#' }
+#' @export 
+h2o.negative_log_likelihood <- function(model) {
+    return(h2o.extract_value(model, "negative_log_likelihood"))
+}
+
+#'
+#' Extracts the final training average objective function of a GLM model.
+#'
+#' @param model an \linkS4class{H2OModel} object.
+#' 
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "acceleration"
+#' cars_model <- h2o.glm((y=response, 
+#'                        x=predictors, 
+#'                        training_frame = cars, 
+#'                        family="gaussian",
+#'                        generate_scoring_history=TRUE)
+#' objValue <- h2o.average_objective(cars_model)
+#' }
+#' @export 
+h2o.average_objective <- function(model) {
+    return(h2o.extract_value(model, "objective"))
+}
+
+h2o.extract_value <- function(model, value) {
+  if (is(model, "H2OModel") && (model@algorithm=='glm')) {
+      if (model@allparameters$generate_scoring_history==TRUE) {
+          scHist <- model@model$scoring_history
+          return(scHist[nrow(scHist), value])
+      } else {
+          stop("negative_log_likelihood and average_objection functions can only be extracted when generate_scoring_history=TRUE for now.")
+      }
+  } else {
+      stop("negative_log_likelihood and average_objection functions are only available for GLM models.")
+  }
+}
+
+#'
 #' Return coefficients fitted on the standardized data (requires standardize = True, which is on by default). These coefficients can be used to evaluate variable importance.
 #'
 #' @param object an \linkS4class{H2OModel} object.
