@@ -280,6 +280,106 @@ When GLM performs regression (with factor columns), one category can be left out
 The reason for the different behavior with regularization is that collinearity is not a problem with regularization. 
 And it’s better to leave regularization to find out which level to ignore (or how to distribute the coefficients between the levels).
 
+Regression Influence Diagnostics
+''''''''''''''''''''''''''''''''
+
+Regression influence diagnostics reveal the influence of each data row on the GLM parameter determination for IRLSM. This shows the parameter value change for each predictor when  a data row is included and excluded in the dataset used to train the GLM model. 
+
+To find the regression diagnostics for the Gaussian family, the output is:
+
+.. math::
+   
+   y_i = x_i^T \beta + \epsilon_i
+
+For the whole dataset, there is:
+
+.. math::
+   
+   Y = X \beta
+
+where:
+
+- :math:`Y` is a column vector with :math:`N` elements;
+- :math:`X` is a :math:`N \times p` matrix containing :math:`X = \begin{bmatrix} x_0^T \\ x_1^T \\ x_2^T \\ \vdots \\ x_{N-1}^T \\\end{bmatrix}`;
+- :math:`x_i` is a column vector with :math:`p` elements: :math:`x_i = \begin{bmatrix} x_{i0} \\ x_{i1} \\ \vdots \\ x_{ip -2} \\ 1 \\\end{bmatrix}` where :math:`1` is added to represent the term associated with the intercept term.
+
+The least square solution for :math:`\beta` is:
+
+.. math::
+   
+   \hat{\beta} = (X^TX)^{-1}X^Ty.
+
+The residual is defined as: 
+
+.. math::
+   
+   r_i = y_i - x_i^T \hat{\beta} \quad \text{equation 1.}
+
+The projection matrix is:
+
+.. math::
+   
+   M = I - H = I - X(X^TX)^{-1}X^T \quad \text{equation 2.}
+
+The residual in *equation 1* is good at pointing out ill-fitting points. However, if does not adequately reveal which observations unduly influence the fit of :math:`\beta`. The diagonal of :math:`M` can direct to those points. Influential points tend to have small values of :math:`m_{ii}` (much smaller than the average value of :math:`1 - \frac{m}{N}` where :math:`m` is the number of predictors and :math:`N` is the number of rows of data in the dataset).
+
+The GLM model is then fitted with all the data to find :math:`\hat{\beta}`. Data row :math:`l` is then deleted and the GLM model is fitted again to find :math:`\hat{\beta}(l)` as the model coefficients. The influence of data row :math:`l` can be found by looking at the parameter value change:
+
+.. math::
+   
+   \Delta_l \hat{\beta} = \hat{\beta} - \hat{\beta}(l) \quad \text{equation 3.}
+
+The DFBETAS for the :math:`k\text{th}` coefficient due to the absence of data row :math:`l` is calculated as:
+
+.. math::
+
+   DFBETAS(l)_k = \frac{\Delta_l \hat{\beta}_k}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} = \frac{\beta_k - \beta_{(l)k}}{\sqrt[s_{(l)}]{(X^TX)_{kk}^{-1}}} \quad \text{euqation 4}
+
+where:
+
+- :math:`s_{(l)}^2 = \frac{1}{N-1-p} \sum_{i = 0 \text{ & } i \neq l}^{N-1} \big( y_i - x_i^T \hat{\beta}(l) \big)^2` is for a non-weighted dataset. Regression influence diagnostics work for both weighted and non-weighted datasets.
+- :math:`(X^TX)_{kk}^{-1}` is the diagonal of the gram matrix inverse.
+
+To find the regression diagnostics for the Binomial family, the output is
+
+.. math::
+   
+   prob(\hat{y}_i = 1 | x_{i}, \beta, \beta_0) = \mu_i^{y_i}(1-\mu_i)^{1-y_i}
+
+where :math:`\mu_i = \frac{1}{1 + exp(- \beta^T x_i -\beta_0)}` and :math:`y_i = 1 \text{ or } 0`. The iterative coefficient update can be written as:
+
+.. math::
+   
+   \beta^{t+1} = \beta^t + (X^TVX)^{-1}X^Ts \quad \text{equation 5}
+
+where:
+
+- :math:`V` is a diagonal matrix with diagonal value :math:`v_{ii} = \mu_i (1-\mu_i)`;
+- :math:`s_i = y_i - \mu_i`.
+
+The formula for DFBETAS for the :math:`k\text{th}` coefficient due to the ansence of data row :math:`l` is defined as:
+
+.. math::
+   
+   DFBETAS(l)_k = \quad ^{\Delta_l \hat{\beta}_k} \big/ _{\hat{\sigma}_k} \quad \text{equation 6}
+
+where:
+
+- :math:`\hat{\sigma}_k` is the standard error of the :math:`k\text{th}` coefficient;
+- :math:`\Delta_l \hat{\beta}_k` is the :math:`k\text{th}` element of the vector :math:`\Delta_l \hat{\beta}` which is approximated as:
+
+.. math::
+   
+   \Delta_l \hat{\beta} = \frac{w_l(y_l-\mu_l)}{1-h_{ll}} (X^TVX)^{-1}x_l \quad \text{equation 7}
+
+- :math:`w_l` is the weight assigned to the data row;
+- :math:`h_{ll}` is the diagonal of a hat matrix which is calculated as:
+
+.. math::
+   
+   h_{ll} = w_l \mu_l (1-\mu_l)x_l^T(X^TVX)^{-1}x_l \quad \text{equation 8.}
+
+
 .. _family_and_link_functions:
 
 Family and Link Functions
