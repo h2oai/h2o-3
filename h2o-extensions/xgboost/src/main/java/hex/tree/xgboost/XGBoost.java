@@ -473,6 +473,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         boolean scored = doScoring(model, exec, varImp, false, _parms._score_eval_metric_only);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           LOG.info("Early stopping triggered - stopping XGBoost training");
+          LOG.info("Setting actual ntrees to the " + model._output._ntrees);
+          _parms._ntrees = model._output._ntrees;
           break;
         }
 

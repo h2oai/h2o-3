@@ -65,6 +65,7 @@ public class RemoteXGBoostExecutorTest {
     public void prostateRegressionWithCustomEarlyStopping() {
         Scope.enter();
         try {
+            int ntrees=1000;
             // Parse frame into H2O
             Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
@@ -75,7 +76,7 @@ public class RemoteXGBoostExecutorTest {
             parms._train = tfr._key;
             parms._response_column = "AGE";
             parms._ignored_columns = new String[]{"ID"};
-            parms._ntrees = 1000;
+            parms._ntrees = ntrees;
             parms._eval_metric = "rmse";
             parms._stopping_tolerance = 1e-1;
             parms._score_tree_interval = 3;
@@ -85,7 +86,8 @@ public class RemoteXGBoostExecutorTest {
             XGBoostModel model = new XGBoost(parms).trainModel().get();
             Scope.track_generic(model);
 
-            assertTrue(model._output._ntrees < parms._ntrees);
+            assertEquals(ntrees, model._input_parms._ntrees);
+            assertTrue(model._output._ntrees < model._input_parms._ntrees);
             for (ScoreKeeper sk : model._output.scoreKeepers()) {
                 assertEquals(sk._rmse, sk._custom_metric, 1e-5);
             }

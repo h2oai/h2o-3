@@ -185,7 +185,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return newMB;
   }
 
-  /** All the parameters required to build the model. */
+  /** All the parameters required to build the model. 
+   * The values of this property will be used as actual parameters of the model. */
   public P _parms;              // Not final, so CV can set-after-clone
 
   /** All the parameters required to build the model conserved in the input form, with AUTO values not evaluated yet. */

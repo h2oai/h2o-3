@@ -500,6 +500,9 @@ public abstract class SharedTree<
                 _model._output.trimTo(bestNTrees);
                 _model.update(_job);
               }
+            } else if (!_parms._is_cv_model) {
+              LOG.info("Stopping early and setting actual ntrees to the " + _model._output._ntrees);
+              _parms._ntrees = _model._output._ntrees;
             }
             _job.update(_ntrees-_model._output._ntrees); // finish the progress bar
             LOG.info(_model.toString()); // we don't know if doScoringAndSaveModel printed the model or not
