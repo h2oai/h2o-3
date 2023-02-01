@@ -779,22 +779,22 @@ Negative Binomial
 
 GLM dispersion estimation using the maximum likelihood method for the negative binomial family is available when you set ``dispersion_parameter_method=“ml”``.
 
-**Note**: Regularization is not supported when using dispersion parameter estimation using maximum likelihood.
+**Note**: Regularization is not supported when you use dispersion parameter estimation with maximum likelihood.
 
-The coefficients (betas) are estimated using IRLSM. The dispersion parameter theta is estimated after each IRLSM iteration. After the first beta update, the initial theta estimate is made using the method of moments as a starting point. Then, theta is updated using the maximum likelihood in each iteration.
+The coefficients, or betas, are estimated using IRLSM. The dispersion parameter theta is estimated after each IRLSM iteration. After the first beta update, the initial theta estimate is made using the method of moments as a starting point. Then, theta is updated using the maximum likelihood in each iteration.
 
-When not converged:
+While not converged:
 
-- Estimate coefficients (betas)
-- Estimate dispersion (thetas)
+1. Estimate coefficients (betas)
+2. Estimate dispersion (thetas)
 
-   - If first iteration:
+   a. If it is the first iteration:
 
-      - Theta <- Method of Moments estimate
+      i. Theta :math:`\gets` Method of Moments estimate
 
-   - Else:
+   b. Otherwise:
    
-      - Theta <- Maximum Likelihood estimate using Newton’s method with learning rate estimated using Golden section search
+      i. Theta :math:`\gets` Maximum Likelihood estimate using Newton’s method with learning rate estimated using Golden section search
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
