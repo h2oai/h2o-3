@@ -1304,8 +1304,10 @@ Below is a simple example showing how to build a Generalized Linear model.
     h2o.std_coef_plot(prostate_glm)
 
     # Since you generated the scoring history, you can retrieve the average objective and the negative log likelihood:
-    h2o.average_objective(prostate_glm)
-    h2o.negative_log_likelihood(prostate_glm)
+    print(h2o.average_objective(prostate_glm))
+    [1] 0.540688
+    print(h2o.negative_log_likelihood(prostate_glm))
+    [1] 205.4614
 
    .. code-tab:: python
 
@@ -1364,8 +1366,10 @@ Below is a simple example showing how to build a Generalized Linear model.
     prostate_glm.std_coef_plot()
 
     # Since you generated the scoring history, you can access the average objective and negative log likelihood:
-    prostate_glm.average_objective()
-    prostate_glm.negative_log_likelihood()
+    print("average objective: {0}.".format(prostate_glm.average_objective()))
+    average objective: 0.5406879877388551.
+    print("negative log likelihood: {0}.".format(prostate_glm.negative_log_likelihood()))
+    negative log likelihood: 205.46143534076492.
 
 Calling Model Attributes
 ''''''''''''''''''''''''
