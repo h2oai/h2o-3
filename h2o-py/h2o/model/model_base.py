@@ -548,7 +548,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         return self.extract_scoring_history("negative_log_likelihood")
 
-    def avarege_objective(self):
+    def average_objective(self):
         """
         Retrieve model average objective function value from scoring history if exists for GLM model.  If there is no 
         regularization, the avearge objective value*obj_reg should equal the neg_log_likelihood value.
