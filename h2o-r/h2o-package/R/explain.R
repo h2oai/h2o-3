@@ -884,6 +884,9 @@ case_insensitive_match_arg <- function(arg, choices) {
                                       "model than necessary, not accounting for heteroscedasticity, autocorrelation, ",
                                       "etc. Note that if you see \"striped\" lines of residuals, that is an artifact ",
                                       "of having an integer valued (vs a real valued) response variable."),
+           learning_curve = paste0("Learning curve plot shows the loss function/metric dependent on number of ",
+                                   "iterations or trees for tree-based algorithms. This plot can be useful for ",
+                                   "determining whether the model overfits."),
            variable_importance = paste0("The variable importance plot shows the relative importance of the most ",
                                         "important variables in the model."),
            varimp_heatmap = paste0("Variable importance heatmap shows variable importance across multiple models. ",
@@ -3154,7 +3157,7 @@ h2o.learning_curve_plot <- function(model,
   }
 
   selected_timestep_value <- switch(timestep,
-                                    number_of_trees = model@allparameters$ntrees,
+                                    number_of_trees = model@params$actual$ntrees,
                                     iterations = model@model$model_summary$number_of_iterations,
                                     iteration = model@model$model_summary$number_of_iterations,
                                     epochs = model@allparameters$epochs,
@@ -3629,6 +3632,7 @@ h2o.explain <- function(object,
     "leaderboard",
     "confusion_matrix",
     "residual_analysis",
+    "learning_curve",
     "varimp",
     "varimp_heatmap",
     "model_correlation_heatmap",
@@ -3772,7 +3776,18 @@ h2o.explain <- function(object,
       }
     }
   }
-
+  if (!"learning_curve" %in% skip_explanations) {
+    result$learning_curve <- list(
+      header = .h2o_explanation_header("Learning Curve Plot"),
+      description = .describe("learning_curve"),
+      plots = list())
+    for (m in models_info$model_ids) {
+      m <- models_info$get_model(m)
+      result$learning_curve$plots[[m@model_id]] <- .customized_call(
+        h2o.learning_curve_plot, model = m, overrides = plot_overrides$learning_curve)
+      if (models_info$is_automl) break
+    }
+  }
   # feature importance
   if (!"varimp" %in% skip_explanations) {
     if (any(sapply(models_info$model_ids, .has_varimp))) {

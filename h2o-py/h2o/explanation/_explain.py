@@ -99,6 +99,8 @@ class Description:
                           "for heteroscedasticity, autocorrelation, etc. Note that if you see \"striped\" lines of "
                           "residuals, that is an artifact of having an integer valued (vs a real valued) "
                           "response variable.",
+        learning_curve="Learning curve plot shows the loss function/metric dependent on number of iterations or trees "
+                       "for tree-based algorithms. This plot can be useful for determining whether the model overfits.",
         variable_importance="The variable importance plot shows the relative importance of the most "
                             "important variables in the model.",
         varimp_heatmap="Variable importance heatmap shows variable importance across multiple models. "
@@ -3098,6 +3100,7 @@ def explain(
         "leaderboard",
         "confusion_matrix",
         "residual_analysis",
+        "learning_curve",
         "varimp",
         "varimp_heatmap",
         "model_correlation_heatmap",
@@ -3154,7 +3157,15 @@ def explain(
                                                plot_overrides.get(
                                                    "residual_analysis"),
                                                figsize=figsize)))
-
+    if "learning_curve" in explanations:
+        result["learning_curve"] = H2OExplanation()
+        result["learning_curve"]["header"] = display(Header("Learning Curve Plot"))
+        result["learning_curve"]["description"] = display(Description("learning_curve"))
+        result["learning_curve"]["plots"] = H2OExplanation()
+        for model in models_to_show:
+            result["learning_curve"]["plots"][model.model_id] = display(
+                model.learning_curve_plot(**_custom_args(plot_overrides.get("learning_curve"), figsize=figsize))
+            )
     if len(models_with_varimp) > 0 and "varimp" in explanations:
         result["varimp"] = H2OExplanation()
         result["varimp"]["header"] = display(Header("Variable Importance"))
