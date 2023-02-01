@@ -203,6 +203,17 @@ public class TestUtil extends Iced {
       checkArrays(expected[ind], actual[ind], threshold);
     }
   }
+  
+  public static void checkIntArrays(int[][] expected, int[][] actual) {
+    int len1 = expected.length;
+    assertEquals(len1, actual.length);
+
+    for (int ind = 0; ind < len1; ind++) {
+      assertEquals(expected[ind].length, actual[ind].length);
+      Arrays.equals(expected[ind], actual[ind]);
+    }
+  }
+  
 
   /**
    * @deprecated use {@link #generateEnumOnly(int, int, int, double)} instead

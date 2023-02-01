@@ -5,12 +5,14 @@ import hex.Model;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMTask;
+import hex.gram.Gram;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -102,42 +104,138 @@ public class ModelSelectionUtils {
         for (int predIndex : currIndices)
             predBitSet.set(predIndex);
     }
-    
-    public static int[][] mapPredIndex2CPMIndices(DataInfo dinfo, int predLength) {
+
+    /***
+     * Class to store the CPM produced, predNames and pred2CPMMapping after the removal of redundant predictors
+     * if present
+     */
+    static class CPMnPredNames {
+        double[][] _cpm;
+        String[] _predNames;
+        int[][] _pred2CPMMapping;
+        
+        public CPMnPredNames(double[][] cpm, String[] predNames, int[][] pred2CPMM) {
+            _cpm = cpm; // cpm with duplicated predictors removed
+            _predNames = predNames; // predictor names with duplicated predictors removed
+            _pred2CPMMapping = pred2CPMM;   // mapping of predictors to cpm indices
+        }
+    }
+
+    public static CPMnPredNames genCPMPredNamesIndex(Key jobKey, DataInfo dinfo, String[] predictorNames, 
+                                                     ModelSelectionModel.ModelSelectionParameters parms) {
+        // check if there are redundant predictors
+        ArrayList<Integer> ignoredCols = new ArrayList<>();
+        GLMTask.GLMIterationTask gtask = genGramCheckDup(jobKey, dinfo, ignoredCols, parms);
+        double[] xTransposey;
+        Gram gram = gtask.getGram();
+        List<Integer> ignoredFullPredCols = new ArrayList<>();
+        // drop unwanted predictors
+        if (ignoredCols.size() > 0) {
+            List<String> ignoredPredIndices = new ArrayList<>();
+            ignoredFullPredCols = findFullDupPred(dinfo, ignoredCols, ignoredPredIndices, predictorNames);
+            predictorNames = Arrays.stream(predictorNames).filter(x -> !ignoredPredIndices.contains(x)).toArray(String[]::new);
+            // drop cols from gram and XTY
+            xTransposey = dropIgnoredCols(gtask, ignoredFullPredCols);
+        } else {
+            xTransposey = gtask.getXY();
+        }
+        return new CPMnPredNames(formCPM(gram, xTransposey, gtask.getYY()), predictorNames, 
+                mapPredIndex2CPMIndices(dinfo, predictorNames.length, ignoredFullPredCols));
+    }
+
+    /**
+     *  This method attempts to map all predictors into the corresponding cpm indices that refer to that predictor.
+     *  This is complicated by two things:
+     *  a. the presence of duplicated predictors that are removed;
+     *  b. the presence of enum predictors that will map one predictor to multiple consecutive cpm indices.
+     */
+    public static int[][] mapPredIndex2CPMIndices(DataInfo dinfo, int predLength, List<Integer> ignoredPredInd) {
         int numPreds = predLength;
         int[][] pred2CPMMapping = new int[numPreds][];
         int offset = 0;
-        
+        int counter = 0;
+
         for (int index=0; index < dinfo._cats; index++) {  // take care of categorical columns
-            int numLevels = dinfo._catOffsets[index+1]-dinfo._catOffsets[index];    // number of catLevels
-            pred2CPMMapping[index] = IntStream.iterate(offset, n->n+1).limit(numLevels).toArray();
-            offset += numLevels;
+            if (!ignoredPredInd.contains(index)) {  // enum pred not ignored
+                int numLevels = dinfo._catOffsets[index + 1] - dinfo._catOffsets[index];    // number of catLevels
+                pred2CPMMapping[counter++] = IntStream.iterate(offset, n -> n + 1).limit(numLevels).toArray();
+                offset += numLevels;
+            }
         }
-        for (int index=0; index < dinfo._nums; index++) {
-            pred2CPMMapping[index+dinfo._cats] = new int[]{dinfo._numOffsets[index]};
+        int totPreds = dinfo._cats+dinfo._nums;
+        for (int index=dinfo._cats; index < totPreds; index++) {
+            if (!ignoredPredInd.contains(index))
+                pred2CPMMapping[counter++] = new int[]{offset++};
         }
         return pred2CPMMapping;
     }
-            
-    public static double[][] createCrossProductMatrix(Key jobKey, DataInfo dinfo) {
+    
+    
+    public static double[][] formCPM(Gram gram, double[] xTransposey, double yy) {
+        int coeffSize = xTransposey.length;
+        int cPMsize = coeffSize+1;
+        double[][] crossProductMatrix = new double[cPMsize][cPMsize];
+        gram.getXXCPM(crossProductMatrix, false, false);
+        // copy xZTransposex, xTransposey, yy to crossProductMatrix
+        for (int rowIndex=0; rowIndex<coeffSize; rowIndex++) {
+            crossProductMatrix[rowIndex][coeffSize] = xTransposey[rowIndex];
+        }
+        System.arraycopy(xTransposey, 0, crossProductMatrix[coeffSize], 0, coeffSize);
+        crossProductMatrix[coeffSize][coeffSize] = yy;
+        return crossProductMatrix;
+    }
+    
+    public static double[] dropIgnoredCols(GLMTask.GLMIterationTask gtask, List<Integer> ignoredCols) {
+        Gram gram = gtask.getGram();
+        int[] droppedCols = ignoredCols.stream().mapToInt(x->x).toArray();
+        gram.dropCols(droppedCols);
+        return ArrayUtils.removeIds(gtask.getXY(), droppedCols);
+    }
+    
+    /***
+     * The duplicated columns generated by qr-cholesky is at the level of coefficients.  This means for enum predictors
+     * there could be multiple coefficients, one for each level of the enum level.  For enum predictors, I will 
+     * remove the predictor only if all its columns are duplicated.  This make it a little more complicated.
+     */
+    public static List<Integer> findFullDupPred(DataInfo dinfo, List<Integer> ignoredCols, List<String> ignoredPredInd,
+                                                String[] prednames) {
+        List<Integer> ignoredColsCopy = new ArrayList<>(ignoredCols);
+        List<Integer> fullIgnoredCols = new ArrayList<>();
+        int[] catOffsets = dinfo._catOffsets;
+
+        if (dinfo._cats > 0) {   // there are enum columns in dataset
+            int catOffsetsLen = catOffsets.length;
+            for (int index = 1; index < catOffsetsLen; index++) {
+                final int counter = index;
+                List<Integer> discarded = ignoredColsCopy.stream().filter(x -> x < catOffsets[counter]).collect(Collectors.toList());
+                if ((discarded != null) && (discarded.size() == (catOffsets[index]-catOffsets[index-1]))) {  // full enum predictors found in ignored columns
+                    fullIgnoredCols.addAll(discarded);
+                    ignoredPredInd.add(prednames[index-1]);
+                }
+                if (discarded != null && discarded.size() > 0)
+                    ignoredColsCopy.removeAll(discarded);
+            }
+        }
+        if (ignoredColsCopy != null && ignoredColsCopy.size()>0) {
+            int offsetNum = dinfo._numOffsets[0]-dinfo._cats;
+            ignoredPredInd.addAll(ignoredColsCopy.stream().map(x -> prednames[x-offsetNum]).collect(Collectors.toList()));
+            fullIgnoredCols.addAll(ignoredColsCopy);    // add all remaining numerical ignored predictors columns
+        }
+        return fullIgnoredCols;
+    }
+    
+    public static GLMTask.GLMIterationTask genGramCheckDup(Key jobKey, DataInfo dinfo, ArrayList<Integer> ignoredCols, 
+                                                    ModelSelectionModel.ModelSelectionParameters parms) {
         double[] beta = new double[dinfo.coefNames().length];
         beta = Arrays.stream(beta).map(x -> 1.0).toArray(); // set coefficient to all 1
         GLMTask.GLMIterationTask gtask = new GLMTask.GLMIterationTask(jobKey, dinfo, new GLMModel.GLMWeightsFun(gaussian,
                 GLMModel.GLMParameters.Link.identity, 1, 0.1, 0.1), beta).doAll(dinfo._adaptedFrame);
-        double[][] xTransposex = gtask.getGram().getXX();
-        double[] xTransposey = gtask.getXY();
-        int cPMsize = xTransposey.length+1;
-        int coeffSize = xTransposey.length;
-        double[][] crossProductMatrix = new double[cPMsize][cPMsize];
-        // copy xZTransposex, xTransposey, yy to crossProductMatrix
-        for (int rowIndex=0; rowIndex<coeffSize; rowIndex++) {
-            System.arraycopy(xTransposex[rowIndex], 0, crossProductMatrix[rowIndex], 0, coeffSize);
-            crossProductMatrix[rowIndex][coeffSize] = xTransposey[rowIndex];
-        }
-        System.arraycopy(xTransposey, 0, crossProductMatrix[coeffSize], 0, coeffSize);
-        crossProductMatrix[coeffSize][coeffSize] = gtask.getYY();
-        return crossProductMatrix;
+        Gram gram = gtask.getGram();
+        Gram.Cholesky chol = gram.qrCholesky(ignoredCols, parms._standardize);
+        if (!chol.isSPD()) throw new Gram.NonSPDMatrixException();
+        return gtask;
     }
+    
 
     public static double calR2Scale(Frame train, String resp) {
         Vec respV = train.vec(resp);

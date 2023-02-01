@@ -909,6 +909,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _invTheta = 1/theta;
     }
 
+    /***
+     * Given the estimated model output x, we want to find the linear part which is transpose(beta)*p+intercept if
+     * beta does not contain the intercept.
+     */
     public final double link(double x) {
       switch(_link) {
         case identity:
@@ -999,7 +1003,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    // function inverse of link function
+    /***
+     * Given the linear combination transpose(beta)*p+intercept (if
+     * beta does not contain the intercept), this method will provide the estimated model output.
+     */
     public final double linkInv(double x) {
       switch(_link) {
         case ologlog:

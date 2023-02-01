@@ -22,7 +22,7 @@ def test_glm_negLL_Obj():
     assert abs(nll_noReg-obj_noReg/glm_model_noReg.actual_params["obj_reg"]) < 1e-6, \
         "objective ({0}) and negative log likelihood ({1}) should equal but do not.".format(obj_noReg, nll_noReg)
     assert abs(nll-obj) > 1e-6, "objective ({0}) and negative log likelihood ({1}) should not equal but do" \
-                                            " not.".format(obj, nll)
+                                            " equal.".format(obj, nll)
 if __name__ == "__main__":
   pyunit_utils.standalone_test(test_glm_negLL_Obj)
 else:
