@@ -579,6 +579,8 @@ The corresponding deviance is:
 
 **Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
 
+
+
 Links
 '''''
 
@@ -624,6 +626,9 @@ For **AUTO**:
 
 Dispersion Parameter Estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tweedie
+'''''''
 
 The density for the maximum likelihood function for Tweedie can be written as:
 
@@ -717,7 +722,7 @@ As :math:`p` closes in on 1, the Tweedie density function becomes multimodal. Th
 As a conservative condition, to ensure that the density is unimodal for most values of :math:`y,\phi`, we should have :math:`p>1.2`.
 
 Tweedie Dispersion Example
-''''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. tabs::
    .. code-tab:: r R
@@ -768,6 +773,28 @@ Tweedie Dispersion Example
       # Retrieve the estimated dispersion:
       model._model_json["output"]["dispersion"]
       8.966819788535565
+
+Negative Binomial
+'''''''''''''''''
+
+GLM dispersion estimation using the maximum likelihood method for the negative binomial family is available when you set ``dispersion_parameter_method=“ml”``.
+
+**Note**: Regularization is not supported when using dispersion parameter estimation using maximum likelihood.
+
+The coefficients (betas) are estimated using IRLSM. The dispersion parameter theta is estimated after each IRLSM iteration. After the first beta update, the initial theta estimate is made using the method of moments as a starting point. Then, theta is updated using the maximum likelihood in each iteration.
+
+When not converged:
+
+- Estimate coefficients (betas)
+- Estimate dispersion (thetas)
+
+   - If first iteration:
+
+      - Theta <- Method of Moments estimate
+
+   - Else:
+   
+      - Theta <- Maximum Likelihood estimate using Newton’s method with learning rate estimated using Golden section search
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
