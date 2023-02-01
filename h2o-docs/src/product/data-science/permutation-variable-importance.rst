@@ -55,7 +55,7 @@ Examples
         h2o.init()
 
         # load data
-        prostate_train <- h2o.uploadFile("smalldata/prostate/prostate.csv")
+        prostate_train <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
         # train a model
         gbm <- h2o.gbm(y = "CAPSULE", training_frame = prostate_train)
@@ -78,7 +78,7 @@ Examples
         h2o.init()
 
         # load data
-        prostate_train = h2o.import_file(path="smalldata/prostate/prostate.csv")
+        prostate_train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
         prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
 
         # train model
