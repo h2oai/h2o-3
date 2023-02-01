@@ -299,7 +299,7 @@ For the whole dataset, there is:
 
 where:
 
-- :math:`Y` is a column vector with :math:`N` elements;
+- :math:`Y` is a column vector with :math:`N` elements and :math:`Y = \begin{bmatrix} y_0 \\ y_1 \\ y_2 \\ \vdots \\ y_{N-1} \\\end{bmatrix}`;
 - :math:`X` is a :math:`N \times p` matrix containing :math:`X = \begin{bmatrix} x_0^T \\ x_1^T \\ x_2^T \\ \vdots \\ x_{N-1}^T \\\end{bmatrix}`;
 - :math:`x_i` is a column vector with :math:`p` elements: :math:`x_i = \begin{bmatrix} x_{i0} \\ x_{i1} \\ \vdots \\ x_{ip -2} \\ 1 \\\end{bmatrix}` where :math:`1` is added to represent the term associated with the intercept term.
 
