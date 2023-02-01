@@ -236,8 +236,8 @@ class H2OCluster(H2OSchema):
                 print("Warning:", message)
         # Check age of the install
         if self.build_too_old:
-            print(("Warning: Your H2O cluster version is too old ({})!"
-                   "Please download and install the latest version from http://h2o.ai/download/"
+            print(("Warning: Your H2O cluster version is ({}) old.  There may be a newer version available.\n"
+                   "Please download and install the latest version from: https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
                    ).format(self.build_age))
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -283,7 +283,7 @@ class H2OCluster(H2OSchema):
                   self.cloud_internal_timezone,
                   self.datafile_parser_timezone,
                   self.version,
-                  "{} {}".format(self.build_age, ("!!!" if self.build_too_old else "")),
+                  self.build_age,
                   self.cloud_name,
                   self.cloud_size,
                   get_human_readable_bytes(free_mem),
