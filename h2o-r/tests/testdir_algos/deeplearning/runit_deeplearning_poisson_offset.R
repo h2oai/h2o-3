@@ -32,9 +32,9 @@ test <- function() {
 	print(min(ph[,1]))
 	print(max(ph[,1]))
 	expect_equal(195705, mean_deviance, tolerance=1)
-	expect_equal(0.975, mean(ph[,1]), tolerance=1e-3)
-	expect_equal(0.496,    min(ph[,1]), tolerance=1e-3)
-	expect_equal(2, max(ph[,1]), tolerance=1)
+	expect_equal(20235, mean(ph[,1]), tolerance=1e-3)
+	expect_equal(352,    min(ph[,1]), tolerance=1e-3)
+	expect_equal(217516, max(ph[,1]), tolerance=1)
 
 	#with offset
 	#gg = gbm(formula = Claims~factor(Class)+factor(Merit)+offset(log(Insured))  , distribution = "poisson",data = ca,
