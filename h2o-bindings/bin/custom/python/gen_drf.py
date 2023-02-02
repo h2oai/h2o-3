@@ -6,6 +6,7 @@ options = dict(
         'h2o.model.extensions.Trees',
         'h2o.model.extensions.SupervisedTrees',
         'h2o.model.extensions.Contributions',
+        'h2o.model.extensions.Fairness',
     ],
 )
 deprecated_params = dict(offset_column=None)

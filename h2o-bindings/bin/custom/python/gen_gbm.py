@@ -8,7 +8,8 @@ options = dict(
         'h2o.model.extensions.SupervisedTrees',
         'h2o.model.extensions.HStatistic',
         'h2o.model.extensions.Contributions',
-        'h2o.model.extensions.RowToTreeAssignment',
+        'h2o.model.extensions.Fairness',
+        'h2o.model.extensions.RowToTreeAssignment'
     ],
 )
 

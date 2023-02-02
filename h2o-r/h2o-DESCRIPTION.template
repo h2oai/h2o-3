@@ -65,4 +65,5 @@ Suggests: ggplot2 (>= 3.3.0),
           htmltools,
           plotly,
           repr,
-          curl
+          curl,
+          scales

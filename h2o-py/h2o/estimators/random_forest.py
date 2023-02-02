@@ -27,7 +27,8 @@ class H2ORandomForestEstimator(H2OEstimator):
                                       'h2o.model.extensions.VariableImportance',
                                       'h2o.model.extensions.Trees',
                                       'h2o.model.extensions.SupervisedTrees',
-                                      'h2o.model.extensions.Contributions'],
+                                      'h2o.model.extensions.Contributions',
+                                      'h2o.model.extensions.Fairness'],
                  'verbose': True}
 
     @deprecated_params({'offset_column': None})

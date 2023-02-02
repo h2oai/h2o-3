@@ -723,21 +723,54 @@ pareto_front_corner_cases_test <- function() {
   expect_true(all(br$name == "bottom right"))
 }
 
+
+fairness_plots_test <- function() {
+  data <- h2o.uploadFile(locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+
+  x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3')
+  y <- "default payment next month"
+  protected_columns <- c('SEX', 'EDUCATION', 'MARRIAGE')
+
+  for (col in c(y, protected_columns))
+    data[[col]] <- h2o.asfactor(data[[col]])
+
+  splits <- h2o.splitFrame(data, 0.98)
+  train <- splits[[1]]
+  test <- splits[[2]]
+  reference <- c("1", "2", "2")  # university educated single man
+  favorable_class <- "0"  # no default next month
+
+  aml <- h2o.automl(x, y, train, max_models=12)
+
+  models <- lapply(aml@leaderboard$model_id, h2o.getModel)
+  da <- h2o.disparate_analysis(models, test, protected_columns, reference, favorable_class)
+
+  expect_ggplot(plot(h2o.pareto_front(da, "auc", "air_min", optimum="top right")))
+
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "deeplearning"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "drf"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "gbm"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "glm"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "xgboost"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+}
+
+
 doSuite("Explanation Tests", makeSuite(
-  varimp_test
-  , explanation_test_single_model_regression
-  , explanation_test_automl_regression
-  , explanation_test_list_of_models_regression
-  , explanation_test_single_model_binomial_classification
-  , explanation_test_automl_binomial_classification
-  , explanation_test_list_of_models_binomial_classification
-  , explanation_test_single_model_multinomial_classification
-  , explanation_test_automl_multinomial_classification
-  , explanation_test_list_of_models_multinomial_classification
-  , learning_curve_plot_test_of_models_not_included_in_automl
-  , explanation_test_timeseries
-  , explanation_test_automl_pareto_front
-  , explanation_test_grid_pareto_front
-  , explanation_test_some_dataframe_pareto_front
-  , pareto_front_corner_cases_test
+   varimp_test
+   , explanation_test_single_model_regression
+   , explanation_test_automl_regression
+   , explanation_test_list_of_models_regression
+   , explanation_test_single_model_binomial_classification
+   , explanation_test_automl_binomial_classification
+   , explanation_test_list_of_models_binomial_classification
+   , explanation_test_single_model_multinomial_classification
+   , explanation_test_automl_multinomial_classification
+   , explanation_test_list_of_models_multinomial_classification
+   , learning_curve_plot_test_of_models_not_included_in_automl
+   , explanation_test_timeseries
+   , explanation_test_automl_pareto_front
+   , explanation_test_grid_pareto_front
+   , explanation_test_some_dataframe_pareto_front
+   , pareto_front_corner_cases_test
+   , fairness_plots_test
 ))

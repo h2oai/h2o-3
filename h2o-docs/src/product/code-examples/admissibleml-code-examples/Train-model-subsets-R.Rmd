@@ -1,0 +1,64 @@
+---
+title: "Infogram Train Subset Models Demo Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(h2o)
+
+h2o.init()
+
+# Import HMDA dataset
+f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+col_types <- list(by.col.name = c("high_priced"),
+                  types = c("factor"))
+df <- h2o.importFile(path = f, col.types = col_types)
+
+splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+train <- splits[[1]]
+test <- splits[[2]]
+
+# Response column and predictor columns
+y <- "high_priced"
+x <- c("loan_amount",
+       "loan_to_value_ratio",
+       "loan_term",
+       "intro_rate_period",
+       "property_value",
+       "income",
+       "debt_to_income_ratio")
+
+# Fairness related information
+protected_columns <- c("derived_race", "derived_sex")
+reference <- c("White", "Male")
+favorable_class <- "0"
+
+# Infogram
+ig <- h2o.infogram(y = y, x = x, training_frame = train, protected_columns = protected_columns)
+plot(ig)
+
+# Admissible score frame
+asf <- ig@admissible_score
+asf
+```
+
+```{r}
+da <- h2o.no_progress(h2o.infogram_train_subset_models(ig, h2o.automl, train, test, y, protected_columns, reference, favorable_class, max_models = 10, seed = 1))
+da
+```
+
+```{r}
+pf <- h2o.pareto_front(da, x_metric = "auc", y_metric = "significant_air_min", optimum = "top right", color = "algo")
+plot(pf)
+pf@pareto_front
+```
+
+```{r}
+potentially_fair_model <- h2o.getModel(da[da$significant_air_min > 0.8, "model_id"][[1]])
+```
+
+```{r fig.height=6, fig.width=12, warning=FALSE, results="asis"}
+h2o.inspect_model_fairness(potentially_fair_model, test, protected_columns, reference, favorable_class)
+```
