@@ -636,21 +636,30 @@ public class TestUtil extends Iced {
   
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
-      File file = FileUtils.locateFile(fname);
-      if ((file == null) && (isCI() || runWithoutLocalFiles())) {
-        long lastModified = downloadTestFileFromS3(fname);
-        if (lastModified != 0 && isCI()) { // in CI fail if the file is missing for more than 30 days
-          if (System.currentTimeMillis() - lastModified > 30 * 24 * 60 * 60 * 1000L) {
-            throw new IllegalStateException(
-                    "File '" + fname + "' is still not locally synchronized (more than 30 days). Talk to #devops-requests");
-          }
-        }
-      }
+      downloadFileIfMissingLocally(fname);
       return NFSFileVec.make(fname);
     } catch (IOException ioe) {
       Log.err(ioe);
       fail(ioe.getMessage());
       return null;
+    }
+  }
+
+  public static File getFile(String fname) throws IOException {
+    downloadFileIfMissingLocally(fname);
+    return FileUtils.getFile(fname);
+  }
+
+  private static void downloadFileIfMissingLocally(final String fname) throws IOException {
+    File file = FileUtils.locateFile(fname);
+    if ((file == null) && (isCI() || runWithoutLocalFiles())) {
+      long lastModified = downloadTestFileFromS3(fname);
+      if (lastModified != 0 && isCI()) { // in CI fail if the file is missing for more than 30 days
+        if (System.currentTimeMillis() - lastModified > 30 * 24 * 60 * 60 * 1000L) {
+          throw new IllegalStateException(
+                  "File '" + fname + "' is still not locally synchronized (more than 30 days). Talk to #devops-requests");
+        }
+      }
     }
   }
 

@@ -48,7 +48,6 @@ import water.util.TwoDimTable;
 
 import java.io.*;
 import java.util.*;
-import java.util.logging.Filter;
 import java.util.stream.Collectors;
 
 import static hex.Model.Contributions.*;
@@ -58,7 +57,6 @@ import static hex.genmodel.utils.DistributionFamily.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
-import static water.util.FileUtils.getFile;
 
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
