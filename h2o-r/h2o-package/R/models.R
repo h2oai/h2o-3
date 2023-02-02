@@ -2518,7 +2518,7 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #'                        training_frame = cars, 
 #'                        family="gaussian",
 #'                        generate_scoring_history=TRUE)
-#' objValue <- h2o.negative_log_likelihood(cars_model)
+#' nllValue <- h2o.negative_log_likelihood(cars_model)
 #' }
 #' @export 
 h2o.negative_log_likelihood <- function(model) {
