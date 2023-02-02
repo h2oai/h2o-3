@@ -279,7 +279,6 @@ class PoissonDistribution extends Distribution {
 
     @Override
     public double deviance(double w, double y, double f) {
-//        f = link(f); //bring back f to link space
         return 2 * w * (y * LogExpUtil.log(y / f) - y + f);
     }
 
