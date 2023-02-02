@@ -948,7 +948,7 @@ h2o.clusterInfo <- function() {
   cat("    H2O cluster timezone:      ", res$cloud_internal_timezone, "\n")
   cat("    H2O data parsing timezone: ", res$datafile_parser_timezone, "\n")
   cat("    H2O cluster version:       ", res$version, "\n")
-  cat("    H2O cluster version age:   ", res$build_age, if (res$build_too_old) "!!!" else "", "\n")
+  cat("    H2O cluster version age:   ", res$build_age, "\n")
   cat("    H2O cluster name:          ", res$cloud_name, "\n")
   cat("    H2O cluster total nodes:   ", res$cloud_size, "\n")
   cat("    H2O cluster total memory:  ", sprintf("%.2f GB", freeMem), "\n")
@@ -966,7 +966,7 @@ h2o.clusterInfo <- function() {
     warning("Number of CPU cores allowed is limited to 1 on some nodes.\n",
             "To remove this limit, set environment variable 'OPENBLAS_MAIN_FREE=1' before starting R.")
   if (res$build_too_old) {
-    warning(sprintf("\nYour H2O cluster version is too old (%s)!\nPlease download and install the latest version from http://h2o.ai/download/", res$build_age))
+    warning(sprintf("\nYour H2O cluster version is (%s) old. There may be a newer version available.\nPlease download and install the latest version from: https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html", res$build_age))
   }
 }
 

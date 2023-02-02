@@ -25,7 +25,7 @@ public class AboutHandler extends Handler {
 
     if (H2O.ABV.isTooOld()) {
       entries.add(new AboutEntryV3("Version warning",
-                                   "Your H2O version is too old! Please download the latest version from http://h2o.ai/download/"));
+                                   "Your H2O version is over 100 days old. Please download the latest version from: https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"));
     }
 
     for (H2O.AboutEntry ae : H2O.getAboutEntries()) {
