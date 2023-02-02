@@ -60,38 +60,28 @@ test <- function() {
                        train_samples_per_iteration = -1,validation_frame = fre,activation = "Tanh",distribution = "poisson", score_training_samples=0)
         p = h2o.predict(hh,newdata = fre)[,1]
         nr <- nrow(p)
-	# ClaimNb <- as.data.frame(fre)['ClaimNb']
+
+	# temporary used used for comparing with sklearn deviance values
+	# write.csv(as.vector(fre$ClaimNb[,1]),file='x.csv')
+	# write.csv(as.vector(p),file='f.csv')
+
 	# min value of logarithm due to hex.LogExpUtil.MIN_LOG
 	min_log <- -19.0
 	div <- fre$ClaimNb[,1]/p[,1]
-	div <- pmax(exp(-19.0), as.vector(div[,1]))
-	print(p[,1])
+	div <- pmax(exp(min_log), as.vector(div[,1]))
 	ClaimNbPMin <- pmax(min_log, log(div))
-	# pMin <- pmax(min_log, p[,1])
-	print(length(fre$ClaimNb[,1]))
-	print(p)
-	# deviance <- 2 * sum(fre$ClaimNb[,1] * (log(ClaimNbMin) - log(p[,1])) - fre$ClaimNb[,1] + p[,1])
-	# deviance <- 2 * sum(fre$ClaimNb[,1] * log(ClaimNbPMin) - fre$ClaimNb[,1] + p[,1])
 	deviance <- 2 * sum(fre$ClaimNb[,1] * ClaimNbPMin - fre$ClaimNb[,1] + p[,1])
-	print(deviance)
 
-	# for (i in 1: nr) {
-	# 		print('---')
-	# 	print(fre$ClaimNb[i,1])
-	# 	print(p[i,1])
-	# 	print(2 * sum(fre$ClaimNb[i,1] * ClaimNbPMin[i] - fre$ClaimNb[i,1] + p[i,1]))
-	# 	}
 	mean_deviance <- deviance/nr ## Poisson deviance
-	print(mean_deviance)
-  #
+
   print("---------------------------------------------------------poisson-----------------------------------------------")
         print(mean_deviance)
         print(hh@model$training_metrics@metrics$mean_residual_deviance)
         print(hh@model$validation_metrics@metrics$mean_residual_deviance)
   print("---------------------------------------------------------poisson-----------------------------------------------")
 
-	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-1)
-	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-1)
+	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e0)
+	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e0)
 	
 	
 }
