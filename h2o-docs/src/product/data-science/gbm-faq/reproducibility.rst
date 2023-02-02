@@ -125,7 +125,10 @@ In order to reproduce the model on a machine with a different number of CPU core
 
 ``"Rebalancing train dataset into 145 chunks."``
 
-**If the logs show that rebalancing has occurred, reproducibility is not possible.** If the logs do not mention rebalancing, continue to Step 2.
+.. warning::
+    If the logs show that rebalancing has occurred, reproducibility is not possible.
+
+If the logs do not mention rebalancing, continue to Step 2.
 
 
    .. tabs::
@@ -185,7 +188,8 @@ In order to reproduce the model on a machine with a different number of CPU core
 
 ``"Rebalancing train dataset into 145 chunks."``
 
-**If the logs show that rebalancing has occurred, you will not be able to reproduce the model.**
+.. warning::
+    If the logs show that rebalancing has occurred, you will not be able to reproduce the model.
 
 How do I reproduce a model where model training was not triggered from the leader node?
 #######################################################################################
