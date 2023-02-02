@@ -2502,7 +2502,7 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #' Extracts the final training negative log likelihood of a GLM model.
 #'
 #' @param model an \linkS4class{H2OModel} object.
-#' 
+#' @return The final training negative log likelihood of a GLM model.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
