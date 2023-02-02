@@ -546,7 +546,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :return: the negative likelihood function value
         """
-        return self.extract_scoring_history("negative_log_likelihood")
+        return self._extract_scoring_history("negative_log_likelihood")
 
     def average_objective(self):
         """
@@ -555,10 +555,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :return: the average objective function value
         """
-        return self.extract_scoring_history("objective")
+        return self._extract_scoring_history("objective")
 
         
-    def extract_scoring_history(self, value):
+    def _extract_scoring_history(self, value):
         model = self._model_json["output"]
         if 'glm' == self.algo:
             if self.actual_params['generate_scoring_history'] is True:

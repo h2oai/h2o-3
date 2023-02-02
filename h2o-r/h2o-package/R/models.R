@@ -2503,6 +2503,7 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #'
 #' @param model an \linkS4class{H2OModel} object.
 #' @return The final training negative log likelihood of a GLM model.
+#' 
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -2521,13 +2522,14 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #' }
 #' @export 
 h2o.negative_log_likelihood <- function(model) {
-    return(h2o.extract_value(model, "negative_log_likelihood"))
+    return(extract_scoring_history(model, "negative_log_likelihood"))
 }
 
 #'
 #' Extracts the final training average objective function of a GLM model.
 #'
 #' @param model an \linkS4class{H2OModel} object.
+#' @return The final training average objective of a GLM model.
 #' 
 #' @examples 
 #' \dontrun{
@@ -2547,10 +2549,10 @@ h2o.negative_log_likelihood <- function(model) {
 #' }
 #' @export 
 h2o.average_objective <- function(model) {
-    return(h2o.extract_value(model, "objective"))
+    return(extract_scoring_history(model, "objective"))
 }
 
-h2o.extract_value <- function(model, value) {
+extract_scoring_history <- function(model, value) {
   if (is(model, "H2OModel") && (model@algorithm=='glm')) {
       if (model@allparameters$generate_scoring_history==TRUE) {
           scHist <- model@model$scoring_history
