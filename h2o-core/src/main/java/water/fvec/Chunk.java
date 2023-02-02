@@ -566,6 +566,13 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
     return res;
   }
 
+  public final Chunk setVolatile(float[] fs) {
+    Chunk res;
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C4FVolatileChunk(fs), fs.length*3, Value.ICE);
+    DKV.put(v._key,v);
+    return res;
+  }
+
   public final Chunk setVolatile(int[] vals) {
     Chunk res;
     Value v = new Value(_vec.chunkKey(_cidx), res = new C4VolatileChunk(vals),vals.length*4,Value.ICE);

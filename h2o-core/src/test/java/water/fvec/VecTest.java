@@ -356,5 +356,29 @@ public class VecTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testMakeVolatileFloats() {
+    Scope.enter();
+    try {
+      Vec zeros = Vec.makeZero(100_000);
+      Scope.track(zeros);
+      Vec[] vs = zeros.makeVolatileFloats(3);
+      Scope.track(new Frame(vs));
+      assertEquals(3, vs.length);
+      for (int i = 0; i < 3; i++) {
+        Vec v = vs[i];
+        assertTrue(v.isVolatile());
+        assertEquals(zeros.length(), v.length());
+        assertEquals(v.min(), 0, 0);
+        assertEquals(v.max(), 0, 0);
+        for (int cidx = 0; cidx < zeros.nChunks(); cidx++) {
+          assertTrue(v.chunkForChunkIdx(cidx) instanceof C4FVolatileChunk);
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
   
 }
