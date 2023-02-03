@@ -741,7 +741,7 @@ Tweedie Dispersion Example
                        y = response, 
                        training_frame = training_data, 
                        family = 'tweedie',
-                       tweedie_variance_power = 3 
+                       tweedie_variance_power = 3, 
                        lambda = 0, 
                        compute_p_values = TRUE, 
                        dispersion_parameter_method = "pearson", 
