@@ -24,6 +24,7 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
@@ -467,10 +468,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     private void scoreAndBuildTrees(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp) {
+      long scoringTime = 0;
       for (int tid = 0; tid < _ntrees; tid++) {
         if (_job.stop_requested() && tid > 0) break;
         // During first iteration model contains 0 trees, then 1-tree, ...
+        long scoringStart = System.currentTimeMillis();
         boolean scored = doScoring(model, exec, varImp, false, _parms._score_eval_metric_only);
+        scoringTime += System.currentTimeMillis() - scoringStart;
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           LOG.info("Early stopping triggered - stopping XGBoost training");
           LOG.info("Setting actual ntrees to the " + model._output._ntrees);
@@ -513,9 +517,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       
       _job.update(0, "Scoring the final model");
       // Final scoring
+      long scoringStart = System.currentTimeMillis();
       doScoring(model, exec, varImp, true, _parms._score_eval_metric_only);
+      scoringTime += System.currentTimeMillis() - scoringStart;
       // Finish remaining work (if stopped early)
       _job.update(_parms._ntrees-model._output._ntrees);
+      Log.info("In-training scoring took " + scoringTime + "ms.");
     }
 
     private boolean monotonicityConstraintCheckEnabled() {
