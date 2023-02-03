@@ -2513,7 +2513,7 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #' cars <- h2o.importFile(f)
 #' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "acceleration"
-#' cars_model <- h2o.glm((y=response, 
+#' cars_model <- h2o.glm(y=response, 
 #'                        x=predictors, 
 #'                        training_frame = cars, 
 #'                        family="gaussian",
@@ -2540,7 +2540,7 @@ h2o.negative_log_likelihood <- function(model) {
 #' cars <- h2o.importFile(f)
 #' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "acceleration"
-#' cars_model <- h2o.glm((y=response, 
+#' cars_model <- h2o.glm(y=response, 
 #'                        x=predictors, 
 #'                        training_frame = cars, 
 #'                        family="gaussian",
