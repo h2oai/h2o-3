@@ -55,6 +55,7 @@ reference:
       - h2o.auc
       - h2o.automl
       - h2o.auuc
+      - h2o.average_objective
       - h2o.betweenss
       - h2o.biases
       - h2o.bottomN
@@ -233,6 +234,7 @@ reference:
       - h2o.names
       - h2o.nchar
       - h2o.ncol
+      - h2o.negative_log_likelihood
       - h2o.networkTest
       - h2o.nlevels
       - h2o.no_progress

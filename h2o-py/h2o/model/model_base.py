@@ -539,6 +539,46 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if "scoring_history" in model and model["scoring_history"] is not None:
             return model["scoring_history"].as_data_frame()
         print("No score history for this model")
+        
+    def negative_log_likelihood(self):
+        """
+        Retrieve model negative likelihood function value from scoring history if exists for GLM model
+        
+        :return: the negative likelihood function value
+        """
+        return self._extract_scoring_history("negative_log_likelihood")
+
+    def average_objective(self):
+        """
+        Retrieve model average objective function value from scoring history if exists for GLM model.  If there is no 
+        regularization, the avearge objective value*obj_reg should equal the neg_log_likelihood value.
+        
+        :return: the average objective function value
+        """
+        return self._extract_scoring_history("objective")
+
+        
+    def _extract_scoring_history(self, value):
+        model = self._model_json["output"]
+        if 'glm' == self.algo:
+            if self.actual_params['generate_scoring_history'] is True:
+                if "scoring_history" in model and model["scoring_history"] is not None:
+                    sc_history = model["scoring_history"]
+                    col_header = sc_history._col_header
+                    if value in col_header:
+                        index_val = col_header.index(value)
+                        scLen = len(sc_history._cell_values)
+                        return sc_history._cell_values[scLen-1][index_val]
+                    else:
+                        print("{0} not available.".format(value))
+                else:
+                    raise H2OValueError("GLM scoring_history is missing.  Cannot extract {0}.".value)
+            else:
+                raise H2OValueError("For now, need to set generate_scoring_history to True to get {0}".format(value))
+        else:
+            raise H2OValueError("{0} is only for GLM models.".format(value))
+
+
 
     def ntrees_actual(self):
         """
