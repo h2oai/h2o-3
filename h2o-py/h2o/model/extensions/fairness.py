@@ -2,7 +2,6 @@ import numpy as np
 from collections import defaultdict
 from itertools import product
 
-from h2o.explanation import Description
 from h2o.utils.threading import local_context
 
 
@@ -422,6 +421,7 @@ class Fairness:
         """
         import h2o
         from h2o.explanation import H2OExplanation
+        from h2o.explanation import Description
         from h2o.explanation._explain import NumpyFrame
         from h2o.explanation._explain import _display, _dont_display, Header
         from h2o.model.extensions import has_extension
