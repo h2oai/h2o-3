@@ -117,7 +117,7 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         @API(help = "For maxrsweep mode only.  If true, will return full blown GLM models with the desired predictor" +
                 "subsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is for" +
                 "speeding up the model selection process.  The users can choose to build the GLM models themselves" +
-                "by using the predictor subsets themselves.  Default to true.",
+                "by using the predictor subsets themselves.  Defaults to false.",
                 level = API.Level.critical)
         public boolean build_glm_model;
 
