@@ -244,7 +244,7 @@ Defining a GLM Model
 
 - **generate_variable_inflation_factors**: If ``True``, generates the variable inflation factors for numerical predictors. Defaults to ``False``.
 
-**generate_scoring_history**: Generates scoring history for the GLM model when set to ``True``. This may significantly slow down the algorithm. Defaults to ``False``. When **generate_scoring_history** is enabled, you also will be able to fetch the average objective and the negative log likelihood using their accessor functions: ``average_objective`` and ``negative_log_likelihood``.
+**generate_scoring_history**: Generates scoring history for the GLM model when set to ``True``. This may significantly slow down the algorithm. Defaults to ``False``. When **generate_scoring_history** is enabled, you also will be able to fetch the average objective and the negative log likelihood using their accessor functions: ``average_objective`` and ``negative_log_likelihood``. 
 
 
 Interpreting a GLM Model
