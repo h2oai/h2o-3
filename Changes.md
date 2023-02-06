@@ -2,6 +2,56 @@
 
 ## H2O
 
+### zz_Kurka (3.40.0.1) - 2/8/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/index.html</a>
+
+#### Bug
+- [[PUBDEV-8948]](https://h2oai.atlassian.net/browse/PUBDEV-8948) - Improved GLM negative binomial calculation time.
+- [[PUBDEV-8896]](https://h2oai.atlassian.net/browse/PUBDEV-8896) - Cleaned up COLLATE field in the description of the R package by allowing Roxygen2 to generate the COLLATE field.
+- [[PUBDEV-8882]](https://h2oai.atlassian.net/browse/PUBDEV-8882) - Changed the exceptions in Stacked Ensembles checks to ModelBuilder warnings.
+- [[PUBDEV-8575]](https://h2oai.atlassian.net/browse/PUBDEV-8575) - Fixed GLM ignoring time budget when trained using cross-validation in AutoML.
+- [[PUBDEV-8531]](https://h2oai.atlassian.net/browse/PUBDEV-8531) - Fixed incorrect actual `ntrees` value reported in tree-based models.
+
+#### Improvement
+- [[PUBDEV-8971]](https://h2oai.atlassian.net/browse/PUBDEV-8971) - Increased speed of XGBoost scoring on wide datasets.
+- [[PUBDEV-8918]](https://h2oai.atlassian.net/browse/PUBDEV-8918) - Updated error message for when a user specifies the wrong cluster when connecting to a running H2O instance.
+- [[PUBDEV-8890]](https://h2oai.atlassian.net/browse/PUBDEV-8890) - Improved memory usage in creation of parse-response for wide datasets.
+- [[PUBDEV-8880]](https://h2oai.atlassian.net/browse/PUBDEV-8880) - Increased testing speed by adding ability to train XGBoost cross-validation models concurrently on the same GPU. 
+- [[PUBDEV-8873]](https://h2oai.atlassian.net/browse/PUBDEV-8873) - Added ability to score `eval_metric` on validation datasets for XGBoost.
+- [[PUBDEV-8872]](https://h2oai.atlassian.net/browse/PUBDEV-8872) - Added notebook demonstrating `eval_metric` for XGBoost.
+- [[PUBDEV-8871]](https://h2oai.atlassian.net/browse/PUBDEV-8871) - Increased XGBoost model training speed by disabling H2O scoring to rely solely on `eval_metric`. 
+- [[PUBDEV-8862]](https://h2oai.atlassian.net/browse/PUBDEV-8862) - Updated to Java 17 from Java 11/openjdk in H2O docker images.
+- [[PUBDEV-8363]](https://h2oai.atlassian.net/browse/PUBDEV-8363) - Updated warning message for when H2O version is outdated.
+- [[PUBDEV-8051]](https://h2oai.atlassian.net/browse/PUBDEV-8051) - Introduced a better format for storing default, input, and actual parameters in H2O model objects for R by using `@params` slots.
+- [[PUBDEV-7807]](https://h2oai.atlassian.net/browse/PUBDEV-7807) - Added `model_summary` to Stacked Ensembles.
+- [[PUBDEV-7659]](https://h2oai.atlassian.net/browse/PUBDEV-7659) - Moved StackedEnsembleModel::checkAndInheritModelProperties to StackedEnsemble class.
+
+#### New Feature
+- [[PUBDEV-8926]](https://h2oai.atlassian.net/browse/PUBDEV-8926) - Added ability to publish models to MLOps via Python API.
+- [[PUBDEV-8689]](https://h2oai.atlassian.net/browse/PUBDEV-8689) - Added ability to grid over Infogram.
+- [[PUBDEV-8638]](https://h2oai.atlassian.net/browse/PUBDEV-8638) - Implemented Regression Influence Diagnostics for GLM.
+- [[PUBDEV-8637]](https://h2oai.atlassian.net/browse/PUBDEV-8637) - Enhanced GBM procedures to output which records are used for each tree.
+- [[PUBDEV-8112]](https://h2oai.atlassian.net/browse/PUBDEV-8112) - Added learning curve plot to H2O’s Explainability.
+- [[PUBDEV-5047]](https://h2oai.atlassian.net/browse/PUBDEV-5047) - Added `eval_metric` for XGBoost and exposed the code in R and Python.
+
+#### Task
+- [[PUBDEV-8977]](https://h2oai.atlassian.net/browse/PUBDEV-8977) -  Added `negative_log_likelihood` and `average_objective` accessor functions in R and Python for GLM.
+- [[PUBDEV-8577]](https://h2oai.atlassian.net/browse/PUBDEV-8577) - Limited the number of iterations when training the final GLM model after cross-validation.
+
+#### Technical Task
+- [[PUBDEV-8875]](https://h2oai.atlassian.net/browse/PUBDEV-8875) - Added support for scoring `eval_metric` on a validation set for external XGBoost cluster.
+- [[PUBDEV-8874]](https://h2oai.atlassian.net/browse/PUBDEV-8874) - Added support for scoring `eval_metric` on a validation set for internal XGBoost cluster.
+- [[PUBDEV-8684]](https://h2oai.atlassian.net/browse/PUBDEV-8684) - Implemented GLM dispersion estimation parameter using maximum likelihood method for the negative binomial family.
+
+#### Docs
+- [[PUBDEV-8987]](https://h2oai.atlassian.net/browse/PUBDEV-8987) - Highlighted information about how rebalancing makes reproducibility impossible.
+- [[PUBDEV-8975]](https://h2oai.atlassian.net/browse/PUBDEV-8975) - Added documentation on Regression Influence Diagnostics for GLM.
+- [[PUBDEV-8974]](https://h2oai.atlassian.net/browse/PUBDEV-8974) - Fixed non-functional data paths in code examples throughout the user guide.
+- [[PUBDEV-8972]](https://h2oai.atlassian.net/browse/PUBDEV-8972) - Added information on the `row_to_tree_assignment` function.
+- [[PUBDEV-8967]](https://h2oai.atlassian.net/browse/PUBDEV-8967) - Added documentation on using H2O with Apple M1 chip.
+- [[PUBDEV-8966]](https://h2oai.atlassian.net/browse/PUBDEV-8966) - Added information on `init` parameter being skipped due to `estimate_k=True` for K-Means.
+
 ### Zygmund (3.38.0.4) - 1/5/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zygmund/4/index.html</a>
