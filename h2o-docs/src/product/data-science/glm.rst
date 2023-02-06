@@ -627,7 +627,7 @@ For **AUTO**:
 Dispersion Parameter Estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Regularization is not supported when you use dispersion parameter estimation with maximum likelihood.
+Regularization is not supported when you use dispersion parameter estimation with maximum likelihood. 
 
 Tweedie
 '''''''
