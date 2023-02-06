@@ -274,7 +274,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 error("max_predictor_number", "Your dataset contains duplicated predictors.  " +
                         "After removal, reduce your max_predictor_number to "+_predictorNames.length+" or less.");
             if (error_count() > 0)
-                throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ModelSelection.this);             
+                throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ModelSelection.this);
             checkMemoryFootPrint(_crossProductMatrix.length);
             // generate mapping of predictor index to CPM indices due to enum columns add multiple rows/columns to CPM
             double r2Scale = 1.0/calR2Scale(train(), _parms._response_column);
@@ -302,7 +302,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 _job.update(predNum, "Finished forward step with "+predNum+" predictors.");
 
                 if (predNum < _numPredictors && predNum > 1) {  // implement the replacement part
-                    bestModel = replacement(currSubsetIndices, validSubset, usedCombos, predictorIndices, bestModel);
+                    bestModel = replacement(currSubsetIndices, validSubset, usedCombos, predictorIndices, bestModel, 
+                            _parms._intercept, _crossProductMatrix, _predictorIndex2CPMIndices);
                     // reset validSubset
                     currSubsetIndices = IntStream.of(bestModel._predSubset).boxed().collect(Collectors.toList());
                     validSubset = IntStream.rangeClosed(0, predNames.size() - 1).boxed().collect(Collectors.toList());
@@ -625,16 +626,16 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         if (bestInd == -1 || errorVarianceMin > bestErrVar) { // Predictor sets are duplicates.  Return SweepModel for findBestMSEModel stream operations
             return new SweepModel(null, null, null, errorVarianceMin);
         } else {    // new predictor in replacement performs better than before 
-            currSubsetIndices.add(predPos, validSubsets.get(bestInd));
+            currSubsetIndices.add(predPos, validSubsets.get(bestInd));  // add new replaced predictor into predictor subset
             int[] subsetPred = currSubsetIndices.stream().mapToInt(x->x).toArray();
             bestModel._predSubset = subsetPred;
-            replacedPreds.add(validSubsets.get(bestInd));
+            replacedPreds.add(validSubsets.get(bestInd));   // collect all replaced predictors in one replacement call
             List<Integer> newAllSweepIndices = IntStream.range(0, bestModel._CPM.length-1).boxed().collect(Collectors.toList());
             double[][] subsetCPM = unsweptPredAfterReplacedPred(subsetPred, subsetCPMO, origCPM, predInd2CPMInd, 
                     hasIntercept, predPos, sweepIndicesRemovedPred, newAllSweepIndices);
             int[] newSweepIndices = extractSweepIndices(currSubsetIndices, predPos, subsetPred[predPos], predInd2CPMInd,
                     hasIntercept);
-            if (newSweepIndices.length == sweepIndicesRemovedPred.length && replacedPreds.size() < 2 && newSweepIndices.length == 1) {
+            if (newSweepIndices.length == sweepIndicesRemovedPred.length && replacedPreds.size() < 2 && newSweepIndices.length == 1) {  // 1 on 1 cpm replacement only
                 updateCPMSV(bestModel, subsetCPM, newSweepIndices, newAllSweepIndices, sweepIndicesRemovedPred);
             } else {    // reset when there are multiple replacements
                 genBestSweepVector(bestModel, origCPM, predInd2CPMInd, hasIntercept);
@@ -653,8 +654,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      *       not improve anymore.
      *
      * see doc at https://h2oai.atlassian.net/browse/PUBDEV-8444 for details.
-     *
-     * The most important thing here is to make sure validSubset contains the true eligible predictors to choose
+     *     * The most important thing here is to make sure validSubset contains the true eligible predictors to choose
      * from.  Inside the for loop, I will remove and add predictors that have been chosen in oneLessSubset and add
      * the removed predictor back to validSubset after it is no longer selected in the predictor subset.
      *
@@ -662,8 +662,9 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      * valid, then I will remove all predictors that have been chosen in currSubsetIndices.
      *
      */
-    public SweepModel replacement(List<Integer> currSubsetIndices, List<Integer> validSubset,
-                                  Set<BitSet> usedCombos, BitSet predIndices, SweepModel bestModel) {
+    public static SweepModel replacement(List<Integer> currSubsetIndices, List<Integer> validSubset,
+                                  Set<BitSet> usedCombos, BitSet predIndices, SweepModel bestModel, boolean hasIntercept,
+                                  double[][] crossProductMatrix, int[][] predictorIndex2CPMIndices) {
         double errorVarianceMin = bestModel._errorVariance;
         int currSubsetSize = currSubsetIndices.size();  // predictor subset size
         int lastCurrPredIndex = currSubsetSize - 1;
@@ -680,8 +681,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 ArrayList<Integer> oneLessSubset = new ArrayList<>(currSubsetIndices);
                 int removedSubInd = oneLessSubset.remove(index);
                 currModel._predSubset = oneLessSubset.stream().mapToInt(x -> x).toArray();
-                tempModel = forwardStepR(oneLessSubset, validSubset, usedCombos, predIndices, _crossProductMatrix, 
-                        _predictorIndex2CPMIndices, currModel, _parms._intercept, errorVarianceMin, index, removedSubInd, replacedPreds);
+                tempModel = forwardStepR(oneLessSubset, validSubset, usedCombos, predIndices, crossProductMatrix, 
+                        predictorIndex2CPMIndices, currModel, hasIntercept, errorVarianceMin, index, removedSubInd, replacedPreds);
                 if (tempModel._CPM != null && errorVarianceMin > tempModel._errorVariance) {
                     currModel = tempModel;
                     validSubset.remove(oneLessSubset.get(lastCurrPredIndex));
@@ -690,6 +691,8 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     bestErrVarModel = new SweepModel(currModel._predSubset, currModel._CPM, currModel._sweepVector,
                             currModel._errorVariance);
                     validSubset.add(removedSubInd);
+/*                    currSubsetIndices.clear();
+                    currSubsetIndices.addAll(oneLessSubset);*/
                 }
             }
             if (lastBestErrVarPosIndex >= 0) // improvement was found, continue

@@ -319,6 +319,15 @@ public class ModelSelectionUtils {
         return trainFramesList.stream().toArray(Frame[]::new);
     }
 
+    /**
+     * After the forward step and during the replacement step, when a new predictor at position predPos is found to
+     * generate better R2 score than the predictor subset found during the forward step, this function will be called.
+     * It does the following:
+     * - locate the swept index corresponding to the new predictor;
+     * - generate array of swept index starting at the swept index of new predictor +1 till the last swept;
+     * - sweep the subsetCPM with the swept index array generated above;
+     * - replace the subsetCPM row/col with the new predictor and return it.
+     */
     public static double[][] unsweptPredAfterReplacedPred(int[] predSubset, double[][] subsetCPM, double[][] origCPM,
                                                           int[][] predInd2CPMInd, boolean hasIntercept, int predPos,
                                                           int[] sweepIndicesRemovedPred, List<Integer> newAllSweepIndices) {
@@ -448,6 +457,11 @@ public class ModelSelectionUtils {
         for (int index=startIndex; index<svLen; index++) 
             origSV[index] = newSV[index-startIndex];
     }
+    
+    
+    public static Frame saveSquareDoubleMatrix2Frame(double[][] array) {
+        return new water.util.ArrayUtils().frame(array);
+    }
 
     /**
      * This method will perform sweeping on the rows/columns of CPM corresponding to the newly replaced predictor.  sv
@@ -548,7 +562,12 @@ public class ModelSelectionUtils {
         }*/
         return vector2Change;
     }
-    
+
+    /***
+     * Given the old subsetCPM that has been swept correctly to undo the sweeping of sweeping indices after the new
+     * predictor sweeping index, this function will replace the subsetCPM at the oldSweepIndices with the 
+     * newSweepIndices corresponding to the new predictor that is replacing the old predictor.
+     */
     public static double[][] replaceCPMwNewPred(double[][] cpm, double[][] allCPM, int[][] pred2CPM, 
                                                 int[] oldSweepIndices, int[] newSweepIndices, int[] predSubset, 
                                                 boolean hasIntercept) {
@@ -911,7 +930,8 @@ public class ModelSelectionUtils {
 
     /**
      * Given predRemoved (the predictor that is to be removed and replaced in the forward step), this method will
-     * calculate the locations of the CPM rows/columns associated with it.
+     * calculate the locations of the CPM rows/columns associated with it.  CurrSubsetIndices contains the original
+     * predictor subsets.
      */
     public static int[] extractSweepIndices(List<Integer> currSubsetIndices, int predPos, int predRemoved, 
                                      int[][] predInd2CPMIndices, boolean hasIntercept) {
