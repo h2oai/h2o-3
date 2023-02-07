@@ -383,6 +383,11 @@ public class DeepLearningGradientCheck extends TestUtil {
       Log.info("Number of failed tests: " + failedcount);
       Log.info("Mean. relative error: " + meanRelErr/count);
       Log.info("Max. relative error: " + PrettyPrint.formatPct(maxRelErr));
+      System.out.println("Number of tests: " + count);
+      System.out.println("Number of failed tests: " + failedcount);
+      System.out.println("Mean. relative error: " + meanRelErr/count);
+      System.out.println("Max. relative error: " + PrettyPrint.formatPct(maxRelErr));
+//      System.out.println();
       Assert.assertTrue("Error too large: " + maxRelErr + " >= " + MAX_TOLERANCE, maxRelErr < MAX_TOLERANCE);
       Assert.assertTrue("Failed count too large: " + failedcount + " > " + MAX_FAILED_COUNT, failedcount <= MAX_FAILED_COUNT);
 
