@@ -244,6 +244,8 @@ Defining a GLM Model
 
 - **generate_variable_inflation_factors**: If ``True``, generates the variable inflation factors for numerical predictors. Defaults to ``False``.
 
+**generate_scoring_history**: Generates scoring history for the GLM model when set to ``True``. This may significantly slow down the algorithm. Defaults to ``False``. When **generate_scoring_history** is enabled, you also will be able to fetch the average objective and the negative log likelihood using their accessor functions: ``average_objective`` and ``negative_log_likelihood``. 
+
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1390,7 +1392,8 @@ Below is a simple example showing how to build a Generalized Linear model.
                             y = response, 
                             training_frame = df, 
                             lambda = 0, 
-                            compute_p_values = TRUE)
+                            compute_p_values = TRUE
+                            generate_scoring_history = TRUE)
 
     # Coefficients that can be applied to the non-standardized data
     h2o.coef(prostate_glm)
@@ -1429,6 +1432,12 @@ Below is a simple example showing how to build a Generalized Linear model.
     # Retrieve a graphical plot of the standardized coefficient magnitudes
     h2o.std_coef_plot(prostate_glm)
 
+    # Since you generated the scoring history, you can retrieve the average objective and the negative log likelihood:
+    print(h2o.average_objective(prostate_glm))
+    [1] 0.540688
+    print(h2o.negative_log_likelihood(prostate_glm))
+    [1] 205.4614
+
    .. code-tab:: python
 
     import h2o
@@ -1446,7 +1455,8 @@ Below is a simple example showing how to build a Generalized Linear model.
 
     prostate_glm = H2OGeneralizedLinearEstimator(family= "binomial", 
                                               lambda_ = 0, 
-                                              compute_p_values = True)
+                                              compute_p_values = True
+                                              generate_scoring_history = True)
     prostate_glm.train(predictors, response_col, training_frame= prostate)
     
     # Coefficients that can be applied to the non-standardized data.
@@ -1483,6 +1493,12 @@ Below is a simple example showing how to build a Generalized Linear model.
 
     # Retrieve a graphical plot of the standardized coefficient magnitudes
     prostate_glm.std_coef_plot()
+
+    # Since you generated the scoring history, you can access the average objective and negative log likelihood:
+    print("average objective: {0}.".format(prostate_glm.average_objective()))
+    average objective: 0.5406879877388551.
+    print("negative log likelihood: {0}.".format(prostate_glm.negative_log_likelihood()))
+    negative log likelihood: 205.46143534076492.
 
 Calling Model Attributes
 ''''''''''''''''''''''''
