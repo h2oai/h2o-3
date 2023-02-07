@@ -679,6 +679,8 @@ The corresponding deviance is:
 
 **Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
 
+
+
 Links
 '''''
 
@@ -724,6 +726,11 @@ For **AUTO**:
 
 Dispersion Parameter Estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Regularization is not supported when you use dispersion parameter estimation with maximum likelihood. 
+
+Tweedie
+'''''''
 
 The density for the maximum likelihood function for Tweedie can be written as:
 
@@ -817,57 +824,79 @@ As :math:`p` closes in on 1, the Tweedie density function becomes multimodal. Th
 As a conservative condition, to ensure that the density is unimodal for most values of :math:`y,\phi`, we should have :math:`p>1.2`.
 
 Tweedie Dispersion Example
-''''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. tabs::
    .. code-tab:: r R
 
       # Import the training data:
-      training_data <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+      training_data <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p3_phi1_10KRows.csv")
 
       # Set the predictors and response:
       predictors <- c('abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.')
-      response <- 'resp'
+      response <- 'x'
 
       # Build and train the model:
       model <- h2o.glm(x = predictors, 
                        y = response, 
                        training_frame = training_data, 
-                       family = 'gamma', 
+                       family = 'tweedie',
+                       tweedie_variance_power = 3, 
                        lambda = 0, 
                        compute_p_values = TRUE, 
-                       dispersion_parameter_method = "ml", 
-                       init_dispersion_parameter = 1.1, 
+                       dispersion_parameter_method = "pearson", 
+                       init_dispersion_parameter = 0.5, 
                        dispersion_epsilon = 1e-4, 
                        max_iterations_dispersion = 100)
 
       # Retrieve the estimated dispersion:
       model@model$dispersion
-      [1] 8.96682
+      [1] 0.7599965
 
 
    .. code-tab:: python
 
       # Import the training data:
-      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p3_phi1_10KRows.csv")
 
       # Set the predictors and response:
       predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5.""]
-      response = "resp"
+      response = "x"
 
       # Build and train the model:
-      model = H2OGeneralizedLinearEstimator(family="gamma", 
+      model = H2OGeneralizedLinearEstimator(family="tweedie", 
                                             lambda_=0, 
                                             compute_p_values=True, 
-                                            dispersion_parameter_method="ml", 
-                                            init_dispersion_parameter=1.1, 
-                                            dispersion_epsilon=1e-4, 
+                                            dispersion_parameter_method="pearson", 
+                                            init_dispersion_parameter=0.5, 
+                                            dispersion_epsilon=1e-4,
+                                            tweedie_variance_power=3, 
                                             max_iterations_dispersion=100)
       model.train(x=predictors, y=response, training_frame=training_data)
 
       # Retrieve the estimated dispersion:
       model._model_json["output"]["dispersion"]
-      8.966819788535565
+      0.7599964835351135
+
+Negative Binomial
+'''''''''''''''''
+
+GLM dispersion estimation using the maximum likelihood method for the negative binomial family is available when you set ``dispersion_parameter_method=“ml”``.
+
+The coefficients, or betas, are estimated using IRLSM. The dispersion parameter theta is estimated after each IRLSM iteration. After the first beta update, the initial theta estimate is made using the method of moments as a starting point. Then, theta is updated using the maximum likelihood in each iteration.
+
+While not converged:
+
+1. Estimate coefficients (betas)
+2. Estimate dispersion (theta)
+
+   a. If it is the first iteration:
+
+      i. Theta :math:`\gets` Method of Moments estimate
+
+   b. Otherwise:
+   
+      i. Theta :math:`\gets` Maximum Likelihood estimate using Newton’s method with learning rate estimated using Golden section search
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
