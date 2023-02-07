@@ -46,6 +46,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/ind
 
 #### Docs
 - [[PUBDEV-8987]](https://h2oai.atlassian.net/browse/PUBDEV-8987) - Highlighted information about how rebalancing makes reproducibility impossible.
+- [[PUBDEV-8983]](https://h2oai.atlassian.net/browse/PUBDEV-8983) - Added documentation on the `negative_log_likelihood` and `average_objective` accessor functions.
+- [[PUBDEV-8981]](https://h2oai.atlassian.net/browse/PUBDEV-8981) - Added information on GLM dispersion estimation using maximum likelihood method for the negative binomial family.
 - [[PUBDEV-8975]](https://h2oai.atlassian.net/browse/PUBDEV-8975) - Added documentation on Regression Influence Diagnostics for GLM.
 - [[PUBDEV-8974]](https://h2oai.atlassian.net/browse/PUBDEV-8974) - Fixed non-functional data paths in code examples throughout the user guide.
 - [[PUBDEV-8972]](https://h2oai.atlassian.net/browse/PUBDEV-8972) - Added information on the `row_to_tree_assignment` function.
