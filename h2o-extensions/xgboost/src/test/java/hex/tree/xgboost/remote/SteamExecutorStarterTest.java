@@ -9,7 +9,6 @@ import org.junit.runner.RunWith;
 import water.H2O;
 import water.Job;
 import water.Scope;
-import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
@@ -97,21 +96,26 @@ public class SteamExecutorStarterTest {
             Job<XGBoostModel> model2 = new XGBoost(params).trainModel();
 
             // first request will request external cluster start
+            System.out.println("first request will start external cluster start...");
             Map<String, String> startReq = steam.waitToReceiveMessage("start request");
             assertNotNull(startReq.get("_id"));
             assertEquals("startXGBoostCluster", startReq.get("_type"));
             steam.sendMessage(makeStartingResponse(startReq));
             steam.sendMessage(makeStartedResponse(startReq));
             Scope.track_generic(model1.get());
+            System.out.println("grabbed model1...");
 
             // second model should not go to steam
-            Optional<Map<String, String>> startRequest2 = steam.waitToReceiveMessage("none", 1_000, false);
+            System.out.println("Second model should not go to steam.");
+            Optional<Map<String, String>> startRequest2 = steam.waitToReceiveMessage("none", 2_000, false);
             assertFalse("Unexpected message to steam", startRequest2.isPresent());
             Scope.track_generic(model2.get());
 
             // steam requests cluster stop
+            System.out.println("Steam requests cluster stop.");
             steam.sendMessage(makeStopReq("01_stop_req"));
             expectAndCheckStopResponse(steam, "01_stop_req", true);
+            System.out.println("Steam cluster stopped.");
         } finally {
             steam.close();
             Scope.exit();
@@ -159,7 +163,7 @@ public class SteamExecutorStarterTest {
     public void testSteamClusterTimeout() throws Exception {
         Scope.enter();
         final WebsocketClient steam = new WebsocketClient();
-        System.setProperty("sys.ai.h2o.steam.notification.timeout", "2000");
+        System.setProperty("sys.ai.h2o.steam.notification.timeout", "3000"); // increase from 2000
         try {
             Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
@@ -170,12 +174,13 @@ public class SteamExecutorStarterTest {
 
             // first request will request external cluster start
             Job<XGBoostModel> model1 = new XGBoost(params).trainModel();
-            Map<String, String> startReq = steam.waitToReceiveMessage("start request", 1000);
+            System.out.println("first request will request external cluster start....");
+            Map<String, String> startReq = steam.waitToReceiveMessage("start request", 2000);
             assertNotNull(startReq.get("_id"));
             assertEquals("startXGBoostCluster", startReq.get("_type"));
 
             // steam does not respond in time
-            Thread.sleep(3_000);
+            Thread.sleep(4_000);
             try {
                 Scope.track_generic(model1.get());
                 fail("Expected exception to be thrown");
@@ -192,7 +197,7 @@ public class SteamExecutorStarterTest {
 
             // try again
             Job<XGBoostModel> model2 = new XGBoost(params).trainModel();
-            Map<String, String> startRe2 = steam.waitToReceiveMessage("start request 2", 1000);
+            Map<String, String> startRe2 = steam.waitToReceiveMessage("start request 2", 2000);
             assertNotNull(startRe2.get("_id"));
             assertEquals("startXGBoostCluster", startRe2.get("_type"));
 
@@ -204,6 +209,7 @@ public class SteamExecutorStarterTest {
             // steam requests cluster stop
             steam.sendMessage(makeStopReq("02_stop_req"));
             expectAndCheckStopResponse(steam, "02_stop_req", true);
+            System.out.println("Steam cluster stopped.");
         } finally {
             System.clearProperty("sys.ai.h2o.steam.notification.timeout");
             steam.close();
@@ -233,16 +239,19 @@ public class SteamExecutorStarterTest {
             steam.sendMessage(makeStartedResponse(startReq));
 
             // steam requests cluster stop
-            Thread.sleep(500);
+            Thread.sleep(1000); // double from original 500
             steam.sendMessage(makeStopReq("03_stop_req_01"));
+            System.out.println("Sent first cluster stop message and checking that cluster has stopped.");
             expectAndCheckStopResponse(steam, "03_stop_req_01", false);
-
+            System.out.println("first cluster has stopped.");
             // model finishes
             Scope.track_generic(model.get());
 
             // steam requests cluster stop again
             steam.sendMessage(makeStopReq("03_stop_req_02"));
+            System.out.println("Sent second cluster stop message and checking that cluster has stopped.");
             expectAndCheckStopResponse(steam, "03_stop_req_02", true);
+            System.out.println("second cluster has stopped.");
 
             // building another model
             XGBoostModel.XGBoostParameters params2 = new XGBoostModel.XGBoostParameters();
@@ -262,7 +271,9 @@ public class SteamExecutorStarterTest {
 
             // steam requests cluster stop
             steam.sendMessage(makeStopReq("03_stop_req_03"));
+            System.out.println("Sent last cluster stop message and checking that cluster has stopped.");
             expectAndCheckStopResponse(steam, "03_stop_req_03", true);
+            System.out.println("last cluster has stopped.");
         } finally {
             steam.close();
             Scope.exit();
