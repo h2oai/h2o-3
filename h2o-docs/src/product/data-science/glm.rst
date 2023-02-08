@@ -244,6 +244,8 @@ Defining a GLM Model
 
 - **generate_variable_inflation_factors**: If ``True``, generates the variable inflation factors for numerical predictors. Defaults to ``False``.
 
+**generate_scoring_history**: Generates scoring history for the GLM model when set to ``True``. This may significantly slow down the algorithm. Defaults to ``False``. When **generate_scoring_history** is enabled, you also will be able to fetch the average objective and the negative log likelihood using their accessor functions: ``average_objective`` and ``negative_log_likelihood``. 
+
 
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -679,6 +681,8 @@ The corresponding deviance is:
 
 **Note**: Future versions of this model will optimize the coefficients as well as the dispersion parameter. Please stay tuned.
 
+
+
 Links
 '''''
 
@@ -724,6 +728,11 @@ For **AUTO**:
 
 Dispersion Parameter Estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Regularization is not supported when you use dispersion parameter estimation with maximum likelihood. 
+
+Tweedie
+'''''''
 
 The density for the maximum likelihood function for Tweedie can be written as:
 
@@ -817,57 +826,79 @@ As :math:`p` closes in on 1, the Tweedie density function becomes multimodal. Th
 As a conservative condition, to ensure that the density is unimodal for most values of :math:`y,\phi`, we should have :math:`p>1.2`.
 
 Tweedie Dispersion Example
-''''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. tabs::
    .. code-tab:: r R
 
       # Import the training data:
-      training_data <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+      training_data <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p3_phi1_10KRows.csv")
 
       # Set the predictors and response:
       predictors <- c('abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.')
-      response <- 'resp'
+      response <- 'x'
 
       # Build and train the model:
       model <- h2o.glm(x = predictors, 
                        y = response, 
                        training_frame = training_data, 
-                       family = 'gamma', 
+                       family = 'tweedie',
+                       tweedie_variance_power = 3, 
                        lambda = 0, 
                        compute_p_values = TRUE, 
-                       dispersion_parameter_method = "ml", 
-                       init_dispersion_parameter = 1.1, 
+                       dispersion_parameter_method = "pearson", 
+                       init_dispersion_parameter = 0.5, 
                        dispersion_epsilon = 1e-4, 
                        max_iterations_dispersion = 100)
 
       # Retrieve the estimated dispersion:
       model@model$dispersion
-      [1] 8.96682
+      [1] 0.7599965
 
 
    .. code-tab:: python
 
       # Import the training data:
-      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+      training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p3_phi1_10KRows.csv")
 
       # Set the predictors and response:
       predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5.""]
-      response = "resp"
+      response = "x"
 
       # Build and train the model:
-      model = H2OGeneralizedLinearEstimator(family="gamma", 
+      model = H2OGeneralizedLinearEstimator(family="tweedie", 
                                             lambda_=0, 
                                             compute_p_values=True, 
-                                            dispersion_parameter_method="ml", 
-                                            init_dispersion_parameter=1.1, 
-                                            dispersion_epsilon=1e-4, 
+                                            dispersion_parameter_method="pearson", 
+                                            init_dispersion_parameter=0.5, 
+                                            dispersion_epsilon=1e-4,
+                                            tweedie_variance_power=3, 
                                             max_iterations_dispersion=100)
       model.train(x=predictors, y=response, training_frame=training_data)
 
       # Retrieve the estimated dispersion:
       model._model_json["output"]["dispersion"]
-      8.966819788535565
+      0.7599964835351135
+
+Negative Binomial
+'''''''''''''''''
+
+GLM dispersion estimation using the maximum likelihood method for the negative binomial family is available when you set ``dispersion_parameter_method=“ml”``.
+
+The coefficients, or betas, are estimated using IRLSM. The dispersion parameter theta is estimated after each IRLSM iteration. After the first beta update, the initial theta estimate is made using the method of moments as a starting point. Then, theta is updated using the maximum likelihood in each iteration.
+
+While not converged:
+
+1. Estimate coefficients (betas)
+2. Estimate dispersion (theta)
+
+   a. If it is the first iteration:
+
+      i. Theta :math:`\gets` Method of Moments estimate
+
+   b. Otherwise:
+   
+      i. Theta :math:`\gets` Maximum Likelihood estimate using Newton’s method with learning rate estimated using Golden section search
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
@@ -1361,7 +1392,8 @@ Below is a simple example showing how to build a Generalized Linear model.
                             y = response, 
                             training_frame = df, 
                             lambda = 0, 
-                            compute_p_values = TRUE)
+                            compute_p_values = TRUE
+                            generate_scoring_history = TRUE)
 
     # Coefficients that can be applied to the non-standardized data
     h2o.coef(prostate_glm)
@@ -1400,6 +1432,12 @@ Below is a simple example showing how to build a Generalized Linear model.
     # Retrieve a graphical plot of the standardized coefficient magnitudes
     h2o.std_coef_plot(prostate_glm)
 
+    # Since you generated the scoring history, you can retrieve the average objective and the negative log likelihood:
+    print(h2o.average_objective(prostate_glm))
+    [1] 0.540688
+    print(h2o.negative_log_likelihood(prostate_glm))
+    [1] 205.4614
+
    .. code-tab:: python
 
     import h2o
@@ -1417,7 +1455,8 @@ Below is a simple example showing how to build a Generalized Linear model.
 
     prostate_glm = H2OGeneralizedLinearEstimator(family= "binomial", 
                                               lambda_ = 0, 
-                                              compute_p_values = True)
+                                              compute_p_values = True
+                                              generate_scoring_history = True)
     prostate_glm.train(predictors, response_col, training_frame= prostate)
     
     # Coefficients that can be applied to the non-standardized data.
@@ -1454,6 +1493,12 @@ Below is a simple example showing how to build a Generalized Linear model.
 
     # Retrieve a graphical plot of the standardized coefficient magnitudes
     prostate_glm.std_coef_plot()
+
+    # Since you generated the scoring history, you can access the average objective and negative log likelihood:
+    print("average objective: {0}.".format(prostate_glm.average_objective()))
+    average objective: 0.5406879877388551.
+    print("negative log likelihood: {0}.".format(prostate_glm.negative_log_likelihood()))
+    negative log likelihood: 205.46143534076492.
 
 Calling Model Attributes
 ''''''''''''''''''''''''
