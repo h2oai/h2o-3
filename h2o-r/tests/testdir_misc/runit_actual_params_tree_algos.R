@@ -2,9 +2,10 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 check.actual.parameters <- function(model) {
-    expect_equal(model@model$model_summary$number_of_trees,model@params$actual$ntrees)
-    expect_equal(100,model@params$input$ntrees)
-    expect_true(100>model@params$actual$ntrees)
+    print(paste("ntrees from model_summary", model@model$model_summary$number_of_trees, ". Actual values of ntrees", model@params$actual$ntrees))
+    expect_equal(model@model$model_summary$number_of_trees, model@params$actual$ntrees, info="ntrees from model_summary should be equal to actual ntrees")
+    expect_equal(100,model@params$input$ntrees, info="Input params should be equal to 100")
+    expect_true(100>model@params$actual$ntrees, info="Actual params should be less than 100 because of early stopping")
 }
 
 test.actual_params_tree_algos <- function() {
