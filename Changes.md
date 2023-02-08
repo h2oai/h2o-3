@@ -33,10 +33,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/ind
 - [[PUBDEV-8638]](https://h2oai.atlassian.net/browse/PUBDEV-8638) - Implemented Regression Influence Diagnostics for GLM.
 - [[PUBDEV-8637]](https://h2oai.atlassian.net/browse/PUBDEV-8637) - Enhanced GBM procedures to output which records are used for each tree.
 - [[PUBDEV-8112]](https://h2oai.atlassian.net/browse/PUBDEV-8112) - Added learning curve plot to H2O’s Explainability.
-- [[PUBDEV-5047]](https://h2oai.atlassian.net/browse/PUBDEV-5047) - Added `eval_metric` for XGBoost and exposed the code in R and Python.
 
 #### Task
-- [[PUBDEV-8977]](https://h2oai.atlassian.net/browse/PUBDEV-8977) -  Added `negative_log_likelihood` and `average_objective` accessor functions in R and Python for GLM.
+- [[PUBDEV-8977]](https://h2oai.atlassian.net/browse/PUBDEV-8977) - Added `negative_log_likelihood` and `average_objective` accessor functions in R and Python for GLM.
 - [[PUBDEV-8577]](https://h2oai.atlassian.net/browse/PUBDEV-8577) - Limited the number of iterations when training the final GLM model after cross-validation.
 
 #### Technical Task
