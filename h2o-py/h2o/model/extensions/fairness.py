@@ -1,4 +1,3 @@
-import numpy as np
 from collections import defaultdict
 from itertools import product
 
@@ -102,6 +101,10 @@ class Fairness:
         >>> gbm.fair_pd_plot(test, "AGE", protected_columns)
         """
         import h2o
+        from h2o.utils.shared_utils import can_use_numpy
+        if not can_use_numpy():
+            raise ImportError("numpy is required for fair_pd_plot.")
+        import numpy as np
         from h2o.explanation._explain import no_progress_block
         from h2o.plot import get_matplotlib_pyplot
         from h2o.utils.typechecks import assert_is_type, is_type
@@ -191,6 +194,9 @@ class Fairness:
         >>> gbm.fair_roc_plot(test, protected_columns, reference, favorable_class)
         """
         import h2o
+        from h2o.utils.shared_utils import can_use_numpy
+        if not can_use_numpy():
+            raise ImportError("numpy is required for fair_roc_plot.")
         from h2o.explanation._explain import NumpyFrame
         from h2o.plot import get_matplotlib_pyplot
         from h2o.utils.typechecks import assert_is_type
@@ -254,7 +260,9 @@ class Fairness:
         """
         import h2o
         from h2o.utils.typechecks import assert_is_type
-
+        from h2o.utils.shared_utils import can_use_numpy
+        if not can_use_numpy():
+            raise ImportError("numpy is required for fair_pr_plot.")
         from h2o.explanation._explain import NumpyFrame
         from h2o.plot import get_matplotlib_pyplot
 
@@ -323,6 +331,10 @@ class Fairness:
         >>> gbm.fair_shap_plot(test, "AGE", protected_columns)
         """
         import h2o
+        from h2o.utils.shared_utils import can_use_numpy
+        if not can_use_numpy():
+            raise ImportError("numpy is required for fair_shap_plot.")
+        import numpy as np
         from h2o.explanation._explain import no_progress_block
         from h2o.explanation import H2OExplanation
         from h2o.explanation._explain import NumpyFrame
@@ -420,6 +432,9 @@ class Fairness:
         >>> gbm.inspect_model_fairness(test, protected_columns, reference, favorable_class)
         """
         import h2o
+        from h2o.utils.shared_utils import can_use_numpy
+        if not can_use_numpy():
+            raise ImportError("numpy is required for inspect_model_fairness.")
         from h2o.explanation import H2OExplanation
         from h2o.explanation import Description
         from h2o.explanation._explain import NumpyFrame
