@@ -216,9 +216,9 @@ Defining an XGBoost Model
 
 - `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
 
-- **eval_metric**: Specify the `evaluation metric <https://xgboost.readthedocs.io/en/stable/parameter.html#learning-task-parameters>`__ that will be passed to the native XGBoost backend. Defaults to ``"None"``.
+- **eval_metric**: Specify the `evaluation metric <https://xgboost.readthedocs.io/en/stable/parameter.html#learning-task-parameters>`__ that will be passed to the native XGBoost backend. To use ``eval_metric`` for early stopping, you need to specify ``stopping_metric="custom"``. Defaults to ``"None"``. 
 
-- **score_eval_metric_only**: Score only the evaluation metric when enabled. This can make model training faster if scoring is frequent (e.g. each iteration). Defaults to ``False``.
+- **score_eval_metric_only**: Disable native H2O scoring and score only the ``eval_metric`` when enabled. This can make model training faster if scoring is frequent (e.g. each iteration). Defaults to ``False``.
 
 
 "LightGBM" Emulation Mode Options
@@ -477,7 +477,7 @@ FAQs
     1. When H2O does not provide a suitable built-in metric (e.g. if you want to calculate classification error for a different threshold than the one automatically determined by H2O, you can do so by specifying ``eval_metric="error@<your threshold>"``);
     2. When you have frequent scoring.
 
-  Refer to this `demo on utilizing the evalutation metric <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/xgboost_eval_metric_demo.ipynb>`__ for more information.
+  Refer to this `demo on utilizing the evalutation metric with early stopping <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/xgboost_eval_metric_demo.ipynb>`__ for more information.
 
 References
 ~~~~~~~~~~
