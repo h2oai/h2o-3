@@ -425,6 +425,53 @@ On Spark
 
 Refer to the `Getting Started with Sparkling Water <welcome.html#getting-started-with-sparkling-water>`__ section for information on how to launch H2O on Spark. 
 
+Connecting to an H2O Cluster by Name
+------------------------------------
+
+You can connect to an already live H2O cluster by providing the cluster name. 
+
+The following examples show how to connect through the cluster name in a programmatic way. You will first save the connection details where the file name is the cluster name. The connection details are then programmatically picked up by the cluster name.
+
+First, start a cluster and save the cluster information:
+
+.. tabs::
+  .. code-tab:: python
+
+    # Create a cluster called 'saved-cluster'
+    cluster_name = 'saved-cluster'
+    import h2o
+    h2o.init(name=cluster_name)
+
+    import json
+    def save_cluster_details(cluster):
+      cluster_details = cluster.get_status().as_data_frame().iloc[0]
+      name = cluster_details.H2O_cluster_name
+      url = cluster_details.H2O_connection_url
+      file_path = '{}.json'.format(name)
+      with open(file_path,'w') as fp:
+        json.dump(url, fp)
+      return file_path
+
+    save_cluster_details(h2o.cluster())
+    'saved-cluster.json'
+
+Then, connect to that cluster by importing the cluster details that were saved:
+
+.. tabs::
+  .. code-tab:: python
+
+    import h2o
+    import json
+
+    cluster_name = 'saved-cluster'
+
+    # Load the URL:
+    with open ('{}.json'.format(cluster_name), 'r') as fp:
+      url = json.load(fp)
+
+    # Connect via the URL:
+    h2o.connect(url=url)
+
 Best Practices
 --------------
 
