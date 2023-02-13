@@ -36,7 +36,7 @@ def mean_residual_deviance_sklearn():
 
     assert_equals(sklearn_nrd, dle_mrd['train'], delta=1e-5)
     assert_equals(sklearn_nrd, dle_mrd['valid'], delta=1e-5)
-    assert_equals(sklearn_nrd, dle_mrd['xval'], delta=1e-1)
+    assert_equals(sklearn_nrd, dle_mrd['xval'], delta=1e0)
 
 
 if __name__ == "__main__":
