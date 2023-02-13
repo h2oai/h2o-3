@@ -94,6 +94,10 @@ setup(
             "gssapi",
             "pykerberos >= 1.1.8, < 2.0.0; sys.platform != 'win32'",
             "winkerberos >= 0.5.0; sys.platform == 'win32'"
+        ],
+        "plot": [
+            "numpy",
+            "matplotlib"
         ]
     }
 )
