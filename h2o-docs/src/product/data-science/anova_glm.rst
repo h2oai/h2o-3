@@ -11,7 +11,7 @@ Since ANOVA GLM is mainly used to investigate the contribution of each predictor
 Defining an ANOVA GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ANOVA GLM uses a similar set of parameters to GLM. Parameters are optional unless specified as *requried*.
+Parameters are optional unless specified as *requried*. ANOVA GLM includes many `GLM parameters <glm.html#shared-glm-family-parameters>`__. 
 
 Training the model
 ''''''''''''''''''
@@ -32,82 +32,6 @@ Algorithm-specific parameters
 - **nparallelism**: Number of models to build in parallel. Adjust according to your system. Defaults to ``4``. 
 
 - **type**: Refer to the SS type 1, 2, 3, or 4. We are currently only supporting type 3.
-
-GLM family parameters
-'''''''''''''''''''''
-
-- `family <algo-params/family.html>`__: Specify the model type.
-
-   -  If the family is ``gaussian``, the response must be numeric (**Real** or **Int**).
-   -  If the family is ``binomial``, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
-   -  If the family is ``fractionalbinomial``, the response must be a numeric between 0 and 1.
-   -  If the family is ``multinomial``, the response can be categorical with more than two levels/classes (**Enum**).
-   -  If the family is ``ordinal``, the response must be categorical with at least 3 levels.
-   -  If the family is ``quasibinomial``, the response must be numeric.
-   -  If the family is ``poisson``, the response must be numeric and non-negative (**Int**).
-   -  If the family is ``negativebinomial``, the response must be numeric and non-negative (**Int**).
-   -  If the family is ``gamma``, the response must be numeric and continuous and positive (**Real** or **Int**).
-   -  If the family is ``tweedie``, the response must be numeric and continuous (**Real**) and non-negative.
-   -  If the family is ``AUTO`` (default),
-
-      - and the response is **Enum** with cardinality = 2, then the family is automatically determined as ``binomial``.
-      - and the response is **Enum** with cardinality > 2, then the family is automatically determined as ``multinomial``.
-      - and the response is numeric (**Real** or **Int**), then the family is automatically determined as ``gaussian``.
-
--  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if ``family="tweedie"``) Specify the Tweedie variance power (defaults to ``0``).
-
--  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if ``family="tweedie"``) Specify the Tweedie link power (defaults to ``1``).
-
--  `theta <algo-params/theta.html>`__: Theta value (equal to :math:`\frac{1}{r}`) for use with the negative binomial family. This value must be > 0 and defaults to ``1e-10``.  
-
--  `solver <algo-params/solver.html>`__: Specify the solver to use. One of: 
-   
-   - ``IRLSM``: fast on problems with a small number of predictors and for lambda search with L1 penalty 
-   - ``L_BFGS``: scales better for datasets with many columns; read more `here <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__
-   - ``COORDINATE_DESCENT``: ``IRLSM`` with the covariance updates version of cyclical coordinate descent in the innermost loop
-   - ``COORDINATE_DESCENT_NAIVE``: ``IRLSM`` with the naive updates version of cyclical coordinate descent in the innermost loop
-   - ``GRADIENT_DESCENT_LH``: can only be used with the ``ordinal`` family
-   - ``GRADIENT_DESCENT_SQERR``: can only be used with the ``ordinal`` family
-   - ``AUTO`` (default): will set the solver based on the given data and other parameters
-
--  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
-
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
-
--  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values. This option defaults to ``False``.
-
--  `link <algo-params/link.html>`__: Specify a link function (one of: ``Identity``, ``Family_Default`` (default), ``Logit``, ``Log``, ``Inverse``, ``Tweedie``, or ``Ologit``).
-
-   -  If the family is ``Gaussian``, then ``Identity``, ``Log``, and ``Inverse`` are supported.
-   -  If the family is ``Binomial``, then ``Logit`` is supported.
-   -  If the family is ``Fractionalbinomial``, then ``Logit`` is supported.
-   -  If the family is ``Poisson``, then ``Log`` and ``Identity`` are supported.
-   -  If the family is ``Gamma``, then ``Inverse``, ``Log``, and ``Identity`` are supported.
-   -  If the family is ``Tweedie``, then only ``Tweedie`` is supported.
-   -  If the family is ``Multinomial``, then only ``Family_Default`` is supported. (This defaults to ``multinomial``.)
-   -  If the family is ``Quasibinomial``, then only ``Logit`` is supported.
-   -  If the family is ``Ordinal``, then only ``Ologit`` is supported
-   -  If the family is ``Negative Binomial``, then ``Log`` and ``Identity`` are supported.
-   - If the family is ``AUTO``,
-
-      - and a link is not specified, then the link is determined as ``Family_Default`` (defaults to the family to which ``AUTO`` is determined).
-      - and a link is specified, the link is used so long as the specified link is compatible with the family to which ``AUTO`` is determined. Otherwise, an error message is thrown stating that ``AUTO`` for underlying data requires a different link and gives a list of possible compatible links.
-      - The list of supported links for ``family = AUTO`` is:
-
-          1. If the response is **Enum** with cardinality = 2, then ``Logit`` is supported.
-          2. If the response is **Enum** with cardinality > 2, then only ``Family_Default`` is supported (this defaults to ``multinomial``).
-          3. If the response is numeric (**Real** or **Int**), then ``Identity``, ``Log``, and ``Inverse`` are suported.
-
-
--  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value must be a value in the range ``0`` to ``1`` or set to ``-1`` (disabled).  This option is set to ``0`` by default.  
-   
-     **Note**: This is a simple method affecting only the ``intercept``. You may want to use weights and offset for a better fit.
-
--  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2. A value of ``1`` produces LASSO regression; a value of ``0`` produces Ridge regression. The default value is ``0`` when ``SOLVER='L-BFGS'``; otherwise it is ``0.5`` to specify a mixing between LASSO and Ridge regression.
-
--  `lambda <algo-params/lambda.html>`__: Specify the regularization strength. Defaults to ``[0.0]``.
-
--  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. This option defaults to ``False`` (disabled).
 
 Common parameters
 '''''''''''''''''

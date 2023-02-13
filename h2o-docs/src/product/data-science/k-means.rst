@@ -36,6 +36,8 @@ Algorithm-specifc parameters
    - ``Furthest`` (default): initialization chooses one initial center at random and then chooses the next center to be the point furthest away in terms of Euclidean distance.
    - ``User``: initialization requires the corresponding ``user_points`` parameter. Note that the user-specified points dataset must have the same number of columns as the training dataset.
 
+   **Note**: ``init`` is ignored if ``estimate_k=True`` because the algorithm will determine the initial cluster centers on its own.
+
 -  `cluster_size_constraints <algo-params/cluster_size_constraints.html>`__: An array specifying the minimum number of points that should be in each cluster. The length of the constraints array has to be the same as the number of clusters.
 
 -  **parallelize_cross_validation**: Specify whether to enable parallel training of cross-validation models.

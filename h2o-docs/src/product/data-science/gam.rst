@@ -16,7 +16,7 @@ GAM supports importing and exporting `MOJOs <../save-and-load-model.html#support
 Defining a GAM Model
 ~~~~~~~~~~~~~~~~~~~~
 
-Parameters are optional unless specified as *required*.
+Parameters are optional unless specified as *required*. GAM includes many `GLM parameters <glm.html#shared-glm-family-parameters>`__.
 
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
@@ -44,108 +44,6 @@ Algorithm-specific parameters
 -  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
 
 **splines_non_negative**: Valid for I-spline (``bs=2``) only. ``True`` if the I-splines are monotonically increasing (and monotonically non-decreasing). ``False`` if the I-splines are monotonically decreasing (and monotonically non-increasing). If specified, must be the same size as ``gam_columns``. Values for other spline types will be ignored. Defaults to ``True``.
-
-GLM family parameters
-'''''''''''''''''''''
-
--  `family <algo-params/family.html>`__: Specify the model type.
-
-   -  If the family is ``gaussian``, the response must be numeric (**Real** or **Int**). 
-   -  If the family is ``binomial``, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
-   -  If the family is ``fractionalbinomial``, the response must be a numeric between 0 and 1.
-   -  If the family is ``multinomial``, the response can be categorical with more than two levels/classes (**Enum**).
-   -  If the family is ``ordinal``, the response must be categorical with at least 3 levels.
-   -  If the family is ``quasibinomial``, the response must be numeric.
-   -  If the family is ``poisson``, the response must be numeric and non-negative (**Int**).
-   -  If the family is ``negativebinomial``, the response must be numeric and non-negative (**Int**).
-   -  If the family is ``gamma``, the response must be numeric and continuous and positive (**Real** or **Int**).
-   -  If the family is ``tweedie``, the response must be numeric and continuous (**Real**) and non-negative.
-   -  If the family is ``AUTO`` (default),
-
-      - and the response is **Enum** with cardinality = 2, then the family is automatically determined as ``binomial``.
-      - and the response is **Enum** with cardinality > 2, then the family is automatically determined as ``multinomial``.
-      - and the response is numeric (**Real** or **Int**), then the family is automatically determined as ``gaussian``.
-
--  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if ``family="tweedie"``) Specify the Tweedie variance power (defaults to ``0``).
-
--  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if ``family="tweedie"``) Specify the Tweedie link power (defaults to ``0``).
-
--  `theta <algo-params/theta.html>`__: Theta value (equal to :math:`\frac{1}{r}`) for use when ``family="negativebinomial``. This value must be > 0 and defaults to ``1e-10``.  
-
--  `solver <algo-params/solver.html>`__: Specify the solver to use. One of:
-   
-   - ``IRLSM``: fast on problems with a small number of predictors and for lambda search with L1 penalty 
-   - ``L_BFGS``: scales better for datasets with many columns; read more `here <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__
-   - ``COORDINATE_DESCENT``: ``IRLSM`` with the covariance updates version of cyclical coordinate descent in the innermost loop
-   - ``COORDINATE_DESCENT_NAIVE``: ``IRLSM`` with the naive updates version of cyclical coordinate descent in the innermost loop
-   - ``GRADIENT_DESCENT_LH``: can only be used with the ``ordinal`` family
-   - ``GRADIENT_DESCENT_SQERR``: can only be used with the ``ordinal`` family
-   - ``AUTO`` (default): will set the solver based on the given data and other parameters
-
-
--  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2. A value of ``1`` produces LASSO regression; a value of ``0`` produces Ridge regression. The default value of ``alpha`` is ``0`` when ``SOLVER = 'L-BFGS'``; otherwise it is ``0.5`` to specify a mixing between LASSO and Ridge regression.
-
--  `lambda <algo-params/lambda.html>`__: Specify the regularization strength.
-
--  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GAM will calculate the minimum lambda. This option defaults to ``False`` (disabled).
-
--  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if ``lambda_search`` is enabled) Specify the number of lambdas to use in the search. When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, then the default value for ``nlambdas`` is ``100``. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When ``alpha=0``, the default value for ``nlamdas`` is set to ``30`` because fewer lambdas are needed for ridge regression. This value defaults to ``-1`` (disabled).
-
--  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
-
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
-
--  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (``lambda=0``). This option defaults to ``False`` (disabled).
-
--  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option defaults to ``True`` (enabled).
-
--  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values. This option defaults to ``False`` (disabled).
-
--  `objective_epsilon <algo-params/objective_epsilon.html>`__: If the objective value is less than this threshold, then the model is converged. By default, this is set to ``-1`` (automatic), which means the following: if ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, the default value of ``objective_epsilon`` is set to ``.0001``.
-
--  `beta_epsilon <algo-params/beta_epsilon.html>`__: Converge if beta changes less than this value (using L-infinity norm). This only applies to ``IRLSM`` solver, and the default value is ``0.0001``.
-
--  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. By default this is set to ``-1``, which means the following: if ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and lambda is equal to zero, then this value defaults to ``.000001``. For any other value of lambda, this value defaults to ``.0001``.
-
--  `link <algo-params/link.html>`__: Specify a link function (one of: ``Identity``, ``Family_Default`` (default), ``Logit``, ``Log``, ``Inverse``, ``Tweedie``, or ``Ologit``).
-
-   -  If the family is ``Gaussian``, then ``Identity``, ``Log``, and ``Inverse`` are supported.
-   -  If the family is ``Binomial``, then ``Logit`` is supported.
-   -  If the family is ``Fractionalbinomial``, then ``Logit`` is supported.
-   -  If the family is ``Poisson``, then ``Log`` and ``Identity`` are supported.
-   -  If the family is ``Gamma``, then ``Inverse``, ``Log``, and ``Identity`` are supported.
-   -  If the family is ``Tweedie``, then only ``Tweedie`` is supported.
-   -  If the family is ``Multinomial``, then only ``Family_Default`` is supported. (This defaults to ``multinomial``.)
-   -  If the family is ``Quasibinomial``, then only ``Logit`` is supported.
-   -  If the family is ``Ordinal``, then only ``Ologit`` is supported
-   -  If the family is ``Negative Binomial``, then ``Log`` and ``Identity`` are supported.
-   - If the family is ``AUTO``,
-
-      - and a link is not specified, then the link is determined as ``Family_Default`` (defaults to the family to which ``AUTO`` is determined).
-      - and a link is specified, the link is used so long as the specified link is compatible with the family to which ``AUTO`` is determined. Otherwise, an error message is thrown stating that ``AUTO`` for underlying data requires a different link and gives a list of possible compatible links.
-      - The list of supported links for ``family = AUTO`` is:
-
-          1. If the response is **Enum** with cardinality = 2, then ``Logit`` is supported.
-          2. If the response is **Enum** with cardinality > 2, then only ``Family_Default`` is supported (this defaults to ``multinomial``).
-          3. If the response is numeric (**Real** or **Int**), then ``Identity``, ``Log``, and ``Inverse`` are suported.
-
-- **startval**: The initial starting values for fixed and randomized coefficients in GAM specified as a double array.
-
--  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value must be a value in the range (0,1) or set to ``-1`` (disabled). This option defaults to ``-1`` (disabled).  
-   
-     **Note**: This is a simple method affecting only the ``intercept``. You may want to use weights and offset for a better fit.
-
-- **cold_start**: Only applicable to multiple alpha/lambda values when calling GLM from GAM. If ``False`` (default), build the next model for the next set of ``alpha``/``lambda`` values starting from the values provided by the current model. If ``True``, GLM will build from scratch.
-
--  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Specify the minimum lambda to use for lambda search. This is specified as a ratio of **lambda_max**, which is the smallest :math:`\lambda` for which the solution is all zeros. This value defaults to ``0``. This default indicates that if the number of observations is greater than the number of variables, then ``lambda_min_ratio`` is set to ``0.0001``; if the number of observations is less than the number of variables, then ``lambda_min_ratio`` is set to ``0.01``.
-
--  `beta_constraints <algo-params/beta_constraints.html>`__: Specify a dataset to use for beta constraints. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The dataset must contain a "names" column with valid coefficient names.
-
--  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to ``1/n`` where ``n`` is the number of observations (rows) in the training set.
-
--  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. Interactions with and among gamified columns are not supported at this moment.
-
--  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
 Common parameters
 '''''''''''''''''

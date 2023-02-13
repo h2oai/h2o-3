@@ -40,8 +40,6 @@ Algorithm-specific parameters
 
 - **init_dispersion_parameter**: Initial value of disperion factor to be estimated using either ``"pearson"`` or ``"ml"``. Default to ``1.0``.
 
-- **generate_scoring_history**: If set to ``True``, this will generate scoring history for GLM. This may significantly slow down the algorithm. Defaults to ``False``.
-
 - **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, will break out of the dispersion parameter estimation loop using maximum likelihood Defaults to ``0.0001``.
 
 - **max_iterations_dispersion**: Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood. Defaults to ``1000000``.
@@ -58,6 +56,10 @@ Algorithm-specific parameters
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns.
 
+- **generate_variable_inflation_factors**: If ``True``, generates the variable inflation factors for numerical predictors. Defaults to ``False``.
+
+- **generate_scoring_history**: Generates scoring history for the GLM model when set to ``True``. This may significantly slow down the algorithm. When ``generate_scoring_history`` is enabled, you also will be able to fetch the average objective and the negative log likelihood using their accessor functions: ``average_objective`` and ``negative_log_likelihood``. Defaults to ``False``. 
+
 HGLM parameters
 '''''''''''''''
 
@@ -72,12 +74,24 @@ HGLM parameters
 -  **startval**: The initial starting values for fixed and randomized coefficients in ``HGLM`` specified as a double array. 
 
 
-GLM family parameters
-'''''''''''''''''''''
+Shared GLM family parameters
+''''''''''''''''''''''''''''
 
-- **score_iteration_interval**: Perform scoring for every ``score_iteration_interval`` iteration. Defaults to ``-1``.
+.. |GAM| image:: ../images/GAM.png
+   :scale: 5%
+   :align: middle
 
--  `family <algo-params/family.html>`__: Specify the model type.
+.. |MS| image:: ../images/MS.png
+   :scale: 5%
+   :align: middle
+
+.. |ANOVA| image:: ../images/ANOVA.png
+   :scale: 5%
+   :align: middle
+
+- **score_iteration_interval**: |MS| Perform scoring for every ``score_iteration_interval`` iteration. Defaults to ``-1``.
+
+-  `family <algo-params/family.html>`__: |GAM| |MS| |ANOVA| (Shared with GLM, Model Selection, andSpecify the model type.
 
    -  If the family is ``gaussian``, the response must be numeric (**Real** or **Int**).
    -  If the family is ``binomial``, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
@@ -95,13 +109,13 @@ GLM family parameters
       - and the response is **Enum** with cardinality > 2, then the family is automatically determined as ``multinomial``.
       - and the response is numeric (**Real** or **Int**), then the family is automatically determined as ``gaussian``.
 
--  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if ``family="tweedie"``) Specify the Tweedie variance power (defaults to ``0``).
+-  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: |GAM| |MS| |ANOVA| (Only applicable if ``family="tweedie"``) Specify the Tweedie variance power (defaults to ``0``).
 
--  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if ``family="tweedie"``) Specify the Tweedie link power (defaults to ``1``).
+-  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: |GAM| |MS| |ANOVA| (Only applicable if ``family="tweedie"``) Specify the Tweedie link power (defaults to ``1``).
 
--  `theta <algo-params/theta.html>`__: Theta value (equal to :math:`\frac{1}{r}`) for use when ``family="negativebinomial``. This value must be :math:`>` 0 and defaults to ``1e-10``. 
+-  `theta <algo-params/theta.html>`__: |GAM| |MS| |ANOVA| Theta value (equal to :math:`\frac{1}{r}`) for use when ``family="negativebinomial``. This value must be :math:`>` 0 and defaults to ``1e-10``. 
 
--  `solver <algo-params/solver.html>`__: Specify the solver to use. One of: 
+-  `solver <algo-params/solver.html>`__: |GAM| |MS| |ANOVA| Specify the solver to use. One of: 
    
    - ``IRLSM``: fast on problems with a small number of predictors and for lambda search with L1 penalty 
    - ``L_BFGS``: scales better for datasets with many columns; read more `here <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__
@@ -111,31 +125,31 @@ GLM family parameters
    - ``GRADIENT_DESCENT_SQERR``: can only be used with the ``ordinal`` family
    - ``AUTO`` (default): will set the solver based on the given data and other parameters
 
--  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2. A value of ``1`` produces LASSO regression; a value of ``0`` produces Ridge regression. The default value of ``alpha`` is ``0`` when ``SOLVER = 'L-BFGS'``; otherwise it is ``0.5`` to specify a mixing between LASSO and Ridge regression.
+-  `alpha <algo-params/alpha.html>`__: |GAM| |MS| |ANOVA| Specify the regularization distribution between L1 and L2. A value of ``1`` produces LASSO regression; a value of ``0`` produces Ridge regression. The default value of ``alpha`` is ``0`` when ``SOLVER = 'L-BFGS'``; otherwise it is ``0.5`` to specify a mixing between LASSO and Ridge regression.
 
--  `lambda <algo-params/lambda.html>`__: Specify the regularization strength.
+-  `lambda <algo-params/lambda.html>`__: |GAM| |MS| |ANOVA| Specify the regularization strength.
 
--  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. This option defaults to ``False`` (disabled).
+-  `lambda_search <algo-params/lambda_search.html>`__: |GAM| |MS| |ANOVA| Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. This option defaults to ``False`` (disabled).
 
--  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if ``lambda_search=True``) Specify the number of lambdas to use in the search. When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, then the default value for ``nlambdas`` is 100. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When ``alpha=0``, the default value for ``nlamdas`` is set to 30 because fewer lambdas are needed for ridge regression. This value defaults to ``-1``.
+-  `nlambdas <algo-params/nlambdas.html>`__: |GAM| |MS| (Applicable only if ``lambda_search=True``) Specify the number of lambdas to use in the search. When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, then the default value for ``nlambdas`` is 100. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When ``alpha=0``, the default value for ``nlamdas`` is set to 30 because fewer lambdas are needed for ridge regression. This value defaults to ``-1``.
 
--  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
+-  `plug_values <algo-params/plug_values.html>`__: |GAM| |MS| |ANOVA| When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
 
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
+-  `compute_p_values <algo-params/compute_p_values.html>`__: |GAM| |MS| |ANOVA| Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
--  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (``lambda=0``). This option defaults to ``False`` (disabled). 
+-  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: |GAM| |MS| Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (``lambda=0``). This option defaults to ``False`` (disabled). 
 
--  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option defaults to ``True`` (enabled). 
+-  `intercept <algo-params/intercept.html>`__: |GAM| |MS| Specify whether to include a constant term in the model. This option defaults to ``True`` (enabled). 
 
--  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values. This option defaults to ``False`` (disabled).
+-  `non_negative <algo-params/non_negative.html>`__: |GAM| |MS| |ANOVA| Specify whether to force coefficients to have non-negative values. This option defaults to ``False`` (disabled).
 
--  `objective_epsilon <algo-params/objective_epsilon.html>`__: If the objective value is less than this threshold, then the model is converged. If ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, the default value of ``objective_epsilon`` is set to ``.0001``. The default value is ``-1``.
+-  `objective_epsilon <algo-params/objective_epsilon.html>`__: |GAM| If the objective value is less than this threshold, then the model is converged. If ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, the default value of ``objective_epsilon`` is set to ``.0001``. The default value is ``-1``.
 
--  `beta_epsilon <algo-params/beta_epsilon.html>`__: Converge if beta changes less than this value (using L-infinity norm). This only applies to ``IRLSM`` solver, and the value defaults to ``0.0001``.
+-  `beta_epsilon <algo-params/beta_epsilon.html>`__: |GAM| |MS| Converge if beta changes less than this value (using L-infinity norm). This only applies to ``IRLSM`` solver, and the value defaults to ``0.0001``.
 
--  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For ``L-BFGS`` only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. If ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, this value defaults to ``.0001``. This value defaults to ``-1``.
+-  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: |GAM| |MS| (For ``L-BFGS`` only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. If ``lambda_search=True``, then this value defaults to ``.0001``. If ``lambda_search=False`` and ``lambda`` is equal to zero, then this value defaults to ``.000001``. For any other value of ``lambda``, this value defaults to ``.0001``. This value defaults to ``-1``.
 
--  `link <algo-params/link.html>`__: Specify a link function (one of: ``Identity``, ``Family_Default`` (default), ``Logit``, ``Log``, ``Inverse``, ``Tweedie``, or ``Ologit``).
+-  `link <algo-params/link.html>`__: |GAM| |MS| |ANOVA| Specify a link function (one of: ``Identity``, ``Family_Default`` (default), ``Logit``, ``Log``, ``Inverse``, ``Tweedie``, or ``Ologit``).
 
    -  If the family is ``Gaussian``, then ``Identity``, ``Log``, and ``Inverse`` are supported.
    -  If the family is ``Binomial``, then ``Logit`` is supported.
@@ -157,19 +171,19 @@ GLM family parameters
           2. If the response is **Enum** with cardinality > 2, then only ``Family_Default`` is supported (this defaults to ``multinomial``).
           3. If the response is numeric (**Real** or **Int**), then ``Identity``, ``Log``, and ``Inverse`` are suported.
 
--  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to ``-1`` and must be a value in the range (0,1).
+-  `prior <algo-params/prior.html>`__: |GAM| |MS| |ANOVA| Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to ``-1`` and must be a value in the range (0,1).
    
      **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
 
-- **cold_start**: Specify whether the model should be built from scratch. This parameter is only applicable when building a GLM model with multiple ``alpha``/``lambda`` values. If ``False`` and for a fixed alpha value, the next model with the next ``lambda`` value out of the ``lambda`` array will be built using the coefficients and the GLM state values of the current model. If ``True``, the next GLM model will be built from scratch. The default value is ``False``.
+- **cold_start**: |MS| Specify whether the model should be built from scratch. This parameter is only applicable when building a GLM model with multiple ``alpha``/``lambda`` values. If ``False`` and for a fixed alpha value, the next model with the next ``lambda`` value out of the ``lambda`` array will be built using the coefficients and the GLM state values of the current model. If ``True``, the next GLM model will be built from scratch. The default value is ``False``.
 
   **Note:** If an ``alpha`` array is specified and for a brand new ``alpha``, the model will be built from scratch regardless of the value of ``cold_start``.
 
--  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda_max**, which is the smallest :math:`\lambda` for which the solution is all zeros). This value defaults to ``-1`` which indicates that if the number of observations is greater than the number of variables, then ``lambda_min_ratio`` is set to 0.0001; if the number of observations is less than the number of variables, then ``lambda_min_ratio`` is set to 0.01. 
+-  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: |GAM| |MS| Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda_max**, which is the smallest :math:`\lambda` for which the solution is all zeros). This value defaults to ``-1`` which indicates that if the number of observations is greater than the number of variables, then ``lambda_min_ratio`` is set to 0.0001; if the number of observations is less than the number of variables, then ``lambda_min_ratio`` is set to 0.01. 
 
--  `beta_constraints <algo-params/beta_constraints.html>`__: Specify a dataset to use beta constraints. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The dataset must contain a "names" column with valid coefficient names.
+-  `beta_constraints <algo-params/beta_constraints.html>`__: |GAM| |MS| Specify a dataset to use beta constraints. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The dataset must contain a "names" column with valid coefficient names.
 
--  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to ``-1``.
+-  `max_active_predictors <algo-params/max_active_predictors.html>`__: |GAM| |MS| Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to ``-1``.
 
 -  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to ``1/nobs``.
 
