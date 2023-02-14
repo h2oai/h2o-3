@@ -6,13 +6,13 @@ on:
     branches:
       - 'master'
       - 'rel-*'
-
+      - 'devops/snyk-integration'
 permissions:
   contents: read
 
 jobs:
   snyk_scan_test:
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
