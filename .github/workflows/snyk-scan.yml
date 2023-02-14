@@ -24,9 +24,9 @@ jobs:
         id: changed-files
         with:
           files: | # This will match all the files with below patterns
-            build.gradle$
-            requirements.txt$
-            package.json$
+            *build.gradle
+            *requirements.txt
+            *package.json
 
       - uses: snyk/actions/setup@master
 
@@ -39,7 +39,7 @@ jobs:
         id: scan1
         continue-on-error: true
         run: |
-          unset CI # By default GH actions will set it to true. Therfore it will affect isCi flag in build.gradle (line #7)
+          unset CI # By default GH actions will set it to true. Therefore it will affect isCi flag in build.gradle (line #7)
           snyk test --all-sub-projects -d --fail-on=all --package-manager=gradle
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
