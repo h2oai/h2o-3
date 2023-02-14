@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0 # To fetch all commits history on branch (Refer: https://github.com/tj-actions/changed-files#usage)
        
       - name: Check changed Deps files
-        uses: tj-actions/changed-files@v10
+        uses: tj-actions/changed-files@v35
         id: changed-files
         with:
           files: | # This will match all the files with below patterns
@@ -30,7 +30,7 @@ jobs:
 
       - uses: snyk/actions/setup@master
 
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v3
         with:
           java-version: "8"
           distribution: 'adopt'
@@ -44,7 +44,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.7"
       - name: Snyk scan for Python 3.7 dependencies
@@ -58,9 +58,9 @@ jobs:
           pip install -r h2o-py/requirements.txt            
           snyk test -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved   
 
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
+          node-version: '16.x'
       - name: Snyk scan for Node dependencies
         if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
         id: scan3
@@ -92,12 +92,12 @@ jobs:
         id: extract_ref
 
       - uses: snyk/actions/setup@master
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v3
         with:
           java-version: "8"
           distribution: 'adopt'
           
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.7"
       - name: Snyk scan for Python 3.7 dependencies
@@ -108,9 +108,9 @@ jobs:
           pip install -r h2o-py/requirements.txt                  
           snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/requirements.txt      
 
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
+          node-version: '16.x'
       - name: Snyk scan for Node dependencies
         run: |
           snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-web/package.json --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-web/package.json  -d 
