@@ -23,10 +23,16 @@ jobs:
         id: changed-files
         with:
           files: | # This will match all the files with below patterns
-            *build.gradle
+            build.gradle
+            */build.gradle
+            **/build.gradle
+            ***/build.gradle
             *requirements.txt
-            *package.json
-
+            */*requirements.txt
+            **/*requirements.txt
+            */package.json
+            **/package.json
+      
       - uses: snyk/actions/setup@master
 
       - uses: actions/setup-java@v3
