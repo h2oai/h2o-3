@@ -26,11 +26,11 @@ h2o.init()
 
 Set a H2O Cloud instance you will be connecting to:
 ```
-hce.settings.connection.client_id = 'q8s-qa-platform'
-hce.settings.connection.token_endpoint_url = 'https://auth.demo.h2o.ai/auth/realms/q8s-qa/protocol/openid-connect/token'
+hce.settings.connection.client_id = 'hac-platform-public'
+hce.settings.connection.token_endpoint_url = 'https://auth.internal.dedicated.h2o.ai/auth/realms/q8s-qa/protocol/openid-connect/token'
 ```
 
-Get authenticated against H2O.ai cloud (https://cloud-qa.h2o.ai/auth/get-platform-token) and set platform token:
+Get authenticated against H2O.ai cloud (https://internal.dedicated.h2o.ai/auth/get-platform-token) and set platform token:
 ```
 hce.settings.connection.refresh_token = "TOKEN_THAT_YOU_RECIEVED_AFTER_AUTHENTICATION"
 ```
@@ -38,7 +38,7 @@ hce.settings.connection.refresh_token = "TOKEN_THAT_YOU_RECIEVED_AFTER_AUTHENTIC
 ### MLOps
 Set MLOps instance and the project that you will utilize for publishing your models.
 ```
-hce.settings.mlops.api_url = 'https://mlops-api.cloud-qa.h2o.ai'
+hce.settings.mlops.api_url = 'https://mlops-api.internal.dedicated.h2o.ai'
 hce.settings.mlops.project_name = 'My-project-for-h2o-3-models'
 ```
 
@@ -206,7 +206,7 @@ hce.settings.mlops.automl.automatic_publishing = True
 To check whether all models were published (Change to `stragegy="best"` if you're interested only in the best model),
 call:
 ```
-gbm_grid.is_published(strategy="all")
+aml.is_published(strategy="all")
 ```
 
 #### Model Deployment
