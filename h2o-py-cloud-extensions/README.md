@@ -27,7 +27,7 @@ h2o.init()
 Set a H2O Cloud instance you will be connecting to:
 ```
 hce.settings.connection.client_id = 'hac-platform-public'
-hce.settings.connection.token_endpoint_url = 'https://auth.internal.dedicated.h2o.ai/auth/realms/q8s-qa/protocol/openid-connect/token'
+hce.settings.connection.token_endpoint_url = 'https://auth.internal.dedicated.h2o.ai/auth/realms/hac/protocol/openid-connect/token'
 ```
 
 Get authenticated against H2O.ai cloud (https://internal.dedicated.h2o.ai/auth/get-platform-token) and set platform token:
