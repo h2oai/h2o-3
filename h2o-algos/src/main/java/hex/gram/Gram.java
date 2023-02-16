@@ -595,6 +595,44 @@ public final class Gram extends Iced<Gram> {
     return xx;
   }
 
+  /**
+   * This method will copy the xx matrix into a matrix xalloc which is of bigger size than the actual xx by 1 in both
+   * row and column.
+   */
+  public double[][] getXXCPM(double[][] xalloc, boolean lowerDiag, boolean icptFirst) {
+    double[][] xx = xalloc;
+    int off = 0;
+    if(_hasIntercept && icptFirst) {
+      double [] icptRow = _xx[_xx.length-1];
+      xx[0][0] = icptRow[icptRow.length-1];
+      for(int i = 0; i < icptRow.length-1; ++i)
+        xx[i+1][0] = icptRow[i];
+      off = 1;
+    }
+    for( int i = 0; i < _diag.length; ++i ) {
+      xx[i + off][i + off] = _diag[i];
+      if(!lowerDiag) {
+        int col = i+off;
+        double [] xrow = xx[i+off];
+        for (int j = off; j < _xx.length; ++j)
+          xrow[j+_diagN] = _xx[j][col];
+      }
+    }
+    for( int i = 0; i < _xx.length - off; ++i ) {
+      double [] xrow = xx[i+_diag.length + off];
+      double [] xrowOld = _xx[i];
+      System.arraycopy(xrowOld,0,xrow,off,xrowOld.length);
+      if(!lowerDiag) {
+        int col = xrowOld.length-1;
+        int row = i+1;
+        int xrowLen = xrow.length-1;
+        for (int j = col+1; j < xrowLen; ++j)
+          xrow[j] = _xx[row++][col];
+      }
+    }
+    return xx;
+  }
+
   public void add(Gram grm) {
     ArrayUtils.add(_xx,grm._xx);
     ArrayUtils.add(_diag,grm._diag);

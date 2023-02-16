@@ -266,12 +266,20 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         List<Integer> buildMaxRSweepModels(ModelSelectionModel model) {
             _coefNames = _dinfo.coefNames();
             // generate cross-product matrix (CPM) as in section III of doc
-            _crossProductMatrix = createCrossProductMatrix(_job._key, _dinfo);
+            CPMnPredNames cpmPredIndex = genCPMPredNamesIndex(_job._key, _dinfo, _predictorNames, _parms);
+            _crossProductMatrix = cpmPredIndex._cpm;
+            _predictorIndex2CPMIndices = cpmPredIndex._pred2CPMMapping;
+            _predictorNames = cpmPredIndex._predNames;
+            if (_predictorNames.length < _parms._max_predictor_number)
+                error("max_predictor_number", "Your dataset contains duplicated predictors.  " +
+                        "After removal, reduce your max_predictor_number to "+_predictorNames.length+" or less.");
+            if (error_count() > 0)
+                throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ModelSelection.this);             
             checkMemoryFootPrint(_crossProductMatrix.length);
             // generate mapping of predictor index to CPM indices due to enum columns add multiple rows/columns to CPM
             double r2Scale = 1.0/calR2Scale(train(), _parms._response_column);
             CoeffNormalization coefNorm = generateScale(_dinfo, _parms._standardize);
-            _predictorIndex2CPMIndices = mapPredIndex2CPMIndices(_dinfo, _predictorNames.length);
+
             List<Integer> currSubsetIndices = new ArrayList<>();    // store best k predictor subsets for 1 to k predictors
             List<String> predNames = new ArrayList<>(Arrays.asList(_predictorNames));
             // store predictor indices that are still available to be added to the bigger subset
