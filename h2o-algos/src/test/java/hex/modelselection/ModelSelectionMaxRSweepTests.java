@@ -2,6 +2,8 @@ package hex.modelselection;
 
 import Jama.Matrix;
 import hex.DataInfo;
+import hex.glm.GLMTask;
+import hex.gram.Gram;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -31,6 +33,256 @@ import static org.junit.Assert.assertTrue;
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class ModelSelectionMaxRSweepTests extends TestUtil {
+    public DataInfo setup(Frame origF, ModelSelectionModel.ModelSelectionParameters parms) {
+        int[] eCol = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        final Frame tempF = origF;
+        Arrays.stream(eCol).forEach(x -> tempF.replace(x, tempF.vec(x).toCategoricalVec()).remove());
+        DKV.put(origF);
+        Scope.track(origF);
+        parms._response_column = "C21";
+        parms._family = gaussian;
+        parms._train = origF._key;
+        DataInfo dinfo =  new DataInfo(origF.clone(), null, 1, false,
+                DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false,
+                parms.makeImputer(), false, false, false, false, null);
+        return dinfo;
+    }
+
+    /***
+     * In this test, we fake the ignored columns to contain full set of enum columns to be discarded and numerical ones
+     * as well.  We want to make sure that the correct predictor columns are included in the final ignoredFullPredCols.
+     */
+    @Test
+    public void testFindFullDupPredFull() {
+        Scope.enter();
+        try {
+            Frame origF=Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));;
+            ModelSelectionModel.ModelSelectionParameters parms=new ModelSelectionModel.ModelSelectionParameters();;
+            DataInfo dinfo = setup(origF, parms);
+            List<Integer> correctIgnoredPreds = new ArrayList<>(Arrays.asList(0, 3, 16, 17));
+            List<Integer> ignoredCols = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 10, 11, 12, 32, 33));
+            List<String> ignoredPredsNames = new ArrayList<>();
+            String[] predictornames = dinfo._adaptedFrame.names();
+            List<String> correctIgnoredPredNames = correctIgnoredPreds.stream().map(x -> predictornames[x]).collect(Collectors.toList());
+            List<Integer> ignoredFullPreds = findFullDupPred(dinfo, ignoredCols, ignoredPredsNames, predictornames);
+            // check that ignored predictor columns are generated correctly.
+            assert ignoredFullPreds.size() == ignoredCols.size();
+            int equalCounts = (int) IntStream.range(0, ignoredCols.size()).filter(x -> ignoredCols.get(x) == ignoredFullPreds.get(x)).count();
+            assert equalCounts == ignoredFullPreds.size() : "expected and actual predictor columns are not equal.";
+            // check that the correct duplicated predictor names are removed.
+            assert correctIgnoredPredNames.size() == ignoredPredsNames.size() : 
+                    "expected and actual removed predictor names list sizes are not equal.";
+            equalCounts = (int) IntStream.range(0, ignoredPredsNames.size()).filter(x -> correctIgnoredPredNames.get(x).equals(ignoredPredsNames.get(x))).count();
+            assert equalCounts == ignoredPredsNames.size() : "actual and expected removed predictor names are not the same.";
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    /***
+     * This test will test when the ignored columns containing partial enum columns removal, it should not be removed
+     * at all the the final list.
+     */
+    @Test
+    public void testFindPartialDupPredFull() {
+        Scope.enter();
+        try {
+            Frame origF=Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));;
+            ModelSelectionModel.ModelSelectionParameters parms=new ModelSelectionModel.ModelSelectionParameters();;
+            DataInfo dinfo = setup(origF, parms);
+            List<Integer> correctIgnoredPreds = new ArrayList<>(Arrays.asList(0, 3, 10, 16, 17));
+            List<Integer> correctIgnoredFullPreds = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 10, 11, 12, 26, 32, 33));
+            List<Integer> ignoredCols = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 10, 11, 12, 17, 21, 26, 32, 33));
+            List<String> ignoredPredsNames = new ArrayList<>();
+            String[] predictornames = dinfo._adaptedFrame.names();
+            List<String> correctIgnoredPredNames = correctIgnoredPreds.stream().map(x -> predictornames[x]).collect(Collectors.toList());
+            List<Integer> ignoredFullPreds = findFullDupPred(dinfo, ignoredCols, ignoredPredsNames, predictornames);
+            // check that ignored predictor columns are generated correctly.
+            assert ignoredFullPreds.size() == correctIgnoredFullPreds.size();
+            int equalCounts = (int) IntStream.range(0, correctIgnoredFullPreds.size()).filter(x -> correctIgnoredFullPreds.get(x) == ignoredFullPreds.get(x)).count();
+            assert equalCounts == ignoredFullPreds.size() : "expected and actual predictor columns are not equal.";
+            // check that the correct duplicated predictor names are removed.
+            assert correctIgnoredPredNames.size() == ignoredPredsNames.size() :
+                    "expected and actual removed predictor names list sizes are not equal.";
+            equalCounts = (int) IntStream.range(0, ignoredPredsNames.size()).filter(x -> correctIgnoredPredNames.get(x).equals(ignoredPredsNames.get(x))).count();
+            assert equalCounts == ignoredPredsNames.size() : "actual and expected removed predictor names are not the same.";
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    /***
+     * This test will make sure the correct rows/columns of gram matrix and xTransposeY vectors are dropped due to
+     * the presence of duplicated predictor columns.
+     */
+    @Test
+    public void testDropIgnoredCols() {
+        Scope.enter();
+        try {
+            Frame origF = Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));
+            ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
+            DataInfo dinfo = setup(origF, parms);
+            
+            //fake ignored columns here and just add in which ever predictors we want to drop to test the code.  
+            // drop 1st and last enum predictors, 1st and last numerical predictors
+            List<Integer> droppedCols = new ArrayList<>(Arrays.asList(0,1,2,3,24,25,26,35));
+            testCorrectDroppedGramsNXTY(droppedCols, dinfo, parms);
+            // drop odd predictors;
+            droppedCols = new ArrayList<>(Arrays.asList(7,8,9,13,14,15,18,19,22,23,26,28,30,32,34));
+            testCorrectDroppedGramsNXTY(droppedCols, dinfo, parms);
+            // drop even predictors
+            droppedCols = new ArrayList<>(Arrays.asList(0,1,2,3,10,11,12,16,17,20,21,24,25,27,29,31,33,35));
+            testCorrectDroppedGramsNXTY(droppedCols, dinfo, parms);
+            // drop all enums predictor columns
+            droppedCols = IntStream.range(0,26).boxed().collect(Collectors.toList());
+            testCorrectDroppedGramsNXTY(droppedCols, dinfo, parms);
+            // drop all numerical predictor columns
+            droppedCols = IntStream.range(26, 36).boxed().collect(Collectors.toList());
+            testCorrectDroppedGramsNXTY(droppedCols, dinfo, parms);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    public static void testCorrectDroppedGramsNXTY(List<Integer> droppedCols, DataInfo dinfo, 
+                                                   ModelSelectionModel.ModelSelectionParameters parms) {
+        GLMTask.GLMIterationTask gtask = genGramCheckDup(null, dinfo, new ArrayList<>(), parms);
+        Gram gram = gtask.getGram();
+        double[] manualDropedXTY = removeXTYDupCols(gtask.getXY(), droppedCols);
+        double[][] manualDroppedCPM = removeGramDupCols(gram, manualDropedXTY, gtask.getYY(), droppedCols);
+        double[] xTransposey = dropIgnoredCols(gtask, droppedCols);
+        double[][] cpmWithoutDupCols = formCPM(gram, xTransposey, gtask.getYY());
+        TestUtil.checkArrays(manualDropedXTY, xTransposey, 1e-6);
+        TestUtil.checkDoubleArrays(manualDroppedCPM, cpmWithoutDupCols, 1e-6);
+    }
+    
+    public static double[][] removeGramDupCols(Gram gram, double[] xTY, double yy, List<Integer>droppedCols) {
+        double[][] origXX = gram.getXX();
+        int oldXXSize = origXX.length;
+        int newXXSize = origXX.length-droppedCols.size()+1;
+        double[][] newXX = new double[newXXSize][newXXSize];
+        int newRowCounter = 0;
+        int newColCounter;
+        for (int rowIndex=0; rowIndex < oldXXSize; rowIndex++) {
+            if (!droppedCols.contains(rowIndex)) {
+                newColCounter = newRowCounter;
+                for (int colIndex = rowIndex; colIndex < oldXXSize; colIndex++) {
+                    if (!droppedCols.contains(colIndex)) {
+                        newXX[newRowCounter][newColCounter] = origXX[rowIndex][colIndex];
+                        newXX[newColCounter][newRowCounter] = origXX[colIndex][rowIndex];
+                        newColCounter++;
+                    }
+                }
+                newRowCounter++;
+            }
+        }
+        int copyLen = newXXSize-1;
+        for (int index=0; index<copyLen; index++) {
+            newXX[copyLen][index] = xTY[index];
+            newXX[index][copyLen] = xTY[index];
+        }
+        newXX[copyLen][copyLen] = yy;
+        return newXX;
+    }
+    
+    public static double[] removeXTYDupCols(double[] origXTY, List<Integer> droppedCols) {
+        int oldSize = origXTY.length;
+        int newSize = oldSize-droppedCols.size();
+        double[] newXTY = new double[newSize];
+        int newCounter = 0;
+        for (int index=0; index<oldSize; index++) {
+            if (!droppedCols.contains(index))
+                newXTY[newCounter++]=origXTY[index];
+        }
+        return newXTY;
+    }
+
+    /***
+     * This will test for the correct mapping of predictors to cpm indices with duplicated predictors
+     */
+    @Test
+    public void testPredInd2CPMIndDuplicateCols() {
+        Scope.enter();
+        try {
+            Frame origF = Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));
+            ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
+            DataInfo dinfo = setup(origF, parms);
+
+            // keep only first enum
+            List<Integer> droppedPreds = IntStream.range(1, 20).boxed().collect(Collectors.toList());
+            int[][] correctMap = new int[][]{{0,1,2,3}};
+            testCorrectPred2CPMMap(dinfo, 1, droppedPreds, correctMap);
+            // keep all enums
+            droppedPreds = IntStream.range(10, 20).boxed().collect(Collectors.toList());
+            correctMap = new int[][]{{0,1,2,3}, {4,5,6}, {7,8,9}, {10,11,12}, {13,14,15}, {16,17}, {18,19}, {20,21}, {22,23}, {24,25}};
+            testCorrectPred2CPMMap(dinfo, 10, droppedPreds, correctMap);
+            // keep all numerical columns
+            droppedPreds = IntStream.range(0,10).boxed().collect(Collectors.toList());
+            correctMap = new int[][]{{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}};
+            testCorrectPred2CPMMap(dinfo, 10, droppedPreds, correctMap);
+            // keep only even predictors
+            droppedPreds = new ArrayList<>(Arrays.asList(1,3,5,7,9,11,13,15,17,19));
+            correctMap = new int[][]{{0,1,2,3}, {4,5,6}, {7,8,9}, {10,11},{12,13},{14},{15},{16},{17},{18}};
+            testCorrectPred2CPMMap(dinfo, 10, droppedPreds, correctMap);
+            // keep only odd predictors
+            droppedPreds = new ArrayList<>(Arrays.asList(0,2,4,6,8,10,12,14,16,18));
+            correctMap = new int[][]{{0,1,2},{3,4,5},{6,7},{8,9},{10,11},{12}, {13}, {14},{15},{16}};
+            testCorrectPred2CPMMap(dinfo, 10, droppedPreds, correctMap);
+            // keep first enum and first numerical
+            droppedPreds = new ArrayList<>(Arrays.asList(1,2,3,4,5,6,7,8,9,11,12,13,14,15,16,17,18,19));
+            correctMap = new int[][]{{0,1,2,3}, {4}};
+            testCorrectPred2CPMMap(dinfo, 2, droppedPreds, correctMap);
+            // keep last enum and last numerical
+            droppedPreds = new ArrayList<>(Arrays.asList(0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18));
+            correctMap = new int[][]{{0,1}, {2}};
+            testCorrectPred2CPMMap(dinfo, 2, droppedPreds, correctMap);
+        } finally {
+            Scope.exit();
+        }
+        
+    }
+    
+    public void testCorrectPred2CPMMap(DataInfo dinfo, int predLength, List<Integer> ignoredPredInd, int[][] correctMap) {
+        int[][] pred2CPMIndexMap = mapPredIndex2CPMIndices(dinfo, predLength, ignoredPredInd);
+        TestUtil.checkIntArrays(pred2CPMIndexMap, correctMap);
+    }
+
+    /***
+     * This will test for the correct mapping of predictors to cpm indices.  This one does not take into account
+     * duplicated predictors
+     */
+    @Test
+    public void testPredIndex2CPMIndices() {
+        Scope.enter();
+        try {
+            Frame origF=Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));;
+            ModelSelectionModel.ModelSelectionParameters parms=new ModelSelectionModel.ModelSelectionParameters();;
+            DataInfo dinfo = setup(origF, parms);
+            String[] predictorNames = dinfo._adaptedFrame.names(); // predictor names plus response column
+            int numPred = predictorNames.length-1;
+            int[] catOffset = dinfo._catOffsets;
+            int[] numOffset = dinfo._numOffsets;
+            int[][] mPred2CPMMap = new int[numPred][];
+            for (int catInd=0; catInd<dinfo._nums; catInd++) {
+                int numRowCols = catOffset[catInd+1]-catOffset[catInd];
+                mPred2CPMMap[catInd] = IntStream.iterate(catOffset[catInd], x->x+1).limit(numRowCols).toArray();
+            }
+            for (int numInd=0; numInd<dinfo._nums; numInd++)
+                mPred2CPMMap[numInd+dinfo._cats] = new int[]{numOffset[numInd]};
+
+            // generated from model
+            int[][] predictorIndex2CPMIndices = mapPredIndex2CPMIndices(dinfo, predictorNames.length-1, new ArrayList<>());
+
+            // compare manually generated and program generated predInd2MapIndices
+            assertTrue(mPred2CPMMap.length==predictorIndex2CPMIndices.length);
+            for (int index=0; index<numPred; index++) {
+                assertArrayEquals("expected and extracted predInd2CPMIndices arrays are not equal",
+                        mPred2CPMMap[index], predictorIndex2CPMIndices[index]);
+            }
+        } finally {
+            Scope.exit();
+        }
+    }
 
     @Test
     public void testAllSweepingVectors() {
@@ -725,49 +977,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         }
     }
 
-    @Test
-    public void testPredIndex2CPMIndices() {
-        Scope.enter();
-        try {
-            Frame origF = Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));
-            int[] eCol = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-            Arrays.stream(eCol).forEach(x -> origF.replace(x, origF.vec(x).toCategoricalVec()).remove());
-            DKV.put(origF);
-            Scope.track(origF);
-            ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
-            parms._response_column = "C21";
-            parms._family = gaussian;
-            parms._train = origF._key;
-            DataInfo dinfo =  new DataInfo(origF.clone(), null, 1, false,
-                    DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false,
-                    parms.makeImputer(), false, false, false, false, null);
-            // manually generate predictor indices to CPM row/column indices
-            String[] predictorNames = dinfo._adaptedFrame.names(); // predictor names plus response column
-            int numPred = predictorNames.length-1;
-            int[] catOffset = dinfo._catOffsets;
-            int[] numOffset = dinfo._numOffsets;
-            int[][] mPred2CPMMap = new int[numPred][];
-            for (int catInd=0; catInd<dinfo._nums; catInd++) {
-                int numRowCols = catOffset[catInd+1]-catOffset[catInd];
-                mPred2CPMMap[catInd] = IntStream.iterate(catOffset[catInd], x->x+1).limit(numRowCols).toArray();
-            }
-            int totCol = dinfo._cats+dinfo._nums;
-            for (int numInd=0; numInd<dinfo._nums; numInd++)
-                mPred2CPMMap[numInd+dinfo._cats] = new int[]{numOffset[numInd]};
 
-            // generated from model
-            int[][] predictorIndex2CPMIndices = mapPredIndex2CPMIndices(dinfo, predictorNames.length-1);
-
-            // compare manually generated and program generated predInd2MapIndices
-            assertTrue(mPred2CPMMap.length==predictorIndex2CPMIndices.length);
-            for (int index=0; index<numPred; index++) {
-                assertArrayEquals("expected and extracted predInd2CPMIndices arrays are not equal",
-                        mPred2CPMMap[index], predictorIndex2CPMIndices[index]);
-            }
-        } finally {
-            Scope.exit();
-        }
-    }
 
     @Test
     public void testMaxRSweepEnumOnly() {
