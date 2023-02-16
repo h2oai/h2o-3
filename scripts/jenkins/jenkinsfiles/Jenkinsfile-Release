@@ -389,7 +389,7 @@ EOF
                                                             echo '****** Upload to Conda ******'
                                                             # Right now packages for all platforms are in the current directory
                                                             # upload all distribution packages
-                                                                anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
+                                                            anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
                                                             anaconda upload osx-64/\${PKG_NAME}
                                                             anaconda upload linux-64/\${PKG_NAME}
                                                             anaconda upload win-64/\${PKG_NAME}
