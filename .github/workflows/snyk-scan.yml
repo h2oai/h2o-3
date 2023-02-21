@@ -1,6 +1,7 @@
 name: Snyk Security Vulnerability Scan
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
