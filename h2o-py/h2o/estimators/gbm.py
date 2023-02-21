@@ -327,7 +327,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param interaction_constraints: A set of allowed column interactions.
                Defaults to ``None``.
         :type interaction_constraints: List[List[str]], optional
-        :param auto_rebalance: Allow automatic rebalancing of training and validation dataset
+        :param auto_rebalance: Allow automatic rebalancing of training and validation datasets
                Defaults to ``True``.
         :type auto_rebalance: bool
         """
@@ -2229,7 +2229,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def auto_rebalance(self):
         """
-        Allow automatic rebalancing of training and validation dataset
+        Allow automatic rebalancing of training and validation datasets
 
         Type: ``bool``, defaults to ``True``.
         """
