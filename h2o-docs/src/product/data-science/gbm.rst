@@ -279,6 +279,8 @@ Defining a GBM Model
 
 - `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
 
+- **auto_rebalance**: Allow automatic rebalancing of training and validation datasets. Automatic rebalancing affects GBM model reproducibility on the different hardware configurations, but it is a key training performance attribute. This option is defaults to true (True).
+
 Interpreting a GBM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
