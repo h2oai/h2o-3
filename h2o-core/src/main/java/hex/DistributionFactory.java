@@ -68,6 +68,33 @@ public class DistributionFactory {
                 throw H2O.unimpl("Try to get "+family+" which is not supported.");
         }
     }
+
+    /**
+     * Util class to calculate log and exp function for distribution and link function identically 
+     */
+    final public static class LogExpUtil {
+        final static public double MIN_LOG = -19;
+        final static public double MAX = 1e19;
+
+        /**
+         * Sanitized exponential function - helper function.
+         *
+         * @param x value to be transform
+         * @return result of exp function
+         */
+        public static double exp(double x) { return Math.min(MAX, Math.exp(x)); }
+
+        /**
+         * Sanitized log function - helper function
+         *
+         * @param x value to be transform
+         * @return result of log function
+         */
+        public static double log(double x) {
+            x = Math.max(0, x);
+            return x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
+        }
+    }
 }
 
 class GaussianDistribution extends Distribution {
@@ -112,7 +139,7 @@ class BernoulliDistribution extends Distribution {
     public BernoulliDistribution(DistributionFamily family){ super(family, new LogitFunction()); }
 
     @Override
-    public double deviance(double w, double y, double f) { return -2 * w * (y * LogExpUtil.log(f) + (1 - y) * LogExpUtil.log(1 - f)); }
+    public double deviance(double w, double y, double f) { return -2 * w * (y * DistributionFactory.LogExpUtil.log(f) + (1 - y) * DistributionFactory.LogExpUtil.log(1 - f)); }
 
     @Override
     public double negHalfGradient(double y, double f) { return y - linkInv(f); }
@@ -143,11 +170,11 @@ class QuasibinomialDistribution extends Distribution {
     public double deviance(double w, double y, double f) {
         if (y == f) return 0;
         if (f > 1)
-            return -2 * w * y * LogExpUtil.log(f);
+            return -2 * w * y * DistributionFactory.LogExpUtil.log(f);
         else if (f < 0)
-            return -2 * w * (1 - y) * LogExpUtil.log(1 - f);
+            return -2 * w * (1 - y) * DistributionFactory.LogExpUtil.log(1 - f);
         else
-            return -2 * w * (y * LogExpUtil.log(f) + (1 - y) * LogExpUtil.log(1 - f));
+            return -2 * w * (y * DistributionFactory.LogExpUtil.log(f) + (1 - y) * DistributionFactory.LogExpUtil.log(1 - f));
     }
 
     @Override
@@ -279,7 +306,8 @@ class PoissonDistribution extends Distribution {
 
     @Override
     public double deviance(double w, double y, double f) {
-        return 2 * w * (y * LogExpUtil.log(y / f) - y + f);
+        double a = link(f);
+        return 2 * w * (y * DistributionFactory.LogExpUtil.log(y / f) - y + f);
     }
 
     @Override
@@ -315,12 +343,12 @@ class GammaDistribution extends Distribution {
     @Override
     public double deviance(double w, double y, double f) {
         f = link(f); // bring back f to link space
-        return 2 * w * (y * LogExpUtil.exp(-f) + f);
+        return 2 * w * (y * DistributionFactory.LogExpUtil.exp(-f) + f);
     }
 
     @Override
     public double negHalfGradient(double y, double f) {
-        return y * LogExpUtil.exp(-f) - 1;
+        return y * DistributionFactory.LogExpUtil.exp(-f) - 1;
     }
 
     @Override
@@ -350,30 +378,32 @@ class TweedieDistribution extends Distribution {
     public double deviance(double w, double y, double f) {
         f = link(f); // bring back f to link space
         assert (_tweediePower > 1 && _tweediePower < 2);
-        return 2 * w * (Math.pow(y, 2 - _tweediePower) / ((1 - _tweediePower) * (2 - _tweediePower)) - y * LogExpUtil.exp(f * (1 - _tweediePower)) / (1 - _tweediePower) + LogExpUtil.exp(f * (2 - _tweediePower)) / (2 - _tweediePower));
+        return 2 * w * (Math.pow(y, 2 - _tweediePower) / ((1 - _tweediePower) * (2 - _tweediePower)) -
+                y * DistributionFactory.LogExpUtil.exp(f * (1 - _tweediePower)) / (1 - _tweediePower) + 
+                DistributionFactory.LogExpUtil.exp(f * (2 - _tweediePower)) / (2 - _tweediePower));
     }
 
     @Override
     public double negHalfGradient(double y, double f) {
         assert (_tweediePower > 1 && _tweediePower < 2);
-        return y * LogExpUtil.exp(f * (1 - _tweediePower)) - LogExpUtil.exp(f * (2 - _tweediePower));
+        return y * DistributionFactory.LogExpUtil.exp(f * (1 - _tweediePower)) - DistributionFactory.LogExpUtil.exp(f * (2 - _tweediePower));
     }
 
     @Override
     public double initFNum(double w, double o, double y) {
-        return w * y * LogExpUtil.exp(o * (1 - _tweediePower));
+        return w * y * DistributionFactory.LogExpUtil.exp(o * (1 - _tweediePower));
     }
 
     @Override
     public double initFDenom(double w, double o, double y) {
-        return w * LogExpUtil.exp(o * (2 - _tweediePower));
+        return w * DistributionFactory.LogExpUtil.exp(o * (2 - _tweediePower));
     }
 
     @Override
-    public double gammaNum(double w, double y, double z, double f) { return w * y * LogExpUtil.exp(f * (1 - _tweediePower)); }
+    public double gammaNum(double w, double y, double z, double f) { return w * y * DistributionFactory.LogExpUtil.exp(f * (1 - _tweediePower)); }
 
     @Override
-    public double gammaDenom(double w, double y, double z, double f) { return w * LogExpUtil.exp(f * (2 - _tweediePower)); }
+    public double gammaDenom(double w, double y, double z, double f) { return w * DistributionFactory.LogExpUtil.exp(f * (2 - _tweediePower)); }
 }
 
 class HuberDistribution extends Distribution {
@@ -515,31 +545,4 @@ class CustomDistributionWrapper extends CFuncObject<CDistributionFunc> {
 
     @Override
     protected void setupLocal() { super.setupLocal(); }
-}
-
-/**
- * Util class to calculate log and exp function for distribution and link function identically 
- */
-final class LogExpUtil {
-    final static public double MIN_LOG = -19;
-    final static public double MAX = 1e19;
-
-    /**
-     * Sanitized exponential function - helper function.
-     *
-     * @param x value to be transform
-     * @return result of exp function
-     */
-    public static double exp(double x) { return Math.min(MAX, Math.exp(x)); }
-
-    /**
-     * Sanitized log function - helper function
-     *
-     * @param x value to be transform
-     * @return result of log function
-     */
-    public static double log(double x) {
-        x = Math.max(0, x);
-        return x == 0 ? MIN_LOG : Math.max(MIN_LOG, Math.log(x));
-    }
 }
