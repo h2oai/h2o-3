@@ -3,7 +3,12 @@ name: Snyk Security Vulnerability Scan
 on:
   workflow_dispatch:
   pull_request:
+  create:
+    tags:
+      - 'jenkins-[0-9]+.[0-9]+.[0-9]+.[0-9]+'
   push:
+    tags:
+      - 'jenkins-[0-9]+.[0-9]+.[0-9]+.[0-9]+'
     branches:
       - 'master'
       - 'rel-*'
