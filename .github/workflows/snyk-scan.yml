@@ -3,9 +3,12 @@ name: Snyk Security Vulnerability Scan
 on:
   pull_request:
   push:
+    tags:
+      - 'jenkins-3.38.0.4'
     branches:
       - 'master'
       - 'rel-*'
+      - 'rel-3.38.0.4'
 
 permissions:
   contents: read
