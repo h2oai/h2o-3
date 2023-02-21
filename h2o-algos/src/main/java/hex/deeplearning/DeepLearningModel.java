@@ -23,6 +23,7 @@ import java.util.Arrays;
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearning.makeDataInfo;
 import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss.*;
+import static hex.genmodel.utils.DistributionFamily.poisson;
 import static water.H2O.technote;
 
 /**
@@ -663,7 +664,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 //        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
 //      }
         pred = _dist.linkInv(pred);
-        loss += _dist.deviance(1 /*weight*/, actual, pred);
+        if (poisson.equals(_parms._distribution)) {
+          double linkF = DistributionFactory.LogExpUtil.log(pred);
+          loss += -2*(actual * linkF - DistributionFactory.LogExpUtil.exp(pred));
+        } else {
+          loss += _dist.deviance(1 /*weight*/, actual, pred);
+        }
       }
 
       // add L1/L2 penalty of model coefficients (weights & biases)
