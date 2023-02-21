@@ -99,6 +99,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  interaction_constraints=None,  # type: Optional[List[List[str]]]
+                 auto_rebalance=True,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -326,6 +327,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param interaction_constraints: A set of allowed column interactions.
                Defaults to ``None``.
         :type interaction_constraints: List[List[str]], optional
+        :param auto_rebalance: Allow automatic rebalancing of training and validation dataset
+               Defaults to ``True``.
+        :type auto_rebalance: bool
         """
         super(H2OGradientBoostingEstimator, self).__init__()
         self._parms = {}
@@ -392,6 +396,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
         self.interaction_constraints = interaction_constraints
+        self.auto_rebalance = auto_rebalance
 
     @property
     def training_frame(self):
@@ -2220,5 +2225,19 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def interaction_constraints(self, interaction_constraints):
         assert_is_type(interaction_constraints, None, [[str]])
         self._parms["interaction_constraints"] = interaction_constraints
+
+    @property
+    def auto_rebalance(self):
+        """
+        Allow automatic rebalancing of training and validation dataset
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("auto_rebalance")
+
+    @auto_rebalance.setter
+    def auto_rebalance(self, auto_rebalance):
+        assert_is_type(auto_rebalance, None, bool)
+        self._parms["auto_rebalance"] = auto_rebalance
 
 
