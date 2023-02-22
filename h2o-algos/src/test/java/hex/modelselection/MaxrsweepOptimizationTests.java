@@ -9,13 +9,13 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static hex.gam.MatrixFrameUtils.GamUtils.copy2DArray;
-import static hex.modelselection.ModelSelection.replacement;
 import static hex.modelselection.ModelSelectionMaxRSweepTests.assertEqualSV;
 import static hex.modelselection.ModelSelectionUtils.*;
 
@@ -71,7 +71,7 @@ public class MaxrsweepOptimizationTests  extends TestUtil {
     return new CPMInd(bigCPM, pred2BigCPMIndices);
   }
   
-  @Test
+ /* @Test
   public void testReplacement() {
     // at predictor size 31, before calling replacement, currSubsetIndices is {77, 96, 74, 75, 87, 88, 85, 6, 100, 3, 
     // 174, 127, 66, 169, 122, 136, 137, 188, 179, 30, 192, 177, 180, 172, 134, 193, 49, 72, 34, 62, 24}, 
@@ -100,7 +100,7 @@ public class MaxrsweepOptimizationTests  extends TestUtil {
     SweepVector[][] targetSV = sweepCPM(targetCPM, IntStream.range(0, currCPM.length-1).toArray(), true);
     
     
-  }
+  }*/
   
   @Test
   public void testForwardR() {

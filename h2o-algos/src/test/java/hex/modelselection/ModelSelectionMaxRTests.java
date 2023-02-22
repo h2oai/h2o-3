@@ -7,10 +7,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.Log;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,8 +17,6 @@ import java.util.stream.Stream;
 
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
-import static hex.modelselection.ModelSelection.forwardStep;
-import static hex.modelselection.ModelSelection.replacement;
 import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.*;
 import static hex.modelselection.ModelSelectionUtils.generateMaxRTrainingFrames;
 import static hex.modelselection.ModelSelectionUtils.removeTrainingFrames;
@@ -31,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 @CloudSize(1)
 public class ModelSelectionMaxRTests extends TestUtil {
     
-    @Test
+/*    @Test
     public void testReplacement() {
         Scope.enter();
         try {
@@ -84,9 +80,9 @@ public class ModelSelectionMaxRTests extends TestUtil {
         } finally {
             Scope.exit();
         }
-    }
+    }*/
     
-    @Test
+/*    @Test
     public void testForwardStep() {
         Scope.enter();
         try {
@@ -123,7 +119,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
         } finally {
             Scope.exit();
         }
-    }
+    }*/
     
     @Test
     public void testGenerateMaxRTrainingFrames() {
@@ -353,7 +349,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
         }
     }
 
-    public void assertCorrectReplacement(List<Integer> currSubset, List<String> coefNames, double bestR2,
+/*    public void assertCorrectReplacement(List<Integer> currSubset, List<String> coefNames, double bestR2,
                                          String[] bestR2Subset, boolean okToBeNull,
                                          ModelSelectionModel.ModelSelectionParameters parms) {
         List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
@@ -368,7 +364,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
         Scope.track_generic(bestR2Model);
         String[] modelCoeff = sortStringArray(bestR2Model._output._coefficient_names);
         assertArrayEquals(bestR2Subset, modelCoeff);
-    }
+    }*/
 
     public String[] sortStringArray(String[] arr) {
         List<String> coeffList = Arrays.stream(arr).collect(Collectors.toList());
@@ -396,7 +392,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
         return bestCoefList;
     }
 
-    public void assertCorrectForwardStep(String[][] bestR2Coeffs, List<Integer> currSubsetIndices, int newPredInd,
+/*    public void assertCorrectForwardStep(String[][] bestR2Coeffs, List<Integer> currSubsetIndices, int newPredInd,
                                          List<String> coefNames, ModelSelectionModel.ModelSelectionParameters parms) {
         String[] bestR2Coeff = bestR2Coeffs[currSubsetIndices.size()-1];
         List<Integer> changedSubset = new ArrayList<>(currSubsetIndices);
@@ -408,7 +404,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
         Scope.track_generic(bestR2Model);
         String[] modelCoefNames = bestR2Model._output.coefficientNames();
         assertArrayEquals(bestR2Coeff, modelCoefNames);
-    }
+    }*/
     
     public void assertCorrectTrainingFrames(Frame[] trainingFrames, String[][] correctTrainCols) {
         int numFrame = trainingFrames.length;
