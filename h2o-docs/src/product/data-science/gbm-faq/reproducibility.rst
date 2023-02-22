@@ -189,7 +189,7 @@ If the logs do not mention rebalancing, continue to Step 2.
 ``"Rebalancing train dataset into 145 chunks."``
 
 .. warning::
-    If the logs show that rebalancing has occurred, you will not be able to reproduce the model.
+    If the logs show that rebalancing has occurred, use ``auto_rebalance = False``, which switches off rebalance but can significantly increase training time.
 
 How do I reproduce a model where model training was not triggered from the leader node?
 #######################################################################################

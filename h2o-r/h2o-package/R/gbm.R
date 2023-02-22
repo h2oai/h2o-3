@@ -110,6 +110,7 @@
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param interaction_constraints A set of allowed column interactions.
+#' @param auto_rebalance \code{Logical}. Allow automatic rebalancing of training and validation datasets Defaults to TRUE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -189,6 +190,7 @@ h2o.gbm <- function(x,
                     gainslift_bins = -1,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                     interaction_constraints = NULL,
+                    auto_rebalance = TRUE,
                     verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -338,6 +340,8 @@ h2o.gbm <- function(x,
     parms$auc_type <- auc_type
   if (!missing(interaction_constraints))
     parms$interaction_constraints <- interaction_constraints
+  if (!missing(auto_rebalance))
+    parms$auto_rebalance <- auto_rebalance
 
   # Error check and build model
   model <- .h2o.modelJob('gbm', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -404,6 +408,7 @@ h2o.gbm <- function(x,
                                     gainslift_bins = -1,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     interaction_constraints = NULL,
+                                    auto_rebalance = TRUE,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -557,6 +562,8 @@ h2o.gbm <- function(x,
     parms$auc_type <- auc_type
   if (!missing(interaction_constraints))
     parms$interaction_constraints <- interaction_constraints
+  if (!missing(auto_rebalance))
+    parms$auto_rebalance <- auto_rebalance
 
   # Build segment-models specific parameters
   segment_parms <- list()
