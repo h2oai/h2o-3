@@ -318,7 +318,8 @@ class Fairness:
         :param jitter: Amount of jitter used to show the point density.
         :param alpha: Transparency of the points.
         :param save_plot_path_prefix: A prefix of the path to save the plot via using matplotlib function savefig. 
-                                      The suffix of the path will be determined from a contribution columns name.
+                                      The suffix of the path will be determined from a column name for which SHAP values
+                                      were calculated for.
         
         :return: H2OExplanation object
 
