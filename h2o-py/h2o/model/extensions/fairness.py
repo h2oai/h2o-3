@@ -304,7 +304,7 @@ class Fairness:
         return plt.gcf()
 
     def fair_shap_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1,
-                       save_plot_path=None):
+                       save_plot_path_prefix=None):
         """
         SHAP summary plot for one feature with protected groups on y-axis.
 
@@ -317,7 +317,8 @@ class Fairness:
         :param figsize: Tuple with figure size; passed directly to matplotlib.
         :param jitter: Amount of jitter used to show the point density.
         :param alpha: Transparency of the points.
-        :param save_plot_path: A path to save the plot via using matplotlib function savefig.
+        :param save_plot_path_prefix: A prefix of the path to save the plot via using matplotlib function savefig. 
+                                      The suffix of the path will be determined from a contribution columns name.
         
         :return: H2OExplanation object
 
@@ -402,8 +403,8 @@ class Fairness:
             plt.yticks(range(len(result)), [", ".join(pg) for pg, _, _ in result])
             plt.grid()
             plt.colorbar().set_label("log({})".format(contr_column) if autoscale else contr_column)
-            if save_plot_path is not None:
-                plt.savefig(fname=save_plot_path + "_" +  contr_column)
+            if save_plot_path_prefix is not None:
+                plt.savefig(fname=save_plot_path_prefix + "_" +  contr_column)
             plots[contr_column] = plt.gcf()
         return plots
 
