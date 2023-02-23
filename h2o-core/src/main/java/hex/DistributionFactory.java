@@ -306,7 +306,6 @@ class PoissonDistribution extends Distribution {
 
     @Override
     public double deviance(double w, double y, double f) {
-        double a = link(f);
         return 2 * w * (y * DistributionFactory.LogExpUtil.log(y / f) - y + f);
     }
 
