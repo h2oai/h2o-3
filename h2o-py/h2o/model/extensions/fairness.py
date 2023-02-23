@@ -385,8 +385,6 @@ class Fairness:
         autoscale = autoscale and not frame[column].isfactor()[0] and frame[column].min() > -1 and (
                 np.nanmax(np.log(maxes)) - np.nanmin(np.log(maxes)) > 1).all()
         plots = H2OExplanation()
-        if save_plot_path is not None:
-            plt.savefig(fname=save_plot_path)
         for contr_column, result in results.items():
             plt.figure(figsize=figsize)
             for i, (pg, contr, vals) in enumerate(result):
@@ -404,6 +402,8 @@ class Fairness:
             plt.yticks(range(len(result)), [", ".join(pg) for pg, _, _ in result])
             plt.grid()
             plt.colorbar().set_label("log({})".format(contr_column) if autoscale else contr_column)
+            if save_plot_path is not None:
+                plt.savefig(fname=save_plot_path + "_" +  contr_column)
             plots[contr_column] = plt.gcf()
         return plots
 
