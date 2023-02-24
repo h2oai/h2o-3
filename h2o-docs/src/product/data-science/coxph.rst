@@ -73,6 +73,7 @@ Common parameters
 
 -  `max_iterations <algo-params/max_iterations.html>`__: A positive integer defining the maximum number of iterations during model training. The role this parameter plays in the stopping criteria of the model-fitting algorithm is explained in the :ref:`coxph_algorithm` section below. This value defaults to ``20``.
 
+- `use_all_factor_levels <algo-params/coxph.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. This option defaults to ``True`` (enabled).
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
