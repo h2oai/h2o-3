@@ -165,7 +165,7 @@ Defining a Uplift DRF Model
    optimal value for your configuration. This option defaults to 1024.
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
-   training. Use 0 (default) to disable.
+   training. This value is set to ``0`` (disabled) by default. **Note**: ``max_runtime_secs`` cannot always produce a reproducible model for Uplift DRF.
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
    algorithm components dependent on randomization. The seed is
