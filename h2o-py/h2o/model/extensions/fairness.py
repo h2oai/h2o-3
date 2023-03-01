@@ -66,7 +66,7 @@ class Fairness:
 
         return {n: _get_tracked_frame(f["key"]["name"]) for n, f in zip(res.map_keys["string"], res.frames)}
 
-    def fair_pd_plot(self, frame, column, protected_columns, figsize=(16, 9), autoscale=True):
+    def fair_pd_plot(self, frame, column, protected_columns, figsize=(16, 9), autoscale=True, save_plot_path=None):
         """
         Partial dependence plot per protected group.
 
@@ -77,6 +77,7 @@ class Fairness:
                                       such as race, gender, age etc.
         :param figsize: Tuple with figure size; passed directly to matplotlib.
         :param autoscale: If ``True``, try to guess when to use log transformation on X axis.
+        :param save_plot_path: A path to save the plot via using matplotlib function savefig.
         :return: Matplotlib Figure object
 
         :examples:
@@ -155,9 +156,11 @@ class Fairness:
         plt.ylabel("Response")
         plt.legend()
         plt.grid()
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
         return plt.gcf()
 
-    def fair_roc_plot(self, frame, protected_columns, reference, favorable_class, figsize=(16, 9)):
+    def fair_roc_plot(self, frame, protected_columns, reference, favorable_class, figsize=(16, 9), save_plot_path=None):
         """
         Plot ROC curve per protected group.
 
@@ -169,6 +172,7 @@ class Fairness:
                           If set to ``None``, it will use the biggest group as the reference.
         :param favorable_class: Positive/favorable outcome class of the response.
         :param figsize: Figure size; passed directly to Matplotlib
+        :param save_plot_path: A path to save the plot via using matplotlib function savefig.
 
         :return: Matplotlib Figure object
 
@@ -222,9 +226,11 @@ class Fairness:
         plt.xlabel("False Positive Rate")
         plt.ylabel("True Positive Rate")
         plt.title("Receiver Operating Characteristic Curve")
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
         return plt.gcf()
 
-    def fair_pr_plot(self, frame, protected_columns, reference, favorable_class, figsize=(16, 9)):
+    def fair_pr_plot(self, frame, protected_columns, reference, favorable_class, figsize=(16, 9), save_plot_path=None):
         """
         Plot PR curve per protected group.
         :param frame: H2OFrame
@@ -234,6 +240,7 @@ class Fairness:
                           If set to ``None``, it will use the biggest group as the reference.
         :param favorable_class: Positive/favorable outcome class of the response.
         :param figsize: Figure size; passed directly to Matplotlib
+        :param save_plot_path: A path to save the plot via using matplotlib function savefig.
 
         :return: Matplotlib Figure object
 
@@ -292,9 +299,12 @@ class Fairness:
         plt.xlabel("Recall")
         plt.ylabel("Precision")
         plt.title("Precision-Recall Curve")
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
         return plt.gcf()
 
-    def fair_shap_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1):
+    def fair_shap_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1,
+                       save_plot_path_prefix=None):
         """
         SHAP summary plot for one feature with protected groups on y-axis.
 
@@ -307,7 +317,11 @@ class Fairness:
         :param figsize: Tuple with figure size; passed directly to matplotlib.
         :param jitter: Amount of jitter used to show the point density.
         :param alpha: Transparency of the points.
-        :return: Matplotlib Figure object
+        :param save_plot_path_prefix: A prefix of the path to save the plot via using matplotlib function savefig. 
+                                      The suffix of the path will be determined from a column name for which SHAP values
+                                      were calculated for.
+        
+        :return: H2OExplanation object
 
         :examples:
         >>> from h2o.estimators import H2OGradientBoostingEstimator
@@ -390,6 +404,8 @@ class Fairness:
             plt.yticks(range(len(result)), [", ".join(pg) for pg, _, _ in result])
             plt.grid()
             plt.colorbar().set_label("log({})".format(contr_column) if autoscale else contr_column)
+            if save_plot_path_prefix is not None:
+                plt.savefig(fname=save_plot_path_prefix + "_" +  contr_column)
             plots[contr_column] = plt.gcf()
         return plots
 
