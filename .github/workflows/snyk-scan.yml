@@ -36,6 +36,7 @@ jobs:
         with:
           java-version: "8"
           distribution: 'adopt'
+      
       - name: Snyk scan for Java dependencies 
         if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
         id: scan1
@@ -49,6 +50,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.7"
+      
       - name: Snyk scan for Python 3.7 dependencies
         if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan2
