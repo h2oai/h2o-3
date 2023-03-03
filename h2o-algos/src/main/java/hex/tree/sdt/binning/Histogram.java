@@ -3,11 +3,14 @@ package hex.tree.sdt.binning;
 import hex.tree.sdt.DataFeaturesLimits;
 import hex.tree.sdt.mrtasks.FeaturesLimitsMRTask;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static hex.tree.sdt.binning.BinningStrategy.CATEGORICAL;
 
 public class Histogram {
     private final List<FeatureBins> _featuresBins;
@@ -15,22 +18,25 @@ public class Histogram {
 
     public Histogram(Frame originData, DataFeaturesLimits conditionLimits, BinningStrategy binningStrategy) {
         _binningStrategy = binningStrategy;
+        // get real features limits where the conditions are fulfilled
+        DataFeaturesLimits featuresLimitsForConditions = getFeaturesLimitsForConditions(originData, conditionLimits);
         // call strategy to create bins for each feature separately
-        _featuresBins = IntStream.range(0, originData.numCols() - 1/*exclude the last prediction column*/)
-                .mapToObj(i -> new FeatureBins(
-                        _binningStrategy.createFeatureBins(originData,
-                                // get real features limits where the conditions are fulfilled
-                                getFeaturesLimitsForConditions(originData, conditionLimits), i)))
+        _featuresBins = IntStream
+                .range(0, originData.numCols() - 1/*exclude the last prediction column*/)
+                .mapToObj(i -> (originData.vec(i).get_type() == Vec.T_NUM)
+                        ? new FeatureBins(_binningStrategy.createFeatureBins(originData, featuresLimitsForConditions, i))
+                        : new FeatureBins(CATEGORICAL.createFeatureBins(originData, featuresLimitsForConditions, i)))
                 .collect(Collectors.toList());
     }
 
 
     /**
      * Get list of feature bins (copy) - for testing.
+     *
      * @param featureIndex feature index
      * @return list of feature bins
      */
-    public List<Bin> getFeatureBins(int featureIndex) {
+    public List<NumericBin> getFeatureBins(int featureIndex) {
         return _featuresBins.get(featureIndex).getFeatureBins();
     }
 

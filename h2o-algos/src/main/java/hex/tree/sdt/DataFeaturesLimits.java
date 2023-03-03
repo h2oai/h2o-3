@@ -9,20 +9,20 @@ import java.util.stream.Collectors;
  */
 public class DataFeaturesLimits {
     // limits for each feature
-    private final List<FeatureLimits> _featuresLimits;
+    private final List<AbstractFeatureLimits> _featuresLimits;
 
-    public DataFeaturesLimits(final List<FeatureLimits> featureLimits) {
+    public DataFeaturesLimits(final List<AbstractFeatureLimits> featureLimits) {
         this._featuresLimits = featureLimits;
     }
 
     public DataFeaturesLimits(final double[][] featureLimits) {
         this._featuresLimits = Arrays.stream(featureLimits)
-                .map(dd -> new FeatureLimits(dd[0], dd[1]))
+                .map(dd -> new NumericFeatureLimits(dd[0], dd[1]))
                 .collect(Collectors.toList());
     }
 
     public DataFeaturesLimits clone() {
-        return new DataFeaturesLimits(_featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
+        return new DataFeaturesLimits(_featuresLimits.stream().map(AbstractFeatureLimits::clone).collect(Collectors.toList()));
     }
 
     /**
@@ -34,8 +34,8 @@ public class DataFeaturesLimits {
      */
     public DataFeaturesLimits updateMin(final int selectedFeature, final double newMin) {
         DataFeaturesLimits clone = new DataFeaturesLimits(
-                _featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
-        clone._featuresLimits.get(selectedFeature).setNewMin(newMin);
+                _featuresLimits.stream().map(AbstractFeatureLimits::clone).collect(Collectors.toList()));
+        ((NumericFeatureLimits) clone._featuresLimits.get(selectedFeature)).setNewMin(newMin);
         return clone;
     }
 
@@ -48,22 +48,24 @@ public class DataFeaturesLimits {
      */
     public DataFeaturesLimits updateMax(final int selectedFeature, final double newMax) {
         DataFeaturesLimits clone = new DataFeaturesLimits(
-                _featuresLimits.stream().map(FeatureLimits::clone).collect(Collectors.toList()));
-        clone._featuresLimits.get(selectedFeature).setNewMax(newMax);
+                _featuresLimits.stream().map(AbstractFeatureLimits::clone).collect(Collectors.toList()));
+        ((NumericFeatureLimits) clone._featuresLimits.get(selectedFeature)).setNewMax(newMax);
         return clone;
     }
 
-    public FeatureLimits getFeatureLimits(int featureIndex) {
+    public AbstractFeatureLimits getFeatureLimits(int featureIndex) {
         return _featuresLimits.get(featureIndex);
     }
 
     /**
-     * Serialize limits do n x 2 array so it can be passed to MR task
+     * Serialize limits to n x 2 array, so it can be passed to MR task
      *
      * @return
      */
     public double[][] toDoubles() {
-        return _featuresLimits.stream().map(v -> new double[]{v._min, v._max}).toArray(double[][]::new);
+        return _featuresLimits.stream()
+                .map(v -> new double[]{((NumericFeatureLimits)v)._min, ((NumericFeatureLimits)v)._max})
+                .toArray(double[][]::new);
     }
 
     /**

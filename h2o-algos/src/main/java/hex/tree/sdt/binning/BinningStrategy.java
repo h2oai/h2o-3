@@ -1,9 +1,8 @@
 package hex.tree.sdt.binning;
 
 import hex.tree.sdt.DataFeaturesLimits;
-import hex.tree.sdt.FeatureLimits;
+import hex.tree.sdt.NumericFeatureLimits;
 import hex.tree.sdt.mrtasks.CountBinSamplesCountMRTask;
-import hex.tree.sdt.mrtasks.CountBinsSamplesCountsMRTask;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -12,9 +11,6 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static hex.tree.sdt.mrtasks.CountBinsSamplesCountsMRTask.COUNT;
-import static hex.tree.sdt.mrtasks.CountBinsSamplesCountsMRTask.COUNT_0;
 
 /**
  * Strategy for binning. Creates bins for single feature.
@@ -43,12 +39,12 @@ public enum BinningStrategy {
             return roundToNDecimalPoints(number, DECIMALS_TO_CONSIDER);
         }
 
-        private List<Bin> createEmptyBinsFromBinningValues(List<Double> binningValues, double realMin, double realMax) {
-            List<Bin> emptyBins = new ArrayList<>();
+        private List<NumericBin> createEmptyBinsFromBinningValues(List<Double> binningValues, double realMin, double realMax) {
+            List<NumericBin> emptyBins = new ArrayList<>();
             // create bins between nearest binning values, don't create bin starting with the last value (on index size - 1)
             for (int i = 0; i < binningValues.size() - 1; i++) {
                 emptyBins.add(
-                        new Bin(roundToNDecimalPoints(binningValues.get(i)),
+                        new NumericBin(roundToNDecimalPoints(binningValues.get(i)),
                                 roundToNDecimalPoints(binningValues.get(i + 1))));
             }
             // set the firs min to some lower value (relative to step) so the actual value equal to min is not lost
@@ -59,8 +55,8 @@ public enum BinningStrategy {
         }
         
         @Override
-        List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
-            FeatureLimits featureLimits = featuresLimits.getFeatureLimits(feature);
+        List<NumericBin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
+            NumericFeatureLimits featureLimits = (NumericFeatureLimits) featuresLimits.getFeatureLimits(feature);
             double step = (featureLimits._max - featureLimits._min) / NUM_BINS;
             // constant feature - dont use for split
             if (step == 0) {
@@ -87,11 +83,17 @@ public enum BinningStrategy {
             for (double value = featureLimits._min; value <= featureLimits._max; value += step) {
                 binningValues.add(value);
             }
-            List<Bin> emptyBins = createEmptyBinsFromBinningValues(binningValues, featureLimits._min, featureLimits._max);
+            List<NumericBin> emptyBins = createEmptyBinsFromBinningValues(
+                    binningValues, featureLimits._min, featureLimits._max);
             
             Log.debug("Real max: " + featureLimits._max
                     + ", last bin min: " + emptyBins.get(emptyBins.size() - 1)._min
                     + ", last bin max: " + emptyBins.get(emptyBins.size() - 1)._max + ", step: " + step);
+
+
+            // todo categorical data - no binning is needed for categorical data as they are already binned.
+            // but the statistics have to be calculated...
+
 
             return calculateBinSamplesCount(originData, emptyBins, feature, featuresLimits.toDoubles());
         }
@@ -103,7 +105,7 @@ public enum BinningStrategy {
      */
     EQUAL_HEIGHT {
         @Override
-        List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
+        List<NumericBin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
             return null;
         }
 
@@ -114,7 +116,14 @@ public enum BinningStrategy {
      */
     CUSTOM_BINS {
         @Override
-        List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
+        List<NumericBin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
+            return null;
+        }
+    },
+
+    CATEGORICAL {
+        @Override
+        List<NumericBin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature) {
             return null;
         }
     };
@@ -127,9 +136,10 @@ public enum BinningStrategy {
      * @param feature        selected feature index
      * @return list of created bins
      */
-    abstract List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature);
-    public static List<Bin> calculateBinSamplesCount(Frame data, List<Bin> emptyBins,
-                                                     int feature, double[][] featuresLimits) {
+    abstract List<NumericBin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature);
+
+    public static List<NumericBin> calculateBinSamplesCount(Frame data, List<NumericBin> emptyBins,
+                                                            int feature, double[][] featuresLimits) {
         // run MR task to compute accumulated statistic for bins - one task for each bin
         return emptyBins.stream().peek(bin -> {
             CountBinSamplesCountMRTask task =
@@ -140,16 +150,6 @@ public enum BinningStrategy {
         }).collect(Collectors.toList());
 
 
-//        // run MR task to compute accumulated statistic for bins - one task for one feature
-//        double[][] binsArray = 
-//                emptyBins.stream().map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
-//        CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(feature, featuresLimits, binsArray);
-//        task.doAll(data);
-//        for(int i = 0; i < binsArray.length; i ++) {
-//            emptyBins.get(i)._count = (int) task._bins[i][COUNT];
-//            emptyBins.get(i)._count0 = (int) task._bins[i][COUNT_0];
-//        }
-//        return emptyBins;
     }
 }
     

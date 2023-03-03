@@ -1,12 +1,13 @@
 package hex.tree.sdt;
 
+
 /**
  * Limits for one feature.
  */
-public class FeatureLimits {
+public class NumericFeatureLimits extends AbstractFeatureLimits {
     public double _min;
     public double _max;
-    public FeatureLimits(final double min, final double max) {
+    public NumericFeatureLimits(final double min, final double max) {
         _min = min;
         _max = max;
     }
@@ -19,8 +20,8 @@ public class FeatureLimits {
         _min = newMin;
     }
 
-    public static FeatureLimits clone(final FeatureLimits toClone) {
-        return new FeatureLimits(toClone._min, toClone._max);
+    public NumericFeatureLimits clone() {
+        return new NumericFeatureLimits(_min, _max);
     }
 
 }

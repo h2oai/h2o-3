@@ -5,10 +5,10 @@ import java.util.stream.Collectors;
 
 public class FeatureBins {
 
-    private List<Bin> _bins;
+    private List<NumericBin> _bins;
     private final boolean _isConstant;
 
-    public FeatureBins(List<Bin> bins) {
+    public FeatureBins(List<NumericBin> bins) {
         if (bins == null) {
             _isConstant = true;
         } else {
@@ -48,7 +48,7 @@ public class FeatureBins {
         return _isConstant;
     }
     
-    List<Bin> getFeatureBins() {
-        return _bins.stream().map(Bin::clone).collect(Collectors.toList());
+    List<NumericBin> getFeatureBins() {
+        return _bins.stream().map(NumericBin::clone).collect(Collectors.toList());
     }
 }
