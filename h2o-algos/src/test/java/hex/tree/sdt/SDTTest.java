@@ -70,7 +70,7 @@ public class SDTTest extends TestUtil {
             assertEquals(train.numRows(), out.numRows());
 
 
-            System.out.println(DKV.getGet(model._output._treeKey));
+//            System.out.println(DKV.getGet(model._output._treeKey));
 
             Frame test = new TestFrameBuilder()
                     .withVecTypes(Vec.T_NUM, Vec.T_NUM)
@@ -330,4 +330,74 @@ public class SDTTest extends TestUtil {
             Scope.exit();
         }
     }
+
+
+
+    @Test
+    public void testCategoricalData() {
+        try {
+            Scope.enter();
+            Frame train = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ar("a", "b", "b", "b", "a", "a", "a", "b", "b", "a"))
+                    .withDataForCol(2, ard(1, 1, 0, 1, 0, 1, 0, 1, 1, 1))
+                    .withColNames("First", "Second", "Prediction")
+                    .build();
+
+            Scope.track_generic(train);
+
+
+            SDTModel.SDTParameters p =
+                    new SDTModel.SDTParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._max_depth = 5;
+            p._limitNumSamplesForSplit = 2;
+            p._response_column = "Prediction";
+
+            SDT sdt = new SDT(p);
+            SDTModel model = sdt.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+
+            Frame out = model.score(train);
+            Scope.track_generic(out);
+            System.out.println(Arrays.toString(out.names()));
+            assertEquals(train.numRows(), out.numRows());
+
+
+            System.out.println(DKV.getGet(model._output._treeKey));
+
+            Frame test = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+//                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
+                    .withDataForCol(1, ar("b", "b", "b", "b", "a", "a", "a", "a", "a", "a"))
+                    .withColNames("First", "Second")
+                    .build();
+            Scope.track_generic(test);
+
+            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output._treeKey)).getNodes()));
+            System.out.println(String.join("\n", ((CompressedSDT) DKV.getGet(model._output._treeKey)).getListOfRules()));
+
+            Frame prediction = model.score(test);
+            Scope.track_generic(prediction);
+            System.out.println(Arrays.toString(FrameUtils.asInts(prediction.vec(0))));
+            assertEquals(1, prediction.vec(0).at(0), 0.1);
+            assertEquals(1, prediction.vec(0).at(1), 0.1);
+            assertEquals(0, prediction.vec(0).at(2), 0.1);
+            assertEquals(1, prediction.vec(0).at(3), 0.1);
+            assertEquals(0, prediction.vec(0).at(4), 0.1);
+            assertEquals(1, prediction.vec(0).at(5), 0.1);
+            assertEquals(0, prediction.vec(0).at(6), 0.1);
+            assertEquals(1, prediction.vec(0).at(7), 0.1);
+            assertEquals(1, prediction.vec(0).at(8), 0.1);
+            assertEquals(1, prediction.vec(0).at(9), 0.1);
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
 }
