@@ -1,6 +1,6 @@
 package hex.tree.sdt;
 
-import hex.tree.sdt.binning.Bin;
+import hex.tree.sdt.binning.NumericBin;
 import hex.tree.sdt.binning.BinningStrategy;
 import hex.tree.sdt.binning.Histogram;
 import hex.tree.sdt.mrtasks.CountBinSamplesCountMRTask;
@@ -53,7 +53,7 @@ public class BinningTest extends TestUtil {
     private void testBinningValidity(Histogram histogram, int numRows) {
         // min and max values
         for (int i = 0; i < histogram.featuresCount(); i++) {
-            List<Bin> featureBins = histogram.getFeatureBins(i);
+            List<NumericBin> featureBins = histogram.getFeatureBins(i);
             assertFalse(featureBins.isEmpty());
             // at least first and last bins are not empty
             assertNotEquals(0, featureBins.get(0)._count);
@@ -132,9 +132,9 @@ public class BinningTest extends TestUtil {
             // min and max values of features
             for (int i = 0; i < wholeDataLimits.featuresCount(); i++) {
                 // check that lower limit is lower than the minimum value
-                assertTrue(prostateData.vec(i).min() > wholeDataLimits.getFeatureLimits(i)._min);
+                assertTrue(prostateData.vec(i).min() > ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._min);
                 assertEquals(prostateData.vec(i).max(),
-                        wholeDataLimits.getFeatureLimits(i)._max,
+                        ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._max,
                         Precision.EPSILON);
             }
 

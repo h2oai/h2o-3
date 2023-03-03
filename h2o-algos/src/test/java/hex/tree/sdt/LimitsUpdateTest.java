@@ -45,9 +45,9 @@ public class LimitsUpdateTest extends TestUtil {
             // min and max values of features
             for (int i = 0; i < wholeDataLimits.featuresCount(); i++) {
                 // check that lower limit is lower than the minimum value
-                assertTrue(basicData.vec(i).min() > wholeDataLimits.getFeatureLimits(i)._min);
+                assertTrue(basicData.vec(i).min() > ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._min);
                 assertEquals(basicData.vec(i).max(),
-                        wholeDataLimits.getFeatureLimits(i)._max,
+                        ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._max,
                         Precision.EPSILON);
             }
             
@@ -55,20 +55,20 @@ public class LimitsUpdateTest extends TestUtil {
             DataFeaturesLimits newDataLimits = wholeDataLimits.updateMax(0, 8.1);
             
             // check that new max was set
-            assertEquals(8.1, newDataLimits.getFeatureLimits(0)._max, Precision.EPSILON);
-            assertNotEquals( wholeDataLimits.getFeatureLimits(0)._max, 
-                    newDataLimits.getFeatureLimits(0)._max, Precision.EPSILON);
+            assertEquals(8.1, ((NumericFeatureLimits) newDataLimits.getFeatureLimits(0))._max, Precision.EPSILON);
+            assertNotEquals( ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(0))._max,
+                    ((NumericFeatureLimits) newDataLimits.getFeatureLimits(0))._max, Precision.EPSILON);
             // check that min din not change
-            assertEquals(wholeDataLimits.getFeatureLimits(0)._min, 
-                    newDataLimits.getFeatureLimits(0)._min, Precision.EPSILON);
+            assertEquals(((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(0))._min,
+                    ((NumericFeatureLimits) newDataLimits.getFeatureLimits(0))._min, Precision.EPSILON);
             
             DataFeaturesLimits newRealDataLimits = getFeaturesLimitsForConditions(basicData, newDataLimits);
             
             // test that real limits are more concrete that the limitations. 
             // For specific data new max of feature 1 will be 8 instead of 9.
-            assertEquals(8.0, newRealDataLimits.getFeatureLimits(1)._max, Precision.EPSILON);
-            assertTrue(newRealDataLimits.getFeatureLimits(1)._max < 
-                    newDataLimits.getFeatureLimits(1)._max);
+            assertEquals(8.0, ((NumericFeatureLimits) newRealDataLimits.getFeatureLimits(1))._max, Precision.EPSILON);
+            assertTrue(((NumericFeatureLimits) newRealDataLimits.getFeatureLimits(1))._max <
+                    ((NumericFeatureLimits) newDataLimits.getFeatureLimits(1))._max);
             
             // test when limitations are null
             DataFeaturesLimits dataLimitsWithoutLimitations = getFeaturesLimitsForConditions(basicData,
