@@ -122,7 +122,7 @@
 #' @param build_glm_model \code{Logical}. For maxrsweep mode only.  If true, will return full blown GLM models with the desired
 #'        predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
 #'        forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby using
-#'        the predictor subsets themselves.  Default to false. Defaults to TRUE.
+#'        the predictor subsets themselves.  Defaults to false. Defaults to TRUE.
 #' @param p_values_threshold For mode='backward' only.  If specified, will stop the model building process when all coefficientsp-values
 #'        drop below this threshold  Defaults to 0.
 #' @param influence If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the

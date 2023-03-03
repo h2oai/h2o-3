@@ -314,7 +314,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         :param build_glm_model: For maxrsweep mode only.  If true, will return full blown GLM models with the desired
                predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
                forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby
-               using the predictor subsets themselves.  Default to false.
+               using the predictor subsets themselves.  Defaults to false.
                Defaults to ``True``.
         :type build_glm_model: bool
         :param p_values_threshold: For mode='backward' only.  If specified, will stop the model building process when
@@ -1199,7 +1199,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         For maxrsweep mode only.  If true, will return full blown GLM models with the desired predictorsubsets.  If
         false, only the predictor subsets, predictor coefficients are returned.  This is forspeeding up the model
         selection process.  The users can choose to build the GLM models themselvesby using the predictor subsets
-        themselves.  Default to false.
+        themselves.  Defaults to false.
 
         Type: ``bool``, defaults to ``True``.
         """
