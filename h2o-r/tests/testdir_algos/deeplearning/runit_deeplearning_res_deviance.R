@@ -79,9 +79,10 @@ test <- function() {
         print(hh@model$training_metrics@metrics$mean_residual_deviance)
         print(hh@model$validation_metrics@metrics$mean_residual_deviance)
   print("---------------------------------------------------------poisson-----------------------------------------------")
-
-	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e0)
-	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e0)
+    # big difference in values probably because of the numerical error while calculations in R
+    # (see pyunit_mean_residual_deviance_sklearn.py test for testing the correctness of the calculated deviance)
+	expect_equal(mean_deviance, hh@model$training_metrics@metrics$mean_residual_deviance, tolerance=1e-1)
+	expect_equal(mean_deviance, hh@model$validation_metrics@metrics$mean_residual_deviance, tolerance=1e-1)
 	
 	
 }
