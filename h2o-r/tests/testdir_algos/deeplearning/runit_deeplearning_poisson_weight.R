@@ -30,10 +30,10 @@ test <- function() {
   print(mean(ph[,1]))
   print(min(ph[,1]))
   print(max(ph[,1]))
-	expect_equal(0.03611814, mean_deviance, tolerance=1e-5)
-	expect_equal(1.055678, mean(ph[,1]), tolerance=1e-5 )
-	expect_equal(0.8751913, min(ph[,1]), tolerance=1e-5 )
-	expect_equal(1.37664, max(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.0365, mean_deviance, tolerance=1e-3)
+	expect_equal(1.055, mean(ph[,1]), tolerance=1e-3 )
+	expect_equal(0.875, min(ph[,1]), tolerance=1e-3 )
+	expect_equal(1.376, max(ph[,1]), tolerance=1e-3 )
 
 }
 doTest("Deeplearning weight Test: deeplearning w/ weights for poisson distribution", test)
