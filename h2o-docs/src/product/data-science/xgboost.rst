@@ -475,7 +475,7 @@ FAQs
   While you don't always need to specify a custom ``eval_metric``, it is beneficial in two specific cases:
 
     1. When H2O does not provide a suitable built-in metric (e.g. if you want to calculate classification error for a different threshold than the one automatically determined by H2O, you can do so by specifying ``eval_metric="error@<your threshold>"``);
-    2. When you have frequent scoring.
+    2. When you have frequent scoring (e.g. ``score_each_iteration=True``, ``score_tree_interval < 10``). Using ``score_eval_metric_only=True`` allows you to keep ``score_each_iteration=True`` while still reducing training time.
 
   Refer to this `demo on utilizing the evalutation metric with early stopping <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/xgboost_eval_metric_demo.ipynb>`__ for more information.
 
