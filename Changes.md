@@ -24,6 +24,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/ind
 - [[PUBDEV-9008]](https://h2oai.atlassian.net/browse/PUBDEV-9008) - Added warning that `max_runtime_secs` cannot always produce reproducible models.
 - [[PUBDEV-9007]](https://h2oai.atlassian.net/browse/PUBDEV-9007) - Added example for how to save a file as a parquet.
 - [[PUBDEV-8990]](https://h2oai.atlassian.net/browse/PUBDEV-8990) - Added example for how to connect to an H2O cluster by name.
+- [[PUBDEV-8889]](https://h2oai.atlassian.net/browse/PUBDEV-8889) - Added information on the implementation of the `eval_metric` for XGBoost.
 
 ### Kurka (3.40.0.1) - 2/8/2023
 
