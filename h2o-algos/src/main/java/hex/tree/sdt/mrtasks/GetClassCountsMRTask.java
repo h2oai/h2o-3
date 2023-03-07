@@ -4,6 +4,8 @@ import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 
+import java.util.Arrays;
+
 /**
  * MR task for counting classes.
  */
@@ -20,6 +22,7 @@ public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
         _count0 = 0;
         _count1 = 0;
         _featuresLimits = featuresLimits;
+        System.out.println(Arrays.deepToString(featuresLimits));
     }
 
     @Override

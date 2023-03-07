@@ -6,4 +6,6 @@ package hex.tree.sdt;
 public abstract class AbstractFeatureLimits {
 
   public abstract AbstractFeatureLimits clone();
+
+  public abstract double[] toDoubles();
 }

@@ -374,8 +374,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     private Pair<Integer, Integer> countClasses(final DataFeaturesLimits featuresLimits) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
                 // create limits that are always fulfilled
-                ? Stream.generate(() -> new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE})
-                .limit(_train.numCols() - 1 /*exclude the last prediction column*/).toArray(double[][]::new)
+                ? DataFeaturesLimits.defaultLimits(_train.numCols())
                 : featuresLimits.toDoubles());
         task.doAll(_train);
 

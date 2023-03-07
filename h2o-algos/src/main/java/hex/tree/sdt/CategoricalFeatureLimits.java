@@ -6,17 +6,22 @@ import java.util.Arrays;
  * Limits for one feature.
  */
 public class CategoricalFeatureLimits extends AbstractFeatureLimits {
-    public boolean[] _mask;
-    public CategoricalFeatureLimits(final boolean[] mask) {
-        _mask = Arrays.copyOf(mask, mask.length);
+    public int[] _setOfCategories;
+    public CategoricalFeatureLimits(final int[] setOfCategories) {
+        _setOfCategories = Arrays.copyOf(setOfCategories, setOfCategories.length);
     }
 
-    public void setNewMask(final boolean[] newMask) {
-        _mask = Arrays.copyOf(newMask, newMask.length);
+    public void setNewSetOfCategories(final int[] newSetOfCategories) {
+        _setOfCategories = Arrays.copyOf(newSetOfCategories, newSetOfCategories.length);
     }
 
     public CategoricalFeatureLimits clone() {
-        return new CategoricalFeatureLimits(Arrays.copyOf(_mask, _mask.length));
+        return new CategoricalFeatureLimits(Arrays.copyOf(_setOfCategories, _setOfCategories.length));
+    }
+
+    @Override
+    public double[] toDoubles() {
+        return Arrays.stream(_setOfCategories).mapToDouble(c -> (double) c).toArray();
     }
 
 }

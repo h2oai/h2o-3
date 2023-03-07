@@ -24,4 +24,9 @@ public class NumericFeatureLimits extends AbstractFeatureLimits {
         return new NumericFeatureLimits(_min, _max);
     }
 
+    @Override
+    public double[] toDoubles() {
+        return new double[]{_min, _max};
+    }
+
 }
