@@ -404,12 +404,6 @@ def call(final pipelineContext) {
       imageSpecifier: "r-3.5.3-jdk-11"
     ],
     [
-      stageName: 'Java 16 JUnit', target: 'test-junit-16-jenkins', pythonVersion: '2.7', javaVersion: 16,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-16"
-    ],
-    [
       stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '2.7', javaVersion: 17,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
