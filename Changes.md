@@ -10,6 +10,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/ind
 - [[PUBDEV-8998]](https://h2oai.atlassian.net/browse/PUBDEV-8998) - Fixed dependency on numpy in Fairness-related code.
 - [[PUBDEV-8997]](https://h2oai.atlassian.net/browse/PUBDEV-8997) - Added ability to debug GBM reproducibility by looking at tree structure with `equal_gbm_model_tree_structure`.
 
+#### Improvement
+- [[PUBDEV-8708]](https://h2oai.atlassian.net/browse/PUBDEV-8708) - Fixed the deviance computation for GBM Poisson distribution.
+
 #### New Feature
 - [[PUBDEV-9009]](https://h2oai.atlassian.net/browse/PUBDEV-9009) - Added `save_plot_path` parameter for Fairness plotting allowing you to save plots.
 
