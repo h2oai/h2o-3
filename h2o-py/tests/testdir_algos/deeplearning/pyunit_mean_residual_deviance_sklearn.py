@@ -3,7 +3,7 @@ import sys
 
 from sklearn.metrics import mean_poisson_deviance
 
-from h2o import h2o, H2OFrame
+import h2o
 from h2o.estimators import H2ODeepLearningEstimator
 from tests import pyunit_utils, assert_equals
 
@@ -12,7 +12,7 @@ sys.path.insert(1, os.path.join("..", "..", ".."))
 
 def mean_residual_deviance_sklearn():
     print("poisson")
-    fre: H2OFrame = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/freMTPL2freq.csv.zip"))
+    fre = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/freMTPL2freq.csv.zip"))
     fre['VehPower'] = fre['VehPower'].asfactor()
     dle = H2ODeepLearningEstimator(training_frame=fre, response_column="ClaimNb", hidden=[5, 5], epochs=1,
                                    train_samples_per_iteration=-1, validation_frame=fre, activation="Tanh",
@@ -30,7 +30,7 @@ def mean_residual_deviance_sklearn():
     print("valid: ", dle_mrd['valid'])
     print("xval: ", dle_mrd['xval'])
 
-    pred: H2OFrame = dle.predict(fre)
+    pred = dle.predict(fre)
     sklearn_nrd = mean_poisson_deviance(fre.as_data_frame()["ClaimNb"], pred.as_data_frame()['predict'])
     print("sklearn: ", sklearn_nrd)
 
