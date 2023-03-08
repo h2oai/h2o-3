@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Kurka (3.40.0.2) - 3/7/2023
+### Kurka (3.40.0.2) - 3/8/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html</a>
 
