@@ -452,18 +452,18 @@ FAQ
 
   -  DRF needs to pass over up to 1M\*22\*250k = 5500 billion numbers per tree, and assuming 50 trees, that’s up to 275 trillion numbers, which can take a few hours
 
--  **Why DRF reports training metrics different than model_performance?**
+-  **Why does DRF report different training metrics than** ``model_performance`` **?**
 
-  DRF estimates performance of the algorithm on OutOfBound samples (Samples excluded by sampling mechanism). Since ``sample_rate`` is lower than one by default, it can happen that call of model_performance give different number.
+  DRF estimates performance of the algorithm on OutOfBound samples (i.e. samples excluded from the sampling mechanism). Since ``sample_rate`` is less than 1 by default, calling ``model_performance`` can give a different number.
 
 .. tabs::
    .. code-tab:: python
 
-    # Train a drf model
+    # Train a DRF model:
     drf = H2ORandomForestEstimator(seed=123)
     drf.train(..., training_frame= train, validation_frame=valid)
     
-    # Training metrics will be different due the reason above
+    # Training metrics will be different due to the reason above:
     drf._model_json["output"]["training_metrics"].aucpr() != drf.model_performance(test_data=train).aucpr()
     # Validation metrics are equal
     drf._model_json["output"]["validation_metrics"].aucpr() == drf.model_performance(test_data=valid).aucpr()
