@@ -13,8 +13,9 @@ class TestMeanResidualDevianceForPoissonDistributionWithScikitlearn(unittest.Tes
     
     @unittest.skipIf(sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] <= 5),
                      "Tested only on python >3.5, mean_poisson_deviance is not supported on lower python version")
-    def mean_residual_deviance_sklearn(self):
+    def test_mean_residual_deviance_sklearn(self):
         from sklearn.metrics import mean_poisson_deviance
+        h2o.init(strict_version_check=False)
         print("poisson")
         fre = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/freMTPL2freq.csv.zip"))
         fre['VehPower'] = fre['VehPower'].asfactor()
