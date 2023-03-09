@@ -2,6 +2,33 @@
 
 ## H2O
 
+### Kurka (3.40.0.2) - 3/9/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html</a>
+
+#### Bug
+- [[PUBDEV-8998]](https://h2oai.atlassian.net/browse/PUBDEV-8998) - Fixed dependency on numpy in Fairness-related code.
+- [[PUBDEV-8997]](https://h2oai.atlassian.net/browse/PUBDEV-8997) - Added ability to debug GBM reproducibility by looking at tree structure with `equal_gbm_model_tree_structure`.
+
+#### Improvement
+- [[PUBDEV-8708]](https://h2oai.atlassian.net/browse/PUBDEV-8708) - Fixed the deviance computation for GBM Poisson distribution.
+
+#### New Feature
+- [[PUBDEV-9009]](https://h2oai.atlassian.net/browse/PUBDEV-9009) - Added `save_plot_path` parameter for Fairness plotting allowing you to save plots.
+
+#### Task
+- [[PUBDEV-8954]](https://h2oai.atlassian.net/browse/PUBDEV-8954) - Implemented incremental MaxRSweep without using sweep vectors.
+- [[PUBDEV-8952]](https://h2oai.atlassian.net/browse/PUBDEV-8952) - Removed duplicate predictors for ModelSelection’s MaxRSweep.
+
+#### Engineering Story
+- [[PUBDEV-9005]](https://h2oai.atlassian.net/browse/PUBDEV-9005) - Pointed MLOps integration to internal.dedicated environment.
+
+#### Docs
+- [[PUBDEV-9008]](https://h2oai.atlassian.net/browse/PUBDEV-9008) - Added warning that `max_runtime_secs` cannot always produce reproducible models.
+- [[PUBDEV-9007]](https://h2oai.atlassian.net/browse/PUBDEV-9007) - Added example for how to save a file as a parquet.
+- [[PUBDEV-8990]](https://h2oai.atlassian.net/browse/PUBDEV-8990) - Added example for how to connect to an H2O cluster by name.
+- [[PUBDEV-8889]](https://h2oai.atlassian.net/browse/PUBDEV-8889) - Added information on the implementation of the `eval_metric` for XGBoost.
+
 ### Kurka (3.40.0.1) - 2/8/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/index.html</a>
