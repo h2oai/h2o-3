@@ -52,8 +52,7 @@ public class Histogram {
      */
     public static DataFeaturesLimits getFeaturesLimitsForConditions(Frame originData, DataFeaturesLimits conditionLimits) {
         FeaturesLimitsMRTask task = new FeaturesLimitsMRTask(conditionLimits == null
-                ? Stream.generate(() -> new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE})
-                .limit(originData.numCols() - 1/*exclude the last prediction column*/).toArray(double[][]::new)
+                ? DataFeaturesLimits.defaultLimits(originData.numCols())
                 : conditionLimits.toDoubles());
         task.doAll(originData);
         return new DataFeaturesLimits(task._realFeatureLimits);
