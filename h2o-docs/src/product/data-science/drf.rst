@@ -455,7 +455,7 @@ FAQ
 -  **Why does DRF report different training metrics than** ``model_performance`` **?**
 
   DRF estimates performance of the algorithm on OutOfBag samples (i.e. samples excluded from the sampling mechanism) instead of the whole training dataset. Since ``sample_rate`` is less than 1 by default, calling ``model_performance`` can give a different number. When ``sample_rate=1``, the metrics are reported only on validation dataset. Cross-validation also reports training metrics on OutOfBag samples.
-  When ``sample_rate=1``, and no validation dataset is provided, and cross validation is not performed, the metric is not reported at all as warning is raised.
+  When ``sample_rate=1``, and no validation dataset is provided, and cross validation is not performed, the metric is not reported at all and warning is raised.
 
 .. tabs::
    .. code-tab:: python
@@ -468,6 +468,8 @@ FAQ
     drf._model_json["output"]["training_metrics"].aucpr() != drf.model_performance(test_data=train).aucpr()
     # Validation metrics are equal
     drf._model_json["output"]["validation_metrics"].aucpr() == drf.model_performance(test_data=valid).aucpr()
+    # Metrics reported on all training data:
+    drf.model_performance(test_data=train).aucpr()
 
 DRF Algorithm
 ~~~~~~~~~~~~~
