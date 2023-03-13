@@ -452,6 +452,25 @@ FAQ
 
   -  DRF needs to pass over up to 1M\*22\*250k = 5500 billion numbers per tree, and assuming 50 trees, that’s up to 275 trillion numbers, which can take a few hours
 
+-  **Why does DRF report different training metrics than** ``model_performance`` **?**
+
+  DRF estimates performance of the algorithm on OutOfBag samples (i.e. samples excluded from the sampling mechanism) instead of the whole training dataset. Since ``sample_rate`` is less than 1 by default, calling ``model_performance`` can give a different number. When ``sample_rate=1``, the metrics are reported only on the validation dataset. Cross-validation also reports training metrics on OutOfBag samples.
+
+  When ``sample_rate=1``, no validation dataset is provided, and cross validation is not performed, the metric is not reported at all and a warning is raised.
+
+.. tabs::
+   .. code-tab:: python
+
+    # Train a DRF model:
+    drf = H2ORandomForestEstimator(seed=123)
+    drf.train(..., training_frame= train, validation_frame=valid)
+    
+    # Training metrics will be different due to the reason above:
+    drf._model_json["output"]["training_metrics"].aucpr() != drf.model_performance(test_data=train).aucpr()
+    # Validation metrics are equal
+    drf._model_json["output"]["validation_metrics"].aucpr() == drf.model_performance(test_data=valid).aucpr()
+    # Metrics reported on all training data:
+    drf.model_performance(test_data=train).aucpr()
 
 DRF Algorithm
 ~~~~~~~~~~~~~
