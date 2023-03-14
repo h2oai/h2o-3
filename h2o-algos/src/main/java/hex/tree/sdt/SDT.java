@@ -26,7 +26,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     /**
      * Minimum number of samples to split the set.
      */
-    private int _limitNumSamplesForSplit;
+    private int _min_rows;
 
     /**
      * Current number of build nodes.
@@ -52,7 +52,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     public SDT(SDTModel.SDTParameters parameters) {
         super(parameters);
-        _limitNumSamplesForSplit = parameters._limitNumSamplesForSplit;
+        _min_rows = parameters._min_rows;
         _nodesCount = 0;
         _tree = null;
         init(false);
@@ -82,8 +82,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
                     .calculateBinsStatisticsForFeature(featureIndex)
                     .stream()
                     // todo - consider setting min count of samples in bin instead of filtering splits
-                    .filter(binStatistics -> ((binStatistics._leftCount >= _limitNumSamplesForSplit)
-                            && (binStatistics._rightCount >= _limitNumSamplesForSplit)))
+                    .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
+                            && (binStatistics._rightCount >= _min_rows)))
                     .peek(binStatistics -> Log.debug("counts: " + binStatistics._maxBinValue + " "
                             + binStatistics._leftCount + " " + binStatistics._rightCount))
                     // map to pairs (maxBinValue, criterion)
@@ -200,8 +200,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
         // stop building from this node, the node will be list
         if ((nodeDepth >= _parms._max_depth)
-                || (classesCount._1() <= _limitNumSamplesForSplit)
-                || (classesCount._2() <= _limitNumSamplesForSplit)
+                || (classesCount._1() <= _min_rows)
+                || (classesCount._2() <= _min_rows)
 //                || zeroRatio > 0.999 || zeroRatio < 0.001
         ) {
             // add imaginary left and right children to imitate valid tree structure
@@ -311,7 +311,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
          * Build the tree iteratively starting from the root node.
          */
         private void buildSDTIteratively() {
-            _tree = new double[(int) Math.pow(2, _parms._max_depth + 1)][3];
+            _tree = new double[(int) Math.pow(2, _parms._max_depth + 1)-1][3];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits(_train));
             // build iteratively each node of the tree (each cell of the array) by picking limits from the queue

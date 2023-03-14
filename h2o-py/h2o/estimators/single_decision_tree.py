@@ -28,7 +28,12 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
                  ignore_const_cols=True,  # type: bool
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  response_column=None,  # type: Optional[str]
+                 seed=-1,  # type: int
+                 offset_column=None,  # type: Optional[str]
+                 weights_column=None,  # type: Optional[str]
+                 fold_column=None,  # type: Optional[str]
                  max_depth=20,  # type: int
+                 min_rows=10,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -50,9 +55,31 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
         :param response_column: Response variable column.
                Defaults to ``None``.
         :type response_column: str, optional
+        :param seed: Seed for random numbers (affects sampling)
+               Defaults to ``-1``.
+        :type seed: int
+        :param offset_column: Offset column. This will be added to the combination of columns before applying the link
+               function.
+               Defaults to ``None``.
+        :type offset_column: str, optional
+        :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
+               to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
+               that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
+               not increase the size of the data frame. This is typically the number of times a row is repeated, but
+               non-integer values are supported as well. During training, rows with higher weights matter more, due to
+               the larger loss function pre-factor. If you set weight = 0 for a row, the returned prediction frame at
+               that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
+               Defaults to ``None``.
+        :type weights_column: str, optional
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
+        :type fold_column: str, optional
         :param max_depth: Max depth of tree.
                Defaults to ``20``.
         :type max_depth: int
+        :param min_rows: Fewest allowed (weighted) observations in a leaf.
+               Defaults to ``10``.
+        :type min_rows: int
         """
         super(H2OSingleDecisionTreeEstimator, self).__init__()
         self._parms = {}
@@ -62,7 +89,12 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
         self.ignore_const_cols = ignore_const_cols
         self.categorical_encoding = categorical_encoding
         self.response_column = response_column
+        self.seed = seed
+        self.offset_column = offset_column
+        self.weights_column = weights_column
+        self.fold_column = fold_column
         self.max_depth = max_depth
+        self.min_rows = min_rows
 
     @property
     def training_frame(self):
@@ -135,6 +167,68 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
         self._parms["response_column"] = response_column
 
     @property
+    def seed(self):
+        """
+        Seed for random numbers (affects sampling)
+
+        Type: ``int``, defaults to ``-1``.
+        """
+        return self._parms.get("seed")
+
+    @seed.setter
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
+
+    @property
+    def offset_column(self):
+        """
+        Offset column. This will be added to the combination of columns before applying the link function.
+
+        Type: ``str``.
+        """
+        return self._parms.get("offset_column")
+
+    @offset_column.setter
+    def offset_column(self, offset_column):
+        assert_is_type(offset_column, None, str)
+        self._parms["offset_column"] = offset_column
+
+    @property
+    def weights_column(self):
+        """
+        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
+        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
+        frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
+        During training, rows with higher weights matter more, due to the larger loss function pre-factor. If you set
+        weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get an
+        accurate prediction, remove all rows with weight == 0.
+
+        Type: ``str``.
+        """
+        return self._parms.get("weights_column")
+
+    @weights_column.setter
+    def weights_column(self, weights_column):
+        assert_is_type(weights_column, None, str)
+        self._parms["weights_column"] = weights_column
+
+    @property
+    def fold_column(self):
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+        """
+        return self._parms.get("fold_column")
+
+    @fold_column.setter
+    def fold_column(self, fold_column):
+        assert_is_type(fold_column, None, str)
+        self._parms["fold_column"] = fold_column
+
+    @property
     def max_depth(self):
         """
         Max depth of tree.
@@ -147,5 +241,19 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
     def max_depth(self, max_depth):
         assert_is_type(max_depth, None, int)
         self._parms["max_depth"] = max_depth
+
+    @property
+    def min_rows(self):
+        """
+        Fewest allowed (weighted) observations in a leaf.
+
+        Type: ``int``, defaults to ``10``.
+        """
+        return self._parms.get("min_rows")
+
+    @min_rows.setter
+    def min_rows(self, min_rows):
+        assert_is_type(min_rows, None, int)
+        self._parms["min_rows"] = min_rows
 
 

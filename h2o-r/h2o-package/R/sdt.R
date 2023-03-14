@@ -13,7 +13,19 @@
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
+#'        Defaults to -1 (time-based random number).
+#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
+#'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
+#'        an accurate prediction, remove all rows with weight == 0.
+#' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @param max_depth Max depth of tree. Defaults to 20.
+#' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 10.
 #' @export
 h2o.sdt <- function(x,
                     y,
@@ -21,7 +33,12 @@ h2o.sdt <- function(x,
                     model_id = NULL,
                     ignore_const_cols = TRUE,
                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                    max_depth = 20)
+                    seed = -1,
+                    offset_column = NULL,
+                    weights_column = NULL,
+                    fold_column = NULL,
+                    max_depth = 20,
+                    min_rows = 10)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -52,8 +69,18 @@ h2o.sdt <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
   if (!missing(max_depth))
     parms$max_depth <- max_depth
+  if (!missing(min_rows))
+    parms$min_rows <- min_rows
 
   # Error check and build model
   model <- .h2o.modelJob('sdt', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -64,7 +91,12 @@ h2o.sdt <- function(x,
                                     training_frame,
                                     ignore_const_cols = TRUE,
                                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                    seed = -1,
+                                    offset_column = NULL,
+                                    weights_column = NULL,
+                                    fold_column = NULL,
                                     max_depth = 20,
+                                    min_rows = 10,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -100,8 +132,18 @@ h2o.sdt <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
   if (!missing(max_depth))
     parms$max_depth <- max_depth
+  if (!missing(min_rows))
+    parms$min_rows <- min_rows
 
   # Build segment-models specific parameters
   segment_parms <- list()
