@@ -26,7 +26,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     /**
      * Minimum number of samples to split the set.
      */
-    private int _limitNumSamplesForSplit;
+    private int _min_rows;
 
     /**
      * Current number of build nodes.
@@ -52,7 +52,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     public SDT(SDTModel.SDTParameters parameters) {
         super(parameters);
-        _limitNumSamplesForSplit = parameters._limitNumSamplesForSplit;
+        _min_rows = parameters._min_rows;
         _nodesCount = 0;
         _tree = null;
         init(true);
@@ -82,8 +82,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
                     .calculateBinsStatisticsForFeature(featureIndex)
                     .stream()
                     // todo - consider setting min count of samples in bin instead of filtering splits
-                    .filter(binStatistics -> ((binStatistics._leftCount >= _limitNumSamplesForSplit)
-                            && (binStatistics._rightCount >= _limitNumSamplesForSplit)))
+                    .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
+                            && (binStatistics._rightCount >= _min_rows)))
                     .peek(binStatistics -> Log.debug("counts: " + binStatistics._maxBinValue + " "
                             + binStatistics._leftCount + " " + binStatistics._rightCount))
                     // map to pairs (maxBinValue, criterion)
@@ -203,8 +203,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
         // stop building from this node, the node will be a leaf
         if ((nodeDepth >= _parms._max_depth)
-                || (countsByClass[0] <= _limitNumSamplesForSplit)
-                || (countsByClass[1] <= _limitNumSamplesForSplit)
+                || (countsByClass[0] <= _min_rows)
+                || (countsByClass[1] <= _min_rows)
 //                || zeroRatio > 0.999 || zeroRatio < 0.001
         ) {
             // add imaginary left and right children to imitate valid tree structure
