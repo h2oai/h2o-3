@@ -138,7 +138,7 @@ def connection():
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
          max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, 
-         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
+         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, hdfs_config=None, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -181,6 +181,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
+    :param hdfs_config: Configuration file of the HDFS.
 
 
     :examples:
@@ -213,6 +214,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     assert_is_type(extra_classpath, [str], None)
     assert_is_type(jvm_custom_args, [str], None)
     assert_is_type(bind_to_localhost, bool)
+    assert_is_type(hdfs_config, str, None)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool, "as_port": bool})
 
@@ -288,7 +290,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                                   min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
                                   max_log_file_size=max_log_file_size, port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
-                                  bind_to_localhost=bind_to_localhost)
+                                  bind_to_localhost=bind_to_localhost, hdfs_config=hdfs_config)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
                                      cacert=cacert, auth=auth, proxy=proxy, cookies=cookies, verbose=True,
                                      strict_version_check=svc)
