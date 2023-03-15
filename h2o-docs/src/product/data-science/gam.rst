@@ -6,7 +6,8 @@ Generalized Additive Models (GAM)
 Introduction
 ~~~~~~~~~~~~
 
-A generalized additive model (GAM) is a :ref:`glm` in which the linear predictor depends linearly on predictor variables and smooth functions of predictor variables. H2O's GAM implementation follows closely the implementation as described in "Generalized Additive Models: An Introduction with R, Texts in Statistical Science [:ref:`1<ref1>`]" by Simon N. Wood. Another good resource for GAM can be found in "Generalized Additive Models" by T.J. Hastie and R.J. Tibshirani [:ref:`2<ref2>`].
+A Generalized Additive Model (GAM) is a type of Generalized Linear Model (GLM) where the linear predictor has a linear relationship with predictor variables and smooth functions of predictor variables. H2O's GAM implementation is closely based on the approach described in "Generalized Additive Models: An Introduction with R, Texts in Statistical Science [:ref:`1<ref1>`]" by Simon N. Wood. Another useful resource on GAMs can be found in "Generalized Additive Models" by T.J. Hastie and R.J. Tibshirani [:ref:`2<ref2>`].
+
 
 MOJO Support
 ''''''''''''
@@ -16,21 +17,30 @@ GAM supports importing and exporting `MOJOs <../save-and-load-model.html#support
 Defining a GAM Model
 ~~~~~~~~~~~~~~~~~~~~
 
-Parameters are optional unless specified as *required*. GAM shares many `GLM parameters <glm.html#shared-glm-family-parameters>`__.
+-  `model_id <algo-params/model_id.html>`__: (Optional) Provide a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
-Algorithm-specific parameters
-'''''''''''''''''''''''''''''
+-  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, the training frame is entered automatically if you click the **Build a model** button from the ``Parse`` cell.
 
--  **bs**: An array specifying the spline types for each GAM predictor. You must include one value for each GAM predictor. One of:
+-  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the model's accuracy.
 
-    - ``0`` (default) specifies cubic regression spline. 
-    - ``1`` specifies thin plate regression with knots.
-    - ``2`` specifies monotone splines (or I-splines).
-    - ``3`` specifies NBSplineTypeI M-splines (which can support any polynomial order).
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. The default value is 0 (no cross-validation).
 
--  **gam_columns**: *Required* An array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
-  
--  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components that rely on randomization. The seed is consistent for each H2O instance, allowing you to create models with the same starting conditions in different configurations. The default value is -1 (time-based random number).
+
+-  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
+
+   -  For a regression model, this column must be numeric (**Real** or **Int**).
+   -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is **Binomial**, the dataset cannot have more than two levels.
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, all columns except ``y`` are used.
+
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Retaining cross-validation models may require significantly more memory in the H2O cluster. This option defaults to true (enabled).
+
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions. This option defaults to false (not enabled).
+
+
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to false (not enabled).
+
 
 -  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
 
@@ -73,90 +83,186 @@ Common parameters
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns since no information can be gained from them. This option defaults to ``True`` (enabled).
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns, as they provide no useful information. This option defaults to true (enabled).
 
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to ``False`` (disabled).
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Enable this option to score during each iteration of the model training. This option defaults to false (not enabled).
 
--  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to ``True`` (enabled).
+-  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``. 
 
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions. This option defaults to ``False`` (disabled).
+    **Note**: Offsets are per-row "bias values" used during model training. For Gaussian distributions, they can be viewed as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to obtain the actual response values.
 
--  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to ``-1`` (unlimited). This default indicates that if the ``IRLSM`` solver is used, the value of ``max_active_predictors`` is set to ``5000``, otherwise it is set to ``100000000``.
+-  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified weights_column must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified``weights_column``.
+    
+    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. They typically represent the number of times a row is repeated, but non-integer values are also supported. During training, rows with higher weights matter more due to the larger loss function pre-factor.
 
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This option defaults to ``-1`` (unlimited).
+-  `family <algo-params/family.html>`__: Choose the model type.
 
-- `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable.
+   -  **gaussian**: Requires a numeric response (**Real** or **Int**). 
+   -  **binomial**: Requires a 2-class categorical or binary response (**Enum** or **Int**).
+   -  **fractionalbinomial**: Requires a numeric response between 0 and 1.
+   -  **multinomial**: Requires a categorical response with more than two classes (**Enum**).
+   -  **ordinal**: Requires a categorical response with at least three levels.
+   -  **quasibinomial**: Requires a numeric response.
+   -  **poisson**: Requires a non-negative numeric response (**Int**).
+   -  **negativebinomial**: Requires a non-negative numeric response (**Int**).
+   -  **gamma**: Requires a continuous, positive numeric response (**Real** or **Int**).
+   -  **tweedie**: Requires a continuous, non-negative numeric response (**Real**).
+   -  **AUTO**: If the family is set to AUTO (default), the family is automatically determined based on the response type and cardinality.
 
--  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
+-  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: Applicable only for Tweedie family. Default value is 0.
 
--  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+-  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: Applicable only for Tweedie family. Default value is 0.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. The value can be ``0`` (default) to disable or :math:`\geq` ``2``. 
+-  `theta <algo-params/theta.html>`__: For negative binomial family, the theta value (1/r) must be > 0. Default value is 0. 
 
--  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``.
-   
-     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+-  `solver <algo-params/solver.html>`__: Choose a solver (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is suitable for problems with few predictors and L1 penalty lambda searches, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__  is better for datasets with many columns. COORDINATE_DESCENT and COORDINATE_DESCENT_NAIVE are IRLSM variants that use cyclical coordinate descent in the inner loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR are for Ordinal family only. AUTO (default) sets the solver based on the data and parameters.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
+-  `alpha <algo-params/alpha.html>`__: Set the regularization distribution between L1 and L2. Default value is 0 for ``L-BFGS`` solver, and 0.5 for others.
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
+-  `lambda <algo-params/lambda.html>`__:  Set the regularization strength.
 
--  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``False`` (disabled).
+-  `lambda_search <algo-params/lambda_search.html>`__: Enable or disable lambda search, which starts with lambda max (smallest :math:`\lambda` that makes all coefficients zero). If ``lambda_min_ratio`` is specified, it is taken as lambda min. If not, GAM calculates the minimum lambda. Default is false (disabled).
 
-- `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
+-  `early_stopping <algo-params/early_stopping.html>`__: Enable or disable stopping early when there's no more relative improvement on the training or validation set. Default is true (enabled).
 
-    - ``AUTO`` (default): (This defaults to ``logloss`` for classification and ``deviance`` for regression)
-    - ``deviance``
-    - ``logloss``
-    - ``MSE``
-    - ``RMSE``
-    - ``MAE``
-    - ``RMSLE``
-    - ``AUC`` (area under the ROC curve)
-    - ``AUCPR`` (area under the Precision-Recall curve)
-    - ``lift_top_group``
-    - ``misclassification``
-    - ``mean_per_class_error``
 
-- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
-
+- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the **stopping_metric** doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default).
     **Note:** If cross-validation is enabled:
   
     - All cross-validation models stop training when the validation metric doesn't improve.
     - The main model runs for the mean number of epochs.
     - N+1 models may be off by the number specified for ``stopping_rounds`` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
-- `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This option defaults to ``0.001``.
+- `stopping_metric <algo-params/stopping_metric.html>`__: Choose the metric for early stopping from the following options:
 
--  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
-    
-     **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+  - ``AUTO``: Default setting - ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. (Note: ``custom`` and ``custom_increasing`` are only available for GBM and DRF with the Python Client.)
+  - ``anomaly_score`` (Isolation Forest only)
+  - ``deviance``
+  - ``logloss``
+  - ``MSE``
+  - ``RMSE``
+  - ``MAE``
+  - ``RMSLE``
+  - ``AUC`` (area under the ROC curve)
+  - ``AUCPR`` (area under the Precision-Recall curve)
+  - ``lift_top_group``
+  - ``misclassification``
+  - ``mean_per_class_error``
+  - ``custom`` (GBM/DRF Python client only)
+  - ``custom_increasing`` (GBM/DRF Python client only)
 
--  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
-
--  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
-    
-    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
+- `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Set the relative tolerance for metric-based stopping. Training will stop if improvement is less than this value. Default is ``0.001``.
    
-    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+-  `nlambdas <algo-params/nlambdas.html>`__: Number of lambdas to use in the search (only applicable if **lambda_search** is enabled). Default value depends on the value of alpha. For ``alpha``  > 0, the default value is 100. For alpha = 0, the default value is 30.
 
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then no predictors will be used.
+-  `standardize <algo-params/standardize.html>`__: Set to true to standardize numeric columns to have a mean of zero and unit variance. Highly recommended to avoid skewed results due to varying variances. Default is false (not enabled).
 
--  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
+-  `missing_values_handling <algo-params/missing_values_handling.html>`__: Choose how to handle missing values - Skip, MeanImputation, or PlugValues. Default is MeanImputation.
 
-    -  For a regression model, this column must be numeric (**Real** or **Int**).
-    -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset must contain two levels.
+-  `plug_values <algo-params/plug_values.html>`__: For ``missing_values_handling="PlugValues"``, provide a single-row frame with values to impute missing values in the training/validation frame.
+
+-  `compute_p_values <algo-params/compute_p_values.html>`__: Set to true to compute p-values. Recommended to enable ``remove_collinear_columns``. Not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver required. Default is ``False`` (disabled).
+
+-  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Set to true to automatically remove collinear columns during model building. Collinear columns will be dropped and have 0 coefficients in the returned model. Only available if lambda=0. Default is false (not enabled).
+
+-  `intercept <algo-params/intercept.html>`__: Set to true to include a constant term in the model. Default is true (enabled).
+
+-  `non_negative <algo-params/non_negative.html>`__: Set to true to force coefficients to have non-negative values. Default is false (not enabled).
+
+-  `max_iterations <algo-params/max_iterations.html>`__: Set the number of training iterations. Default is -1 (unlimited).
+
+-  `objective_epsilon <algo-params/objective_epsilon.html>`__: Convergence threshold for the objective value. Default is -1 (automatic), which adjusts based on lambda_search and lambda values.
+
+-  `beta_epsilon <algo-params/beta_epsilon.html>`__: Convergence threshold for beta changes (using L-infinity norm). Only applies to IRLSM solver. Default is 0.0001.
+
+-  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Convergence threshold for the objective value (using the L-infinity norm). Default is -1 (automatic), which adjusts based on lambda_search and lambda values.
+
+-  `link <algo-params/link.html>`__: Choose a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, or Ologit). Default is Family_Default.
+
+   -  **Gaussian**: **Identity**, **Log**, **Inverse**
+   -  **Binomial**: **Logit**
+   -  **Fractionalbinomial**: **Logit**
+   -  **Poisson**: **Log**, **Identity**
+   -  **Gamma**: **Inverse**, **Log**, **Identity**
+   -  **Tweedie**: **Tweedie**
+   -  **Multinomial**: **Family_Default** (defaults to ``multinomial``)
+   -  **Quasibinomial**: **Logit**
+   -  **Ordinal**: **Ologit** 
+   -  **Negative Binomial**: **Log**, **Identity**
+   - For family =  **AUTO**:
+      - If the response is Enum with cardinality = 2, Logit is supported.
+      - If the response is Enum with cardinality > 2, Family_Default is supported (defaults to multinomial).
+      - If the response is numeric (Real or Int), Identity, Log, and Inverse are supported.
+      **Note:**: If no link is specified, the link is determined as Family_Default (defaults to the family to which AUTO is determined). If a link is specified, it is used as long as it is compatible with the family to which AUTO is determined. Otherwise, an error message is displayed, suggesting a different link and a list of possible compatible links.
+
+-  `prior <algo-params/prior.html>`__: Set the prior probability for p(y==1) in logistic regression when the data has been sampled, and the mean of response doesn't reflect reality. The value should be between 0 and 1 or set to -1 (disabled). By default, this option is set to -1 (disabled).
+   
+     **Note**: This method only affects the intercept. Consider using weights and offset for a better fit.
+
+-  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Define the minimum lambda for the lambda search as a ratio of **lambda_max** (smallest :math:`\lambda` where the solution is all zeros). The default value is 0.
+
+-  `beta_constraints <algo-params/beta_constraints.html>`__: Choose a dataset to apply beta constraints, providing upper and lower bounds for the coefficient vector. This dataset must include a names column with valid coefficient names.
+
+-  `max_active_predictors <algo-params/max_active_predictors.html>`__: Set the maximum number of active predictors during computation. This value works as a stopping criterion to avoid expensive model building with numerous predictors. The default value is -1 (unlimited).
+
+-  `interactions <algo-params/interactions.html>`__: List the predictor column indices to interact with. All pairwise combinations will be computed for this list.
+
+-  `interaction_pairs <algo-params/interaction_pairs.html>`__: Use this option to specify a list of pairwise column interactions (interactions between two variables) when defining interactions. This is different from ``interactions``, which will compute all pairwise combinations of specified columns.
+
+-  **obj_reg**: Define the likelihood divider in objective value computation. By default, this is set to ``1/n``, where ``n`` is the number of observations (rows) in the training set.
+
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Provide a directory to export generated models automatically.
+
+- **subspaces**: List model parameters that can vary freely within the same subspace list, allowing the user to group model parameters with restrictions. If specified, the following parameters must have the same array dimension:
+  
+  - ``gam_columns``
+  - ``scale``
+  - ``num_knots``
+  - ``bs``
+
+Example of specifying these parameters:
+
+  .. code-block:: bash
+    
+   hyper_parameters = {
+     'alpha':[0.9, 0.1],
+     'subspaces': [{
+         'scale':[[1,1,1],[0.1, 0.1, 0.1]],
+         'num_knots':[[4,4,4],[5,5,5]],
+         'gam_columns':[[“C1”,“C2",“C3”]]
+     }, {
+         'scale':[[1,1],[0.1, 0.1,]],
+         'num_knots':[[4,4],[5,5]],
+         'gam_columns':[[“C2",“C3”]]
+     }]
+   }
+
+
+With this hyperparameter specification, 16 GAM models will be built.
+
+-  **num_knots**: Include an array specifying the number of knots for each predictor in ``gam_columns``.
+            
+-  **knot_ids**: Provide a string array of frame keys/IDs containing knot locations. Include one value for each GAM column in ``gam_columns``.
+
+-  **gam_columns**: Required. Include an array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column.
+
+-  **bs**: Add an array specifying the B-Splines for each GAM predictor. Include one value for each GAM predictor. The default value is `0`, which specifies a cubic regression spline.
+
+-  **scale**: Include an array specifying the smoothing parameter for GAM.
+
+-  **keep_gam_cols**: Choose whether to save keys storing GAM columns. By default, this option is set to false (not enabled).
+
 
 .. _scenario1:
 
 A Simple Linear Model
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Consider :math:`n` observations, :math:`x_i` with response variable :math:`y_i`, where :math:`y_i` is an observation on random variable :math:`Y_i`. Let :math:`u_i ≡ E(Y_i)`. Assuming a linear relationship between the predictor variables and the response, the following relationship exists between :math:`xi` and :math:`Y_i` as:
+For :math:`n` observations, :math:`x_i` with response variable :math:`y_i`, where :math:`y_i` is an observation on random variable :math:`Y_i`. and :math:`u_i ≡ E(Y_i)`. Assuming a linear relationship between the predictor variables and the response, the relationship between :math:`xi` and :math:`Y_i` is:
 
   :math:`Y_i = u_i + \epsilon_i \text{ where } u_i = \beta_i x_i + \beta_0`
 
-and :math:`\beta_i, \beta_0` are unknown parameters, :math:`\epsilon_i` are i.i.d zero mean variables with variances :math:`\delta^2`. We already know how to estimate :math:`\beta_i, \beta_0` using :ref:`GLM<glm>`.
+and :math:`\beta_i, \beta_0` are unknown parameters, :math:`\epsilon_i` are i.i.d zero mean variables with variances :math:`\delta^2`. We can estimate :math:`\beta_i, \beta_0` using :ref:`GLM<glm>`.
 
 .. _scenario2:
 
@@ -167,49 +273,49 @@ Using the same observations as in the previous A Simple Linear Model section, a 
 
   :math:`Y_i = f(x_i) + \epsilon_i \text{ where } f(x_i) = {\Sigma_{j=1}^k}b_j(x_i)\beta_j+\beta_0`
 
-Again, :math:`\beta = [\beta_0, \beta_1, \ldots, b_k]` is an unknown parameter vector that can also be estimated using :ref:`GLM<glm>`. This can be done by using :math:`[b_1(x_i), b_2(x_i), \ldots , b_K(x_i)]` as the predictor variables instead of :math:`x_i`. Here, we are basically estimating :math:`f(x_i)` using a set of basis functions:
+Again, :math:`\beta = [\beta_0, \beta_1, \ldots, b_k]` is an unknown parameter vector that can also be estimated using :ref:`GLM<glm>`. This can be done by using :math:`[b_1(x_i), b_2(x_i), \ldots , b_K(x_i)]` as the predictor variables instead of :math:`x_i`. We are essentially estimating :math:`f(x_i)` using a set of basis functions:
 
 :math:`\{b_1(x_i), b_2(x_i), \ldots, b_K(x_i)\}`
 
-where :math:`k` is the number of basis functions used. Note that for each predictor variable, we get to decide the types and number of basis functions that we would like to use to best generate a GAM.
+where :math:`k` is the number of basis functions used. Note that for each predictor variable, we can decide the types and number of basis functions that we want to use to generate best GAM.
 
 .. _scenario3:
 
-A Simple Piecewise Linear Basis Function
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Understanding Simple Piecewise Linear Basis Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To understand the role of basis functions, we are going to use a linear tent function.
+To comprehend the role of basis functions, let's take a look at a linear tent function. This will help us understand how piecewise basis functions work.
 
-Using piecewise basis functions, we need to pay attention to the locations of the function’s derivative discontinuities, that is by the locations at which the linear pieces join up. These locations are referred to as the knots and denoted by :math:`\{x_i^*:j=1, \ldots, K\}`. And suppose that the knots are sorted, meaning that :math:`x_i^* > x_{i-1}^*`. Then for :math:`j=2, \ldots, K - 1`, we have basis function :math:`b_j(x)` defined as:
+When working with piecewise basis functions, it's crucial to pay attention to the points where the function's derivative discontinuities occur. These points are where the linear pieces connect, and they are known as knots. We denote these knots by :math:`\{x_i^*:j=1, \ldots, K\}`. And suppose that the knots are sorted, meaning that :math:`x_i^* > x_{i-1}^*`. 
+
+For :math:`j=2, \ldots, K - 1`, the basis function :math:`b_j(x)` defined as:
 
   .. figure:: ../images/gam_simple_piecewise1.png
 
   .. figure:: ../images/gam_simple_piecewise2.png
 
+This function helps us understand how the linear pieces join together and interact with each other.
+
 .. _scenario4:
 
-Using Piecewise Tent Function to Approximate One Predictor Variable
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using Piecewise Tent Functions to Approximate a Single Predictor Variable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To illustrate how we can use the piecewise tent functions to approximate a predictor variable, let’s use the following example for a predictor:
+To illustrate how we can use the piecewise tent functions to approximate a predictor variable, let's take an example where the predictor value ranges from 0.0 to 1.0.:
 
-- Predictor value goes from 0.0 to 1.0
-- Set :math:`K=10` to use 10 piecewise tent functions
-- The knots are located at 0, 1/9, 2/9, 3/9, …, 8/9, 1.
-
-The basis function values are plotted in in the figure below. Note that there are 10 basis functions. The basis function values overlap with its neighbors from the left and the right except for the first and the last basis functions.
+We will use 10 piecewise tent functions, with K = 10. The knots will be located at 0, 1/9, 2/9, 3/9, ..., 8/9, 1. The figure below shows the basis function values, which overlap with their neighbors except for the first and last basis functions.
 
 .. figure:: ../images/gam_piecewise_tent_basis.png
    :alt: Piecewise tent basis functions
 
-For simplicity, let’s assume that we only have 21 predictor values uniformly spreading over the range from 0 to 1 with values 0, 0.05, 0.1, 0.15, …, 1.0. The next task is to translate each :math:`x_j` to a set of 10 basis function values. This means that for every value of :math:`x_j`, we will obtain 10 values, each one correspond to each of the basis function.
+For simplicity, assume we have 21 predictor values uniformly distributed between 0 and 1, with values of 0, 0.05, 0.1, 0.15, ..., 1.0. Our goal is to convert each :math:`x_j` into a set of 10 basis function values. So, for every :math:`x_j` value, we will obtain 10 values corresponding to each of the basis functions.
 
-For the predictor value at 0, the only basis function that matters is the first one. All the other basis function contributes 0 to the predictor value. Hence, for :math:`x_j = 0`, the vector corresponding to all basis functions will have the following values: {1,0,0,0,0,0,0,0,0,0} because the first basis function value is 1 at :math:`x_j = 0`. **Note** Substitute :math:`x=0` to the first basis function 
+
+For the predictor value at 0 (:math:`x_j = 0`), the only relevant basis function is the first one. All other basis functions contribute 0 to the predictor value. Thus, for :math:`x_j = 0` the vector representing all basis functions has these values: {1, 0, 0, 0, 0, 0, 0, 0, 0, 0}. This is because the first basis function value is 1 at :math:`x_j = 0`:
 
  :math:`b_1(x) = \frac{\big(\frac{1}{9} - x \big)}{\big(\frac{2}{9} - \frac{1}{9} \big)}`
 
-
-For predictor value 0.05, only the first and second basis functions contribute to its value, while the other basis functions are 0 at 0.05. The value of the first basis function is 0.55. **Note** Substitute :math:`x=0.05` to the first basis function 
+For predictor value 0.05, only the first and second basis functions contribute, while the others are 0 at 0.05. The value of the first basis function is 0.55. which can be obtained by substituting :math:`x=0.05` in the first basis function:
 
  :math:`b_1(x) = \frac{\big(\frac{1}{9} - x \big)}{\big(\frac{2}{9} - \frac{1}{9} \big)}`
 
@@ -272,15 +378,14 @@ We have calculated the expanded basis function vector for all predictor values, 
 Spline Functions
 ~~~~~~~~~~~~~~~~
 
-It has been proven in [:ref:`2<ref2>`] that the natural cubic splines are the smoothest interpolators. For a set of points :math:`{x_i, y_i:i = 1, \ldots, n}` where :math:`x_i \leq x_{i+1}`. The natural cubic spline, :math:`g(x)`, interpolating these points, is a function made up of sections of cubic polynomial, one for each :math:`[x_i, x_{i+1}]`. They are joined up together so that the whole spline is continuous to second derivative, while :math:`g(x_i) = y_i` and :math:`g^{''}(x_i) = g^{''}(x_n) = 0`. To ensure smooth function, we can add a penalty function :math:`J(f) = \int_{x_1}^{x_n} {(f^{''}(x))^2}dx` to the actual objective function that we are trying to optimize. The rationality behind this penalty is that the second derivative of a function measures the gradient change. For functions that wriggle a lot, it will have a higher second derivative magnitude. For a straight line that does not wriggle at all, the second derivative is zero.
-
+Natural cubic splines are proven to be the smoothest interpolators, as shown in [:ref:`2<ref2>`]. Given a set of points :math:`{x_i, y_i:i = 1, \ldots, n}` where :math:`x_i \leq x_{i+1}`, the natural cubic spline, :math:`g(x)`, interpolates these points using sections of cubic polynomial for each :math:`[x_i, x_{i+1}]`. These sections are joined together so that the entire spline is continuous to the second derivative, with :math:`g(x_i) = y_i` and :math:`g^{''}(x_i) = g^{''}(x_n) = 0`. To ensure a smooth function, a penalty function :math:`J(f) = \int_{x_1}^{x_n} {(f^{''}(x))^2}dx` can be added to the objective function being optimized. This penalty is based on the idea that a function's second derivative measures gradient change, and a higher second derivative magnitude indicates more wriggling.
 
 Cubic Regression Splines
 ''''''''''''''''''''''''
 
-Following the implementation in [:ref:`1<ref1>`], we have implemented the cubic regression splines for a single predictor variable. This approach defines the splines in terms of its values at the knots. Next, we define a cubic spline function, :math:`f(x)`, :math:`k` knots, :math:`x_1, x_2, \ldots, x_k`. Let :math:`\beta_j = f(x_j)` and :math:`\delta_j = f^{''}(x_j) = \frac{d^2f(x_j)}{d^2x}`. 
+Implemented based on [:ref:`1<ref1>`], cubic regression splines are used for a single predictor variable. This approach defines the splines in terms of their values at the knots. A cubic spline function, :math:`f(x)`, with :math:`k` knots, :math:`x_1, x_2, \ldots, x_k`, is defined using :math:`\beta_j = f(x_j)` and :math:`\delta_j = f^{''}(x_j) = \frac{d^2f(x_j)}{d^2x}`. 
 
-The splines can be written as:
+The splines can be expressed as:
 
 .. math::
 
@@ -291,17 +396,17 @@ where:
 - :math:`a_j^-(x) = (x_{j+1} - x)/h_j, a_j^+(x) = (x - x_j) / h_j`
 - :math:`c_j^-(x) = \big[\frac{(x_{j+1}-x)^3}{h_j} - h_j(x_{j+1} - x)\big] /6, c_j^+(x) = \big[\frac{(x-x_j)^3}{h_j} - h_j(x-x_j \big] / 6`
 
-Note that in order to ensure smooth fitting functions at the knots, the spline must be continuous to second derivative at the :math:`x_j` and should have zero second derivative at :math:`x_1` and :math:`x_k`. It can be shown that :math:`\beta\delta^- = DB` (to be added at a later date), where
+To ensure smooth fitting functions at the knots, the spline must be continuous to the second derivative at :math:`x_j` and have zero second derivative at :math:`x_1` and :math:`x_k`. It can be shown that :math:`\beta\delta^- = DB` (to be added later), where
 
  .. figure:: ../images/gam_cubic_regression_spines1.png
 
 Let :math:`BinvD = B^{-1}D` and let :math:`F = {\begin{bmatrix}0\\BinvD\\0\end{bmatrix}}`
 
-The spline can be rewritten entire in terms of :math:`\beta` as
+The spline can be rewritten entirely in terms of :math:`\beta` as
 
  :math:`f(x) = a_j^-(x)\beta_j + a_j^+(x)\beta_{j+1} + c_j^-(x)F_j\beta + c_j^+(x)F_{j+1}\beta \text{ for } x_j \leq x \leq x_{j+1}`
 
-which can be written as :math:`f(x_i) = \sum_{j=1}^{k}b_j(x_i)\beta_j+\beta_0` where :math:`b_j(x_i)` are the basis functions and :math:`\beta_0, \beta_1, \ldots, \beta_k` are the unknown parameters that can be estimated using :ref:`GLM<glm>`. In addition, the penalty term added to the final objective function can be derived to be:
+which can be expressed as :math:`f(x_i) = \sum_{j=1}^{k}b_j(x_i)\beta_j+\beta_0` where :math:`b_j(x_i)` are the basis functions and :math:`\beta_0, \beta_1, \ldots, \beta_k` are the unknown parameters that can be estimated using :ref:`GLM<glm>`. Additionally, the penalty term added to the final objective function can be derived as:
 
 .. math::
 
@@ -315,9 +420,9 @@ For linear regression models, the final objective function to minimize is
 
  \sum_{i=1}^n \bigg( y_i - \big( \sum_{j=1}^k b_j(x_i)\beta_j + \beta_0 \big) \bigg) + \lambda \beta^T S \beta
 
-Note that :math:`\lambda` will be another parameter for the user to choose using gridsearch. In a future release, we may use cross-validation to automatically choose :math:`lambda`.
+Note that the user will choose :math:`\lambda` using grid search. In future releases, cross-validation may be used to automatically select :math:`lambda`.
 
-Hence, at this point, we can call our :ref:`GLM<glm>`. However, we still need to add the contribution of the penalty term to the gradient and hessian calculation.
+At this point, :ref:`GLM<glm>` can be called, but the contribution of the penalty term to the gradient and Hessian calculation still needs to be added.
 
 Thin Plate Regression Splines
 '''''''''''''''''''''''''''''
@@ -332,11 +437,10 @@ For documentation on thin plate regression splines, refer here:
 Monotone Splines
 ''''''''''''''''
 
-We have implemented I-splines which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. In order to specify the monotone spline, you need to both set ``bs = 2`` and specify ``spline_orders`` which will be equal to the polynomials used to generate the splines.
-
+We have implemented I-splines, which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. To specify the monotone spline, you need to set ``bs = 2`` and specify ``spline_orders``, which will be equal to the polynomials used to generate the splines.
 **B-splines:** :math:`Q_{i,k}(t)`
 
-This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-spline of order :math:`k` at knot :math:`i` where it is non-zero over the duration :math:`t_i \leq t < t_{i+k}`. The recursive formula [:ref:`4<ref4>`] used to generate a B-spline of a higher order from two B-splines of a lower order is:
+B-splines are generated using a recursive formula over a set of knots :math:`t_0,t_1,\dots ,t_N` that covers the input range of interest. The number of basis functions for B-splines over the original knots is :math:`N+1+k-2`, where :math:`N+1` is the number of knots without duplication and :math:`k` is the spline order.
 
 .. math::
    
@@ -407,7 +511,7 @@ Or, you can use the recursive formula where higher order N-splines can be derive
 
 **I-splines:** :math:`I_{i,k}(t)`
 
-I-splines are used to build the monotone spline functions by restricting the gamified column coefficients to be :math:`\geq` 0 [:ref:`5<ref5>`]. We have implemented I-splines using the following method:
+I-splines are used to build monotone spline functions by restricting the gamified column coefficients to be :math:`\geq` 0. They are constructed using the N-splines.
 
 .. math::
    
@@ -461,7 +565,7 @@ Instead of using the recursive expression, look at the coefficients associated w
 General GAM
 ~~~~~~~~~~~
 
-In a general GAM, using the :ref:`GLM<glm>` jargon, the link function can be constructed using a mixture of predictor variables and smooth functions of predictor variables as follows:
+In a generalized additive model (GAM), using the :ref:`GLM<glm>` jargon, the link function can be constructed using a mixture of predictor variables and smooth functions of predictor variables as follows: 
 
 .. math::
 
