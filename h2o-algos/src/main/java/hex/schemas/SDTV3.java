@@ -18,11 +18,15 @@ public class SDTV3 extends ModelBuilderSchema<
                 "ignore_const_cols",
                 "categorical_encoding",
                 "response_column",
+                "seed",
                 // SDT specific
                 "max_depth",
         };
 
         @API(help = "Max depth of tree.", gridable = true)
         public int max_depth;
+
+        @API(help = "Seed.", gridable = true)
+        public long seed;
     }
 }

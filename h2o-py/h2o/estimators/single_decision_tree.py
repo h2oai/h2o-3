@@ -28,6 +28,7 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
                  ignore_const_cols=True,  # type: bool
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  response_column=None,  # type: Optional[str]
+                 seed=-1,  # type: int
                  max_depth=20,  # type: int
                  ):
         """
@@ -50,6 +51,9 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
         :param response_column: Response variable column.
                Defaults to ``None``.
         :type response_column: str, optional
+        :param seed: Seed.
+               Defaults to ``-1``.
+        :type seed: int
         :param max_depth: Max depth of tree.
                Defaults to ``20``.
         :type max_depth: int
@@ -62,6 +66,7 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
         self.ignore_const_cols = ignore_const_cols
         self.categorical_encoding = categorical_encoding
         self.response_column = response_column
+        self.seed = seed
         self.max_depth = max_depth
 
     @property
@@ -133,6 +138,20 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
+
+    @property
+    def seed(self):
+        """
+        Seed.
+
+        Type: ``int``, defaults to ``-1``.
+        """
+        return self._parms.get("seed")
+
+    @seed.setter
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
     @property
     def max_depth(self):
