@@ -351,6 +351,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         return new SDTDriver();
     }
 
+    @Override
+    public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
     @Override
     public ModelCategory[] can_build() {
