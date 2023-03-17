@@ -7,6 +7,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 import water.Scope;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -88,6 +89,97 @@ public class SDTTest extends TestUtil {
             assertEquals(1, prediction.vec(0).at(8), 0.1);
             assertEquals(1, prediction.vec(0).at(9), 0.1);
 
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testCategoricalFeaturesChecks() {
+        try {
+            Scope.enter();
+            Frame train = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
+                    .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
+                    .withColNames("First", "Second", "Prediction")
+                    .build();
+
+            Scope.track_generic(train);
+            SDTModel.SDTParameters p =
+                    new SDTModel.SDTParameters();
+            p._train = train._key;
+            p._response_column = "Prediction";
+            SDT sdt = new SDT(p);
+
+            // validation occurs when starting training
+            sdt.trainModel().get();
+            fail("should have thrown validation error");
+        } catch (H2OModelBuilderIllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("Categorical features are not supported yet"));
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testNaNsChecks() {
+        try {
+            Scope.enter();
+            Frame train = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(Double.NaN, Double.POSITIVE_INFINITY, 
+                            0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
+                    .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
+                    .withColNames("First", "Second", "Prediction")
+                    .build();
+
+            Scope.track_generic(train);
+            SDTModel.SDTParameters p =
+                    new SDTModel.SDTParameters();
+            p._train = train._key;
+            p._response_column = "Prediction";
+            SDT sdt = new SDT(p);
+
+            // validation occurs when starting training
+            sdt.trainModel().get();
+            fail("should have thrown validation error");
+        } catch (H2OModelBuilderIllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("NaNs are not supported yet"));
+            assertTrue(e.getMessage().contains("Infs are not supported"));
+        } finally {
+            Scope.exit();
+        }
+    }
+
+
+    @Test
+    public void testPredictionColumnChecks() {
+        try {
+            Scope.enter();
+            Frame train = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
+                    .withDataForCol(2, ard(1, 2, 2, 1, 0, 1, 0, 1, 1, 1))
+                    .withColNames("First", "Second", "Prediction")
+                    .build();
+
+            Scope.track_generic(train);
+            SDTModel.SDTParameters p =
+                    new SDTModel.SDTParameters();
+            p._train = train._key;
+            p._response_column = "Prediction";
+            SDT sdt = new SDT(p);
+
+            // validation occurs when starting training
+            sdt.trainModel().get();
+            fail("should have thrown validation error");
+        } catch (H2OModelBuilderIllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("Only categorical response is supported"));
+            assertTrue(e.getMessage().contains("Only binary response is supported"));
         } finally {
             Scope.exit();
         }
