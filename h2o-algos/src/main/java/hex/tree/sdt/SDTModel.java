@@ -36,14 +36,10 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
         // compute score for given point
         CompressedSDT tree = DKV.getGet(_output._treeKey);
         SDTPrediction prediction = tree.predictRowStartingFromNode(data, 0);
+        // for now, only pred. for class 0 is stored, will be improved later
         preds[0] = prediction.classPrediction;
-        if(prediction.classPrediction == 0) { 
-            preds[1] = prediction.probability;
-            preds[2] = 1 - prediction.probability;
-        } else {
-            preds[1] = 1 - prediction.probability;
-            preds[2] = prediction.probability;
-        }
+        preds[1] = prediction.probability;
+        preds[2] = 1 - prediction.probability;
         
         System.out.println(Arrays.toString(preds));
         return preds;

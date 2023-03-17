@@ -127,44 +127,48 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
     /**
-     * Select decision value for leaf.
+     * Select decision value for leaf. Decision value is argmax of the array with counts of samples by class.
      *
-     * @param zeroRatio #zero/#one in a leaf
+     * @param countsByClass counts of samples of each class
      * @return decision value (in current case - 0 or 1)
      */
-    private int selectDecisionValue(double zeroRatio) {
-        if (zeroRatio >= 0.5) {
-            return 0;
-        } else {
-            return 1;
+    private int selectDecisionValue(int[] countsByClass) {
+        if (_nclass == 1) {
+            return countsByClass[0];
         }
+        int currentMaxClass = 0;
+        int currentMax = countsByClass[currentMaxClass];
+        for (int c = 1; c < _nclass; c ++) {
+            if (countsByClass[c] > currentMax) {
+                currentMaxClass = c;
+                currentMax = countsByClass[c];
+            }
+        }
+        return currentMaxClass;
     }
 
     /**
-     * Calculates a probability of predicted value for a leaf.
+     * Calculates probabilities of each class for a leaf.
      *
-     * @param zeroRatio #zero/#one in a leaf
+     * @param countsByClass #zero/#one in a leaf
      * @return probability of decision value (in current case - major 0 or 1)
      */
-    private double calculateProbability(double zeroRatio) {
-        if (zeroRatio >= 0.5) {
-            return zeroRatio;
-        } else {
-            return 1 - zeroRatio;
-        }
+    private double[] calculateProbability(int[] countsByClass) {
+        int samplesCount = Arrays.stream(countsByClass).sum();
+        return Arrays.stream(countsByClass).asDoubleStream().map(n -> n / samplesCount).toArray();
     }
 
 
     /**
      * Set decision value to the node.
      *
-     * @param zeroRatio #zero/#one in a leaf
+     * @param countsByClass counts of samples of each class
      * @param nodeIndex node index
      */
-    public void makeLeafFromNode(double zeroRatio, int nodeIndex) {
+    public void makeLeafFromNode(int[] countsByClass, int nodeIndex) {
         _tree[nodeIndex][0] = 1; // indicates leaf
-        _tree[nodeIndex][1] = selectDecisionValue(zeroRatio);
-        _tree[nodeIndex][2] = calculateProbability(zeroRatio);
+        _tree[nodeIndex][1] = selectDecisionValue(countsByClass);
+        _tree[nodeIndex][2] = calculateProbability(countsByClass)[0]; // for now keep only prob. of class 0. will be improved later
         // nothing to return, node is modified inplace
     }
 
@@ -190,18 +194,17 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         }
 
         // todo - add limit by information gain (at least because of ideal split for example 11111)
-        // (count0, count1)
-        Pair<Integer, Integer> classesCount = countClasses(actualLimits);
-        double zeroRatio = classesCount._1() /*0*/ * 1.0 / (classesCount._1() /*0*/ + classesCount._2() /*1*/);
+        // [count0, count1, ...]
+        int[] countsByClass = countClasses(actualLimits);
         if (nodeIndex == 1) {
-            Log.info("Classes counts in dataset: 0 - " + classesCount._1() + ", 1 - " + classesCount._2());
+            Log.info("Classes counts in dataset: 0 - " + countsByClass[0] + ", 1 - " + countsByClass[1]);
         }
         // compute node depth
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
         // stop building from this node, the node will be a leaf
         if ((nodeDepth >= _parms._max_depth)
-                || (classesCount._1() <= _limitNumSamplesForSplit)
-                || (classesCount._2() <= _limitNumSamplesForSplit)
+                || (countsByClass[0] <= _limitNumSamplesForSplit)
+                || (countsByClass[1] <= _limitNumSamplesForSplit)
 //                || zeroRatio > 0.999 || zeroRatio < 0.001
         ) {
             // add imaginary left and right children to imitate valid tree structure
@@ -209,7 +212,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             limitsQueue.add(null);
             // right child
             limitsQueue.add(null);
-            makeLeafFromNode(zeroRatio, nodeIndex);
+            makeLeafFromNode(countsByClass, nodeIndex);
             return;
         }
 
@@ -223,7 +226,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             limitsQueue.add(null);
             // right child
             limitsQueue.add(null);
-            makeLeafFromNode(zeroRatio, nodeIndex);
+            makeLeafFromNode(countsByClass, nodeIndex);
             return;
         }
 
@@ -234,8 +237,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
         DataFeaturesLimits limitsLeft = actualLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
         DataFeaturesLimits limitsRight = actualLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
-        Log.debug("root: " + countClasses(actualLimits) + ", left: " + countClasses(limitsLeft) +
-                ", right: " + countClasses(limitsRight) + ", best feature: " + bestSplitInfo._splitFeatureIndex
+        Log.debug("root: " + Arrays.toString(countClasses(actualLimits)) + ", left: " 
+                + Arrays.toString(countClasses(limitsLeft)) + ", right: " + Arrays.toString(countClasses(limitsRight)) 
+                + ", best feature: " + bestSplitInfo._splitFeatureIndex
                 + ", threshold: " + bestSplitInfo._threshold);
 
         Log.debug("feature: " + bestSplitInfo._splitFeatureIndex + ", threshold: " + bestSplitInfo._threshold);
@@ -376,15 +380,15 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
      * @param featuresLimits limits
      * @return pair (count0, count1)
      */
-    private Pair<Integer, Integer> countClasses(final DataFeaturesLimits featuresLimits) {
+    private int[] countClasses(final DataFeaturesLimits featuresLimits) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
                 // create limits that are always fulfilled
                 ? Stream.generate(() -> new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE})
                 .limit(_train.numCols() - 1 /*exclude the last prediction column*/).toArray(double[][]::new)
-                : featuresLimits.toDoubles());
+                : featuresLimits.toDoubles(), _nclass);
         task.doAll(_train);
 
-        return new Pair<>(task._count0, task._count1);
+        return task._countsByClass;
     }
 
 }

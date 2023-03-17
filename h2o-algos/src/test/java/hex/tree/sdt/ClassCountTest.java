@@ -24,42 +24,38 @@ public class ClassCountTest extends TestUtil {
         try {
             Scope.enter();
             Frame basicData = new TestFrameBuilder()
-                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ard(1, 1, 0, 1, 0, 1, 0, 1, 1, 1))
-                    .withDataForCol(2, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
-
-                    .withColNames("First", "Prediction", "Second")
+                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
+                    .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
+                    .withColNames("First", "Second", "Prediction")
                     .build();
-
-            Vec response = basicData.remove("Prediction");
-            basicData.add("Prediction", response);
 
             Scope.track_generic(basicData);
 
             DataFeaturesLimits wholeDataLimits = SDT.getInitialFeaturesLimits(basicData);
 
-            GetClassCountsMRTask task = new GetClassCountsMRTask(wholeDataLimits.toDoubles());
+            GetClassCountsMRTask task = new GetClassCountsMRTask(wholeDataLimits.toDoubles(), 2);
             task.doAll(basicData);
             
-            assertEquals(3, task._count0);
-            assertEquals(7, task._count1);
+            assertEquals(3, task._countsByClass[0]);
+            assertEquals(7, task._countsByClass[1]);
 
             DataFeaturesLimits limit0FeaturesLimits = getFeaturesLimitsForConditions(basicData, 
                     wholeDataLimits.updateMax(0, 5.0));
-            task = new GetClassCountsMRTask(limit0FeaturesLimits.toDoubles());
+            task = new GetClassCountsMRTask(limit0FeaturesLimits.toDoubles(), 2);
             task.doAll(basicData);
 
-            assertEquals(2, task._count0);
-            assertEquals(4, task._count1);
+            assertEquals(2, task._countsByClass[0]);
+            assertEquals(4, task._countsByClass[1]);
 
             DataFeaturesLimits limit1FeaturesLimits = getFeaturesLimitsForConditions(basicData,
                     limit0FeaturesLimits.updateMin(1, 1.0));
-            task = new GetClassCountsMRTask(limit1FeaturesLimits.toDoubles());
+            task = new GetClassCountsMRTask(limit1FeaturesLimits.toDoubles(), 2);
             task.doAll(basicData);
 
-            assertEquals(0, task._count0);
-            assertEquals(4, task._count1);
+            assertEquals(0, task._countsByClass[0]);
+            assertEquals(4, task._countsByClass[1]);
             
         } finally {
             Scope.exit();

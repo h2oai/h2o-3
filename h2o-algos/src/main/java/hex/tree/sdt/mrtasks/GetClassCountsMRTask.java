@@ -8,17 +8,18 @@ import water.fvec.Chunk;
  * MR task for counting classes.
  */
 public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
-    public int _count0;
-    public int _count1;
+    public int _numClasses;
+    // counts of samples for each class, class corresponds to the index in array: [count0, count1, ...]
+    public int[] _countsByClass;
 
     private final double[][] _featuresLimits;
 
     int LIMIT_MIN = 0;
     int LIMIT_MAX = 1;
 
-    public GetClassCountsMRTask(double[][] featuresLimits) {
-        _count0 = 0;
-        _count1 = 0;
+    public GetClassCountsMRTask(double[][] featuresLimits, int numClasses) {
+        _numClasses = numClasses;
+        _countsByClass = new int[_numClasses];
         _featuresLimits = featuresLimits;
     }
 
@@ -40,10 +41,10 @@ public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
                 }
             }
             if (!conditionsFailed) {
-                if (Precision.equals(cs[classColumn].atd(row), 0, Precision.EPSILON)) {
-                    _count0++;
-                } else {
-                    _count1++;
+                for (int c = 0; c < _numClasses; c++) {
+                    if (Precision.equals(cs[classColumn].atd(row), c, Precision.EPSILON)) {
+                        _countsByClass[c]++;
+                    }
                 }
             }
         }
@@ -51,7 +52,8 @@ public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
 
     @Override
     public void reduce(GetClassCountsMRTask mrt) {
-        _count0 += mrt._count0;
-        _count1 += mrt._count1;
+        for (int c = 0; c < _numClasses; c++) {
+            _countsByClass[c] += mrt._countsByClass[c];
+        }
     }
 }
