@@ -10,10 +10,6 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
 
     private static final Logger LOG = Logger.getLogger(SDTModel.class);
 
-    @Override
-    protected String[] makeScoringNames(){
-        return new String[]{"predict"};
-    }
 
     public SDTModel(Key<SDTModel> selfKey, SDTModel.SDTParameters parms,
                     SDTModel.SDTOutput output) {
