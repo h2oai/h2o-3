@@ -13,6 +13,8 @@
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
+#'        Defaults to -1 (time-based random number).
 #' @param max_depth Max depth of tree. Defaults to 20.
 #' @export
 h2o.sdt <- function(x,
@@ -21,6 +23,7 @@ h2o.sdt <- function(x,
                     model_id = NULL,
                     ignore_const_cols = TRUE,
                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                    seed = -1,
                     max_depth = 20)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -52,6 +55,8 @@ h2o.sdt <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(seed))
+    parms$seed <- seed
   if (!missing(max_depth))
     parms$max_depth <- max_depth
 
@@ -64,6 +69,7 @@ h2o.sdt <- function(x,
                                     training_frame,
                                     ignore_const_cols = TRUE,
                                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                    seed = -1,
                                     max_depth = 20,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
@@ -100,6 +106,8 @@ h2o.sdt <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(seed))
+    parms$seed <- seed
   if (!missing(max_depth))
     parms$max_depth <- max_depth
 
