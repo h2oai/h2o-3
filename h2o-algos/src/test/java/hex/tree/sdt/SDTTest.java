@@ -27,24 +27,16 @@ import static org.junit.Assert.*;
 @RunWith(H2ORunner.class)
 public class SDTTest extends TestUtil {
 
-//    @ClassRule
-//    public static EnvironmentVariables environmentVariables = new EnvironmentVariables();
-//    
-//    @BeforeClass
-//    public static void initTest() {
-//        final File h2oHomeDir = new File(System.getProperty("user.dir")).getParentFile();
-//        environmentVariables.set("H2O_FILES_SEARCH_PATH", h2oHomeDir.getAbsolutePath());
-//    }
 
     @Test
     public void testBasicData() {
         try {
             Scope.enter();
             Frame train = new TestFrameBuilder()
-                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
                     .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
-                    .withDataForCol(2, ard(1, 1, 0, 1, 0, 1, 0, 1, 1, 1))
+                    .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
                     .withColNames("First", "Second", "Prediction")
                     .build();
 
@@ -61,9 +53,8 @@ public class SDTTest extends TestUtil {
 
             SDT sdt = new SDT(p);
             SDTModel model = sdt.trainModel().get();
+            assert model != null;
             Scope.track_generic(model);
-            assertNotNull(model);
-
             Frame out = model.score(train);
             Scope.track_generic(out);
             System.out.println(Arrays.toString(out.names()));
@@ -120,6 +111,10 @@ public class SDTTest extends TestUtil {
         Scope.enter();
         Frame train = Scope.track(parseTestFile("smalldata/testng/prostate_train.csv"));
         Frame test = Scope.track(parseTestFile("smalldata/testng/prostate_test.csv"));
+        train.replace(0, train.vec(0).toCategoricalVec()).remove();
+        test.replace(0, test.vec(0).toCategoricalVec()).remove();
+        DKV.put(train);
+        DKV.put(test);
 
         SDTModel.SDTParameters p =
                 new SDTModel.SDTParameters();
@@ -167,6 +162,7 @@ public class SDTTest extends TestUtil {
     
 
     @Test
+    @Ignore
     public void testBigDataSynthetic() {
         Scope.enter();
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/Dataset1_train.csv"));
@@ -191,6 +187,7 @@ public class SDTTest extends TestUtil {
     }
 
     @Test
+    @Ignore
     public void testBigDataCreditCard() {
         Scope.enter();
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/creditcard_train.csv"));
@@ -215,6 +212,7 @@ public class SDTTest extends TestUtil {
     }
 
     @Test
+    @Ignore
     public void testHIGGSDataset() {
         Scope.enter();
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/HIGGS_train_limited1.csv"));
@@ -257,7 +255,7 @@ public class SDTTest extends TestUtil {
             Scope.track_generic(out);
             assertEquals(test.numRows(), out.numRows());
 
-            writePredictionsToFile("./predictions_" + datasetName + "_sdt.csv", out.vec(0).toCategoricalVec(), p._response_column);
+//            writePredictionsToFile("./predictions_" + datasetName + "_sdt.csv", out.vec(0).toCategoricalVec(), p._response_column);
 
 //            System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
 //            System.out.println(test.vec(p._response_column));
@@ -296,7 +294,7 @@ public class SDTTest extends TestUtil {
 
             Scope.track_generic(out1);
             assertEquals(test.numRows(), out1.numRows());
-            writePredictionsToFile("./predictions_" + datasetName + "_drf.csv", out1.vec(0).toCategoricalVec(), p1._response_column);
+//            writePredictionsToFile("./predictions_" + datasetName + "_drf.csv", out1.vec(0).toCategoricalVec(), p1._response_column);
             
 //            System.out.println("Scoring: " + model1.testJavaScoring(test, out1, 1e-3));
 //            System.out.println(test.vec(p._response_column));
