@@ -2,6 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
 check.actual.parameters <- function(model) {
+    print(model@algorithm)
     print(paste("ntrees from model_summary", model@model$model_summary$number_of_trees, ". Actual values of ntrees", model@params$actual$ntrees))
     expect_equal(model@model$model_summary$number_of_trees, model@params$actual$ntrees, info="ntrees from model_summary should be equal to actual ntrees")
     expect_equal(100,model@params$input$ntrees, info="Input params should be equal to 100")
@@ -9,11 +10,11 @@ check.actual.parameters <- function(model) {
 }
 
 test.actual_params_tree_algos <- function() {
-    prostate<-h2o.importFile(locate("smalldata/logreg/prostate.csv"))
+    prostate<-h2o.importFile(locate("smalldata/prostate/prostate.csv"))
     prostate$CAPSULE<-as.factor(prostate$CAPSULE)
     response<-"CAPSULE"
 
-    prostate_split<-h2o.splitFrame(data=prostate,ratios=0.75)
+    prostate_split<-h2o.splitFrame(data=prostate,ratios=0.8, seed=1234)
     prostate_train<-prostate_split[[1]]
     prostate_test<-prostate_split[[2]]
 
@@ -74,7 +75,7 @@ test.actual_params_tree_algos <- function() {
     stopping_metric="AUCPR",
     stopping_rounds=3,
     stopping_tolerance=0.01,
-    seed=42,
+    seed=1,
     ntrees=100,
     score_each_iteration=TRUE)
     check.actual.parameters(model)
