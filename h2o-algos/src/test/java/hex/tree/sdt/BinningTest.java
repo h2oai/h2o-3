@@ -69,16 +69,12 @@ public class BinningTest extends TestUtil {
         try {
             Scope.enter();
             Frame basicData = new TestFrameBuilder()
-                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ard(1, 1, 0, 1, 0, 1, 0, 1, 1, 1))
-                    .withDataForCol(2, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
-
-                    .withColNames("First", "Prediction", "Second")
+                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
+                    .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
+                    .withColNames("First", "Second", "Prediction")
                     .build();
-
-            Vec response = basicData.remove("Prediction");
-            basicData.add("Prediction", response);
 
             DataFeaturesLimits wholeDataLimits = getInitialFeaturesLimits(basicData);
 
@@ -117,8 +113,9 @@ public class BinningTest extends TestUtil {
         try {
             Scope.enter();
 
-            Frame prostateData = Scope.track(parseTestFile("smalldata/prostate/prostate_train.csv"));
+            Frame prostateData = Scope.track(parseTestFile("smalldata/testng/prostate_train.csv"));
 
+            // manually put prediction column as the last one
             Vec response = prostateData.remove("CAPSULE");
             prostateData.add("CAPSULE", response);
             
