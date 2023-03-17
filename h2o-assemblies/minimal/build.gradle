@@ -21,7 +21,6 @@ dependencies {
     runtimeOnly project(":h2o-jetty-9-minimal")
     api project(":h2o-web")
     api project(":h2o-persist-http")
-    api project(":h2o-ext-mojo-pipeline")
 }
 
 shadowJar {

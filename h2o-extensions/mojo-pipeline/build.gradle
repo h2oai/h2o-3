@@ -2,12 +2,15 @@ description = "H2O MOJO Pipeline support"
 
 dependencies {
     api project(":h2o-core")
+    api project(":h2o-genmodel-ext-mojo-pipeline")
     api "ai.h2o:mojo2-runtime-api:${mojo2version}"
+    api "ai.h2o:mojo2-runtime-impl:${mojo2version}" // TODO: Change to compile only dependency
+
 
     testImplementation project(":h2o-test-support")
     testImplementation "net.sf.opencsv:opencsv:2.3"
     testRuntimeOnly project(":${defaultWebserverModule}")
-    testRuntimeOnly "ai.h2o:mojo2-runtime-impl:${mojo2version}"
+    testImplementation "ai.h2o:mojo2-runtime-impl:${mojo2version}"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

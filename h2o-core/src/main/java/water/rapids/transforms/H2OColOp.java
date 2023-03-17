@@ -22,8 +22,21 @@ public class H2OColOp extends Transform<H2OColOp> {
   protected final String _fun;
   private final String _oldCol;
   private String[] _newCol;
+  private String _newJavaColTypes;
   private String _newColTypes;
   boolean _multiColReturn;
+
+  @Override
+  public String[] getNewNames() { return _newCol; }
+  @Override
+  public String[] getNewTypes() { 
+    String[] result = new String[_newCol.length]; 
+    Arrays.fill(result, _newColTypes);
+    return result;
+  }
+  
+  public String[] getOldNames() { return new String[]{_oldCol}; }
+
 
   public H2OColOp(String name, String ast, boolean inplace, String[] newNames) { // (op (cols fr cols) {extra_args})
     super(name,ast,inplace,newNames);
@@ -39,6 +52,7 @@ public class H2OColOp extends Transform<H2OColOp> {
         setupParamsImpl(i,args);
     }
   }
+  
 
   protected void setupParamsImpl(int i, String[] args) {
     _params.put(args[i], (AstParameter) _ast._asts[i + 1]);
@@ -51,7 +65,8 @@ public class H2OColOp extends Transform<H2OColOp> {
     Session ses = new Session();
     Frame fr = ses.exec(_ast, null).getFrame();
     _newCol = _newNames==null?new String[fr.numCols()]:_newNames;
-    _newColTypes = toJavaPrimitive(fr.anyVec().get_type_str());
+    _newColTypes = fr.anyVec().get_type_str();
+    _newJavaColTypes = toJavaPrimitive(_newColTypes);
     if( (_multiColReturn=fr.numCols() > 1) ) {
       for(int i=0;i<_newCol.length;i++) {
         if(_newNames==null) _newCol[i] = f.uniquify(i > 0 ? _newCol[i - 1] : _oldCol);
@@ -118,7 +133,7 @@ public class H2OColOp extends Transform<H2OColOp> {
       StringBuilder sb = new StringBuilder(
               "    @Override public RowData transform(RowData row) {\n"+
               (paramIsRow() ? addRowParam() : "") +
-              "     "+_newColTypes+"[] res = GenMunger."+lookup(_fun)+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params);\n");
+              "     "+_newJavaColTypes+"[] res = GenMunger."+lookup(_fun)+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params);\n");
       for(int i=0;i<_newCol.length;i++)
         sb.append(
               "      row.put(\""+_newCol[i]+"\",("+i+">=res.length)?\"\":res["+i+"]);\n");
@@ -129,7 +144,7 @@ public class H2OColOp extends Transform<H2OColOp> {
     } else {
       return "    @Override public RowData transform(RowData row) {\n"+
              (paramIsRow() ? addRowParam() : "") +
-             "      "+_newColTypes+" res = GenMunger."+lookup(_fun)+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params);\n"+
+             "      "+_newJavaColTypes+" res = GenMunger."+lookup(_fun)+"(("+typeCast+")row.get(\""+_oldCol+"\"), _params);\n"+
              "      row.put(\""+_newCol[0]+"\", res);\n" +
              "      return row;\n" +
              "    }\n";

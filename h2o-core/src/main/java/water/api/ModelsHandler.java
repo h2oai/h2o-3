@@ -19,7 +19,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
 
-public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,S>>
+public class  ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,S>>
     extends Handler {
 
   /** Class which contains the internal representation of the models list and params. */
