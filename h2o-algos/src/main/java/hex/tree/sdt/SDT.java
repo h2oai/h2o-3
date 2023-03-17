@@ -55,7 +55,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         _limitNumSamplesForSplit = parameters._limitNumSamplesForSplit;
         _nodesCount = 0;
         _tree = null;
-        init(false);
+        init(true);
     }
 
     public SDT(boolean startup_once) {
@@ -267,12 +267,32 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
 
     private class SDTDriver extends Driver {
+        
+        private void sdtChecks() {
+            if(_train.hasNAs()) {
+                error("_train", "NaNs are not supported yet");
+            }
+            if(_train.hasInfs()) {
+                error("_train", "Infs are not supported");
+            }
+            if(IntStream.range(0, _train.numCols() - 1) // ignore prediction column
+                    .mapToObj(index -> _train.vec(index).isCategorical()).anyMatch(i -> i)) {
+                error("_train", "Categorical features are not supported yet");
+            }
+            if(!_response.isCategorical() ) {
+                error("_response", "Only categorical response is supported");
+            }
+            if(!_response.isBinary()) {
+                error("_response", "Only binary response is supported");
+            }
+        }
 
         @Override
         public void computeImpl() {
             _model = null;
             try {
-                init(false);
+                init(true);
+                sdtChecks();
                 if (error_count() > 0) {
                     throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SDT.this);
                 }
