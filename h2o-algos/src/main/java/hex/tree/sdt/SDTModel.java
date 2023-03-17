@@ -4,6 +4,8 @@ import hex.*;
 import org.apache.log4j.Logger;
 import water.*;
 
+import java.util.Arrays;
+
 public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.SDTOutput> {
 
     private static final Logger LOG = Logger.getLogger(SDTModel.class);
@@ -39,8 +41,15 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
         CompressedSDT tree = DKV.getGet(_output._treeKey);
         SDTPrediction prediction = tree.predictRowStartingFromNode(data, 0);
         preds[0] = prediction.classPrediction;
-        preds[1] = prediction.probability;
-        System.out.println(prediction.classPrediction);
+        if(prediction.classPrediction == 0) { 
+            preds[1] = prediction.probability;
+            preds[2] = 1 - prediction.probability;
+        } else {
+            preds[1] = 1 - prediction.probability;
+            preds[2] = prediction.probability;
+        }
+        
+        System.out.println(Arrays.toString(preds));
         return preds;
     }
 
