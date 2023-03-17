@@ -19,7 +19,7 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
      * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
      * Shape n x 3.
      * Values of second dimension: (indicator of leaf (0/1), feature index or decision value, threshold or probability).
-     * For a list: (1, decision value, probability), for an internal node: (0, feature index, threshold)
+     * For a leaf: (1, decision value, probability), for an internal node: (0, feature index, threshold)
      */
     private final double[][] _nodes;
 

@@ -127,9 +127,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
     /**
-     * Select decision value for list.
+     * Select decision value for leaf.
      *
-     * @param zeroRatio #zero/#one in list
+     * @param zeroRatio #zero/#one in a leaf
      * @return decision value (in current case - 0 or 1)
      */
     private int selectDecisionValue(double zeroRatio) {
@@ -141,9 +141,9 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
     /**
-     * Calculates a probability of predicted value for list.
+     * Calculates a probability of predicted value for a leaf.
      *
-     * @param zeroRatio #zero/#one in list
+     * @param zeroRatio #zero/#one in a leaf
      * @return probability of decision value (in current case - major 0 or 1)
      */
     private double calculateProbability(double zeroRatio) {
@@ -158,11 +158,11 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     /**
      * Set decision value to the node.
      *
-     * @param zeroRatio #zero/#one in list
+     * @param zeroRatio #zero/#one in a leaf
      * @param nodeIndex node index
      */
-    public void makeListFromNode(double zeroRatio, int nodeIndex) {
-        _tree[nodeIndex][0] = 1; // indicates list
+    public void makeLeafFromNode(double zeroRatio, int nodeIndex) {
+        _tree[nodeIndex][0] = 1; // indicates leaf
         _tree[nodeIndex][1] = selectDecisionValue(zeroRatio);
         _tree[nodeIndex][2] = calculateProbability(zeroRatio);
         // nothing to return, node is modified inplace
@@ -198,7 +198,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         }
         // compute node depth
         int nodeDepth = (int) Math.floor(MathUtils.log2(nodeIndex + 1));
-        // stop building from this node, the node will be list
+        // stop building from this node, the node will be a leaf
         if ((nodeDepth >= _parms._max_depth)
                 || (classesCount._1() <= _limitNumSamplesForSplit)
                 || (classesCount._2() <= _limitNumSamplesForSplit)
@@ -209,25 +209,25 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             limitsQueue.add(null);
             // right child
             limitsQueue.add(null);
-            makeListFromNode(zeroRatio, nodeIndex);
+            makeLeafFromNode(zeroRatio, nodeIndex);
             return;
         }
 
         Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH/*, minNumSamplesInBin - todo consider*/);
 
         SplitInfo bestSplitInfo = findBestSplit(histogram);
-        // if no split could be found, make a list from current node
+        // if no split could be found, make a leaf from current node
         if (bestSplitInfo == null) {
             // add imaginary left and right children to imitate right tree structure
             // left child
             limitsQueue.add(null);
             // right child
             limitsQueue.add(null);
-            makeListFromNode(zeroRatio, nodeIndex);
+            makeLeafFromNode(zeroRatio, nodeIndex);
             return;
         }
 
-        // flag that node is not a list
+        // flag that node is not a leaf
         _tree[nodeIndex][0] = 0;
         _tree[nodeIndex][1] = bestSplitInfo._splitFeatureIndex;
         _tree[nodeIndex][2] = bestSplitInfo._threshold;
