@@ -44,20 +44,27 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
      * @param actualNodeIndex - actual node to avaluate and then go to selected child
      * @return class label
      */
-    public SDTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex) {
+    public SDTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex, String ruleExplanation) {
         // todo - add explainability (save the chain of rules from the root to the leaf)
         int isALeaf = (int) _nodes[actualNodeIndex][0];
         double featureIndexOrValue = _nodes[actualNodeIndex][1];
         double thresholdOrProbability = _nodes[actualNodeIndex][2];
         // first value 1 means that the node is list, return prediction for the list
         if (isALeaf == 1) {
-            return new SDTPrediction((int) featureIndexOrValue, thresholdOrProbability, "ruleExplanation");
+            return new SDTPrediction((int) featureIndexOrValue, thresholdOrProbability, 
+                    ruleExplanation + " -> (" + featureIndexOrValue 
+                            + ", probabilities: " + thresholdOrProbability + ", " + (1 - thresholdOrProbability) + ")");
+        }
+        if (!ruleExplanation.isEmpty()) {
+            ruleExplanation += " and ";
         }
         if (rowValues[(int) featureIndexOrValue] < thresholdOrProbability
                 || Precision.equals(rowValues[(int) featureIndexOrValue], thresholdOrProbability, Precision.EPSILON)) {
-            return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1);
+            return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1,
+                    ruleExplanation + "(x" + featureIndexOrValue + " <= " + thresholdOrProbability + ")");
         } else {
-            return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 2);
+            return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 2,
+                    ruleExplanation + "(x" + featureIndexOrValue + " > " + thresholdOrProbability + ")");
         }
     }
 
