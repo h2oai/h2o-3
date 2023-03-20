@@ -1,5 +1,6 @@
 package hex.mojopipeline;
 
+import hex.genmodel.mojopipeline.transformers.MathBinaryTransform;
 import hex.genmodel.mojopipeline.transformers.MathUnaryTransform;
 import mojo.spec.Custom;
 import mojo.spec.PipelineOuterClass;
@@ -7,7 +8,6 @@ import water.fvec.ByteVec;
 import water.fvec.NFSFileVec;
 import water.rapids.Assembly;
 import water.rapids.ast.AstExec;
-import water.rapids.ast.prims.math.AstUniOp;
 import water.rapids.transforms.H2OColOp;
 import water.rapids.transforms.H2OColSelect;
 import water.rapids.transforms.Transform;
@@ -143,6 +143,12 @@ public class H2OAssemblyToMojoPipelineConverter {
             builder.setCustomOp(
                 Custom.CustomOp.newBuilder()
                     .setTransformerName(MathUnaryTransform.Factory.TRANSFORMER_ID)
+                    .addParams(functionParam)
+                    .build());
+        } else if (MathBinaryTransform.Factory.functionExists(functionName)) {
+            builder.setCustomOp(
+                Custom.CustomOp.newBuilder()
+                    .setTransformerName(MathBinaryTransform.Factory.TRANSFORMER_ID)
                     .addParams(functionParam)
                     .build());
         } else {
