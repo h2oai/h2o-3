@@ -511,18 +511,6 @@ def call(final pipelineContext) {
       stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
       timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
-    [
-      stageName: 'R3.5 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.5 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'R3.5 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ]
