@@ -20,7 +20,7 @@ public class H2OColOp extends Transform<H2OColOp> {
   private static final String FRAME_ID_PLACEHOLDER = "dummy";
 
   protected final String _fun;
-  private final String _oldCol;
+  protected String _oldCol;
   private String[] _newCol;
   private String _newJavaColTypes;
   private String _newColTypes;
@@ -41,14 +41,20 @@ public class H2OColOp extends Transform<H2OColOp> {
   public H2OColOp(String name, String ast, boolean inplace, String[] newNames) { // (op (cols fr cols) {extra_args})
     super(name,ast,inplace,newNames);
     _fun = _ast._asts[0].str();
-    _oldCol = findOldName((AstExec)_ast._asts[1]);
+    _oldCol = null;
+    for(int i=1; i<_ast._asts.length; ++i) {
+      if (_ast._asts[i] instanceof AstExec) {
+        _oldCol = findOldName((AstExec)_ast._asts[i]);
+        break;
+      }
+    }
     setupParams();
   }
 
   private void setupParams() {
     String[] args = _ast.getArgs();
     if( args!=null && args.length > 1 ) { // first arg is the frame
-      for(int i=1; i<args.length; ++i)
+      for(int i=0; i < args.length; ++i)
         setupParamsImpl(i,args);
     }
   }

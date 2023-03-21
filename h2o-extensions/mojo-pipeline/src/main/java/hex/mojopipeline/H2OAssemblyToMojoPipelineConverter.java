@@ -7,7 +7,7 @@ import mojo.spec.PipelineOuterClass;
 import water.fvec.ByteVec;
 import water.fvec.NFSFileVec;
 import water.rapids.Assembly;
-import water.rapids.ast.AstExec;
+import water.rapids.transforms.H2OBinaryOp;
 import water.rapids.transforms.H2OColOp;
 import water.rapids.transforms.H2OColSelect;
 import water.rapids.transforms.Transform;
@@ -88,6 +88,8 @@ public class H2OAssemblyToMojoPipelineConverter {
     private static Transformation convertStage(Transform stage){
         if (stage instanceof H2OColSelect) {
             return convertColSelect((H2OColSelect)stage);
+        } else if (stage instanceof H2OBinaryOp) {
+            return convertBinaryOp((H2OBinaryOp)stage);
         } else if (stage instanceof H2OColOp) {
             return convertColOp((H2OColOp)stage);
         } else {
@@ -123,7 +125,70 @@ public class H2OAssemblyToMojoPipelineConverter {
 
     private static Transformation convertColOp(H2OColOp stage){
         Transformation.Builder builder = Transformation.newBuilder();
-        setCustomBuilderForColOp(builder, stage.getAst(), stage.name());
+        String functionName = stage.getAst()._asts[0].str();
+        Custom.CustomParam functionParam = Custom.CustomParam.newBuilder()
+                .setName("function")
+                .setStringParam(functionName)
+                .build();
+        if (MathUnaryTransform.Factory.functionExists(functionName)) {
+            builder.setCustomOp(
+                Custom.CustomOp.newBuilder()
+                    .setTransformerName(MathUnaryTransform.Factory.TRANSFORMER_ID)
+                    .addParams(functionParam)
+                    .build());
+        } else {
+            throw new UnsupportedOperationException(
+                    String.format("The function '%s' in the stage '%s' is not supported.", functionName, stage.name()));
+        }
+        for (String inputColumn : stage.getOldNames()) {
+            builder.addInputs(inputColumn);
+        }
+        for (String outputColumn : stage.getNewNames()) {
+            builder.addOutputs(outputColumn);
+        }
+        return builder.build();
+    }
+
+    private static Transformation convertBinaryOp(H2OBinaryOp stage){
+        Transformation.Builder builder = Transformation.newBuilder();
+        String functionName = stage.getAst()._asts[0].str();
+        if (MathBinaryTransform.Factory.functionExists(functionName)) {
+            Custom.CustomOp.Builder customOpBuilder = Custom.CustomOp.newBuilder();
+            customOpBuilder.setTransformerName(MathBinaryTransform.Factory.TRANSFORMER_ID);
+            customOpBuilder.addParams(
+                Custom.CustomParam.newBuilder()
+                    .setName("function")
+                    .setStringParam(functionName)
+                    .build());
+            customOpBuilder.addParams(
+                Custom.CustomParam.newBuilder()
+                    .setName("isLeftCol")
+                    .setBoolParam(stage.getIsLeftColumn())
+                    .build());
+            customOpBuilder.addParams(
+                Custom.CustomParam.newBuilder()
+                    .setName("isRightCol")
+                    .setBoolParam(stage.getIsRightColumn())
+                    .build());
+            if(!stage.getIsLeftColumn()) {
+                customOpBuilder.addParams(
+                    Custom.CustomParam.newBuilder()
+                        .setName("constValue")
+                        .setFloat64Param(stage.getAst()._asts[1].exec(null).getNum())
+                        .build());
+            }
+            if(!stage.getIsRightColumn()) {
+                customOpBuilder.addParams(
+                    Custom.CustomParam.newBuilder()
+                        .setName("constValue")
+                        .setFloat64Param(stage.getAst()._asts[2].exec(null).getNum())
+                        .build());
+            }
+            builder.setCustomOp(customOpBuilder.build());
+        } else {
+            throw new UnsupportedOperationException(
+                    String.format("The function '%s' in the stage '%s' is not supported.", functionName, stage.name()));
+        }
         for (String inputColumn : stage.getOldNames()) {
             builder.addInputs(inputColumn);
         }
@@ -133,29 +198,6 @@ public class H2OAssemblyToMojoPipelineConverter {
         return builder.build();
     }
     
-    private static void setCustomBuilderForColOp(Transformation.Builder builder, AstExec ast, String stageName) {
-        String functionName = ast._asts[0].str();
-        Custom.CustomParam functionParam = Custom.CustomParam.newBuilder()
-            .setName("function")
-            .setStringParam(functionName)
-            .build();
-        if (MathUnaryTransform.Factory.functionExists(functionName)) {
-            builder.setCustomOp(
-                Custom.CustomOp.newBuilder()
-                    .setTransformerName(MathUnaryTransform.Factory.TRANSFORMER_ID)
-                    .addParams(functionParam)
-                    .build());
-        } else if (MathBinaryTransform.Factory.functionExists(functionName)) {
-            builder.setCustomOp(
-                Custom.CustomOp.newBuilder()
-                    .setTransformerName(MathBinaryTransform.Factory.TRANSFORMER_ID)
-                    .addParams(functionParam)
-                    .build());
-        } else {
-            throw new UnsupportedOperationException(
-                String.format("The function '%s' in the stage '%s' is not supported.", functionName, stageName));
-        }
-    }
 
     private static Frame frame(Column[] cols) {
         return Frame.newBuilder().addAllColumns(Arrays.asList(cols)).build();

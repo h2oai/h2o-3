@@ -12,19 +12,45 @@ import java.util.Map;
 public class MathBinaryTransform extends MojoTransform {
 
     MathBinaryFunction _function;
+    boolean _isLeftCol;
+    boolean _isRightCol;
+    double _constValue;
 
-    MathBinaryTransform(int[] iindices, int[] oindices, MathBinaryFunction function) {
+    MathBinaryTransform(
+            int[] iindices, 
+            int[] oindices, 
+            MathBinaryFunction function, 
+            boolean isLeftCol, 
+            boolean isRightCol, 
+            double constValue) {
         super(iindices, oindices);
         _function = function;
+        _isLeftCol = isLeftCol;
+        _isRightCol = isRightCol;
+        _constValue = constValue;
     }
 
     @Override
     public void transform(MojoFrame frame) {
-        double[] left = (double[]) frame.getColumnData(iindices[0]);
-        double[] right = (double[]) frame.getColumnData(iindices[1]);
-        double[] o = (double[]) frame.getColumnData(oindices[0]);
-        for (int i = 0, nrows = frame.getNrows(); i < nrows; i++) {
-            o[i] = _function.call(left[i], right[i]);
+        if (!_isLeftCol) {
+            double[] values = (double[]) frame.getColumnData(iindices[0]);
+            double[] o = (double[]) frame.getColumnData(oindices[0]);
+            for (int i = 0, nrows = frame.getNrows(); i < nrows; i++) {
+                o[i] = _function.call(_constValue, values[i]);
+            }
+        } else if (!_isRightCol) {
+            double[] values = (double[]) frame.getColumnData(iindices[0]);
+            double[] o = (double[]) frame.getColumnData(oindices[0]);
+            for (int i = 0, nrows = frame.getNrows(); i < nrows; i++) {
+                o[i] = _function.call(values[i], _constValue);
+            }
+        } else {
+            double[] left = (double[]) frame.getColumnData(iindices[0]);
+            double[] right = (double[]) frame.getColumnData(iindices[1]);
+            double[] o = (double[]) frame.getColumnData(oindices[0]);
+            for (int i = 0, nrows = frame.getNrows(); i < nrows; i++) {
+                o[i] = _function.call(left[i], right[i]);
+            }
         }
     }
 
@@ -221,8 +247,14 @@ public class MathBinaryTransform extends MojoTransform {
                                            Map<String, Object> params,
                                            ReaderBackend backend) {
             final String functionName = (String) params.get("function");
+            final Boolean isLeftCol = (Boolean) params.get("isLeftCol");
+            final Boolean isRightCol = (Boolean) params.get("isRightCol");
+            double constValue = 0.0;
+            if (!isLeftCol || !isRightCol) {
+                constValue = (Double) params.get("constValue");
+            }
             final MathBinaryFunction function = Factory.getFunction(functionName);
-            return new MathBinaryTransform(iindcies, oindices, function);
+            return new MathBinaryTransform(iindcies, oindices, function, isLeftCol, isRightCol, constValue);
         }
     }
 }
