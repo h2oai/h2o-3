@@ -64,7 +64,7 @@ class H2OLocalServer(object):
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
               ice_root=None, log_dir=None, log_level=None, max_log_file_size=None, port="54321+", name=None, extra_classpath=None,
-              verbose=True, jvm_custom_args=None, bind_to_localhost=True, hdfs_config=None):
+              verbose=True, jvm_custom_args=None, bind_to_localhost=True, extra_args={}):
         """
         Start new H2O server on the local machine.
 
@@ -91,7 +91,7 @@ class H2OLocalServer(object):
         :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local
             machine (default) or if it can be reached from other computers on the network.
             Only applicable when H2O is started from the Python client.
-        :param hdfs_config: Configuration file of the HDFS.
+        :param extra_args: Extra arguments useful for starting an H2O server, e.g. `hdfs_config` for specifying configuration file for accessing HDFS.
 
         :returns: a new H2OLocalServer instance.
         """
@@ -110,7 +110,7 @@ class H2OLocalServer(object):
         assert_is_type(extra_classpath, None, [str])
         assert_is_type(jvm_custom_args, list, None)
         assert_is_type(bind_to_localhost, bool)
-        assert_is_type(hdfs_config, str, None)
+        assert_is_type(extra_args, {"hdfs_config": str})
         if jar_path:
             assert_satisfies(jar_path, jar_path.endswith("h2o.jar"))
 
@@ -142,7 +142,7 @@ class H2OLocalServer(object):
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size, jvm_custom_args=jvm_custom_args,
                           bind_to_localhost=bind_to_localhost, log_dir=log_dir, log_level=log_level,
-                          max_log_file_size=max_log_file_size, hdfs_config=hdfs_config)
+                          max_log_file_size=max_log_file_size, extra_args=extra_args)
         if verbose: print("  Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
         atexit.register(lambda: hs.shutdown())
         return hs
@@ -267,7 +267,7 @@ class H2OLocalServer(object):
         yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
 
     def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost, 
-                       log_dir=None, log_level=None, max_log_file_size=None, hdfs_config=None):
+                       log_dir=None, log_level=None, max_log_file_size=None, extra_args={}):
         """Actually start the h2o.jar executable (helper method for `.start()`)."""
         self._ip = "127.0.0.1"
 
@@ -331,8 +331,8 @@ class H2OLocalServer(object):
         cmd += ["-log_level", "INFO"]
         cmd += ["-allow_unsupported_java"]
 
-        if hdfs_config:
-            cmd += ["-hdfs_config", hdfs_config]
+        if extra_args.get("hdfs_config", None):
+            cmd += ["-hdfs_config", extra_args["hdfs_config"]]
 
         # Create stdout and stderr files
         self._stdout = self._tmp_file("stdout")
