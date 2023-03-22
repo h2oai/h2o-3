@@ -1,7 +1,7 @@
-package hex.tree.sdt.binning;
+package hex.tree.dt.binning;
 
-import hex.tree.sdt.DataFeaturesLimits;
-import hex.tree.sdt.mrtasks.FeaturesLimitsMRTask;
+import hex.tree.dt.DataFeaturesLimits;
+import hex.tree.dt.mrtasks.FeaturesLimitsMRTask;
 import water.fvec.Frame;
 
 import java.util.List;

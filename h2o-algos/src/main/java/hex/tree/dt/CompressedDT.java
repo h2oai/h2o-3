@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 import org.apache.commons.math3.util.Precision;
 import water.Key;
@@ -11,9 +11,9 @@ import java.util.stream.Collectors;
 
 
 /**
- * Compressed SDT class containing tree as array.
+ * Compressed DT class containing tree as array.
  */
-public class CompressedSDT extends Keyed<CompressedSDT> {
+public class CompressedDT extends Keyed<CompressedDT> {
 
     /**
      * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
@@ -25,13 +25,9 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
 
     private final ArrayList<String> _listOfRules;
 
-//    public CompressedSDT(int nodes_count) {
-//        _key = Key.make("CompressedSDT" + Key.rand());
-//        _nodes = new double[nodes_count][2];
-//    }
 
-    public CompressedSDT(double[][] nodes) {
-        _key = Key.make("CompressedSDT" + Key.rand());
+    public CompressedDT(double[][] nodes) {
+        _key = Key.make("CompressedDT" + Key.rand());
         _nodes = nodes;
         _listOfRules = new ArrayList<>();
         extractRulesStartingWithNode(0, "");
@@ -41,18 +37,18 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
      * Makes prediction by recursively evaluating the data through the tree.
      *
      * @param rowValues       - data row to find prediction for
-     * @param actualNodeIndex - actual node to avaluate and then go to selected child
+     * @param actualNodeIndex - actual node to evaluate and then go to selected child
      * @return class label
      */
-    public SDTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex, String ruleExplanation) {
+    public DTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex, String ruleExplanation) {
         // todo - add explainability (save the chain of rules from the root to the leaf)
         int isALeaf = (int) _nodes[actualNodeIndex][0];
         double featureIndexOrValue = _nodes[actualNodeIndex][1];
         double thresholdOrProbability = _nodes[actualNodeIndex][2];
         // first value 1 means that the node is list, return prediction for the list
         if (isALeaf == 1) {
-            return new SDTPrediction((int) featureIndexOrValue, thresholdOrProbability, 
-                    ruleExplanation + " -> (" + featureIndexOrValue 
+            return new DTPrediction((int) featureIndexOrValue, thresholdOrProbability,
+                    ruleExplanation + " -> (" + featureIndexOrValue
                             + ", probabilities: " + thresholdOrProbability + ", " + (1 - thresholdOrProbability) + ")");
         }
         if (!ruleExplanation.isEmpty()) {
@@ -75,7 +71,7 @@ public class CompressedSDT extends Keyed<CompressedSDT> {
 
     // todo - add test on this
     public void extractRulesStartingWithNode(int nodeIndex, String actualRule) {
-        if(_nodes[nodeIndex][0] == 1) {
+        if (_nodes[nodeIndex][0] == 1) {
             // if node is a list, add the rule to the list and return
             _listOfRules.add(actualRule + " -> (" + _nodes[nodeIndex][1] + ", " + _nodes[nodeIndex][2] + ")");
             return;

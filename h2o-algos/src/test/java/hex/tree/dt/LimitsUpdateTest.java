@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
@@ -11,7 +11,7 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import static hex.tree.sdt.binning.Histogram.getFeaturesLimitsForConditions;
+import static hex.tree.dt.binning.Histogram.getFeaturesLimitsForConditions;
 import static org.junit.Assert.*;
 
 
@@ -37,7 +37,7 @@ public class LimitsUpdateTest extends TestUtil {
             
             Scope.track_generic(basicData);
 
-            DataFeaturesLimits wholeDataLimits = SDT.getInitialFeaturesLimits(basicData);
+            DataFeaturesLimits wholeDataLimits = DT.getInitialFeaturesLimits(basicData);
 
             // count of features
             assertEquals(basicData.numCols() - 1, wholeDataLimits.featuresCount());

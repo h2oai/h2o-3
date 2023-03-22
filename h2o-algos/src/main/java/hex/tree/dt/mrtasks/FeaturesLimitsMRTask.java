@@ -1,6 +1,6 @@
-package hex.tree.sdt.mrtasks;
+package hex.tree.dt.mrtasks;
 
-import hex.tree.sdt.SDT;
+import hex.tree.dt.DT;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
@@ -39,7 +39,7 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
      */
     private void tryUpdatingMin(int feature, double candidateValue) {
         if (_realFeatureLimits[feature][LIMIT_MIN] > candidateValue) {
-            _realFeatureLimits[feature][LIMIT_MIN] = candidateValue - SDT.EPSILON;
+            _realFeatureLimits[feature][LIMIT_MIN] = candidateValue - DT.EPSILON;
         }
     }
 

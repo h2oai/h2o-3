@@ -1,4 +1,4 @@
-package hex.tree.sdt.binning;
+package hex.tree.dt.binning;
 
 /**
  * Statistics for single bin depending on all the data.

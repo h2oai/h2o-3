@@ -1,4 +1,4 @@
-package hex.tree.sdt.mrtasks;
+package hex.tree.dt.mrtasks;
 
 import org.apache.commons.math3.util.Precision;
 import water.MRTask;

@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 /**
  * Split info, holds feature index and threshold.

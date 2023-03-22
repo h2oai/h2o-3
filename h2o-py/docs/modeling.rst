@@ -19,6 +19,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2ODecisionTreeEstimator`
+-------------------------------
+.. autoclass:: h2o.estimators.decision_tree.H2ODecisionTreeEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2ODeepLearningEstimator`
 -------------------------------
 .. autoclass:: h2o.estimators.deeplearning.H2ODeepLearningEstimator
@@ -76,12 +82,6 @@ Supervised
 :mod:`H2ORuleFitEstimator`
 --------------------------
 .. autoclass:: h2o.estimators.rulefit.H2ORuleFitEstimator
-    :show-inheritance:
-    :members:
-
-:mod:`H2OSingleDecisionTreeEstimator`
--------------------------------------
-.. autoclass:: h2o.estimators.single_decision_tree.H2OSingleDecisionTreeEstimator
     :show-inheritance:
     :members:
 

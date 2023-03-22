@@ -12,13 +12,13 @@ from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
-class H2OSingleDecisionTreeEstimator(H2OEstimator):
+class H2ODecisionTreeEstimator(H2OEstimator):
     """
-    Single Decision Tree
+    Decision Tree
 
     """
 
-    algo = "sdt"
+    algo = "dt"
     supervised_learning = True
 
     def __init__(self,
@@ -81,7 +81,7 @@ class H2OSingleDecisionTreeEstimator(H2OEstimator):
                Defaults to ``10``.
         :type min_rows: int
         """
-        super(H2OSingleDecisionTreeEstimator, self).__init__()
+        super(H2ODecisionTreeEstimator, self).__init__()
         self._parms = {}
         self._id = self._parms['model_id'] = model_id
         self.training_frame = training_frame

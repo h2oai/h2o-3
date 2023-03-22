@@ -1,6 +1,6 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
-import hex.tree.sdt.mrtasks.GetClassCountsMRTask;
+import hex.tree.dt.mrtasks.GetClassCountsMRTask;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Scope;
@@ -12,7 +12,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 
-import static hex.tree.sdt.binning.Histogram.getFeaturesLimitsForConditions;
+import static hex.tree.dt.binning.Histogram.getFeaturesLimitsForConditions;
 import static org.junit.Assert.*;
 
 @CloudSize(1)
@@ -33,7 +33,7 @@ public class ClassCountTest extends TestUtil {
 
             Scope.track_generic(basicData);
 
-            DataFeaturesLimits wholeDataLimits = SDT.getInitialFeaturesLimits(basicData);
+            DataFeaturesLimits wholeDataLimits = DT.getInitialFeaturesLimits(basicData);
 
             GetClassCountsMRTask task = new GetClassCountsMRTask(wholeDataLimits.toDoubles(), 2);
             task.doAll(basicData);

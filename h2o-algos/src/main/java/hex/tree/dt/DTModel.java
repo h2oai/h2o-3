@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 import hex.*;
 import org.apache.log4j.Logger;
@@ -6,13 +6,13 @@ import water.*;
 
 import java.util.Arrays;
 
-public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.SDTOutput> {
+public class DTModel extends Model<DTModel, DTModel.DTParameters, DTModel.DTOutput> {
 
-    private static final Logger LOG = Logger.getLogger(SDTModel.class);
+    private static final Logger LOG = Logger.getLogger(DTModel.class);
 
 
-    public SDTModel(Key<SDTModel> selfKey, SDTModel.SDTParameters parms,
-                    SDTModel.SDTOutput output) {
+    public DTModel(Key<DTModel> selfKey, DTParameters parms,
+                   DTOutput output) {
         super(selfKey, parms, output);
     }
 
@@ -34,28 +34,28 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
     protected double[] score0(double[] data, double[] preds) {
         assert _output._treeKey != null : "Output has no tree, check if tree is properly set to the output.";
         // compute score for given point
-        CompressedSDT tree = DKV.getGet(_output._treeKey);
-        SDTPrediction prediction = tree.predictRowStartingFromNode(data, 0, "");
+        CompressedDT tree = DKV.getGet(_output._treeKey);
+        DTPrediction prediction = tree.predictRowStartingFromNode(data, 0, "");
         System.out.println(prediction.ruleExplanation);
         // for now, only pred. for class 0 is stored, will be improved later
         preds[0] = prediction.classPrediction;
         preds[1] = prediction.probability;
         preds[2] = 1 - prediction.probability;
-        
+
         System.out.println(Arrays.toString(preds));
         return preds;
     }
 
-    public static class SDTOutput extends Model.Output {
+    public static class DTOutput extends Model.Output {
         public int _max_depth;
         public int _limitNumSamplesForSplit;
 
-        public Key<CompressedSDT> _treeKey;
+        public Key<CompressedDT> _treeKey;
 
-        public SDTOutput(SDT sdt) {
-            super(sdt);
-            _max_depth = sdt._parms._max_depth;
-            _limitNumSamplesForSplit = sdt._parms._min_rows;
+        public DTOutput(DT dt) {
+            super(dt);
+            _max_depth = dt._parms._max_depth;
+            _limitNumSamplesForSplit = dt._parms._min_rows;
         }
 
     }
@@ -78,7 +78,7 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
         return super.readAll_impl(ab, fs);
     }
 
-    public static class SDTParameters extends Model.Parameters {
+    public static class DTParameters extends Model.Parameters {
         long seed = -1; //ignored
         /**
          * Depth (max depth) of the tree
@@ -87,7 +87,7 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
 
         public int _min_rows;
 
-        public SDTParameters() {
+        public DTParameters() {
             super();
             _max_depth = 20;
             _min_rows = 10;
@@ -95,17 +95,17 @@ public class SDTModel extends Model<SDTModel, SDTModel.SDTParameters, SDTModel.S
 
         @Override
         public String algoName() {
-            return "SDT";
+            return "DT";
         }
 
         @Override
         public String fullName() {
-            return "Single Decision Tree";
+            return "Decision Tree";
         }
 
         @Override
         public String javaName() {
-            return SDTModel.class.getName();
+            return DTModel.class.getName();
         }
 
         @Override

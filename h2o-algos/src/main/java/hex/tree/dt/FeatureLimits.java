@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 /**
  * Limits for one feature.
@@ -6,6 +6,7 @@ package hex.tree.sdt;
 public class FeatureLimits {
     public double _min;
     public double _max;
+
     public FeatureLimits(final double min, final double max) {
         _min = min;
         _max = max;

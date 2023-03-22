@@ -1,9 +1,8 @@
-package hex.tree.sdt.binning;
+package hex.tree.dt.binning;
 
-import hex.tree.sdt.DataFeaturesLimits;
-import hex.tree.sdt.FeatureLimits;
-import hex.tree.sdt.mrtasks.CountBinSamplesCountMRTask;
-import hex.tree.sdt.mrtasks.CountBinsSamplesCountsMRTask;
+import hex.tree.dt.DataFeaturesLimits;
+import hex.tree.dt.FeatureLimits;
+import hex.tree.dt.mrtasks.CountBinSamplesCountMRTask;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -12,9 +11,6 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static hex.tree.sdt.mrtasks.CountBinsSamplesCountsMRTask.COUNT;
-import static hex.tree.sdt.mrtasks.CountBinsSamplesCountsMRTask.COUNT_0;
 
 /**
  * Strategy for binning. Creates bins for single feature.

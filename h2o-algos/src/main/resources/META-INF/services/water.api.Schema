@@ -86,10 +86,10 @@ hex.schemas.ExtendedIsolationForestModelV3
 hex.schemas.ExtendedIsolationForestModelV3$ExtendedIsolationForestModelOutputV3
 hex.schemas.ExtendedIsolationForestV3
 hex.schemas.ExtendedIsolationForestV3$ExtendedIsolationForestParametersV3
-hex.schemas.SDTModelV3
-hex.schemas.SDTModelV3$SDTModelOutputV3
-hex.schemas.SDTV3
-hex.schemas.SDTV3$SDTParametersV3
+hex.schemas.DTModelV3
+hex.schemas.DTModelV3$DTModelOutputV3
+hex.schemas.DTV3
+hex.schemas.DTV3$DTParametersV3
 water.api.ModelMetricsAnomalyV3
 water.api.ModelMetricsGLRMV99
 water.api.ModelMetricsPCAV3

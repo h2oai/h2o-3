@@ -1,16 +1,16 @@
 import h2o
-from h2o.estimators import H2OSingleDecisionTreeEstimator
+from h2o.estimators import H2ODecisionTreeEstimator
 from tests import pyunit_utils
 from sklearn.metrics import accuracy_score, f1_score
 
 
-def test_sdt_binary_classification():
+def test_dt_binary_classification():
     target_variable = 'CAPSULE'
     train, test = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv")).split_frame(ratios=[.7])
     y_train = train[target_variable].as_data_frame(use_pandas=True)[target_variable]
     y_test = test[target_variable].as_data_frame(use_pandas=True)[target_variable]
 
-    sdt_h2o = H2OSingleDecisionTreeEstimator(model_id="single_decision_tree.hex", max_depth=5)
+    sdt_h2o = H2ODecisionTreeEstimator(model_id="single_decision_tree.hex", max_depth=5)
     sdt_h2o.train(training_frame=train, y=target_variable)
 
     pred_train = sdt_h2o.predict(train).as_data_frame(use_pandas=True)['predict']
@@ -31,6 +31,6 @@ def test_sdt_binary_classification():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_sdt_binary_classification)
+    pyunit_utils.standalone_test(test_dt_binary_classification)
 else:
-    test_sdt_binary_classification()
+    test_dt_binary_classification()

@@ -346,7 +346,7 @@ def algo_to_classname(algo):
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     if algo == "isolationforest": return "H2OIsolationForestEstimator"
     if algo == "extendedisolationforest": return "H2OExtendedIsolationForestEstimator"
-    if algo == "sdt": return "H2OSingleDecisionTreeEstimator"
+    if algo == "dt": return "H2ODecisionTreeEstimator"
     if algo == "psvm": return "H2OSupportVectorMachineEstimator"
     if algo == "gam": return "H2OGeneralizedAdditiveEstimator"
     if algo == "anovaglm": return "H2OANOVAGLMEstimator"
@@ -451,7 +451,7 @@ def main():
         naivebayes="naive_bayes",
         isolationforest="isolation_forest",
         extendedisolationforest="extended_isolation_forest",
-        sdt="single_decision_tree",
+        dt="decision_tree",
         upliftdrf="uplift_random_forest",
         modelselection="model_selection"
     )

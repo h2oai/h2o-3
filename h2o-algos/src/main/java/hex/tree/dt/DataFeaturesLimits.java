@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 import java.util.Arrays;
 import java.util.List;
@@ -58,7 +58,7 @@ public class DataFeaturesLimits {
     }
 
     /**
-     * Serialize limits do n x 2 array so it can be passed to MR task
+     * Serialize limits do n x 2 array, so it can be passed to MR task
      *
      * @return
      */

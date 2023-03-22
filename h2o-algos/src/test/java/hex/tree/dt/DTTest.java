@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 import hex.ConfusionMatrix;
 import hex.tree.drf.DRF;
@@ -26,7 +26,7 @@ import static org.junit.Assert.*;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
-public class SDTTest extends TestUtil {
+public class DTTest extends TestUtil {
 
 
     @Test
@@ -44,16 +44,16 @@ public class SDTTest extends TestUtil {
             Scope.track_generic(train);
 
 
-            SDTModel.SDTParameters p =
-                    new SDTModel.SDTParameters();
+            DTModel.DTParameters p =
+                    new DTModel.DTParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._max_depth = 5;
             p._min_rows = 2;
             p._response_column = "Prediction";
 
-            SDT sdt = new SDT(p);
-            SDTModel model = sdt.trainModel().get();
+            DT dt = new DT(p);
+            DTModel model = dt.trainModel().get();
             assert model != null;
             Scope.track_generic(model);
             Frame out = model.score(train);
@@ -72,8 +72,8 @@ public class SDTTest extends TestUtil {
                     .build();
             Scope.track_generic(test);
 
-            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output._treeKey)).getNodes()));
-            System.out.println(String.join("\n", ((CompressedSDT) DKV.getGet(model._output._treeKey)).getListOfRules()));
+            System.out.println(Arrays.deepToString(((CompressedDT) DKV.getGet(model._output._treeKey)).getNodes()));
+            System.out.println(String.join("\n", ((CompressedDT) DKV.getGet(model._output._treeKey)).getListOfRules()));
 
             Frame prediction = model.score(test);
             Scope.track_generic(prediction);
@@ -107,14 +107,14 @@ public class SDTTest extends TestUtil {
                     .build();
 
             Scope.track_generic(train);
-            SDTModel.SDTParameters p =
-                    new SDTModel.SDTParameters();
+            DTModel.DTParameters p =
+                    new DTModel.DTParameters();
             p._train = train._key;
             p._response_column = "Prediction";
-            SDT sdt = new SDT(p);
+            DT dt = new DT(p);
 
             // validation occurs when starting training
-            sdt.trainModel().get();
+            dt.trainModel().get();
             fail("should have thrown validation error");
         } catch (H2OModelBuilderIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Categorical features are not supported yet"));
@@ -137,14 +137,14 @@ public class SDTTest extends TestUtil {
                     .build();
 
             Scope.track_generic(train);
-            SDTModel.SDTParameters p =
-                    new SDTModel.SDTParameters();
+            DTModel.DTParameters p =
+                    new DTModel.DTParameters();
             p._train = train._key;
             p._response_column = "Prediction";
-            SDT sdt = new SDT(p);
+            DT dt = new DT(p);
 
             // validation occurs when starting training
-            sdt.trainModel().get();
+            dt.trainModel().get();
             fail("should have thrown validation error");
         } catch (H2OModelBuilderIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("NaNs are not supported yet"));
@@ -168,14 +168,14 @@ public class SDTTest extends TestUtil {
                     .build();
 
             Scope.track_generic(train);
-            SDTModel.SDTParameters p =
-                    new SDTModel.SDTParameters();
+            DTModel.DTParameters p =
+                    new DTModel.DTParameters();
             p._train = train._key;
             p._response_column = "Prediction";
-            SDT sdt = new SDT(p);
+            DT dt = new DT(p);
 
             // validation occurs when starting training
-            sdt.trainModel().get();
+            dt.trainModel().get();
             fail("should have thrown validation error");
         } catch (H2OModelBuilderIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Only categorical response is supported"));
@@ -208,8 +208,8 @@ public class SDTTest extends TestUtil {
         DKV.put(train);
         DKV.put(test);
 
-        SDTModel.SDTParameters p =
-                new SDTModel.SDTParameters();
+        DTModel.DTParameters p =
+                new DTModel.DTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
         p._max_depth = 12;
@@ -233,8 +233,8 @@ public class SDTTest extends TestUtil {
         Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
         Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test_preprocessed.csv"));
 
-        SDTModel.SDTParameters p =
-                new SDTModel.SDTParameters();
+        DTModel.DTParameters p =
+                new DTModel.DTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
         p._max_depth = 12;
@@ -260,8 +260,8 @@ public class SDTTest extends TestUtil {
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/Dataset1_train.csv"));
         Frame test = Scope.track(parseTestFile("smalldata/yuliia/Dataset1_test.csv"));
 
-        SDTModel.SDTParameters p =
-                new SDTModel.SDTParameters();
+        DTModel.DTParameters p =
+                new DTModel.DTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
         p._max_depth = 3;
@@ -285,8 +285,8 @@ public class SDTTest extends TestUtil {
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/creditcard_train.csv"));
         Frame test = Scope.track(parseTestFile("smalldata/yuliia/creditcard_test.csv"));
 
-        SDTModel.SDTParameters p =
-                new SDTModel.SDTParameters();
+        DTModel.DTParameters p =
+                new DTModel.DTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
         p._max_depth = 5;
@@ -310,8 +310,8 @@ public class SDTTest extends TestUtil {
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/HIGGS_train_limited1.csv"));
         Frame test = Scope.track(parseTestFile("smalldata/yuliia/HIGGS_test_limited1.csv"));
 
-        SDTModel.SDTParameters p =
-                new SDTModel.SDTParameters();
+        DTModel.DTParameters p =
+                new DTModel.DTParameters();
         p._train = train._key;
         p._seed = 0xDECAF;
         p._max_depth = 5;
@@ -329,20 +329,20 @@ public class SDTTest extends TestUtil {
         
     }
     
-    public void testDataset(Frame train, Frame test, SDTModel.SDTParameters p, DRFModel.DRFParameters p1, String datasetName) {
+    public void testDataset(Frame train, Frame test, DTModel.DTParameters p, DRFModel.DRFParameters p1, String datasetName) {
         try {
 
-            SDT sdt = new SDT(p);
-            long start_training_sdt = System.currentTimeMillis();
-            SDTModel model = sdt.trainModel().get();
-            long end_training_sdt = System.currentTimeMillis();
+            DT dt = new DT(p);
+            long start_training_dt = System.currentTimeMillis();
+            DTModel model = dt.trainModel().get();
+            long end_training_dt = System.currentTimeMillis();
 
             assertNotNull(model);
             Scope.track_generic(model);
 
-            long start_predicting_sdt = System.currentTimeMillis();
+            long start_predicting_dt = System.currentTimeMillis();
             Frame out = model.score(test);
-            long end_predicting_sdt = System.currentTimeMillis();
+            long end_predicting_dt = System.currentTimeMillis();
 
             Scope.track_generic(out);
             assertEquals(test.numRows(), out.numRows());
@@ -359,7 +359,7 @@ public class SDTTest extends TestUtil {
             ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(
                     test.vec(p._response_column).toCategoricalVec(),
                     out.vec(0).toCategoricalVec());
-            System.out.println("SDT:");
+            System.out.println("DT:");
             System.out.println("Accuracy: " + cm.accuracy());
 //            System.out.println("Precision: " + cm.precision());
 //            System.out.println("Recall: " + cm.recall());

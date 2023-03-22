@@ -37,7 +37,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.rulefit     .RuleFit     (true),
             new hex.tree.uplift.UpliftDRF    (true),
             new hex.modelselection .ModelSelection (true),
-            new hex.tree.sdt    .SDT         (true)
+            new hex.tree.dt      .DT         (true)
     };
 
     // "Word2Vec", "Example", "Grep"

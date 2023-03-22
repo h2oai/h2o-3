@@ -1,9 +1,9 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
-import hex.tree.sdt.binning.Bin;
-import hex.tree.sdt.binning.BinningStrategy;
-import hex.tree.sdt.binning.Histogram;
-import hex.tree.sdt.mrtasks.CountBinSamplesCountMRTask;
+import hex.tree.dt.binning.Bin;
+import hex.tree.dt.binning.BinningStrategy;
+import hex.tree.dt.binning.Histogram;
+import hex.tree.dt.mrtasks.CountBinSamplesCountMRTask;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static hex.tree.sdt.SDT.getInitialFeaturesLimits;
+import static hex.tree.dt.DT.getInitialFeaturesLimits;
 import static org.junit.Assert.*;
 
 @CloudSize(1)

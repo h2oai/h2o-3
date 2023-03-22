@@ -1,16 +1,16 @@
 package hex.schemas;
 
-import hex.tree.sdt.SDT;
-import hex.tree.sdt.SDTModel;
+import hex.tree.dt.DT;
+import hex.tree.dt.DTModel;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
 
-public class SDTV3 extends ModelBuilderSchema<
-        SDT,
-        SDTV3, 
-        SDTV3.SDTParametersV3> {
+public class DTV3 extends ModelBuilderSchema<
+        DT,
+        DTV3,
+        DTV3.DTParametersV3> {
 
-    public static final class SDTParametersV3 extends ModelParametersSchemaV3<SDTModel.SDTParameters, SDTParametersV3> {
+    public static final class DTParametersV3 extends ModelParametersSchemaV3<DTModel.DTParameters, DTParametersV3> {
         static public String[] fields = new String[]{
                 "model_id",
                 "training_frame",
@@ -34,7 +34,7 @@ public class SDTV3 extends ModelBuilderSchema<
         @API(help = "Max depth of tree.", gridable = true)
         public int max_depth;
 
-        @API(help="Fewest allowed (weighted) observations in a leaf.", gridable = true)
+        @API(help = "Fewest allowed (weighted) observations in a leaf.", gridable = true)
         public int min_rows;
     }
 }

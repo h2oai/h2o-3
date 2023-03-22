@@ -1,11 +1,11 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.tree.sdt.binning.BinAccumulatedStatistics;
-import hex.tree.sdt.binning.BinningStrategy;
-import hex.tree.sdt.binning.Histogram;
-import hex.tree.sdt.mrtasks.GetClassCountsMRTask;
+import hex.tree.dt.binning.BinAccumulatedStatistics;
+import hex.tree.dt.binning.BinningStrategy;
+import hex.tree.dt.binning.Histogram;
+import hex.tree.dt.mrtasks.GetClassCountsMRTask;
 import org.apache.commons.math3.util.Precision;
 import org.apache.log4j.Logger;
 import water.DKV;
@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 /**
  * Single Decision Tree
  */
-public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel.SDTOutput> {
+public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOutput> {
 
     /**
      * Minimum number of samples to split the set.
@@ -41,16 +41,16 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
      */
     private double[][] _tree;
 
-    private SDTModel _model;
+    private DTModel _model;
     transient Random _rand;
 
     //    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 2; // todo - make a parameter with default value
     public final static double EPSILON = 1e-6;
 
-    private static final Logger LOG = Logger.getLogger(SDT.class);
+    private static final Logger LOG = Logger.getLogger(DT.class);
 
 
-    public SDT(SDTModel.SDTParameters parameters) {
+    public DT(DTModel.DTParameters parameters) {
         super(parameters);
         _min_rows = parameters._min_rows;
         _nodesCount = 0;
@@ -58,8 +58,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         init(true);
     }
 
-    public SDT(boolean startup_once) {
-        super(new SDTModel.SDTParameters(), startup_once);
+    public DT(boolean startup_once) {
+        super(new DTModel.DTParameters(), startup_once);
     }
 
     /**
@@ -138,7 +138,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         }
         int currentMaxClass = 0;
         int currentMax = countsByClass[currentMaxClass];
-        for (int c = 1; c < _nclass; c ++) {
+        for (int c = 1; c < _nclass; c++) {
             if (countsByClass[c] > currentMax) {
                 currentMaxClass = c;
                 currentMax = countsByClass[c];
@@ -163,7 +163,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
      * Set decision value to the node.
      *
      * @param countsByClass counts of samples of each class
-     * @param nodeIndex node index
+     * @param nodeIndex     node index
      */
     public void makeLeafFromNode(int[] countsByClass, int nodeIndex) {
         _tree[nodeIndex][0] = 1; // indicates leaf
@@ -237,8 +237,8 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
         DataFeaturesLimits limitsLeft = actualLimits.updateMax(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
         DataFeaturesLimits limitsRight = actualLimits.updateMin(bestSplitInfo._splitFeatureIndex, bestSplitInfo._threshold);
-        Log.debug("root: " + Arrays.toString(countClasses(actualLimits)) + ", left: " 
-                + Arrays.toString(countClasses(limitsLeft)) + ", right: " + Arrays.toString(countClasses(limitsRight)) 
+        Log.debug("root: " + Arrays.toString(countClasses(actualLimits)) + ", left: "
+                + Arrays.toString(countClasses(limitsLeft)) + ", right: " + Arrays.toString(countClasses(limitsRight))
                 + ", best feature: " + bestSplitInfo._splitFeatureIndex
                 + ", threshold: " + bestSplitInfo._threshold);
 
@@ -270,23 +270,23 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     }
 
 
-    private class SDTDriver extends Driver {
-        
-        private void sdtChecks() {
-            if(_train.hasNAs()) {
+    private class DTDriver extends Driver {
+
+        private void dtChecks() {
+            if (_train.hasNAs()) {
                 error("_train", "NaNs are not supported yet");
             }
-            if(_train.hasInfs()) {
+            if (_train.hasInfs()) {
                 error("_train", "Infs are not supported");
             }
-            if(IntStream.range(0, _train.numCols() - 1) // ignore prediction column
+            if (IntStream.range(0, _train.numCols() - 1) // ignore prediction column
                     .mapToObj(index -> _train.vec(index).isCategorical()).anyMatch(i -> i)) {
                 error("_train", "Categorical features are not supported yet");
             }
-            if(!_response.isCategorical() ) {
+            if (!_response.isCategorical()) {
                 error("_response", "Only categorical response is supported");
             }
-            if(!_response.isBinary()) {
+            if (!_response.isBinary()) {
                 error("_response", "Only binary response is supported");
             }
         }
@@ -296,15 +296,15 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
             _model = null;
             try {
                 init(true);
-                sdtChecks();
+                dtChecks();
                 if (error_count() > 0) {
-                    throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SDT.this);
+                    throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DT.this);
                 }
                 _rand = RandomUtils.getRNG(_parms._seed);
-                _model = new SDTModel(dest(), _parms,
-                        new SDTModel.SDTOutput(SDT.this));
+                _model = new DTModel(dest(), _parms,
+                        new DTModel.DTOutput(DT.this));
                 _model.delete_and_lock(_job);
-                buildSDT();
+                buildDT();
                 LOG.info(_model.toString());
             } finally {
                 if (_model != null)
@@ -315,18 +315,18 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         /**
          * Build SDT and update infrastructure.
          */
-        private void buildSDT() {
-            buildSDTIteratively();
+        private void buildDT() {
+            buildDTIteratively();
             Log.debug("depth: " + _parms._max_depth + ", nodes count: " + _nodesCount);
 
-            CompressedSDT compressedSDT = new CompressedSDT(_tree);
+            CompressedDT compressedDT = new CompressedDT(_tree);
 
-            _model._output._treeKey = compressedSDT._key;
-            DKV.put(compressedSDT);
+            _model._output._treeKey = compressedDT._key;
+            DKV.put(compressedDT);
             _job.update(1);
             _model.update(_job);
-//            System.out.println("Tree: " + compressedSDT.toString());
-            System.out.println("Rules: " + String.join("\n", compressedSDT.getListOfRules()));
+//            System.out.println("Tree: " + compressedDT.toString());
+            System.out.println("Rules: " + String.join("\n", compressedDT.getListOfRules()));
             Log.debug("Tree:");
             Log.debug(Arrays.deepToString(_tree));
         }
@@ -334,7 +334,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
         /**
          * Build the tree iteratively starting from the root node.
          */
-        private void buildSDTIteratively() {
+        private void buildDTIteratively() {
             _tree = new double[(int) Math.pow(2, _parms._max_depth + 1)][3];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits(_train));
@@ -352,11 +352,13 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
 
     @Override
     protected Driver trainModelImpl() {
-        return new SDTDriver();
+        return new DTDriver();
     }
 
     @Override
-    public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+    public BuilderVisibility builderVisibility() {
+        return BuilderVisibility.Experimental;
+    }
 
     @Override
     public ModelCategory[] can_build() {
@@ -372,7 +374,7 @@ public class SDT extends ModelBuilder<SDTModel, SDTModel.SDTParameters, SDTModel
     public boolean isSupervised() {
         return true;
     }
-    
+
 
     /**
      * Count classes withing samples satisfying given limits.
