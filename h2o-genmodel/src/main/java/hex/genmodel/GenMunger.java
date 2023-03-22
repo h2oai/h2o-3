@@ -92,22 +92,55 @@ public class GenMunger implements Serializable {
   }
   public static double divide(double d, HashMap<String,String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
-    String[] riteArg = parameters.get("rightArg");
-    if( leftArg==null ) return d / parseNum(riteArg[0]);
+    String[] rightArg = parameters.get("rightArg");
+    if( leftArg==null ) return d / parseNum(rightArg[0]);
     return parseNum(leftArg[0]) / d;
   }
   public static double mod(double d, HashMap<String,String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
-    String riteArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return d % parseNum(riteArg);
+    String rightArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return d % parseNum(rightArg);
     return parseNum(leftArg) % d;
   }
   public static double pow(double d, HashMap<String, String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
-    String riteArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return Math.pow(d,parseNum(riteArg));
+    String rightArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return Math.pow(d,parseNum(rightArg));
     return Math.pow(parseNum(leftArg),d);
   }
+
+  private static double and(double l, double r) {
+    return (l == 0 || r == 0) ? 0 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 1);
+  }
+  
+  public static double and(double d, HashMap<String, String[]> parameters) {
+    String leftArg = parameters.get("leftArg")[0];
+    String rightArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return and(d, parseNum(rightArg));
+    return and(parseNum(leftArg), d);
+  }
+
+  private static double or(double l, double r) {
+    return (l == 1 || r == 1) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0);
+  }
+  public static double or(double d, HashMap<String, String[]> parameters) {
+    String leftArg = parameters.get("leftArg")[0];
+    String rightArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return or(d, parseNum(rightArg));
+    return or(parseNum(leftArg), d);
+  }
+  
+  private static double intDiv(double l, double r) {
+    return (((int) r) == 0) ? Double.NaN : (int) l / (int) r;
+  }
+  
+  public static double intDiv(double d, HashMap<String, String[]> parameters) {
+    String leftArg = parameters.get("leftArg")[0];
+    String rightArg = parameters.get("rightArg")[0];
+    if( leftArg==null ) return intDiv(d, parseNum(rightArg));
+    return intDiv(parseNum(leftArg), d);
+  }
+  
   public static String[] strsplit(String s, HashMap<String,String[]> parameters) {
     String pattern = parameters.get("split")[0];
     return s.split(pattern);

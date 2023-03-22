@@ -37,6 +37,14 @@ public class H2OBinaryOp extends H2OColOp {
     binaryOps.put(">=","greaterThanEquals");
     binaryOps.put("==", "equals");
     binaryOps.put("!=", "notEquals");
+    binaryOps.put("^", "pow");
+    binaryOps.put("%", "mod");
+    binaryOps.put("%%", "mod");
+    binaryOps.put("&", "and");
+    binaryOps.put("&&", "and");
+    binaryOps.put("|", "or");
+    binaryOps.put("||", "or");
+    binaryOps.put("intDiv", "intDiv");
   }
 
   public H2OBinaryOp(String name, String ast, boolean inplace, String[] newNames) {

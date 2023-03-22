@@ -65,7 +65,7 @@ public class MathBinaryTransform extends MojoTransform {
             double ulpLeft = Math.ulp(l);
             double ulpRight = Math.ulp(r);
             double smallUlp = Math.min(ulpLeft, ulpRight);
-            double absDiff = Math.abs(ulpLeft - ulpRight); // subtraction order does not matter, due to IEEE 754 spec
+            double absDiff = Math.abs(l - r); // subtraction order does not matter, due to IEEE 754 spec
             return absDiff <= smallUlp;
         }
 
