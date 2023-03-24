@@ -61,7 +61,9 @@ public class H2OColOp extends Transform<H2OColOp> {
   
 
   protected void setupParamsImpl(int i, String[] args) {
-    _params.put(args[i], (AstParameter) _ast._asts[i + 1]);
+    if (_ast._asts[i + 1] instanceof AstParameter) {
+      _params.put(args[i], (AstParameter) _ast._asts[i + 1]);
+    }
   }
 
   @Override public Transform<H2OColOp> fit(Frame f) { return this; }

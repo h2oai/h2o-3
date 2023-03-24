@@ -78,33 +78,6 @@ public class MathBinaryTransform extends MojoTransform {
         }
         
         private static final HashMap<String,MathBinaryFunction> _supportedFunctions = new HashMap<String,MathBinaryFunction>() {{
-            put("round", new MathBinaryFunction() {
-                @Override
-                public double call(double x, double digits) {
-                    if (Double.isNaN(x)) return x;
-                    double sgn = x < 0 ? -1 : 1;
-                    x = Math.abs(x);
-                    if ((int) digits != digits) digits = Math.round(digits);
-                    double power_of_10 = (int) Math.pow(10, (int) digits);
-                    return sgn * (digits == 0
-                            // go to the even digit
-                            ? (x % 1 > 0.5 || (x % 1 == 0.5 && !(Math.floor(x) % 2 == 0)))
-                            ? Math.ceil(x)
-                            : Math.floor(x)
-                            : Math.floor(x * power_of_10 + 0.5) / power_of_10);
-                }
-            });
-            put("signif", new MathBinaryFunction() {
-                @Override
-                public double call(double x, double digits) {
-                    if (Double.isNaN(x)) return x;
-                    if (digits < 1) digits = 1; //mimic R's base::signif
-                    if ((int) digits != digits) digits = Math.round(digits);
-                    java.math.BigDecimal bd = new java.math.BigDecimal(x);
-                    bd = bd.round(new java.math.MathContext((int) digits, java.math.RoundingMode.HALF_EVEN));
-                    return bd.doubleValue();
-                }
-            });
             put("&", new MathBinaryFunction() {
                 @Override
                 public double call(double l, double r) {

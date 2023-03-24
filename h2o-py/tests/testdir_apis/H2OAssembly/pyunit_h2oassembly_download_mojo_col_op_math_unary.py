@@ -38,16 +38,18 @@ def h2oassembly_download_mojo_col_op_math_unary():
     test_unary_math_function(H2OFrame.tanpi)
     test_unary_math_function(H2OFrame.trigamma)
     test_unary_math_function(H2OFrame.trunc)
+    test_unary_math_function(H2OFrame.round, digits=5)
+    test_unary_math_function(H2OFrame.signif, digits=5)
     
     
-def test_unary_math_function(function):
+def test_unary_math_function(function, **params):
     values = [[11, 12.5, "13", 14], [21, 22.2, "23", 24], [31, 32.3, "33", 34]]
     frame = h2o.H2OFrame(
         python_obj=values,
         column_names=["a", "b", "c", "d"],
         column_types=["numeric", "numeric", "string", "numeric"])
     assembly = H2OAssembly(
-        steps=[("col_op_" + function.__name__, H2OColOp(op=function, col="b", new_col_name="n", inplace=False)),])
+        steps=[("col_op_" + function.__name__, H2OColOp(op=function, col="b", new_col_name="n", inplace=False, **params)),])
     
     expected = assembly.fit(frame)
     assert_is_type(expected, H2OFrame)

@@ -7,6 +7,9 @@ import mojo.spec.PipelineOuterClass;
 import water.fvec.ByteVec;
 import water.fvec.NFSFileVec;
 import water.rapids.Assembly;
+import water.rapids.ast.AstParameter;
+import water.rapids.ast.params.AstNum;
+import water.rapids.ast.params.AstStr;
 import water.rapids.transforms.H2OBinaryOp;
 import water.rapids.transforms.H2OColOp;
 import water.rapids.transforms.H2OColSelect;
@@ -21,6 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 
 public class H2OAssemblyToMojoPipelineConverter {
     
@@ -130,12 +134,13 @@ public class H2OAssemblyToMojoPipelineConverter {
                 .setName("function")
                 .setStringParam(functionName)
                 .build();
+        
         if (MathUnaryTransform.Factory.functionExists(functionName)) {
-            builder.setCustomOp(
-                Custom.CustomOp.newBuilder()
+            Custom.CustomOp.Builder customOpBuilder = Custom.CustomOp.newBuilder()
                     .setTransformerName(MathUnaryTransform.Factory.TRANSFORMER_ID)
-                    .addParams(functionParam)
-                    .build());
+                    .addParams(functionParam);
+            convertParameters(stage, customOpBuilder);
+            builder.setCustomOp(customOpBuilder.build());
         } else {
             throw new UnsupportedOperationException(
                     String.format("The function '%s' in the stage '%s' is not supported.", functionName, stage.name()));
@@ -147,6 +152,22 @@ public class H2OAssemblyToMojoPipelineConverter {
             builder.addOutputs(outputColumn);
         }
         return builder.build();
+    }
+    
+    private static void convertParameters(H2OColOp stage, Custom.CustomOp.Builder builder) {
+        for (Map.Entry<String,AstParameter> entry: stage.getParams().entrySet()) {
+            String name = entry.getKey();
+            AstParameter value = entry.getValue();
+            Custom.CustomParam.Builder paramBuilder = Custom.CustomParam.newBuilder().setName(name);
+            if (value instanceof AstNum) {
+                AstNum parameter = (AstNum) value;
+                paramBuilder.setFloat64Param(parameter.getNum());
+            } else if (value instanceof AstStr) {
+                AstStr parameter = (AstStr) value;
+                paramBuilder.setStringParam(parameter.getStr());
+            }
+            builder.addParams(paramBuilder.build());
+        }
     }
 
     private static Transformation convertBinaryOp(H2OBinaryOp stage){
