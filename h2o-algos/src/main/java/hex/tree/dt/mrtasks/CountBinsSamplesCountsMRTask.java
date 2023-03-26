@@ -11,7 +11,7 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
     public int _featureSplit;
     // numCol x 2 - min and max for each feature
     double[][] _featuresLimits;
-    // binsCount * 4 - min, max, count, count0
+    // binsCount x 4 - min, max, count, count0
     public double[][] _bins;
 
 
@@ -48,9 +48,9 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
                     if ((cs[_featureSplit].atd(row) > _bins[i][LIMIT_MIN])
                             && (cs[_featureSplit].atd(row) < _bins[i][LIMIT_MAX]
                             || Precision.equals(cs[_featureSplit].atd(row), _bins[i][LIMIT_MAX], Precision.EPSILON))) {
-                        _bins[i][COUNT] ++;
+                        _bins[i][COUNT]++;
                         if (Precision.equals(cs[classFeature].atd(row), 0, Precision.EPSILON)) {
-                            _bins[i][COUNT_0] ++;
+                            _bins[i][COUNT_0]++;
                         }
                     }
                 }

@@ -3,7 +3,8 @@ package hex.tree.dt;
 import hex.tree.dt.binning.Bin;
 import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
-import hex.tree.dt.mrtasks.CountBinSamplesCountMRTask;
+//import hex.tree.dt.mrtasks.CountBinSamplesCountMRTask;
+import hex.tree.dt.mrtasks.CountBinsSamplesCountsMRTask;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,29 +27,6 @@ import static org.junit.Assert.*;
 @RunWith(H2ORunner.class)
 public class BinningTest extends TestUtil {
     
-    private void testBinSamplesCount(Frame data, double[][] initialLimits) {
-
-        CountBinSamplesCountMRTask task =
-                new CountBinSamplesCountMRTask(0, 1.0, 2.0, initialLimits);
-        task.doAll(data);
-        assertEquals(1, task._count);
-        assertEquals(1, task._count0);
-
-        task = new CountBinSamplesCountMRTask(0, 0.9, 2.0, initialLimits);
-        task.doAll(data);
-        assertEquals(2, task._count);
-        assertEquals(1, task._count0);
-
-        task = new CountBinSamplesCountMRTask(1, 1.0, 6.0, initialLimits);
-        task.doAll(data);
-        assertEquals(5, task._count);
-        assertEquals(0, task._count0);
-
-        task = new CountBinSamplesCountMRTask(1, 0.88, 6.0, initialLimits);
-        task.doAll(data);
-        assertEquals(5, task._count);
-        assertEquals(0, task._count0);
-    }
     
     private void testBinningValidity(Histogram histogram, int numRows) {
         // min and max values
@@ -97,16 +75,77 @@ public class BinningTest extends TestUtil {
             // feature 1, count 0
             assertEquals(Arrays.asList(3, 0, 0, 0, 0, 0, 0, 0, 0, 0),
                     histogram.getFeatureBins(1).stream().map(b -> b._count0).collect(Collectors.toList()));
-
-            // test samples count in bins 
-            testBinSamplesCount(basicData, wholeDataLimits.toDoubles());
             
         } finally {
             Scope.exit();
         }
     }
     
-    
+    @Test
+    public void testBinSamplesCountBasicData() {
+        try {
+            Scope.enter();
+            Frame basicData = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
+                    .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
+                    .withColNames("First", "Second", "Prediction")
+                    .build();
+
+            DataFeaturesLimits dataLimits = getInitialFeaturesLimits(basicData);
+            Histogram histogram = new Histogram(basicData, dataLimits, BinningStrategy.EQUAL_WIDTH);
+            
+            double[][] binsArray = histogram.getFeatureBins(0).stream()
+                    .map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
+            
+            CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(0, 
+                    dataLimits.toDoubles(), binsArray).doAll(basicData);
+            
+            assertEquals(10, task._bins.length);
+                    
+            assert(task._bins[0][0] < basicData.vec(0).min());
+            assert(task._bins[0][1] < 1 && task._bins[0][1] > 0.8);
+            assert(task._bins[0][2] == 1.0);
+            assert(task._bins[0][3] == 0.0);
+
+            assert(task._bins[1][0] == task._bins[0][1]);
+            assert(task._bins[1][1] < 2);
+            assert(task._bins[1][2] == 1.0);
+            assert(task._bins[1][3] == 0.0);
+
+            assert(task._bins[2][0] == task._bins[1][1]);
+            assert(task._bins[2][1] < 3);
+            assert(task._bins[2][2] == 1.0);
+            assert(task._bins[2][3] == 1.0);
+
+
+            binsArray = histogram.getFeatureBins(1).stream()
+                    .map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
+
+            task = new CountBinsSamplesCountsMRTask(1, dataLimits.toDoubles(), binsArray).doAll(basicData);
+
+            assertEquals(10, task._bins.length);
+
+            assert(task._bins[0][0] < basicData.vec(1).min());
+            assert(task._bins[0][1] == 1.69);
+            assert(task._bins[0][2] == 7.0);
+            assert(task._bins[0][3] == 3.0);
+
+            assert(task._bins[1][0] == task._bins[0][1]);
+            assert(task._bins[1][1] == 2.5);
+            assert(task._bins[1][2] == 1.0);
+            assert(task._bins[1][3] == 0.0);
+
+            assert(task._bins[2][0] == task._bins[1][1]);
+            assert(task._bins[2][1] == 3.32);
+            assert(task._bins[2][2] == 0.0);
+            assert(task._bins[2][3] == 0.0);
+            
+        } finally {
+            Scope.exit();
+        }
+    }
 
     @Test
     public void testBinningProstateData() {

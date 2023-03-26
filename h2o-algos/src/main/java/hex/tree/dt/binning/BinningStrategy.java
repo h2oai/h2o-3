@@ -2,7 +2,7 @@ package hex.tree.dt.binning;
 
 import hex.tree.dt.DataFeaturesLimits;
 import hex.tree.dt.FeatureLimits;
-import hex.tree.dt.mrtasks.CountBinSamplesCountMRTask;
+import hex.tree.dt.mrtasks.CountBinsSamplesCountsMRTask;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Strategy for binning. Creates bins for single feature.
@@ -114,6 +113,9 @@ public enum BinningStrategy {
             return null;
         }
     };
+    
+    public static final int COUNT = 2;
+    public static final int COUNT_0 = 3;
 
     /**
      * Creates bins for selected feature.
@@ -124,28 +126,18 @@ public enum BinningStrategy {
      * @return list of created bins
      */
     abstract List<Bin> createFeatureBins(Frame originData, DataFeaturesLimits featuresLimits, int feature);
-    public static List<Bin> calculateBinSamplesCount(Frame data, List<Bin> emptyBins,
+    public static List<Bin> calculateBinSamplesCount(Frame data, List<Bin> bins,
                                                      int feature, double[][] featuresLimits) {
-        // run MR task to compute accumulated statistic for bins - one task for each bin
-        return emptyBins.stream().peek(bin -> {
-            CountBinSamplesCountMRTask task =
-                    new CountBinSamplesCountMRTask(feature, bin._min, bin._max, featuresLimits);
-            task.doAll(data);
-            bin._count0 = task._count0;
-            bin._count = task._count;
-        }).collect(Collectors.toList());
 
-
-//        // run MR task to compute accumulated statistic for bins - one task for one feature
-//        double[][] binsArray = 
-//                emptyBins.stream().map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
-//        CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(feature, featuresLimits, binsArray);
-//        task.doAll(data);
-//        for(int i = 0; i < binsArray.length; i ++) {
-//            emptyBins.get(i)._count = (int) task._bins[i][COUNT];
-//            emptyBins.get(i)._count0 = (int) task._bins[i][COUNT_0];
-//        }
-//        return emptyBins;
+        // run MR task to compute accumulated statistic for bins - one task for one feature, calculates all bins at once
+        double[][] binsArray = bins.stream().map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
+        CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(feature, featuresLimits, binsArray);
+        task.doAll(data);
+        for(int i = 0; i < binsArray.length; i ++) {
+            bins.get(i)._count = (int) task._bins[i][COUNT];
+            bins.get(i)._count0 = (int) task._bins[i][COUNT_0];
+        }
+        return bins;
     }
 }
     
