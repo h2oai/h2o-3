@@ -119,4 +119,4 @@ Collate:
          'infogram.R'
          'zzz.R'
          'upliftrandomforest.R'
-         'dt.R'
+         'decisiontree.R'

@@ -12,7 +12,7 @@ test.compare.classification.with.r <- function() {
 
     allDepth <- c(2, 5, 7, 10, 15, 17, 20)
     for (depthLevel in allDepth) {
-        h2o_dt <- h2o.dt(y="response", x = c(1:2), training_frame=train, max_depth=depthLevel)
+        h2o_dt <- h2o.decisionTree(y="response", x = c(1:2), training_frame=train, max_depth=depthLevel)
         h2o_pred_valid <- h2o.predict(h2o_dt, valid)$predict
         h2o_pred <- h2o.predict(h2o_dt, train)$predict
         print(h2o.predict(h2o_dt, train))

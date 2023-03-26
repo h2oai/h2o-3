@@ -338,6 +338,9 @@ def main():
         if name == "drf":
             module = "randomForest"
             file_name = "randomforest"
+        if name == "dt":
+            module = "decisionTree"
+            file_name = "decisiontree"
         if name == "upliftdrf":
             module = "upliftRandomForest"
             file_name = "upliftrandomforest"
