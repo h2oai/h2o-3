@@ -339,7 +339,7 @@ def main():
             module = "randomForest"
             file_name = "randomforest"
         if name == "dt":
-            module = "decisionTree"
+            module = "decision_tree"
             file_name = "decisiontree"
         if name == "upliftdrf":
             module = "upliftRandomForest"

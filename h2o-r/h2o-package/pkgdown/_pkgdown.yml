@@ -287,7 +287,7 @@ reference:
       - h2o.scoreHistoryGAM
       - h2o.sd 
       - h2o.sdev
-      - h2o.decisionTree
+      - h2o.decision_tree
       - h2o.set_s3_credentials
       - h2o.setLevels
       - h2o.setTimezone
