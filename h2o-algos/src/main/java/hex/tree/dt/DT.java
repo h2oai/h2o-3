@@ -44,7 +44,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     private DTModel _model;
     transient Random _rand;
 
-    //    private final static int LIMIT_NUM_ROWS_FOR_SPLIT = 2; // todo - make a parameter with default value
     public final static double EPSILON = 1e-6;
 
     private static final Logger LOG = Logger.getLogger(DT.class);
@@ -63,7 +62,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     }
 
     /**
-     * Use binning and update features limits for child nodes.
+     * Use binning and update features limits for child nodes. todo - use several criteria (strategy)
      *
      * @param histogram - histogram for relevant data
      * @return split info - holds feature index and threshold, null if the split could not be found.
@@ -104,7 +103,8 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             return null; // no split could be found
         }
         double threshold = currentMinCriterionPair._1();
-        return new SplitInfo(bestFeatureIndex, threshold);
+        double criterionValue = currentMinCriterionPair._2();
+        return new SplitInfo(bestFeatureIndex, threshold, criterionValue);
     }
 
     private Double binaryEntropy(int leftCount, int leftCount0, int rightCount, int rightCount0) {
@@ -193,7 +193,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             return;
         }
 
-        // todo - add limit by information gain (at least because of ideal split for example 11111)
         // [count0, count1, ...]
         int[] countsByClass = countClasses(actualLimits);
         if (nodeIndex == 1) {
@@ -219,8 +218,11 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         Histogram histogram = new Histogram(_train, actualLimits, BinningStrategy.EQUAL_WIDTH/*, minNumSamplesInBin - todo consider*/);
 
         SplitInfo bestSplitInfo = findBestSplit(histogram);
+        double criterionForTheParentNode = entropyBinarySplit(1.0 * countsByClass[0] / (countsByClass[0] + countsByClass[1]));
         // if no split could be found, make a leaf from current node
-        if (bestSplitInfo == null) {
+        // if the information gain is low, make a leaf from current node
+        if (bestSplitInfo == null 
+                || Math.abs(criterionForTheParentNode - bestSplitInfo._criterionValue) < MIN_IMPROVEMENT) {
             // add imaginary left and right children to imitate right tree structure
             // left child
             limitsQueue.add(null);
@@ -326,7 +328,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             _job.update(1);
             _model.update(_job);
 //            System.out.println("Tree: " + compressedDT.toString());
-            System.out.println("Rules: " + String.join("\n", compressedDT.getListOfRules()));
+//            System.out.println("Rules: " + String.join("\n", compressedDT.getListOfRules()));
             Log.debug("Tree:");
             Log.debug(Arrays.deepToString(_tree));
         }

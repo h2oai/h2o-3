@@ -41,7 +41,6 @@ public class CompressedDT extends Keyed<CompressedDT> {
      * @return class label
      */
     public DTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex, String ruleExplanation) {
-        // todo - add explainability (save the chain of rules from the root to the leaf)
         int isALeaf = (int) _nodes[actualNodeIndex][0];
         double featureIndexOrValue = _nodes[actualNodeIndex][1];
         double thresholdOrProbability = _nodes[actualNodeIndex][2];
@@ -69,7 +68,6 @@ public class CompressedDT extends Keyed<CompressedDT> {
         return Arrays.stream(_nodes).map(n -> "(" + n[0] + "," + n[1] + ")").collect(Collectors.joining(";"));
     }
 
-    // todo - add test on this
     public void extractRulesStartingWithNode(int nodeIndex, String actualRule) {
         if (_nodes[nodeIndex][0] == 1) {
             // if node is a list, add the rule to the list and return
