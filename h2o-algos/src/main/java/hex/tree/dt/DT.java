@@ -151,8 +151,8 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     /**
      * Calculates probabilities of each class for a leaf.
      *
-     * @param countsByClass #zero/#one in a leaf
-     * @return probability of decision value (in current case - major 0 or 1)
+     * @param countsByClass counts of 0 and 1 in a leaf
+     * @return probabilities of 0 or 1
      */
     private double[] calculateProbability(int[] countsByClass) {
         int samplesCount = Arrays.stream(countsByClass).sum();
