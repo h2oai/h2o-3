@@ -6,11 +6,13 @@ from sklearn.metrics import accuracy_score, f1_score
 
 def test_dt_binary_classification():
     target_variable = 'CAPSULE'
-    train, test = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv")).split_frame(ratios=[.7])
+    data = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv"))
+    data[target_variable] = data[target_variable].asfactor()
+    train, test = data.split_frame(ratios=[.7])
     y_train = train[target_variable].as_data_frame(use_pandas=True)[target_variable]
     y_test = test[target_variable].as_data_frame(use_pandas=True)[target_variable]
 
-    sdt_h2o = H2ODecisionTreeEstimator(model_id="single_decision_tree.hex", max_depth=5)
+    sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex", max_depth=5)
     sdt_h2o.train(training_frame=train, y=target_variable)
 
     pred_train = sdt_h2o.predict(train).as_data_frame(use_pandas=True)['predict']
