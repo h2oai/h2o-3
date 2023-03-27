@@ -6,9 +6,11 @@ package hex.tree.dt;
 public class SplitInfo {
     public int _splitFeatureIndex;
     public double _threshold;
+    public double _criterionValue;
 
-    public SplitInfo(int splitFeatureIndex, double threshold) {
+    public SplitInfo(int splitFeatureIndex, double threshold, double criterionValue) {
         _splitFeatureIndex = splitFeatureIndex;
         _threshold = threshold;
+        _criterionValue = criterionValue;
     }
 }
