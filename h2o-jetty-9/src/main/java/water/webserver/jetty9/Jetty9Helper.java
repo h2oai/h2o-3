@@ -72,6 +72,7 @@ class Jetty9Helper {
         } else {
             connector = new ServerConnector(jettyServer, httpConnectionFactory);
         }
+        connector.setIdleTimeout(httpConfiguration.getIdleTimeout()); // for websockets,...
         if (ip != null) {
             connector.setHost(ip);
         }

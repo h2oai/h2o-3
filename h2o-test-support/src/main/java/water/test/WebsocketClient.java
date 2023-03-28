@@ -33,7 +33,9 @@ public class WebsocketClient extends Endpoint {
     }
     
     public void close() throws IOException {
-        sess.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Test Done"));
+        if (sess.isOpen()) {
+            sess.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Test Done"));
+        }
     }
 
     @OnOpen
@@ -59,7 +61,7 @@ public class WebsocketClient extends Endpoint {
     }
 
     public Map<String, String> waitToReceiveMessage(String message) {
-        return waitToReceiveMessage(message, 10_000);
+        return waitToReceiveMessage(message, 100_000);
     }
     
     public Map<String, String> waitToReceiveMessage(String message, int timeoutMillis) {
