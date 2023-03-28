@@ -35,15 +35,27 @@ for python_version in "${array[@]}"; do
 
   apt-get update
 
-  DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev python${pkg_suffix}-setuptools
-  if [[ ${major} -ge 3 && ${minor} -ge 7 ]]; then
-      DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version}-distutils
+  if [[ ${python_version} == "3.5" ]] || [[ ${python_version} == "3.6" ]] || [[ ${python_version} == "3.7" ]]
+  then
+    wget https://www.python.org/ftp/python/${python_version}.0/Python-${python_version}.0.tgz
+    tar -xvf Python-${python_version}.0.tgz
+    cd Python-${python_version}.0
+    ./configure --enable-shared
+    make
+    make install
+    cd ..
+    export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib
+  else
+    DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev python${pkg_suffix}-setuptools
+    if [[ ${major} -ge 3 && ${minor} -ge 8 ]]; then
+        DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version}-distutils
+    fi
   fi
   apt-get clean
   rm -rf /var/cache/apt/*
 
   echo "###### Installing pip for Python ${python_version} ######"
-  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]]
+  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]] || [[ ${python_version} == "3.6" ]]
   then
     curl https://bootstrap.pypa.io/pip/${python_version}/get-pip.py --output get-pip.py
     python${python_version} get-pip.py
