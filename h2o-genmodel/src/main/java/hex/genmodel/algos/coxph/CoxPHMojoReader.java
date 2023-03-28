@@ -3,7 +3,9 @@ package hex.genmodel.algos.coxph;
 import hex.genmodel.ModelMojoReader;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
 
@@ -23,11 +25,41 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     _model._cats = readkv("cats");
     _model._useAllFactorLevels = readkv("use_all_factor_levels");
     _model._lpBase = _model.computeLpBase();
-    _model._interactions_1 = readkv("interactions_1");
-    _model._interactions_2 = readkv("interactions_2");
     _model._interaction_targets = readkv("interaction_targets");
+    _model._interaction_column_index = new HashSet<>();
+    _model._interaction_column_domains = new HashMap<>();
+    _model._nums = readkv("num_numerical_columns");
+    _model._num_offsets = readkv("num_offsets");
+    
+    if (_model._interaction_targets != null) {
+
+      _model._is_enum_1 = readkv("is_enum_1");
+      _model._interactions_1 = readkv("interactions_1");
+      _model._interactions_2 = readkv("interactions_2");
+
+      for (int index : _model._interaction_targets) {
+        _model._interaction_column_index.add(index);
+        if (_model._domains[index] != null)
+          _model._interaction_column_domains.put(index, Arrays.asList(_model._domains[index]));
+      }
+      _model._interaction_types = createInteractionTypes();
+    }
   }
 
+  private CoxPHMojoModel.InteractionTypes[] createInteractionTypes() {
+    int numInteractions = _model._interaction_targets.length;
+    CoxPHMojoModel.InteractionTypes[] interactionTypes = new CoxPHMojoModel.InteractionTypes[numInteractions];
+    for (int index=0; index<numInteractions; index++) {
+      if (_model._domains[_model._interactions_1[index]] != null && _model._domains[_model._interactions_2[index]] != null)
+        interactionTypes[index] = CoxPHMojoModel.InteractionTypes.ENUM_TO_ENUM;
+      else if ((_model._domains[_model._interactions_1[index]] == null && _model._domains[_model._interactions_2[index]] == null))
+        interactionTypes[index] = CoxPHMojoModel.InteractionTypes.NUM_TO_NUM;
+      else
+        interactionTypes[index] = CoxPHMojoModel.InteractionTypes.ENUM_TO_NUM;
+    }
+    return interactionTypes;
+  }
+  
   private HashMap<CoxPHMojoModel.Strata, Integer> readStrata() {
     final int count = readkv("strata_count");
     final HashMap<CoxPHMojoModel.Strata, Integer> result = new HashMap<>(count);

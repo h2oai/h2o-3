@@ -16,9 +16,11 @@ import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.IcedInt;
-import water.util.Log;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -433,23 +435,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override
   public boolean haveMojo() {
-    final boolean enabled = super.haveMojo() && hasOnlyNumericInteractions();
-    if (! enabled) {
-      boolean forceEnabled = H2O.getSysBoolProperty("coxph.mojo.forceEnable", false);
-      if (forceEnabled) {
-        Log.warn("Model " + this._key + " doesn't technically support MOJO, but MOJO support was force-enabled.");
-        return true;
-      }
-    }
-    return enabled;
-  }
-
-  boolean hasOnlyNumericInteractions() {
-    if (_output._interactionSpec == null) {
-      return true;
-    }
-    return Stream.of(_output.data_info._interactions)
-            .allMatch(InteractionPair::isNumeric);
+    return true;
   }
 
   @Override

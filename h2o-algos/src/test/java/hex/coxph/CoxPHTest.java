@@ -223,7 +223,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   }
 
   @Test
-  public void showMojoIsNotAvailableWithCategoricalInteractions() {
+  public void showMojoIsAvailableWithCategoricalInteractions() {
     try {
       Scope.enter();
       final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv")
@@ -248,7 +248,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
 
       // categorical interaction (num-cat specifically)
       parmsCat._interaction_pairs = new StringPair[]{new StringPair("age", "surgery")};
-      assertFalse(Scope.track_generic(new CoxPH(parmsCat).trainModel().get()).haveMojo());
+      assertTrue(Scope.track_generic(new CoxPH(parmsCat).trainModel().get()).haveMojo());
     } finally {
       Scope.exit();
     }
