@@ -136,6 +136,8 @@
 #'        If specified, must be the same size as gam_columns
 #' @param scale Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
 #' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
+#' @param store_knot_locations \code{Logical}. If set to true, will return knot locations as double[][] array for gam column names found
+#'        knots_for_gam.  Default to false. Defaults to FALSE.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @examples
@@ -217,6 +219,7 @@ h2o.gam <- function(x,
                     bs = NULL,
                     scale = NULL,
                     keep_gam_cols = FALSE,
+                    store_knot_locations = FALSE,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -375,6 +378,8 @@ h2o.gam <- function(x,
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
+  if (!missing(store_knot_locations))
+    parms$store_knot_locations <- store_knot_locations
   if (!missing(auc_type))
     parms$auc_type <- auc_type
 
@@ -470,6 +475,7 @@ h2o.gam <- function(x,
                                     bs = NULL,
                                     scale = NULL,
                                     keep_gam_cols = FALSE,
+                                    store_knot_locations = FALSE,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
@@ -633,6 +639,8 @@ h2o.gam <- function(x,
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
+  if (!missing(store_knot_locations))
+    parms$store_knot_locations <- store_knot_locations
   if (!missing(auc_type))
     parms$auc_type <- auc_type
 
@@ -666,6 +674,38 @@ h2o.gam <- function(x,
 }
 
 
+#' Extracts the knot locations from model output if it is enabled.
+#'
+#' @param model is a H2OModel with algorithm name of gam
+#' @param gam_column will only extract the knot locations for the specific gam_columns.  Else, return all.
+#' @export 
+h2o.get_knot_locations <- function(model, gam_column=NULL) {
+    if (!model@allparameters$store_knot_locations) {
+        stop("knot locations are not available, please set store_knot_locations to TRUE")
+    }
+    if (is.null(gam_column)) {
+        return(model@model$knot_locations)
+    }
+    gam_columns <- model@model$gam_knot_column_names
+    if (gam_column %in% gam_columns) {
+        return(model@model$knot_locations[which(gam_columns==gam_column)])
+    } else {
+        stop(paste(gam_column, "is not a valid gam column", sep=" "))
+    }
+}
+
+#' Extracts the gam column names corresponding to the knot locations from model output if it is enabled.
+#'
+#' @param model is a H2OModel with algorithm name of gam
+#' @export 
+h2o.get_gam_knot_column_names <- function(model) {
+    if (!model@allparameters$store_knot_locations) {
+        stop("knot locations are not available, please set store_knot_locations to TRUE")
+    }
+    return(model@model$gam_knot_column_names)
+
+}
+    
     .h2o.fill_gam <- function(model, parameters, allparams) {
         if (is.null(model$scoring_history))
             model$scoring_history <- model$glm_scoring_history
@@ -673,4 +713,5 @@ h2o.gam <- function(x,
             model$model_summary <- model$glm_model_summary
         return(model)
     }
+
 
