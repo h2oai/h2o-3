@@ -25,7 +25,7 @@ public class H2OAssemblyToMojoPipelineConversionTest extends TestUtil {
                 Vec.makeRepSeq(100, 5),
                 Vec.makeRepSeq(100, 7),
                 Vec.makeRepSeq(100, 9),
-                Vec.makeRepSeq(100, 11) 
+                Vec.makeRepSeq(100, 11)
             }
         );
         result._key = Key.make("dummy");
@@ -93,6 +93,39 @@ public class H2OAssemblyToMojoPipelineConversionTest extends TestUtil {
             Assembly assembly = new Assembly(Key.make(), steps);
             Frame expected = assembly.fit(frame.clone());
             
+            MojoPipeline mojoPipeline = H2OAssemblyToMojoPipelineConverter.convert(assembly);
+            Frame result = mojoPipeline.transform(frame, true);
+
+            assertFrameEquals(expected, result , 1e-6);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testConversionOnH2OColOperationWithUnaryStringFunction() throws IOException {
+        try {
+            Scope.enter();
+            Frame frame = new Frame(
+                new String[]{"s"},
+                new Vec[]{
+                    Vec.makeVec(new String[] {"fsttta", "TtdaftT", "", "tds"}, Vec.newKey())
+                }
+            );
+            frame._key = Key.make("dummy");
+            DKV.put(frame);
+            Scope.track(frame);
+            Transform[] steps = new Transform[]{
+                    new H2OColOp(
+                        "replaceall",
+                        "(replaceall (cols_py dummy 's') 'tt' 'bccc' True)",
+                        false,
+                        new String[]{"newCol"}),
+            };
+
+            Assembly assembly = new Assembly(Key.make(), steps);
+            Frame expected = assembly.fit(frame.clone());
+
             MojoPipeline mojoPipeline = H2OAssemblyToMojoPipelineConverter.convert(assembly);
             Frame result = mojoPipeline.transform(frame, true);
 

@@ -2,12 +2,14 @@ package hex.mojopipeline;
 
 import hex.genmodel.mojopipeline.transformers.MathBinaryTransform;
 import hex.genmodel.mojopipeline.transformers.MathUnaryTransform;
+import hex.genmodel.mojopipeline.transformers.StringUnaryTransform;
 import mojo.spec.Custom;
 import mojo.spec.PipelineOuterClass;
 import water.fvec.ByteVec;
 import water.fvec.NFSFileVec;
 import water.rapids.Assembly;
 import water.rapids.ast.AstParameter;
+import water.rapids.ast.params.AstId;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstStr;
 import water.rapids.transforms.H2OBinaryOp;
@@ -134,17 +136,19 @@ public class H2OAssemblyToMojoPipelineConverter {
                 .setName("function")
                 .setStringParam(functionName)
                 .build();
+        Custom.CustomOp.Builder customOpBuilder = Custom.CustomOp.newBuilder();
+        customOpBuilder.addParams(functionParam);
+        convertParameters(stage, customOpBuilder);
         
         if (MathUnaryTransform.Factory.functionExists(functionName)) {
-            Custom.CustomOp.Builder customOpBuilder = Custom.CustomOp.newBuilder()
-                    .setTransformerName(MathUnaryTransform.Factory.TRANSFORMER_ID)
-                    .addParams(functionParam);
-            convertParameters(stage, customOpBuilder);
-            builder.setCustomOp(customOpBuilder.build());
+            customOpBuilder.setTransformerName(MathUnaryTransform.Factory.TRANSFORMER_ID);
+        } else if (StringUnaryTransform.Factory.functionExists(functionName)) {
+            customOpBuilder.setTransformerName(StringUnaryTransform.Factory.TRANSFORMER_ID);
         } else {
             throw new UnsupportedOperationException(
                     String.format("The function '%s' in the stage '%s' is not supported.", functionName, stage.name()));
         }
+        builder.setCustomOp(customOpBuilder.build());
         for (String inputColumn : stage.getOldNames()) {
             builder.addInputs(inputColumn);
         }
@@ -165,6 +169,9 @@ public class H2OAssemblyToMojoPipelineConverter {
             } else if (value instanceof AstStr) {
                 AstStr parameter = (AstStr) value;
                 paramBuilder.setStringParam(parameter.getStr());
+            } else if (value instanceof AstId) {
+                AstId parameter = (AstId) value;
+                paramBuilder.setStringParam(parameter.str());
             }
             builder.addParams(paramBuilder.build());
         }
