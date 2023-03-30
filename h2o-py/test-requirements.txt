@@ -5,7 +5,7 @@ pykerberos >= 1.1.8, < 2.0.0; sys.platform != 'win32'
 gssapi==1.5.1
 tabulate==0.8.2
 slam==0.6.0
-cython==0.27.3
+cython==0.27.3; python_version < '3.5'
 twine==1.10.0
 urllib3==1.26.5
 grip==4.4.0
