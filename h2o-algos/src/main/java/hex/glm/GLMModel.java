@@ -1133,35 +1133,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public final void likelihoodAndDeviance(double yr, GLMWeights x, double w) {
       double ym = x.mu;
-      switch (_family) {
-        case gaussian:
-          x.dev = w * (yr - ym) * (yr - ym);
-          x.l =  .5 * x.dev;
-          break;
-        case quasibinomial:
-          if(yr == ym) x.l = 0;
-          else if (ym > 1) x.l = -(yr*Math.log(ym));
-          else x.l = - (yr*Math.log(ym) + (1-yr)*Math.log(1-ym));
-          x.dev = 2*x.l;
-          break;
-        case binomial:
-        case fractionalbinomial:
-          x.l = ym == yr?0:w*((MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym));
-          x.dev = 2*x.l;
-          break;
-        case poisson:
-        case gamma:
-        case tweedie:
-          x.dev = w*deviance(yr,ym);
-          x.l = likelihood(w, yr, ym); // todo: verify that this is not true for Poisson distribution
-          break;
-        case negativebinomial:
-          x.dev = w*deviance(yr,ym); // CHECKED-log/CHECKED-identity
-          x.l = w*likelihood(yr,ym); // CHECKED-log/CHECKED-identity
-          break;
-        default:
-          throw new RuntimeException("unknown family " + _family);
-      }
+      x.dev = w * deviance(yr, ym);
+      x.l = likelihood(yr, ym, w);
     }
     
     public final double likelihood(double w, double yr, double ym) {
@@ -1171,22 +1144,33 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     
     public final double likelihood(double yr, double ym) {
+      // formulas are moved from the likelihoodAndDeviance method above
       switch (_family) {
         case gaussian:
           return .5 * (yr - ym) * (yr - ym);
         case binomial:
         case quasibinomial:
+          if (yr == ym)
+            return 0;
+          else if (ym > 1) 
+            return -(yr * Math.log(ym));
+          else 
+            return -(yr * Math.log(ym) + (1 - yr) * Math.log(1 - ym));
         case fractionalbinomial:
           if (yr == ym) return 0;
-          return .5 * deviance(yr, ym);
+          return (MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym);
         case poisson:
           if (yr == 0) return 2 * ym;
           return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
         case negativebinomial:
-          return ((yr>0 && ym>0)?
-                  (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
-                          yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
-                  ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
+          if (yr > 0 && ym > 0) {
+            return -GLMTask.sumOper(yr, _invTheta, 0) + _invTheta * Math.log(1 + _theta * ym) 
+                    - yr * Math.log(ym) - yr * Math.log(_theta) + yr * Math.log(1 + _theta * ym);
+          }
+          if (yr == 0 && ym > 0) {
+            return _invTheta * Math.log(1 + _theta * ym); // with everything
+          }
+          return 0;
         case gamma:
           if (yr == 0) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
