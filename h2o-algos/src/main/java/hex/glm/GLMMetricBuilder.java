@@ -31,7 +31,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   double null_devince;
   long _nobs;
   double _log_likelihood;
-  double _aic;// internal AIC used only for poisson family!
+  double _aic;
   private double _aic2;// internal AIC used only for poisson family!
   final GLMModel.GLMWeightsFun _glmf;
   final private int _rank;
