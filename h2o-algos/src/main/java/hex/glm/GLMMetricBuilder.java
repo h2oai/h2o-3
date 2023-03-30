@@ -18,7 +18,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
-;
+;import java.util.Arrays;
 
 /**
  * Class for GLMValidation.
@@ -83,7 +83,10 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
     if(weight == 0)return ds;
     _metricBuilder.perRow(ds,yact,weight,offset,m);
-    _log_likelihood += m.likelihood(weight, yact[0], ds[0]);
+    if (Arrays.asList(Family.gaussian, Family.binomial, Family.quasibinomial, Family.fractionalbinomial, 
+                    Family.poisson, Family.negativebinomial, Family.gamma, Family.tweedie).contains(_glmf._family)) {
+      _log_likelihood += m.likelihood(weight, yact[0], ds[0]);
+    }
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
       if(_glmf._family == Family.multinomial || _glmf._family == Family.ordinal)
         add2(yact[0], ds, weight, offset);

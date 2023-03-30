@@ -7,6 +7,8 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
+import java.util.Arrays;
+
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 
 public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSupervised<MetricBuilderGAM> {
@@ -86,8 +88,10 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
       _metricBuilder.reduce(other._metricBuilder);
     _residual_deviance += other._residual_deviance;
     _null_deviance += other._null_deviance;
-    if (_glmf._family.equals(negativebinomial))
+    if (Arrays.asList(gaussian, binomial, quasibinomial, fractionalbinomial, 
+            poisson, negativebinomial, gamma, tweedie).contains(_glmf._family)) {
       _log_likelihood += other._log_likelihood;
+    }
     _nobs += other._nobs;
     _aic2 += other._aic2;
     _wcount += other._wcount;
