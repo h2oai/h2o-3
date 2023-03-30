@@ -3121,7 +3121,7 @@ public abstract class GLMTask  {
           z = eta + (y - mu) * d;
           w = r.weight / (var * d * d);
         }
-        _likelihood += _params.likelihood(y,mu);
+        _likelihood += _params.likelihood(w,y,mu);
         zTilda.set(i,eta-_betaw[_betaw.length-1]);
         assert w >= 0 || Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
         wChunk.set(i,w);

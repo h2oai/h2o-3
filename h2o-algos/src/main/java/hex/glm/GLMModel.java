@@ -11,6 +11,7 @@ import hex.util.EffectiveParametersUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
+import org.apache.commons.math3.special.Gamma;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -308,7 +309,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     if (w == 0) {
       return 0;
     } else {
-      return w*(_parms.likelihood(y, f));
+      return _parms.likelihood(w, y, f);
     }
   }
 
@@ -375,6 +376,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public Solver _solver = Solver.AUTO;
     public double _tweedie_variance_power;
     public double _tweedie_link_power;
+    public double _dispersion_estimated;
     public double _theta; // 1/k and is used by negative binomial distribution only
     public double _invTheta;
     public double [] _alpha;
@@ -628,6 +630,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _link = l;
       this._theta=theta;
       this._invTheta = 1.0/theta;
+      this._dispersion_estimated = _init_dispersion_parameter;
     }
 
     public final double variance(double mu){
@@ -703,14 +706,49 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      return deviance((double)yr,(double)ym);
     }
 
-    public final double likelihood(double yr, double ym){ 
-      if (_family.equals(Family.negativebinomial)) {
-        return ((yr>0 && ym>0)?
-                (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
-                        yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
-                ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
-      }  else
-        return .5 * deviance(yr,ym);
+    public final double likelihood(double w, double yr, double ym) {
+      switch (_family) {
+        case gaussian:
+          return -.5 * (w * Math.pow(yr - ym, 2) / _dispersion_estimated 
+                  + Math.log(_dispersion_estimated / w) + Math.log(2 * Math.PI));
+        case binomial:
+          return w * (yr * Math.log(ym) + (1-yr) * Math.log(1 - ym)) 
+                  + w * (Gamma.digamma(2) - Gamma.digamma(yr + 1) 
+                  - Gamma.digamma(1 - yr + 1));
+        case quasibinomial:
+          if (yr == ym)
+            return 0;
+          else if (ym > 1)
+            return -w * (yr * Math.log(ym));
+          else
+            return -w * (yr * Math.log(ym) + (1 - yr) * Math.log(1 - ym));
+        case fractionalbinomial:
+          if (yr == ym)
+            return 0;
+          return w * ((MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym));
+        case poisson:
+          return w * (yr * Math.log(ym) - ym - Gamma.digamma(yr + 1)); // gamma(n) = (n-1)!
+        case negativebinomial:
+          return yr * Math.log(_invTheta * ym / w) - (yr + w/_invTheta) * Math.log(1 + _invTheta * ym / w) 
+                  + Math.log(Gamma.gamma(yr + w/_invTheta) / (Gamma.gamma(yr + 1) * Gamma.gamma(w/_invTheta)));
+        case gamma:
+          return w * Math.log(w*yr / ym) - w*yr/ym - Math.log(yr) - Gamma.digamma(w);
+        case tweedie: // todo - update with Tomas's solution
+            double temp;
+            if (_tweedie_variance_power == 1) {
+                temp = Math.pow(ym, 2 - _tweedie_variance_power) * (1.0 / (2 - _tweedie_variance_power)) 
+                        - yr * Math.log(ym);
+            } else if (_tweedie_variance_power == 2) {
+                temp = Math.log(ym) 
+                        - yr * Math.pow(ym, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
+            } else {
+                temp = Math.pow(ym, 2 - _tweedie_variance_power) * (1.0 / (2 - _tweedie_variance_power)) 
+                        - yr * Math.pow(ym, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
+            }
+            return temp; // ignored the a(y,phi,p) term as it is a constant for us
+        default:
+          throw new RuntimeException("unknown family " + _family);
+      }
     }
 
     public final double linkDeriv(double x) { // note: compute an inverse of what R does

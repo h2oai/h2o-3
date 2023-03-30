@@ -2620,6 +2620,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             }
           }
         }
+        _parms._dispersion_estimated = se;
         double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
        // double[][] inv = cholInv(); // from non-standardized predictors
         Cholesky chol = _chol;
