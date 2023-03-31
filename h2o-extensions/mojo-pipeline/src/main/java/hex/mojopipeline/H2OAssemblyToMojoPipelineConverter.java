@@ -1,8 +1,6 @@
 package hex.mojopipeline;
 
-import hex.genmodel.mojopipeline.transformers.MathBinaryTransform;
-import hex.genmodel.mojopipeline.transformers.MathUnaryTransform;
-import hex.genmodel.mojopipeline.transformers.StringUnaryTransform;
+import hex.genmodel.mojopipeline.transformers.*;
 import mojo.spec.Custom;
 import mojo.spec.PipelineOuterClass;
 import water.fvec.ByteVec;
@@ -12,6 +10,7 @@ import water.rapids.ast.AstParameter;
 import water.rapids.ast.params.AstId;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstStr;
+import water.rapids.ast.params.AstStrList;
 import water.rapids.transforms.H2OBinaryOp;
 import water.rapids.transforms.H2OColOp;
 import water.rapids.transforms.H2OColSelect;
@@ -144,6 +143,10 @@ public class H2OAssemblyToMojoPipelineConverter {
             customOpBuilder.setTransformerName(MathUnaryTransform.Factory.TRANSFORMER_ID);
         } else if (StringUnaryTransform.Factory.functionExists(functionName)) {
             customOpBuilder.setTransformerName(StringUnaryTransform.Factory.TRANSFORMER_ID);
+        } else if (StringPropertiesUnaryTransform.Factory.functionExists(functionName)) {
+            customOpBuilder.setTransformerName(StringPropertiesUnaryTransform.Factory.TRANSFORMER_ID);
+        } else if (StringGrepTransform.Factory.functionExists(functionName)) {
+            customOpBuilder.setTransformerName(StringGrepTransform.Factory.TRANSFORMER_ID);
         } else {
             throw new UnsupportedOperationException(
                     String.format("The function '%s' in the stage '%s' is not supported.", functionName, stage.name()));
@@ -169,6 +172,10 @@ public class H2OAssemblyToMojoPipelineConverter {
             } else if (value instanceof AstStr) {
                 AstStr parameter = (AstStr) value;
                 paramBuilder.setStringParam(parameter.getStr());
+            } else if (value instanceof AstStrList) {
+                AstStrList parameter = (AstStrList) value;
+                String joined = String.join("`````", parameter._strs);
+                paramBuilder.setStringParam(joined);
             } else if (value instanceof AstId) {
                 AstId parameter = (AstId) value;
                 paramBuilder.setStringParam(parameter.str());

@@ -5,12 +5,12 @@ import ai.h2o.mojos.runtime.frame.MojoFrame;
 import ai.h2o.mojos.runtime.frame.MojoFrameMeta;
 import ai.h2o.mojos.runtime.transforms.MojoTransform;
 import ai.h2o.mojos.runtime.transforms.MojoTransformBuilderFactory;
+import hex.genmodel.mojopipeline.parsing.ParameterParser;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public class StringUnaryTransform extends MojoTransform {
@@ -37,24 +37,6 @@ public class StringUnaryTransform extends MojoTransform {
     }
 
     public static class Factory implements MojoTransformBuilderFactory {
-        interface Operation {
-            String call(String value);
-        }
-        
-        private static boolean paramValueToBoolean(Object paramValue) {
-            if (paramValue instanceof String) {
-                return Boolean.parseBoolean((String)paramValue);
-            } else if (paramValue instanceof Double) {
-                return (Double)paramValue > 0.0;
-            } else {
-                throw new UnsupportedOperationException(
-                    String.format(
-                        "Unable convert a parameter value %s of type %s to Boolean.",
-                        paramValue, 
-                        paramValue.getClass().getName()));
-            }
-        }
-        
         private static final HashMap<String,StringUnaryFunction> _supportedFunctions = new HashMap<String,StringUnaryFunction>() {{
             put("lstrip", new StringUnaryFunction() {
                 private String _set = null;
@@ -110,7 +92,7 @@ public class StringUnaryTransform extends MojoTransform {
                     if (ignoreCaseObj == null) {
                         throw new IllegalArgumentException("The 'ignore_case' param is not passed to 'replaceall' function!");
                     }
-                    _ignoreCase = paramValueToBoolean(ignoreCaseObj);
+                    _ignoreCase = ParameterParser.paramValueToBoolean(ignoreCaseObj);
                 }
                 @Override
                 public String call(String value) {
@@ -144,7 +126,7 @@ public class StringUnaryTransform extends MojoTransform {
                     if (ignoreCaseObj == null) {
                         throw new IllegalArgumentException("The 'ignore_case' param is not passed to 'replacefirst' function!");
                     }
-                    _ignoreCase = paramValueToBoolean(ignoreCaseObj);
+                    _ignoreCase = ParameterParser.paramValueToBoolean(ignoreCaseObj);
                 }
                 @Override
                 public String call(String value) {
