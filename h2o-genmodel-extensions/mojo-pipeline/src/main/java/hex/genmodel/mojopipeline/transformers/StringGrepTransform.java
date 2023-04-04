@@ -21,90 +21,24 @@ public class StringGrepTransform extends MojoTransform {
     
     Pattern _pattern =  null;
     Boolean _invert = null;
-    Boolean _outputLogical = null;
 
-    StringGrepTransform(int[] iindices, int[] oindices, Pattern pattern, Boolean invert, Boolean outputLogical) {
+    StringGrepTransform(int[] iindices, int[] oindices, Pattern pattern, Boolean invert) {
         super(iindices, oindices);
         _pattern = pattern;
         _invert = invert;
-        _outputLogical = outputLogical;
     }
 
     @Override
     public void transform(MojoFrame frame) {
         String[] a = (String[]) frame.getColumnData(iindices[0]);
-        Double[] o = (Double[]) frame.getColumnData(oindices[0]);
-        OutputWriter writer = OutputWriter.makeWriter(o, _outputLogical, 1, _invert);
+        double[] o = (double[]) frame.getColumnData(oindices[0]);
         Matcher matcher = _pattern.matcher("");
         for (int i = 0, nrows = frame.getNrows(); i < nrows; i++) {
             if (a[i] == null) {
-                writer.addNA(i);
+                o[i] = _invert ? 1 : 0;
             } else {
                 matcher.reset(a[i]);
-                writer.addRow(i, matcher.find());
-            }
-        }
-    }
-
-    private static abstract class OutputWriter {
-        static final double MATCH = 1;
-        static final double NO_MATCH = 0;
-
-        Double[] _outputArray;
-        long _start;
-        boolean _invert;
-
-        OutputWriter(Double[] outputArray, long start, boolean invert) {
-            _outputArray = outputArray;
-            _start = start;
-            _invert = invert;
-        }
-
-        abstract void addNA(int row);
-        abstract void addRow(int row, boolean matched);
-
-        static OutputWriter makeWriter(Double[] outputArray, boolean outputLogical, long start, boolean invert) {
-            if (outputLogical) {
-                return new IndicatorWriter(outputArray, start, invert);
-            } else {
-                return new PositionWriter(outputArray, start, invert);
-            }
-        }
-
-    }
-
-    private static class IndicatorWriter extends OutputWriter {
-        IndicatorWriter(Double[] outputArray, long start, boolean invert) {
-            super(outputArray, start, invert);
-        }
-
-        @Override
-        void addNA(int row) {
-            _outputArray[row] = _invert ? MATCH : NO_MATCH;
-        }
-
-        @Override
-        void addRow(int row, boolean matched) {
-            _outputArray[row] = matched != _invert ? MATCH : NO_MATCH;
-        }
-    }
-
-    private static class PositionWriter extends OutputWriter {
-        PositionWriter(Double[] outputArray, long start, boolean invert) {
-            super(outputArray, start, invert);
-        }
-
-        @Override
-        void addNA(int row) {
-            if (_invert) {
-                _outputArray[row] = _start + (double)row;
-            }
-        }
-
-        @Override
-        void addRow(int row, boolean matched) {
-            if (matched != _invert) {
-                _outputArray[row] = _start + (double)row;
+                o[i] = matcher.find() != _invert ? 1 : 0;
             }
         }
     }
@@ -145,6 +79,9 @@ public class StringGrepTransform extends MojoTransform {
                 throw new IllegalArgumentException("The 'output_logical' param is not passed to 'grep' function!");
             }
             boolean outputLogical = ParameterParser.paramValueToBoolean(outputLogicalObj);
+            if (!outputLogical) {
+                throw new IllegalArgumentException("The 'grep' operation in MOJO supports just logical output!");
+            }
 
             Object patternObj = params.get("regex");
             if (patternObj == null) {
@@ -157,9 +94,7 @@ public class StringGrepTransform extends MojoTransform {
                 iindcies,
                 oindices,
                 pattern,
-                invert,
-                outputLogical
-            );
+                invert);
         }
     }
 }

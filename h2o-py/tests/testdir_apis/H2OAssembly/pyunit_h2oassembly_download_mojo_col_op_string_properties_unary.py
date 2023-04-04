@@ -4,6 +4,7 @@ from tests import pyunit_utils
 from h2o.assembly import *
 from h2o.transforms.preprocessing import *
 from h2o.pipeline import H2OMojoPipeline
+import uuid
 
 
 def h2oassembly_download_mojo_col_op_string_properties_unary():
@@ -15,11 +16,15 @@ def h2oassembly_download_mojo_col_op_string_properties_unary():
     with open(path, "w") as text_file:
         text_file.writelines(["33ss33\n", "sssss\n", "tt\n", "33ttaattaas\n", "\n", "asttatta\n", "text\n"])
     test_unary_string_properties_function(H2OFrame.num_valid_substrings, path_to_words=path)
+    test_unary_string_properties_function(H2OFrame.grep, pattern="tt", ignore_case=False, invert=False, output_logical=True)
+    test_unary_string_properties_function(H2OFrame.grep, pattern="tt", ignore_case=False, invert=True, output_logical=True)
+    test_unary_string_properties_function(H2OFrame.grep, pattern="tt", ignore_case=True, invert=False, output_logical=True)
+    test_unary_string_properties_function(H2OFrame.grep, pattern="tt", ignore_case=True, invert=True, output_logical=True)
 
     
 def test_unary_string_properties_function(function, **params):
     values = [[12.5, "++&&texTtextText&+", 14],
-              [12.2, "  fTFsaf   ", 24],
+              [12.2, "  fTtFsaf   ", 24],
               [2.23, "      fd9af ", 34],
               [3.31, "+&texttext&&++", 34],
               [4.31, "3fdsf3", 34],
@@ -41,7 +46,7 @@ def test_unary_string_properties_function(function, **params):
     assert_is_type(expected, H2OFrame)
     
     results_dir = os.path.join(os.getcwd(), "results")
-    file_name = "h2oassembly_download_mojo_col_op_" + function.__name__
+    file_name = "h2oassembly_download_mojo_col_op_" + function.__name__ + "_" + str(uuid.uuid4())
     path = os.path.join(results_dir, file_name + ".mojo")
     
     mojo_file = assembly.download_mojo(file_name=file_name, path=path)
