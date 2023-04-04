@@ -37,12 +37,45 @@ def class_extensions():
         if "glm_scoring_history" in model and model["glm_scoring_history"] is not None:
             return model["glm_scoring_history"].as_data_frame()
         print("No score history for this model")
+        
+    def get_knot_locations(self, gam_column=None):
+        """
+        Retrieve gam columns knot locations if store_knot_location parameter is enabled.  If a gam column name is 
+        specified, the know loations corresponding to that gam column is returned.  Otherwise, all knot locations are
+        returned for all gam columns.  The order of the gam columns are specified in gam_knot_column_names of the 
+        model output.
+        
+        :return: knot locations of gam columns.
+        """
+        if not(self.actual_params["store_knot_locations"]):
+            raise H2OValueError("Knot locations are not available.  Please re-run with store_knot_locations=True")
+        knot_locations = self._model_json['output']['knot_locations']
+        gam_names = self._model_json['output']['gam_knot_column_names']
+        if gam_column is None:
+            return knot_locations
+        else:
+            if gam_column in gam_names:
+                return knot_locations[gam_names.index(gam_column)]
+            else:
+                raise H2OValueError("{0} is not a valid gam column name.".format(gam_column))
 
+    def get_gam_knot_column_names(self):
+        """
+        Retrieve gam column names corresponding to the knot locations that will be returned if store_knot_location
+        parameter is enabled.  
+     
+        :return: gam column names whose knot locations are stored in the knot_locations.
+        """
+        if not(self.actual_params["store_knot_locations"]):
+            raise H2OValueError("Knot locations are not available.  Please re-run with store_knot_locations=True")
+
+        return self._model_json['output']['gam_knot_column_names']
 
 extensions = dict(
     __imports__="""
 import h2o
 from h2o.utils.typechecks import U
+from h2o.exceptions import H2OValueError
 """,
     __class__=class_extensions,
 )
