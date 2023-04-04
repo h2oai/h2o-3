@@ -130,6 +130,7 @@ reference:
       - h2o.generic
       - h2o.genericModel
       - h2o.get_automl
+      - h2o.get_knot_locations
       - h2o.get_leaderboard
       - h2o.get_ntrees_actual
       - h2o.get_segment_models
@@ -149,6 +150,8 @@ reference:
       - h2o.anovaglm
       - h2o.get_best_r2_values
       - h2o.get_best_model_predictors
+      - h2o.get_knot_locations
+      - h2o.get_gam_knot_column_names
       - h2o.get_predictor_added_per_step
       - h2o.get_predictor_removed_per_step
       - h2o.get_regression_influence_diagnostics

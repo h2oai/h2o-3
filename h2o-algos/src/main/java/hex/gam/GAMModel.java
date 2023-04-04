@@ -255,6 +255,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     boolean _glmCvOn = false;
     public boolean[] _splines_non_negative;
     public boolean[] _splines_non_negative_sorted;
+    public boolean _store_knot_locations = false;
 
     @Override
     public long progressUnits() {
@@ -395,6 +396,35 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public String[] _responseDomains;
     public String _gam_transformed_center_key;
     final Family _family;
+    public String[] _gam_knot_column_names;
+    public double[][] _knot_locations;
+
+    /***
+     * The function will copy over the knot locations into _knot_locations and the gam column names corresponding to
+     * the knot locations into _gam_knot_column_names.
+     */
+    public void copyKnots(double[][][] knots, String[][] gam_columns_sorted) {
+      int numGam = gam_columns_sorted.length;
+      int trueGamNum = 0;
+      for (int index=0; index<numGam; index++) {
+        trueGamNum += gam_columns_sorted[index].length;
+      }
+      _gam_knot_column_names = new String[trueGamNum];
+      _knot_locations = new double[trueGamNum][];
+      int knotIndex=0;
+      for (int index=0; index<numGam; index++) {
+        if (knots[index].length==1) {
+          _gam_knot_column_names[knotIndex] = gam_columns_sorted[index][0];
+          _knot_locations[knotIndex++] = knots[index][0].clone();
+        } else {
+          int dupKnots = knots[index].length;
+          for (int index2=0; index2<dupKnots; index2++) {
+            _gam_knot_column_names[knotIndex] = gam_columns_sorted[index][index2];
+            _knot_locations[knotIndex++] = knots[index][index2].clone();
+          }
+        }
+      }
+    }
     
     @Override
     public int nclasses() {

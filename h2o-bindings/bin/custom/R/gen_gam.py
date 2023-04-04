@@ -1,4 +1,3 @@
-
 extensions = dict(
     required_params=['x', 'y', 'training_frame', 'gam_columns'],  # empty to override defaults in gen_defaults
     validate_required_params="""
@@ -62,6 +61,38 @@ extensions = dict(
         parms$missing_values_handling <- missing_values_handling
     """,
     module="""
+#' Extracts the knot locations from model output if it is enabled.
+#'
+#' @param model is a H2OModel with algorithm name of gam
+#' @param gam_column will only extract the knot locations for the specific gam_columns.  Else, return all.
+#' @export 
+h2o.get_knot_locations <- function(model, gam_column=NULL) {
+    if (!model@allparameters$store_knot_locations) {
+        stop("knot locations are not available, please set store_knot_locations to TRUE")
+    }
+    if (is.null(gam_column)) {
+        return(model@model$knot_locations)
+    }
+    gam_columns <- model@model$gam_knot_column_names
+    if (gam_column %in% gam_columns) {
+        return(model@model$knot_locations[which(gam_columns==gam_column)])
+    } else {
+        stop(paste(gam_column, "is not a valid gam column", sep=" "))
+    }
+}
+
+#' Extracts the gam column names corresponding to the knot locations from model output if it is enabled.
+#'
+#' @param model is a H2OModel with algorithm name of gam
+#' @export 
+h2o.get_gam_knot_column_names <- function(model) {
+    if (!model@allparameters$store_knot_locations) {
+        stop("knot locations are not available, please set store_knot_locations to TRUE")
+    }
+    return(model@model$gam_knot_column_names)
+
+}
+    
     .h2o.fill_gam <- function(model, parameters, allparams) {
         if (is.null(model$scoring_history))
             model$scoring_history <- model$glm_scoring_history
@@ -69,6 +100,7 @@ extensions = dict(
             model$model_summary <- model$glm_model_summary
         return(model)
     }
+
 """
 )
 

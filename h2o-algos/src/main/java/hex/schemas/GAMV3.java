@@ -82,6 +82,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "bs", // array, name of basis functions used
             "scale", // array, smoothing parameter for GAM,
             "keep_gam_cols",
+            "store_knot_locations",
             "auc_type"
     };
 
@@ -228,6 +229,10 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
 
     @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
+
+    @API(help="If set to true, will return knot locations as double[][] array for gam column names found knots_for_gam." +
+            "  Default to false.", level = Level.secondary, direction = Direction.INPUT)    
+    public boolean store_knot_locations;
 
     @API(help = "Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For " +
             "monotone I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of " +
