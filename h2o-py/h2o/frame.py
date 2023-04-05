@@ -3249,7 +3249,7 @@ class H2OFrame(Keyed, H2ODisplay):
         assert_is_type(y, H2OFrame)
         assert_is_type(measure, Enum('lv', 'lcs', 'qgram', 'jaccard', 'jw', 'soundex'))
         assert_is_type(compare_empty, bool)
-        return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure, compare_empty))._frame()
+        return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure, compare_empty))
 
     def asfactor(self):
         """

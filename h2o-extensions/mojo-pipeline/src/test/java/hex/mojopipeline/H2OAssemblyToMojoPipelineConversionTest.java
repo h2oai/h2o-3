@@ -134,4 +134,38 @@ public class H2OAssemblyToMojoPipelineConversionTest extends TestUtil {
             Scope.exit();
         }
     }
+
+    @Test
+    public void testConversionOnH2OColOperationWithBinaryStringPropertiesFunction() throws IOException {
+        try {
+            Scope.enter();
+            Scope.enter();
+            Frame frame = new Frame(
+                    new String[]{"sl", "sr"},
+                    new Vec[]{
+                            Vec.makeVec(new String[] {"fsttta", "TtdaftT", "", "tds"}, Vec.newKey()),
+                            Vec.makeVec(new String[] {"ftta", "TttT", "", "ts"}, Vec.newKey())
+                    }
+            );
+            frame._key = Key.make("dummy");
+            DKV.put(frame);
+            Scope.track(frame);
+            Transform[] steps = new Transform[]{
+                    new H2OBinaryOp("op1",
+                            "(strDistance (cols_py dummy 'sl') (cols_py dummy 'sr') 'lv' True )", 
+                            false,
+                            new String[]{"newCol1"}),
+            };
+
+            Assembly assembly = new Assembly(Key.make(), steps);
+            Frame expected = assembly.fit(frame.clone());
+
+            MojoPipeline mojoPipeline = H2OAssemblyToMojoPipelineConverter.convert(assembly);
+            Frame result = mojoPipeline.transform(frame, true);
+
+            assertFrameEquals(expected, result , 1e-6);
+        } finally {
+            Scope.exit();
+        }
+    }
 }

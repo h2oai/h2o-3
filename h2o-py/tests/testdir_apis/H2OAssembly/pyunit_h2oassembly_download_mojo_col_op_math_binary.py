@@ -32,7 +32,6 @@ def test_binary_math_function(function):
         python_obj=values,
         column_names=["a", "b", "c", "d"],
         column_types=["numeric", "numeric", "string", "numeric"])
-    binary_op = H2OBinaryOp(op=function, col="b", right=H2OCol("d"), new_col_name="n", inplace=False)
     function_name = function.__name__.strip('_')
     assembly = H2OAssembly(steps=[
         (function_name + "1", H2OBinaryOp(op=function, col="b", right=H2OCol("d"), new_col_name="n1", inplace=False)),

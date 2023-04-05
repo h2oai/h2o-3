@@ -5,6 +5,7 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 dependencies {
+    api project(":h2o-genmodel")
     api "org.apache.commons:commons-math3:3.6.1"
     api "commons-lang:commons-lang:2.6"
     api "commons-io:commons-io:2.11.0"

@@ -3,3 +3,4 @@ hex.genmodel.mojopipeline.transformers.MathBinaryTransform$Factory
 hex.genmodel.mojopipeline.transformers.StringUnaryTransform$Factory
 hex.genmodel.mojopipeline.transformers.StringPropertiesUnaryTransform$Factory
 hex.genmodel.mojopipeline.transformers.StringGrepTransform$Factory
+hex.genmodel.mojopipeline.transformers.StringPropertiesBinaryTransform$Factory

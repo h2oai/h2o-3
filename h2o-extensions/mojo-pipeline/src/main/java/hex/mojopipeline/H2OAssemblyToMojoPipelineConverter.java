@@ -187,43 +187,46 @@ public class H2OAssemblyToMojoPipelineConverter {
     private static Transformation convertBinaryOp(H2OBinaryOp stage){
         Transformation.Builder builder = Transformation.newBuilder();
         String functionName = stage.getAst()._asts[0].str();
+        Custom.CustomOp.Builder customOpBuilder = Custom.CustomOp.newBuilder();
+        customOpBuilder.addParams(
+                Custom.CustomParam.newBuilder()
+                        .setName("function")
+                        .setStringParam(functionName)
+                        .build());
+        customOpBuilder.addParams(
+                Custom.CustomParam.newBuilder()
+                        .setName("isLeftCol")
+                        .setBoolParam(stage.getIsLeftColumn())
+                        .build());
+        customOpBuilder.addParams(
+                Custom.CustomParam.newBuilder()
+                        .setName("isRightCol")
+                        .setBoolParam(stage.getIsRightColumn())
+                        .build());
+        if(!stage.getIsLeftColumn()) {
+            customOpBuilder.addParams(
+                    Custom.CustomParam.newBuilder()
+                            .setName("constValue")
+                            .setFloat64Param(stage.getAst()._asts[1].exec(null).getNum())
+                            .build());
+        }
+        if(!stage.getIsRightColumn()) {
+            customOpBuilder.addParams(
+                    Custom.CustomParam.newBuilder()
+                            .setName("constValue")
+                            .setFloat64Param(stage.getAst()._asts[2].exec(null).getNum())
+                            .build());
+        }
+        convertParameters(stage, customOpBuilder);
         if (MathBinaryTransform.Factory.functionExists(functionName)) {
-            Custom.CustomOp.Builder customOpBuilder = Custom.CustomOp.newBuilder();
             customOpBuilder.setTransformerName(MathBinaryTransform.Factory.TRANSFORMER_ID);
-            customOpBuilder.addParams(
-                Custom.CustomParam.newBuilder()
-                    .setName("function")
-                    .setStringParam(functionName)
-                    .build());
-            customOpBuilder.addParams(
-                Custom.CustomParam.newBuilder()
-                    .setName("isLeftCol")
-                    .setBoolParam(stage.getIsLeftColumn())
-                    .build());
-            customOpBuilder.addParams(
-                Custom.CustomParam.newBuilder()
-                    .setName("isRightCol")
-                    .setBoolParam(stage.getIsRightColumn())
-                    .build());
-            if(!stage.getIsLeftColumn()) {
-                customOpBuilder.addParams(
-                    Custom.CustomParam.newBuilder()
-                        .setName("constValue")
-                        .setFloat64Param(stage.getAst()._asts[1].exec(null).getNum())
-                        .build());
-            }
-            if(!stage.getIsRightColumn()) {
-                customOpBuilder.addParams(
-                    Custom.CustomParam.newBuilder()
-                        .setName("constValue")
-                        .setFloat64Param(stage.getAst()._asts[2].exec(null).getNum())
-                        .build());
-            }
-            builder.setCustomOp(customOpBuilder.build());
+        } else if (StringPropertiesBinaryTransform.Factory.functionExists(functionName)) {
+            customOpBuilder.setTransformerName(StringPropertiesBinaryTransform.Factory.TRANSFORMER_ID);
         } else {
             throw new UnsupportedOperationException(
                     String.format("The function '%s' in the stage '%s' is not supported.", functionName, stage.name()));
         }
+        builder.setCustomOp(customOpBuilder.build());
         for (String inputColumn : stage.getOldNames()) {
             builder.addInputs(inputColumn);
         }

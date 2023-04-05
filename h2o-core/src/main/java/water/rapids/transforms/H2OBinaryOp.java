@@ -45,6 +45,7 @@ public class H2OBinaryOp extends H2OColOp {
     binaryOps.put("|", "or");
     binaryOps.put("||", "or");
     binaryOps.put("intDiv", "intDiv");
+    binaryOps.put("strDistance", "strDistance");
   }
 
   public H2OBinaryOp(String name, String ast, boolean inplace, String[] newNames) {
@@ -54,9 +55,9 @@ public class H2OBinaryOp extends H2OColOp {
   @Override protected void setupParamsImpl(int i, String[] args) {
     if( _ast._asts[i+1] instanceof AstExec) {
       if( !isBinaryOp(_fun) ) throw H2O.unimpl("unimpl: " + lookup(_fun));
-      if (args[i].equals("leftArg")) {
+      if (args[i].equals("leftArg") || args[i].equals("ary_x")) {
         _leftIsCol = true;
-      } else if (args[i].equals("rightArg")) {
+      } else if (args[i].equals("rightArg") || args[i].equals("ary_y")) {
         _riteIsCol = true;
       }
       _binCol = ((AstExec)_ast._asts[i+1])._asts[2].str();
