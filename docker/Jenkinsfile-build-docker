@@ -77,7 +77,7 @@ ansiColor('xterm') {
         }
         buildInParallel(pipelineContext, pythonImages)
 
-        buildInParallel(pipelineContext, ['dev-r-base'])
+        buildInParallel(pipelineContext, ['dev-r-base', 'dev-mojocompat'])
         def componentImages = []
         R_VERSION.each {version ->
             componentImages += "dev-r-${version}"
@@ -85,7 +85,6 @@ ansiColor('xterm') {
         JDK_VERSIONS.each {version ->
             componentImages += "dev-jdk-${version}"
         }
-        componentImages += "dev-mojocompat"
         buildInParallel(pipelineContext, componentImages)
 
         buildInParallel(pipelineContext, ["dev-build-base"])
