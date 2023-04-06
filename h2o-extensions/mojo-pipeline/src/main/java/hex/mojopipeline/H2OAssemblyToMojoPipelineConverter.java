@@ -5,6 +5,7 @@ import mojo.spec.Custom;
 import mojo.spec.PipelineOuterClass;
 import water.fvec.ByteVec;
 import water.fvec.NFSFileVec;
+import water.parser.ParseTime;
 import water.rapids.Assembly;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.params.AstId;
@@ -135,8 +136,13 @@ public class H2OAssemblyToMojoPipelineConverter {
                 .setName("function")
                 .setStringParam(functionName)
                 .build();
+        Custom.CustomParam timezoneParam = Custom.CustomParam.newBuilder()
+                .setName("timezone")
+                .setStringParam(ParseTime.getTimezone().getID())
+                .build();
         Custom.CustomOp.Builder customOpBuilder = Custom.CustomOp.newBuilder();
         customOpBuilder.addParams(functionParam);
+        customOpBuilder.addParams(timezoneParam);
         convertParameters(stage, customOpBuilder);
         
         if (MathUnaryTransform.Factory.functionExists(functionName)) {
@@ -147,6 +153,12 @@ public class H2OAssemblyToMojoPipelineConverter {
             customOpBuilder.setTransformerName(StringPropertiesUnaryTransform.Factory.TRANSFORMER_ID);
         } else if (StringGrepTransform.Factory.functionExists(functionName)) {
             customOpBuilder.setTransformerName(StringGrepTransform.Factory.TRANSFORMER_ID);
+        } else if (TimeUnaryTransform.Factory.functionExists(functionName)) {
+            customOpBuilder.setTransformerName(TimeUnaryTransform.Factory.TRANSFORMER_ID);
+        } else if (ToStringConversion.Factory.functionExists(functionName)) {
+            customOpBuilder.setTransformerName(ToStringConversion.Factory.TRANSFORMER_ID);
+        } else if (ToNumericConversion.Factory.functionExists(functionName)) {
+            customOpBuilder.setTransformerName(ToNumericConversion.Factory.TRANSFORMER_ID);
         } else {
             throw new UnsupportedOperationException(
                     String.format("The function '%s' in the stage '%s' is not supported.", functionName, stage.name()));
