@@ -244,7 +244,7 @@ public class ModelSelectionUtils {
         double[] beta = new double[dinfo.coefNames().length];
         beta = Arrays.stream(beta).map(x -> 1.0).toArray(); // set coefficient to all 1
         GLMTask.GLMIterationTask gtask = new GLMTask.GLMIterationTask(jobKey, dinfo, new GLMModel.GLMWeightsFun(gaussian,
-                GLMModel.GLMParameters.Link.identity, 1, 0.1, 0.1), beta).doAll(dinfo._adaptedFrame);
+                GLMModel.GLMParameters.Link.identity, 1, 0.1, 0.1, 1, false), beta).doAll(dinfo._adaptedFrame);
         Gram gram = gtask.getGram();
         Gram.Cholesky chol = gram.qrCholesky(ignoredCols, parms._standardize);
         if (!chol.isSPD()) throw new Gram.NonSPDMatrixException();

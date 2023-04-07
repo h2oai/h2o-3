@@ -1057,7 +1057,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         
         if (_parms._dispersion_learning_rate <= 0 && tweedie.equals(_parms._family))
-          error("dispersion_learning_rate", "must > 0 and is only used with tweedie disersion" +
+          error("dispersion_learning_rate", "must > 0 and is only used with tweedie dispersion" +
                   " parameter estimation using ml.");
         
         if (_parms._fix_tweedie_variance_power && tweedie.equals(_parms._family) && _parms._tweedie_variance_power > 1
@@ -2166,8 +2166,144 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
       }
     }
-
-
+//
+//    private double quadInterpolation(double x, double xl, double xm, double xu, double fl, double fm, double fu) {
+//      double diffML = (fm-fl)/(xm-xl);
+//      double diffUM = (fu-fm)/(xu-xm);
+//      return Math.min(((diffUM-diffML)/(xu-xl))*(x-xm)*(x-xl)+diffML*(x-xl)+fl, Math.min(fl, fu));
+//    }
+//    
+//  
+////    private void fitIRLSMProfile(Solver s) {
+//      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+//      LineSearchSolver ls = null;
+//      int iterCnt = _checkPointFirstIter ? _state._iter : 0;
+//      boolean firstIter = iterCnt == 0;
+//      final BetaConstraint bc = _state.activeBC();
+//      boolean converged = false;
+//      double p =1.9;
+//      double bestLLH = Double.NEGATIVE_INFINITY;
+//      double bestP = 1.5;
+//      ComputationState.GramXY gram = null;
+//
+//      Vec weights = _dinfo._weights
+//              ? _dinfo.getWeightsVec()
+//              : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
+//      Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
+//      
+//      double[][] params = MemoryManager.malloc8d(_parms._max_iterations_dispersion, 2);
+//      double[] llhs = MemoryManager.malloc8d(_parms._max_iterations_dispersion);
+//      double[] selectedParms = new double[2];
+//      Log.info("::: ::---::");
+//      for (int i = 0; i <= _parms._max_iterations_dispersion; i++) {
+//        updateTweedieVariancePower(p);
+//        Log.info("::: Iteration: " + i + "; p = " + p + "; bestP = " + bestP + "; bestLLH = " + bestLLH);
+////        if ((i == _parms._max_iterations_dispersion) || !(p > 1.9 && p < 2 || p > 2 && p < 2.1)) {
+//          converged = false;
+//          iterCnt = 0;
+//          firstIter = true;
+//          double[] trainHistory = new double[5], validHistory = new double[5];
+//          coldStart(trainHistory, validHistory);
+//          _state._ymu = new double[]{_parms._intercept ? _train.lastVec().mean() : _parms.linkInv(0)};
+//          _nullBeta[_dinfo.fullN()] = new GLMModel.GLMWeightsFun(_parms).link(_state._ymu[0]);
+//          _state.setLambda(0);
+//
+//          //_model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+//          _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
+//          _model._output._ymu = _state._ymu.clone();
+//          try {
+//            while (!converged && iterCnt < _parms._max_iterations /*&& !_job.stop_requested()*/) {
+//              iterCnt++;
+//              long t1 = System.currentTimeMillis();
+//              gram = _state.computeGram(betaCnd, s);
+//              long t2 = System.currentTimeMillis();
+//              if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) >
+//                      _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
+//                _state._lsNeeded = true;
+//              } else {
+//                if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
+//                  Log.info("DONE after " + (iterCnt - 1) + " iterations (1)");
+//                  _model._betaCndCheckpoint = betaCnd;
+//                  converged = true;
+//                }
+//                if (!_checkPointFirstIter)
+//                  betaCnd = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
+//                          : ADMM_solve(gram.gram, gram.xy); // this will shrink betaCnd if needed but this call may be skipped
+//              }
+//              firstIter = false;
+//              _checkPointFirstIter = false;
+//              long t3 = System.currentTimeMillis();
+//              if (_state._lsNeeded) {
+//                if (ls == null)
+//                  ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+//                          ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
+//                          : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
+//                double[] oldBetaCnd = ls.getX();
+//                if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
+//                  betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+//                }
+//                if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
+//                  Log.info(LogMsg("Ls failed " + ls));
+//                  converged = true;
+//                }
+//                betaCnd = ls.getX();
+//                if (_betaConstraintsOn)
+//                  bc.applyAllBounds(betaCnd);
+//
+//                if (!progress(betaCnd, ls.ginfo()))
+//                  converged = true;
+//                long t4 = System.currentTimeMillis();
+//                Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+//              } else {
+//                if (_betaConstraintsOn) // apply beta constraints without LS
+//                  bc.applyAllBounds(betaCnd);
+//                Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+//              }
+//            }
+//          } catch (NonSPDMatrixException e) {
+//            Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+//          }
+//          DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+//                  1, Vec.T_NUM, _dinfo._adaptedFrame);
+//          Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+//
+////      for (i = 0; i < 151; i++) {
+////         p = 1 + 3. / 150 * i;
+//
+//        TweedieVariancePowerMLEstimator tweedieVariancePowerMLEstimator = new TweedieVariancePowerMLEstimator(
+//                p,
+//                _parms._init_dispersion_parameter,
+//                _parms._max_iterations_dispersion,
+//                false,
+//                false,
+//                false).doAll(mu, response, weights);
+//        llh = tweedieVariancePowerMLEstimator._loglikelihood;
+//        Log.info("::: trained_p = " + _parms._tweedie_variance_power + " p  = "+p+" LLH = " + llh +
+//                " OldLLH = " + (-(gram == null ? Double.POSITIVE_INFINITY : gram.likelihood)));
+////      }
+////        } else {
+////          llh = quadInterpolation(p, 1.9, 2, 2.1, llh19, llh2, llh21);
+////          Log.info("::: p = " + p + " LLH = " + llh +
+////                  " OldLLH = " + (-(gram == null ? Double.POSITIVE_INFINITY : gram.likelihood)) +
+////                          "; llh19 = "+llh19+"; llh2 = "+llh2+"; llh21 = "+llh21+ "; llh3 = "+llh3+
+////                  "; interpolated");
+////        }
+//        if (llh > bestLLH || bestLLH == 0) {
+//          bestP = p;
+//          bestLLH = llh;
+//        }
+//        if (p == 1.9)
+//          llh19 = llh;
+//        if (p == 2)
+//          llh2 = llh;
+//        if (p == 2.1)
+//          llh21 = llh;
+//        if (p == 3)
+//          llh3 = llh;
+////        if (bestLLH > llh && bestLLH != 0)
+////          i = Math.max(i, _parms._max_iterations_dispersion - 1);
+//      }
+//    }
 
     private void fitIRLSMML(Solver s) {
       double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
@@ -2182,6 +2318,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ? _dinfo.getWeightsVec()
               : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
       Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
+      if (tweedie.equals(_parms._family)) {
+        // make sure link power is set to canonical value if appropriate
+        updateTweedieParms(_parms._tweedie_variance_power, _parms._init_dispersion_parameter);
+        // Check if response contains zeros if so limit variance power to (1,2)
+        if (response.min() <= 0)
+          warn("_tweedie_var_power", "Response contains zeros and/or values lower than zero. "+
+                  "Tweedie variance power ML estimation will be limited between 1 and 2.");
+      }
       try {
         while (!converged && iterCnt < _parms._max_iterations && !_job.stop_requested()) {
           iterCnt++;
@@ -2234,17 +2378,224 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // Dispersion estimation part
           if (negativebinomial.equals(_parms._family)){
             converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH, weights, response) && converged;
+          } else if (tweedie.equals(_parms._family)){
+            if (_parms._fix_dispersion_parameter) {
+              converged = updateTweedieVariancePower(iterCnt, _state.expandBeta(betaCnd), weights, response) && converged;
+            }
           }
+
           if (Math.abs(previousLLH - gram.likelihood) < _parms._objective_epsilon)
             sameLLH ++;
           else
             sameLLH = 0;
-          converged = converged || sameLLH > 10;
+          Log.info("::: Gram likelihood = "+gram.likelihood);
+          if (!tweedie.equals(_parms._family))
+            converged = converged || sameLLH > 10;
           previousLLH = gram.likelihood;
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
-        throw e; // TODO: Decide if we want to return a bad model or no model at all.
+      }
+    }
+
+    private boolean updateTweedieVariancePower(int iterCnt, double[] betaCnd, Vec weights, Vec response) {
+      final double newtonThreshold = 0.1; // when d < newtonThreshold => use Newton's method
+      final double phi = _parms._init_dispersion_parameter;
+      final double originalP = _parms._tweedie_variance_power;
+      double bestLLH = Double.NEGATIVE_INFINITY, bestP = 1.5, lowerBound, upperBound, p = originalP;
+      int newtonFailures = 0;
+
+      DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+              1, Vec.T_NUM, _dinfo._adaptedFrame);
+      Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+
+      // Golden section search for p between 1  and 2 
+      lowerBound = 1 + 1e-16; 
+      if (response.min() <= 0) {
+        upperBound = 2 - 1e-16;
+      } else {
+        upperBound = Double.POSITIVE_INFINITY;
+      }
+      // Let's assume the var power will be close to the one in last iteration and hopefully save some time 
+      if (iterCnt > 1 && originalP > 1.2) {
+        if (!_parms._fix_tweedie_variance_power) {
+          updateTweedieParms(Math.max(lowerBound, p - 0.01), phi);
+          mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        }
+        TweedieVariancePowerMLEstimator lo = new TweedieVariancePowerMLEstimator(
+                Math.max(lowerBound, p - 0.01),
+                phi, _parms._max_iterations_dispersion).doAll(mu, response, weights);
+        if (!_parms._fix_tweedie_variance_power) {
+          updateTweedieParms(p, phi);
+          mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        }
+        TweedieVariancePowerMLEstimator mid = new TweedieVariancePowerMLEstimator(p, phi, _parms._max_iterations_dispersion).doAll(mu, response, weights);
+        if (!_parms._fix_tweedie_variance_power) {
+          updateTweedieParms(Math.min(upperBound, p+0.01), phi);
+          mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        }
+        TweedieVariancePowerMLEstimator hi = new TweedieVariancePowerMLEstimator(
+                Math.min(upperBound, p + 0.01),
+                phi, _parms._max_iterations_dispersion, false, false, false).doAll(mu, response, weights);
+        if (mid._loglikelihood > lo._loglikelihood && !Double.isNaN(lo._loglikelihood) && !Double.isNaN(mid._loglikelihood))
+          lowerBound = lo._p;
+        if (mid._loglikelihood > hi._loglikelihood && !Double.isNaN(mid._loglikelihood) && !Double.isNaN(hi._loglikelihood))
+          upperBound = hi._p;
+      }
+
+      if (upperBound == Double.POSITIVE_INFINITY) {
+        // look at p=2 and p=3 (cheap to compute)
+        if (!_parms._fix_tweedie_variance_power) {
+          updateTweedieParms(2, phi);
+          mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        }
+        TweedieVariancePowerMLEstimator tvp2 = new TweedieVariancePowerMLEstimator(2, phi, _parms._max_iterations_dispersion).doAll(mu, response, weights);
+        if (!_parms._fix_tweedie_variance_power) {
+          updateTweedieParms(3, phi);
+          mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        }
+        TweedieVariancePowerMLEstimator tvp3 = new TweedieVariancePowerMLEstimator(3, phi, _parms._max_iterations_dispersion).doAll(mu, response, weights);
+        double llhI = tvp3._loglikelihood, llhIm1 = tvp2._loglikelihood;
+        // pI == p_i, pIm1 == p_{i-1}, ...
+        double pI = 3, pIm1 = 2, pIm2 = lowerBound;
+        // if p(2) > p(3) => search in [1, 3]
+        // look at 3,6,12,24,48,96, ... until p(x_{i-1}) > p(x_i) => search in [x_{i-2}, x_i] 
+        while (llhIm1 < llhI) {
+          pIm2 = pIm1;
+          pIm1 = pI;
+          llhIm1 = llhI;
+          pI *= 2;
+          if (!_parms._fix_tweedie_variance_power) {
+            updateTweedieParms(pI, phi);
+            mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+          }
+          TweedieVariancePowerMLEstimator tvp = new TweedieVariancePowerMLEstimator(pI, phi, _parms._max_iterations_dispersion).doAll(mu, response, weights);
+          llhI = tvp._loglikelihood;
+          Log.info("::: p = (" + pIm2 + ", " + pIm1 + ", " + pI + "); llh = (..., " + llhIm1 + ", " + llhI + ")");
+        }
+        lowerBound = pIm2;
+        upperBound = pI;
+      }
+
+      double d = upperBound - lowerBound;
+      p = (upperBound+lowerBound)/2;
+      
+      Log.info("::: ------------------------ [" + lowerBound + ", " + upperBound + "]; p = "+p);
+      for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
+        // likelihood, grad, and hess get unstable for the series method near 2, so I'm not using Newton's method for 
+        // this region and instead use "hybrid" (series+inversion) likelihood calculation
+        if (d < newtonThreshold && p >= lowerBound && p <= upperBound && newtonFailures < 3 && !(p >= 2 && p <= 2.1)){
+          // Use Newton's method in bracketed space
+          if (!_parms._fix_tweedie_variance_power) {
+            updateTweedieParms(p, phi);
+            mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+          }
+          TweedieVariancePowerMLEstimator tvp = new TweedieVariancePowerMLEstimator(p, phi, _parms._max_iterations_dispersion, false, true, true).doAll(mu, response, weights);
+          if (tvp._loglikelihood > bestLLH) {
+            Log.info("::: i = "+iterCnt+"; Newton Improved: bestLLH = "+ bestLLH+"; new best = "+tvp._loglikelihood);
+            bestLLH = tvp._loglikelihood;
+            bestP = p;
+          }
+          double delta = tvp._llhDp /tvp._llhDpDp;
+          Log.info("::: i = "+iterCnt+"; Newton p = " + p +"; new p = "+(p-delta)+"; delta = "+delta+"; break? "+(Math.abs(delta) < _parms._dispersion_epsilon)+"; eps = "+_parms._dispersion_epsilon);
+          p = p - delta;
+          if (Math.abs(delta) < _parms._dispersion_epsilon) break;
+        } else {
+          if (d < newtonThreshold) {
+            newtonFailures ++;
+            if (newtonFailures < 3)
+              Log.info("::: i = "+iterCnt+"; Newton failed and stepped out of bounds; failures = "+newtonFailures);
+          }
+          d *= 0.618;  // division by golden ratio
+          final double lowerBoundProposal = upperBound - d;
+          final double upperBoundProposal = lowerBound + d;
+          if (!_parms._fix_tweedie_variance_power) {
+            updateTweedieParms(lowerBoundProposal, phi);
+            mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+          }
+          TweedieVariancePowerMLEstimator lowerEst = new TweedieVariancePowerMLEstimator(lowerBoundProposal, phi, _parms._max_iterations_dispersion).doAll(mu, response, weights);
+          if (!_parms._fix_tweedie_variance_power) {
+            updateTweedieParms(upperBoundProposal, phi);
+            mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+          }
+          TweedieVariancePowerMLEstimator upperEst = new TweedieVariancePowerMLEstimator(upperBoundProposal, phi, _parms._max_iterations_dispersion).doAll(mu, response, weights);
+
+          if (lowerEst._loglikelihood >= upperEst._loglikelihood) {
+            upperBound = upperBoundProposal;
+            if (lowerEst._loglikelihood > bestLLH) {
+              bestLLH = lowerEst._loglikelihood;
+              bestP = lowerEst._p;
+            }
+          } else {
+            lowerBound = lowerBoundProposal;
+            if (upperEst._loglikelihood > bestLLH) {
+              bestLLH = upperEst._loglikelihood;
+              bestP = upperEst._p;
+            }
+          }
+          p = (upperBound+lowerBound)/2;
+          Log.info("::: i = " + iterCnt + "; d = " + d + "; lastP = " + p + "; p = [" + lowerBound + ", " + lowerEst._p + ", " + upperEst._p + ", " + upperBound + "]; llhs = [" + lowerEst._loglikelihood + ", " + upperEst._loglikelihood + "]; bestP = " + bestP + "; bestLLH = " + bestLLH);
+          if (Math.abs((upperBoundProposal - lowerBoundProposal)) < _parms._dispersion_epsilon || _job.stop_requested()) {
+            bestP = (upperBoundProposal + lowerBoundProposal) / 2;
+            break;
+          }
+          if (!Double.isFinite(upperEst._loglikelihood) && !Double.isFinite(lowerEst._loglikelihood) && lowerEst._p < 5) {
+            Log.info("::: i = " + iterCnt + "; Infinities/NaNs => Break");
+            bestP = 1.5;
+            break;
+          }
+          if (upperEst._loglikelihood == 0 && lowerEst._loglikelihood == 0) {
+            Log.info("::: i = " + iterCnt + "; Zeros => Break");
+            bestP = 1.5;
+            break;
+          }
+        }
+      }
+      updateTweedieParms(bestP, phi);
+      return Math.abs(p - bestP) < _parms._dispersion_epsilon;
+    }
+
+    private void updateTweedieParms(double p, double dispersion) {
+      if (!Double.isFinite(p)) return;
+      double linkPower = _parms._tweedie_link_power;
+      if (!_parms._fix_tweedie_variance_power) {
+        linkPower = 1 - p;
+        _nullBeta = null;
+        _state._currGram = null;
+      }
+      _parms.updateTweedieParams(p, linkPower, dispersion);
+      _model._parms.updateTweedieParams(p, linkPower, dispersion);
+
+      if (!_parms._fix_tweedie_variance_power) {
+        // skipping extra rows? (outside of weights == 0)GLMT
+        boolean skippingRows = (_parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.Skip && _train.hasNAs());
+        if (hasWeightCol() || skippingRows) { // need to re-compute means and sd
+          boolean setWeights = skippingRows;// && _parms._lambda_search && _parms._alpha[0] > 0;
+          if (setWeights) {
+            Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
+            _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
+          }
+          YMUTask ymt = new YMUTask(_dinfo, 1, setWeights, skippingRows, true, false).doAll(_dinfo._adaptedFrame);
+          if (ymt.wsum() == 0)
+            throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
+          Log.info(LogMsg("using " + ymt.nobs() + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
+          // if sparse data, need second pass to compute variance
+          _nobs = ymt.nobs();
+          if (_parms._obj_reg == -1)
+            _parms._obj_reg = 1.0 / ymt.wsum();
+          if (!_parms._stdOverride)
+            _dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
+          _state._ymu = _parms._intercept ? ymt._yMu : new double[]{_parms.linkInv(0)};
+        } else {
+          _nobs = _train.numRows();
+          if (_parms._obj_reg == -1)
+            _parms._obj_reg = 1.0 / _nobs;
+          _state._ymu = new double[]{_parms._intercept ? _train.lastVec().mean() : _parms.linkInv(0)};
+        }
+      }
+
+      if (_state._glmw != null) {
+        _state._glmw = new GLMWeightsFun(_parms);
       }
     }
 
@@ -2568,8 +2919,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             else if (gaussian.equals(_parms._family) && Link.identity.equals(_parms._link))
               fitLSM(solver);
             else {
-              if (_parms._dispersion_parameter_method.equals(ml) && _parms._family.equals(negativebinomial))
-                fitIRLSMML(solver);
+              if (_parms._dispersion_parameter_method.equals(ml))
+//                if (tweedie.equals(_parms._family))
+//                  fitIRLSMProfile(solver);
+//                else
+                  fitIRLSMML(solver);
               else
                 fitIRLSM(solver);
             }
@@ -2810,8 +3164,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Link tlink = tfamily.defaultLink;
         if (!(link == null))
           tlink = link[k];
-        GLMWeightsFun glmfun = new GLMWeightsFun(tfamily, tlink,
-                0, 0, 0);
+        GLMWeightsFun glmfun = new GLMWeightsFun(tfamily, tlink, 0, 0, 0, 1, false);
         int colLength = _randC[k];
         for (int col = 0; col < colLength; col++) {
           int index = k * colLength + col;
