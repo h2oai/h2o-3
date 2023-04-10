@@ -181,7 +181,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
-    :param extra_args: Extra arguments useful for starting an H2O server, e.g. `hdfs_config` for specifying configuration file for accessing HDFS.
+    :param extra_args: Extra arguments useful for starting an H2O server, should be a `dict`. E.g. pass `extra_args={"-hdfs_config": SOME_PATH}` to specify configuration file for accessing HDFS.
 
 
     :examples:
@@ -214,7 +214,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     assert_is_type(extra_classpath, [str], None)
     assert_is_type(jvm_custom_args, [str], None)
     assert_is_type(bind_to_localhost, bool)
-    assert_is_type(extra_args, {"hdfs_config": str})
+    assert_is_type(extra_args, {str: str})
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool, "as_port": bool})
 

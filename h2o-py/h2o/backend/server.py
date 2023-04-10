@@ -110,7 +110,7 @@ class H2OLocalServer(object):
         assert_is_type(extra_classpath, None, [str])
         assert_is_type(jvm_custom_args, list, None)
         assert_is_type(bind_to_localhost, bool)
-        assert_is_type(extra_args, {"hdfs_config": str})
+        assert_is_type(extra_args, {str: str})
         if jar_path:
             assert_satisfies(jar_path, jar_path.endswith("h2o.jar"))
 
@@ -331,8 +331,8 @@ class H2OLocalServer(object):
         cmd += ["-log_level", "INFO"]
         cmd += ["-allow_unsupported_java"]
 
-        if extra_args.get("hdfs_config", None):
-            cmd += ["-hdfs_config", extra_args["hdfs_config"]]
+        for k, v in extra_args.items():
+            cmd += [k, v]
 
         # Create stdout and stderr files
         self._stdout = self._tmp_file("stdout")
