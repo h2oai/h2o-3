@@ -2318,9 +2318,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ? _dinfo.getWeightsVec()
               : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
       Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
+      
+      Log.info("::: +++++++++++++++++++++++++++++++++++++++++++++++++");
+      Log.info("::: p = "+_parms._tweedie_variance_power + "; phi = "+_parms._init_dispersion_parameter);
+      
       if (tweedie.equals(_parms._family)) {
         // make sure link power is set to canonical value if appropriate
-        updateTweedieParms(_parms._tweedie_variance_power, _parms._init_dispersion_parameter);
+        updateTweedieParms(
+                response.min() <= 0 && _parms._tweedie_variance_power >= 2 
+                        ? 1.5  // if there are zeros in the response p >= 2 would make the first iteration of beta optimization ignore the zeros and that would deform the likelihood
+                        : _parms._tweedie_variance_power,
+                _parms._init_dispersion_parameter);
         // Check if response contains zeros if so limit variance power to (1,2)
         if (response.min() <= 0)
           warn("_tweedie_var_power", "Response contains zeros and/or values lower than zero. "+
@@ -2389,8 +2397,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           else
             sameLLH = 0;
           Log.info("::: Gram likelihood = "+gram.likelihood);
-          if (!tweedie.equals(_parms._family))
-            converged = converged || sameLLH > 10;
+          //if (!tweedie.equals(_parms._family))
+          if (sameLLH > 10) {
+            Log.info("::: Same LLH > 10; converged?"+converged);
+          }
+          converged = converged || sameLLH > 10;
           previousLLH = gram.likelihood;
         }
       } catch (NonSPDMatrixException e) {
@@ -2409,6 +2420,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               1, Vec.T_NUM, _dinfo._adaptedFrame);
       Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
 
+//      for (int i = 0; i < 500; i++) {
+//        p = 1+(i/100.);
+//        TweedieVariancePowerMLEstimator tvp = new TweedieVariancePowerMLEstimator(p, phi).doAll(mu, response, weights);
+//        Log.info("::::: "+iterCnt+","+p+","+tvp._loglikelihood+","+ tvp._skippedRows);
+//      }
+//      
+//      p = originalP;
       // Golden section search for p between 1  and 2 
       lowerBound = 1 + 1e-16; 
       if (response.min() <= 0) {
@@ -2417,7 +2435,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         upperBound = Double.POSITIVE_INFINITY;
       }
       // Let's assume the var power will be close to the one in last iteration and hopefully save some time 
-      if (iterCnt > 1 && originalP > 1.2) {
+      if (iterCnt > 1 && originalP > 1.2 && !(originalP > 1.95 && originalP < 2.1)) {
         if (!_parms._fix_tweedie_variance_power) {
           updateTweedieParms(Math.max(lowerBound, p - 0.01), phi);
           mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
@@ -2441,6 +2459,22 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           lowerBound = lo._p;
         if (mid._loglikelihood > hi._loglikelihood && !Double.isNaN(mid._loglikelihood) && !Double.isNaN(hi._loglikelihood))
           upperBound = hi._p;
+        Log.info("::: lo = "+lo._loglikelihood + "; mid = "+mid._loglikelihood+"; hi = "+hi._loglikelihood);
+
+//        if (bestLLH < lo._loglikelihood) {
+//          bestLLH = lo._loglikelihood;
+//          bestP = lo._p;
+//        }
+//
+//        if (bestLLH < mid._loglikelihood) {
+//          bestLLH = mid._loglikelihood;
+//          bestP = mid._p;
+//        }
+//
+//        if (bestLLH < hi._loglikelihood) {
+//          bestLLH = hi._loglikelihood;
+//          bestP = hi._p;
+//        }
       }
 
       if (upperBound == Double.POSITIVE_INFINITY) {
@@ -2458,6 +2492,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double llhI = tvp3._loglikelihood, llhIm1 = tvp2._loglikelihood;
         // pI == p_i, pIm1 == p_{i-1}, ...
         double pI = 3, pIm1 = 2, pIm2 = lowerBound;
+
+        if (bestLLH < llhI) {
+          bestLLH = llhI;
+          bestP = pI;
+        }
+
+        if (bestLLH < llhIm1) {
+          bestLLH = llhIm1;
+          bestP = pIm1;
+        }
+
         // if p(2) > p(3) => search in [1, 3]
         // look at 3,6,12,24,48,96, ... until p(x_{i-1}) > p(x_i) => search in [x_{i-2}, x_i] 
         while (llhIm1 < llhI) {
@@ -2471,6 +2516,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
           TweedieVariancePowerMLEstimator tvp = new TweedieVariancePowerMLEstimator(pI, phi, _parms._max_iterations_dispersion).doAll(mu, response, weights);
           llhI = tvp._loglikelihood;
+
+          if (bestLLH < llhI) {
+            bestLLH = llhI;
+            bestP = pI;
+          }
+
           Log.info("::: p = (" + pIm2 + ", " + pIm1 + ", " + pI + "); llh = (..., " + llhIm1 + ", " + llhI + ")");
         }
         lowerBound = pIm2;
@@ -2495,6 +2546,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             Log.info("::: i = "+iterCnt+"; Newton Improved: bestLLH = "+ bestLLH+"; new best = "+tvp._loglikelihood);
             bestLLH = tvp._loglikelihood;
             bestP = p;
+          } else {
+            Log.info("::: i = "+iterCnt+"; Newton failed to improve: bestLLH = "+bestLLH+"; current LLH: "+tvp._loglikelihood);
+            newtonFailures++;
           }
           double delta = tvp._llhDp /tvp._llhDpDp;
           Log.info("::: i = "+iterCnt+"; Newton p = " + p +"; new p = "+(p-delta)+"; delta = "+delta+"; break? "+(Math.abs(delta) < _parms._dispersion_epsilon)+"; eps = "+_parms._dispersion_epsilon);
@@ -2552,7 +2606,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       updateTweedieParms(bestP, phi);
-      return Math.abs(p - bestP) < _parms._dispersion_epsilon;
+      Log.info("::: originalP = "+originalP+"; bestP = "+bestP+"; diff = "+(originalP-bestP)+"; disp. eps = "+_parms._dispersion_epsilon);
+      return Math.abs(originalP - bestP) < _parms._dispersion_epsilon;
     }
 
     private void updateTweedieParms(double p, double dispersion) {

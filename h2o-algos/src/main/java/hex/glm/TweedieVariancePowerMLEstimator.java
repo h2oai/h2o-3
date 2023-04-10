@@ -3,6 +3,7 @@ package hex.glm;
 import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
+import water.util.Log;
 import water.util.fp.Function2;
 import water.util.fp.Function3;
 
@@ -181,12 +182,12 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             } else if (_p == 3) {
                 llh = invGaussLLH(y, mu, w);
                 _method = invGaussian;
-            } else if (_p > 1.999 && _p < 3) {
-                llh = tweedieInversionLLH(y, mu, w);
-                if (!Double.isNaN(llh)) {
-                    if (accumulate) accumulate(llh, 0, 0);
-                    _method = inversion;
-                }
+//            } else if (_p > 1.999 && _p < 3) {
+//                llh = tweedieInversionLLH(y, mu, w);
+//                if (!Double.isNaN(llh)) {
+//                    if (accumulate) accumulate(llh, 0, 0);
+//                    _method = inversion;
+//                }
             } else if (_p > 1 && _p < 1.1) {
                 // pass; use the series approach
                 _method = series;
@@ -289,6 +290,11 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         _llhDp += mrt._llhDp;
         _llhDpDp += mrt._llhDpDp;
         _skippedRows += mrt._skippedRows;
+    }
+
+    @Override
+    protected void postGlobal() {
+        Log.info(":::: Skipped Rows = "+ _skippedRows);
     }
 
     void cleanSums() {
