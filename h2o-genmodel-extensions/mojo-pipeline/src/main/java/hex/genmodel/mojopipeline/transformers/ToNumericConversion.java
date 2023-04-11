@@ -5,6 +5,11 @@ import ai.h2o.mojos.runtime.frame.MojoFrame;
 import ai.h2o.mojos.runtime.frame.MojoFrameMeta;
 import ai.h2o.mojos.runtime.transforms.MojoTransform;
 import ai.h2o.mojos.runtime.transforms.MojoTransformBuilderFactory;
+import hex.genmodel.mojopipeline.parsing.ParameterParser;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormatter;
+import water.util.ParseTime;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -56,11 +61,24 @@ public class ToNumericConversion extends MojoTransform {
                     public double call(String value) { return Double.parseDouble(value); }
                 });
                 put("as.Date", new ToNumericConversionFunction() {
+                    DateTimeFormatter _formatter = null;
                     @Override
-                    public void initialize(Map<String, Object> params) {}
+                    public void initialize(Map<String, Object> params) {
+                        Object formatObj = params.get("format");
+                        if (formatObj == null) {
+                            throw new IllegalArgumentException("The 'format' param is not passed to 'as.Date' function!");
+                        }
+                        String format = (String)formatObj;
+                        Object timezoneObj = params.get("timezone");
+                        if (formatObj == null) {
+                            throw new IllegalArgumentException("The 'timezone' param is not passed to 'as.Date' function!");
+                        }
+                        DateTimeZone timeZoneId = DateTimeZone.forID((String)timezoneObj);
+                        _formatter = ParseTime.forStrptimePattern(format).withZone(timeZoneId);
+                    }
 
                     @Override
-                    public double call(String value) { return Double.parseDouble(value); }
+                    public double call(String value) { return DateTime.parse(value, _formatter).getMillis(); }
                 });
         }};
 
