@@ -5,7 +5,7 @@ import ai.h2o.mojos.runtime.frame.MojoFrame;
 import ai.h2o.mojos.runtime.frame.MojoFrameMeta;
 import ai.h2o.mojos.runtime.transforms.MojoTransform;
 import ai.h2o.mojos.runtime.transforms.MojoTransformBuilderFactory;
-import hex.genmodel.mojopipeline.parsing.ParameterParser;
+import org.apache.commons.lang.math.NumberUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
@@ -58,7 +58,9 @@ public class ToNumericConversion extends MojoTransform {
                     public void initialize(Map<String, Object> params) {}
 
                     @Override
-                    public double call(String value) { return Double.parseDouble(value); }
+                    public double call(String value) {
+                        return NumberUtils.toDouble(value, Double.NaN);
+                    }
                 });
                 put("as.Date", new ToNumericConversionFunction() {
                     DateTimeFormatter _formatter = null;
@@ -78,7 +80,13 @@ public class ToNumericConversion extends MojoTransform {
                     }
 
                     @Override
-                    public double call(String value) { return DateTime.parse(value, _formatter).getMillis(); }
+                    public double call(String value) {
+                        try {
+                            return DateTime.parse(value, _formatter).getMillis();
+                        } catch (IllegalArgumentException e) {
+                            return Double.NaN;
+                        }
+                    }
                 });
         }};
 
