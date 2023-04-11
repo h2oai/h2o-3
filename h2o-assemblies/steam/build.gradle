@@ -32,8 +32,8 @@ dependencies {
         exclude group: "org.apache.hadoop"
     }
     // Force latest version Hadoop with unused components excluded - we need Hadoop for Parquet and S3A export 
-    api "org.apache.hadoop:hadoop-hdfs-client:3.3.3"
-    api("org.apache.hadoop:hadoop-common:3.3.3") {
+    api "org.apache.hadoop:hadoop-hdfs-client:3.3.5"
+    api("org.apache.hadoop:hadoop-common:3.3.5") {
         exclude group: "com.sun.jersey"
         exclude group: "javax.servlet"
         exclude group: "org.apache.avro"
@@ -41,8 +41,9 @@ dependencies {
         exclude group: "org.apache.zookeeper"
         exclude group: "org.eclipse.jetty"
         exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
+        exclude group: "org.apache.hadoop", module: "hadoop-auth"
     }
-    api("org.apache.hadoop:hadoop-aws:3.3.3") {
+    api("org.apache.hadoop:hadoop-aws:3.3.5") {
         exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
     }
     // aws-java-sdk-dynamodb is required for S3A support, S3A import throws NoClassDefFoundError (AmazonDynamoDBException)
@@ -53,7 +54,7 @@ dependencies {
     api "org.apache.commons:commons-compress:1.21"
     // Force specific Parquet version to avoid dependency on vulnerable FasterXML jackson-mapper-asl
     api "org.apache.parquet:parquet-hadoop:1.12.2"
-    api("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.3") {
+    api("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.5") {
         transitive = false
     }
     // Google OAuth force version
