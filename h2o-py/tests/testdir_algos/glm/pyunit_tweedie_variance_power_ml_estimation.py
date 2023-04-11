@@ -126,7 +126,7 @@ def test_tweedie_var_power_estimation_1p2_phi_2_no_link_power_est():
                                              dispersion_parameter_method="ml")
     model_ml.train(training_frame=training_data, x=x, y=Y)
     print(model_ml.actual_params["tweedie_variance_power"])
-    assert abs(model_ml.actual_params["tweedie_variance_power"] - 1.27) < 0.001
+    assert abs(model_ml.actual_params["tweedie_variance_power"] - 1.19096) < 0.001
 
     model_ml = H2OGeneralizedLinearEstimator(family='tweedie', fix_dispersion_parameter=True,
                                              tweedie_variance_power=1.5, init_dispersion_parameter=2,
@@ -134,7 +134,7 @@ def test_tweedie_var_power_estimation_1p2_phi_2_no_link_power_est():
                                              dispersion_parameter_method="ml")
     model_ml.train(training_frame=training_data, x=x, y=Y)
     print(model_ml.actual_params["tweedie_variance_power"])
-    assert abs(model_ml.actual_params["tweedie_variance_power"] - 1.27) < 0.001
+    assert abs(model_ml.actual_params["tweedie_variance_power"] -  1.19096) < 0.001
 
 
 def test_tweedie_var_power_estimation_2p5_phi_2p5_no_link_power_est():

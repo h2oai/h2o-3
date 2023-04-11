@@ -629,7 +629,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _link = l;
       this._theta=theta;
       this._invTheta = 1.0/theta;
-      Log.info("::: GLMParameters("+f.toString()+", "+twVar+", "+twLnk+")");
     }
 
     public final double variance(double mu){

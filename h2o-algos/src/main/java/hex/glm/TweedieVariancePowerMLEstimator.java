@@ -3,6 +3,7 @@ package hex.glm;
 import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
+import water.fvec.Vec;
 import water.util.Log;
 import water.util.fp.Function2;
 import water.util.fp.Function3;
@@ -61,19 +62,15 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     public LikelihoodEstimator _method;
 
     TweedieVariancePowerMLEstimator(double variancePower, double dispersion) {
-        this(variancePower, dispersion, 1000);
+        this(variancePower, dispersion, false, false, false);
     }
 
-    TweedieVariancePowerMLEstimator(double variancePower, double dispersion, long max_iter_cnt) {
-        this(variancePower, dispersion, max_iter_cnt, false, false, false);
-    }
-
-    TweedieVariancePowerMLEstimator(double variancePower, double dispersion, long max_iter_cnt,
+    TweedieVariancePowerMLEstimator(double variancePower, double dispersion,
                                     boolean useSaddlepointApprox, boolean needDp, boolean needDpDp) {
         _p = variancePower;
         assert _p >= 1;
         _phi = dispersion;
-        _max_iter_cnt = max_iter_cnt;
+        _max_iter_cnt = 25000;
 
         _pp = _p * _p;
         _ppp = _pp * _p;
@@ -168,102 +165,138 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
     private double logLikelihood(double y, double mu, double w, boolean accumulate) {
         if (w == 0) return 0;
-        double llh = 0, llhDp = 0, llhDpDp = 0;
-        _method = _useSaddlepoint ? saddlepoint : series;
+        if (_p >= 2 && y <= 0) {
+            if (accumulate) accumulate(Double.NEGATIVE_INFINITY, 0, 0);
+            return Double.NEGATIVE_INFINITY;
+        }
+        double[] llh_llhDp_llhDpDp = MemoryManager.malloc8d(3);
         if (!_useSaddlepoint) {
-            final double xi = _phi / pow(y, 2 - _p);
+            _method = series;
+            //final double xi = _phi / pow(y, 2 - _p);
+            final double xix = (_phi * pow(y, _p2)) / (1 + (_phi * pow(y, _p2))); //  from R's dtweedie
             // decide whether we want the Fourier inversion approach
             if (_p == 1) {
-                llh = poissonLLH(y, mu, w);
+                llh_llhDp_llhDpDp[0] = poissonLLH(y, mu, w);
                 _method = poisson;
             } else if (_p == 2) {
-                llh = gammaLLH(y, mu, w);
+                llh_llhDp_llhDpDp[0] = gammaLLH(y, mu, w);
                 _method = gamma;
             } else if (_p == 3) {
-                llh = invGaussLLH(y, mu, w);
+                llh_llhDp_llhDpDp[0] = invGaussLLH(y, mu, w);
                 _method = invGaussian;
-//            } else if (_p > 1.999 && _p < 3) {
-//                llh = tweedieInversionLLH(y, mu, w);
-//                if (!Double.isNaN(llh)) {
-//                    if (accumulate) accumulate(llh, 0, 0);
-//                    _method = inversion;
-//                }
-            } else if (_p > 1 && _p < 1.1) {
-                // pass; use the series approach
-                _method = series;
-            } else if (_p < 2 && xi > 0.01) {
+            } else if (_p > 1.1 && _p <= 1.2) {
+                if (xix > 0 && xix < 0.1)
+                    _method = inversion;
+            } /*else if (_p < 2 && xi > 0.01) {
                 // pass; use the series approach
                 // this "xi-based" heuristic is proposed in section 8 in
                 // DUNN, Peter and SMYTH, Gordon, 2008. Evaluation of Tweedie exponential dispersion model densities by Fourier inversion.
                 _method = series;
-            } else if (_p > 2 && xi > 1) {
+            } else if (_p > 2 && xi < 1.0) {
                 // pass; use the series approach
                 _method = series;
             } else {
-                llh = tweedieInversionLLH(y, mu, w);
-                if (!Double.isNaN(llh)) {
                     _method = inversion;
+            }*/ else if (_p > 1.2 && _p <= 1.3) { // from actual R's implementation
+                if (xix > 0 && xix < 0.3)
+                    _method = inversion;
+            } else if (_p > 1.3 && _p <= 1.4) {
+                if (xix > 0 && xix < 0.5)
+                    _method = inversion;
+            } else if (_p > 1.4 && _p <= 1.5) {
+                if (xix > 0 && xix < 0.8)
+                    _method = inversion;
+            } else if (_p > 1.5 && _p < 5) {
+                if (xix > 0 && xix < 0.9)
+                    _method = inversion;
+            } else if (_p >= 5 && _p < 7) {
+                if (xix > 0 && xix < 0.5)
+                    _method = inversion;
+            } else if (_p >= 7 && _p < 10) {
+                if (xix > 0 && xix < 0.3)
+                    _method = inversion;
+            }
+
+            if (series.equals(_method))
+                tweedieSeries(y, mu, w, llh_llhDp_llhDpDp);
+            if (inversion.equals(_method) || Double.isNaN(llh_llhDp_llhDpDp[0])) {
+                llh_llhDp_llhDpDp[0] = tweedieInversion(y, mu, w);
+                _method = inversion;
+                if (Double.isNaN(llh_llhDp_llhDpDp[0])) {
+                    tweedieSeries(y, mu, w, llh_llhDp_llhDpDp);
+                    _method = series;
                 }
             }
-            boolean llhCalculated = !_method.equals(series);
-            double llhDpPart = (pow(mu, -_p1) * y * log(mu) * _invp1 - pow(mu, -_p2) * log(mu) * _invp2 +
-                    pow(mu, -_p1) * y * _invp1sq - pow(mu, -_p2) * _invp2sq) * w / _phi;
-            double llhDpDpPart = -(pow(mu, -_p1) * y * pow(log(mu), 2) * _invp1 - pow(mu, -_p2) * pow(log(mu), 2) * _invp2 +
-                    2 * (pow(mu, -_p1) * y * log(mu) * _invp1sq - pow(mu, -_p2) * log(mu) * _invp2sq +
-                            pow(mu, -_p1) * y * _invp1sq * _invp1 - pow(mu, -_p2) * _invp2sq * _invp2)) * w / _phi;
-            if (_p < 2) {
-                _method = series;
-                if (y == 0) {
-                    if (!llhCalculated)
-                        llh = -w * pow(mu, 2 - _p) / (_phi * (2 - _p));
-                    if (_needDp)
-                        llhDp = -(pow(mu, -_p2) * w * log(mu) * _invp2 + pow(mu, -_p2) * w * _invp2sq) / _phi;
-                    if (_needDpDp)
-                        llhDpDp = (pow(mu, -_p2) * w * pow(log(mu), 2) * _invp2 + 2 * pow(mu, -_p2) * w * log(mu) * _invp2sq + 2 * pow(mu, -_p2) * w * _invp2sq * _invp2) / _phi;
-                } else {
-                    calculateWjSums(y, w);
-                    if (!llhCalculated) {
-                        llh = -log(y) + log(_wSum) + _logWMax - w * (pow(mu, -_p1) * y * _invp1 - pow(mu, -_p2) / _p2) / _phi;
-                        if (llh == Double.POSITIVE_INFINITY) // can happen with p approaching one (wSum == Inf)
-                            llh = Double.NEGATIVE_INFINITY;
-                    }
-                    if (_needDp)
-                        llhDp = llhDpPart + _wDpSum / _wSum;
-                    if (_needDpDp)
-                        llhDpDp = llhDpDpPart + (_wDpDpSum / _wSum - _wDpSum / _wSum * _wDpSum / _wSum);
-                }
-            } else { // _p > 2
-                _method = series;
-                //mu = max(1e-16, mu); // no mass at 0
-                if (y == 0) return Double.NEGATIVE_INFINITY;
-                calculateVkSums(y, w);
-                if (!llhCalculated)
-                    llh = -log(PI * y) + _logVSum + _logVMax - w * (pow(mu, -_p1) * y * _invp1 - pow(mu, -_p2) / _p2) / _phi;
-                if (_needDp)
-                    llhDp = llhDpPart + exp(_logVDpSum - _logVSum) * _vDpSumSgn;
-                if (_needDpDp)
-                    llhDpDp = llhDpDpPart + (exp(_logVDpDpSum - _logVSum) * _vDpDpSumSgn - exp(_logVDpSum - _logVSum + _logVDpSum - _logVSum));
-            }
+
         }
         // Use saddlepoint approx. if the series method failed. See [1] for description and comparison of the
         // saddlepoint approximation.
         // [1] DUNN, Peter and SMYTH, Gordon, 2001. Tweedie Family Densities: Methods of Evaluation
-        if (_useSaddlepoint || (Double.isNaN(llh))) {
+        if (_useSaddlepoint || (Double.isNaN(llh_llhDp_llhDpDp[0]))) {
             // Try to use Saddlepoint approximation
             _method = saddlepoint;
             if (y == 0) {
                 if (_p > 1 && _p < 2)
-                    llh = pow(mu, 2 - _p) / (_phi * (2 - _p));
+                    llh_llhDp_llhDpDp[0] = pow(mu, 2 - _p) / (_phi * (2 - _p));
                 else
-                    llh = Double.NEGATIVE_INFINITY;
+                    llh_llhDp_llhDpDp[0] = Double.NEGATIVE_INFINITY;
             } else {
                 double dev = deviance(mu, y);
                 if (_p < 2) y += 1. / 6.;
-                llh = -0.5 * (log(2 * PI * _phi) + _p * log(y)) + (-dev / (2 * _phi));
+                llh_llhDp_llhDpDp[0] = -0.5 * (log(2 * PI * _phi) + _p * log(y)) + (-dev / (2 * _phi));
             }
         }
-        if (accumulate) accumulate(llh, llhDp, llhDpDp);
-        return llh;
+        if (accumulate) accumulate(llh_llhDp_llhDpDp[0], llh_llhDp_llhDpDp[1], llh_llhDp_llhDpDp[2]);
+        return llh_llhDp_llhDpDp[0];
+    }
+
+
+    private void tweedieSeries(double y, double mu, double w, double[] out_llh_dp_dpdp) {
+        out_llh_dp_dpdp[0] = 0; // llh
+        out_llh_dp_dpdp[1] = 0; // llhDp - gradient with respect to p
+        out_llh_dp_dpdp[2] = 0; // llhDpDp - hessian with respect to p
+        double llhDpPart = (pow(mu, -_p1) * y * log(mu) * _invp1 - pow(mu, -_p2) * log(mu) * _invp2 +
+                pow(mu, -_p1) * y * _invp1sq - pow(mu, -_p2) * _invp2sq) * w / _phi;
+        double llhDpDpPart = -(pow(mu, -_p1) * y * pow(log(mu), 2) * _invp1 - pow(mu, -_p2) * pow(log(mu), 2) * _invp2 +
+                2 * (pow(mu, -_p1) * y * log(mu) * _invp1sq - pow(mu, -_p2) * log(mu) * _invp2sq +
+                        pow(mu, -_p1) * y * _invp1sq * _invp1 - pow(mu, -_p2) * _invp2sq * _invp2)) * w / _phi;
+        if (_p < 2) {
+            if (y == 0) {
+                out_llh_dp_dpdp[0] = -w * pow(mu, 2 - _p) / (_phi * (2 - _p));
+                if (_needDp)
+                    out_llh_dp_dpdp[1] = -(pow(mu, -_p2) * w * log(mu) * _invp2 + pow(mu, -_p2) * w * _invp2sq) / _phi;
+                if (_needDpDp)
+                    out_llh_dp_dpdp[2] = (pow(mu, -_p2) * w * pow(log(mu), 2) * _invp2 + 2 * pow(mu, -_p2) * w * log(mu) * _invp2sq + 2 * pow(mu, -_p2) * w * _invp2sq * _invp2) / _phi;
+            } else {
+                calculateWjSums(y, w);
+                out_llh_dp_dpdp[0] = -log(y) + log(_wSum) + _logWMax - w * (pow(mu, -_p1) * y * _invp1 - pow(mu, -_p2) / _p2) / _phi;
+                if (out_llh_dp_dpdp[0] == Double.POSITIVE_INFINITY) // can happen with p approaching one (wSum == Inf)
+                    out_llh_dp_dpdp[0] = Double.NEGATIVE_INFINITY;
+                if (_needDp)
+                    out_llh_dp_dpdp[1] = llhDpPart + _wDpSum / _wSum;
+                if (_needDpDp)
+                    out_llh_dp_dpdp[2] = llhDpDpPart + (_wDpDpSum / _wSum - _wDpSum / _wSum * _wDpSum / _wSum);
+            }
+        } else { // _p > 2
+            //mu = max(1e-16, mu); // no mass at 0
+            if (y == 0) return;
+            calculateVkSums(y, w);
+            out_llh_dp_dpdp[0] = -log(PI * y) + _logVSum + _logVMax - w * (pow(mu, -_p1) * y * _invp1 - pow(mu, -_p2) / _p2) / _phi;
+            if (_needDp)
+                out_llh_dp_dpdp[1] = llhDpPart + exp(_logVDpSum - _logVSum) * _vDpSumSgn;
+            if (_needDpDp)
+                out_llh_dp_dpdp[2] = llhDpDpPart + (exp(_logVDpDpSum - _logVSum) * _vDpDpSumSgn - exp(_logVDpSum - _logVSum + _logVDpSum - _logVSum));
+        }
+    }
+
+    public TweedieVariancePowerMLEstimator compute(Vec mu, Vec y, Vec weights) {
+        if (_p >= 2 && y.min() <= 0) {
+            _loglikelihood = Double.NEGATIVE_INFINITY;
+            _llhDp = 0;
+            _llhDpDp = 0;
+            return this;
+        }
+        return doAll(mu, y, weights);
     }
 
     @Override
@@ -294,7 +327,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
     @Override
     protected void postGlobal() {
-        Log.info(":::: Skipped Rows = "+ _skippedRows);
+        Log.info(":::: Skipped Rows = " + _skippedRows);
     }
 
     void cleanSums() {
@@ -328,8 +361,8 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
         cleanSums();
 
-        final int jMax = max(2, (int) Math.ceil(w * pow(y, 2 - _p) / ((2 - _p) * _phi)));
-        int j;
+        final long jMax = max(2, (long) Math.ceil(w * pow(y, 2 - _p) / ((2 - _p) * _phi)));
+        long j;
         int cnt = 0;
         // Start at the maximum and spread out until the change is negligible
         while (!(WjLB && WjUB && WjDpLB && WjDpUB && WjDpDpLB && WjDpDpUB) && cnt < _max_iter_cnt) {
@@ -353,7 +386,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     }
 
 
-    private boolean Wj(double log_y, double log_w, int j) {
+    private boolean Wj(double log_y, double log_w, long j) {
         final double expInner = ((1 - _alpha) * j) * log_w +
                 (_alpha * j) * (_logp1 - log_y) -
                 j * (1 - _alpha) * _log_phi - j * _logp2 - logGamma(j + 1) - logGamma(-j * _alpha);
@@ -365,11 +398,11 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
         _wSum += wSumInc;
         if (_needDp || _needDpDp)  // can use more precision in grad and hess
-            return (abs(wSumInc) + _epsilon) / (abs(_wSum) + _epsilon) < _epsilon;
-        return (abs(wSumInc) + _epsilon) / (abs(_logWMax) + _epsilon) < _epsilon;
+            return (abs(wSumInc) + _epsilon) / (abs(_wSum) + _epsilon) < _epsilon && expInner - _logWMax < -37;
+        return expInner - _logWMax < -37;
     }
 
-    private boolean WjDp(double logs_sumWdp, double p1alphaw, double ps_sumWdp, double pphiy_sumWdp, int j) {
+    private boolean WjDp(double logs_sumWdp, double p1alphaw, double ps_sumWdp, double pphiy_sumWdp, long j) {
         double wDpSumInc;
         final double log2_inner = _p2 * digamma(-j * _alpha) + logs_sumWdp;
         wDpSumInc = Math.signum(log2_inner) * Math.signum(ps_sumWdp) * exp(
@@ -384,7 +417,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         return (Math.abs(wDpSumInc) + _epsilon) / (abs(_wDpSum) + _epsilon) < _epsilon;
     }
 
-    private boolean WjDpDp(double y, double w, double negwy, double denom_W_dp_dp_exped, double log_p1_phi_wy, int j) {
+    private boolean WjDpDp(double y, double w, double negwy, double denom_W_dp_dp_exped, double log_p1_phi_wy, long j) {
         if (j <= 1) return false; // Undefined
         double wDpDpSumInc;
         final double mja = -(_alpha * j);
@@ -430,7 +463,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
         cleanSums();
 
-        final long kMax = max(1, (int) (w * pow(y, 2 - _p) / ((_p - 2) * _phi)));
+        final long kMax = max(1, (long) (w * pow(y, 2 - _p) / ((_p - 2) * _phi)));
         long k;
         long cnt = 0;
         double mPiAlphaK, logGammaK1, logGammaKalpha1, digammaKalpha1;
@@ -439,6 +472,13 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         while (!(VkLB && VkUB && VkDpLB && VkDpUB && VkDpDpLB && VkDpDpUB) && cnt < _max_iter_cnt) {
             k = kMax + cnt;
             mPiAlphaK = _pialpha * k;
+            if (k > Integer.MAX_VALUE) { // prevents StackOverflowError from digamma
+                _logVSum = Double.NEGATIVE_INFINITY;
+                _logVMax = 0;
+                _logVDpSum = Double.NaN;
+                _logVDpDpSum = Double.NaN;
+                break;
+            }
             logGammaK1 = logGamma(k + 1);
             logGammaKalpha1 = logGamma(k * _alpha + 1);
             digammaKalpha1 = digamma(k * _alpha + 1);
@@ -489,8 +529,8 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
         _logVSum += vSumInc; // logVSum wasn't transformed by log at this point
         if (_needDp || _needDpDp) // can use more precision for grad and hess
-            return (abs(vSumInc) + _epsilon) / (abs(_logVSum) + _epsilon) < _epsilon;
-        return (abs(vSumInc) + _epsilon) / (abs(_logVMax) + _epsilon) < _epsilon;
+            return (abs(vSumInc) + _epsilon) / (abs(_logVSum) + _epsilon) < _epsilon && expInner - _logVMax < -37;
+        return expInner - _logVMax < -37;
     }
 
     boolean VkDp(double log_y, double log_w, long k, double log_pwy, double mPiAlphaK, double logGammaKalpha1,
@@ -789,7 +829,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     };
 
 
-    private double tweedieInversionLLH(double y, double mu, double w) {
+    private double tweedieInversion(double y, double mu, double w) {
         assert _p != 1 && _p != 2;
 
         if (_p < 2 && _p > 1) {
@@ -1766,6 +1806,4 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
         return result;
     }
-
-
 }
