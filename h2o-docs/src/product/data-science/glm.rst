@@ -83,14 +83,17 @@ Shared GLM family parameters
 ''''''''''''''''''''''''''''
 
 .. |GAM| image:: ../images/GAM.png
+   :alt: Generalized Additive Models
    :scale: 5%
    :align: middle
 
 .. |MS| image:: ../images/MS.png
+   :alt: ModelSelection
    :scale: 5%
    :align: middle
 
 .. |ANOVA| image:: ../images/ANOVA.png
+   :alt: ANOVA GLM
    :scale: 5%
    :align: middle
 
