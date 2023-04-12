@@ -48,7 +48,9 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     private final boolean _useSaddlepoint;
     private final boolean _needDp;
     private final boolean _needDpDp;
+    private final boolean _forceInversion;
     public long _skippedRows;
+    public long _totalRows;
 
     enum LikelihoodEstimator {
         series,
@@ -62,11 +64,15 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     public LikelihoodEstimator _method;
 
     TweedieVariancePowerMLEstimator(double variancePower, double dispersion) {
-        this(variancePower, dispersion, false, false, false);
+        this(variancePower, dispersion, false, false, false, false);
     }
 
+    TweedieVariancePowerMLEstimator(double variancePower, double dispersion, boolean forceInversion) {
+        this(variancePower, dispersion, false, false, false, forceInversion);
+    }
     TweedieVariancePowerMLEstimator(double variancePower, double dispersion,
-                                    boolean useSaddlepointApprox, boolean needDp, boolean needDpDp) {
+                                    boolean useSaddlepointApprox, boolean needDp, boolean needDpDp, boolean forceInversion) {
+        //Log.info("::: TweedieVariancePowerMLEstimator("+variancePower+", "+ dispersion + ", "+useSaddlepointApprox + ", "+needDp+", "+needDpDp+","+forceInversion+")");
         _p = variancePower;
         assert _p >= 1;
         _phi = dispersion;
@@ -95,6 +101,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         _useSaddlepoint = useSaddlepointApprox;
         _needDp = needDp;
         _needDpDp = needDpDp;
+        _forceInversion = forceInversion; // useful when bracketing close to p=2
     }
 
 
@@ -172,7 +179,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         double[] llh_llhDp_llhDpDp = MemoryManager.malloc8d(3);
         if (!_useSaddlepoint) {
             _method = series;
-            //final double xi = _phi / pow(y, 2 - _p);
+            final double xi = _phi / pow(y, 2 - _p);
             final double xix = (_phi * pow(y, _p2)) / (1 + (_phi * pow(y, _p2))); //  from R's dtweedie
             // decide whether we want the Fourier inversion approach
             if (_p == 1) {
@@ -184,9 +191,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             } else if (_p == 3) {
                 llh_llhDp_llhDpDp[0] = invGaussLLH(y, mu, w);
                 _method = invGaussian;
-            } else if (_p > 1.1 && _p <= 1.2) {
-                if (xix > 0 && xix < 0.1)
-                    _method = inversion;
+           
             } /*else if (_p < 2 && xi > 0.01) {
                 // pass; use the series approach
                 // this "xi-based" heuristic is proposed in section 8 in
@@ -197,7 +202,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                 _method = series;
             } else {
                     _method = inversion;
-            }*/ else if (_p > 1.2 && _p <= 1.3) { // from actual R's implementation
+            } else if (_p > 1.2 && _p <= 1.3) { // from actual R's implementation
                 if (xix > 0 && xix < 0.3)
                     _method = inversion;
             } else if (_p > 1.3 && _p <= 1.4) {
@@ -215,18 +220,40 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             } else if (_p >= 7 && _p < 10) {
                 if (xix > 0 && xix < 0.3)
                     _method = inversion;
+            }*/ else if (_p < 2) { // combination of the paper's decision criteria and R's
+                if(xi  <= 0.01 /*||
+                        _p > 1.1 && _p <= 1.2 && xix > 0 && xix < 0.1 ||
+                        _p > 1.2 && _p <= 1.3 && xix > 0 && xix < 0.3 ||
+                        _p > 1.3 && _p <= 1.4 && xix > 0 && xix < 0.5 ||
+                        _p > 1.4 && _p <= 1.5 && xix > 0 && xix < 0.8 ||
+                        _p > 1.5 && xix > 0 && xix < 0.9*/
+                ) 
+                    _method = inversion;
+            } else if (_p > 2 ) {
+                if (xi <= 1.0)
+                    _method = inversion;
             }
-
+            if (_forceInversion)
+                _method = inversion;
             if (series.equals(_method))
                 tweedieSeries(y, mu, w, llh_llhDp_llhDpDp);
-            if (inversion.equals(_method) || Double.isNaN(llh_llhDp_llhDpDp[0])) {
+            if (inversion.equals(_method) || Double.isNaN(llh_llhDp_llhDpDp[0]) && _p != 1  && _p != 2) {
                 llh_llhDp_llhDpDp[0] = tweedieInversion(y, mu, w);
                 _method = inversion;
-                if (Double.isNaN(llh_llhDp_llhDpDp[0])) {
+                if (!Double.isFinite(llh_llhDp_llhDpDp[0])) {
                     tweedieSeries(y, mu, w, llh_llhDp_llhDpDp);
                     _method = series;
+                } else if (_needDp || _needDpDp) {
+                    final double llh = llh_llhDp_llhDpDp[0];
+                    tweedieSeries(y, mu, w, llh_llhDp_llhDpDp);
+                    llh_llhDp_llhDpDp[0] = llh;
                 }
             }
+            if (series.equals(_method) && !Double.isFinite(llh_llhDp_llhDpDp[0])){
+                llh_llhDp_llhDpDp[0] = tweedieInversion(y, mu, w);
+                _method = inversion; 
+            }
+                
 
         }
         // Use saddlepoint approx. if the series method failed. See [1] for description and comparison of the
@@ -302,6 +329,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     @Override
     public void map(Chunk[] cs) {
         double mu, y, w, llh;
+        _totalRows += cs[0]._len;
         // cs = {mu, response, weight}
         for (int i = 0; i < cs[0]._len; i++) {
             mu = max(0, cs[0].atd(i)); // In first iteration it sometimes generates negative responses
@@ -323,11 +351,12 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         _llhDp += mrt._llhDp;
         _llhDpDp += mrt._llhDpDp;
         _skippedRows += mrt._skippedRows;
+        _totalRows += mrt._totalRows;
     }
 
     @Override
     protected void postGlobal() {
-        Log.info(":::: Skipped Rows = " + _skippedRows);
+        Log.info(":::: Skipped Rows = " + _skippedRows+"/"+_totalRows+" ("+(100.*_skippedRows/(double)_totalRows)+" %)");
     }
 
     void cleanSums() {
