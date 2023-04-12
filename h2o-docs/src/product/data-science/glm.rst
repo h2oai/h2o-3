@@ -192,7 +192,7 @@ Shared GLM family parameters
 
 -  `max_active_predictors <algo-params/max_active_predictors.html>`__: |GAM| |MS| Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to ``-1``.
 
--  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to ``1/nobs``.
+-  **obj_reg**: |GAM| |MS| Specifies the likelihood divider in objective value computation. This defaults to ``1/nobs``.
 
 Common parameters
 '''''''''''''''''
