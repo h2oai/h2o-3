@@ -5,6 +5,8 @@ RUN \
     sed -i.bak "/^#.*deb-src.*universe$/s/^# //g" /etc/apt/sources.list && \
     apt-get update && \
     mkdir -p /usr/share/man/man1 && \
+    # For rgl R package \
+    apt-get install -y zip libglu1-mesa-dev libpcre2-dev && \
     DEBIAN_FRONTEND=noninteractive apt -y build-dep r-base && \
     apt-get -y remove openjdk-8-jdk openjdk-8-jdk-headless openjdk-8-jre openjdk-8-jre-headless && \
     apt-get clean && \
