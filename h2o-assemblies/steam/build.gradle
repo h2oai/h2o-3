@@ -41,7 +41,6 @@ dependencies {
         exclude group: "org.apache.zookeeper"
         exclude group: "org.eclipse.jetty"
         exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
-        exclude group: "org.apache.hadoop", module: "hadoop-auth"
     }
     api("org.apache.hadoop:hadoop-aws:3.3.5") {
         exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
@@ -63,6 +62,9 @@ dependencies {
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
             because 'Fixes CVE-2022-42003'
+        }
+        api('net.minidev:json-smart:2.4.10') {
+            because 'Fixes CVE-2023-1370'
         }
     }
 }
