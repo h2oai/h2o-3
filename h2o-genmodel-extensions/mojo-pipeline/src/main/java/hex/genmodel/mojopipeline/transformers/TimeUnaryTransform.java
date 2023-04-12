@@ -28,20 +28,34 @@ public class TimeUnaryTransform extends MojoTransform {
     @Override
     public void transform(MojoFrame frame) {
         double[] a = (double[]) frame.getColumnData(iindices[0]);
-        double[] o = (double[]) frame.getColumnData(oindices[0]);
+        String[] factors = _function.factors();
         MutableDateTime dataTime = new MutableDateTime(0, _timeZone);
-        for (int i = 0, nrows = frame.getNrows(); i < nrows; i++) {
-            if (Double.isNaN(a[i])) {
-                o[i] = Double.NaN;
-            } else{
-                dataTime.setMillis((long)a[i]);
-                o[i] = _function.call(dataTime);
+        if (factors == null) {
+            double[] o = (double[]) frame.getColumnData(oindices[0]);
+            for (int i = 0, nrows = frame.getNrows(); i < nrows; i++) {
+                if (Double.isNaN(a[i])) {
+                    o[i] = Double.NaN;
+                } else {
+                    dataTime.setMillis((long) a[i]);
+                    o[i] = _function.call(dataTime);
+                }
+            }
+        } else {
+            String[] o = (String[]) frame.getColumnData(oindices[0]);
+            for (int i = 0, nrows = frame.getNrows(); i < nrows; i++) {
+                if (Double.isNaN(a[i])) {
+                    o[i] = null;
+                } else {
+                    dataTime.setMillis((long) a[i]);
+                    o[i] = factors[(int)_function.call(dataTime)];
+                }
             }
         }
     }
 
    interface TimeUnaryFunction {
         double call(MutableDateTime value);
+        String[] factors();
     }
 
     public static class Factory implements MojoTransformBuilderFactory {
@@ -50,38 +64,65 @@ public class TimeUnaryTransform extends MojoTransform {
             put("day", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getDayOfMonth(); }
+
+                @Override
+                public String[] factors() { return null; }
             });
             put("dayOfWeek", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getDayOfWeek() - 1; }
+
+                @Override
+                public String[] factors() { return new String[]{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}; }
             });
             put("hour", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getHourOfDay(); }
+
+                @Override
+                public String[] factors() { return null; }
             });
             put("millis", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getMillisOfSecond(); }
+
+                @Override
+                public String[] factors() { return null; }
             });
             put("minute", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getMinuteOfHour(); }
+
+                @Override
+                public String[] factors() { return null; }
             });
             put("month", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getMonthOfYear(); }
+
+                @Override
+                public String[] factors() { return null; }
             });
             put("second", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getSecondOfMinute(); }
+                
+                @Override
+                public String[] factors() { return null; }
             });
             put("week", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getWeekOfWeekyear(); }
+
+                @Override
+                public String[] factors() { return null; }
             });
             put("year", new TimeUnaryFunction() {
                 @Override
                 public double call(MutableDateTime value) { return value.getYear(); }
+
+                @Override
+                public String[] factors() { return null; }
             });
         }};
 

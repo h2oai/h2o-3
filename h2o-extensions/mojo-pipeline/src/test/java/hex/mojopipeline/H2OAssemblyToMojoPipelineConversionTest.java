@@ -168,4 +168,44 @@ public class H2OAssemblyToMojoPipelineConversionTest extends TestUtil {
             Scope.exit();
         }
     }
+
+    @Test
+    public void testConversionOnH2OColOperationWithUnaryTimeFunction() throws IOException {
+        try {
+            Scope.enter();
+            Frame frame = new Frame(
+                    new String[]{"dt"},
+                    new Vec[]{
+                            Vec.makeVec(new String[] {
+                                    "15.07.09 1:01:34",
+                                    "30.09.09 23:00:43",
+                                    "3.01.06 13:30:00",
+                                    "30.09.09 23:00:12"},
+                            Vec.newKey()),
+                    }
+            );
+            frame._key = Key.make("dummy");
+            DKV.put(frame);
+            Scope.track(frame);
+            Transform[] steps = new Transform[]{
+                    new H2OColOp("op_parse_dt",
+                            "(as.Date (cols_py dummy 'dt') '%d.%m.%y %H:%M:%S' )",
+                            false,
+                            new String[]{"i"}),
+                    new H2OColOp("col_op_day",
+                            "(day (cols_py dummy 'i') )",
+                            false,
+                            new String[]{"o"}),
+            };
+
+            Assembly assembly = new Assembly(Key.make(), steps);
+            Frame expected = assembly.fit(frame.clone());
+
+            MojoPipeline mojoPipeline = H2OAssemblyToMojoPipelineConverter.convert(assembly);
+            Frame result = mojoPipeline.transform(frame, true);
+            assertFrameEquals(expected, result , 1e-6);
+        } finally {
+            Scope.exit();
+        }
+    }
 }
