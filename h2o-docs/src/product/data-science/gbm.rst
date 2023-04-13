@@ -41,7 +41,7 @@ Quick Start and Additional Resources
 Defining a GBM Model
 ~~~~~~~~~~~~~~~~~~~~
 
-Parameters are optional unless specified as *required*.
+Parameters are optional unless specified as *required*. 
 
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
