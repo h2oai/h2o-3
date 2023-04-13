@@ -43,7 +43,7 @@ Algorithm-specific parameters
 
 - **dispersion_parameter_method**: Method used to estimate the dispersion factor for Tweedie, Gamma, and Negative Binomial only. Can be one of ``"pearson"`` (default), ``"deviance"``, or ``"ml"``. 
 
-- **init_dispersion_parameter**: Initial value of disperion factor to be estimated using either ``"pearson"`` or ``"ml"``. This option defaults to ``1.0``.
+- **init_dispersion_parameter**: Initial value of disperion factor before being estimated using either ``"pearson"`` or ``"ml"``. This option defaults to ``1.0``.
 
 - **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, this will break out of the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``0.0001``.
 
@@ -55,7 +55,7 @@ Algorithm-specific parameters
 
 - **generate_variable_inflation_factors**: If enabled, this option generates the variable inflation factors for numerical predictors. This option defaults to ``False`` (disabled).
 
-- **dispersion_learning_rate**: (Applicable only when ``dispersion_parameter_method="ml"``) This value controls how much the dispersion parameter estimate will be changed when the calculated loglikelihood actually decreases with the new dispersion. In this case, instead of setting *dispersion = dispersion*, it is *dispersion + dispersion_learning_rate* :math:`\times` *change*. This option must be > 0 and defaults to ``0.5``.
+- **dispersion_learning_rate**: (Applicable only when ``dispersion_parameter_method="ml"``) This value controls how much the dispersion parameter estimate will be changed when the calculated loglikelihood actually decreases with the new dispersion. In this case, instead of setting *dispersion = dispersion + change*, it is *dispersion + dispersion_learning_rate* :math:`\times` *change*. This option must be > 0 and defaults to ``0.5``.
 
 -  `interactions <algo-params/interactions.html>`__: Specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list. 
 
@@ -87,7 +87,7 @@ Shared GLM family parameters
    :scale: 5%
    :align: middle
 
-.. |MS| image:: ../images/MS.png
+.. |MS| image:: ../images/ModSelect.png
    :alt: ModelSelection
    :scale: 5%
    :align: middle
@@ -97,7 +97,7 @@ Shared GLM family parameters
    :scale: 5%
    :align: middle
 
-**GLM Family**: |GAM| Generalized Additive Models (GAM) |MS| ModelSelection |ANOVA| ANOVA GLM
+**GLM Family**: |GAM| `Generalized Additive Models <gam.html#defining-a-gam-model>`__ (GAM) |MS| `ModelSelection <model_selection.html#defining-a-modelselection-model>`__ |ANOVA| `ANOVA GLM <anova_glm.#defining-an-anova-glm-model>`__
 
 - **score_iteration_interval**: |MS| Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
 
@@ -147,7 +147,7 @@ Shared GLM family parameters
 
 -  `compute_p_values <algo-params/compute_p_values.html>`__: |GAM| |MS| |ANOVA| Request computation of p-values. P-values can be computed with or without regularization. Setting ``remove_collinear_columns`` is recommended. H2O will return an error if p-values are requested and there are collinear columns and ``remove_collinear_columns`` flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``; ``IRLSM`` solver requried. This option defaults to ``False`` (disabled).
 
--  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: |GAM| |MS| Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (``lambda=0``). This option defaults to ``False`` (disabled). 
+-  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: |GAM| |MS| Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This option defaults to ``False`` (disabled).
 
 -  `intercept <algo-params/intercept.html>`__: |GAM| |MS| Specify whether to include a constant term in the model. This option defaults to ``True`` (enabled). 
 
@@ -185,7 +185,7 @@ Shared GLM family parameters
    
      **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
 
-- **cold_start**: |MS| Specify whether the model should be built from scratch. This parameter is only applicable when building a GLM model with multiple ``alpha``/``lambda`` values. If ``False`` and for a fixed ``alpha`` value, the next model with the next ``lambda`` value out of the ``lambda`` array will be built using the coefficients and the GLM state values of the current model. If ``True``, the next GLM model will be built from scratch. The default value is ``False``.
+- **cold_start**: |GAM| |MS| Specify whether the model should be built from scratch. This parameter is only applicable when building a GLM model with multiple ``alpha``/``lambda`` values. If ``False`` and for a fixed ``alpha`` value, the next model with the next ``lambda`` value out of the ``lambda`` array will be built using the coefficients and the GLM state values of the current model. If ``True``, the next GLM model will be built from scratch. The default value is ``False``.
 
      **note** If an ``alpha`` array is specified and for a brand new ``alpha``, the model will be built from scratch regardless of the value of ``cold_start``.
 
