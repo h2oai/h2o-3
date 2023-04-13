@@ -883,7 +883,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _tweedie_link_power = tweedieLinkPower;
       _init_dispersion_parameter = dispersion;
       _tweedieEstimator = new TweedieVariancePowerMLEstimator(tweedieVariancePower, dispersion);
-      Log.info("::: updateTweediePower(p = "+tweedieVariancePower+"; link = "+tweedieLinkPower+"; phi = "+dispersion);
     }
   } // GLMParameters
 

@@ -4,7 +4,6 @@ import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Vec;
-import water.util.Log;
 import water.util.fp.Function2;
 import water.util.fp.Function3;
 
@@ -70,9 +69,9 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     TweedieVariancePowerMLEstimator(double variancePower, double dispersion, boolean forceInversion) {
         this(variancePower, dispersion, false, false, false, forceInversion);
     }
+
     TweedieVariancePowerMLEstimator(double variancePower, double dispersion,
                                     boolean useSaddlepointApprox, boolean needDp, boolean needDpDp, boolean forceInversion) {
-        //Log.info("::: TweedieVariancePowerMLEstimator("+variancePower+", "+ dispersion + ", "+useSaddlepointApprox + ", "+needDp+", "+needDpDp+","+forceInversion+")");
         assert variancePower >= 1;
         assert (forceInversion || useSaddlepointApprox) && !(needDp || needDpDp) || !forceInversion || !useSaddlepointApprox;
         _p = variancePower;
@@ -181,7 +180,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         if (!_useSaddlepoint) {
             _method = series;
             final double xi = _phi / pow(y, 2 - _p);
-            final double xix = (_phi * pow(y, _p2)) / (1 + (_phi * pow(y, _p2))); //  from R's dtweedie
             // decide whether we want the Fourier inversion approach
             if (_p == 1) {
                 llh_llhDp_llhDpDp[0] = poissonLLH(y, mu, w);
@@ -192,45 +190,12 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             } else if (_p == 3) {
                 llh_llhDp_llhDpDp[0] = invGaussLLH(y, mu, w);
                 _method = invGaussian;
-           
-            } /*else if (_p < 2 && xi > 0.01) {
-                // pass; use the series approach
+            } else if (_p < 2) {
                 // this "xi-based" heuristic is proposed in section 8 in
                 // DUNN, Peter and SMYTH, Gordon, 2008. Evaluation of Tweedie exponential dispersion model densities by Fourier inversion.
-                _method = series;
-            } else if (_p > 2 && xi < 1.0) {
-                // pass; use the series approach
-                _method = series;
-            } else {
+                if (xi <= 0.01)
                     _method = inversion;
-            } else if (_p > 1.2 && _p <= 1.3) { // from actual R's implementation
-                if (xix > 0 && xix < 0.3)
-                    _method = inversion;
-            } else if (_p > 1.3 && _p <= 1.4) {
-                if (xix > 0 && xix < 0.5)
-                    _method = inversion;
-            } else if (_p > 1.4 && _p <= 1.5) {
-                if (xix > 0 && xix < 0.8)
-                    _method = inversion;
-            } else if (_p > 1.5 && _p < 5) {
-                if (xix > 0 && xix < 0.9)
-                    _method = inversion;
-            } else if (_p >= 5 && _p < 7) {
-                if (xix > 0 && xix < 0.5)
-                    _method = inversion;
-            } else if (_p >= 7 && _p < 10) {
-                if (xix > 0 && xix < 0.3)
-                    _method = inversion;
-            }*/ else if (_p < 2) { // combination of the paper's decision criteria and R's
-                if(xi  <= 0.01 /*||
-                        _p > 1.1 && _p <= 1.2 && xix > 0 && xix < 0.1 ||
-                        _p > 1.2 && _p <= 1.3 && xix > 0 && xix < 0.3 ||
-                        _p > 1.3 && _p <= 1.4 && xix > 0 && xix < 0.5 ||
-                        _p > 1.4 && _p <= 1.5 && xix > 0 && xix < 0.8 ||
-                        _p > 1.5 && xix > 0 && xix < 0.9*/
-                ) 
-                    _method = inversion;
-            } else if (_p > 2 ) {
+            } else if (_p > 2) {
                 if (xi <= 1.0)
                     _method = inversion;
             }
@@ -238,7 +203,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                 _method = inversion;
             if (series.equals(_method))
                 tweedieSeries(y, mu, w, llh_llhDp_llhDpDp);
-            if ((inversion.equals(_method) || Double.isNaN(llh_llhDp_llhDpDp[0])) && _p != 1  && _p != 2) {
+            if ((inversion.equals(_method) || Double.isNaN(llh_llhDp_llhDpDp[0])) && _p != 1 && _p != 2) {
                 llh_llhDp_llhDpDp[0] = tweedieInversion(y, mu, w);
                 _method = inversion;
                 if (!Double.isFinite(llh_llhDp_llhDpDp[0])) {
@@ -250,9 +215,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     llh_llhDp_llhDpDp[0] = llh;
                 }
             }
-       
-                
-
         }
         // Use saddlepoint approx. if the series method failed. See [1] for description and comparison of the
         // saddlepoint approximation.
@@ -321,10 +283,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             _llhDpDp = 0;
             return this;
         }
-        Log.info("::: Pre calculation; p = "+_p+"; phi = "+_phi+"; _needDp = "+ _needDp + "; force Inversion = " + _forceInversion);
-        TweedieVariancePowerMLEstimator result = doAll(mu, y, weights);
-        Log.info("::: Post calculation");
-        return result;
+        return doAll(mu, y, weights);
     }
 
     @Override
@@ -355,11 +314,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         _totalRows += mrt._totalRows;
     }
 
-    @Override
-    protected void postGlobal() {
-        Log.info(":::: Skipped Rows = " + _skippedRows+"/"+_totalRows+" ("+(100.*_skippedRows/(double)_totalRows)+" %)");
-    }
-
     void cleanSums() {
         _logVSum = 0;
         _logVDpSum = 0;
@@ -372,6 +326,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     }
 
     void calculateWjSums(double y, double w) {
+        assert y > 0;
         final double negwy = (-1) * pow(w, _invp1) * pow(y, 2 * _invp1);
         final double denom_W_dp_dp_exped = pow(_p1, 2 * _invp1) * _p2 * pow(_phi, _invp1) * pow(y, _p * _invp1);
         final double log_p1_phi_wy = log(_p1 * _phi / (w * y));
@@ -414,7 +369,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             cnt++;
         }
     }
-
 
     private boolean Wj(double log_y, double log_w, long j) {
         final double expInner = ((1 - _alpha) * j) * log_w +
@@ -476,6 +430,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     }
 
     void calculateVkSums(double y, double w) {
+        assert y > 0;
         final double logs = _logp1 + log(_phi) - log(w) - log(y);
         final double logssq = -pow(_logp1, 2) - pow(log(_phi), 2) - pow(log(w), 2) - pow(log(y), 2);
         final double log_w = log(w);
@@ -978,8 +933,8 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     }
 
     private FindKMaxResult findKMax(double y, double phi) {
-        double largest = 1e30;
-        int lrgint = 100000000;
+        final double largest = 1e30;
+        final int largeInt = 100000000;
         double psi = (PI / 2) * (1 - _p) / (2 * _p - 1);
         double z2 = 1 / (phi * (1 - _p)) * tan(psi);
         double dz2 = imgdcgf(z2, phi) - y;
@@ -1055,10 +1010,10 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
         if (kMax < 0) {
             kMax = abs(kMax);
-            mMax = lrgint;
+            mMax = largeInt;
         } else {
             int dpmMax = (int) ((kMax / PI) - 0.5);
-            mMax = Math.min(dpmMax, lrgint);
+            mMax = Math.min(dpmMax, largeInt);
         }
         return new FindKMaxResult(kMax, tMax, mMax);
 
@@ -1139,9 +1094,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     }
 
     private double newtonMethodWithBisection(double y, double x1, double x2, double x0, Function2<Double, Double, Double> fun, Function2<Double, Double, Double> dfun) { // in fortran sfzro
-        //Log.info("sfzro(p=" + _p + ", phi=" + ", y=" + y + ", x1=" + x1 + ", x2=" + x2 + ", x0=" + x0 + ")");
         double maxit = 100, xl, xh, result, dx, dxOld, f, df;
-
         double fl = fun.apply(y, x1);
         double fh = fun.apply(y, x2);
 
@@ -1193,11 +1146,8 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     }
 
     private double newtonMethodWithBisectionWithM(double y, double x1, double x2, double x0, Function3<Double, Double, Integer, Double> fun, Function2<Double, Double, Double> dfun, int m) { // in fortran sfzro2
-        //Log.info("sfzro2(p=" + _p + ", phi=" +  ", y=" + y + ", x1=" + x1 + ", x2=" + x2 + ", x0=" + x0 + ", m=" + m + ")");
         int maxit = 100;
-
         double xl, xh, result, dxOld, dx, f, df;
-
         double fl = fun.apply(y, x1, m);
         double fh = fun.apply(y, x2, m);
 
@@ -1262,7 +1212,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             xUpper = (a - b) / 2. * absc[i] + (b + a) / 2.;
             sum += weights[i] * (fun.apply(y, mu, xLower) + fun.apply(y, mu, xUpper));
         }
-        //Log.info("GaussQuad: a=" + a + "; b=" + b + "; y=" + y + "; mu=" + mu + "; sum=" + sum + "; result = " + (sum * (b - a) / 2.) + "; xLower=" + xLower + "; xUpper=" + xUpper);
         return sum * (b - a) / 2.;
     }
 
@@ -1353,7 +1302,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         }
 
         void apply(double FF, double psi, double w, int znum) {
-            // Log.info("sidiacc(" + znum + ")");
             final double largest = 1e30;
             _w = w;
 
@@ -1421,7 +1369,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         zero1 = zero2;
         tStep = zero2 / 2;
         for (int i = 0; i < 4; i++) {
-            //Log.info("smallp[1]: " + i + "; lower=" + lower + ", upper=" + upper + ", flo=" + fLo + ", fhi=" + fHi);
             lower = zero1 + tStep * 0.05;
             upper = zero1 + tStep * 0.3;
 
@@ -1440,7 +1387,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             result = gaussQuad(f2, zero1, zero2, y, mu);
 
             area1 = area1 + result;
-            //Log.info("smallp[2]: area1 = " + area1 + "; result = " + result);
             tStep = zero2 - zero1;
             zero1 = zero2;
             t0 = zero2 + (0.8 * tStep);
@@ -1485,22 +1431,9 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             area += result;
             tStep = zero2 - zero1;
             zero1 = zero2;
-
-            //Log.info("smallp[3]: area = " + area + "; result = " + result);
         }
 
         result = (area0 + area1 + w) / PI;
-
-//        int exitStatus = 0;
-//        if ((abs(w - wOld[0]) + abs(w - wOld[1])) < /*aimrerr*/ 1e-10){
-//            exitStatus = -1;
-//        } else {
-//            exitStatus = -10;
-//        }
-//
-//        if (abs(relErr) < 1e-10)
-//            exitStatus = 1;
-
         return result;
     }
 
@@ -1521,7 +1454,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         area = 0.0;
         int iteration = 0;
         double relErr = 1.0;
-        int allok;
+        boolean allOk;
 
         double[] wOld = new double[3];
 
@@ -1539,9 +1472,9 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             }
             fLo = intIm.apply(y, zLo, m);
 
-            allok = 1;
+            allOk = true;
 
-            while (allok == 1 && (fHi * fLo) > 0) {
+            while (allOk && (fHi * fLo) > 0) {
                 zLo = zHi;
                 zHi = zHi * 1.5;
 
@@ -1549,13 +1482,13 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                 fHi = intIm.apply(y, zHi, m);
 
                 if (zHi > largest / 10.0)
-                    allok = 0;
+                    allOk = false;
             }
 
             if (zHi > largest / 10.0)
-                allok = 0;
+                allOk = false;
 
-            if (allok == 0) {
+            if (!allOk) {
                 result = 0.0;
                 return result;
             }
@@ -1573,7 +1506,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                 zHi = zero2 * 1.5;
 
                 if (zHi > largest / 10.0) {
-                    allok = 0;
+                    allOk = false;
                     fLo = 0.0;
                     fHi = 0.0;
                 } else {
@@ -1581,7 +1514,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     fHi = intIm.apply(y, zHi, m);
                 }
 
-                while (allok == 1 && (fHi * fLo) > 0) {
+                while (allOk && (fHi * fLo) > 0) {
                     zLo = zHi;
                     zHi = zHi * 1.5;
 
@@ -1591,13 +1524,13 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     zero = zHi - fHi * (zHi - zLo) / (fHi - fLo);
 
                     if (zHi > largest / 10.0)
-                        allok = 0;
+                        allOk = false;
                 }
 
                 if (zHi > largest / 10.0)
-                    allok = 0;
+                    allOk = false;
 
-                if (allok == 0) {
+                if (!allOk) {
                     result = 0.0;
                     return result;
                 }
@@ -1634,15 +1567,15 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                 zHi = zero * 2.0;
 
                 if (zHi > largest / 10.0) {
-                    allok = 0;
+                    allOk = false;
                     fLo = 0.0;
                     fHi = 0.0;
                 } else {
-                    allok = 1;
+                    allOk = true;
                     fLo = intIm.apply(y, zLo, m);
                     fHi = intIm.apply(y, zHi, m);
                 }
-                while (allok == 1 && (fHi * fLo) > 0) {
+                while (allOk && (fHi * fLo) > 0) {
                     zLo = zHi;
                     zHi = zHi * 1.5;
 
@@ -1650,11 +1583,11 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     fHi = intIm.apply(y, zHi, m);
 
                     if (zHi > largest / 10.0)
-                        allok = 0;
+                        allOk = false;
                 }
                 if (zHi > largest / 10.0)
-                    allok = 0;
-                if (allok == 0) {
+                    allOk = false;
+                if (!allOk) {
                     result = 0.0;
                     return result;
                 }
@@ -1675,7 +1608,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     zHi = zero2 + 2.0 * diff;
 
                     if (zHi > largest / 10.) {
-                        allok = 0;
+                        allOk = false;
                         fLo = 0.0;
                         fHi = 0.0;
                     } else {
@@ -1683,19 +1616,19 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                         fHi = intIm.apply(y, zHi, m);
                     }
 
-                    while (allok == 1 && (fHi * fLo) > 0) {
+                    while (allOk && (fHi * fLo) > 0) {
                         zLo = zHi;
                         zHi = zHi * 1.5;
                         fLo = intIm.apply(y, zLo, m);
                         fHi = intIm.apply(y, zHi, m);
 
                         if (zHi > largest / 10.0)
-                            allok = 0;
+                            allOk = false;
                     }
                     if (zHi > largest / 10.0)
-                        allok = 0;
+                        allOk = false;
 
-                    if (allok == 0) {
+                    if (!allOk) {
                         result = 0.0;
                         return result;
                     }
@@ -1728,18 +1661,18 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                 zHi = tMax;
 
                 if (zHi > largest / 10.) {
-                    allok = 0;
+                    allOk = false;
                     fLo = 0;
                     fHi = 0;
                 } else {
-                    allok = 1;
+                    allOk = true;
                     fLo = intIm.apply(y, zLo, m);
                     fHi = intIm.apply(y, zHi, m);
                 }
 
                 double diff = zHi - zLo;
 
-                while (allok == 1. && (fHi * fLo) > 0) {
+                while (allOk && (fHi * fLo) > 0) {
                     zLo = zHi;
                     zHi = zHi + 0.1 * diff;
 
@@ -1747,12 +1680,12 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     fHi = intIm.apply(y, zHi, m);
 
                     if (zHi > largest / 10.0)
-                        allok = 0;
+                        allOk = false;
                 }
                 if (zHi > largest / 10.0)
-                    allok = 0;
+                    allOk = false;
 
-                if (allok == 0) {
+                if (!allOk) {
                     result = 0.0;
                     return result;
                 }
@@ -1789,7 +1722,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     }
 
                     if (zHi > largest / 10.) {
-                        allok = 0;
+                        allOk = false;
                         fLo = 0;
                         fHi = 0;
                     } else {
@@ -1797,7 +1730,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                         fHi = intIm.apply(y, zHi, m);
                     }
 
-                    while (allok == 1 && (fHi * fLo) > 0) {
+                    while (allOk && (fHi * fLo) > 0) {
                         zLo = zHi;
                         zHi = zHi * 1.5;
 
@@ -1805,13 +1738,13 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                         fHi = intIm.apply(y, zHi, m);
 
                         if (zHi > largest / 10.0)
-                            allok = 0;
+                            allOk = false;
                     }
 
                     if (zHi > largest / 10.0)
-                        allok = 0;
+                        allOk = false;
 
-                    if (allok == 0) {
+                    if (!allOk) {
                         result = 0.0;
                         return result;
                     }

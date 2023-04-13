@@ -2,19 +2,17 @@ package hex.glm;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.Scope;
 import water.TestUtil;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.Log;
 
-import static java.lang.Math.*;
-import static org.apache.commons.math3.special.Gamma.logGamma;
+import static java.lang.Math.abs;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GLMTweediePowerEstimationTest extends TestUtil {
-
+    /*
+    // USEFUL tests for debugging the likelihood estimation but not used for automated tests
     @Test
     public void testVK() {
         double y = 65536;
@@ -78,7 +76,7 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
         Log.info("LLH = " + llh + "; diff = " + (llh - expected));
         assert roughlyEqual(llh, expected);
     }
-
+    */
 
     private boolean roughlyEqual(double actual, double expected) {
         // The expected results are taken from R by taking a logarithm from the dtweedie
@@ -3206,7 +3204,5 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                 }
             }
         }
-
     }
-
 }
