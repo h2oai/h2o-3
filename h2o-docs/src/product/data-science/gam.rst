@@ -25,7 +25,7 @@ Algorithm-specific parameters
 
 -  **num_knots**: An array that specifies the number of knots for each predictor specified in ``gam_columns``.
 
--  **spline_orders**: Order of I-splines/monotone splines used for GAM predictors. For example, ``spline_orders=3`` means a polynomial of order 3 will be used in the splines. If specified, this option must be the same size as ``gam_columns``. Values for ``bs=0`` or ``bs=1`` will be ignored.
+-  **spline_orders**: Order of I-splines (also known as monotone splines) and NBSplineTypeI M-splines used for GAM predictors. For example, ``spline_orders=3`` means a polynomial of order 3 will be used in the splines. If specified, this option must be the same size as ``gam_columns``. Values for ``bs=0`` or ``bs=1`` will be ignored.
 
 -  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
 
@@ -33,18 +33,18 @@ Algorithm-specific parameters
 
 -  **scale_tp_penalty_mat**: Scale penalty matrix for thin plate smoothers. This option defaults to ``False``.
 
--  **bs**: An array specifying the B-Splines for each GAM predictor. You must include one value for each GAM predictor. One of:
+-  **bs**: An array specifying the spline types for each GAM predictor. You must include one value for each GAM predictor. One of:
 
     - ``0`` (default) specifies cubic regression spline. 
     - ``1`` specifies thin plate regression with knots.
-    - ``2`` specifies monotone splines.
-    - ``3`` specifies splines of any polynomial order.
+    - ``2`` specifies monotone splines (or I-splines).
+    - ``3`` specifies NBSplineTypeI M-splines (which can support any polynomial order).
    
 -  **scale**: An array specifying the smoothing parameter for GAM. If specified, must be the same length as ``gam_columns``.
 
 -  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
 
--  **splines_non_negative**: (Applicable for I-spline/``bs=2`` only) Set this option to ``True`` if the I-splines are monotonically increasing (and monotonically non-decreasing). Set this option to ``False`` if the I-splines are monotonically decreasing (and monotonically non-increasing). If specified, this option must be the same size as ``gam_columns``. Values for other spline types will be ignored. This option defaults to ``True`` (enabled).
+-  **splines_non_negative**: (Applicable for I-spline or ``bs=2`` only) Set this option to ``True`` if the I-splines are monotonically increasing (and monotonically non-decreasing). Set this option to ``False`` if the I-splines are monotonically decreasing (and monotonically non-increasing). If specified, this option must be the same size as ``gam_columns``. Values for other spline types will be ignored. This option defaults to ``True`` (enabled).
 
 Common parameters
 '''''''''''''''''
