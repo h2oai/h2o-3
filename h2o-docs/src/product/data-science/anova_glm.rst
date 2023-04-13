@@ -11,55 +11,61 @@ Since ANOVA GLM is mainly used to investigate the contribution of each predictor
 Defining an ANOVA GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ANOVA GLM uses a similar set of parameters to GLM.
+Parameters are optional unless specified as *requried*. ANOVA GLM shares many `GLM parameters <glm.html#shared-glm-family-parameters>`__. 
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as
-   a reference. By default, H2O automatically generates a destination
-   key.
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the
-   model. **NOTE**: In Flow, if you click the **Build a model** button from the
-   ``Parse`` cell, the training frame is entered automatically.
+- **save_transformed_framekeys**: Enable this option to save the keys of transformed predictors and interaction column. This option defaults to ``False`` (disabled).
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
+- **highest_interaction_term**: This option limits the number of interaction terms (i.e. ``2`` means interaction between 2 columns only, ``3`` for three columns, etc.). This option defaults to ``2``.
+
+- **nparallelism**: Set the number of models to build in parallel (adjust according to your system). This option defaults to ``4``. 
+
+- **type**: Refer to the SS type 1, 2, 3, or 4. We are currently only supporting type 3.
+
+Common parameters
+'''''''''''''''''
+
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
+   
+    **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant
-   training columns, since no information can be gained from them. This option is defaults to true (enabled).
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
-   algorithm components dependent on randomization. The seed is
-   consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score
-   during each iteration of the model training. This value is disabled by default.
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns since no information can be gained from them. This option defaults to ``True`` (enabled).
 
--  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Specify whether to score during each iteration of the model training. This option is set to ``False`` (disabled) by default.
 
--  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation
-   weights, which are used for bias correction. The specified
-   ``weights_column`` must be included in the specified
-   ``training_frame``. 
+-  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset. This will be added to the combination of columns before applying the link function.
+
+-  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
    
     *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  `balance_classes <algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is defaults to false (not enabled), and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max\_after\_balance\_size** parameter.
+-  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values. One of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``.
 
--  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for
-   **stopping\_metric** doesn't improve for the specified number of
-   training rounds, based on a simple moving average. This option is defaults 0 (no early stopping). The metric is computed on the validation data (if provided); otherwise, training data is used.
+-  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. This option defaults to ``True`` (enabled).
 
--  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
-   The available options are:
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This option defaults to ``0``.
+
+-  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``False`` (disabled).
+
+-  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. This option defaults to ``0`` (no early stopping). The metric is computed on the validation data (if provided); otherwise, training data is used.
+
+-  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
     
-    - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. 
-    - ``anomaly_score`` (Isolation Forest only)
+    - ``AUTO`` (default): (This defaults to ``logloss`` for classification and ``deviance`` for regression)
     - ``deviance``
     - ``logloss``
     - ``MSE``
@@ -71,74 +77,26 @@ ANOVA GLM uses a similar set of parameters to GLM.
     - ``lift_top_group`` 
     - ``misclassification``
     - ``mean_per_class_error``
-    - ``custom`` (Python client only)
-    - ``custom_increasing`` (Python client only)
 
--  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
-   metric-based stopping to stop training if the improvement is less
-   than this value. This value defaults to 0.001.
+-  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This option defaults to ``0.001``.
 
--  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option is defaults to False (disabled).
+-  `balance_classes <algo-params/balance_classes.html>`__: (Applicable only for classification) Specify whether to oversample the minority classes to balance the class distribution. This option can increase the data frame size. Majority classes can be undersampled to satisfy the ``max_after_balance_size`` parameter. This option defaults to ``False`` (disabled).
 
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
-   training.  This defaults to 0 (unlimited).
+-  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: (Applicable only if ``balance_classes=True``) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.
 
--  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
+-  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: (Applicable only if ``balance_classes=True``) Specify the maximum relative size of the training data after balancing class counts. The value can be > 1 and defaults to ``5.0``.
 
--  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of
-   the training data after balancing class counts (**balance\_classes**
-   must be enabled). The value can be less than 1.0 and defaults to 5.0.
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training.  This option defaults to ``0`` (unlimited).
 
-- `family <algo-params/family.html>`__: Specify the model type. Use binomial for classification with logistic regression, others are for regression problems. One of ``"auto"``(default), ``"gaussian"``, ``"binomial"``, ``fractionalbinomial``, ``"quasibinomial"``, ``"poisson"``, ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``.
-
--  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
-   specified for **Family**) Specify the Tweedie variance power (defaults to 0).
-
--  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if *Tweedie* is specified
-   for **Family**) Specify the Tweedie link power (defaults to 1).
-
--  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 0.  
-
--  `solver <algo-params/solver.html>`__: Specify the solver to use (``AUTO``, ``IRLSM`` (default), ``L_BFGS``, ``COORDINATE_DESCENT_NAIVE``, ``COORDINATE_DESCENT``, ``GRADIENT_DESCENT_LH``, or ``GRADIENT_DESCENT_SQERR``). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family. AUTO will set the solver based on the given data and other parameters.
-
--  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2. The default value of alpha is 0 when ``solver = 'L-BFGS'``, otherwise it is 0.5.
-
--  `lambda <algo-params/lambda.html>`__: Specify the regularization strength. Defaults to ``[0.0]``.
-
--  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GAM will calculate the minimum lambda. This option is defaults to false (not enabled).
-
--  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. This option defaults to True.
-
--  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip, MeanImputation, or PlugValues). This value defaults to MeanImputation.
-
--  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
-
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. P-values only work with the ``IRLSM`` solver and no regularization. Defaults to True.
-
--  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values. This option is defaults to false.
-
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations (defaults to 0).
-
--  `link <algo-params/link.html>`__: Specify a link function (``Identity``, ``Family_Default``, ``Logit``, ``Log``, ``Inverse``, ``Tweedie``, or ``Ologit``). The default value is Family_Default.
-
--  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value must be a value in the range (0,1) or set to -1 (disabled).  This option is set to 0 by default.  
-   
-     **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
-
-- **type**: Refer to the SS type 1, 2, 3, or 4. 
-
-     **Note**: We are currently only supporting 3.
-
-- **highest_interaction_term**: This limits the number of interaction terms (i.e. 2 means interaction between 2 columns only, 3 for three columns, etc.). Defaults to 2.
-
-- **save_transformed_framekeys**: Set to True to save the keys of transformed predictors and interaction column. Defaults to False.
+Type III SS
+~~~~~~~~~~~
 
 To demonstrate what Type III SS is and how it is implemented, here is an example of regression with two categorical predictors: 
 
 - **note**: This algorithm will support multiple categorical/numerical columns and other families as well; we just need to replace the SS with the residual deviance for other families.
 
 SS (Sum of Squares)
-~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''
 
 In Analysis of Variance (ANOVA), the partition of the response variable sum of squares in a linear model is described as "explained" and "unexplained" components. Consider a dataset generated by
 
@@ -168,7 +126,7 @@ The model SS by itself is not useful. However, if you have multiple models, the 
 
 
 Type III SS Calculation
-~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''
 
 The Type III SS calculation can be illustrated using two predictors (C,R). Let
 
