@@ -27,6 +27,8 @@ public abstract class Transform<T> extends Iced {
   public String[] getNewTypes() { return new String[0]; }
   public AstExec getAst() { return _ast; }
   
+  public boolean isInPlace() { return _inplace; }
+  
   public IcedHashMap<String,AstParameter> getParams() { return _params; }
 
   Transform(String name, String ast, boolean inplace, String[] newNames) {

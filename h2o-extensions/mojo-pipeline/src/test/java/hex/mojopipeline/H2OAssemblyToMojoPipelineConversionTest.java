@@ -33,7 +33,39 @@ public class H2OAssemblyToMojoPipelineConversionTest extends TestUtil {
         Scope.track(result);
         return result;
     }
+
+    @Test
+    public void testPipelineWithInplaceOperations() throws IOException {
+        try {
+            Scope.enter();
+            Frame frame = createTestingFrame();
+            Transform[] steps = new Transform[]{
+                new H2OColOp("sin", "(sin (cols_py dummy 'c'))", false, new String[]{"newCol1"}),
+                new H2OColOp("abs", "(abs (cols_py dummy 'newCol1'))", true, new String[0]),
+                new H2OColOp("sqrt", "(sqrt (cols_py dummy 'c'))", false, new String[]{"newCol2"}),
+                new H2OColOp("cos", "(cos (cols_py dummy 'newCol1'))", true, new String[0]),
+                new H2OBinaryOp("plus", "(+ (cols_py dummy 'newCol1') 1)", true, new String[0]), 
+                new H2OColOp("to_string", "(as.character (cols_py dummy 'newCol2'))", true, new String[0]), 
+                new H2OBinaryOp("strDist", 
+                        "(strDistance (cols_py dummy 'newCol2') (cols_py dummy 'newCol2') 'lv' False)", 
+                        true,
+                        new String[0]), 
+                new H2OColSelect("select", "(cols_py dummy ['newCol1', 'newCol2'])", false, null)
+            };
+
+            Assembly assembly = new Assembly(Key.make(), steps);
+            Frame expected = assembly.fit(frame.clone());
+
+            MojoPipeline mojoPipeline = H2OAssemblyToMojoPipelineConverter.convert(assembly);
+            Frame result = mojoPipeline.transform(frame, true);
+
+            assertFrameEquals(expected, result , 1e-6);
+        } finally {
+            Scope.exit();
+        }
+    }
     
+
     @Test
     public void testConversionOnH2OColSelect() throws IOException {
         try {

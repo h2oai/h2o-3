@@ -40,16 +40,23 @@ public class H2OAssemblyToMojoPipelineConverter {
         pipelineBuilder.setFeatures(frame(inputColumns));
 
         Frame.Builder interimsFrameBuilder = Frame.newBuilder();
+        
+        
+        InplaceOperationSimulator inplaceOperationSimulator = new InplaceOperationSimulator();
         for (Transform stage : stages) {
-            Transformation transformation = convertStage(stage);
+            Transformation transformation = convertStage(stage, inplaceOperationSimulator);
             pipelineBuilder.addTransformations(transformation);
             if (stage.getNewNames().length > 0) {
                 Column[] tempColumns = convertColumns(stage.getNewNames(), stage.getNewTypes());
                 interimsFrameBuilder.addAllColumns(Arrays.asList(tempColumns));
             }
         }
+        Column[] replacementColumns = convertColumns(
+                inplaceOperationSimulator.getReplacementColumnNames(), 
+                inplaceOperationSimulator.getReplacementColumnTypes());
+        interimsFrameBuilder.addAllColumns(Arrays.asList(replacementColumns));
         pipelineBuilder.setInterims(interimsFrameBuilder);
-        setOutputColumns(pipelineBuilder, lastStage);
+        setOutputColumns(pipelineBuilder, lastStage, inplaceOperationSimulator);
         Pipeline pipeline = pipelineBuilder.build();
 
         return pipeline;
@@ -91,34 +98,39 @@ public class H2OAssemblyToMojoPipelineConverter {
         return result;
     }
 
-    private static Transformation convertStage(Transform stage){
+    private static Transformation convertStage(Transform stage, InplaceOperationSimulator inplaceOperationSimulator){
         if (stage instanceof H2OColSelect) {
-            return convertColSelect((H2OColSelect)stage);
+            return convertColSelect((H2OColSelect)stage, inplaceOperationSimulator);
         } else if (stage instanceof H2OBinaryOp) {
-            return convertBinaryOp((H2OBinaryOp)stage);
+            return convertBinaryOp((H2OBinaryOp)stage, inplaceOperationSimulator);
         } else if (stage instanceof H2OColOp) {
-            return convertColOp((H2OColOp)stage);
+            return convertColOp((H2OColOp)stage, inplaceOperationSimulator);
         } else {
             throw new UnsupportedOperationException(
                 String.format("Stage conversion of type %s is not supported yet.", stage.getClass().getName()));
         }
     }
 
-    private static Transformation convertColSelect(H2OColSelect stage){
+    private static Transformation convertColSelect(H2OColSelect stage, InplaceOperationSimulator inplaceOperationSimulator){
         Transformation.Builder builder = Transformation.newBuilder();
         builder.setIdentityOp(PipelineOuterClass.IdentityOp.newBuilder());
         for (String outputColumn : stage.getOutputNames()) {
-            builder.addInputs(outputColumn);
-            builder.addOutputs(outputColumn);
+            String updatedColumn = inplaceOperationSimulator.updateColumn(outputColumn);
+            builder.addInputs(updatedColumn);
+            builder.addOutputs(updatedColumn);
         }
         return builder.build();
     }
 
-    private static void setOutputColumns(Pipeline.Builder pipelineBuilder, Transform lastStage){
+    private static void setOutputColumns(
+            Pipeline.Builder pipelineBuilder,
+            Transform lastStage,
+            InplaceOperationSimulator inplaceOperationSimulator) {
         Transformation.Builder builder = Transformation.newBuilder();
         builder.setIdentityOp(PipelineOuterClass.IdentityOp.newBuilder());
         for (String outputColumn : lastStage.getOutputNames()) {
-            builder.addInputs(outputColumn);
+            String inputColumn = inplaceOperationSimulator.updateColumn(outputColumn);
+            builder.addInputs(inputColumn);
             builder.addOutputs("assembly_" + outputColumn);
         }
         Transformation extraIdentity = builder.build();
@@ -129,7 +141,7 @@ public class H2OAssemblyToMojoPipelineConverter {
         pipelineBuilder.setOutputs(frame(outputColumns));
     }
 
-    private static Transformation convertColOp(H2OColOp stage){
+    private static Transformation convertColOp(H2OColOp stage, InplaceOperationSimulator inplaceOperationSimulator){
         Transformation.Builder builder = Transformation.newBuilder();
         String functionName = stage.getAst()._asts[0].str();
         Custom.CustomParam functionParam = Custom.CustomParam.newBuilder()
@@ -165,10 +177,21 @@ public class H2OAssemblyToMojoPipelineConverter {
         }
         builder.setCustomOp(customOpBuilder.build());
         for (String inputColumn : stage.getOldNames()) {
-            builder.addInputs(inputColumn);
+            String updatedColumn = inplaceOperationSimulator.updateColumn(inputColumn);
+            builder.addInputs(updatedColumn);
         }
-        for (String outputColumn : stage.getNewNames()) {
-            builder.addOutputs(outputColumn);
+        if (stage.isInPlace()) {
+            String[] oldNames =  stage.getOldNames();
+            for (int i = 0; i < oldNames.length; i++) {
+                String oldName = oldNames[i];
+                String newName = "temp_" + oldName + "_" + stage.name();
+                inplaceOperationSimulator.setNewReplacement(oldName, newName, stage.getNewTypes()[i]);
+                builder.addOutputs(newName);
+            }
+        } else {
+            for (String outputColumn : stage.getNewNames()) {
+                builder.addOutputs(outputColumn);
+            }
         }
         return builder.build();
     }
@@ -196,7 +219,7 @@ public class H2OAssemblyToMojoPipelineConverter {
         }
     }
 
-    private static Transformation convertBinaryOp(H2OBinaryOp stage){
+    private static Transformation convertBinaryOp(H2OBinaryOp stage, InplaceOperationSimulator inplaceOperationSimulator){
         Transformation.Builder builder = Transformation.newBuilder();
         String functionName = stage.getAst()._asts[0].str();
         Custom.CustomOp.Builder customOpBuilder = Custom.CustomOp.newBuilder();
@@ -240,10 +263,19 @@ public class H2OAssemblyToMojoPipelineConverter {
         }
         builder.setCustomOp(customOpBuilder.build());
         for (String inputColumn : stage.getOldNames()) {
-            builder.addInputs(inputColumn);
+            String updatedColumn = inplaceOperationSimulator.updateColumn(inputColumn);
+            builder.addInputs(updatedColumn);
         }
-        for (String outputColumn : stage.getNewNames()) {
-            builder.addOutputs(outputColumn);
+        if (stage.isInPlace()) {
+            String[] oldNames =  stage.getOldNames();
+            String oldName = oldNames[0];
+            String newName = "temp_" + oldName + "_" + stage.name();
+            inplaceOperationSimulator.setNewReplacement(oldName, newName, stage.getNewTypes()[0]);
+            builder.addOutputs(newName);
+        } else {
+            for (String outputColumn : stage.getNewNames()) {
+                builder.addOutputs(outputColumn);
+            }
         }
         return builder.build();
     }

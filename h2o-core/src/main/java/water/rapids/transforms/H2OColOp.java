@@ -30,7 +30,7 @@ public class H2OColOp extends Transform<H2OColOp> {
   public String[] getNewNames() { return _newCol; }
   @Override
   public String[] getNewTypes() { 
-    String[] result = new String[_newCol.length]; 
+    String[] result = new String[_newCol.length == 0 ? 1 : _newCol.length]; 
     Arrays.fill(result, _newColTypes);
     return result;
   }
