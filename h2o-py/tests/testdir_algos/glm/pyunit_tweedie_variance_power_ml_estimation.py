@@ -12,7 +12,7 @@ def test_tweedie_var_power_estimation_3_no_link_power_est():
     x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
     training_data = training_data[training_data[Y] > 0, :]
     model_ml = H2OGeneralizedLinearEstimator(family='tweedie', fix_dispersion_parameter=True, fix_tweedie_variance_power=False,
-                                             tweedie_variance_power=2.5, fix_tweedie_variance_power=False,
+                                             tweedie_variance_power=2.5,
                                              lambda_=0, compute_p_values=False,
                                              dispersion_parameter_method="ml", seed=12345)
     model_ml.train(training_frame=training_data, x=x, y=Y)

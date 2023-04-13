@@ -2754,9 +2754,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               fitLSM(solver);
             else {
               if (_parms._dispersion_parameter_method.equals(ml))
-//                if (tweedie.equals(_parms._family))
-//                  fitIRLSMProfile(solver);
-//                else
                   fitIRLSMML(solver);
               else
                 fitIRLSM(solver);
