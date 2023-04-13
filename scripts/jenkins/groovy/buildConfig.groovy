@@ -261,8 +261,10 @@ class BuildConfig {
       default:
         throw new IllegalArgumentException("Cannot find image for component ${component}")
     }
-
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
+    def imageVersion = DEFAULT_IMAGE_VERSION_TAG
+    if (stageConfig.imageVersion)
+      imageVersion = stageConfig.imageVersion
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${imageVersion}"
   }
   
   String getDevImageReference(final specifier, final version) {
