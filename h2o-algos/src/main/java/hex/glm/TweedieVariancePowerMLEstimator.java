@@ -41,7 +41,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     private final double _pialpha;
     private final double _logInvDenom2ConstPart;
     private final double _pisq;
-    private final double _epsilon = 1e-30;
+    private final double _epsilon = 1e-12; // used as a stopping criterion for series method when gradient and hessian are required
     private double _wSum, _wDpSum, _wDpDpSum, _logWMax;
     double _logVSum, _logVDpSum, _logVDpDpSum, _logVMax;
     private double _vDpSumSgn, _vDpDpSumSgn;
@@ -73,8 +73,9 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     TweedieVariancePowerMLEstimator(double variancePower, double dispersion,
                                     boolean useSaddlepointApprox, boolean needDp, boolean needDpDp, boolean forceInversion) {
         //Log.info("::: TweedieVariancePowerMLEstimator("+variancePower+", "+ dispersion + ", "+useSaddlepointApprox + ", "+needDp+", "+needDpDp+","+forceInversion+")");
+        assert variancePower >= 1;
+        assert (forceInversion || useSaddlepointApprox) && !(needDp || needDpDp) || !forceInversion || !useSaddlepointApprox;
         _p = variancePower;
-        assert _p >= 1;
         _phi = dispersion;
         _max_iter_cnt = 25000;
 
@@ -237,7 +238,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                 _method = inversion;
             if (series.equals(_method))
                 tweedieSeries(y, mu, w, llh_llhDp_llhDpDp);
-            if (inversion.equals(_method) || Double.isNaN(llh_llhDp_llhDpDp[0]) && _p != 1  && _p != 2) {
+            if ((inversion.equals(_method) || Double.isNaN(llh_llhDp_llhDpDp[0])) && _p != 1  && _p != 2) {
                 llh_llhDp_llhDpDp[0] = tweedieInversion(y, mu, w);
                 _method = inversion;
                 if (!Double.isFinite(llh_llhDp_llhDpDp[0])) {
@@ -249,10 +250,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     llh_llhDp_llhDpDp[0] = llh;
                 }
             }
-            if (series.equals(_method) && !Double.isFinite(llh_llhDp_llhDpDp[0])){
-                llh_llhDp_llhDpDp[0] = tweedieInversion(y, mu, w);
-                _method = inversion; 
-            }
+       
                 
 
         }
@@ -323,7 +321,10 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             _llhDpDp = 0;
             return this;
         }
-        return doAll(mu, y, weights);
+        Log.info("::: Pre calculation; p = "+_p+"; phi = "+_phi+"; _needDp = "+ _needDp + "; force Inversion = " + _forceInversion);
+        TweedieVariancePowerMLEstimator result = doAll(mu, y, weights);
+        Log.info("::: Post calculation");
+        return result;
     }
 
     @Override
@@ -1087,8 +1088,8 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         DK dk = new DK(phi);
         if (y >= 1) {
             m = -1;
-            tLo = 1e-5;
-            tHi = inflec;
+            tLo = min(1e-5, inflec);
+            tHi = max(inflec, 1e-5);
         } else {
             FindKMaxResult fndKMaxRes = findKMax(y, phi);
             kMax = fndKMaxRes._kMax;
@@ -1105,7 +1106,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         }
         fLo = intIm.apply(y, tLo, m);
         fHi = intIm.apply(y, tHi, m);
-        zStep = tHi - tLo;
+        zStep = abs(tHi - tLo);
 
         while ((fLo * fHi) > 0) {
             tLo = tHi;

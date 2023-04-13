@@ -2406,6 +2406,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+        warn("", "Got Non SPD matrix, stopped.");
       }
     }
 
@@ -2438,7 +2439,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       // Let's assume the var power will be close to the one in last iteration and hopefully save some time 
       if (iterCnt > 1) {
-        boolean forceInversion = (originalP > 1.999 && originalP < 2.1);
+        boolean forceInversion = (originalP > 1.95 && originalP < 2.1);
         if (!_parms._fix_tweedie_variance_power) {
           updateTweedieParms(Math.max(lowerBound, p - 0.01), phi);
           mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
@@ -2463,17 +2464,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           upperBound = hi._p;
         Log.info("::: lo = "+lo._loglikelihood + "; mid = "+mid._loglikelihood+"; hi = "+hi._loglikelihood);
 
-        if (bestLLH < lo._loglikelihood && lo._loglikelihood != 0) {
+        if (bestLLH < lo._loglikelihood && lo._loglikelihood != 0 && !forceInversion) {
           bestLLH = lo._loglikelihood;
           bestP = lo._p;
         }
 
-        if (bestLLH < mid._loglikelihood && mid._loglikelihood != 0) {
+        if (bestLLH < mid._loglikelihood && mid._loglikelihood != 0 && !forceInversion) {
           bestLLH = mid._loglikelihood;
           bestP = mid._p;
         }
 
-        if (bestLLH < hi._loglikelihood && hi._loglikelihood != 0) {
+        if (bestLLH < hi._loglikelihood && hi._loglikelihood != 0 && !forceInversion) {
           bestLLH = hi._loglikelihood;
           bestP = hi._p;
         }
@@ -2537,7 +2538,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
         // likelihood, grad, and hess get unstable for the series method near 2, so I'm not using Newton's method for 
         // this region and instead use "hybrid" (series+inversion) likelihood calculation
-        if (d < newtonThreshold && p >= lowerBound && p <= upperBound && newtonFailures < 3 && !(p >= 2 && p <= 2.1) && p != 3){
+        if (d < newtonThreshold && p >= lowerBound && p <= upperBound && newtonFailures < 3 && !(p >= 1.95 && p <= 2.1) && p != 3){
           // Use Newton's method in bracketed space
           if (!_parms._fix_tweedie_variance_power) {
             updateTweedieParms(p, phi);
@@ -2563,13 +2564,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             converged = true;
             break;
           }
+          if (_job.stop_requested()) 
+            break;
         } else {
           if (d < newtonThreshold) {
             newtonFailures ++;
             if (newtonFailures < 3)
               Log.info("::: i = "+iterCnt+"; Newton failed and stepped out of bounds; failures = "+newtonFailures);
           }
-          boolean forceInversion =  (lowerBound > 1.999 && upperBound < 2.1); // behaves more stable - less -oo but tends to be lower sometimes than series+inversion hybrid 
+          boolean forceInversion =  (lowerBound > 1.95 && upperBound < 2.1); // behaves more stable - less -oo but tends to be lower sometimes than series+inversion hybrid 
           d *= 0.618;  // division by golden ratio
           final double lowerBoundProposal = upperBound - d;
           final double upperBoundProposal = lowerBound + d;
@@ -2612,13 +2615,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (!Double.isFinite(upperEst._loglikelihood) && !Double.isFinite(lowerEst._loglikelihood) && lowerEst._p < 5) {
             Log.info("::: i = " + iterCnt + "; Infinities/NaNs => Break");
             converged = false;
-            bestP = 1.5; // reset to some reasonable value
+            //bestP = 1.5; // reset to some reasonable value
             break;
           }
           if (upperEst._loglikelihood == 0 && lowerEst._loglikelihood == 0) {
             Log.info("::: i = " + iterCnt + "; Zeros => Break");
             converged = false;
-            bestP = 1.5; // reset to some reasonable value
+            //bestP = 1.5; // reset to some reasonable value
             break;
           }
         }

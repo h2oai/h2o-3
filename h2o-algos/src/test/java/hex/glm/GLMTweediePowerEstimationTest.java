@@ -72,7 +72,8 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
     @Test
     public void testSingleLogLikelihoodCalculation() {
         double expected = -7.69752787144296;
-        TweedieVariancePowerMLEstimator tvp = new TweedieVariancePowerMLEstimator(2.00001, 1, false, false, false, false);
+        TweedieVariancePowerMLEstimator tvp = new TweedieVariancePowerMLEstimator(2.00001, 1,
+                false, false, false, true);
         double llh = tvp.logLikelihood(1.0000000001, 0.1);
         Log.info("LLH = " + llh + "; diff = " + (llh - expected));
         assert roughlyEqual(llh, expected);
@@ -91,7 +92,7 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                 return true;
             return false;
         }
-        if (Double.POSITIVE_INFINITY == expected) 
+        if (Double.POSITIVE_INFINITY == expected)
             return abs(actual) > 1e6 || !Double.isFinite(actual);
         if (actual < rMachineMin || expected < rMachineMin)
             return Math.abs(actual - expected) < rMachineEps || Math.abs(actual - expected) / Math.max(Math.abs(actual), Math.abs(expected)) < 1e-6;
@@ -107,29 +108,29 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
     public void testLogLikelihoodCalculationP_LT_2() {
         int counter = 0;
 
-        double[] mus = new double[] {
+        double[] mus = new double[]{
                 1e-16, 0.1, 0.99,
                 0.9999999999, 1.0, 1.0000000001,
                 1.1, 2.0, 64.0,
                 128.0, 1024.0, 65536.0
         };
-        double[] ys = new double[] {
+        double[] ys = new double[]{
                 1e-16, 0.1, 0.99,
                 0.9999999999, 1.0, 1.0000000001,
                 1.1, 2.0, 64.0,
                 128.0, 1024.0, 65536.0
         };
-        double[] ps = new double[] {
+        double[] ps = new double[]{
                 1.01, 1.1, 1.2,
                 1.3, 1.4, 1.5,
                 1.6, 1.7, 1.8,
                 1.9, 1.95, 1.99,
                 1.99999
         };
-        double[] phis = new double[] {
+        double[] phis = new double[]{
                 0.5, 1.0, 2.0
         };
-        double[] results = new double[] {
+        double[] results = new double[]{
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
@@ -2015,8 +2016,8 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                         final double diff = (actual - results[counter]);
                         if (!roughlyEqual(actual, results[counter]))
                             System.err.println("power = " + p + ", phi = " + phi + ", y = " + y + ", mu = " + mu + "; diff = " + diff +
-                                    "; Expected: " + results[counter] + "; Actual: " + actual + "; method: " + tvp._method + 
-                                    "; counter: "+counter+"; xi = "+(phi/Math.pow(y, 2-p)));
+                                    "; Expected: " + results[counter] + "; Actual: " + actual + "; method: " + tvp._method +
+                                    "; counter: " + counter + "; xi = " + (phi / Math.pow(y, 2 - p)));
 
                         assert roughlyEqual(actual, results[counter]);
 
@@ -2024,8 +2025,8 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                         final double diffDp = (actualDp - results[counter]);
                         if (!roughlyEqual(actualDp, results[counter]))
                             System.err.println("(with grad calculation) power = " + p + ", phi = " + phi + ", y = " + y + ", mu = " + mu + "; diff = " + diffDp +
-                                    "; Expected: " + results[counter] + "; Actual: " + actualDp + "; method: " + tvp._method+
-                                    "; counter: "+counter+"; xi = "+(phi/Math.pow(y, 2-p)));
+                                    "; Expected: " + results[counter] + "; Actual: " + actualDp + "; method: " + tvp._method +
+                                    "; counter: " + counter + "; xi = " + (phi / Math.pow(y, 2 - p)));
 
                         assert roughlyEqual(actualDp, results[counter]);
                         counter++;
@@ -2045,7 +2046,7 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
         double[] ps = new double[]{2.0, 2.00001, 2.01, 2.1, 2.2, 2.9, 3.0, 3.1, 3.5, 4.0};
         double[] phis = new double[]{0.5, 1.0, 2.0};
 
-        double[] results =  new double[]{36.2276558490246, -30.8498969407968, -35.4349664550778, -35.4550671265848, -35.4550671267848,
+        double[] results = new double[]{36.2276558490246, -30.8498969407968, -35.4349664550778, -35.4550671265848, -35.4550671267848,
                 -35.4550671269848, -35.6456874863935, -36.8413614879047, -43.7728332935042, -45.1591276546241,
                 -49.3180107379837, -57.6357769047031, -1999999999999927.0,
                 1.68887945411394, -1.09821026218735, -1.11629073169415, -1.11629073187415, -1.11629073205415,
@@ -3055,7 +3056,7 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, -19.5839402122488, -19.2550717540455, -19.1849717063894,
-                -19.1845912459682, 73.1103580361153, Double.NEGATIVE_INFINITY,
+                -19.1845912459682, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
@@ -3094,7 +3095,7 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, -19.7703915560065, -19.6247413281419, -19.6040087663947,
-                -19.6039690298872, 72.7637844458353, Double.NEGATIVE_INFINITY,
+                -19.6039690298872, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
@@ -3133,7 +3134,7 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, -19.918338971576, -19.8455138576437, -19.8351475767701,
-                -19.8351277085163, 72.4172108555554, Double.NEGATIVE_INFINITY,
+                -19.8351277085163, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
                 Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY,
@@ -3177,7 +3178,8 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
         TweedieVariancePowerMLEstimator tvp = null, tvpDp = null;
         for (double p : ps) {
             for (double phi : phis) {
-                tvp = new TweedieVariancePowerMLEstimator(p, phi, false, false, false, false);
+                boolean forceInversion = p > 1.95 && p < 2.1;
+                tvp = new TweedieVariancePowerMLEstimator(p, phi, false, false, false, forceInversion);
                 tvpDp = new TweedieVariancePowerMLEstimator(p, phi, false, true, true, false); // should have higher precision
                 for (double y : ys) {
                     for (double mu : mus) {
@@ -3185,19 +3187,20 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                         final double diff = (actual - results[counter]);
                         if (!roughlyEqual(actual, results[counter]))
                             System.err.println("power = " + p + ", phi = " + phi + ", y = " + y + ", mu = " + mu + "; diff = " + diff +
-                                    "; Expected: " + results[counter] + "; Actual: " + actual + "; method: " + tvp._method+
-                                    "; counter: "+counter+"; xi = "+(phi/Math.pow(y, 2-p))+"; xix = "+((phi*Math.pow(y, 2-p))/(1+(phi*Math.pow(y, 2-p)))));
+                                    "; Expected: " + results[counter] + "; Actual: " + actual + "; method: " + tvp._method +
+                                    "; counter: " + counter + "; xi = " + (phi / Math.pow(y, 2 - p)) + "; xix = " + ((phi * Math.pow(y, 2 - p)) / (1 + (phi * Math.pow(y, 2 - p)))));
 
                         assert roughlyEqual(actual, results[counter]);
+                        if (!forceInversion) {
+                            final double actualDp = tvpDp.logLikelihood(y, mu);
+                            final double diffDp = (actualDp - results[counter]);
+                            if (!roughlyEqual(actualDp, results[counter]))
+                                System.err.println("(with grad calculation) power = " + p + ", phi = " + phi + ", y = " + y + ", mu = " + mu + "; diff = " + diffDp +
+                                        "; Expected: " + results[counter] + "; Actual: " + actualDp + "; method: " + tvp._method +
+                                        "; counter: " + counter + "; xi = " + (phi / Math.pow(y, 2 - p)));
 
-                        final double actualDp = tvpDp.logLikelihood(y, mu);
-                        final double diffDp = (actualDp - results[counter]);
-                        if (!roughlyEqual(actualDp, results[counter]))
-                            System.err.println("(with grad calculation) power = " + p + ", phi = " + phi + ", y = " + y + ", mu = " + mu + "; diff = " + diffDp +
-                                    "; Expected: " + results[counter] + "; Actual: " + actualDp + "; method: " + tvp._method+
-                                    "; counter: "+counter+"; xi = "+(phi/Math.pow(y, 2-p)));
-
-                        assert roughlyEqual(actualDp, results[counter]);
+                            assert roughlyEqual(actualDp, results[counter]);
+                        }
                         counter++;
                     }
                 }
