@@ -12,10 +12,7 @@ import water.rapids.ast.params.AstId;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstStr;
 import water.rapids.ast.params.AstStrList;
-import water.rapids.transforms.H2OBinaryOp;
-import water.rapids.transforms.H2OColOp;
-import water.rapids.transforms.H2OColSelect;
-import water.rapids.transforms.Transform;
+import water.rapids.transforms.*;
 import mojo.spec.PipelineOuterClass.Pipeline;
 import mojo.spec.PipelineOuterClass.Transformation;
 import mojo.spec.PipelineOuterClass.Frame;
@@ -279,7 +276,6 @@ public class H2OAssemblyToMojoPipelineConverter {
         }
         return builder.build();
     }
-    
 
     private static Frame frame(Column[] cols) {
         return Frame.newBuilder().addAllColumns(Arrays.asList(cols)).build();

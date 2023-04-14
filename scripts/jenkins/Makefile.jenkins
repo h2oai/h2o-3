@@ -411,6 +411,13 @@ test-junit-core-jenkins:
 
 test-junit-core:
 	./gradlew h2o-core:test $$ADDITIONAL_GRADLE_OPTS
+	
+test-junit-mojo-pipeline-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-mojo-pipeline
+	
+test-junit-mojo-pipeline:
+	./gradlew h2o-ext-mojo-pipeline:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-automl-jenkins:
 	$(call sed_test_scripts)

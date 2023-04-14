@@ -25,6 +25,11 @@ public class H2OAssemblyToMojoPipelineConversionTest extends TestUtil {
     @BeforeClass() public static void setup() {
         stall_till_cloudsize(1);
     }
+
+    @Before
+    public void checkLicense() {
+        Assume.assumeNotNull(System.getenv("DRIVERLESS_AI_LICENSE_FILE"));
+    }
     
     Frame createTestingFrame() {
         Frame result = new Frame(
