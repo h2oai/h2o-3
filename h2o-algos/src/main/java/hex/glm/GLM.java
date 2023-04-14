@@ -921,6 +921,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         case tweedie:
           if (_nclass != 1) error("_family", H2O.technote(2, "Tweedie requires the response to be numeric."));
+          if (ml.equals(_parms._dispersion_parameter_method)) {
+            if (!_parms._fix_dispersion_parameter)
+              throw H2O.unimpl("Tweedie dispersion parameter has not been implemented yet. Please set fix_dispersion_parameter=True.");
+            // Check if response contains zeros if so limit variance power to (1,2)
+            if (_response.min() <= 0)
+              warn("_tweedie_var_power", "Response contains zeros and/or values lower than zero. "+
+                      "Tweedie variance power ML estimation will be limited between 1 and 2. Values lower than zero will be ignored.");
+          }
           break;
         case quasibinomial:
           if (_nclass != 1) error("_family", H2O.technote(2, "Quasi_binomial requires the response to be numeric."));
@@ -2181,18 +2189,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
       Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
       
-      if (tweedie.equals(_parms._family)) {
-        // make sure link power is set to canonical value if appropriate
-        updateTweedieParms(
-                response.min() <= 0 && _parms._tweedie_variance_power >= 2 
-                        ? 1.5  // if there are zeros in the response p >= 2 would make the first iteration of beta optimization ignore the zeros and that would deform the likelihood
-                        : _parms._tweedie_variance_power,
-                _parms._init_dispersion_parameter);
-        // Check if response contains zeros if so limit variance power to (1,2)
-        if (response.min() <= 0)
-          warn("_tweedie_var_power", "Response contains zeros and/or values lower than zero. "+
-                  "Tweedie variance power ML estimation will be limited between 1 and 2.");
-      }
       try {
         while (!converged && iterCnt < _parms._max_iterations && !_job.stop_requested()) {
           iterCnt++;
@@ -2245,9 +2241,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // Dispersion estimation part
           if (negativebinomial.equals(_parms._family)){
             converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH, weights, response) && converged;
+            Log.info("GLM negative binomial dispersion estimation: iteration = "+iterCnt+"; theta = " + _parms._theta);
           } else if (tweedie.equals(_parms._family)){
             if (_parms._fix_dispersion_parameter && ! _parms._fix_tweedie_variance_power) {
               converged = updateTweedieVariancePower(iterCnt, _state.expandBeta(betaCnd), weights, response) && converged;
+              Log.info("GLM Tweedie variance power estimation: iteration = "+iterCnt+"; p = " + _parms._tweedie_variance_power);
             }
           }
 
@@ -2260,7 +2258,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
-        warn("Regression with MLE training:", "Got Non SPD matrix, stopped.");
+        warn("Regression with MLE training", "Got Non SPD matrix, stopped.");
       }
     }
 
@@ -2278,7 +2276,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       // Golden section search for p between 1  and 2 
       lowerBound = 1 + 1e-16;
-      if (response.min() <= 0 && _parms._tweedie_link_power == 1) {
+      if (response.min() <= 0) {
         upperBound = 2 - 1e-16;
       } else {
         upperBound = Double.POSITIVE_INFINITY;

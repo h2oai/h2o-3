@@ -426,7 +426,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _dispersion_learning_rate = 0.5;
     public Influence _influence;  // if set to dfbetas will calculate the difference of betas obtained from including and excluding a data row
     public boolean _keepBetaDiffVar = false;  // if true, will keep the frame generating the beta without from i and the variance estimation
-    private TweedieVariancePowerMLEstimator _tweedieEstimator;
     
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
@@ -647,9 +646,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return mu * mu;
         case tweedie:
           if (DispersionMethod.ml.equals(_dispersion_parameter_method)) {
-            if (null == _tweedieEstimator)
-              _tweedieEstimator = new TweedieVariancePowerMLEstimator(_tweedie_variance_power, _init_dispersion_parameter);
-            return _tweedieEstimator.variance(mu);
+            return TweedieVariancePowerMLEstimator.variance(mu, _tweedie_variance_power, _init_dispersion_parameter);
           }
           return Math.pow(mu, _tweedie_variance_power);
         default:
@@ -695,9 +692,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
           if (DispersionMethod.ml.equals(_dispersion_parameter_method)) {
-            if (null == _tweedieEstimator)
-              _tweedieEstimator = new TweedieVariancePowerMLEstimator(_tweedie_variance_power, _init_dispersion_parameter);
-            return _tweedieEstimator.deviance(yr, ym);
+            return TweedieVariancePowerMLEstimator.deviance(yr, ym, _tweedie_variance_power);
           }
           double theta = _tweedie_variance_power == 1
             ?Math.log(y1/ym)
@@ -721,7 +716,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                         yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
                 ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
       }  else if (Family.tweedie.equals(_family) && DispersionMethod.ml.equals(_dispersion_parameter_method)) {
-        return -_tweedieEstimator.logLikelihood(yr, ym);
+        return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _init_dispersion_parameter);
       }  else
         return .5 * deviance(yr,ym);
     }
@@ -882,7 +877,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _tweedie_variance_power = tweedieVariancePower;
       _tweedie_link_power = tweedieLinkPower;
       _init_dispersion_parameter = dispersion;
-      _tweedieEstimator = new TweedieVariancePowerMLEstimator(tweedieVariancePower, dispersion);
     }
   } // GLMParameters
 
@@ -910,7 +904,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     double _oneOeta;
     double _oneOetaSquare;
     boolean _dispersionEstimation;
-    private transient TweedieVariancePowerMLEstimator _tweedieEstimator;
 
     final NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     
@@ -932,8 +925,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _invTheta = 1/theta;
       _dispersion = dispersion;
       _dispersionEstimation = dispersionEstimation;
-      if (Family.tweedie.equals(fam))
-        _tweedieEstimator = new TweedieVariancePowerMLEstimator(_var_power, _dispersion);
     }
 
     /***
@@ -1075,7 +1066,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return mu * mu;
         case tweedie:
           if (_dispersionEstimation)
-            return _tweedieEstimator.variance(mu);
+            return TweedieVariancePowerMLEstimator.variance(mu, _var_power, _dispersion);
           return Math.pow(mu,_var_power);
         default:
           throw new RuntimeException("unknown family Id " + this._family);
@@ -1105,7 +1096,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
           if (_dispersionEstimation)
-            return _tweedieEstimator.deviance(yr, ym);
+            return TweedieVariancePowerMLEstimator.deviance(yr, ym, _var_power);
           double val;
           if (_var_power==1) {
             val = yr*Math.log(y1/ym)-(yr-ym);
@@ -1185,7 +1176,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
           if (_dispersionEstimation)
-            return -_tweedieEstimator.logLikelihood(yr, ym);
+            return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym, _var_power, _dispersion);
          //  we ignore the a(y,phi,p) term in the likelihood calculation here since we are not optimizing over them
           double temp = 0;
           if (_var_power==1) {

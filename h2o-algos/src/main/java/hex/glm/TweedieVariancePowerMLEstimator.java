@@ -50,7 +50,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     private final boolean _forceInversion;
     public long _skippedRows;
     public long _totalRows;
-
+    
     enum LikelihoodEstimator {
         series,
         inversion,
@@ -113,30 +113,35 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         return logLikelihood(y, mu, w, false);
     }
 
-    public double deviance(double y, double mu) {
+    public static double logLikelihood(double y, double mu, double p, double phi) {
+        TweedieVariancePowerMLEstimator tweedieVariancePowerMLEstimator = new TweedieVariancePowerMLEstimator(p, phi);
+        return tweedieVariancePowerMLEstimator.logLikelihood(y, mu);
+    }
+
+    public static double deviance(double y, double mu, double p) {
         double dev;
-        if (_p == 1) {
+        if (p == 1) {
             if (y != 0)
                 dev = y * log(y / mu) - (y - mu);
             else
                 dev = mu;
         } else {
-            if (_p == 2) {
+            if (p == 2) {
                 dev = log(mu / y) + (y / mu) - 1;
             } else {
-                if (_p == 0) {
+                if (p == 0) {
                     dev = pow(y - mu, 2);
                     dev = dev / 2;
                 } else {
-                    dev = pow(y, -_p2) / (_p1 * _p2) + (y * pow(mu, -_p1)) / _p1 - pow(mu, -_p2) / _p2;
+                    dev = pow(y, 2-p) / ((p-1) * (p-2)) + (y * pow(mu, 1-p)) / (p-1) - pow(mu, 2-p) / (p-2);
                 }
             }
         }
         return 2 * dev;
     }
-
-    public double variance(double mu) {
-        return _phi * pow(mu, _p);
+    
+    public static double variance(double mu, double p, double phi) {
+        return phi * pow(mu, p);
     }
 
     private double gammaLLH(double y, double mu, double w) {
@@ -228,7 +233,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                 else
                     llh_llhDp_llhDpDp[0] = Double.NEGATIVE_INFINITY;
             } else {
-                double dev = deviance(mu, y);
+                double dev = deviance(mu, y, _p);
                 if (_p < 2) y += 1. / 6.;
                 llh_llhDp_llhDpDp[0] = -0.5 * (log(2 * PI * _phi) + _p * log(y)) + (-dev / (2 * _phi));
             }
@@ -827,7 +832,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             if (y <= 0)
                 return Double.NEGATIVE_INFINITY; // skip; should be -Inf if we wouldn't skip that point
         }
-        double dev = deviance(y, mu);
+        double dev = deviance(y, mu, _p);
         // method 3 in the paper - transform phi and estimate density on the mu=1, y=1 where it should be highest and
         // then transform the result so it corresponds to the value of the untransformed pdf 
         double phi = _phi / pow(y, -_p2);
