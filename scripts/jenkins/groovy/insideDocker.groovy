@@ -21,7 +21,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
   withEnv(customEnv) {
     timeout(time: timeoutValue, unit: timeoutUnit) {
       docker.withRegistry("https://${registry}") {
-        withCredentials([file(credentialsId: 'c096a055-bb45-4dac-ba5e-10e6e470f37e', variable: 'JUNIT_CORE_SITE_PATH'), [$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: "${awsCredsPrefix}AWS_ACCESS_KEY_ID", credentialsId: 'AWS S3 Credentials', secretKeyVariable: "${awsCredsPrefix}AWS_SECRET_ACCESS_KEY"]]) {
+        withCredentials([file(credentialsId: 'c096a055-bb45-4dac-ba5e-10e6e470f37e', variable: 'JUNIT_CORE_SITE_PATH'), [$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: "${awsCredsPrefix}AWS_ACCESS_KEY_ID", credentialsId: 'AWS S3 Credentials', secretKeyVariable: "${awsCredsPrefix}AWS_SECRET_ACCESS_KEY"], [string(credentialsId: 'DRIVERLESS_AI_LICENSE_KEY', variable: 'DRIVERLESS_AI_LICENSE_KEY')]]) {
           dockerGroupIdAdd = ""
           if(addToDockerGroup) {
             dockerGroupName = "docker"
@@ -32,7 +32,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
               dockerGroupIdAdd = "--group-add ${dockerGroupId}"
             }
           }
-          docker.image(image).inside("--init ${dockerGroupIdAdd} --add-host=nexus:172.17.0.53 --dns ${DEFAULT_DNS} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
+          docker.image(image).inside("--init ${dockerGroupIdAdd} --add-host=nexus:172.17.0.53 --dns ${DEFAULT_DNS} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
             sh """
               id
               printenv | sort
