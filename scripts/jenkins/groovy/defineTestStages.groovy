@@ -334,9 +334,8 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark-xgb-gpu', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(), pythonVersion: '3.7',
+      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
       rVersion: '4.0.2',
-      imageVersion: 43,
       healthCheckSuppressed: true
     ],
     [
