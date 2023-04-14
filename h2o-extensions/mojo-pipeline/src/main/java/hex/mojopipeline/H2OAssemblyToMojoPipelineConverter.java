@@ -46,7 +46,7 @@ public class H2OAssemblyToMojoPipelineConverter {
         for (Transform stage : stages) {
             Transformation transformation = convertStage(stage, inplaceOperationSimulator);
             pipelineBuilder.addTransformations(transformation);
-            if (stage.getNewNames().length > 0) {
+            if (!stage.isInPlace() &&stage.getNewNames().length > 0) {
                 Column[] tempColumns = convertColumns(stage.getNewNames(), stage.getNewTypes());
                 interimsFrameBuilder.addAllColumns(Arrays.asList(tempColumns));
             }

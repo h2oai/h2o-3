@@ -1,5 +1,11 @@
 package hex.mojopipeline;
 
+import ai.h2o.mojos.runtime.api.MojoPipelineService;
+import ai.h2o.mojos.runtime.api.PipelineLoader;
+import ai.h2o.mojos.runtime.api.PipelineLoaderFactory;
+import ai.h2o.mojos.runtime.api.backend.MemoryReaderBackend;
+import ai.h2o.mojos.runtime.api.backend.ReaderBackend;
+import ai.h2o.mojos.runtime.lic.LicenseException;
 import org.junit.*;
 import water.*;
 import water.fvec.Frame;
@@ -9,7 +15,10 @@ import water.rapids.transforms.H2OBinaryOp;
 import water.rapids.transforms.H2OColOp;
 import water.rapids.transforms.H2OColSelect;
 import water.rapids.transforms.Transform;
+
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class H2OAssemblyToMojoPipelineConversionTest extends TestUtil {
 
@@ -64,8 +73,34 @@ public class H2OAssemblyToMojoPipelineConversionTest extends TestUtil {
             Scope.exit();
         }
     }
-    
 
+    @Test
+    public void testPipelineWithOnlyInplaceOperations() throws IOException {
+        try {
+            Scope.enter();
+            Frame frame = createTestingFrame();
+            Frame frameForMojo = frame.deepCopy("forMojo");
+            Transform[] steps = new Transform[]{
+                    new H2OColOp("exp", "(exp (cols_py dummy 'c'))", true, new String[0]),
+                    new H2OColOp("abs", "(abs (cols_py dummy 'c'))", true, new String[0]),
+                    new H2OColOp("sqrt", "(sqrt (cols_py dummy 'c'))", true, new String[0]),
+                    new H2OBinaryOp("minus", "(- (cols_py dummy 'c') 1)", true, new String[0]),
+            };
+
+            Assembly assembly = new Assembly(Key.make(), steps);
+            Frame expected = assembly.fit(frame.clone());
+            System.out.println(expected.toTwoDimTable());
+
+            MojoPipeline mojoPipeline = H2OAssemblyToMojoPipelineConverter.convert(assembly);
+            Frame result = mojoPipeline.transform(frameForMojo, true);
+            System.out.println(result.toTwoDimTable());
+
+            assertFrameEquals(expected, result , 1e-6);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
     @Test
     public void testConversionOnH2OColSelect() throws IOException {
         try {
