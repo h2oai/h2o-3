@@ -11,7 +11,7 @@ Since ANOVA GLM is mainly used to investigate the contribution of each predictor
 Defining an ANOVA GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Parameters are optional unless specified as *requried*. ANOVA GLM shares many `GLM parameters <glm.html#shared-glm-family-parameters>`__. 
+Parameters are optional unless specified as *requried*. ANOVA GLM shares many `GLM parameters <glm.html#shared-glm-family-parameters>`__.
 
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
