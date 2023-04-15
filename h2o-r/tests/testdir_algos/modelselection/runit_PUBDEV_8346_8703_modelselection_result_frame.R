@@ -18,16 +18,21 @@ testModelSelectionResultFrame <- function() {
   resultFrameMaxr <- h2o.result(maxrModel)
  
    maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
-   mode="maxrsweep")
+   mode="maxrsweep", build_glm_model=TRUE)
    bestR2Maxrsweep <- h2o.get_best_r2_values(maxrsweepModel)
    resultFrameMaxrsweep <- h2o.result(maxrsweepModel) 
    
    maxrsweepModelGLM <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
-   mode="maxrsweep", build_glm_model=FALSE)
+   mode="maxrsweep")
    bestR2MaxrsweepGLM <- h2o.get_best_r2_values(maxrsweepModelGLM)
-   resultFrameMaxrsweepGLM <- h2o.result(maxrsweepModelGLM) 
-  
-  for (ind in c(1:numModel)) {
+   resultFrameMaxrsweepGLM <- h2o.result(maxrsweepModelGLM)
+
+   maxrsweepModelMM <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
+                                            mode="maxrsweep", multinode_mode=TRUE)
+   bestR2MaxrsweepMM <- h2o.get_best_r2_values(maxrsweepModelMM)
+   resultFrameMaxrsweepMM <- h2o.result(maxrsweepModelMM)
+
+    for (ind in c(1:numModel)) {
     r2Allsubsets <- bestR2Allsubsets[ind]
     r2FrameAllsubsets <- resultFrameAllsubsets[ind, 3] # get r2
     glmModelAllsubsets <- h2o.getModel(resultFrameAllsubsets[ind, 2])
@@ -43,6 +48,7 @@ testModelSelectionResultFrame <- function() {
     r2FrameMaxr <- resultFrameMaxr[ind, 3]  # get r2
     r2FrameMaxrsweep <- resultFrameMaxrsweep[ind, 3]
     r2FrameMaxrsweepGLM <- resultFrameMaxrsweepGLM[ind, 2]
+    r2FrameMaxrsweepMM <- resultFrameMaxrsweepMM[ind, 2]
     glmModelMaxr <- h2o.getModel(resultFrameMaxr[ind, 2])
     predFrameMaxr <- h2o.predict(glmModelMaxr, bhexFV)
     print(predFrameMaxr[1,1])
@@ -54,6 +60,7 @@ testModelSelectionResultFrame <- function() {
     expect_equal(r2FrameMaxr, r2ModelMaxr, tolerance=1e-06)
     expect_equal(r2FrameMaxr, r2ModelAllsubsets, tolerance=1e-06)
     expect_equal(r2FrameMaxrsweepGLM, r2ModelAllsubsets, tolerance=1e-06)
+    expect_equal(r2FrameMaxrsweepMM, r2ModelAllsubsets, tolerance=1e-06)        
   }
 }
 
