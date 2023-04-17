@@ -922,8 +922,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         case tweedie:
           if (_nclass != 1) error("_family", H2O.technote(2, "Tweedie requires the response to be numeric."));
           if (ml.equals(_parms._dispersion_parameter_method)) {
-            if (!_parms._fix_dispersion_parameter)
-              throw H2O.unimpl("Tweedie dispersion parameter has not been implemented yet. Please set fix_dispersion_parameter=True.");
+            if (!_parms._fix_dispersion_parameter && !_parms._fix_tweedie_variance_power)
+              throw H2O.unimpl("Estimation of both Tweedie dispersion parameter and Tweedie variance power has not been implemented yet. Please set fix_dispersion_parameter=True.");
             // Check if response contains zeros if so limit variance power to (1,2)
             if (_response.min() <= 0)
               warn("_tweedie_var_power", "Response contains zeros and/or values lower than zero. "+
