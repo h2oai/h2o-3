@@ -114,7 +114,7 @@ Algorithm-specific parameters
 Common parameters
 '''''''''''''''''
 
--  `training_frame <algo-params/training_frame.html>`__ *Required* Specify the dataset used to build the model. In a Stacked Ensemble model, the training frame is used only to retreive the response column (needed for training the metalearner) and also to compute training metrics for the ensemble model.  
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. In a Stacked Ensemble model, the training frame is used only to retreive the response column (needed for training the metalearner) and also to compute training metrics for the ensemble model.  
 
 -  `y <algo-params/y.html>`__: *Required* Specify the index or column name of the column to use as the dependent variable (response column). The response column can be numeric (regression) or categorical (classification).
 
