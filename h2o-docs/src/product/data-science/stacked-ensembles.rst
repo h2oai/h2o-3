@@ -79,7 +79,7 @@ Algorithm-specific parameters
 
 -  `blending_frame <algo-params/blending_frame.html>`__: Specify a frame to be used for computing the predictions that serve as the training frame for the metalearner. This triggers blending mode if provided.
 
--  `metalearner_algorithm <algo-params/metalearner_algorithm.html>`__ Specify the metalearner algorithm type. Options include:
+-  `metalearner_algorithm <algo-params/metalearner_algorithm.html>`__: Specify the metalearner algorithm type. Options include:
 
      - ``"AUTO"`` (default; GLM with non negative weights & standardization turned off, and if ``validation_frame`` is present, then ``lambda_search`` is set to ``True``; this may change over time)
      - ``"glm"`` (GLM with default parameters)
