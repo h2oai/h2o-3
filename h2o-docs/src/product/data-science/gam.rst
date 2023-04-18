@@ -21,58 +21,46 @@ Parameters are optional unless specified as *required*. GAM shares many `GLM par
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
 
--  **gam_columns**: *Required* An array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
-
--  **num_knots**: An array that specifies the number of knots for each predictor specified in ``gam_columns``.
-
--  **spline_orders**: Order of I-splines (also known as monotone splines) and NBSplineTypeI M-splines used for GAM predictors. For example, ``spline_orders=3`` means a polynomial of order 3 will be used in the splines. If specified, this option must be the same size as ``gam_columns``. Values for ``bs=0`` or ``bs=1`` will be ignored.
-
--  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
-
--  **standardize_tp_gam_cols**: Standardize thin plate predictor columns. This option defaults to ``False``.
-
--  **scale_tp_penalty_mat**: Scale penalty matrix for thin plate smoothers. This option defaults to ``False``.
-
 -  **bs**: An array specifying the spline types for each GAM predictor. You must include one value for each GAM predictor. One of:
 
     - ``0`` (default) specifies cubic regression spline. 
     - ``1`` specifies thin plate regression with knots.
     - ``2`` specifies monotone splines (or I-splines).
     - ``3`` specifies NBSplineTypeI M-splines (which can support any polynomial order).
-   
--  **scale**: An array specifying the smoothing parameter for GAM. If specified, must be the same length as ``gam_columns``.
 
+-  **gam_columns**: *Required* An array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
+  
 -  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
 
--  **splines_non_negative**: (Applicable for I-spline or ``bs=2`` only) Set this option to ``True`` if the I-splines are monotonically increasing (and monotonically non-decreasing). Set this option to ``False`` if the I-splines are monotonically decreasing (and monotonically non-increasing). If specified, this option must be the same size as ``gam_columns``. Values for other spline types will be ignored. This option defaults to ``True`` (enabled).
+-  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
+
+-  **num_knots**: An array that specifies the number of knots for each predictor specified in ``gam_columns``.
+
+-  **scale**: An array specifying the smoothing parameter for GAM. If specified, must be the same length as ``gam_columns``.
+
+-  **scale_tp_penalty_mat**: Scale penalty matrix for thin plate smoothers. This option defaults to ``False``.
+ 
+-  **splines_non_negative**: (Applicable for I-spline or ``bs=2`` only) Set this option to ``True`` if the I-splines are monotonically increasing (or monotonically non-decreasing). Set this option to ``False`` if the I-splines are monotonically decreasing (or monotonically non-increasing). If specified, this option must be the same size as ``gam_columns``. Values for other spline types will be ignored. This option defaults to ``True`` (enabled).
+
+-  **spline_orders**: Order of I-splines (also known as monotone splines) and NBSplineTypeI M-splines used for GAM predictors. For I-splines, the ``spline_orders`` will be the same as the polynomials used to generate the splines. For M-splines, the polynomials will be ``spline_orders`` :math:`-1`. For example, ``spline_orders=3`` for I-splines means a polynomial of order 3 will be used in the splines while for M-splines it means a polynomial of order 2 will be used. If specified, this option must be the same size as ``gam_columns``. Values for ``bs=0`` or ``bs=1`` will be ignored.
+
+-  **standardize_tp_gam_cols**: Standardize thin plate predictor columns. This option defaults to ``False``.
 
 Common parameters
 '''''''''''''''''
 
--  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
-    
-     **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+- `auc_type <algo-params/auc_type.html>`__: Set the default multinomial AUC type. Must be one of:
 
--  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
+    - ``"AUTO"`` (default)
+    - ``"NONE"``
+    - ``"MACRO_OVR"``
+    - ``"WEIGHTED_OVR"``
+    - ``"MACRO_OVO"``
+    - ``"WEIGHTED_OVO"``
 
-    -  For a regression model, this column must be numeric (**Real** or **Int**).
-    -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset must contain two levels.
+-  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``True`` (enabled).
 
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then no predictors will be used.
-
--  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
-
--  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
-
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. The value can be ``0`` (default) to disable or :math:`\geq` ``2``. 
-
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
-
--  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to ``True`` (enabled).
-
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions. This option defaults to ``False`` (disabled).
-
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to ``False`` (disabled).
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 -  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for ``nfolds`` is specified and ``fold_column`` is not specified) Specify the cross-validation fold assignment scheme. One of:
 
@@ -87,37 +75,33 @@ Common parameters
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to ``False`` (disabled).
+
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to ``True`` (enabled).
+
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions. This option defaults to ``False`` (disabled).
+
+-  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to ``-1`` (unlimited). This default indicates that if the ``IRLSM`` solver is used, the value of ``max_active_predictors`` is set to ``5000``, otherwise it is set to ``100000000``.
+
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This option defaults to ``-1`` (unlimited).
+
+- `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable.
+
+-  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. The value can be ``0`` (default) to disable or :math:`\geq` ``2``. 
 
 -  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``.
    
      **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
--  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
-    
-    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
-   
-    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
+
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
 
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``False`` (disabled).
-
--  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
-
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This option defaults to ``-1`` (unlimited).
-
--  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. This value defaults to ``-1`` (unlimited). This default indicates that if the ``IRLSM`` solver is used, the value of ``max_active_predictors`` is set to ``5000``, otherwise it is set to ``100000000``.
-
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
-
--  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training or validation set. This option defaults to ``True`` (enabled).
-
-- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
-
-    **Note:** If cross-validation is enabled:
-  
-    - All cross-validation models stop training when the validation metric doesn't improve.
-    - The main model runs for the mean number of epochs.
-    - N+1 models may be off by the number specified for ``stopping_rounds`` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
 - `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
 
@@ -134,18 +118,34 @@ Common parameters
     - ``misclassification``
     - ``mean_per_class_error``
 
+- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
+
+    **Note:** If cross-validation is enabled:
+  
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for ``stopping_rounds`` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+
 - `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This option defaults to ``0.001``.
 
-- `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable.
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
+    
+     **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
-- `auc_type <algo-params/auc_type.html>`__: Set the default multinomial AUC type. Must be one of:
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
-    - ``"AUTO"`` (default)
-    - ``"NONE"``
-    - ``"MACRO_OVR"``
-    - ``"WEIGHTED_OVR"``
-    - ``"MACRO_OVO"``
-    - ``"WEIGHTED_OVO"``
+-  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
+    
+    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
+   
+    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then no predictors will be used.
+
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
+
+    -  For a regression model, this column must be numeric (**Real** or **Int**).
+    -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is ``Binomial``, the dataset must contain two levels.
 
 .. _scenario1:
 
