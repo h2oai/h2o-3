@@ -39,8 +39,8 @@ Algorithm-specific parameters
 
 - **validation_response_column**: Name of the response column in the validation frame. Response column should be binary and indicate not anomaly/anomaly. Experimental. 
 
-Tree-based parameters
-'''''''''''''''''''''
+Shared-tree algorithm parameters
+''''''''''''''''''''''''''''''''
 
 -  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. This option defaults to ``False`` (disabled).
 
