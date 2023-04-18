@@ -360,6 +360,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public static class GLMParameters extends Model.Parameters {
     static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver"};
+    final static double LOG2PI = Math.log(2 * Math.PI);
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip
     }
@@ -710,7 +711,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       switch (_family) {
         case gaussian:
           return -.5 * (w * Math.pow(yr - ym, 2) / _dispersion_estimated 
-                  + Math.log(_dispersion_estimated / w) + Math.log(2 * Math.PI));
+                  + Math.log(_dispersion_estimated / w) + LOG2PI);
         case binomial:
           return w * (yr * Math.log(ym) + (1-yr) * Math.log(1 - ym)) 
                   + w * (Gamma.digamma(2) - Gamma.digamma(yr + 1) 
