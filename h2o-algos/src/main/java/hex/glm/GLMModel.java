@@ -1137,7 +1137,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
         case tweedie:
           x.dev = w*deviance(yr,ym);
-          x.l = w*likelihood(w, yr, ym); // todo: verify that this is not true for Poisson distribution
+          x.l = likelihood(w, yr, ym); 
           break;
         case negativebinomial:
           x.dev = w*deviance(yr,ym); // CHECKED-log/CHECKED-identity
