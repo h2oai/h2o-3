@@ -79,6 +79,8 @@ Algorithm-specific parameters
 
 -  `blending_frame <algo-params/blending_frame.html>`__: Specify a frame to be used for computing the predictions that serve as the training frame for the metalearner. This triggers blending mode if provided.
 
+-  **keep_levelone_frame**: Keep the level one data frame that's constructed for the metalearning step. This option defaults to ``False`` (disabled).
+
 -  `metalearner_algorithm <algo-params/metalearner_algorithm.html>`__: Specify the metalearner algorithm type. Options include:
 
      - ``"AUTO"`` (default; GLM with non negative weights & standardization turned off, and if ``validation_frame`` is present, then ``lambda_search`` is set to ``True``; this may change over time)
@@ -89,8 +91,6 @@ Algorithm-specific parameters
      - ``"naivebayes"`` (Naïve Bayes with default parameters)
      - ``"xgboost"`` (if available, XGBoost with default parameters)
 
--  `metalearner_nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation of the metalearning algorithm. If you want to compare the cross-validated performance of the ensemble model to the cross-validated performance of the base learners or other algorithms, you should make use of this option. This option defaults to ``0`` (no cross-validation). 
-
 -  `metalearner_fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for ``metalearner_nfolds`` is specified) Specify the cross-validation fold assignment scheme for the metalearner. One of:
     
      - ``AUTO`` (default; uses ``Random``)
@@ -99,6 +99,8 @@ Algorithm-specific parameters
      - ``Stratified`` (which will stratify the folds based on the response variable for classification problems)
 
 -  `metalearner_fold_column <algo-params/fold_column.html>`__: (Cannot be used at the same time as ``nfolds``) Specify the name of the column that contains the cross-validation fold assignment per observation for cross-validation of the metalearner. The column can be numeric (e.g. fold index or other integer value) or it can be categorical. The number of folds is equal to the number of unique values in this column.
+
+-  `metalearner_nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation of the metalearning algorithm. If you want to compare the cross-validated performance of the ensemble model to the cross-validated performance of the base learners or other algorithms, you should make use of this option. This option defaults to ``0`` (no cross-validation). 
 
 -  `metalearner_params <algo-params/metalearner_params.html>`__: If a ``metalearner_algorithm`` is specified, then you can also specify a list of customized parameters for that algorithm (for example, a GBM with ``ntrees=100``, ``max_depth=10``, etc.)
 
@@ -109,30 +111,8 @@ Algorithm-specific parameters
 
 -  **score_training_samples**: Specify the number of training set samples for scoring. The value must be :math:`\geq` 0. To use all training samples, enter ``0``. This option defaults to ``10000``.
 
--  **keep_levelone_frame**: Keep the level one data frame that's constructed for the metalearning step. This option defaults to ``False`` (disabled).
-
 Common parameters
 '''''''''''''''''
-
--  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. In a Stacked Ensemble model, the training frame is used only to retreive the response column (needed for training the metalearner) and also to compute training metrics for the ensemble model.  
-
--  `y <algo-params/y.html>`__: *Required* Specify the index or column name of the column to use as the dependent variable (response column). The response column can be numeric (regression) or categorical (classification).
-
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used. The only use for ``x`` is to get the correct training set so that you can compute ensemble training metrics.
-
--  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset to use for tuning the model. The validation frame will be passed through to the metalearner for tuning.
-
--  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
-
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__:  Maximum allowed runtime in seconds for the metalearner model training. Use ``0`` (default) to disable the time limit. 
-
--  `weights_column <algo-params/weights_column.html>`__: Specifies a column with observation weights. Giving some observation a weight of ``0`` is equivalent to excluding it from the dataset; giving an observation a relative weight of ``2`` is equivalent to repeating that row twice. Negative weights are not allowed.
-
--  `offset_column <algo-params/offset_column.html>`__: (Availability depends on the ``metalearner_algorithm``) Specify a column to use as the offset.
-
--  `seed <algo-params/seed.html>`__: Seed for random numbers; passed through to the metalearner algorithm. This option defaults to ``-1`` (time-based random number).
-
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 - `auc_type <algo-params/auc_type.html>`__: Set the default multinomial AUC type. Must be one of:
 
@@ -142,6 +122,26 @@ Common parameters
     - ``"WEIGHTED_OVR"``
     - ``"MACRO_OVO"``
     - ``"WEIGHTED_OVO"``
+
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__:  Maximum allowed runtime in seconds for the metalearner model training. Use ``0`` (default) to disable the time limit. 
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `offset_column <algo-params/offset_column.html>`__: (Availability depends on the ``metalearner_algorithm``) Specify a column to use as the offset.
+
+-  `seed <algo-params/seed.html>`__: Seed for random numbers; passed through to the metalearner algorithm. This option defaults to ``-1`` (time-based random number).
+
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. In a Stacked Ensemble model, the training frame is used only to retreive the response column (needed for training the metalearner) and also to compute training metrics for the ensemble model.  
+
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset to use for tuning the model. The validation frame will be passed through to the metalearner for tuning.
+
+-  `weights_column <algo-params/weights_column.html>`__: Specifies a column with observation weights. Giving some observation a weight of ``0`` is equivalent to excluding it from the dataset; giving an observation a relative weight of ``2`` is equivalent to repeating that row twice. Negative weights are not allowed.
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used. The only use for ``x`` is to get the correct training set so that you can compute ensemble training metrics.
+
+-  `y <algo-params/y.html>`__: *Required* Specify the index or column name of the column to use as the dependent variable (response column). The response column can be numeric (regression) or categorical (classification).
 
 You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.
 
