@@ -21,52 +21,52 @@ Defining an SVM Model
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
 
--  **hyper_param**: Specify the penalty parameter C of the error term. This option defaults to ``1``.
-
--  **kernel_type**: Specify the type of kernel to use (currently only ``gaussian`` is supported).
-
--  **gamma**: Specify the coefficient of the kernel (currently RBF gamma for gaussian kernel). This option defaults to ``-1`` which means :math:`\frac{1}{\text{#features}}`.
-
--  **rank_ratio**: Specify the desired rank of the `Incomplete Cholesky Facorization <https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization>`__ (ICF) matrix expressed as an ration of number of input rows. This option defaults to ``-1`` which means :math:`\sqrt{\text{#rows}}`.
-
--  **positive_weight**: Specify the weight of the positive (+1) class of observations. This option defaults to ``1``.
-
--  **negative_weight**: Specify the weight of the negative (-1) class of observations. This option defaults to ``1``.
-
 -  **disable_training_metrics**: Disable calculating training metrics (expensive on large datasets). This option defaults to ``True`` (enabled).
-
--  **sv_threshold**: Specify the threshold for accepting a candidate observation into the set of support vectors. This option defaults to ``0.0001``.
 
 -  **fact_threshold**: Specify the convergence threshold of the `Incomplete Cholesky Facorization <https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization>`__ (ICF). This option defaults to ``1e-05``.
 
 -  **feasible_threshold**: Specify the convergence threshold for primal-dual residuals in the `Interior Point Method <https://en.wikipedia.org/wiki/Interior-point_method>`__ (IPM) iteration. This option defaults to ``0.001``.
 
--  **surrogate_gap_threshold**: Specify the feasibility criterion of the surrogate duality gap (eta). This option defaults to ``0.001``.
+-  **gamma**: Specify the coefficient of the kernel (currently RBF gamma for gaussian kernel). This option defaults to ``-1`` which means :math:`\frac{1}{\text{#features}}`.
+
+-  **hyper_param**: Specify the penalty parameter C of the error term. This option defaults to ``1``.
+
+-  **kernel_type**: Specify the type of kernel to use (currently only ``gaussian`` is supported).
 
 -  **mu_factor**: Specify to increase the mean value by this factor. This option defaults to ``10``.
 
+-  **negative_weight**: Specify the weight of the negative (-1) class of observations. This option defaults to ``1``.
+
+-  **positive_weight**: Specify the weight of the positive (+1) class of observations. This option defaults to ``1``.
+
+-  **rank_ratio**: Specify the desired rank of the `Incomplete Cholesky Facorization <https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization>`__ (ICF) matrix expressed as an ration of number of input rows. This option defaults to ``-1`` which means :math:`\sqrt{\text{#rows}}`.
+
+-  **surrogate_gap_threshold**: Specify the feasibility criterion of the surrogate duality gap (eta). This option defaults to ``0.001``.
+
+-  **sv_threshold**: Specify the threshold for accepting a candidate observation into the set of support vectors. This option defaults to ``0.0001``.
+
 Common parameters
 '''''''''''''''''
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option defaults to ``True`` (enabled).
+
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum allowed number of iterations during model training. This value defaults to ``200``.
+
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to ``-1`` (time-based random number).
 
 -  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
 
     **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use in building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
--  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
-
--  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
-
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
-
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option defaults to ``True`` (enabled).
-
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum allowed number of iterations during model training. This value defaults to ``200``.
-
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to ``-1`` (time-based random number).
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
 SVM Algorithm
 ~~~~~~~~~~~~~
