@@ -23,11 +23,15 @@ Algorithm-specific parameters
 
 - **algorithm**: Specify the algorithm to use to fit a tree ensemble. Must be one of: ``"AUTO"``, ``"DRF"`` (default), or ``"GBM"``. 
 
-- **min_rule_length**: Specify the minimal depth of trees to be fit. This option defaults to ``3``.
+- `lambda <algo-params/lambda.html>`__: Specify the regularization strength for LASSO regressor.
+
+- **max_categorical_levels**: Rulefit handles categorical features by EnumLimited scheme. That means it automatically reduces categorical levels to the most prevalent ones and only keeps the ``max_categorical_levels`` most frequent levels. This option defaults to ``10``.
+
+- **max_num_rules**: The maximum number of rules to return. This option defaults to ``-1`` which means the number of rules are selected by diminishing returns in model deviance.
 
 - **max_rule_length**: Specify the maximal  depth of trees to be fit. This option defaults to ``3``.
 
-- **max_num_rules**: The maximum number of rules to return. This option defaults to ``-1`` which means the number of rules are selected by diminishing returns in model deviance.
+- **min_rule_length**: Specify the minimal depth of trees to be fit. This option defaults to ``3``.
 
 - **model_type**: Specify the type of base learners in the ensemble. Must be one of: ``"rules_and_linear"`` (default), ``"rules"``, or ``"linear"``. 
 
@@ -35,39 +39,21 @@ Algorithm-specific parameters
     - If the ``model_type`` is ``rules``, the algorithm fits a linear model only to the rule feature set (no linear terms can become important).
     - If the ``model_type`` is ``linear``, the algorithm fits a linear model only to the original feature set (no rule terms can become important).
 
-- **rule_generation_ntrees**: Specify the number of trees for tree ensemble. This option defaults to ``50``.
-
 - **remove_duplicates**: Specify whether to remove rules which are identical to an earlier rule. This option defaults to ``True`` (enabled).
 
-- **max_categorical_levels**: Rulefit handles categorical features by EnumLimited scheme. That means it automatically reduces categorical levels to the most prevalent ones and only keeps the ``max_categorical_levels`` most frequent levels. This option defaults to ``10``.
-
-- `lambda <algo-params/lambda.html>`__: Specify the regularization strength for LASSO regressor.
+- **rule_generation_ntrees**: Specify the number of trees for tree ensemble. This option defaults to ``50``.
 
 Common parameters
 '''''''''''''''''
 
-- `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
-	
-	**Note:** In Flow, if you click the **Build a model** button from the Parse cell, the training frame is entered automatically.
+- `auc_type <algo-params/auc_type.html>`__: Set the default multinomial AUC type. Must be one of:
 
-- `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
-
-   - For a regression model, this column must be numeric (**Real** or **Int**).
-   - For a classification model, this column must be categorical (**Enum** or **String**). If the family is **Binomial**, the dataset cannot contain more than two levels.
-
-- `x <algo-params/x.html>`__: Specify a vector containing the names or indicies of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
-
-- `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
-
-- `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
-
-- `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternate configurations. This option defaults to ``-1`` (time-based random number).
-
-- `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
-
-   **Python only:** To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``.
-
-   **Note:** Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+    - ``"AUTO"`` (default)
+    - ``"NONE"``
+    - ``"MACRO_OVR"``
+    - ``"WEIGHTED_OVR"``
+    - ``"MACRO_OVO"``
+    - ``"WEIGHTED_OVO"``
 
 - `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e. the loss function). The options are:
 
@@ -82,14 +68,28 @@ Common parameters
 	- ``huber`` -- response column must be numeric
 	- ``tweedie`` -- response column must be numeric
 
-- `auc_type <algo-params/auc_type.html>`__: Set the default multinomial AUC type. Must be one of:
+- `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
-    - ``"AUTO"`` (default)
-    - ``"NONE"``
-    - ``"MACRO_OVR"``
-    - ``"WEIGHTED_OVR"``
-    - ``"MACRO_OVO"``
-    - ``"WEIGHTED_OVO"``
+- `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternate configurations. This option defaults to ``-1`` (time-based random number).
+
+- `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
+	
+	**Note:** In Flow, if you click the **Build a model** button from the Parse cell, the training frame is entered automatically.
+
+- `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
+
+- `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
+
+   **Python only:** To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``.
+
+   **Note:** Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more due to the larger loss function pre-factor.
+
+- `x <algo-params/x.html>`__: Specify a vector containing the names or indicies of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+
+- `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
+
+   - For a regression model, this column must be numeric (**Real** or **Int**).
+   - For a classification model, this column must be categorical (**Enum** or **String**). If the family is **Binomial**, the dataset cannot contain more than two levels.
 
 Interpreting a RuleFit Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
