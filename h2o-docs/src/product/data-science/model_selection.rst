@@ -28,6 +28,12 @@ Parameters are optional unless specified as *required*. ModelSelection shares ma
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
 
+- **build_glm_model**: (Applicable for ``mode = "maxrsweep"`` only) If enabled, this option will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models themselves by using the returned predictor subsets. This option defaults to ``True`` (enabled).
+
+- **max_predictor_number**: Maximum number of predictors to be considered when building GLM models. This option defaults to ``1``.
+
+- **min_predictor_number**: (Applicable for ``mode = "backward"`` only) Minimum number of predictors to be considered when building GLM models starting with all predictors to be included. This option defaults to ``1``.
+
 - **mode**: *Required* Specify the model selection algorithm to use. One of:
    
    - ``"maxr"`` (default)
@@ -37,36 +43,16 @@ Algorithm-specific parameters
 
 - **nparallelism**: Number of models to be built in parallel. This option defaults to ``0.0`` (which is adaptive to the system's capabilities).
 
-- **max_predictor_number**: Maximum number of predictors to be considered when building GLM models. This option defaults to ``1``.
-
-- **min_predictor_number**: (Applicable for ``mode = "backward"`` only) Minimum number of predictors to be considered when building GLM models starting with all predictors to be included. This option defaults to ``1``.
-
 - **p_values_threshold**: (Applicable for ``mode = "backward"`` only) If specified, this option will stop the model building process when all coefficient p-values drop to or below this threshold. This option defaults to ``0.0``.
-
-- **build_glm_model**: (Applicable for ``mode = "maxrsweep"`` only) If enabled, this option will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models themselves by using the returned predictor subsets. This option defaults to ``True`` (enabled).
 
 - **score_iteration_interval**: Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
 
 Common parameters
 '''''''''''''''''
 
--  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
-   
-    **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
--  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
-
-    -  For a regression model only, this column must be numeric (**Real** or **Int**).
-
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
-
--  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
-
--  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
-
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. The value can be set to ``0`` (default) to disable or to :math:`\geq` ``2``. 
-
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
+-  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set. This option is set to ``True`` (enabled) by default.
 
 -  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for ``nfolds`` is specified and ``fold_column`` is not specified) Specify the cross-validation fold assignment scheme. One of:
 
@@ -77,37 +63,29 @@ Common parameters
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
-
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns since no information can be gained from them. This option defaults to ``True`` (enabled).
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This option defaults to ``-1``.
+
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to ``0`` (unlimited).
+
+-  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. The value can be set to ``0`` (default) to disable or to :math:`\geq` ``2``. 
 
 -  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``. This wll be added to the combination of columns before applying the link function.
    
      **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
--  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
-    
-    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
-   
-    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
+
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
 
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``True`` (enabled).
-
--  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
-
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This option defaults to ``-1``.
-
--  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set. This option is set to ``True`` (enabled) by default.
-
-- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
-
-    **Note:** If cross-validation is enabled:
-  
-    - All cross-validation models stop training when the validation metric doesn't improve.
-    - The main model runs for the mean number of epochs.
-    - N+1 models may be off by the number specified for ``stopping_rounds`` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
 - `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
 
@@ -124,11 +102,33 @@ Common parameters
   - ``misclassification``
   - ``mean_per_class_error``
 
+- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
+
+    **Note:** If cross-validation is enabled:
+  
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for ``stopping_rounds`` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+
 - `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This option defaults to ``0.001``.
 
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to ``0`` (unlimited).
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
+   
+    **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
+
+-  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
+    
+    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
+   
+    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
+
+    -  For a regression model only, this column must be numeric (**Real** or **Int**).
 
 Understanding ModelSelection ``mode = allsubsets``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
