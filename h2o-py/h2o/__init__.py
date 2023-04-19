@@ -11,13 +11,11 @@ from codecs import open
 import os
 import sys
 import zipfile
-import platform
 import warnings
 
-_python_version = platform.python_version()
-if _python_version < "3.6":
+if sys.version_info.major < 3 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
     warnings.showwarning(
-        "Your Python version is %s. The support for this version will be removed in H2O 3.42.0.1." % _python_version,
+        "Your Python version is %s. The support for this version will be removed in H2O 3.44.0.1." % sys.version,
         DeprecationWarning,
         "h2o",
         1)
