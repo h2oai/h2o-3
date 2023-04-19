@@ -1560,7 +1560,7 @@ public abstract class GLMTask  {
       _w = new GLMWeights();
       if (_glmf._family.equals(Family.tweedie)) {
         _glmfTweedie = new GLMModel.GLMWeightsFun(_glmf._family, _glmf._link, _glmf._var_power, _glmf._link_power,
-                _glmf._theta, _glmf._dispersion, _glmf._dispersionEstimation);
+                _glmf._theta, _glmf._dispersion, _glmf._varPowerEstimation);
       }
     }
     
