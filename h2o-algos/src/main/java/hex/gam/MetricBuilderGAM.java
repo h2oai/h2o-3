@@ -53,7 +53,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
     if (weight == 0) return ds;
     _metricBuilder.perRow(ds, yact, weight, offset, m); // grab the generic terms
     if (_glmf._family.equals(GLMModel.GLMParameters.Family.negativebinomial))
-      _log_likelihood += m.likelihood(weight, yact[0], ds[0]);
+      _log_likelihood += m.likelihood(weight, yact[0], ds);
     if (!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
       if (_glmf._family.equals(GLMModel.GLMParameters.Family.multinomial) || _glmf._family.equals(GLMModel.GLMParameters.Family.ordinal))
         add2(yact[0], ds[0], weight, offset);

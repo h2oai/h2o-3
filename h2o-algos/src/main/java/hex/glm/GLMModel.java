@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static hex.DistributionFactory.LogExpUtil.log;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
 import static hex.glm.GLMModel.GLMOutput.calculatePValuesFromZValues;
@@ -305,7 +306,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override
-  public double likelihood(double w, double y, double f) {
+  public double likelihood(double w, double y, double[] f) {
     if (w == 0) {
       return 0;
     } else {
@@ -707,44 +708,49 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      return deviance((double)yr,(double)ym);
     }
 
-    public final double likelihood(double w, double yr, double ym) {
+    public final double likelihood(double w, double yr, double[] ym) {
+      double prediction = ym[0];
+      double probabilityOf1;
       switch (_family) {
         case gaussian:
-          return -.5 * (w * Math.pow(yr - ym, 2) / _dispersion_estimated 
-                  + Math.log(_dispersion_estimated / w) + LOG2PI);
+          return -.5 * (w * Math.pow(yr - prediction , 2) / _dispersion_estimated 
+                  + log(_dispersion_estimated / w) + LOG2PI);
         case binomial:
-          return w * (yr * Math.log(ym) + (1-yr) * Math.log(1 - ym)) 
+          probabilityOf1 = ym[2];
+          return w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1)) 
                   + w * (Gamma.digamma(2) - Gamma.digamma(yr + 1) 
                   - Gamma.digamma(1 - yr + 1));
         case quasibinomial:
-          if (yr == ym)
+          probabilityOf1 = ym[2];
+          if (yr == prediction)
             return 0;
-          else if (ym > 1)
-            return -w * (yr * Math.log(ym));
+          else if (prediction > 1) // check what are possible values?
+            return -w * (yr * log(probabilityOf1));
           else
-            return -w * (yr * Math.log(ym) + (1 - yr) * Math.log(1 - ym));
+            return -w * (yr * log(probabilityOf1) + (1 - yr) * log(1 - probabilityOf1));
         case fractionalbinomial:
-          if (yr == ym)
+          probabilityOf1 = ym[2];
+          if (yr == prediction)
             return 0;
-          return w * ((MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym));
+          return w * ((MathUtils.y_log_y(yr, probabilityOf1)) + MathUtils.y_log_y(1 - yr, 1 - probabilityOf1));
         case poisson:
-          return w * (yr * Math.log(ym) - ym - Gamma.digamma(yr + 1)); // gamma(n) = (n-1)!
+          return w * (yr * log(prediction) - prediction - Gamma.digamma(yr + 1)); // gamma(n) = (n-1)!
         case negativebinomial:
-          return yr * Math.log(_invTheta * ym / w) - (yr + w/_invTheta) * Math.log(1 + _invTheta * ym / w) 
-                  + Math.log(Gamma.gamma(yr + w/_invTheta) / (Gamma.gamma(yr + 1) * Gamma.gamma(w/_invTheta)));
+          return yr * log(_invTheta * prediction / w) - (yr + w/_invTheta) * log(1 + _invTheta * prediction / w) 
+                  + log(Gamma.gamma(yr + w/_invTheta) / (Gamma.gamma(yr + 1) * Gamma.gamma(w/_invTheta)));
         case gamma:
-          return w * Math.log(w*yr / ym) - w*yr/ym - Math.log(yr) - Gamma.digamma(w);
+          return w * log(w * yr / prediction) - w * yr / prediction - log(yr) - Gamma.digamma(w);
         case tweedie: // todo - update with Tomas's solution
             double temp;
             if (_tweedie_variance_power == 1) {
-                temp = Math.pow(ym, 2 - _tweedie_variance_power) * (1.0 / (2 - _tweedie_variance_power)) 
-                        - yr * Math.log(ym);
+                temp = Math.pow(prediction, 2 - _tweedie_variance_power) * (1.0 / (2 - _tweedie_variance_power)) 
+                        - yr * log(prediction);
             } else if (_tweedie_variance_power == 2) {
-                temp = Math.log(ym) 
-                        - yr * Math.pow(ym, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
+                temp = log(prediction) 
+                        - yr * Math.pow(prediction, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
             } else {
-                temp = Math.pow(ym, 2 - _tweedie_variance_power) * (1.0 / (2 - _tweedie_variance_power)) 
-                        - yr * Math.pow(ym, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
+                temp = Math.pow(prediction, 2 - _tweedie_variance_power) * (1.0 / (2 - _tweedie_variance_power)) 
+                        - yr * Math.pow(prediction, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
             }
             return temp; // ignored the a(y,phi,p) term as it is a constant for us
         default:
