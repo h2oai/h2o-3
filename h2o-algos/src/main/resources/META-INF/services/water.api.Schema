@@ -90,6 +90,10 @@ hex.schemas.ExtendedIsolationForestModelV3
 hex.schemas.ExtendedIsolationForestModelV3$ExtendedIsolationForestModelOutputV3
 hex.schemas.ExtendedIsolationForestV3
 hex.schemas.ExtendedIsolationForestV3$ExtendedIsolationForestParametersV3
+hex.schemas.FairCutForestModelV3
+hex.schemas.FairCutForestModelV3$FairCutForestModelOutputV3
+hex.schemas.FairCutForestV3
+hex.schemas.FairCutForestV3$FairCutForestParametersV3
 water.api.ModelMetricsAnomalyV3
 water.api.ModelMetricsGLRMV99
 water.api.ModelMetricsPCAV3

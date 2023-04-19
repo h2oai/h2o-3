@@ -8,6 +8,7 @@ import hex.genmodel.algos.gam.GamMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoReader;
+import hex.genmodel.algos.isoforfaircut.FairCutForestMojoReader;
 import hex.genmodel.algos.isotonic.IsotonicRegressionMojoReader;
 import hex.genmodel.algos.pca.PCAMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
@@ -85,6 +86,9 @@ public class ModelMojoFactory {
 
       case "Extended Isolation Forest":
         return new ExtendedIsolationForestMojoReader();
+
+      case "Fair Cut Forest":
+        return new FairCutForestMojoReader();
 
       case "K-means":
         return new KMeansMojoReader();

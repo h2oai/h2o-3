@@ -342,6 +342,7 @@ def main():
             file_name = "upliftrandomforest"
         if name == "isolationforest": module = "isolationForest"
         if name == "extendedisolationforest": module = "extendedIsolationForest"
+        if name == "faircutforest": module = "fairCutForest"
         if name == "naivebayes": module = "naiveBayes"
         if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"
