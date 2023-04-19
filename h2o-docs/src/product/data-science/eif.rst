@@ -44,7 +44,7 @@ The following tutorials are available that describe how to use Extended Isolatio
 Defining an Extended Isolation Forest Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Parameters are optional unless specified as *required*.
+Parameters are optional unless specified as *required*. 
 
 Algorithm-specific parameters
 '''''''''''''''''''''''''''''
