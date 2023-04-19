@@ -753,6 +753,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                         - yr * Math.pow(prediction, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
             }
             return temp; // ignored the a(y,phi,p) term as it is a constant for us
+        case multinomial:
+          double predictedProbabilityOfActualClass = ym[(int) yr + 1];
+          return w * log(predictedProbabilityOfActualClass);
         default:
           throw new RuntimeException("unknown family " + _family);
       }
