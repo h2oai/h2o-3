@@ -2,6 +2,19 @@
 
 ## H2O
 
+### Kurka (3.40.0.4) - 4/XX/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html</a>
+
+#### Bug
+- [[PUBDEV-9050]](https://h2oai.atlassian.net/browse/PUBDEV-9050) - Fixed the deprecation warning thrown for Python 2.7 and 3.5.
+
+#### Docs
+- [[PUBDEV-9049]](https://h2oai.atlassian.net/browse/PUBDEV-9049) - Removed mention of support for Python 2.7 and Python 3.5 from documentation.
+
+#### Security
+- [[PUBDEV-9072]](https://h2oai.atlassian.net/browse/PUBDEV-9072) - Addressed CVE-2023-1370 by removing the vulnerability from h2o-steam.jar.
+
 ### Kurka (3.40.0.3) - 4/4/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/3/index.html</a>
