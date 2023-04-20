@@ -39,7 +39,6 @@ xlsxwriter==1.3.7
 cython==0.29.34; python_version > '3.5'
 causalml==0.12.3; python_version > '3.5'
 colorama
-
 # not directly required, pinned by Snyk to avoid a vulnerability
 pygments==2.7.4; python_version <= '3.7' 
 pygments==2.15.1; python_version > '3.7'
