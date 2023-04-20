@@ -75,37 +75,37 @@ public class GenMunger implements Serializable {
   public static double add(double d, HashMap<String, String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
     String[] riteArg = parameters.get("rightArg");
-    if( leftArg==null ) return d + parseNum(riteArg[0]);
+    if( riteArg!=null ) return d + parseNum(riteArg[0]);
     return parseNum(leftArg[0]) + d;
   }
   public static double minus(double d, HashMap<String, String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
     String[] riteArg = parameters.get("rightArg");
-    if( leftArg==null ) return d - parseNum(riteArg[0]);
+    if( riteArg!=null ) return d - parseNum(riteArg[0]);
     return parseNum(leftArg[0]) - d;
   }
   public static double multiply(double d, HashMap<String,String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
     String[] riteArg = parameters.get("rightArg");
-    if( leftArg==null ) return d * parseNum(riteArg[0]);
+    if( riteArg!=null ) return d * parseNum(riteArg[0]);
     return parseNum(leftArg[0]) * d;
   }
   public static double divide(double d, HashMap<String,String[]> parameters) {
     String[] leftArg = parameters.get("leftArg");
     String[] rightArg = parameters.get("rightArg");
-    if( leftArg==null ) return d / parseNum(rightArg[0]);
+    if( rightArg!=null ) return d / parseNum(rightArg[0]);
     return parseNum(leftArg[0]) / d;
   }
   public static double mod(double d, HashMap<String,String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
     String rightArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return d % parseNum(rightArg);
+    if( rightArg!=null ) return d % parseNum(rightArg);
     return parseNum(leftArg) % d;
   }
   public static double pow(double d, HashMap<String, String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
     String rightArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return Math.pow(d,parseNum(rightArg));
+    if( rightArg!=null ) return Math.pow(d,parseNum(rightArg));
     return Math.pow(parseNum(leftArg),d);
   }
 
@@ -116,7 +116,7 @@ public class GenMunger implements Serializable {
   public static double and(double d, HashMap<String, String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
     String rightArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return and(d, parseNum(rightArg));
+    if( rightArg!=null ) return and(d, parseNum(rightArg));
     return and(parseNum(leftArg), d);
   }
 
@@ -126,7 +126,7 @@ public class GenMunger implements Serializable {
   public static double or(double d, HashMap<String, String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
     String rightArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return or(d, parseNum(rightArg));
+    if( rightArg!=null ) return or(d, parseNum(rightArg));
     return or(parseNum(leftArg), d);
   }
   
@@ -137,7 +137,7 @@ public class GenMunger implements Serializable {
   public static double intDiv(double d, HashMap<String, String[]> parameters) {
     String leftArg = parameters.get("leftArg")[0];
     String rightArg = parameters.get("rightArg")[0];
-    if( leftArg==null ) return intDiv(d, parseNum(rightArg));
+    if( rightArg!=null ) return intDiv(d, parseNum(rightArg));
     return intDiv(parseNum(leftArg), d);
   }
   
