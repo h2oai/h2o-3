@@ -3544,8 +3544,8 @@ def check_data_rows(f1, f2, index_list=[], num_rows=10):
     :param num_rows:
     :return:
     '''
-    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
-    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    temp1 = f1.as_data_frame(use_pandas=True).values
+    temp2 = f2.as_data_frame(use_pandas=True).values
     if len(index_list)==0:
         index_list = random.sample(range(f1.nrow), num_rows)
 
@@ -3579,8 +3579,8 @@ def compare_data_rows(f1, f2, index_list=[], num_rows=10, tol=1e-3):
     :param num_rows:
     :return:
     '''
-    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
-    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    temp1 = f1.as_data_frame(use_pandas=True).values
+    temp2 = f2.as_data_frame(use_pandas=True).values
     if len(index_list)==0:
         index_list = random.sample(range(f1.nrow), num_rows)
 
@@ -3991,8 +3991,8 @@ def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
     pandaF = pd.concat([c0, pandaFtrain], axis=1)
     pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
     newX = list(pandaFtrain.columns.values)
-    data = pandaF.as_matrix(newX)
-    label = pandaF.as_matrix([yresp])
+    data = pandaF[newX].values
+    label = pandaF[[yresp]].values
 
     return (data,label)
 
