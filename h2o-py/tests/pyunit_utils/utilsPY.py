@@ -1140,7 +1140,7 @@ def generate_one_cluster(cluster_center, cluster_number, cluster_size):
 
     pt_dists = np.random.uniform(0, cluster_size, [cluster_number, 1])
     coord_pts = len(cluster_center)     # dimension of each cluster point
-    one_cluster_data = np.zeros((cluster_number, coord_pts), dtype=np.float)
+    one_cluster_data = np.zeros((cluster_number, coord_pts), dtype=np.float64)
 
     for p_ind in range(cluster_number):
         coord_indices = list(range(coord_pts))
@@ -1221,7 +1221,7 @@ def generate_training_set_mixed_glm(csv_filename, csv_filename_true_one_hot, row
     :return: None
     """
     # generate the random training data sets
-    enum_dataset = np.zeros((row_count, enum_col), dtype=np.int)   # generate the categorical predictors
+    enum_dataset = np.zeros((row_count, enum_col), dtype=np.int32)   # generate the categorical predictors
 
     # generate categorical data columns
     for indc in range(enum_col):
@@ -1446,7 +1446,7 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
 
             response_y = x_mat * weight + noise_std * np.random.standard_normal([num_row, 1])
 
-        discrete_y = np.zeros((num_sample, 1), dtype=np.int)
+        discrete_y = np.zeros((num_sample, 1), dtype=np.int32)
         for indR in range(num_sample):
             discrete_y[indR, 0] = lastClass
             for indC in range(lastClass):
@@ -1625,7 +1625,7 @@ def duplicate_scale_cols(col_indices, col_scale, old_filename, new_filename):
 
     np_frame = np.asmatrix(np.genfromtxt(old_filename, delimiter=',', dtype=None))
     (num_row, num_col) = np_frame.shape
-    np_frame_new = np.asmatrix(np.zeros((num_row, len(col_indices)), dtype=np.float))
+    np_frame_new = np.asmatrix(np.zeros((num_row, len(col_indices)), dtype=np.float64))
 
     for ind in range(len(col_indices)):
         np_frame_new[:, ind] = np_frame[:, col_indices[ind]]*col_scale[ind]
@@ -2067,7 +2067,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
             num_feature = len(coeff_pvalues)
             num_class = (len(coeff_pvalues[0])-1)/2
 
-            coeffs = np.zeros((num_class,num_feature), dtype=np.float)
+            coeffs = np.zeros((num_class,num_feature), dtype=np.float64)
 
             end_index = int(num_class+1)
             for col_index in range(len(coeff_pvalues)):
@@ -4006,7 +4006,7 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     :return:
     """
     cmissingNames=[cname+".missing(NA)"]
-    tempnp = np.zeros((nrows,1), dtype=np.int)
+    tempnp = np.zeros((nrows,1), dtype=np.int32)
     # check for nan and assign it correct value
     colVals = pandaFtrain[cname]
     for ind in range(nrows):
