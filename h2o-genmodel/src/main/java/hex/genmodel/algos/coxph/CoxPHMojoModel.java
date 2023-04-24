@@ -60,14 +60,12 @@ public class CoxPHMojoModel extends MojoModel  {
   int[] _interactions_1;
   int[] _interactions_2;
   int[] _interaction_targets;
-  int[] _is_enum_1; // check interaction column1 column type: 1 means enum, 0 means numerical
+  boolean[] _is_enum_1; // check interaction column1 column type
   HashSet<Integer> _interaction_column_index;
   HashMap<Integer, List<String>> _interaction_column_domains;
   InteractionTypes[] _interaction_types;
   int[] _num_offsets;
-  int _enum_num_interaction_number;
-  
-
+ 
   CoxPHMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
@@ -196,8 +194,8 @@ public class CoxPHMojoModel extends MojoModel  {
    * catlevel is not valid, a value of 0.0 will be store at the row at the rowIndex.
    */
   private void enumNumInteractions(double[] row, int[] enumOffset, int interactionIndex, int rowIndex) {
-    int enumPredIndex = _is_enum_1[interactionIndex] == 1 ? _interactions_1[interactionIndex] : _interactions_2[interactionIndex];
-    int numPredIndex = _is_enum_1[interactionIndex] == 1 ? _interactions_2[interactionIndex] : _interactions_1[interactionIndex];
+    int enumPredIndex = _is_enum_1[interactionIndex] ? _interactions_1[interactionIndex] : _interactions_2[interactionIndex];
+    int numPredIndex = _is_enum_1[interactionIndex] ? _interactions_2[interactionIndex] : _interactions_1[interactionIndex];
     int offset = _num_offsets[rowIndex - _cats];
     int catLevel = (int) row[enumPredIndex]-(_useAllFactorLevels?0:1);
     row[rowIndex] = catLevel < 0 ? 0 : row[numPredIndex];

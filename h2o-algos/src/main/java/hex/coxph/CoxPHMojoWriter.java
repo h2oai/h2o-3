@@ -61,7 +61,6 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
     final String[] columnNames = model.modelDescriptor().columnNames();
     int[] interaction_1 = new int[interactions.length];
     int[] interaction_2 = new int[interactions.length];
-    int[] is_enum_1 = new int[interactions.length];
     int[] targets = new int[model._output.data_info._interactionVecs.length];
     String[] interaction_column_names = new String[interactions.length];
     List<String> allColNames = Arrays.asList(model._parms.train().names());
@@ -72,16 +71,10 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
       interaction_2[i] = ArrayUtils.find(columnNames, interactions[i]._name2);
       String combinedName = interactions[i]._name1+"_"+interactions[i]._name2;
       targets[i] = ArrayUtils.find(columnNames, combinedName);  // column index in adaptedFrame
-      if (train.vec(allColNames.indexOf(interactions[i]._name1)).domain() != null) {
-        is_enum_1[i] = 1;
-      } else {
-        is_enum_1[i] = 0;
-      }
       interaction_column_names[i] = combinedName;
     }
     writekv("interactions_1", interaction_1);
     writekv("interactions_2", interaction_2);
-    writekv("is_enum_1", is_enum_1);
     writeStringArrays(interaction_column_names, "interaction_column_names");
     writekv("interaction_targets", targets);  // specifies the position of the interaction column in input array
   }

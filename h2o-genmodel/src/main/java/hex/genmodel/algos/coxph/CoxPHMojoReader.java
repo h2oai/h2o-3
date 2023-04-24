@@ -32,8 +32,6 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
     _model._num_offsets = readkv("num_offsets");
     
     if (_model._interaction_targets != null) {
-
-      _model._is_enum_1 = readkv("is_enum_1");
       _model._interactions_1 = readkv("interactions_1");
       _model._interactions_2 = readkv("interactions_2");
 
@@ -42,22 +40,26 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
         if (_model._domains[index] != null)
           _model._interaction_column_domains.put(index, Arrays.asList(_model._domains[index]));
       }
-      _model._interaction_types = createInteractionTypes();
+      createInteractionTypes();
     }
   }
 
-  private CoxPHMojoModel.InteractionTypes[] createInteractionTypes() {
+  private void createInteractionTypes() {
     int numInteractions = _model._interaction_targets.length;
-    CoxPHMojoModel.InteractionTypes[] interactionTypes = new CoxPHMojoModel.InteractionTypes[numInteractions];
+    _model._interaction_types = new CoxPHMojoModel.InteractionTypes[numInteractions];
+    _model._is_enum_1 = new boolean[numInteractions];
     for (int index=0; index<numInteractions; index++) {
-      if (_model._domains[_model._interactions_1[index]] != null && _model._domains[_model._interactions_2[index]] != null)
-        interactionTypes[index] = CoxPHMojoModel.InteractionTypes.ENUM_TO_ENUM;
-      else if ((_model._domains[_model._interactions_1[index]] == null && _model._domains[_model._interactions_2[index]] == null))
-        interactionTypes[index] = CoxPHMojoModel.InteractionTypes.NUM_TO_NUM;
-      else
-        interactionTypes[index] = CoxPHMojoModel.InteractionTypes.ENUM_TO_NUM;
+      if (_model._domains[_model._interactions_1[index]] != null && _model._domains[_model._interactions_2[index]] != null) {
+        _model._interaction_types[index] = CoxPHMojoModel.InteractionTypes.ENUM_TO_ENUM;
+        _model._is_enum_1[index] = true;
+      } else if ((_model._domains[_model._interactions_1[index]] == null && _model._domains[_model._interactions_2[index]] == null)) {
+        _model._interaction_types[index] = CoxPHMojoModel.InteractionTypes.NUM_TO_NUM;
+      } else {
+        _model._interaction_types[index] = CoxPHMojoModel.InteractionTypes.ENUM_TO_NUM;
+        if (_model._domains[_model._interactions_1[index]] != null)
+          _model._is_enum_1[index] = true;
+      }
     }
-    return interactionTypes;
   }
   
   private HashMap<CoxPHMojoModel.Strata, Integer> readStrata() {
