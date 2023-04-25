@@ -716,12 +716,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return -.5 * (w * Math.pow(yr - prediction , 2) / _dispersion_estimated 
                   + log(_dispersion_estimated / w) + LOG2PI);
         case binomial:
-          probabilityOf1 = ym[2];
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
           return w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1)) 
                   + w * (Gamma.digamma(2) - Gamma.digamma(yr + 1) 
                   - Gamma.digamma(1 - yr + 1));
         case quasibinomial:
-          probabilityOf1 = ym[2];
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
           if (yr == prediction)
             return 0;
           else if (prediction > 1) // check what are possible values?
@@ -729,7 +731,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           else
             return -w * (yr * log(probabilityOf1) + (1 - yr) * log(1 - probabilityOf1));
         case fractionalbinomial:
-          probabilityOf1 = ym[2];
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
           if (yr == prediction)
             return 0;
           return w * ((MathUtils.y_log_y(yr, probabilityOf1)) + MathUtils.y_log_y(1 - yr, 1 - probabilityOf1));
@@ -754,7 +757,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             }
             return temp; // ignored the a(y,phi,p) term as it is a constant for us
         case multinomial:
-          double predictedProbabilityOfActualClass = ym[(int) yr + 1];
+          // if probability is not given, then it is 1.0 if prediction equals to the real y and 0 othervice
+          double predictedProbabilityOfActualClass = ym.length > 1 ? ym[(int) yr + 1] : (prediction == yr ? 1.0 : 0.0);
           return w * log(predictedProbabilityOfActualClass);
         default:
           throw new RuntimeException("unknown family " + _family);
