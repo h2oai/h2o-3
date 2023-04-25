@@ -33,7 +33,7 @@ def gbm_monotone_tweedie_test():
     gbm_adverse.train(y=response, training_frame=train, validation_frame=test)
 
     # variable becomes least important to the model
-    assert ["MVR_PTS"] == gbm_adverse.varimp(use_pandas=True).ix[:, 'variable'].tail(1).tolist()
+    assert ["MVR_PTS"] == gbm_adverse.varimp(use_pandas=True).loc[:, 'variable'].tail(1).tolist()
 
 
 if __name__ == "__main__":
