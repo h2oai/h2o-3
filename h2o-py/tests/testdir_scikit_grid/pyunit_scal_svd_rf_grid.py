@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import RandomizedSearchCV
 from h2o.cross_validation import H2OKFold
 from h2o.model.regression import h2o_r2_score
-from sklearn.metrics.scorer import make_scorer
+from sklearn.metrics import make_scorer
 from scipy.stats import randint
 
 

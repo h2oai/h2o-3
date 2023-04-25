@@ -30,7 +30,7 @@ def link_functions_poisson():
 
   print("Create statsmodel model with canonical link: LOG")
   sm_model_log = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                        family=sm.families.Poisson(sm.families.links.log)).fit()
+                        family=sm.families.Poisson(sm.families.links.log())).fit()
 
   print("Compare model deviances for link function log")
   h2o_deviance_log = old_div(h2o_model_log.residual_deviance(), h2o_model_log.null_deviance())
@@ -43,7 +43,7 @@ def link_functions_poisson():
 
   print("Create statsmodel models with link: IDENTITY")
   sm_model_id = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                       family=sm.families.Poisson(sm.families.links.identity)).fit()
+                       family=sm.families.Poisson(sm.families.links.identity())).fit()
 
   print("Compare model deviances for link function identity")
   h2o_deviance_id = old_div(h2o_model_id.residual_deviance(), h2o_model_id.null_deviance())

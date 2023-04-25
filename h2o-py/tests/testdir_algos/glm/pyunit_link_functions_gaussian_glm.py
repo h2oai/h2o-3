@@ -30,7 +30,7 @@ def link_functions_gaussian():
   h2o_model = H2OGeneralizedLinearEstimator(family="gaussian", link="identity",alpha=0.5, Lambda=0)
   h2o_model.train(x=myX, y=myY, training_frame=h2o_data)
   sm_model = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                    family=sm.families.Gaussian(sm.families.links.identity)).fit()
+                    family=sm.families.Gaussian(sm.families.links.identity())).fit()
 
   print("Compare model deviances for link function identity")
   h2o_deviance = old_div(h2o_model.residual_deviance(), h2o_model.null_deviance())

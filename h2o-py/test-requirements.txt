@@ -37,7 +37,6 @@ boto3==1.18.65; python_version > '3.5'
 lifelines>=0.19.5
 xlsxwriter==1.3.7
 cython==0.29.34; python_version > '3.5'
-xgboost==1.2.0; python_version > '3.5'
 causalml==0.12.3; python_version > '3.5'
 colorama
 # not directly required, pinned by Snyk to avoid a vulnerability

@@ -383,8 +383,8 @@ class H2OFrame(Keyed, H2ODisplay):
         type_map = {
             "enum": np.str, 
             "string": np.str, 
-            "int": np.int, 
-            "real": np.float, 
+            "int": np.int32, 
+            "real": np.float64, 
             "time": np.str,
             "uuid": np.str
         }
@@ -5135,7 +5135,7 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows, domainL):
     import pandas as pd
     
     cmissingNames=[cname+".missing(NA)"]
-    tempnp = np.zeros((nrows,1), dtype=np.int)
+    tempnp = np.zeros((nrows,1), dtype=np.int32)
     # check for nan and assign it correct value
     colVals = pandaFtrain[cname]
     for ind in range(nrows):

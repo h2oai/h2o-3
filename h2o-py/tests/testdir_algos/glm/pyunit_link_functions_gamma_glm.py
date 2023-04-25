@@ -31,7 +31,7 @@ def link_functions_gamma():
   h2o_model_in.train(x=myX, y=myY, training_frame=h2o_data)
 
   sm_model_in = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                       family=sm.families.Gamma(sm.families.links.inverse_power)).fit()
+                       family=sm.families.Gamma(sm.families.links.inverse_power())).fit()
 
   print("Compare model deviances for link function inverse")
   h2o_deviance_in = old_div(h2o_model_in.residual_deviance(), h2o_model_in.null_deviance())
@@ -42,7 +42,7 @@ def link_functions_gamma():
   h2o_model_log = H2OGeneralizedLinearEstimator(family="gamma", link="log",alpha=0.5, Lambda=0)
   h2o_model_log.train(x=myX, y=myY, training_frame=h2o_data)
   sm_model_log = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                        family=sm.families.Gamma(sm.families.links.log)).fit()
+                        family=sm.families.Gamma(sm.families.links.log())).fit()
 
   print("Compare model deviances for link function log")
   h2o_deviance_log = old_div(h2o_model_log.residual_deviance(), h2o_model_log.null_deviance())

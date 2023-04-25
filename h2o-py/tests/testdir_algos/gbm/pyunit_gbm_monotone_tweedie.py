@@ -22,7 +22,7 @@ def gbm_monotone_tweedie_test():
     gbm_mono = H2OGradientBoostingEstimator(monotone_constraints=monotone_constraints, seed=42, distribution="tweedie")
     gbm_mono.train(y=response, training_frame=train, validation_frame=test)
     print(gbm_regular.varimp(use_pandas=True))
-    top_3_vars_mono = gbm_mono.varimp(use_pandas=True).ix[:, 'variable'].head(3).tolist()
+    top_3_vars_mono = gbm_mono.varimp(use_pandas=True).loc[:, 'variable'].head(3).tolist()
 
     # monotone constraints didn't affect the variable importance
     assert top_3_vars_mono == top_3_vars_regular
