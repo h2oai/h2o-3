@@ -290,7 +290,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param startval: double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
                Defaults to ``None``.
         :type startval: List[float], optional
-        :param calc_like: if true, will return likelihood function value for HGLM.
+        :param calc_like: if true, will return likelihood function value.
                Defaults to ``False``.
         :type calc_like: bool
         :param HGLM: If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned

@@ -214,7 +214,7 @@ Defining a GLM Model
 
 -  **startval**: The initial starting values for fixed and randomized coefficients in HGLM specified as a double array. 
 
--  **calc_like**: Specify whether to return likelihood function value for HGLM. This is disabled by default.
+-  **calc_like**: Specify whether to return likelihood function value. This is disabled by default.
 
 -  `HGLM <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built; if disabled (default), then a GLM model will be built. 
 

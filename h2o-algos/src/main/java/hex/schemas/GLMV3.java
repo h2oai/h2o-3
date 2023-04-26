@@ -64,7 +64,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "link",
             "rand_link", // link function for random components, array
             "startval",  // initial starting values for fixed and randomized coefficients, double array
-            "calc_like", // HGLM, true will return likelhood function value
+            "calc_like", // true will return likelihood function value
             "HGLM",  // boolean: true - enabled HGLM, false - normal GLM
             "prior",
             "cold_start", // if true, will start GLM model from initial values and conditions
