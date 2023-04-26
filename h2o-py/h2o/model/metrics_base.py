@@ -323,6 +323,29 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         """
         return self._metric_json['AIC']
 
+    def loglikelihood(self):
+        """The log likelihood for this set of metrics.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate[2] = prostate[2].asfactor()
+        >>> prostate[4] = prostate[4].asfactor()
+        >>> prostate[5] = prostate[5].asfactor()
+        >>> prostate[8] = prostate[8].asfactor()
+        >>> predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        >>> response = "CAPSULE"
+        >>> train, valid = prostate.split_frame(ratios=[.8],seed=1234)
+        >>> pros_glm = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> pros_glm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> pros_glm.loglikelihood()
+        """
+        return self._metric_json['loglikelihood']
+
     def gini(self):
         """Gini coefficient.
 

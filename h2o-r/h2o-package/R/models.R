@@ -2044,6 +2044,69 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
+
+#'
+#' Retrieve the log likelihood value
+#'
+#' Retrieves the log likelihood value.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training log likelihood value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of log likelihoods is returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}.
+#' @param train Retrieve the training log likelihood
+#' @param valid Retrieve the validation log likelihood
+#' @param xval Retrieve the cross-validation log likelihood
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' p_sid <- h2o.runif(prostate)
+#' prostate_train <- prostate[p_sid > .2,]
+#' prostate_glm <- h2o.glm(x = 3:7, y = 2, training_frame = prostate_train)
+#' ll_basic <- h2o.loglikelihood(prostate_glm)
+#' print(ll_basic)
+#' }
+#' @export
+h2o.loglikelihood <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$loglikelihood )
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid && !xval ) {
+            metric <- model.parts$tm@metrics$loglikelihood
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$loglikelihood)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$loglikelihood)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( xval ) {
+            if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+            else {
+                v <- c(v,model.parts$xm@metrics$loglikelihood)
+                v_names <- c(v_names,"xval")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("No loglikelihood for ", class(object)))
+    invisible(NULL)
+}
+
 #'
 #' Retrieve the R2 value
 #'

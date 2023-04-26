@@ -13,5 +13,6 @@ public class MojoModelMetricsOrdinalGLM extends MojoModelMetricsOrdinal {
   @SerializedName("null_deviance")
   public double _nullDev;
   public double _AIC;
+  public double _loglikelihood;
   
 }

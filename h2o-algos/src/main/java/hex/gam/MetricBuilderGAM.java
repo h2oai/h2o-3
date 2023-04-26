@@ -161,24 +161,24 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
       }
       mm = new ModelMetricsBinomialGLM(m, f, mm._nobs, mm._MSE, _domain, metricsBinomial._sigma, 
               metricsBinomial._auc, metricsBinomial._logloss, residualDeviance(), _null_deviance, _aic, nullDOF(), 
-              resDOF(), gl, _customMetric);
+              resDOF(), gl, _customMetric, _log_likelihood);
     } else if (_glmf._family.equals(multinomial)) {
       ModelMetricsMultinomial metricsMultinomial = (ModelMetricsMultinomial) mm;
       mm = new ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM(m, f, metricsMultinomial._nobs, 
               metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, 
               metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(),_null_deviance, _aic, 
-              nullDOF(), resDOF(), metricsMultinomial._auc,  _customMetric);
+              nullDOF(), resDOF(), metricsMultinomial._auc,  _customMetric, _log_likelihood);
     } else if (_glmf._family == GLMModel.GLMParameters.Family.ordinal) { // ordinal should have a different resDOF()
       ModelMetricsOrdinal metricsOrdinal = (ModelMetricsOrdinal) mm;
       mm = new ModelMetricsBinomialGLM.ModelMetricsOrdinalGLM(m, f, metricsOrdinal._nobs, metricsOrdinal._MSE, 
               metricsOrdinal._domain, metricsOrdinal._sigma, metricsOrdinal._cm, metricsOrdinal._hit_ratios, 
-              metricsOrdinal._logloss, residualDeviance(), _null_deviance, _aic, nullDOF(), resDOF(), _customMetric);
+              metricsOrdinal._logloss, residualDeviance(), _null_deviance, _aic, nullDOF(), resDOF(), _customMetric, _log_likelihood);
     } else {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) mm;
       mm = new ModelMetricsRegressionGLM(m, f, metricsRegression._nobs, metricsRegression._MSE, 
               metricsRegression._sigma, metricsRegression._mean_absolute_error, 
               metricsRegression._root_mean_squared_log_error, residualDeviance(), 
-              residualDeviance() / _wcount, _null_deviance, _aic, nullDOF(), resDOF(), _customMetric);
+              residualDeviance() / _wcount, _null_deviance, _aic, nullDOF(), resDOF(), _customMetric, _log_likelihood);
     }
     return gamM.addModelMetrics(mm);
   }
