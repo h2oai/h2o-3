@@ -381,12 +381,12 @@ class H2OFrame(Keyed, H2ODisplay):
             raise ImportError("H2OFrame.dtype function requires numpy to be installed")
         import numpy as np
         type_map = {
-            "enum": np.str, 
-            "string": np.str, 
+            "enum": np.str_, 
+            "string": np.str_, 
             "int": np.int32, 
             "real": np.float64, 
-            "time": np.str,
-            "uuid": np.str
+            "time": np.str_,
+            "uuid": np.str_
         }
         types_list = list(self.types.values())
         return np.dtype(type_map[types_list[0]])
