@@ -21,8 +21,7 @@ IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
 JDK_VERSIONS = ['8', '10', '11', '12', '13', '14', '15', '16', '17']
 JDK_VERSIONS_PY_R = ['8', '11', '17'] // stable, last-supported, latest
-// PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8', '3.9']
-PYTHON_VERSIONS = ['3.9']
+PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8', '3.9']
 R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2']
 
 def pipelineContext
@@ -68,30 +67,30 @@ ansiColor('xterm') {
             }
         }
 
-//        buildInParallel(pipelineContext, ['dev-base'])
-//        buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
+        buildInParallel(pipelineContext, ['dev-base'])
+        buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
 
-//        buildInParallel(pipelineContext, ['dev-python-base'])
+        buildInParallel(pipelineContext, ['dev-python-base'])
         def pythonImages = []
         PYTHON_VERSIONS.each {version ->
             pythonImages += "dev-python-${version}"
         }
         buildInParallel(pipelineContext, pythonImages)
 
-//        buildInParallel(pipelineContext, ['dev-r-base'])
-//        def componentImages = []
-//        R_VERSION.each {version ->
-//            componentImages += "dev-r-${version}"
-//        }
-//        JDK_VERSIONS.each {version ->
-//            componentImages += "dev-jdk-${version}"
-//        }
-//        componentImages += "dev-mojocompat"
-//        buildInParallel(pipelineContext, componentImages)
+        buildInParallel(pipelineContext, ['dev-r-base'])
+        def componentImages = []
+        R_VERSION.each {version ->
+            componentImages += "dev-r-${version}"
+        }
+        JDK_VERSIONS.each {version ->
+            componentImages += "dev-jdk-${version}"
+        }
+        componentImages += "dev-mojocompat"
+        buildInParallel(pipelineContext, componentImages)
 
-//        buildInParallel(pipelineContext, ["dev-build-base"])
-//        buildInParallel(pipelineContext, ["dev-build-hadoop"],)
-//        buildInParallel(pipelineContext, ["dev-release"])
+        buildInParallel(pipelineContext, ["dev-build-base"])
+        buildInParallel(pipelineContext, ["dev-build-hadoop"],)
+        buildInParallel(pipelineContext, ["dev-release"])
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
@@ -99,14 +98,14 @@ ansiColor('xterm') {
                 componentJdkImages += "dev-python-${version}-jdk-${jdkVersion}"
             }
         }
-//        R_VERSION.each {version ->
-//            JDK_VERSIONS_PY_R.each {jdkVersion ->
-//                componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
-//            }
-//        }
+        R_VERSION.each {version ->
+            JDK_VERSIONS_PY_R.each {jdkVersion ->
+                componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
+            }
+        }
         // add python 16 manually, we dont need all JAVA_16xPYTHON_VERSIONS and JAVA_16xR_VERSION  images
         // to be able run Java 16 on nightly
-//        componentJdkImages += "dev-python-2.7-jdk-16" // FIXME can be deleted when Java 16 not run in NIGHTLY_REPEATED_STAGES
+        componentJdkImages += "dev-python-2.7-jdk-16" // FIXME can be deleted when Java 16 not run in NIGHTLY_REPEATED_STAGES
         buildInParallel(pipelineContext, componentJdkImages)
     }
 }
