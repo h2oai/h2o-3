@@ -11,7 +11,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/ind
 
 #### Docs
 - [[PUBDEV-9049]](https://h2oai.atlassian.net/browse/PUBDEV-9049) - Removed mention of support for Python 2.7 and Python 3.5 from documentation.
-- [[PUBDEV-8049]](https://h2oai.atlassian.net/browse/PUBDEV-8049) - Reorganized parameters by algorithm-specific and common and shared-tree (for tree-based algorithms). Updated parameter descriptions for all supervised and unsupervised algorithms. Shifted all shared GLM family parameters to the GLM algorithm page.
+- [[PUBDEV-8049]](https://h2oai.atlassian.net/browse/PUBDEV-8049) - Reorganized supervised and unsupervised algorithm parameters by algorithm-specific, common, and shared-tree (for tree-based algorithms). Updated parameter descriptions for all supervised and unsupervised algorithms. Shifted all shared GLM family parameters to the GLM algorithm page.
 
 #### Security
 - [[PUBDEV-9072]](https://h2oai.atlassian.net/browse/PUBDEV-9072) - Addressed CVE-2023-1370 by removing the vulnerability from h2o-steam.jar.
