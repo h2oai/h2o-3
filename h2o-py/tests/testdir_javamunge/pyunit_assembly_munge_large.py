@@ -9,8 +9,8 @@ from h2o.transforms.preprocessing import *
 
 def javamunge_assembly():
     h2o.remove_all()
-    train = '/Users/marek/git2/h2o-3/smalldata/LoanStats3b.csv'
-    test = '/Users/marek/git2/h2o-3/smalldata/LoanStats3b.csv'
+    train = pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv")
+    test = pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3b.csv")
 
     # lending-club munging assembly
     print("Import and Parse data")
