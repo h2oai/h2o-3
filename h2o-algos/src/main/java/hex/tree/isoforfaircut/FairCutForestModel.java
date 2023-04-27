@@ -103,7 +103,7 @@ public class FairCutForestModel extends Model<FairCutForestModel, FairCutForestM
             _ntrees = 100;
             _sample_size = 256;
             _extension_level = 0;
-            _k_planes = 2;
+            _k_planes = 1;
         }        
     }
 

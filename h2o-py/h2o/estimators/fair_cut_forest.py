@@ -43,7 +43,7 @@ class H2OFairCutForestEstimator(H2OEstimator):
                  ntrees=100,  # type: int
                  sample_size=256,  # type: int
                  extension_level=0,  # type: int
-                 k_planes=2,  # type: int
+                 k_planes=1,  # type: int
                  seed=-1,  # type: int
                  ):
         """
@@ -75,7 +75,7 @@ class H2OFairCutForestEstimator(H2OEstimator):
         :type extension_level: int
         :param k_planes: Number of randomly generated separating hyperplanes, where the best one (that maximizes the
                pooled gain metric) is selected at each split
-               Defaults to ``2``.
+               Defaults to ``1``.
         :type k_planes: int
         :param seed: Seed for pseudo random number generator (if applicable)
                Defaults to ``-1``.
@@ -264,7 +264,7 @@ class H2OFairCutForestEstimator(H2OEstimator):
         Number of randomly generated separating hyperplanes, where the best one (that maximizes the pooled gain metric)
         is selected at each split
 
-        Type: ``int``, defaults to ``2``.
+        Type: ``int``, defaults to ``1``.
 
         :examples:
 

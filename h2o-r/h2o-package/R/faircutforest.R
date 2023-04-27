@@ -16,7 +16,7 @@
 #' @param extension_level Maximum is N - 1 (N = numCols). Minimum is 0. Fair Cut Forest with extension_Level = 0 behaves like Isolation
 #'        Forest. Defaults to 0.
 #' @param k_planes Number of randomly generated separating hyperplanes, where the best one (that maximizes the pooled gain
-#'        metric) is selected at each split Defaults to 2.
+#'        metric) is selected at each split Defaults to 1.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @examples
@@ -58,7 +58,7 @@ h2o.fairCutForest <- function(training_frame,
                               ntrees = 100,
                               sample_size = 256,
                               extension_level = 0,
-                              k_planes = 2,
+                              k_planes = 1,
                               seed = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -98,7 +98,7 @@ h2o.fairCutForest <- function(training_frame,
                                               ntrees = 100,
                                               sample_size = 256,
                                               extension_level = 0,
-                                              k_planes = 2,
+                                              k_planes = 1,
                                               seed = -1,
                                               segment_columns = NULL,
                                               segment_models_id = NULL,
