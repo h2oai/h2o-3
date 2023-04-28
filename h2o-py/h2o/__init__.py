@@ -15,7 +15,7 @@ import warnings
 
 if sys.version_info.major < 3 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
     warnings.showwarning(
-        "Your Python version is %s. The support for this version will be removed in H2O 3.44.0.1." % sys.version,
+        "Your Python version is %s. The support for this version will be removed in H2O 3.42.0.1." % sys.version,
         DeprecationWarning,
         "h2o",
         1)
