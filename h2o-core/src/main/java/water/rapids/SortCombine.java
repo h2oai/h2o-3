@@ -6,6 +6,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -66,6 +67,7 @@ class SortCombine extends DTask<SortCombine> {
     }
     _chunkNum = _leftSB._frame.anyVec().nChunks();
     _leftSortedOXHeader = leftSortedOXHeader;
+
   }
 
   @Override
@@ -74,6 +76,7 @@ class SortCombine extends DTask<SortCombine> {
     long t0 = System.nanoTime();
     _leftKO = new KeyOrder(_leftSortedOXHeader, _mergeId);
     _leftKO.initKeyOrder(_leftSB._msb,/*left=*/true);
+    _retBatchSize = (int) _leftKO._batchSize;
     final long leftN = _leftSortedOXHeader._numRows; // store number of rows in left frame for the MSB
     assert leftN >= 1;
     _timings[0] += (System.nanoTime() - t0) / 1e9;
@@ -87,8 +90,7 @@ class SortCombine extends DTask<SortCombine> {
       tryComplete();
       return;
     }
-
-    _retBatchSize = 1048576;   // must set to be the same from RadixOrder.java
+    
     _numRowsInResult = retSize;
     
     setPerNodeNumsToFetch();  // find out the number of rows to fetch from H2O nodes, number of rows to fetch per chunk

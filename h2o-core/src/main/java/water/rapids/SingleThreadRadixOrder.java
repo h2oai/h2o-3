@@ -180,7 +180,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     assert(numRows > 0);
 
     // The main work. Radix sort this batch ...
-    run(0, numRows, _keySize-1);  // if keySize is 6 bytes, first byte is byte 5
+    run (0, numRows, _keySize-1);  // if keySize is 6 bytes, first byte is byte 5
 
     // don't need to clear these now using private transient
     // _counts = null;
