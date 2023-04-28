@@ -1369,6 +1369,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final double    _ySigma;
   public final long      _nobs;
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
+  public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 

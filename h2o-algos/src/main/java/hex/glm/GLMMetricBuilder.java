@@ -83,7 +83,8 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
     if(weight == 0)return ds;
     _metricBuilder.perRow(ds,yact,weight,offset,m);
-    if (((GLMModel.GLMParameters) m._parms)._calc_like 
+    if (((GLMModel) m)._finalScoring // calculate likelihood only while final scoring to avoid slowdown
+            && ((GLMModel.GLMParameters) m._parms)._calc_like 
             && Arrays.asList(Family.multinomial, Family.gaussian, Family.binomial, Family.quasibinomial, 
                     Family.fractionalbinomial, Family.poisson, Family.negativebinomial, Family.gamma, Family.tweedie)
             .contains(_glmf._family)) {

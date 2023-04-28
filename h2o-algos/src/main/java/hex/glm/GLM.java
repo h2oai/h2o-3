@@ -3276,8 +3276,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.setVcov(_vcov);
         _model.update(_job._key);
       }
-      if (!_parms._HGLM)  // no need to do for HGLM
+      if (!_parms._HGLM) {  // no need to do for HGLM
+        _model._finalScoring = true; // enables likelihood calculation while scoring
         scoreAndUpdateModel();
+        _model._finalScoring = false; // avoid calculating likelihood in case of further updates
+      }
       
       if (dfbetas.equals(_parms._influence))
         genRID();
