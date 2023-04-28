@@ -1,8 +1,6 @@
 package hex.tree.isoforfaircut;
 
 import hex.Model;
-import hex.tree.isoforextended.ExtendedIsolationForest;
-import hex.tree.isoforextended.ExtendedIsolationForestModel;
 import org.apache.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -16,28 +14,29 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import static hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel.averagePathLengthOfUnsuccessfulSearch;
+import static hex.genmodel.algos.isoforfaircut.FairCutForestMojoModel.averagePathLengthOfUnsuccessfulSearch;
 import static org.junit.Assert.*;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
-public class ExtendedIsolationForestTest extends TestUtil {
-    private static final Logger LOG = Logger.getLogger(ExtendedIsolationForestTest.class);
+public class FairCutForestTest extends TestUtil {
+    private static final Logger LOG = Logger.getLogger(FairCutForestTest.class);
 
     @Test
     public void testBasicTrain() {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._extension_level = train.numCols() - 1;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            FairCutForestModel model = fcf.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
         } finally {
@@ -50,15 +49,16 @@ public class ExtendedIsolationForestTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._extension_level = train.numCols() - 1;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            FairCutForestModel model = fcf.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
 
@@ -78,16 +78,17 @@ public class ExtendedIsolationForestTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 0;
             p._sample_size = 10;
             p._extension_level = 0;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            fcf.trainModel().get();
         } finally {
             Scope.exit();
         }
@@ -98,16 +99,17 @@ public class ExtendedIsolationForestTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 1;
             p._sample_size = 1;
             p._extension_level = -1;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            fcf.trainModel().get();
         } finally {
             Scope.exit();
         }
@@ -118,16 +120,17 @@ public class ExtendedIsolationForestTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 1;
             p._sample_size = 2;
             p._extension_level = -1;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            fcf.trainModel().get();
         } finally {
             Scope.exit();
         }
@@ -138,16 +141,59 @@ public class ExtendedIsolationForestTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 1;
             p._sample_size = 2;
             p._extension_level = 2;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            fcf.trainModel().get();
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testBasicTrainErrorTooFewHyperplanes() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 1;
+            p._sample_size = 2;
+            p._extension_level = 2;
+            p._k_planes =  0;
+
+            FairCutForest fcf = new FairCutForest(p);
+            fcf.trainModel().get();
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testBasicTrainErrorTooManyHyperplanes() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 1;
+            p._sample_size = 2;
+            p._extension_level = 2;
+            p._k_planes =  101;
+
+            FairCutForest fcf = new FairCutForest(p);
+            fcf.trainModel().get();
         } finally {
             Scope.exit();
         }
@@ -160,16 +206,17 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.enter();
             Frame train = Scope.track(generateRealOnly(128, 100_000, 0, 0xCAFFE));
 
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._sample_size = 30_000;
             p._extension_level = train.numCols() - 1;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            FairCutForestModel model = fcf.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
 
@@ -189,15 +236,16 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.enter();
             Frame train = Scope.track(generateRealOnly(2, 65536, 0, 0xCAFFE));
 
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._extension_level = train.numCols() - 1;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            FairCutForestModel model = fcf.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
 
@@ -217,15 +265,16 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.enter();
             Frame train = Scope.track(generateRealOnly(128, 500, 0, 0xCAFFE));
 
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._extension_level = train.numCols() - 1;
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            FairCutForestModel model = fcf.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
 
@@ -251,17 +300,18 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     .build();
             Scope.track(train);
 
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._sample_size = 2;
             p._extension_level = 2;
+            p._k_planes =  1;
             p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            FairCutForestModel model = fcf.trainModel().get();
             assertNotNull(model);
             Scope.track_generic(model);
 
@@ -291,16 +341,17 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     .build();
             Scope.track(train);
 
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
-                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            FairCutForestModel.FairCutForestParameters p =
+                    new FairCutForestModel.FairCutForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._sample_size = 2;
             p._extension_level = 2; // Maximum is 2 because String column will be removed
+            p._k_planes =  1;
 
-            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            FairCutForest fcf = new FairCutForest(p);
+            FairCutForestModel model = fcf.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
 

@@ -1,7 +1,7 @@
-package hex.tree.isoforfaircut.isoforextended;
+package hex.tree.isoforfaircut;
 
-import hex.tree.isoforextended.isolationtree.IsolationTree;
-import hex.tree.isoforextended.isolationtree.IsolationTreeStats;
+import hex.tree.isoforfaircut.isolationtree.IsolationTree;
+import hex.tree.isoforfaircut.isolationtree.IsolationTreeStats;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;

@@ -1,7 +1,7 @@
-package hex.tree.isoforfaircut.isoforextended;
+package hex.tree.isoforfaircut;
 
-import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
-import hex.tree.isoforextended.isolationtree.IsolationTree;
+import hex.tree.isoforfaircut.isolationtree.CompressedIsolationTree;
+import hex.tree.isoforfaircut.isolationtree.IsolationTree;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class IsolationTreeTest extends TestUtil {
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
 
             long start = System.currentTimeMillis();
-            IsolationTree isolationTree = new IsolationTree(9, 1);
+            IsolationTree isolationTree = new IsolationTree(9, 1, 1);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             long end = System.currentTimeMillis();
             isolationTree.logNodesNumRows(Level.INFO);
@@ -57,7 +57,7 @@ public class IsolationTreeTest extends TestUtil {
             double[] normalPoint = toNumericRow(train, 0);
 
             long start = System.currentTimeMillis();
-            IsolationTree isolationTree = new IsolationTree(16, 31);
+            IsolationTree isolationTree = new IsolationTree(16, 31, 1);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             long end = System.currentTimeMillis();
             isolationTree.logNodesNumRows(Level.DEBUG);
@@ -80,39 +80,30 @@ public class IsolationTreeTest extends TestUtil {
     }
 
     @Test
-    public void testExtendedIsolationTreeSplit() {
+    public void testFairCutTreeSplit() {
         double[][] data = new double[][]{{2.0, 1.0, -1.0}, {5.0, 6.0, -6.0}, {6.0, 0.0, -8.0}};
-        double[] p = new double[]{1.0, 4.0, -1.0};
-        double[] n = new double[]{-0.25, 0.0, 0.25};
+        double[] normalVector = new double[]{1.0, 4.0, -1.0};
+        double[] zeros = new double[]{0, 0, 0};
+        double[] ones = new double[]{1, 1, 1};
 
-        IsolationTree.FilteredData split = IsolationTree.extendedIsolationForestSplit(data, p, n);
+        IsolationTree.SplitCriteria splitCriteria = 
+                new IsolationTree.SplitCriteria(normalVector, 0, zeros, ones, 1, null);
+
+        IsolationTree.FilteredData split = IsolationTree.split(data, splitCriteria);
 
         // Result of (data - p) * n = (1.5, 0.25, -1.25)^T
 
         assertArrayEquals("Result is not correct", new double[]{-1.0}, split.getLeft()[0], 1e-3);
         assertArrayEquals("Result is not correct", new double[]{2.0, 1.0}, split.getRight()[0], 1e-3);
     }
-
-    @Test
-    public void testGaussianVector() {
-        double[] a = IsolationTree.gaussianVector(5,  2, 0xCAFFE);
-        int numOfZeros = 0;
-        for (double v : a) {
-            if (v == 0) {
-                numOfZeros++;
-            }
-        }
-        assertEquals("Array should contain two zeros: " + Arrays.toString(a),2, numOfZeros);
-        assertArrayEquals("Arrays are different: " + Arrays.toString(a), new double[]{0.866, 0.0, 1.657, -0.166, 0.0}, a, 1e-3);
-    }
-
+    
     @Test
     public void testIsolationTreeStatsSmokeTreeLimitEqualToDataSize() {
         double[][] data = new double[][]{
                 {5, 0.25159, 0.98433, 0.96306, -0.99260, -0.26453, -0.20910, 1.61677, -0.83930, -0.63632, 0.63247, 0.42071, -0.06717, -0.23723, -0.19529, 0.92324},
                 {3, 1.49243, 1.24084, -0.93344, 1.54171, 0.32838, -1.12037, -0.46590, 0.74632, 1.13758, 0.93562, 1.17489, 0.42124, 1.42660, -0.11774, 0.46041}
         };
-        IsolationTree isolationTree = new IsolationTree(4, 1);
+        IsolationTree isolationTree = new IsolationTree(4, 1, 1);
         isolationTree.buildTree(data, 0xF00D, 0);
         isolationTree.logNodesNumRows(Level.INFO);
         assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 2, isolationTree.getIsolatedPoints());
@@ -129,7 +120,7 @@ public class IsolationTreeTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            IsolationTree isolationTree = new IsolationTree(9, 1);
+            IsolationTree isolationTree = new IsolationTree(9, 1, 1);
             isolationTree.buildTree(FrameUtils.asDoubles(train), 0xF00D, 0);
             isolationTree.logNodesNumRows(Level.INFO);
             assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 11, isolationTree.getIsolatedPoints());
@@ -149,7 +140,7 @@ public class IsolationTreeTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            IsolationTree isolationTree = new IsolationTree(7, 1);
+            IsolationTree isolationTree = new IsolationTree(7, 1, 1);
             isolationTree.buildTree(FrameUtils.asDoubles(train), 0xF00D, 0);
             isolationTree.logNodesNumRows(Level.INFO);
             assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 2, isolationTree.getIsolatedPoints());

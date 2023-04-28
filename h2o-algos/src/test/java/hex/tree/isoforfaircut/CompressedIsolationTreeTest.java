@@ -1,8 +1,8 @@
-package hex.tree.isoforfaircut.isoforextended;
+package hex.tree.isoforfaircut;
 
-import hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoModel;
-import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
-import hex.tree.isoforextended.isolationtree.IsolationTree;
+import hex.genmodel.algos.isoforfaircut.FairCutForestMojoModel;
+import hex.tree.isoforfaircut.isolationtree.CompressedIsolationTree;
+import hex.tree.isoforfaircut.isolationtree.IsolationTree;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -66,10 +66,10 @@ public class CompressedIsolationTreeTest extends TestUtil {
                     .build();
             Scope.track(train);
 
-            IsolationTree isolationTree = new IsolationTree(2, 1);
+            IsolationTree isolationTree = new IsolationTree(2, 1, 1);
             cmpIsolationTreeFull = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xDECAF, 0);
             cmpIsolationTreeOneZero = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
-            IsolationTree isolationTreeSparse = new IsolationTree(3, 1);
+            IsolationTree isolationTreeSparse = new IsolationTree(3, 1, 1);
             cmpIsolationTreeSparse = isolationTreeSparse.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             isolationTreeSparse.logNodesNumRows(Level.INFO);
         } finally {
@@ -93,13 +93,13 @@ public class CompressedIsolationTreeTest extends TestUtil {
             double[] row4 = new double[]{2.0, 2.0};
 
             LOG.info(Arrays.toString(cmpIsolationTreeFullBytes));
-            double pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeFullBytes, row1);
+            double pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeFullBytes, row1);
             assertEquals(cmpIsolationTreeFull.computePathLength(row1), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeFullBytes, row2);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeFullBytes, row2);
             assertEquals(cmpIsolationTreeFull.computePathLength(row2), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeFullBytes, row3);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeFullBytes, row3);
             assertEquals(cmpIsolationTreeFull.computePathLength(row3), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeFullBytes, row4);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeFullBytes, row4);
             assertEquals(cmpIsolationTreeFull.computePathLength(row4), pathLengthFromBytes, 0);
 
             // Should isolate to each leaf from left to right
@@ -109,13 +109,13 @@ public class CompressedIsolationTreeTest extends TestUtil {
             double[] row8 = new double[]{6.5, 6.5};
 
             LOG.info(Arrays.toString(cmpIsolationTreeOneZeroBytes));
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeOneZeroBytes, row5);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeOneZeroBytes, row5);
             assertEquals(cmpIsolationTreeOneZero.computePathLength(row5), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeOneZeroBytes, row6);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeOneZeroBytes, row6);
             assertEquals(cmpIsolationTreeOneZero.computePathLength(row6), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeOneZeroBytes, row7);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeOneZeroBytes, row7);
             assertEquals(cmpIsolationTreeOneZero.computePathLength(row7), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeOneZeroBytes, row8);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeOneZeroBytes, row8);
             assertEquals(cmpIsolationTreeOneZero.computePathLength(row8), pathLengthFromBytes, 0);
 
             // Should isolate to each leaf from left to right
@@ -127,17 +127,17 @@ public class CompressedIsolationTreeTest extends TestUtil {
             double[] row14 = new double[]{10.0, 10.0};
 
             LOG.info(Arrays.toString(cmpIsolationTreeSparseBytes));
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row9);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row9);
             assertEquals(cmpIsolationTreeSparse.computePathLength(row9), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row10);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row10);
             assertEquals(cmpIsolationTreeSparse.computePathLength(row10), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row11);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row11);
             assertEquals(cmpIsolationTreeSparse.computePathLength(row11), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row12);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row12);
             assertEquals(cmpIsolationTreeSparse.computePathLength(row12), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row13);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row13);
             assertEquals(cmpIsolationTreeSparse.computePathLength(row13), pathLengthFromBytes, 0);
-            pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row14);
+            pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(cmpIsolationTreeSparseBytes, row14);
             assertEquals(cmpIsolationTreeSparse.computePathLength(row14), pathLengthFromBytes, 0);
         } finally {
             Scope.exit();
@@ -151,7 +151,7 @@ public class CompressedIsolationTreeTest extends TestUtil {
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             Scope.track(train);
 
-            IsolationTree isolationTree = new IsolationTree(8, 1);
+            IsolationTree isolationTree = new IsolationTree(8, 1, 1);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             isolationTree.logNodesNumRows(Level.INFO);
 
@@ -161,7 +161,7 @@ public class CompressedIsolationTreeTest extends TestUtil {
                 row[0] = random.nextDouble();
                 row[1] = random.nextDouble();
                 LOG.debug(Arrays.toString(row));
-                double pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(compressedIsolationTree.toBytes(), row);
+                double pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(compressedIsolationTree.toBytes(), row);
                 double pathLengthClass = compressedIsolationTree.computePathLength(row);
                 assertEquals(pathLengthClass, pathLengthFromBytes, 0);
                 
@@ -178,7 +178,7 @@ public class CompressedIsolationTreeTest extends TestUtil {
             Frame train = Scope.track(generateRealOnly(32, 32768, 0, 0xBEEF));
             Scope.track(train);
 
-            IsolationTree isolationTree = new IsolationTree(16, train.numCols() - 1);
+            IsolationTree isolationTree = new IsolationTree(16, train.numCols() - 1, 1);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             isolationTree.logNodesNumRows(Level.DEBUG);
 
@@ -189,7 +189,7 @@ public class CompressedIsolationTreeTest extends TestUtil {
                     row[j] = random.nextDouble();
                 }
                 LOG.debug(Arrays.toString(row));
-                double pathLengthFromBytes = ExtendedIsolationForestMojoModel.scoreTree0(compressedIsolationTree.toBytes(), row);
+                double pathLengthFromBytes = FairCutForestMojoModel.scoreTree0(compressedIsolationTree.toBytes(), row);
                 double pathLengthClass = compressedIsolationTree.computePathLength(row);
                 assertEquals(pathLengthClass, pathLengthFromBytes, 0);
             }
