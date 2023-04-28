@@ -1,7 +1,7 @@
 name: Send slack alerts for new GitHub issues
 
 on:
-  issues:
+  issues: # workflow.yml should be placed in the default branch to trigger for issues
     types: [opened]
 
 jobs:
