@@ -74,8 +74,10 @@ def installXGBWheel(final String h2o3dir) {
     sh """
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-
-        pip install ${h2o3dir}/xgb-whls/xgboost_ompv4-*-cp${env.PYTHON_VERSION.replaceAll('\\.','')}-*-linux_x86_64.whl
+        if [ "${env.PYTHON_VERSION}" != "3.9" ]
+        then
+            pip install ${h2o3dir}/xgb-whls/xgboost_ompv4-*-cp${env.PYTHON_VERSION.replaceAll('\\.','')}-*-linux_x86_64.whl
+        fi
     """
 }
 
