@@ -1,20 +1,19 @@
 ---
-name: Bug report
+"\U0001F41B Bug Report"
 about: Create a report to help us improve
 title: ''
 labels: bug
 assignees: ''
-
 ---
 
-**H2O version, Operating System**
-(e.g. 3.38.0.1, Mac OS w/ M1 chip)
+**H2O version, Operating System and Environment**
+(e.g. 3.38.0.1, Mac OS w/ M1 chip, R v4.0.1).  Please let us know if you're running on K8s/Hadoop and if so, what version.
 
 **Actual behavior**
-(A clear and concise description of what the bug is.)
+A clear and concise description of what the bug is.
 
 **Expected behavior**
-(A clear and concise description of what you expected to happen.)
+A clear and concise description of what you expected to happen.
 
 
 **Steps to reproduce**
