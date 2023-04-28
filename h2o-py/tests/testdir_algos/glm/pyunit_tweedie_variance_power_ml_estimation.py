@@ -249,7 +249,41 @@ def test_():
             print("p =", p, "not converged due to an Error:", [l for l in str(e).splitlines() if "Exception" in l][0])
 
 
+def test_tweedie_var_power_estimation_2p1_disp2_est():
+    training_data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/tweedie_p2p1_disp3_5Cols_10kRows_est1p89.csv"))
+    Y = 'resp'
+    x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
+    training_data = training_data[training_data[Y] > 0, :]
+    trueDisp = 2.1
+    model_ml = H2OGeneralizedLinearEstimator(family='tweedie', fix_dispersion_parameter=True, fix_tweedie_variance_power=False,
+                                             tweedie_variance_power=2.1,
+                                             lambda_=0, compute_p_values=False,
+                                             init_dispersion_parameter=2.0,
+                                             dispersion_parameter_method="ml", seed=12345)
+    model_ml.train(training_frame=training_data, x=x, y=Y)
+    print("estimated variance power: {0}, true variance power: {1}".format(model_ml.actual_params["tweedie_variance_power"], trueDisp))
+    assert abs(model_ml.actual_params["tweedie_variance_power"] - 2.144064040064248) < 1e-6
+
+
+def test_tweedie_var_power_estimation_2p6_disp2_est():
+    training_data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/tweedie_p2p6_disp2_5Cols_10krows_est1p94.csv"))
+    Y = 'resp'
+    x = ['abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.']
+    training_data = training_data[training_data[Y] > 0, :]
+    trueDisp = 2.6
+    model_ml = H2OGeneralizedLinearEstimator(family='tweedie', fix_dispersion_parameter=True, fix_tweedie_variance_power=False,
+                                             tweedie_variance_power=trueDisp,
+                                             lambda_=0, compute_p_values=False,
+                                             init_dispersion_parameter=2.0,
+                                             dispersion_parameter_method="ml", seed=12345)
+    model_ml.train(training_frame=training_data, x=x, y=Y)
+    print("estimated variance power: {0}, true variance power: {1}".format(model_ml.actual_params["tweedie_variance_power"], trueDisp))
+    assert abs(model_ml.actual_params["tweedie_variance_power"] - 2.67437207518084) < 1e-6
+
+
 pyunit_utils.run_tests([
+    test_tweedie_var_power_estimation_2p1_disp2_est,
+    test_tweedie_var_power_estimation_2p6_disp2_est,
     test_tweedie_var_power_estimation_1p2_phi_2_no_link_power_est,
     test_tweedie_var_power_estimation_1_8_no_link_power_est,
     test_tweedie_var_power_estimation_2p5_phi_2p5_no_link_power_est,
