@@ -190,7 +190,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
 
   @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
     GLMModel gm = (GLMModel) m;
-    if (!gm._parms._HGLM)
+    if (!gm._parms._HGLM && gm._parms._calc_like && gm._finalScoring)
       computeAIC(gm);
     ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null, null);
     if (gm._parms._HGLM) { // HGLM 
