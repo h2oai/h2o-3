@@ -434,11 +434,6 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   @Override
-  public boolean haveMojo() {
-    return true;
-  }
-
-  @Override
   public ModelDescriptor modelDescriptor() {
     return new CoxPHModelDescriptor(extraMojoFeatures());
   }
