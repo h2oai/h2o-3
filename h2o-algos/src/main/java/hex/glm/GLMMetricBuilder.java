@@ -83,11 +83,11 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
     if(weight == 0)return ds;
     _metricBuilder.perRow(ds,yact,weight,offset,m);
-    if (((GLMModel) m)._finalScoring // calculate likelihood only while final scoring to avoid slowdown
-            && ((GLMModel.GLMParameters) m._parms)._calc_like 
-            && Arrays.asList(Family.multinomial, Family.gaussian, Family.binomial, Family.quasibinomial, 
-                    Family.fractionalbinomial, Family.poisson, Family.negativebinomial, Family.gamma, Family.tweedie)
-            .contains(_glmf._family)) {
+    GLMModel gm = (GLMModel) m;
+    if ((gm._finalScoring && gm._parms._calc_like && Arrays.asList(Family.multinomial, Family.gaussian, Family.binomial, 
+                    Family.quasibinomial, Family.fractionalbinomial, Family.poisson, Family.negativebinomial, 
+                    Family.gamma, Family.tweedie).contains(_glmf._family)) /*final scoring, _calc_like flag is on*/
+    || (!gm._finalScoring && _glmf._family.equals(Family.negativebinomial)) /*model build*/) {
       _log_likelihood += m.likelihood(weight, yact[0], ds);
     }
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
