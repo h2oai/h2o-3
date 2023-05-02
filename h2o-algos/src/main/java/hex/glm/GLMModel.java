@@ -309,8 +309,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double likelihood(double w, double y, double[] f) {
     if (w == 0) {
       return 0;
-    } else {
+    } else if (_finalScoring){
+      // time-consuming calculation for the final scoring
       return _parms.likelihood(w, y, f);
+    } else {
+      // optimized calculation for model build
+      return w*(_parms.likelihood(y, f[0]));
     }
   }
 
@@ -708,6 +712,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      return deviance((double)yr,(double)ym);
     }
 
+    // likelihood calculation used for the model building
+    public final double likelihood(double yr, double ym){
+      if (_family.equals(Family.negativebinomial)) {
+        return ((yr>0 && ym>0)?
+                (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
+                        yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
+                ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
+      }  else
+        return .5 * deviance(yr,ym);
+    }
+
+    // more time consuming likelihood calculation used for the final scoring
     public final double likelihood(double w, double yr, double[] ym) {
       double prediction = ym[0];
       double probabilityOf1;
