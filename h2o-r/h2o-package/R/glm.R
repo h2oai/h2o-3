@@ -93,7 +93,7 @@
 #'        Defaults to family_default.
 #' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
 #' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
-#' @param calc_like \code{Logical}. if true, will return likelihood function value. Defaults to FALSE.
+#' @param calc_like \code{Logical}. if true, will return likelihood function value for HGLM. Defaults to FALSE.
 #' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
 #'        to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
