@@ -184,13 +184,44 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       return _nobs - _rank;
   }
 
-  protected void computeAIC(GLMModel gm){
-    _aic = -2 * _log_likelihood + 2 * Arrays.stream(gm.beta()).filter(b -> b != 0).count();
+  protected void computeAIC(GLMModel gm) {
+    if (gm._parms._calc_like && gm._finalScoring) { // uses likelihood which is calculated for the final scoring
+      _aic = -2 * _log_likelihood + 2 * Arrays.stream(gm.beta()).filter(b -> b != 0).count();
+    } else { // original calculation for the model build
+      _aic = 0;
+      switch (_glmf._family) {
+        case gaussian:
+          _aic = _nobs * (Math.log(residual_deviance / _nobs * 2 * Math.PI) + 1) + 2;
+          break;
+        case quasibinomial:
+        case binomial:
+        case fractionalbinomial:
+          _aic = residual_deviance;
+          break;
+        case poisson:
+          _aic = -2 * _aic2;
+          break; // AIC is set during the validation task
+        case gamma:
+          _aic = Double.NaN;
+          break;
+        case ordinal:
+        case tweedie:
+        case multinomial:
+          _aic = Double.NaN;
+          break;
+        case negativebinomial:
+          _aic = 2 * _log_likelihood;
+          break;
+        default:
+          assert false : "missing implementation for family " + _glmf._family;
+      }
+      _aic += 2 * _rank;
+    }
   }
 
   @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
     GLMModel gm = (GLMModel) m;
-    if (!gm._parms._HGLM && gm._parms._calc_like && gm._finalScoring)
+    if (!gm._parms._HGLM)
       computeAIC(gm);
     ModelMetrics metrics = _metricBuilder.makeModelMetrics(gm, f, null, null);
     if (gm._parms._HGLM) { // HGLM 
