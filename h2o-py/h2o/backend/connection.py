@@ -259,7 +259,7 @@ class H2OConnection(h2o_meta()):
         hc = H2OConnection.open(...)
 
     Once opened, the connection remains active until the script exits (or until you explicitly :meth:`close` it).
-    If the script exits with an exception, then the connection will fail to close, and the backend server will
+    If the script exits with an exception, then the connection will fail to close, and the backend server will.
     keep all the temporary frames and the open session.
 
     Alternatively, you can use this class as a context manager, which will ensure that the connection gets closed
