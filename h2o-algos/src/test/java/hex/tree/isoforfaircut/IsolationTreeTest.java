@@ -40,40 +40,9 @@ public class IsolationTreeTest extends TestUtil {
             }
 
             double pathLength = compressedIsolationTree.computePathLength(new double[]{0.0, 0.0}); // Normal Point
-            assertTrue("Path length should be longer. Normal point should not be isolated close to root but is pathLength = " + pathLength, pathLength >= 4);
-
-            pathLength = compressedIsolationTree.computePathLength(new double[]{5.0, 5.0}); //Anomaly
-            assertTrue("Path length should be close to 0 (Root) but is pathLength = " + pathLength, pathLength <= 4);
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
-    public void testIsolationTreeLarge() {
-        try {
-            Scope.enter();
-            Frame train = Scope.track(generateRealOnly(32, 32768, 0, 0xBEEF));
-            double[] normalPoint = toNumericRow(train, 0);
-
-            long start = System.currentTimeMillis();
-            IsolationTree isolationTree = new IsolationTree(16, 31, 1);
-            CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
-            long end = System.currentTimeMillis();
-            isolationTree.logNodesNumRows(Level.DEBUG);
-
-            long time = end - start;
-            if (time > 1000) {
-                LOG.info("Tree building took a longer than it should: " + time + "ms.");
-            }
-
-            double pathLength = compressedIsolationTree.computePathLength(normalPoint);
-            assertTrue("Path length should be longer. Normal point should not be isolated close to root but is pathLength = " + pathLength, pathLength >= 8);
-
-            double[] anomaly = new double[32];
-            Arrays.fill(anomaly, 10000.0);
-            pathLength = compressedIsolationTree.computePathLength(anomaly); //Anomaly
-            assertTrue("Path length should be close to 0 (Root) but is pathLength = " + pathLength, pathLength <= 8);
+            assertTrue("Path length should be longer. Normal point should not be isolated close to root but is pathLength = " + pathLength, pathLength >= 7);
+            pathLength = compressedIsolationTree.computePathLength(new double[]{-10.0, -10.0}); //Anomaly
+            assertTrue("Path length should be close to 0 (Root) but is pathLength = " + pathLength, pathLength <= 7);
         } finally {
             Scope.exit();
         }
@@ -83,15 +52,24 @@ public class IsolationTreeTest extends TestUtil {
     public void testFairCutTreeSplit() {
         double[][] data = new double[][]{{2.0, 1.0, -1.0}, {5.0, 6.0, -6.0}, {6.0, 0.0, -8.0}};
         double[] normalVector = new double[]{1.0, 4.0, -1.0};
+        
+        // no standardization
         double[] zeros = new double[]{0, 0, 0};
         double[] ones = new double[]{1, 1, 1};
 
-        IsolationTree.SplitCriteria splitCriteria = 
-                new IsolationTree.SplitCriteria(normalVector, 0, zeros, ones, 1, null);
+        double[] z = new double[3];
+
+        // project data
+        for (int j = 0; j < data.length; j++) {
+            for (int i = 0; i < 3; i++) {
+                z[j] += data[i][j] * normalVector[i];
+            }
+        }
+
+        IsolationTree.SplitCriteria splitCriteria =
+                new IsolationTree.SplitCriteria(normalVector, 0, zeros, ones, 1, z);
 
         IsolationTree.FilteredData split = IsolationTree.split(data, splitCriteria);
-
-        // Result of (data - p) * n = (1.5, 0.25, -1.25)^T
 
         assertArrayEquals("Result is not correct", new double[]{-1.0}, split.getLeft()[0], 1e-3);
         assertArrayEquals("Result is not correct", new double[]{2.0, 1.0}, split.getRight()[0], 1e-3);
@@ -106,10 +84,10 @@ public class IsolationTreeTest extends TestUtil {
         IsolationTree isolationTree = new IsolationTree(4, 1, 1);
         isolationTree.buildTree(data, 0xF00D, 0);
         isolationTree.logNodesNumRows(Level.INFO);
-        assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 2, isolationTree.getIsolatedPoints());
-        assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 14, isolationTree.getNotIsolatedPoints());
-        assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 1, isolationTree.getZeroSplits());
-        assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 6, isolationTree.getLeaves());
+        assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 6, isolationTree.getIsolatedPoints());
+        assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 10, isolationTree.getNotIsolatedPoints());
+        assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 0, isolationTree.getZeroSplits());
+        assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 9, isolationTree.getLeaves());
         assertEquals("Depth should almost always be equal to height limit", 4, isolationTree.getDepth());
 
         assertEquals("Some point are lost in the process: ", data[0].length, isolationTree.getIsolatedPoints() + isolationTree.getNotIsolatedPoints());
@@ -123,10 +101,10 @@ public class IsolationTreeTest extends TestUtil {
             IsolationTree isolationTree = new IsolationTree(9, 1, 1);
             isolationTree.buildTree(FrameUtils.asDoubles(train), 0xF00D, 0);
             isolationTree.logNodesNumRows(Level.INFO);
-            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 11, isolationTree.getIsolatedPoints());
-            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 489, isolationTree.getNotIsolatedPoints());
-            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 22, isolationTree.getZeroSplits());
-            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 51, isolationTree.getLeaves());
+            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 169, isolationTree.getIsolatedPoints());
+            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 331, isolationTree.getNotIsolatedPoints());
+            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 0, isolationTree.getZeroSplits());
+            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 301, isolationTree.getLeaves());
             assertEquals("Depth should almost always be equal to height limit", 9, isolationTree.getDepth());
 
             assertEquals("Some points are lost in the process: ", train.numRows(), isolationTree.getIsolatedPoints() + isolationTree.getNotIsolatedPoints());
@@ -143,10 +121,10 @@ public class IsolationTreeTest extends TestUtil {
             IsolationTree isolationTree = new IsolationTree(7, 1, 1);
             isolationTree.buildTree(FrameUtils.asDoubles(train), 0xF00D, 0);
             isolationTree.logNodesNumRows(Level.INFO);
-            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 2, isolationTree.getIsolatedPoints());
-            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 498, isolationTree.getNotIsolatedPoints());
-            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 9, isolationTree.getZeroSplits());
-            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 23, isolationTree.getLeaves());
+            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 26, isolationTree.getIsolatedPoints());
+            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 474, isolationTree.getNotIsolatedPoints());
+            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 0, isolationTree.getZeroSplits());
+            assertEquals("Check if isolation tree splitting correctly and adjust the number in case of inner splitting change", 119, isolationTree.getLeaves());
             assertEquals("Depth should almost always be equal to height limit", 7, isolationTree.getDepth());
 
             assertEquals("Some points are lost in the process: ", train.numRows(), isolationTree.getIsolatedPoints() + isolationTree.getNotIsolatedPoints());

@@ -305,8 +305,8 @@ public class FairCutForestTest extends TestUtil {
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
-            p._sample_size = 2;
-            p._extension_level = 2;
+            p._sample_size = 3;
+            p._extension_level = 3;
             p._k_planes =  1;
             p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
 

@@ -18,7 +18,7 @@ public class FairCutForestV3 extends ModelBuilderSchema<
                 "ignore_const_cols",
                 "categorical_encoding",
 
-                // Extended Isolation Forest specific
+                // Fair Cut Forest specific
                 "ntrees",
                 "sample_size",
                 "extension_level",
