@@ -7,6 +7,8 @@ public class FeatureLimits {
     public double _min;
     public double _max;
 
+
+    private double EPSILON = 1e-3; // epsilon for approximate comparing of limits, used in tests only
     public FeatureLimits(final double min, final double max) {
         _min = min;
         _max = max;
@@ -24,4 +26,7 @@ public class FeatureLimits {
         return new FeatureLimits(toClone._min, toClone._max);
     }
 
+    public boolean equals(FeatureLimits other) {
+        return Math.abs(_min - other._min) < EPSILON && Math.abs(_max - other._max) < EPSILON;
+    }
 }
