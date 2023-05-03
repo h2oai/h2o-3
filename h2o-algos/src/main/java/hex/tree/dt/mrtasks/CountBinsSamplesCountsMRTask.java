@@ -28,6 +28,14 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
 
     @Override
     public void map(Chunk[] cs) {
+        // deep copy of bins array so the reduce phase performs correctly
+        {
+            double[][] tmpBins = new double[_bins.length][];
+            for (int b = 0; b < _bins.length; b++) {
+                tmpBins[b] = new double[]{_bins[b][0], _bins[b][1], 0, 0};
+            }
+            _bins = tmpBins;
+        }
         int classFeature = cs.length - 1;
         int numRows = cs[0]._len;
         boolean conditionsFailed;

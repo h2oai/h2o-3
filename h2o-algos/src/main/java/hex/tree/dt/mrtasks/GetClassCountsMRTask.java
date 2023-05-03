@@ -25,6 +25,14 @@ public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
 
     @Override
     public void map(Chunk[] cs) {
+        // deep copy of countsByClass array so the reduce phase performs correctly
+        {
+            int[] tmpCounts = new int[_numClasses];
+            for (int c = 0; c < _numClasses; c++) {
+                tmpCounts[c] = 0;
+            }
+            _countsByClass = tmpCounts;
+        }
         int classColumn = cs.length - 1; // the last column
         int numRows = cs[0]._len;
         boolean conditionsFailed;

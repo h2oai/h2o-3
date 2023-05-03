@@ -57,6 +57,14 @@ public class FeaturesLimitsMRTask extends MRTask<FeaturesLimitsMRTask> {
 
     @Override
     public void map(Chunk[] cs, NewChunk[] nc) {
+        // deep copy of realFeatureLimits array so the reduce phase performs correctly
+        {
+            double[][] tmpLimits = new double[_featuresLimits.length][];
+            for (int l = 0; l < _featuresLimits.length; l++) {
+                tmpLimits[l] = new double[]{_realFeatureLimits[l][0], _realFeatureLimits[l][1]};
+            }
+            _realFeatureLimits = tmpLimits;
+        }
         int numCols = cs.length - 1; // exclude prediction column
         int numRows = cs[0]._len;
         boolean conditionsFailed;
