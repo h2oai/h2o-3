@@ -139,10 +139,6 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         }
         return 2 * dev;
     }
-    
-    public static double variance(double mu, double p, double phi) {
-        return phi * pow(mu, p);
-    }
 
     private double gammaLLH(double y, double mu, double w) {
         final double a = 1 / _phi;

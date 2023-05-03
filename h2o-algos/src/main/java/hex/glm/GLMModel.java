@@ -645,9 +645,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
           return mu * mu;
         case tweedie:
-          if (DispersionMethod.ml.equals(_dispersion_parameter_method)) {
-            return TweedieVariancePowerMLEstimator.variance(mu, _tweedie_variance_power, _init_dispersion_parameter);
-          }
           return Math.pow(mu, _tweedie_variance_power);
         default:
           throw new RuntimeException("unknown family Id " + this._family);
@@ -1065,8 +1062,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
           return mu * mu;
         case tweedie:
-          if (_varPowerEstimation)
-            return TweedieVariancePowerMLEstimator.variance(mu, _var_power, _dispersion);
           return Math.pow(mu,_var_power);
         default:
           throw new RuntimeException("unknown family Id " + this._family);
