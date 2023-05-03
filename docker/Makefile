@@ -72,38 +72,6 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-2.7-jdk-%: dev-python-2.7
-endif
-dev-python-2.7-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-python-3.5-jdk-%: dev-python-3.5
-endif
-dev-python-3.5-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
 dev-python-3.6-jdk-%: dev-python-3.6
 endif
 dev-python-3.6-jdk-%:

@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 from tests import pyunit_utils

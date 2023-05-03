@@ -99,7 +99,6 @@ As you have noticed, we define a number of special classes to facilitate type co
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 import importlib
@@ -116,18 +115,10 @@ __all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNume
            "assert_is_type", "assert_matches", "assert_satisfies", "is_type")
 
 
-if PY2:
-    # noinspection PyProtectedMember
-    from h2o.utils.compatibility import _native_unicode, _native_long
-    _str_type = (str, _native_unicode)
-    _int_type = (int, _native_long)
-    _num_type = (int, _native_long, float)
-    _primitive_type = (str, int, float, bool, _native_unicode, _native_long)
-else:
-    _str_type = str
-    _int_type = int
-    _num_type = (int, float)
-    _primitive_type = (str, int, float, bool, bytes)
+_str_type = str
+_int_type = int
+_num_type = (int, float)
+_primitive_type = (str, int, float, bool, bytes)
 
 
 def is_type(var, *args):

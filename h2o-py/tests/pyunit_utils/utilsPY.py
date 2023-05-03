@@ -1,11 +1,6 @@
-# Py2 compat
-from __future__ import print_function
-from future import standard_library
-
 from h2o import H2OFrame
 from h2o.expr import ExprNode
 
-standard_library.install_aliases()
 from past.builtins import basestring
 
 # standard lib
@@ -33,10 +28,7 @@ import urllib.request, urllib.error, urllib.parse
 import uuid # call uuid.uuid4() to generate unique uuid numbers
 import numbers
 
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without string support, only unicode)
-except:
-    from io import StringIO  # py3
+from io import StringIO
     
 # 3rd parties
 try:
@@ -53,7 +45,6 @@ import scipy.special
 sys.path.insert(1, "../../")
 
 import h2o
-from h2o.utils.compatibility import PY2
 from h2o.model import H2OBinomialModel, H2OClusteringModel, H2OMultinomialModel, H2OOrdinalModel, H2ORegressionModel, H2OAnomalyDetectionModel
 from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
     H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
@@ -138,8 +129,6 @@ class _XStringIO(io.StringIO):
         self._alt = alt
         
     def write(self, s):
-        if PY2:
-            s = unicode(s)
         if self._alt is not None:
             self._alt.write(s)
         return super(_XStringIO, self).write(s)

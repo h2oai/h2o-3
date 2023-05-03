@@ -1,4 +1,3 @@
-from __future__ import print_function
 import re
 import h2o
 from tests import pyunit_utils

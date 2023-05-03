@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import division, print_function
 import sys
 
 sys.path.insert(1, "../../")

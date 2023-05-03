@@ -5,9 +5,6 @@ H2O data frame.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-from h2o.utils.compatibility import *  # NOQA
-
 import csv
 import datetime
 import functools
@@ -86,7 +83,7 @@ class H2OFrame(Keyed, H2ODisplay):
 
     # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
     __LOCAL_EXPANSION_ON_SINGLE_IMPORT__ = True
-    __fdopen_kwargs = {} if PY2 else {'encoding': 'utf-8'}
+    __fdopen_kwargs = {'encoding': 'utf-8'}
 
     # ------------------------------------------------------------------------------------------------------------------
     # Construction

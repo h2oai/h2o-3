@@ -5,8 +5,6 @@ Collection of utilities for debugging.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
-
 import inspect
 import re
 import sys
@@ -117,7 +115,7 @@ def _except_hook(exc_type, exc_value, exc_tb):
 
     # Print local frames
     err("[LOCAL FRAMES]")
-    err("Omitted: imported modules, class declarations, __future__ features, None-valued")
+    err("Omitted: imported modules, class declarations, None-valued")
     tb = exc_tb
     while tb:
         tb_line = tb.tb_lineno
@@ -137,7 +135,6 @@ def _except_hook(exc_type, exc_value, exc_tb):
             if hasattr(value, "__class__"):
                 if value.__class__ is ModuleType: continue  # omit imported modules
                 if value.__class__ is type: continue  # omit class declarations (new-style classes only)
-                if value.__class__ is print_function.__class__: continue  # omit __future__ declarations
             try:
                 strval = str(value)
                 n_lines = strval.count("\n")

@@ -5,7 +5,6 @@ Rapids expressions. These are helper classes for H2OFrame.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 from collections import OrderedDict

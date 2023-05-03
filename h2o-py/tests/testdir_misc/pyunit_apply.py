@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import division, print_function
-from future.utils import PY2
 import sys
 
 sys.path.insert(1, "../../")
@@ -137,7 +135,7 @@ def pyunit_apply_with_args():
         scale_with_partial_kwargs=(lambda x: x.scale(False, **partial_kwargs)),
         scale_with_partial_kwargs2=(lambda x: x.scale(center=False, **partial_kwargs)),
         scale_with_args_and_kwargs=(lambda x: x.scale(*partial_args, **partial_kwargs)),
-        scale_with_all_kind_args=(lambda x: x.scale(False, *partial_args, scale=False, **partial_kwargs)) if not PY2 else None,  # surprisingly this works because our signature verification is not that strict, but it's fine... at least behaves as expected.
+        scale_with_all_kind_args=(lambda x: x.scale(False, *partial_args, scale=False, **partial_kwargs)),  # surprisingly this works because our signature verification is not that strict, but it's fine... at least behaves as expected.
     )
     for test, lbd in to_test.items():
         if lbd:

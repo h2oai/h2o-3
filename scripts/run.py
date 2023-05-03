@@ -1009,14 +1009,14 @@ class Test(object):
     @staticmethod
     def _pytest_cmd(test_name, ip, port, on_hadoop, hadoop_namenode):
         if g_pycoverage:
-            pyver = "coverage-3.5" if g_py3 else "coverage"
+            pyver = "coverage-3.6" if g_py3 else "coverage"
             cmd = [pyver, "run", "-a", g_py_test_setup, "--usecloud", g_use_proto + ip + ":" + str(port), "--resultsDir",
                    g_output_dir,
                    "--testName", test_name]
             print("Running Python test with coverage:")
             print(cmd)
         else:
-            pyver = "python3.5" if g_py3 else "python"
+            pyver = "python3.6" if g_py3 else "python"
             cmd = [pyver, g_py_test_setup, "--usecloud", g_use_proto + ip + ":" + str(port), "--resultsDir", g_output_dir,
                    "--testName", test_name]
         if is_pyunit(test_name):
