@@ -34,7 +34,7 @@ from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError,
 from h2o.model.metrics import make_metrics
 from h2o.schemas import H2OMetadataV3, H2OErrorV3, H2OModelBuilderErrorV3, define_classes_from_schema
 from h2o.two_dim_table import H2OTwoDimTable
-from h2o.utils.metaclass import CallableString, backwards_compatibility
+from h2o.utils.metaclass import CallableString, backwards_compatibility, h2o_meta
 from h2o.utils.shared_utils import stringify_list, stringify_dict, as_resource
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 
@@ -246,7 +246,7 @@ class H2OConnectionConf(object):
         post_json=lambda *args, **kwargs: _deprecated_post(*args, **kwargs),
     )
 )
-class H2OConnection(H2OMeta):
+class H2OConnection(h2o_meta()):
     """
     Connection handle to an H2O cluster.
 
