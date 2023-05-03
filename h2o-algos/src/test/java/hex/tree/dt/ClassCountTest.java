@@ -3,6 +3,7 @@ package hex.tree.dt;
 import hex.tree.dt.mrtasks.GetClassCountsMRTask;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -20,7 +21,7 @@ import static org.junit.Assert.*;
 public class ClassCountTest extends TestUtil {
 
     @Test
-    public void testBinningBasicData() {
+    public void testClassCountBasicData() {
         try {
             Scope.enter();
             Frame basicData = new TestFrameBuilder()
@@ -57,6 +58,52 @@ public class ClassCountTest extends TestUtil {
             assertEquals(0, task._countsByClass[0]);
             assertEquals(4, task._countsByClass[1]);
             
+        } finally {
+            Scope.exit();
+        }
+
+    }
+
+    @Test
+    public void testClassCountSmalldata() {
+        try {
+            Scope.enter();
+            Frame data = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+            data.replace(0, data.vec(0).toCategoricalVec()).remove();
+            // manually put prediction column as the last one
+            Vec response = data.remove("IsDepDelayed");
+            data.add("IsDepDelayed", response);
+            DKV.put(data);
+
+            Scope.track_generic(data);
+
+            DataFeaturesLimits wholeDataLimits = DT.getInitialFeaturesLimits(data);
+
+            // data.IsDepDelayed.value_counts()
+            GetClassCountsMRTask task = new GetClassCountsMRTask(wholeDataLimits.toDoubles(), 2);
+            task.doAll(data);
+
+            assertEquals(11066, task._countsByClass[0]);
+            assertEquals(13355, task._countsByClass[1]);
+
+            // data[data.fYear <= 1988].IsDepDelayed.value_counts()
+            DataFeaturesLimits limit0FeaturesLimits = getFeaturesLimitsForConditions(data,
+                    wholeDataLimits.updateMax(0, 1988));
+            task = new GetClassCountsMRTask(limit0FeaturesLimits.toDoubles(), 2);
+            task.doAll(data);
+
+            assertEquals(1576, task._countsByClass[0]);
+            assertEquals(1947, task._countsByClass[1]);
+
+            // data[(data.fYear <= 1988) & (data.fDayOfMonth > 12)].IsDepDelayed.value_counts()
+            DataFeaturesLimits limit1FeaturesLimits = getFeaturesLimitsForConditions(data,
+                    limit0FeaturesLimits.updateMin(2, 12));
+            task = new GetClassCountsMRTask(limit1FeaturesLimits.toDoubles(), 2);
+            task.doAll(data);
+
+            assertEquals(1008, task._countsByClass[0]);
+            assertEquals(1196, task._countsByClass[1]);
+
         } finally {
             Scope.exit();
         }

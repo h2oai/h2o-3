@@ -3,6 +3,7 @@ package hex.tree.dt;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -79,5 +80,63 @@ public class LimitsUpdateTest extends TestUtil {
             Scope.exit();
         }
 
+    }
+
+    @Test
+    public void testBinningSmallData() {
+        try {
+            Scope.enter();
+            Frame data = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+            data.replace(0, data.vec(0).toCategoricalVec()).remove();
+            // manually put prediction column as the last one
+            Vec response = data.remove("IsDepDelayed");
+            data.add("IsDepDelayed", response);
+            DKV.put(data);
+
+            Scope.track_generic(data);
+
+            DataFeaturesLimits wholeDataLimits = DT.getInitialFeaturesLimits(data);
+
+            // count of features
+            assertEquals(data.numCols() - 1, wholeDataLimits.featuresCount());
+
+            // min and max values of features
+            for (int i = 0; i < wholeDataLimits.featuresCount(); i++) {
+                // check that lower limit is lower than the minimum value
+                assertTrue(data.vec(i).min() > wholeDataLimits.getFeatureLimits(i)._min);
+                assertEquals(data.vec(i).max(),
+                        wholeDataLimits.getFeatureLimits(i)._max,
+                        Precision.EPSILON);
+            }
+
+            // update data limits - set 1988 as new max for feature 0 (fYear)
+            DataFeaturesLimits newDataLimits = wholeDataLimits.updateMax(0, 1988);
+
+            // check that new max was set
+            assertEquals(1988, newDataLimits.getFeatureLimits(0)._max, Precision.EPSILON);
+            assertNotEquals( wholeDataLimits.getFeatureLimits(0)._max,
+                    newDataLimits.getFeatureLimits(0)._max, Precision.EPSILON);
+            // check that min din not change
+            assertEquals(wholeDataLimits.getFeatureLimits(0)._min,
+                    newDataLimits.getFeatureLimits(0)._min, Precision.EPSILON);
+
+            DataFeaturesLimits newRealDataLimits = getFeaturesLimitsForConditions(data, newDataLimits);
+
+            // test that real limits are more concrete that the limitations. 
+            // For airlines data new max of feature 7 (Distance) is 954 for new limitations on feature 0 (fYear <= 1988).
+            // data[(data.fYear <= 1988)].Distance.max() -> 954
+            // data.Distance.max() -> 3365
+            assertEquals(954, newRealDataLimits.getFeatureLimits(7)._max, Precision.EPSILON);
+            assertEquals(3365, wholeDataLimits.getFeatureLimits(7)._max, Precision.EPSILON);
+            assertTrue(newRealDataLimits.getFeatureLimits(7)._max <
+                    newDataLimits.getFeatureLimits(7)._max);
+
+            // test when limitations are null
+            DataFeaturesLimits dataLimitsWithoutLimitations = getFeaturesLimitsForConditions(data, null);
+            // must be equal to original whole data limits
+            assertTrue(dataLimitsWithoutLimitations.equals(wholeDataLimits));
+        } finally {
+            Scope.exit();
+        }
     }
 }

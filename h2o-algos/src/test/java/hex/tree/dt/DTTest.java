@@ -232,6 +232,10 @@ public class DTTest extends TestUtil {
         Scope.enter();
         Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
         Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test_preprocessed.csv"));
+        train.replace(0, train.vec(0).toCategoricalVec()).remove();
+        test.replace(0, test.vec(0).toCategoricalVec()).remove();
+        DKV.put(train);
+        DKV.put(test);
 
         DTModel.DTParameters p =
                 new DTModel.DTParameters();

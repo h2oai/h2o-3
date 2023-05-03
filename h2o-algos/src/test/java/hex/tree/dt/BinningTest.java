@@ -3,11 +3,11 @@ package hex.tree.dt;
 import hex.tree.dt.binning.Bin;
 import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
-//import hex.tree.dt.mrtasks.CountBinSamplesCountMRTask;
 import hex.tree.dt.mrtasks.CountBinsSamplesCountsMRTask;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -37,8 +37,7 @@ public class BinningTest extends TestUtil {
             assertNotEquals(0, featureBins.get(0)._count);
             assertNotEquals(0, featureBins.get(featureBins.size() - 1)._count);
             // all values are distributed to bins
-            assertEquals(numRows,
-                    featureBins.stream().map(b -> b._count).reduce(0, Integer::sum).intValue());
+            assertEquals(numRows, featureBins.stream().map(b -> b._count).reduce(0, Integer::sum).intValue());
         }
     }
     
@@ -179,6 +178,43 @@ public class BinningTest extends TestUtil {
             // count of features
             assertEquals(prostateData.numCols() - 1, histogram.featuresCount());
             int numRows = (int) prostateData.numRows();
+            testBinningValidity(histogram, numRows);
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
+
+    @Test
+    public void testBinningAirlinesData() {
+        try {
+            Scope.enter();
+            Frame data = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+            data.replace(0, data.vec(0).toCategoricalVec()).remove();
+            // manually put prediction column as the last one
+            Vec response = data.remove("IsDepDelayed");
+            data.add("IsDepDelayed", response);
+            DKV.put(data);
+
+            Scope.track_generic(data);
+
+            DataFeaturesLimits wholeDataLimits = getInitialFeaturesLimits(data);
+
+            // count of features
+            assertEquals(data.numCols() - 1, wholeDataLimits.featuresCount());
+
+            // min and max values of features
+            for (int i = 0; i < wholeDataLimits.featuresCount(); i++) {
+                // check that lower limit is lower than the minimum value
+                assertTrue(data.vec(i).min() > wholeDataLimits.getFeatureLimits(i)._min);
+                assertEquals(data.vec(i).max(), wholeDataLimits.getFeatureLimits(i)._max, Precision.EPSILON);
+            }
+
+            Histogram histogram = new Histogram(data, wholeDataLimits, BinningStrategy.EQUAL_WIDTH);
+            // count of features
+            assertEquals(data.numCols() - 1, histogram.featuresCount());
+            int numRows = (int) data.numRows();
             testBinningValidity(histogram, numRows);
 
         } finally {
