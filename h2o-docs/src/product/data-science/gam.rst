@@ -6,7 +6,8 @@ Generalized Additive Models (GAM)
 Introduction
 ~~~~~~~~~~~~
 
-A generalized additive model (GAM) is a :ref:`glm` in which the linear predictor depends linearly on predictor variables and smooth functions of predictor variables. H2O's GAM implementation follows closely the implementation as described in "Generalized Additive Models: An Introduction with R, Texts in Statistical Science [:ref:`1<ref1>`]" by Simon N. Wood. Another good resource for GAM can be found in "Generalized Additive Models" by T.J. Hastie and R.J. Tibshirani [:ref:`2<ref2>`].
+A Generalized Additive Model (GAM) is a type of Generalized Linear Model (GLM) where the linear predictor has a linear relationship with predictor variables and smooth functions of predictor variables. H2O's GAM implementation is closely based on the approach described in "Generalized Additive Models: An Introduction with R, Texts in Statistical Science [:ref:`1<ref1>`]" by Simon N. Wood. Another useful resource on GAMs can be found in "Generalized Additive Models" by T.J. Hastie and R.J. Tibshirani [:ref:`2<ref2>`].
+
 
 MOJO Support
 ''''''''''''
@@ -28,7 +29,7 @@ Algorithm-specific parameters
     - ``2`` specifies monotone splines (or I-splines).
     - ``3`` specifies NBSplineTypeI M-splines (which can support any polynomial order).
 
--  **gam_columns**: *Required* An array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
+-  **gam_columns**: *Required* Include an array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
   
 -  **keep_gam_cols**: Specify whether to save keys storing GAM columns. This option defaults to ``False`` (disabled).
 
@@ -45,6 +46,27 @@ Algorithm-specific parameters
 -  **spline_orders**: Order of I-splines (also known as monotone splines) and NBSplineTypeI M-splines used for GAM predictors. For I-splines, the ``spline_orders`` will be the same as the polynomials used to generate the splines. For M-splines, the polynomials will be ``spline_orders`` :math:`-1`. For example, ``spline_orders=3`` for I-splines means a polynomial of order 3 will be used in the splines while for M-splines it means a polynomial of order 2 will be used. If specified, this option must be the same size as ``gam_columns``. Values for ``bs=0`` or ``bs=1`` will be ignored.
 
 -  **standardize_tp_gam_cols**: Standardize thin plate predictor columns. This option defaults to ``False``.
+
+-  **subspaces**: List model parameters that can vary freely within the same subspace list, allowing the user to group model parameters with restrictions. If specified, the following parameters must have the same array dimsension:
+    
+    - ``gam_columns``
+    - ``num_knots``
+    - ``scale``
+    - ``bs``
+
+    Here is an example specifying these parameters:
+
+    .. code-block:: bash
+
+        gam = H2OGeneralizedAdditiveEstimator(family='binomial', 
+                                              gam_columns=["C11", "C12", "C13", ["C14", "C15"]], 
+                                              knot_ids=[frameKnotC11.key, framKnotC12.key, frameKnotC13.key, frameKnotC145.key], 
+                                              bs=[0,2,3,1], 
+                                              standardize=True, 
+                                              lambda_=[0], 
+                                              alpha=[0], 
+                                              max_iterations=1, 
+                                              store_knot_locations=True)
 
 Common parameters
 '''''''''''''''''
@@ -71,7 +93,7 @@ Common parameters
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns since no information can be gained from them. This option defaults to ``True`` (enabled).
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns as they provide no useful information. This option defaults to ``True`` (enabled).
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
@@ -87,13 +109,13 @@ Common parameters
 
 - `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable.
 
--  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
+-  `missing_values_handling <algo-params/missing_values_handling.html>`__: Choose how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
 
--  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+-  `model_id <algo-params/model_id.html>`__: Provide a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
 -  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. The value can be ``0`` (default) to disable or :math:`\geq` ``2``. 
 
--  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``.
+-  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the ``weights_column``.
    
      **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
@@ -132,7 +154,7 @@ Common parameters
     
      **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the model's accuracy.
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
     
@@ -152,11 +174,11 @@ Common parameters
 A Simple Linear Model
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Consider :math:`n` observations, :math:`x_i` with response variable :math:`y_i`, where :math:`y_i` is an observation on random variable :math:`Y_i`. Let :math:`u_i ≡ E(Y_i)`. Assuming a linear relationship between the predictor variables and the response, the following relationship exists between :math:`xi` and :math:`Y_i` as:
+For :math:`n` observations, :math:`x_i` with response variable :math:`y_i`, where :math:`y_i` is an observation on random variable :math:`Y_i`. and :math:`u_i ≡ E(Y_i)`. Assuming a linear relationship between the predictor variables and the response, the relationship between :math:`xi` and :math:`Y_i` is:
 
   :math:`Y_i = u_i + \epsilon_i \text{ where } u_i = \beta_i x_i + \beta_0`
 
-and :math:`\beta_i, \beta_0` are unknown parameters, :math:`\epsilon_i` are i.i.d zero mean variables with variances :math:`\delta^2`. We already know how to estimate :math:`\beta_i, \beta_0` using :ref:`GLM<glm>`.
+and :math:`\beta_i, \beta_0` are unknown parameters, :math:`\epsilon_i` are i.i.d zero mean variables with variances :math:`\delta^2`. We can estimate :math:`\beta_i, \beta_0` using :ref:`GLM<glm>`.
 
 .. _scenario2:
 
@@ -167,49 +189,49 @@ Using the same observations as in the previous A Simple Linear Model section, a 
 
   :math:`Y_i = f(x_i) + \epsilon_i \text{ where } f(x_i) = {\Sigma_{j=1}^k}b_j(x_i)\beta_j+\beta_0`
 
-Again, :math:`\beta = [\beta_0, \beta_1, \ldots, b_k]` is an unknown parameter vector that can also be estimated using :ref:`GLM<glm>`. This can be done by using :math:`[b_1(x_i), b_2(x_i), \ldots , b_K(x_i)]` as the predictor variables instead of :math:`x_i`. Here, we are basically estimating :math:`f(x_i)` using a set of basis functions:
+Again, :math:`\beta = [\beta_0, \beta_1, \ldots, b_k]` is an unknown parameter vector that can also be estimated using :ref:`GLM<glm>`. This can be done by using :math:`[b_1(x_i), b_2(x_i), \ldots , b_K(x_i)]` as the predictor variables instead of :math:`x_i`. We are essentially estimating :math:`f(x_i)` using a set of basis functions:
 
 :math:`\{b_1(x_i), b_2(x_i), \ldots, b_K(x_i)\}`
 
-where :math:`k` is the number of basis functions used. Note that for each predictor variable, we get to decide the types and number of basis functions that we would like to use to best generate a GAM.
+where :math:`k` is the number of basis functions used. Note that for each predictor variable, we can decide the types and number of basis functions that we want to use to generate best GAM.
 
 .. _scenario3:
 
-A Simple Piecewise Linear Basis Function
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Understanding Simple Piecewise Linear Basis Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To understand the role of basis functions, we are going to use a linear tent function.
+To comprehend the role of basis functions, let's take a look at a linear tent function. This will help us understand how piecewise basis functions work.
 
-Using piecewise basis functions, we need to pay attention to the locations of the function’s derivative discontinuities, that is by the locations at which the linear pieces join up. These locations are referred to as the knots and denoted by :math:`\{x_i^*:j=1, \ldots, K\}`. And suppose that the knots are sorted, meaning that :math:`x_i^* > x_{i-1}^*`. Then for :math:`j=2, \ldots, K - 1`, we have basis function :math:`b_j(x)` defined as:
+When working with piecewise basis functions, it's crucial to pay attention to the points where the function's derivative discontinuities occur. These points are where the linear pieces connect, and they are known as knots. We denote these knots by :math:`\{x_i^*:j=1, \ldots, K\}`. And suppose that the knots are sorted, meaning that :math:`x_i^* > x_{i-1}^*`. 
+
+For :math:`j=2, \ldots, K - 1`, the basis function :math:`b_j(x)` defined as:
 
   .. figure:: ../images/gam_simple_piecewise1.png
 
   .. figure:: ../images/gam_simple_piecewise2.png
 
+This function helps us understand how the linear pieces join together and interact with each other.
+
 .. _scenario4:
 
-Using Piecewise Tent Function to Approximate One Predictor Variable
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using Piecewise Tent Functions to Approximate a Single Predictor Variable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To illustrate how we can use the piecewise tent functions to approximate a predictor variable, let’s use the following example for a predictor:
+To illustrate how we can use the piecewise tent functions to approximate a predictor variable, let's take an example where the predictor value ranges from 0.0 to 1.0.:
 
-- Predictor value goes from 0.0 to 1.0
-- Set :math:`K=10` to use 10 piecewise tent functions
-- The knots are located at 0, 1/9, 2/9, 3/9, …, 8/9, 1.
-
-The basis function values are plotted in in the figure below. Note that there are 10 basis functions. The basis function values overlap with its neighbors from the left and the right except for the first and the last basis functions.
+We will use 10 piecewise tent functions, with K = 10. The knots will be located at 0, 1/9, 2/9, 3/9, ..., 8/9, 1. The figure below shows the basis function values, which overlap with their neighbors except for the first and last basis functions.
 
 .. figure:: ../images/gam_piecewise_tent_basis.png
    :alt: Piecewise tent basis functions
 
-For simplicity, let’s assume that we only have 21 predictor values uniformly spreading over the range from 0 to 1 with values 0, 0.05, 0.1, 0.15, …, 1.0. The next task is to translate each :math:`x_j` to a set of 10 basis function values. This means that for every value of :math:`x_j`, we will obtain 10 values, each one correspond to each of the basis function.
+For simplicity, assume we have 21 predictor values uniformly distributed between 0 and 1, with values of 0, 0.05, 0.1, 0.15, ..., 1.0. Our goal is to convert each :math:`x_j` into a set of 10 basis function values. So, for every :math:`x_j` value, we will obtain 10 values corresponding to each of the basis functions.
 
-For the predictor value at 0, the only basis function that matters is the first one. All the other basis function contributes 0 to the predictor value. Hence, for :math:`x_j = 0`, the vector corresponding to all basis functions will have the following values: {1,0,0,0,0,0,0,0,0,0} because the first basis function value is 1 at :math:`x_j = 0`. **Note** Substitute :math:`x=0` to the first basis function 
+
+For the predictor value at 0 (:math:`x_j = 0`), the only relevant basis function is the first one. All other basis functions contribute 0 to the predictor value. Thus, for :math:`x_j = 0` the vector representing all basis functions has these values: {1, 0, 0, 0, 0, 0, 0, 0, 0, 0}. This is because the first basis function value is 1 at :math:`x_j = 0`:
 
  :math:`b_1(x) = \frac{\big(\frac{1}{9} - x \big)}{\big(\frac{2}{9} - \frac{1}{9} \big)}`
 
-
-For predictor value 0.05, only the first and second basis functions contribute to its value, while the other basis functions are 0 at 0.05. The value of the first basis function is 0.55. **Note** Substitute :math:`x=0.05` to the first basis function 
+For predictor value 0.05, only the first and second basis functions contribute, while the others are 0 at 0.05. The value of the first basis function is 0.55. which can be obtained by substituting :math:`x=0.05` in the first basis function:
 
  :math:`b_1(x) = \frac{\big(\frac{1}{9} - x \big)}{\big(\frac{2}{9} - \frac{1}{9} \big)}`
 
@@ -272,15 +294,14 @@ We have calculated the expanded basis function vector for all predictor values, 
 Spline Functions
 ~~~~~~~~~~~~~~~~
 
-It has been proven in [:ref:`2<ref2>`] that the natural cubic splines are the smoothest interpolators. For a set of points :math:`{x_i, y_i:i = 1, \ldots, n}` where :math:`x_i \leq x_{i+1}`. The natural cubic spline, :math:`g(x)`, interpolating these points, is a function made up of sections of cubic polynomial, one for each :math:`[x_i, x_{i+1}]`. They are joined up together so that the whole spline is continuous to second derivative, while :math:`g(x_i) = y_i` and :math:`g^{''}(x_i) = g^{''}(x_n) = 0`. To ensure smooth function, we can add a penalty function :math:`J(f) = \int_{x_1}^{x_n} {(f^{''}(x))^2}dx` to the actual objective function that we are trying to optimize. The rationality behind this penalty is that the second derivative of a function measures the gradient change. For functions that wriggle a lot, it will have a higher second derivative magnitude. For a straight line that does not wriggle at all, the second derivative is zero.
-
+Natural cubic splines are proven to be the smoothest interpolators, as shown in [:ref:`2<ref2>`]. Given a set of points :math:`{x_i, y_i:i = 1, \ldots, n}` where :math:`x_i \leq x_{i+1}`, the natural cubic spline, :math:`g(x)`, interpolates these points using sections of cubic polynomial for each :math:`[x_i, x_{i+1}]`. These sections are joined together so that the entire spline is continuous to the second derivative, with :math:`g(x_i) = y_i` and :math:`g^{''}(x_i) = g^{''}(x_n) = 0`. To ensure a smooth function, a penalty function :math:`J(f) = \int_{x_1}^{x_n} {(f^{''}(x))^2}dx` can be added to the objective function being optimized. This penalty is based on the idea that a function's second derivative measures gradient change, and a higher second derivative magnitude indicates more wriggling.
 
 Cubic Regression Splines
 ''''''''''''''''''''''''
 
-Following the implementation in [:ref:`1<ref1>`], we have implemented the cubic regression splines for a single predictor variable. This approach defines the splines in terms of its values at the knots. Next, we define a cubic spline function, :math:`f(x)`, :math:`k` knots, :math:`x_1, x_2, \ldots, x_k`. Let :math:`\beta_j = f(x_j)` and :math:`\delta_j = f^{''}(x_j) = \frac{d^2f(x_j)}{d^2x}`. 
+Implemented based on [:ref:`1<ref1>`], cubic regression splines are used for a single predictor variable. This approach defines the splines in terms of their values at the knots. A cubic spline function, :math:`f(x)`, with :math:`k` knots, :math:`x_1, x_2, \ldots, x_k`, is defined using :math:`\beta_j = f(x_j)` and :math:`\delta_j = f^{''}(x_j) = \frac{d^2f(x_j)}{d^2x}`. 
 
-The splines can be written as:
+The splines can be expressed as:
 
 .. math::
 
@@ -291,17 +312,17 @@ where:
 - :math:`a_j^-(x) = (x_{j+1} - x)/h_j, a_j^+(x) = (x - x_j) / h_j`
 - :math:`c_j^-(x) = \big[\frac{(x_{j+1}-x)^3}{h_j} - h_j(x_{j+1} - x)\big] /6, c_j^+(x) = \big[\frac{(x-x_j)^3}{h_j} - h_j(x-x_j \big] / 6`
 
-Note that in order to ensure smooth fitting functions at the knots, the spline must be continuous to second derivative at the :math:`x_j` and should have zero second derivative at :math:`x_1` and :math:`x_k`. It can be shown that :math:`\beta\delta^- = DB` (to be added at a later date), where
+To ensure smooth fitting functions at the knots, the spline must be continuous to the second derivative at :math:`x_j` and have zero second derivative at :math:`x_1` and :math:`x_k`. It can be shown that :math:`\beta\delta^- = DB` (to be added later), where
 
  .. figure:: ../images/gam_cubic_regression_spines1.png
 
 Let :math:`BinvD = B^{-1}D` and let :math:`F = {\begin{bmatrix}0\\BinvD\\0\end{bmatrix}}`
 
-The spline can be rewritten entire in terms of :math:`\beta` as
+The spline can be rewritten entirely in terms of :math:`\beta` as
 
  :math:`f(x) = a_j^-(x)\beta_j + a_j^+(x)\beta_{j+1} + c_j^-(x)F_j\beta + c_j^+(x)F_{j+1}\beta \text{ for } x_j \leq x \leq x_{j+1}`
 
-which can be written as :math:`f(x_i) = \sum_{j=1}^{k}b_j(x_i)\beta_j+\beta_0` where :math:`b_j(x_i)` are the basis functions and :math:`\beta_0, \beta_1, \ldots, \beta_k` are the unknown parameters that can be estimated using :ref:`GLM<glm>`. In addition, the penalty term added to the final objective function can be derived to be:
+which can be expressed as :math:`f(x_i) = \sum_{j=1}^{k}b_j(x_i)\beta_j+\beta_0` where :math:`b_j(x_i)` are the basis functions and :math:`\beta_0, \beta_1, \ldots, \beta_k` are the unknown parameters that can be estimated using :ref:`GLM<glm>`. Additionally, the penalty term added to the final objective function can be derived as:
 
 .. math::
 
@@ -315,9 +336,9 @@ For linear regression models, the final objective function to minimize is
 
  \sum_{i=1}^n \bigg( y_i - \big( \sum_{j=1}^k b_j(x_i)\beta_j + \beta_0 \big) \bigg) + \lambda \beta^T S \beta
 
-Note that :math:`\lambda` will be another parameter for the user to choose using gridsearch. In a future release, we may use cross-validation to automatically choose :math:`lambda`.
+Note that the user will choose :math:`\lambda` using grid search. In future releases, cross-validation may be used to automatically select :math:`lambda`.
 
-Hence, at this point, we can call our :ref:`GLM<glm>`. However, we still need to add the contribution of the penalty term to the gradient and hessian calculation.
+At this point, :ref:`GLM<glm>` can be called, but the contribution of the penalty term to the gradient and Hessian calculation still needs to be added.
 
 Thin Plate Regression Splines
 '''''''''''''''''''''''''''''
@@ -332,11 +353,10 @@ For documentation on thin plate regression splines, refer here:
 Monotone Splines
 ''''''''''''''''
 
-We have implemented I-splines which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. In order to specify the monotone spline, you need to both set ``bs = 2`` and specify ``spline_orders`` which will be equal to the polynomials used to generate the splines.
-
+We have implemented I-splines, which are used as monotone splines. Monotone splines do not support multinomial or ordinal families. To specify the monotone spline, you need to set ``bs = 2`` and specify ``spline_orders``, which will be equal to the polynomials used to generate the splines.
 **B-splines:** :math:`Q_{i,k}(t)`
 
-This implementation begins with the B-spline. Let :math:`Q_{i,k}(t)` denote a B-spline of order :math:`k` at knot :math:`i` where it is non-zero over the duration :math:`t_i \leq t < t_{i+k}`. The recursive formula [:ref:`4<ref4>`] used to generate a B-spline of a higher order from two B-splines of a lower order is:
+B-splines are generated using a recursive formula over a set of knots :math:`t_0,t_1,\dots ,t_N` that covers the input range of interest. The number of basis functions for B-splines over the original knots is :math:`N+1+k-2`, where :math:`N+1` is the number of knots without duplication and :math:`k` is the spline order.
 
 .. math::
    
@@ -407,7 +427,7 @@ Or, you can use the recursive formula where higher order N-splines can be derive
 
 **I-splines:** :math:`I_{i,k}(t)`
 
-I-splines are used to build the monotone spline functions by restricting the gamified column coefficients to be :math:`\geq` 0 [:ref:`5<ref5>`]. We have implemented I-splines using the following method:
+I-splines are used to build monotone spline functions by restricting the gamified column coefficients to be :math:`\geq` 0. They are constructed using the N-splines.
 
 .. math::
    
@@ -461,7 +481,7 @@ Instead of using the recursive expression, look at the coefficients associated w
 General GAM
 ~~~~~~~~~~~
 
-In a general GAM, using the :ref:`GLM<glm>` jargon, the link function can be constructed using a mixture of predictor variables and smooth functions of predictor variables as follows:
+In a generalized additive model (GAM), using the :ref:`GLM<glm>` jargon, the link function can be constructed using a mixture of predictor variables and smooth functions of predictor variables as follows: 
 
 .. math::
 
