@@ -3940,7 +3940,7 @@ def convertH2OFrameToDMatrixSparse(h2oFrame, yresp, enumCols=[]):
 
     pandas = __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols);
 
-    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1])
+    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1], feature_names=pandas[2])
 
 
 def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
@@ -3977,10 +3977,10 @@ def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
     pandaF = pd.concat([c0, pandaFtrain], axis=1)
     pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
     newX = list(pandaFtrain.columns.values)
-    data = pandaF[newX].values
-    label = pandaF[[yresp]].values
+    data = pandaF[newX].to_numpy()
+    label = pandaF[[yresp]].to_numpy()
 
-    return (data,label)
+    return (data,label,newX)
 
 def generatePandaEnumCols(pandaFtrain, cname, nrows):
     """
