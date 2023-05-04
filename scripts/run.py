@@ -20,11 +20,7 @@ import socket
 import multiprocessing
 import platform
 
-if sys.version_info[0] < 3:
-    # noinspection PyPep8Naming
-    import ConfigParser as configparser
-else:
-    import configparser
+import configparser
 
 
 
