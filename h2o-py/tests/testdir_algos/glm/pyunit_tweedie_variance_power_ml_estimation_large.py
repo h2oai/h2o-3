@@ -183,13 +183,19 @@ def test_tweedie_var_power_estimation_2p6_disp2_est():
     assert abs(model_ml.actual_params["tweedie_variance_power"] - 2.67437207518084) < 1e-6
 
 
-pyunit_utils.run_tests([
-    test_tweedie_var_power_estimation_2p1_disp2_est,  # takes 531s
-    test_tweedie_var_power_estimation_2p6_disp2_est,  # takes 1034s
-    #test_tweedie_var_power_estimation_2p5_phi_2p5_no_link_power_est,  # takes 1968s
-    test_tweedie_var_power_estimation_3_phi_0p5_no_link_power_est,  # takes 1185s
-    #test_tweedie_var_power_estimation_3_no_link_power_est,  # takes 2654s
-    #test_tweedie_var_power_estimation_3_phi_1p5_no_link_power_est,  # takes 2309s
-    test_tweedie_var_power_estimation_5_no_link_power_est,  # takes 830s
-    #test_tweedie_var_power_estimation_5_phi_0p5_no_link_power_est,  # takes 1151s
-])
+def run_random_test():
+    import random
+    tests = [
+        test_tweedie_var_power_estimation_2p1_disp2_est,  # takes 531s
+        test_tweedie_var_power_estimation_2p6_disp2_est,  # takes 1034s
+        test_tweedie_var_power_estimation_2p5_phi_2p5_no_link_power_est,  # takes 1968s
+        test_tweedie_var_power_estimation_3_phi_0p5_no_link_power_est,  # takes 1185s
+        test_tweedie_var_power_estimation_3_no_link_power_est,  # takes 2654s
+        test_tweedie_var_power_estimation_3_phi_1p5_no_link_power_est,  # takes 2309s
+        test_tweedie_var_power_estimation_5_no_link_power_est,  # takes 830s
+        test_tweedie_var_power_estimation_5_phi_0p5_no_link_power_est,  # takes 1151s
+    ]
+    return random.choices(tests, weights=[531.0/w for w in [531, 1034, 1968, 1185, 2654, 2309, 830, 1151]])
+
+
+pyunit_utils.run_tests(run_random_test())
