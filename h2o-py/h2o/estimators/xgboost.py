@@ -1272,7 +1272,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         ...           y=response,
         ...           training_frame=train)
         >>> perf = xgb.model_performance(valid)
-        >>> print perf.auc()
+        >>> print(perf.auc())
         """
         return self._parms.get("max_depth")
 

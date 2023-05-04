@@ -883,7 +883,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         ...           y=response,
         ...           training_frame=train)
         >>> perf = drf.model_performance(valid)
-        >>> print perf.auc()
+        >>> print(perf.auc())
         """
         return self._parms.get("max_depth")
 

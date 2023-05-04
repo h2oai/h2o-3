@@ -10,8 +10,8 @@ def add_junit_perf_results_to_mr_unit(args):
   cursor = mr_unit.cursor()
   try:
     if not os.path.isdir(args[2]) or len(os.listdir(args[2])) == 0:
-      print "{0} does not exist or is empty, so junit_perf.py has nothing to do here. Maybe ./gradlew build failed " \
-            "before it created this directory and the junit test results".format(args[2])
+      print("{0} does not exist or is empty, so junit_perf.py has nothing to do here. Maybe ./gradlew build failed " +
+            "before it created this directory and the junit test results".format(args[2]))
     else:
       for junit_suite_xml in os.listdir(args[2]):
         xml = ET.parse(os.path.join(args[2],junit_suite_xml))
@@ -40,7 +40,7 @@ def add_junit_perf_results_to_mr_unit(args):
   except:
     traceback.print_exc()
     mr_unit.rollback()
-    print "Failed to add performance results to junit table in mr_unit database!"
+    print("Failed to add performance results to junit table in mr_unit database!")
     raise
 
 if __name__ == '__main__':

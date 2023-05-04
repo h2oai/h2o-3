@@ -538,7 +538,7 @@ class ModelSpec(dict):
         if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
         if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
 
-        return ModelSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() + params.items()), dataset['model_category'])
+        return ModelSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items(), **(params.items())), dataset['model_category'])
 
 
     def build_and_validate_model(self, a_node):
@@ -587,7 +587,7 @@ class GridSpec(dict):
         if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
         if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
 
-        return GridSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() + params.items()), grid_params, dataset['model_category'], search_criteria)
+        return GridSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items(), **(params.items())), grid_params, dataset['model_category'], search_criteria)
 
 
     def build_and_validate_grid(self, a_node):

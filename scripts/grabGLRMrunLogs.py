@@ -88,8 +88,8 @@ def main(argv):
     global g_milsongs_java_tail
 
     if len(argv) < 9:
-        print "python grabGLRMrunLogs logsBaseDirectory airlineJavaFileNameWithPath milsongJavaFileNameWithPath " \
-              "airlinePyunitWithPath airlinePyunitWithPath jenkinsJobURL startBuild# endBuild#.\n"
+        print("python grabGLRMrunLogs logsBaseDirectory airlineJavaFileNameWithPath milsongJavaFileNameWithPath " +
+              "airlinePyunitWithPath airlinePyunitWithPath jenkinsJobURL startBuild# endBuild#.\n")
         sys.exit(1)
     else:   # we may be in business
 #        g_script_name = os.path.basename(argv[0])   # get name of script being run.
@@ -104,7 +104,7 @@ def main(argv):
         end_number = int(argv[8])
 
         if (start_number > end_number):
-            print "startBuild# must be <= end_number"
+            print("startBuild# must be <= end_number")
             sys.exit(1)
         else:
             for build_index in range(start_number, end_number+1):   # grab log info for all builds
