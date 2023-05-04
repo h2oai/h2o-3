@@ -1,8 +1,6 @@
 from h2o import H2OFrame
 from h2o.expr import ExprNode
 
-from past.builtins import basestring
-
 # standard lib
 from contextlib import contextmanager
 import copy
@@ -777,8 +775,8 @@ def expect_model_param(models, attribute_name, expected_values):
     if type(expected_values) != list:
         expected_values = [expected_values]
     # limit precision. Rounding happens in some models like RF
-    actual_values = [x if isinstance(x,basestring) else round(float(x),5) for x in actual_values]
-    expected_values = [x if isinstance(x,basestring) else round(float(x),5) for x in expected_values]
+    actual_values = [x if isinstance(x, str) else round(float(x),5) for x in actual_values]
+    expected_values = [x if isinstance(x, str) else round(float(x),5) for x in expected_values]
     print("actual values: {0}".format(actual_values))
     print("expected values: {0}".format(expected_values))
     actual_values_len = len(actual_values)

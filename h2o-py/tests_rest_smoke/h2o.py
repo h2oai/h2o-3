@@ -194,7 +194,7 @@ class H2O(object):
 
                             if val is None:
                                 array_str += 'null'
-                            elif isinstance(val, basestring):
+                            elif isinstance(val, str):
                                 array_str += "\"" + str(val) + "\""
                             else:
                                 array_str += str(val)
@@ -212,7 +212,7 @@ class H2O(object):
 
                             if val is None:
                                 map_str += "\"" + key + "\"" + ': null'
-                            elif isinstance(val, basestring):
+                            elif isinstance(val, str):
                                 map_str += "\"" + str(key) + "\"" + ":" + "\"" + str(val) + "\""
                             else:
                                 map_str += "\"" + key + "\"" + ':' + str(val)
@@ -681,7 +681,7 @@ class H2O(object):
         assert column is not None, 'FAIL: "column" parameter is null'
 
         # quote column names; leave integer column indexes alone
-        if isinstance(column, basestring):
+        if isinstance(column, str):
             column = '"' + column + '"'
 
         params_dict = {
