@@ -131,12 +131,11 @@ public abstract class XGBoostPojoWriter {
             }
             RegTree[][] trees = booster.getGroupedTrees();
             for (int gidx = 0; gidx < trees.length; gidx++) {
-                sb.ip("float preds_").p(gidx).p(" = 0f;").nl();
+                sb.ip("float preds_").p(gidx).p(" = ").pj(_p.getBaseScore()).p(";").nl();
                 for (int tidx = 0; tidx < trees[gidx].length; tidx++) {
                     String treeClassName = renderTreeClass(trees, gidx, tidx, dartBooster, fileCtx);
                     sb.ip("preds_").p(gidx).p(" += ").p(treeClassName).p(".score0(data);").nl();
                 }
-                sb.ip("preds_").p(gidx).p(" += ").pj(_p.getBaseScore()).p(";").nl();
                 sb.ip("preds[").p(gidx).p("] = preds_").p(gidx).p(";").nl();
             }
         }
