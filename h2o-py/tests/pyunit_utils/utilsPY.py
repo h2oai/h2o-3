@@ -364,7 +364,6 @@ def np_comparison_check(h2o_data, np_data, num_elements):
 
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
-
 def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False, glrmIterNumber=-1, zipFilePath=None):
     
     """
