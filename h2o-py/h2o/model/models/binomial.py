@@ -736,7 +736,7 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.iteritems():
             if v is None:
                 m[k] = None
             elif hasattr(v, metric) and callable(getattr(v, metric)):
@@ -1017,7 +1017,7 @@ class H2OBinomialModel(ModelBase):
     def _delegate_to_metrics(self, method, train=False, valid=False, xval=False, **kwargs):
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.iteritems():
             if v is None:
                 m[k] = None
             elif hasattr(v, method) and callable(getattr(v, method)):

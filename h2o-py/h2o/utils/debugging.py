@@ -12,7 +12,6 @@ from types import ModuleType
 
 from h2o.exceptions import H2OJobCancelled, H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import viewkeys
 
 # Nothing to import; this module's only job is to install an exception hook for debugging.
 __all__ = ()
@@ -128,7 +127,7 @@ def _except_hook(exc_type, exc_value, exc_tb):
         if frame_func == "__getattribute__": continue
         if not frame_locl: continue
         err("\n  Within %s() line %s in file %s:" % (frame_func, tb_line, frame_file))
-        for key in sorted(viewkeys(frame_locl), reverse=True):
+        for key in sorted(frame_locl.keys(), reverse=True):
             if key.startswith("__") and key.endswith("__"): continue
             value = frame_locl[key]
             if value is None: continue  # do not print uninitialized variables

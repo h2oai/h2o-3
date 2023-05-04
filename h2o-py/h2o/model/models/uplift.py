@@ -372,7 +372,7 @@ class H2OBinomialUpliftModel(ModelBase):
     def _delegate_to_metrics(self, method, train=False, valid=False, **kwargs):
         tm = ModelBase._get_metrics(self, train, valid, xval=None)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.iteritems():
             if v is None:
                 m[k] = None
             elif hasattr(v, method) and callable(getattr(v, method)):

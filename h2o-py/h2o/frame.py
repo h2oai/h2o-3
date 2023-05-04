@@ -484,7 +484,7 @@ class H2OFrame(Keyed, H2ODisplay):
         if setup["column_names"]: p["column_names"] = None
         if setup["na_strings"]: p["na_strings"] = None
 
-        p.update({k: v for k, v in viewitems(setup) if k in p})
+        p.update({k: v for k, v in setup.iteritems() if k in p})
 
         # Extract only 'name' from each src in the array of srcs
         p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
@@ -2250,7 +2250,7 @@ class H2OFrame(Keyed, H2ODisplay):
             self._ex._cache.names = self.names + [colname]
             self._ex._cache._ncols += 1
             if self._ex._cache.types_valid() and isinstance(value, H2OFrame) and value._ex._cache.types_valid():
-                self._ex._cache._types[colname] = list(viewvalues(value._ex._cache.types))[0]
+                self._ex._cache._types[colname] = list(value._ex._cache.types.values())[0]
             else:
                 self._ex._cache.types = None
         if value_is_own_subframe:

@@ -262,7 +262,7 @@ class Dict(MagicType):
         """Return True if the variable matches this type, and False otherwise."""
         if not isinstance(var, dict): return False
         if any(key not in self._types for key in var): return False
-        for key, ktype in viewitems(self._types):
+        for key, ktype in self._types.iteritems():
             val = var.get(key, None)
             if not _check_type(val, ktype):
                 return False
@@ -271,7 +271,7 @@ class Dict(MagicType):
     def name(self, src=None):
         """Return string representing the name of this type."""
         return "{%s}" % ", ".join("%s: %s" % (key, _get_type_name(ktype, src))
-                                  for key, ktype in viewitems(self._types))
+                                  for key, ktype in self._types.iteritems())
 
 
 class BoundInt(MagicType):
@@ -584,8 +584,8 @@ def _check_type(var, vtype):
                 all(_check_type(var[i], vtype[i]) for i in range(len(vtype))))
     if isinstance(vtype, dict):
         # ``vtype`` is a dict literal
-        ttkv = U(*viewitems(vtype))
-        return isinstance(var, dict) and all(_check_type(kv, ttkv) for kv in viewitems(var))
+        ttkv = U(*(vtype.iteritems()))
+        return isinstance(var, dict) and all(_check_type(kv, ttkv) for kv in var.iteritems())
     if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
         return vtype(var)
     raise RuntimeError("Ivalid type %r in _check_type()" % vtype)
@@ -626,7 +626,7 @@ def _get_type_name(vtype, dump=None):
         return "(%s)" % ", ".join(_get_type_name(item, dump) for item in vtype)
     if isinstance(vtype, dict):
         return "dict(%s)" % ", ".join("%s: %s" % (_get_type_name(tk, dump), _get_type_name(tv, dump))
-                                      for tk, tv in viewitems(vtype))
+                                      for tk, tv in vtype.iteritems())
     if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
         if vtype.__name__ == "<lambda>":
             return _get_lambda_source_code(vtype, dump)
