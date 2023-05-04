@@ -182,7 +182,7 @@ class H2O(object):
         # NOTE: we currently don't need to do this for GET, so that's not implemented.
         if postData is not None:
             munged_postData = {}
-            for k, v in postData.iteritems():
+            for k, v in postData.items():
                 if type(v) is list:
                     if len(v) == 0:
                         munged_postData[k] = '[]'
@@ -207,7 +207,7 @@ class H2O(object):
                     else:
                         first = True
                         map_str = '{'
-                        for key, val in v.iteritems():
+                        for key, val in v.items():
                             if not first: map_str += ', '
 
                             if val is None:

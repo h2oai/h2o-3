@@ -303,7 +303,7 @@ def validate_actual_parameters(input_parameters, actual_parameters, training_fra
     Validate that the returned parameters list for a model build contains all the values we passed in as input.
     '''
     actuals_dict = list_to_dict(actual_parameters, 'name')
-    for k, expected in input_parameters.iteritems():
+    for k, expected in input_parameters.items():
         # TODO: skipping some stuff for now because they aren't serialized properly
         if k is 'response_column':
             continue
@@ -357,7 +357,7 @@ def validate_grid_parameters(grid_parameters, actual_parameters):
     Validate that the returned parameters list for a model build contains values we passed in as grid parameters.
     '''
     actuals_dict = list_to_dict(actual_parameters, 'name')
-    for k, grid_param_values in grid_parameters.iteritems():
+    for k, grid_param_values in grid_parameters.items():
 
         # Python says True; json says true
         assert k in actuals_dict, "FAIL: Expected key " + k + " not found in grid parameters list."
@@ -418,7 +418,7 @@ def fetch_and_validate_grid_sort(a_node, key, sort_by, decreasing):
     criteria = []
     # Unfortunately, we use mixed case in the JSON and lower case in the back end. . .
     for mm in training_metrics:
-        for k, v in mm.iteritems():
+        for k, v in mm.items():
             if k.lower() == sort_by:
                 criteria.append(v)
                 break
@@ -616,7 +616,7 @@ class GridSpec(dict):
 
         # Cartesian or random with max_models: check that we got the right number of models if we know beforehand:
         combos = 1
-        for k, vals in self['grid_params'].iteritems():
+        for k, vals in self['grid_params'].items():
             combos *= len(vals)
 
         # NOTE: if we have a stopping critereon which is not a fixed number we don't know how many models to expect

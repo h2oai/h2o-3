@@ -407,7 +407,7 @@ class H2OCache(object):
             lrows = len(col['data'])  # Cached rows being displayed
             d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"] + list(map(str, range(lrows)))
         # For all columns...
-        for k, v in self._data.iteritems():
+        for k, v in self._data.items():
             x = v['data']  # Data to display
             t = v["type"]  # Column type
             if t == "enum":

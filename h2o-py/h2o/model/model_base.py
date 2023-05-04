@@ -878,7 +878,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems():
+        for k, v in tm.items():
             m[k] = None if v is None else v.r2()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -898,7 +898,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems():
+        for k, v in tm.items():
             m[k] = None if v is None else v.mse()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -918,7 +918,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems():
+        for k, v in tm.items():
             m[k] = None if v is None else v.rmse()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -938,7 +938,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems():
+        for k, v in tm.items():
             m[k] = None if v is None else v.mae()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -958,7 +958,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems(): m[k] = None if v is None else v.rmsle()
+        for k, v in tm.items(): m[k] = None if v is None else v.rmsle()
         return list(m.values())[0] if len(m) == 1 else m
 
     def logloss(self, train=False, valid=False, xval=False):
@@ -977,7 +977,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems(): m[k] = None if v is None else v.logloss()
+        for k, v in tm.items(): m[k] = None if v is None else v.logloss()
         return list(m.values())[0] if len(m) == 1 else m
 
     def mean_residual_deviance(self, train=False, valid=False, xval=False):
@@ -996,7 +996,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems(): m[k] = None if v is None else v.mean_residual_deviance()
+        for k, v in tm.items(): m[k] = None if v is None else v.mean_residual_deviance()
         return list(m.values())[0] if len(m) == 1 else m
 
     def auc(self, train=False, valid=False, xval=False):
@@ -1015,7 +1015,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems():
+        for k, v in tm.items():
             m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -1035,7 +1035,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems(): m[k] = None if v is None else v.aic()
+        for k, v in tm.items(): m[k] = None if v is None else v.aic()
         return list(m.values())[0] if len(m) == 1 else m
 
     def gini(self, train=False, valid=False, xval=False):
@@ -1054,7 +1054,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems(): m[k] = None if v is None else v.gini()
+        for k, v in tm.items(): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
     
     def aucpr(self, train=False, valid=False, xval=False):
@@ -1073,7 +1073,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.iteritems(): 
+        for k, v in tm.items(): 
             if v is not None and not is_type(v, h2o.model.metrics.binomial.H2OBinomialModelMetrics) and not is_type(v,
                                                                                                                     h2o.model.metrics.multinomial.H2OMultinomialModelMetrics):
                 raise H2OValueError("aucpr() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average PR AUC value, default is Weighted One-to-Rest PR AUC.")

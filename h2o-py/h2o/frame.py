@@ -484,7 +484,7 @@ class H2OFrame(Keyed, H2ODisplay):
         if setup["column_names"]: p["column_names"] = None
         if setup["na_strings"]: p["na_strings"] = None
 
-        p.update({k: v for k, v in setup.iteritems() if k in p})
+        p.update({k: v for k, v in setup.items() if k in p})
 
         # Extract only 'name' from each src in the array of srcs
         p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
