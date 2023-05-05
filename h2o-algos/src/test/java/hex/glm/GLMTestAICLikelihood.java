@@ -58,6 +58,38 @@ public class GLMTestAICLikelihood extends TestUtil {
   }
 
   // test quasibinomial
+  @Test
+  public void testQuasibinomialAICLikelihood() {
+    Scope.enter();
+    try {
+      Frame trainData =  parseTestFile("smalldata/prostate/prostate.csv");
+      Scope.track(trainData);
+      final GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+      parms._train = trainData._key;
+      parms._family = GLMModel.GLMParameters.Family.quasibinomial;
+      parms._response_column = "CAPSULE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._calc_like = true;
+      final GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+      final Frame pred = model.score(trainData);
+      Scope.track(pred);
+      //manually calculate loglikelihood and AIC directly from formula
+      int nRow = (int) pred.numRows();
+      double logLike = 0.0;
+      double probabilityOf1;
+      for (int index=0; index<nRow; index++) {
+//        probabilityOf1 = ym.length > 1 ? ym[2] : ym[0];
+        logLike += trainData.vec("CAPSULE").at(index) == 0 ? Math.log(pred.vec(1).at(index)) : Math.log(pred.vec(2).at(index));
+      }
+      assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual AIC: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
+      double aic = -2*logLike + 2*model._output.rank();
+      assertTrue("AIC from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC)<1e-6);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   // test fractionalbinomial
   // test poisson
   // test negative binomial
