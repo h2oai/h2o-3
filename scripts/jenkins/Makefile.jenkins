@@ -136,6 +136,7 @@ test-py-demos:
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
 
 test-pyunit-demos:
+    test "$$CI" != "true" || pip install -U urllib3==1.26.15
 	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
 test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests lookup-explain-tests
