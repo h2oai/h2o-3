@@ -122,8 +122,13 @@ public class PojoUtilsTest extends TestUtil {
     GLMModel.GLMParameters params1 = new GLMModel.GLMParameters();
     GLMModel.GLMParameters params2 = new GLMModel.GLMParameters();
 
-    Field field1 = params1.getClass().getFields()[11];
-    Field field2 = params2.getClass().getFields()[11];
+    Field field1, field2 = null;
+    try {
+      field1 = params1.getClass().getDeclaredField("_alpha");
+      field2 = params2.getClass().getDeclaredField("_alpha");
+    } catch (NoSuchFieldException e) {
+      throw new IllegalArgumentException("Field _alpha not found!", e);
+    }
 
     // check null
     assert PojoUtils.equals(params1,  field1, params2,  field2);
