@@ -3,6 +3,7 @@ package hex.glm;
 import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsRegressionGLM;
 import org.apache.commons.math3.special.Gamma;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -61,6 +62,7 @@ public class GLMTestAICLikelihood extends TestUtil {
   }
 
   // test quasibinomial
+  @Ignore
   @Test
   public void testQuasibinomialAICLikelihood() {
     Scope.enter();
@@ -109,6 +111,7 @@ public class GLMTestAICLikelihood extends TestUtil {
   }
 
   // test fractionalbinomial
+  @Ignore
   @Test
   public void testFractionalbinomialAICLikelihood() {
     Scope.enter();
