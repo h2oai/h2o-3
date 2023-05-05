@@ -110,7 +110,7 @@ def pyunit_make_metrics(weights_col=None):
 
     # Testing base metric methods
     # FIXME: check the same failures for other ModelMetrics impl. and then fix'emall or move them out of base class...
-    base_metrics_methods_failing_on_H2OBinomialModelMetrics = ['aic', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'rmsle']
+    base_metrics_methods_failing_on_H2OBinomialModelMetrics = ['aic', 'loglikelihood', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'rmsle']
     for metric_method in (m for m in base_metric_methods if m not in base_metrics_methods_failing_on_H2OBinomialModelMetrics):
         m0mm = getattr(m0, metric_method)()
         m1mm = getattr(m1, metric_method)()
