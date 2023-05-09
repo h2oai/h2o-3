@@ -688,6 +688,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
+          if (DispersionMethod.ml.equals(_dispersion_parameter_method)) {
+            return TweedieVariancePowerMLEstimator.deviance(yr, ym, _tweedie_variance_power);
+          }
           double theta = _tweedie_variance_power == 1
             ?Math.log(y1/ym)
             :(Math.pow(y1,1.-_tweedie_variance_power) - Math.pow(ym,1 - _tweedie_variance_power))/(1-_tweedie_variance_power);
@@ -709,6 +712,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                 (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
                         yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
                 ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
+      }  else if (Family.tweedie.equals(_family) && DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
+        return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _init_dispersion_parameter);
       }  else
         return .5 * deviance(yr,ym);
     }
@@ -790,8 +795,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return 1.0 / xx;
         case tweedie:
           return _tweedie_link_power == 0
-            ?Math.max(2e-16,Math.exp(x))
-            :Math.pow(x, 1/ _tweedie_link_power);
+            ? Math.max(2e-16, Math.exp(x))
+            : Math.pow(x, 1/ _tweedie_link_power);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -864,6 +869,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public DistributionFamily getDistributionFamily() {
       return familyToDistribution(_family);
     }
+    
+    public void updateTweedieParams(double tweedieVariancePower, double tweedieLinkPower, double dispersion){
+      _tweedie_variance_power = tweedieVariancePower;
+      _tweedie_link_power = tweedieLinkPower;
+      _init_dispersion_parameter = dispersion;
+    }
   } // GLMParameters
 
   public static class GLMWeights {
@@ -886,15 +897,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final double _oneOLinkPowerSquare;
     double _theta;  // used by negative binomial, 0 < _theta <= 1
     double _invTheta;
+    double _dispersion;
     double _oneOeta;
     double _oneOetaSquare;
+    boolean _varPowerEstimation;
 
     final NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     
     public GLMWeightsFun(GLMParameters parms) {this(parms._family,parms._link, parms._tweedie_variance_power, 
-            parms._tweedie_link_power, parms._theta);}
+            parms._tweedie_link_power, parms._theta, parms._init_dispersion_parameter, GLMParameters.DispersionMethod.ml.equals(parms._dispersion_parameter_method) && !parms._fix_tweedie_variance_power);}
 
-    public GLMWeightsFun(Family fam, Link link, double var_power, double link_power, double theta) {
+    public GLMWeightsFun(Family fam, Link link, double var_power, double link_power, double theta, double dispersion, boolean varPowerEstimation) {
       _family = fam;
       _link = link;
       _var_power = var_power;
@@ -907,6 +920,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _oneOLinkPowerSquare = _oneOLinkPower*_oneOLinkPower;
       _theta = theta;
       _invTheta = 1/theta;
+      _dispersion = dispersion;
+      _varPowerEstimation = varPowerEstimation;
     }
 
     /***
@@ -1075,6 +1090,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
+          if (_varPowerEstimation)
+            return TweedieVariancePowerMLEstimator.deviance(yr, ym, _var_power);
           double val;
           if (_var_power==1) {
             val = yr*Math.log(y1/ym)-(yr-ym);
@@ -1115,7 +1132,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
         case tweedie:
           x.dev = w*deviance(yr,ym);
-          x.l = likelihood(w, yr, ym); // todo: verify that this is not true for Poisson distribution
+          x.l = likelihood(w, yr, ym); 
           break;
         case negativebinomial:
           x.dev = w*deviance(yr,ym); // CHECKED-log/CHECKED-identity
@@ -1152,7 +1169,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
           if (yr == 0) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-        case tweedie: // we ignore the a(y,phi,p) term in the likelihood calculation here since we are not optimizing over them
+        case tweedie:
+          if (_varPowerEstimation)
+            return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym, _var_power, _dispersion);
+         //  we ignore the a(y,phi,p) term in the likelihood calculation here since we are not optimizing over them
           double temp = 0;
           if (_var_power==1) {
             temp = Math.pow(ym, _twoMinusVarPower)*_oneOtwoMinusVarPower-yr*Math.log(ym);

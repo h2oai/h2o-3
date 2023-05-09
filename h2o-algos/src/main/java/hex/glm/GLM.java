@@ -921,6 +921,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         case tweedie:
           if (_nclass != 1) error("_family", H2O.technote(2, "Tweedie requires the response to be numeric."));
+          if (ml.equals(_parms._dispersion_parameter_method)) {
+            if (!_parms._fix_dispersion_parameter && !_parms._fix_tweedie_variance_power)
+              throw H2O.unimpl("Estimation of both Tweedie dispersion parameter and Tweedie variance power has not been implemented yet. Please set fix_dispersion_parameter=True.");
+            // Check if response contains zeros if so limit variance power to (1,2)
+            if (_response.min() <= 0)
+              warn("_tweedie_var_power", "Response contains zeros and/or values lower than zero. "+
+                      "Tweedie variance power ML estimation will be limited between 1 and 2. Values lower than zero will be ignored.");
+          }
           break;
         case quasibinomial:
           if (_nclass != 1) error("_family", H2O.technote(2, "Quasi_binomial requires the response to be numeric."));
@@ -1057,7 +1065,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         
         if (_parms._dispersion_learning_rate <= 0 && tweedie.equals(_parms._family))
-          error("dispersion_learning_rate", "must > 0 and is only used with tweedie disersion" +
+          error("dispersion_learning_rate", "must > 0 and is only used with tweedie dispersion" +
                   " parameter estimation using ml.");
         
         if (_parms._fix_tweedie_variance_power && tweedie.equals(_parms._family) && _parms._tweedie_variance_power > 1
@@ -2167,8 +2175,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
-
-
     private void fitIRLSMML(Solver s) {
       double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       LineSearchSolver ls = null;
@@ -2182,6 +2188,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ? _dinfo.getWeightsVec()
               : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
       Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
+      
       try {
         while (!converged && iterCnt < _parms._max_iterations && !_job.stop_requested()) {
           iterCnt++;
@@ -2234,7 +2241,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // Dispersion estimation part
           if (negativebinomial.equals(_parms._family)){
             converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH, weights, response) && converged;
+            Log.info("GLM negative binomial dispersion estimation: iteration = "+iterCnt+"; theta = " + _parms._theta);
+          } else if (tweedie.equals(_parms._family)){
+            if (_parms._fix_dispersion_parameter && ! _parms._fix_tweedie_variance_power) {
+              converged = updateTweedieVariancePower(iterCnt, _state.expandBeta(betaCnd), weights, response) && converged;
+              Log.info("GLM Tweedie variance power estimation: iteration = "+iterCnt+"; p = " + _parms._tweedie_variance_power);
+            }
           }
+
           if (Math.abs(previousLLH - gram.likelihood) < _parms._objective_epsilon)
             sameLLH ++;
           else
@@ -2244,7 +2258,176 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
-        throw e; // TODO: Decide if we want to return a bad model or no model at all.
+        warn("Regression with MLE training", "Got Non SPD matrix, stopped.");
+      }
+    }
+
+    private boolean updateTweedieVariancePower(int iterCnt, double[] betaCnd, Vec weights, Vec response) {
+      final double newtonThreshold = 0.1; // when d < newtonThreshold => use Newton's method
+      final double phi = _parms._init_dispersion_parameter;
+      final double originalP = _parms._tweedie_variance_power;
+      double bestLLH = Double.NEGATIVE_INFINITY, bestP = 1.5, lowerBound, upperBound, p = originalP;
+      int newtonFailures = 0;
+      boolean converged = false;
+      Scope.enter();
+      DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+              1, Vec.T_NUM, _dinfo._adaptedFrame);
+      Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
+
+      // Golden section search for p between 1  and 2 
+      lowerBound = 1 + 1e-16;
+      if (response.min() <= 0) {
+        upperBound = 2 - 1e-16;
+      } else {
+        upperBound = Double.POSITIVE_INFINITY;
+      }
+      // Let's assume the var power will be close to the one in last iteration and hopefully save some time 
+      if (iterCnt > 1) {
+        boolean forceInversion = (originalP > 1.95 && originalP < 2.1);
+        TweedieVariancePowerMLEstimator lo = new TweedieVariancePowerMLEstimator(
+                Math.max(lowerBound, p - 0.01),
+                phi, forceInversion).compute(mu, response, weights);
+        TweedieVariancePowerMLEstimator mid = new TweedieVariancePowerMLEstimator(p, phi, forceInversion).compute(mu, response, weights);
+        TweedieVariancePowerMLEstimator hi = new TweedieVariancePowerMLEstimator(
+                Math.min(upperBound, p + 0.01), phi, forceInversion).compute(mu, response, weights);
+        if (mid._loglikelihood > lo._loglikelihood && !Double.isNaN(lo._loglikelihood) && !Double.isNaN(mid._loglikelihood))
+          lowerBound = lo._p;
+        if (mid._loglikelihood > hi._loglikelihood && !Double.isNaN(mid._loglikelihood) && !Double.isNaN(hi._loglikelihood))
+          upperBound = hi._p;
+
+        if (bestLLH < lo._loglikelihood && lo._loglikelihood != 0 && !forceInversion) {
+          bestLLH = lo._loglikelihood;
+          bestP = lo._p;
+        }
+
+        if (bestLLH < mid._loglikelihood && mid._loglikelihood != 0 && !forceInversion) {
+          bestLLH = mid._loglikelihood;
+          bestP = mid._p;
+        }
+
+        if (bestLLH < hi._loglikelihood && hi._loglikelihood != 0 && !forceInversion) {
+          bestLLH = hi._loglikelihood;
+          bestP = hi._p;
+        }
+      }
+
+      if (upperBound == Double.POSITIVE_INFINITY) {
+        // look at p=2 and p=3 (cheap to compute)
+        TweedieVariancePowerMLEstimator tvp2 = new TweedieVariancePowerMLEstimator(2, phi).compute(mu, response, weights);
+        TweedieVariancePowerMLEstimator tvp3 = new TweedieVariancePowerMLEstimator(3, phi).compute(mu, response, weights);
+        double llhI = tvp3._loglikelihood, llhIm1 = tvp2._loglikelihood;
+        // pI == p_i, pIm1 == p_{i-1}, ...
+        double pI = 3, pIm1 = 2, pIm2 = lowerBound;
+
+        if (bestLLH < llhI && llhI != 0) {
+          bestLLH = llhI;
+          bestP = pI;
+        }
+
+        if (bestLLH < llhIm1 && llhIm1 != 0) {
+          bestLLH = llhIm1;
+          bestP = pIm1;
+        }
+
+        // if p(2) > p(3) => search in [1, 3]
+        // look at 3,6,12,24,48,96, ... until p(x_{i-1}) > p(x_i) => search in [x_{i-2}, x_i] 
+        while (llhIm1 < llhI) {
+          pIm2 = pIm1;
+          pIm1 = pI;
+          llhIm1 = llhI;
+          pI *= 2;
+          TweedieVariancePowerMLEstimator tvp = new TweedieVariancePowerMLEstimator(pI, phi).compute(mu, response, weights);
+          llhI = tvp._loglikelihood;
+
+          if (bestLLH < llhI && llhI != 0) {
+            bestLLH = llhI;
+            bestP = pI;
+          }
+        }
+        lowerBound = pIm2;
+        upperBound = pI;
+      }
+
+      double d = upperBound - lowerBound;
+      p = (upperBound + lowerBound) / 2;
+
+      for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
+        // likelihood, grad, and hess get unstable for the series method near 2, so I'm not using Newton's method for 
+        // this region and instead use "hybrid" (series+inversion) likelihood calculation
+        if (d < newtonThreshold && p >= lowerBound && p <= upperBound && newtonFailures < 3 && !(p >= 1.95 && p <= 2.1) && p != 3) {
+          // Use Newton's method in bracketed space
+          TweedieVariancePowerMLEstimator tvp = new TweedieVariancePowerMLEstimator(
+                  p,
+                  phi,
+                  false, true, true, false).compute(mu, response, weights);
+          if (tvp._loglikelihood > bestLLH && tvp._loglikelihood != 0) {
+            bestLLH = tvp._loglikelihood;
+            bestP = p;
+          } else {
+            newtonFailures++;
+          }
+          double delta = tvp._llhDp / tvp._llhDpDp;
+          p = p - delta;
+          if (Math.abs(delta) < _parms._dispersion_epsilon) {
+            converged = true;
+            break;
+          }
+          if (_job.stop_requested())
+            break;
+        } else {
+          if (d < newtonThreshold) {
+            newtonFailures++;
+          }
+          boolean forceInversion = (lowerBound > 1.95 && upperBound < 2.1); // behaves more stable - less -oo but tends to be lower sometimes than series+inversion hybrid 
+          d *= 0.618;  // division by golden ratio
+          final double lowerBoundProposal = upperBound - d;
+          final double upperBoundProposal = lowerBound + d;
+          TweedieVariancePowerMLEstimator lowerEst = new TweedieVariancePowerMLEstimator(
+                  lowerBoundProposal, phi, forceInversion).compute(mu, response, weights);
+          TweedieVariancePowerMLEstimator upperEst = new TweedieVariancePowerMLEstimator(
+                  upperBoundProposal, phi, forceInversion).compute(mu, response, weights);
+
+          if (forceInversion)
+            bestLLH = Math.max(lowerEst._loglikelihood, upperEst._loglikelihood);
+
+          if (lowerEst._loglikelihood >= upperEst._loglikelihood) {
+            upperBound = upperBoundProposal;
+            if (lowerEst._loglikelihood >= bestLLH && lowerEst._loglikelihood != 0) {
+              bestLLH = lowerEst._loglikelihood;
+              bestP = lowerEst._p;
+            }
+          } else {
+            lowerBound = lowerBoundProposal;
+            if (upperEst._loglikelihood >= bestLLH && upperEst._loglikelihood != 0) {
+              bestLLH = upperEst._loglikelihood;
+              bestP = upperEst._p;
+            }
+          }
+          p = (upperBound + lowerBound) / 2;
+          if (Math.abs((upperBoundProposal - lowerBoundProposal)) < _parms._dispersion_epsilon || _job.stop_requested()) {
+            bestP = (upperBoundProposal + lowerBoundProposal) / 2;
+            converged = true;
+            break;
+          }
+          if (!Double.isFinite(upperEst._loglikelihood) && !Double.isFinite(lowerEst._loglikelihood) && lowerEst._p < 5) {
+            break;
+          }
+          if (upperEst._loglikelihood == 0 && lowerEst._loglikelihood == 0) {
+            break;
+          }
+        }
+      }
+      updateTweedieParms(bestP, phi);
+      Scope.exit();
+      return Math.abs(originalP - bestP) < _parms._dispersion_epsilon && converged;
+    }
+
+    private void updateTweedieParms(double p, double dispersion) {
+      if (!Double.isFinite(p)) return;
+      _parms.updateTweedieParams(p, _parms._tweedie_link_power, dispersion);
+      _model._parms.updateTweedieParams(p, _model._parms._tweedie_link_power, dispersion);
+      if (_state._glmw != null) {
+        _state._glmw = new GLMWeightsFun(_parms);
       }
     }
 
@@ -2568,8 +2751,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             else if (gaussian.equals(_parms._family) && Link.identity.equals(_parms._link))
               fitLSM(solver);
             else {
-              if (_parms._dispersion_parameter_method.equals(ml) && _parms._family.equals(negativebinomial))
-                fitIRLSMML(solver);
+              if (_parms._dispersion_parameter_method.equals(ml))
+                  fitIRLSMML(solver);
               else
                 fitIRLSM(solver);
             }
@@ -2810,8 +2993,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Link tlink = tfamily.defaultLink;
         if (!(link == null))
           tlink = link[k];
-        GLMWeightsFun glmfun = new GLMWeightsFun(tfamily, tlink,
-                0, 0, 0);
+        GLMWeightsFun glmfun = new GLMWeightsFun(tfamily, tlink, 0, 0, 0, 1, false);
         int colLength = _randC[k];
         for (int col = 0; col < colLength; col++) {
           int index = k * colLength + col;
