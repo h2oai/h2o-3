@@ -7,6 +7,7 @@ RUN \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 51716619E084DAB9 && \
     apt-get update && \
     apt-get install -y zip libglu1-mesa-dev libpcre2-dev && \
+    apt-get install -y texlive-full && \
     apt-get -y build-dep r-base && \
     apt-get -y remove openjdk-8-jdk openjdk-8-jdk-headless openjdk-8-jre openjdk-8-jre-headless && \
     apt-get clean && \
