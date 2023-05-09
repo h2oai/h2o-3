@@ -162,6 +162,8 @@ public class H2OAssemblyToMojoPipelineConverter {
             customOpBuilder.setTransformerName(StringPropertiesUnaryTransform.Factory.TRANSFORMER_ID);
         } else if (StringGrepTransform.Factory.functionExists(functionName)) {
             customOpBuilder.setTransformerName(StringGrepTransform.Factory.TRANSFORMER_ID);
+        } else if (StringSplitTransform.Factory.functionExists(functionName)) {
+            customOpBuilder.setTransformerName(StringSplitTransform.Factory.TRANSFORMER_ID);
         } else if (TimeUnaryTransform.Factory.functionExists(functionName)) {
             customOpBuilder.setTransformerName(TimeUnaryTransform.Factory.TRANSFORMER_ID);
         } else if (ToStringConversion.Factory.functionExists(functionName)) {
