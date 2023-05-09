@@ -62,7 +62,6 @@ public class GLMTestAICLikelihood extends TestUtil {
   }
 
   // test quasibinomial
-  @Ignore
   @Test
   public void testQuasibinomialAICLikelihood() {
     Scope.enter();
@@ -77,6 +76,7 @@ public class GLMTestAICLikelihood extends TestUtil {
       parms._calc_like = true;
       final GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
+      model._output.resetThreshold(0.5);
       final Frame pred = model.score(trainData);
       final Vec responseCol = trainData.vec(parms._response_column);
       Scope.track(pred);
@@ -86,32 +86,27 @@ public class GLMTestAICLikelihood extends TestUtil {
       double probabilityOf1;
       double yr;
       for (int index=0; index<nRow; index++) {
-//        System.out.println(pred.vec(0).at(index));
-//        System.out.println("[" + pred.vec(0).at(index) + ", " + pred.vec(1).at(index) + ", " + pred.vec(2).at(index) + "]");
         yr = responseCol.at(index);
         probabilityOf1 = pred.numCols() > 1 ? pred.vec(2).at(index) : pred.vec(0).at(index); // probability of 1 equals prediction
         if(yr == pred.vec(0).at(index)) {
-//          System.out.println(0);
           continue; // logLike += 0.0;
         } else if (pred.vec(0).at(index) > 1) {
-//          System.out.println(-1 * yr * log(probabilityOf1));
           logLike += -1 * yr * log(probabilityOf1);
         } else {
-//          System.out.println(-1 * (yr * log(probabilityOf1) + (1 - yr) * log(1 - probabilityOf1)));
-//          System.out.println(probabilityOf1 + " " + yr + " " + pred.vec(0).at(index) + " " + pred.vec(0));
           logLike += -1 * (yr * log(probabilityOf1) + (1 - yr) * log(1 - probabilityOf1));
         }
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual AIC: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
       double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC)<1e-6);
+      System.out.println(((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC);
+      System.out.println(logLike + " " + aic);
     } finally {
       Scope.exit();
     }
   }
 
   // test fractionalbinomial
-  @Ignore
   @Test
   public void testFractionalbinomialAICLikelihood() {
     Scope.enter();
@@ -125,6 +120,7 @@ public class GLMTestAICLikelihood extends TestUtil {
       parms._calc_like = true;
       final GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
+      model._output.resetThreshold(0.5);
       final Frame pred = model.score(trainData);
       final Vec responseCol = trainData.vec(parms._response_column);
       Scope.track(pred);
@@ -134,7 +130,6 @@ public class GLMTestAICLikelihood extends TestUtil {
       double probabilityOf1;
       double yr;
       for (int index=0; index<nRow; index++) {
-        System.out.println("[" + pred.vec(0).at(index) + ", " + pred.vec(1).at(index) + ", " + pred.vec(2).at(index) + "]");
         yr = responseCol.at(index);
         probabilityOf1 = pred.numCols() > 1 ? pred.vec(2).at(index) : pred.vec(0).at(index); // probability of 1 equals prediction
         if(yr == pred.vec(0).at(index)) {
