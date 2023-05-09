@@ -537,8 +537,9 @@ class ModelSpec(dict):
         assert 'model_category' in dataset, "FAIL: Failed to find model_category in dataset: " + repr(dataset)
         if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
         if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
-
-        return ModelSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() | params.items()), dataset['model_category'])
+        result_dataset_params = dataset_params.copy()
+        result_dataset_params.update(params)
+        return ModelSpec(dest_key, algo, dataset['dest_key'], result_dataset_params, dataset['model_category'])
 
 
     def build_and_validate_model(self, a_node):
@@ -586,8 +587,10 @@ class GridSpec(dict):
         assert 'model_category' in dataset, "FAIL: Failed to find model_category in dataset: " + repr(dataset)
         if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
         if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
+        result_dataset_params = dataset_params.copy()
+        result_dataset_params.update(params)
 
-        return GridSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() | params.items()), grid_params, dataset['model_category'], search_criteria)
+        return GridSpec(dest_key, algo, dataset['dest_key'], result_dataset_params, grid_params, dataset['model_category'], search_criteria)
 
 
     def build_and_validate_grid(self, a_node):
