@@ -198,9 +198,8 @@ def call(final pipelineContext) {
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
-    // Todo merge stages test-py-demos and test-py3-only-demos
     [
-      stageName: 'Py3.7 Demo Notebooks', target: 'test-py-demos', pythonVersion: '3.7',
+      stageName: 'Py3.6 Demo Notebooks', target: 'test-py-demos', pythonVersion: '3.6',
       timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
