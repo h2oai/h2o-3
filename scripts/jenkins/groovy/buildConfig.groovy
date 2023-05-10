@@ -224,6 +224,8 @@ class BuildConfig {
   }
 
   String getStageImage(final stageConfig) {
+    if (stageConfig.imageSpecifier && stageConfig.imageVersion)
+      return getDevImageReference(stageConfig.imageSpecifier, stageConfig.imageVersion)
     if (stageConfig.imageSpecifier)
       return getDevImageReference(stageConfig.imageSpecifier)
     def component = stageConfig.component
@@ -259,13 +261,19 @@ class BuildConfig {
       default:
         throw new IllegalArgumentException("Cannot find image for component ${component}")
     }
-
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
+    def imageVersion = DEFAULT_IMAGE_VERSION_TAG
+    if (stageConfig.imageVersion)
+      imageVersion = stageConfig.imageVersion
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${imageVersion}"
   }
   
-  String getDevImageReference(final specifier) {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${DEFAULT_IMAGE_VERSION_TAG}"
+  String getDevImageReference(final specifier, final version) {
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${version}"
   }
+
+  String getDevImageReference(final specifier) {
+    return getDevImageReference(specifier, DEFAULT_IMAGE_VERSION_TAG)
+  }  
 
   String getStashNameForTestPackage(final String platform) {
     return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform == 'any' ? 'java' : platform)

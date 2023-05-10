@@ -893,6 +893,7 @@ private void invokeStageUsingDefinition(final stageDef, final pipelineContext) {
     activatePythonEnv = stageDef['activatePythonEnv']
     customDockerArgs = stageDef['customDockerArgs']
     imageSpecifier = stageDef['imageSpecifier']
+    imageVersion = stageDef['imageVersion']
     healthCheckSuppressed = stageDef['healthCheckSuppressed']
     addToDockerGroup = stageDef['addToDockerGroup']
     awsCredsPrefix = stageDef['awsCredsPrefix']

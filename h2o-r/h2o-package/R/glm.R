@@ -150,7 +150,7 @@
 #' @param dispersion_learning_rate Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. It must be
 #'        > 0.  This controls how much the dispersion parameter estimate is to be changed when the calculated
 #'        loglikelihood actually decreases with the new dispersion.  In this case, instead of setting new dispersion =
-#'        dispersion - change, we set new dispersion = dispersion + dispersion_learning_rate * change. Defaults to 0.5.
+#'        dispersion + change, we set new dispersion = dispersion + dispersion_learning_rate * change. Defaults to 0.5.
 #'        Defaults to 0.5.
 #' @param influence If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the
 #'        dataset. Must be one of: "dfbetas".
