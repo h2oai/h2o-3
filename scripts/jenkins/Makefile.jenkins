@@ -181,8 +181,11 @@ test-r-smoke:
 test-r-init:
 	cd h2o-r/tests/testdir_jira && ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=7" R -f h2o.init_test_HOQE-16.R
 
-test-r-small: lookup-automl-tests lookup-demos-tests
+test-r-small: lookup-automl-tests lookup-demos-tests lookup-explain-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
+	
+test-r-explain: lookup-explain-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
 test-r-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
