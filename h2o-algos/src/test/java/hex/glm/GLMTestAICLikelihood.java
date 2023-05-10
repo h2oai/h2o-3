@@ -16,7 +16,7 @@ import water.runner.H2ORunner;
 import water.util.MathUtils;
 
 import static hex.DistributionFactory.LogExpUtil.log;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -96,7 +96,7 @@ public class GLMTestAICLikelihood extends TestUtil {
           logLike += -1 * (yr * log(probabilityOf1) + (1 - yr) * log(1 - probabilityOf1));
         }
       }
-      assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual AIC: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
+      assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
       double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsBinomialGLM) model._output._training_metrics)._AIC);
@@ -299,6 +299,37 @@ public class GLMTestAICLikelihood extends TestUtil {
       double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._AIC)<1e-6);
       System.out.println(((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM) model._output._training_metrics)._AIC);
+      System.out.println(logLike + " " + aic);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  // test tweedie
+  @Test
+  public void testTweedieAICLikelihood() {
+    Scope.enter();
+    try {
+      final Frame trainData = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+      Scope.track(trainData);
+      final GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+      parms._train = trainData._key;
+      parms._family = GLMModel.GLMParameters.Family.tweedie;
+      parms._response_column = "CAPSULE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._calc_like = true;
+      final GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+      model._output.resetThreshold(0.5);
+      final Frame pred = model.score(trainData);
+      final Vec responseCol = trainData.vec(parms._response_column);
+      Scope.track(pred);
+      // only check that loglikelihood is calculated
+      double logLike = ((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood;
+      assertNotEquals("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood, 0.0, logLike);
+      double aic = -2*logLike + 2*model._output.rank();
+      assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
+      System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
       System.out.println(logLike + " " + aic);
     } finally {
       Scope.exit();
