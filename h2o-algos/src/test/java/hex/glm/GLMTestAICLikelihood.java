@@ -16,11 +16,61 @@ import water.runner.H2ORunner;
 import water.util.MathUtils;
 
 import static hex.DistributionFactory.LogExpUtil.log;
+import static hex.glm.GLMModel.GLMParameters.LOG2PI;
 import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GLMTestAICLikelihood extends TestUtil {
+  // test gaussian
+  @Test
+  public void testGaussianAICLikelihood() {
+    Scope.enter();
+    try {
+      final Frame trainData = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+      Scope.track(trainData);
+      final GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+      parms._train = trainData._key;
+      parms._family = GLMModel.GLMParameters.Family.gaussian;
+      parms._response_column = "CAPSULE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._calc_like = true;
+      final GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+      model._output.resetThreshold(0.5);
+      final Frame pred = model.score(trainData);
+      final Vec responseCol = trainData.vec(parms._response_column);
+      Scope.track(pred);
+      //manually calculate loglikelihood and AIC directly from formula
+      int nRow = (int) pred.numRows();
+      double logLike = 0.0;
+      double yr;
+      double prediction;
+      double dispersion_estimated_manual = 0;
+      for (int index=0; index<nRow; index++) {
+        yr = responseCol.at(index);
+        prediction = pred.vec(0).at(index);
+        dispersion_estimated_manual += Math.pow(yr - prediction, 2);
+      }
+      dispersion_estimated_manual /= (nRow - 1 - (trainData.numCols() - 2));
+      
+      for (int index=0; index<nRow; index++) {
+        yr = responseCol.at(index);
+        prediction = pred.vec(0).at(index);
+        logLike += -.5 * (Math.pow(yr - prediction , 2) / dispersion_estimated_manual
+                + log(dispersion_estimated_manual) + LOG2PI);
+      }
+      assertTrue("Dispersion parameter estimation from model: "+model._parms._dispersion_estimated+".  Manual dispersion estimation: "+dispersion_estimated_manual+" and they are different.", Math.abs(dispersion_estimated_manual-model._parms._dispersion_estimated)<1e-6);
+      assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
+      double aic = -2*logLike + 2*model._output.rank();
+      assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
+      System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
+      System.out.println(logLike + " " + aic);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   // test binomial generated from model and from manually generated one using single thread only
   @Test
   public void testBinomialAICLikelihood() {
