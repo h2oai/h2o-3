@@ -135,7 +135,7 @@ test-py-demos:
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
 
 test-py3-only-demos:
-	test "$$CI" != "true" || pip install scikit-learn==1.0.2
+	test "$$CI" != "true" || pip install -U urllib3==1.26.13 scikit-learn==1.0.2
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 1 --baseport 56789 --jvm.xmx 10g --testlist py3demos
 
 test-pyunit-demos:
