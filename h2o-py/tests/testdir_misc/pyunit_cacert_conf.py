@@ -31,7 +31,8 @@ def test_cacert_in_config():
         assert False
     except H2OConnectionError as e:
         # any response is a good response - TLS handshake was successful which proves the certificate was used 
-        assert "HTTP 404 Not Found" in str(e)
+        strErr = str(e)
+        assert "HTTP 404 Not Found" in strErr or "X509: NO_CERTIFICATE_OR_CRL_FOUND" in strErr
 
 
 if __name__ == "__main__":

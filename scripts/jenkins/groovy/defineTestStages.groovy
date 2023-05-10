@@ -46,6 +46,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.9 Smoke', target: 'test-py-smoke', pythonVersion: '3.9',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],      
+    [
       stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
@@ -159,7 +163,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R4.0 Small', target: 'test-r-small', rVersion: '4.0.2',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R4.0 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '4.0.2',
@@ -179,7 +183,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
-      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 210, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 X-large', target: 'test-pyunit-xlarge', pythonVersion: '3.7',
@@ -512,17 +516,25 @@ def call(final pipelineContext) {
       timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.5 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+      stageName: 'Py3.9 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.9',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.5 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+      stageName: 'Py3.9 Small', target: 'test-pyunit-small', pythonVersion: '3.9',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.5 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+      stageName: 'Py3.9 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.9',
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
+    [
+      stageName: 'Py3.9 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.9',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.9 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.9',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],      
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ]
@@ -889,6 +901,7 @@ private void invokeStageUsingDefinition(final stageDef, final pipelineContext) {
     activatePythonEnv = stageDef['activatePythonEnv']
     customDockerArgs = stageDef['customDockerArgs']
     imageSpecifier = stageDef['imageSpecifier']
+    imageVersion = stageDef['imageVersion']
     healthCheckSuppressed = stageDef['healthCheckSuppressed']
     addToDockerGroup = stageDef['addToDockerGroup']
     awsCredsPrefix = stageDef['awsCredsPrefix']

@@ -117,7 +117,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. " +
             "It must be > 0.  This controls how much the dispersion parameter estimate is to be changed when the" +
             " calculated loglikelihood actually decreases with the new dispersion.  In this case, instead of setting" +
-            " new dispersion = dispersion - change, we set new dispersion = dispersion + dispersion_learning_rate * change. " +
+            " new dispersion = dispersion + change, we set new dispersion = dispersion + dispersion_learning_rate * change. " +
             "Defaults to 0.5.", level = Level.expert, gridable = true)
     public double dispersion_learning_rate;
 

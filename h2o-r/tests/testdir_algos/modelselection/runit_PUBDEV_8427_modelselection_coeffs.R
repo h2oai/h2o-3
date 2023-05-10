@@ -18,11 +18,11 @@ testModelSelectionCoeffs <- function() {
   coeffsMaxr <- h2o.coef(maxrModel)
   coeffsNormMaxr <- h2o.coef_norm(maxrModel)
   maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel, 
-      mode="maxrsweep")
+      mode="maxrsweep", build_glm_model=TRUE)
   coeffsMaxrsweep <- h2o.coef(maxrsweepModel)
   coeffsNormMaxrsweep <- h2o.coef_norm(maxrsweepModel)
   maxrsweepGLMModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel, 
-        mode="maxrsweep", build_glm_model=FALSE)
+        mode="maxrsweep")
 
   coeffsMaxrsweepGLM <- h2o.coef(maxrsweepGLMModel)
   coeffsNormMaxrsweepGLM <- h2o.coef_norm(maxrsweepGLMModel)

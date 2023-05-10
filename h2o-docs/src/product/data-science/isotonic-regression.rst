@@ -16,39 +16,56 @@ Isotonic Regression models can be exported as `MOJOs <../save-and-load-model.htm
 Defining an Isotonic Regression Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+All parameters are optional unless specified as *required*.
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
--  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the accuracy of the model.
+-  `out_of_bounds <algo-params/out_of_bounds.html>`__: Method for handling values of the ``X`` predictor that are outside of the bounds seen in training. Must be one of: ``clip`` or ``na`` (default). The default value prints "NA" for values outside of the training range.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This value defaults to 0 (no cross-validation).
+Common parameters
+'''''''''''''''''
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable.
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
 
-   -  Isolation Regression will treat any input as a regression problem regardless of type of dependent variable. For categorical variables it will train the model on indices of the labels.
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for ``nfolds`` is specified and ``fold_column`` is not specified) Specify the cross-validation fold assignment scheme. One of:
 
--  `x <algo-params/x.html>`__: Specify name of a single predictor variable to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
-
--  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option is defaults to true (enabled).
-
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions. This option is defaults to false (not enabled).
-
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option is defaults to false (not enabled).
-
--  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems). This option defaults to AUTO.
+    - ``AUTO`` (default; uses ``Random``)
+    - ``Random``
+    - ``Modulo`` (`read more about Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__)
+    - ``Stratified`` (which will stratify the folds based on the response variable for classification problems)
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified``weights_column``. 
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to ``False`` (not enabled).
+
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to ``True`` (enabled).
+
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions. This option defaults to ``False`` (not enabled).
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This value defaults to ``0`` (no cross-validation).
+
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
+   
+      **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
+
+-  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
+   
+    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  `out_of_bounds <algo-params/out_of_bounds.html>`__: Method handling values of X predictor that are outside of the bounds seen in training. Must be one of ``clip`` or ``na`` (default). The default value prints "NA" for values outside of the training range.
+-  `x <algo-params/x.html>`__: Specify the name of a single predictor variable to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
--  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
+
+     -  Isolation Regression will treat any input as a regression problem regardless of the type of dependent variable. For categorical variables, it will train the model on indices of the labels.
 
 Examples
 ~~~~~~~~

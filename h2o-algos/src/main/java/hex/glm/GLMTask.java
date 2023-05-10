@@ -1560,7 +1560,7 @@ public abstract class GLMTask  {
       _w = new GLMWeights();
       if (_glmf._family.equals(Family.tweedie)) {
         _glmfTweedie = new GLMModel.GLMWeightsFun(_glmf._family, _glmf._link, _glmf._var_power, _glmf._link_power,
-                _glmf._theta);
+                _glmf._theta, _glmf._dispersion, _glmf._varPowerEstimation);
       }
     }
     
@@ -2075,7 +2075,7 @@ public abstract class GLMTask  {
         else
           randlink = params._rand_link[index];
         randGLMs[index] = new GLMWeightsFun(params._rand_family[index], randlink,
-                params._tweedie_variance_power, params._tweedie_link_power, 0);
+                params._tweedie_variance_power, params._tweedie_link_power, 0, params._init_dispersion_parameter, false);
       }
       return randGLMs;
     }
@@ -2106,7 +2106,7 @@ public abstract class GLMTask  {
       } else {  // load from dinfo: response, zi, etai and maybe weightID for prior_weight
         usingWpsi = false;
         glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-                _parms._tweedie_link_power, 0);
+                _parms._tweedie_link_power, 0, _parms._init_dispersion_parameter, false);
         zdevChunkInfo = getCorrectChunk(_dinfo._adaptedFrame, 0, chkStartRowIdx, chunks4ZDev, _dinfoWCol,
                 zdevChunkInfo);
       }
@@ -2126,7 +2126,7 @@ public abstract class GLMTask  {
                     rowAbsIndex, chunks4ZDev, _dinfoWCol, zdevChunkInfo);
             if (glmfun==null)
               glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-                      _parms._tweedie_link_power, 0);
+                      _parms._tweedie_link_power, 0, _parms._init_dispersion_parameter, false);
           }
           zdevAbsRelRowNumber = usingWpsi?(int)(rowIndex+rowOffset):rowIndex+zdevChunkInfo[2];
         }  else if (usingWpsi && (zdevAbsRelRowNumber-zdevChunkInfo[0]) >= zdevChunkInfo[1]) {  // load from wprior_wpsi
@@ -2280,7 +2280,7 @@ public abstract class GLMTask  {
         else
           randlink = params._rand_link[index];
         randGLMs[index] = new GLMWeightsFun(params._rand_family[index], randlink,
-                params._tweedie_variance_power, params._tweedie_link_power, 0);
+                params._tweedie_variance_power, params._tweedie_link_power, 0, params._init_dispersion_parameter, false);
       }
       return randGLMs;
     }
@@ -2355,7 +2355,7 @@ public abstract class GLMTask  {
         int[] zdevChunkInfo = new int[3];
 
         glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-                _parms._tweedie_link_power, 0);
+                _parms._tweedie_link_power, 0, _parms._init_dispersion_parameter, false);
         zdevChunkInfo = getCorrectChunk(_dinfo._adaptedFrame, 0, chkStartRowIdx, chunks4ZDev, _dinfoWCol,
                 zdevChunkInfo);
         int zdevAbsRelRowNumber = zdevChunkInfo[2];
@@ -2371,7 +2371,7 @@ public abstract class GLMTask  {
           }
             if (glmfun == null)
               glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-                      _parms._tweedie_link_power, 0);
+                      _parms._tweedie_link_power, 0, _parms._init_dispersion_parameter, false);
           _sumDev += setZDevEta(chunks4ZDev, chunks, rowIndex,  zdevAbsRelRowNumber, glmfun);
           setHv(chunksqMatrix, chunks[1], rowIndex, qMatrixRelRow);  // get hv from qmatrix only
           qMatrixRelRow++;
@@ -2680,7 +2680,7 @@ public abstract class GLMTask  {
     @Override
     public void map(Chunk[] chunks) { // chunks from _dinfo._adaptedFrame
       GLMWeightsFun glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-              _parms._tweedie_link_power, 0);
+              _parms._tweedie_link_power, 0,_parms._init_dispersion_parameter, false);
       Row row = _dinfo.newDenseRow(); // one row of fixed effects/columns
       double eta, mu, temp, zi, wdata;
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk of _dinfo._adaptedFrame

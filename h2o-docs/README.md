@@ -8,7 +8,7 @@ Note that there are also some directories under the **/product** folder from the
 
 ### Requirements
 
-- Python 3.5+
+- Python 3.6+
 - [Sphinx](http://www.sphinx-doc.org/) 
 - [Read The Docs theme](https://sphinx-rtd-theme.readthedocs.io/en/stable/)
 - Additional extensions

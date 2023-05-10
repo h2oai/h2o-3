@@ -1,7 +1,7 @@
 import h2o
 from h2o.estimators import H2OGradientBoostingEstimator
 from tests import pyunit_utils
-from sklearn.datasets.california_housing import fetch_california_housing
+from sklearn.datasets import fetch_california_housing
 
 
 def gbm_monotone_smoke_test():

@@ -2,6 +2,40 @@
 
 ## H2O
 
+### Kurka (3.40.0.4) - 4/28/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html</a>
+
+#### Bug
+- [[PUBDEV-9050]](https://h2oai.atlassian.net/browse/PUBDEV-9050) - Fixed the deprecation warning thrown for Python 2.7 and 3.5.
+
+#### Improvement
+- [[PUBDEV-9048]](https://h2oai.atlassian.net/browse/PUBDEV-9048) - Added official support for Python 3.9.
+
+#### Docs
+- [[PUBDEV-9049]](https://h2oai.atlassian.net/browse/PUBDEV-9049) - Removed mention of support for Python 2.7 and Python 3.5 from documentation.
+- [[PUBDEV-8049]](https://h2oai.atlassian.net/browse/PUBDEV-8049) - Reorganized supervised and unsupervised algorithm parameters by algorithm-specific, common, and shared-tree (for tree-based algorithms). Updated parameter descriptions for all supervised and unsupervised algorithms. Shifted all shared GLM family parameters to the GLM algorithm page.
+
+#### Security
+- [[PUBDEV-9072]](https://h2oai.atlassian.net/browse/PUBDEV-9072) - Addressed CVE-2023-1370 by removing the vulnerability from h2o-steam.jar.
+
+### Kurka (3.40.0.3) - 4/4/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/3/index.html</a>
+
+#### Improvement
+- [[PUBDEV-9043]](https://h2oai.atlassian.net/browse/PUBDEV-9043) - Added GAM Knot Locations to Model Output.
+- [[PUBDEV-9039]](https://h2oai.atlassian.net/browse/PUBDEV-9039) - Addressed CVE-2014-125087 in h2o-steam.jar
+
+#### Engineering Story
+- [[PUBDEV-9040]](https://h2oai.atlassian.net/browse/PUBDEV-9040) - Disabled execution of tests in client mode.
+- [[PUBDEV-9035]](https://h2oai.atlassian.net/browse/PUBDEV-9035) - Deprecated support for Python 2.7 and 3.5.
+
+#### Docs
+- [[PUBDEV-9036]](https://h2oai.atlassian.net/browse/PUBDEV-9036) - Introduced a page describing MOJO capabilities.
+- [[PUBDEV-9023]](https://h2oai.atlassian.net/browse/PUBDEV-9023) - Updated the DRF documentation page to reflect what dataset is used to calculate the model metric.
+- [[PUBDEV-9004]](https://h2oai.atlassian.net/browse/PUBDEV-9004) - Updated and rearranged the hyper-parameter list in the Grid Search documentation page.
+
 ### Kurka (3.40.0.2) - 3/9/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html</a>
