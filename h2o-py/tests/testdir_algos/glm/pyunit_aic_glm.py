@@ -58,7 +58,6 @@ def glm_ll_aic():
     print(aic)
 
 
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glm_ll_aic)
 else:
