@@ -1281,6 +1281,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_parms._fix_tweedie_variance_power && !_parms._fix_dispersion_parameter)
           _tweedieDispersionOnly = true;
       
+        // in order to calculate likelihood for poisson family, dispersion parameter should be estimated
+        if(_parms._calc_like && _parms._family.equals(gaussian)) {
+          _parms._compute_p_values = true;
+          _parms._remove_collinear_columns = true;
+        }
+        
       if (_parms.hasCheckpoint()) {
         if (!Family.gaussian.equals(_parms._family))  // Gaussian it not iterative and therefore don't care
           _checkPointFirstIter = true;  // mark the first iteration during iteration process of training
