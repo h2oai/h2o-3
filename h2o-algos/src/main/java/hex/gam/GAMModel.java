@@ -71,7 +71,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         domain = _output._responseDomains;
     }
     GLMModel.GLMWeightsFun glmf = new GLMModel.GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-            _parms._tweedie_link_power, _parms._theta);
+            _parms._tweedie_link_power, _parms._theta, 1, false);
     return new MetricBuilderGAM(domain, _ymu, glmf, _rank, true, _parms._intercept, _nclass, _parms._auc_type);
   }
 
