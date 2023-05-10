@@ -728,7 +728,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         return .5 * deviance(yr,ym);
     }
 
-    // more time consuming likelihood calculation used for the final scoring
+    // more time-consuming likelihood calculation used for the final scoring
     public final double likelihood(double w, double yr, double[] ym) {
       double prediction = ym[0];
       double probabilityOf1;
@@ -764,19 +764,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                   + log(Gamma.gamma(yr + w/_invTheta) / (Gamma.gamma(yr + 1) * Gamma.gamma(w/_invTheta)));
         case gamma:
           return w * log(w * yr / prediction) - w * yr / prediction - log(yr) - Gamma.digamma(w);
-        case tweedie: // todo - update with Tomas's solution
-            double temp;
-            if (_tweedie_variance_power == 1) {
-                temp = Math.pow(prediction, 2 - _tweedie_variance_power) * (1.0 / (2 - _tweedie_variance_power)) 
-                        - yr * log(prediction);
-            } else if (_tweedie_variance_power == 2) {
-                temp = log(prediction) 
-                        - yr * Math.pow(prediction, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
-            } else {
-                temp = Math.pow(prediction, 2 - _tweedie_variance_power) * (1.0 / (2 - _tweedie_variance_power)) 
-                        - yr * Math.pow(prediction, 1 - _tweedie_variance_power) * (1.0 / (1 - _tweedie_variance_power));
-            }
-            return temp; // ignored the a(y,phi,p) term as it is a constant for us
+        case tweedie:
+          if (DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
+            return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, 
+                    _init_dispersion_parameter);
+          } else {
+            return .5 * deviance(yr, ym[0]);
+          }
         case multinomial:
           // if probability is not given, then it is 1.0 if prediction equals to the real y and 0 othervice
           double predictedProbabilityOfActualClass = ym.length > 1 ? ym[(int) yr + 1] : (prediction == yr ? 1.0 : 0.0);
