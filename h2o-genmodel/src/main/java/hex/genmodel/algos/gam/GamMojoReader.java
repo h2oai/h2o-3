@@ -136,15 +136,6 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
     }
     _model.init();
   }
-  
-  String[] readStringArrays(int aSize, String title) throws IOException {
-    String[] stringArrays = new String[aSize];
-    int counter = 0;
-    for (String line : readtext(title)) {
-      stringArrays[counter++] = line;
-    }
-    return stringArrays;
-  }
 
   String[][] read2DStringArrays(int[] arrayDim, String title) throws IOException {
     int firstDim = arrayDim.length;

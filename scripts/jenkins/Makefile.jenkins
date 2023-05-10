@@ -184,20 +184,11 @@ test-r-init:
 test-r-small: lookup-automl-tests lookup-demos-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
 
-test-r-small-client-mode: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
-
-test-r-small-client-mode-attack: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.opts '-Dsys.ai.h2o.debug.clientDisconnectAttack=true' --jvm.xmx 4g --excludelist .lookup.txt
-
 test-r-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
 test-r-automl-smoke-noxgb: lookup-automl-smoke-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --jvm.xmx 4g --jvm.opts '-Dsys.ai.h2o.ext.core.toggle.XGBoost=false' --testlist .lookup.txt
-
-test-r-client-mode-automl: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
 test-r-medium-large:
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g

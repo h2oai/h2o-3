@@ -38,6 +38,12 @@ public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAM
 
     @API(help="GLM standard error values.  For debugging purposes only")
     double[] glm_std_err;
+    
+    @API(help = "knot locations for all gam columns.")
+    double[][] knot_locations;
+
+    @API(help = "Gam column names for knots stored in knot_locations")
+    String[] gam_knot_column_names;
   }
 
   public GAMV3.GAMParametersV3 createParametersSchema() { return new GAMV3.GAMParametersV3();}

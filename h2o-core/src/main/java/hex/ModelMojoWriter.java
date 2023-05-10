@@ -135,9 +135,11 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     startWritingTextFile(title);
     int numCols = sArrays.length;
     for (int index = 0; index < numCols; index++)
-    for (String sName : sArrays[index]) {
-      writeln(sName);
-    }
+      if (sArrays[index] != null) {
+        for (String sName : sArrays[index]) {
+          writeln(sName);
+        }
+      }
     finishWritingTextFile();
   }
 

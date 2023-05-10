@@ -16,13 +16,13 @@ def gbm_monotone_tweedie_test():
     gbm_regular = H2OGradientBoostingEstimator(seed=42, distribution="tweedie")
     gbm_regular.train(y=response, training_frame=train, validation_frame=test)
     print(gbm_regular.varimp(use_pandas=True))
-    top_3_vars_regular = gbm_regular.varimp(use_pandas=True).ix[:, 'variable'].head(3).tolist()
+    top_3_vars_regular = gbm_regular.varimp(use_pandas=True).loc[:, 'variable'].head(3).tolist()
     assert "MVR_PTS" in top_3_vars_regular
 
     gbm_mono = H2OGradientBoostingEstimator(monotone_constraints=monotone_constraints, seed=42, distribution="tweedie")
     gbm_mono.train(y=response, training_frame=train, validation_frame=test)
     print(gbm_regular.varimp(use_pandas=True))
-    top_3_vars_mono = gbm_mono.varimp(use_pandas=True).ix[:, 'variable'].head(3).tolist()
+    top_3_vars_mono = gbm_mono.varimp(use_pandas=True).loc[:, 'variable'].head(3).tolist()
 
     # monotone constraints didn't affect the variable importance
     assert top_3_vars_mono == top_3_vars_regular
@@ -33,7 +33,7 @@ def gbm_monotone_tweedie_test():
     gbm_adverse.train(y=response, training_frame=train, validation_frame=test)
 
     # variable becomes least important to the model
-    assert ["MVR_PTS"] == gbm_adverse.varimp(use_pandas=True).ix[:, 'variable'].tail(1).tolist()
+    assert ["MVR_PTS"] == gbm_adverse.varimp(use_pandas=True).loc[:, 'variable'].tail(1).tolist()
 
 
 if __name__ == "__main__":

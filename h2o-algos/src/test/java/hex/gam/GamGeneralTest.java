@@ -186,10 +186,53 @@ public class GamGeneralTest extends TestUtil {
         }
     }
 
+    /**
+     * Check and make sure that we are getting back the correct knot location length when store_knot_locations is 
+     * enabled.
+     */
+    @Test
+    public void testKnotLocationOutput() {
+        Scope.enter();
+        try {
+            Frame originFile = Scope.track(parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"));
+            originFile.replace((20), originFile.vec(20).toCategoricalVec()).remove();
+            DKV.put(originFile);
+            int numGam = 6;
+            String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
+            String[][] gamCols = new String[][]{{"C11", "C12", "C13"}, {"C11"}, {"C12"}, {"C13"}};
+            int[] bs = new int[]{1, 0, 1, 2};
+            double[] scale = new double[]{0.01, 0.01, 0.01, 0.01};
+            int[] numKnots = new int[]{11, 12, 13, 14};
+            int[] spline_orders = new int[]{1,2,3,4};
+            String response = "C21";
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._ignored_columns = ignoredCols;
+            params._num_knots = numKnots;
+            params._gam_columns = gamCols;
+            params._bs = bs;
+            params._scale = scale;
+            params._train = originFile._key;
+            params._savePenaltyMat = true;
+            params._standardize_tp_gam_cols = true;
+            params._spline_orders = spline_orders;
+            params._seed = 1;
+            params._store_knot_locations = true;
+            GAMModel gamModel = new GAM(params).trainModel().get();
+            Scope.track_generic(gamModel);
+            String[] knotGamCols = gamModel._output._gam_knot_column_names;
+            assertTrue(knotGamCols.length == numGam);
+            double[][] knotLocations = gamModel._output._knot_locations;
+            assertTrue(knotLocations.length == numGam);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+
     GAMModel buildOneGam(Frame train, Frame valid, String[] ignoredCols, String[][] gamCols, double[] scale, int[] bs, 
                          int[] numKnots, int[] spline_order, String response) {
         GAMModel.GAMParameters params = new GAMModel.GAMParameters();
-        int k = 12;
         params._response_column = response;
         params._ignored_columns = ignoredCols;
         params._num_knots = numKnots;

@@ -47,8 +47,12 @@ def test_maxrsweep_replacement():
     predictors.remove(response)
     npred = 63
     maxrsweep_model = H2OModelSelectionEstimator(mode="maxrsweep", max_predictor_number=npred, intercept=True, 
-                                                 build_glm_model=False, standardize=True)
+                                                 multinode_mode=False, standardize=True)
     maxrsweep_model.train(x=predictors, y=response, training_frame=train)
+
+    maxrsweep_model_MM = H2OModelSelectionEstimator(mode="maxrsweep", max_predictor_number=npred, intercept=True,
+                                                    standardize=True, multinode_mode=True)
+    maxrsweep_model_MM.train(x=predictors, y=response, training_frame=train)
 
     predSubsets = correct_pred_dict.keys()
     for oneKey in predSubsets:
@@ -57,10 +61,15 @@ def test_maxrsweep_replacement():
         correct_pred_subset.sort()
         maxrsweep_one_coef = list(maxrsweep_model.coef(oneKey).keys())
         maxrsweep_one_coef.sort()
+        maxrsweep_one_coef_MM = list(maxrsweep_model_MM.coef(oneKey).keys())
+        maxrsweep_one_coef_MM.sort()
         print("subset size: {0}".format(oneKey))
         assert correct_pred_subset==maxrsweep_one_coef, \
             "Expected coeffs: {0}, Actual from maxrsweep: {1}.  They are different.".format(correct_pred_subset, 
                                                                                             maxrsweep_one_coef)
+        assert correct_pred_subset==maxrsweep_one_coef_MM, \
+            "Expected coeffs: {0}, Actual from maxrsweep with multinode_mode: {1}.  They are different." \
+            "".format(correct_pred_subset, maxrsweep_one_coef_MM)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_maxrsweep_replacement)
