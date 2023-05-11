@@ -199,6 +199,10 @@ def call(final pipelineContext) {
       timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Demo Notebooks (Scikit 1.0.2)', target: 'test-py-demos-new-scikit', pythonVersion: '3.7',
+      timeoutValue: 60, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'Py3.6 Test Demos', target: 'test-pyunit-demos', pythonVersion: '3.6',
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
