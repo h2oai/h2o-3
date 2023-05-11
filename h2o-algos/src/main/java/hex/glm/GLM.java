@@ -1282,7 +1282,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _tweedieDispersionOnly = true;
       
         // in order to calculate likelihood for poisson family, dispersion parameter should be estimated
-        if(_parms._calc_like && _parms._family.equals(gaussian)) {
+        if(!_parms._HGLM && _parms._calc_like && _parms._family.equals(gaussian)) {
           _parms._compute_p_values = true;
           _parms._remove_collinear_columns = true;
         }
