@@ -132,7 +132,6 @@ test-py-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
 
 test-py-demos:
-	apt install graphviz
 	pip install -U scikit-learn==1.0.2 pandas==1.3.5 numpy==1.21.6 causalml==0.12.3
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
 
