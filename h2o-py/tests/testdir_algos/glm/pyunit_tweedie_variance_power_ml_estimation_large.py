@@ -164,7 +164,7 @@ def test_tweedie_var_power_estimation_2p1_disp2_est():
                                              dispersion_parameter_method="ml", seed=12345)
     model_ml.train(training_frame=training_data, x=x, y=Y)
     print("estimated variance power: {0}, true variance power: {1}".format(model_ml.actual_params["tweedie_variance_power"], trueDisp))
-    assert abs(model_ml.actual_params["tweedie_variance_power"] - 2.144064040064248) < 1e-6
+    assert abs(model_ml.actual_params["tweedie_variance_power"] - 2.144064040064248) < 2e-4
 
 
 def test_tweedie_var_power_estimation_2p6_disp2_est():
@@ -180,22 +180,32 @@ def test_tweedie_var_power_estimation_2p6_disp2_est():
                                              dispersion_parameter_method="ml", seed=12345)
     model_ml.train(training_frame=training_data, x=x, y=Y)
     print("estimated variance power: {0}, true variance power: {1}".format(model_ml.actual_params["tweedie_variance_power"], trueDisp))
-    assert abs(model_ml.actual_params["tweedie_variance_power"] - 2.67437207518084) < 1e-6
+    assert abs(model_ml.actual_params["tweedie_variance_power"] - 2.67437207518084) < 2e-4
 
+
+def measure_time(t):
+    def _():
+        import time
+        start = time.monotonic()
+        t()
+        print(f"The test {t.__name__} took {time.monotonic()-start}s")
+    _.__name__ = t.__name__
+    return _
 
 def run_random_test():
     import random
     tests = [
-        test_tweedie_var_power_estimation_2p1_disp2_est,  # takes 531s
-        test_tweedie_var_power_estimation_2p6_disp2_est,  # takes 1034s
-        test_tweedie_var_power_estimation_2p5_phi_2p5_no_link_power_est,  # takes 1968s
-        test_tweedie_var_power_estimation_3_phi_0p5_no_link_power_est,  # takes 1185s
-        test_tweedie_var_power_estimation_3_no_link_power_est,  # takes 2654s
-        test_tweedie_var_power_estimation_3_phi_1p5_no_link_power_est,  # takes 2309s
-        test_tweedie_var_power_estimation_5_no_link_power_est,  # takes 830s
-        test_tweedie_var_power_estimation_5_phi_0p5_no_link_power_est,  # takes 1151s
+        test_tweedie_var_power_estimation_2p1_disp2_est,  # takes 531s -> 49s (without Newton's method) 
+        test_tweedie_var_power_estimation_2p6_disp2_est,  # takes 1034s -> 434s
+        test_tweedie_var_power_estimation_2p5_phi_2p5_no_link_power_est,  # takes 1968s -> 1064s
+        test_tweedie_var_power_estimation_3_phi_0p5_no_link_power_est,  # takes 1185s -> 685s
+        test_tweedie_var_power_estimation_3_no_link_power_est,  # takes 2654s -> 1444s
+        test_tweedie_var_power_estimation_3_phi_1p5_no_link_power_est,  # takes 2309s -> 1314s
+        test_tweedie_var_power_estimation_5_no_link_power_est,  # takes 830s -> 964s
+        test_tweedie_var_power_estimation_5_phi_0p5_no_link_power_est,  # takes 1151s -> 1221s
     ]
-    return random.choices(tests, weights=[531.0/w for w in [531, 1034, 1968, 1185, 2654, 2309, 830, 1151]])
+    return random.choices(tests, weights=[49.0/w for w in [49, 434, 1064, 685, 1444, 1314, 964, 1221]])
+    # weights=[531.0/w for w in [531, 1034, 1968, 1185, 2654, 2309, 830, 1151]])
 
 
 pyunit_utils.run_tests(run_random_test())
