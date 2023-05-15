@@ -22,6 +22,7 @@ def test_tweedie_p_and_phi_estimation_1p2_phi_2_no_link_power_est():
     # Estimate from R tweedie.profile (using p with step 0.001; but different link power (R didn't converge with the same as in h2o)): p= 1.195102 ;  phi= 2.032903 
     assert abs(model_ml.actual_params["tweedie_variance_power"] - 1.19325) < 0.001
     assert abs(model_ml.actual_params["init_dispersion_parameter"] - 2.01912) < 0.001
+    assert abs(model_ml.actual_params["init_dispersion_parameter"] - model_ml._model_json["output"]["dispersion"]) <1e-16
 
 
 def test_tweedie_p_and_phi_estimation_1_8_no_link_power_est():
@@ -42,6 +43,7 @@ def test_tweedie_p_and_phi_estimation_1_8_no_link_power_est():
     # Estimate from R tweedie.profile (using p with step 0.001; but different link power (R didn't converge with the same as in h2o)): p= 1.798571 ;  phi= 1.994105 
     assert abs(model_ml.actual_params["tweedie_variance_power"] - 1.7981745663886501) < 0.001
     assert abs(model_ml.actual_params["init_dispersion_parameter"] - 1.9890117211840974) < 0.001
+    assert abs(model_ml.actual_params["init_dispersion_parameter"] - model_ml._model_json["output"]["dispersion"]) <1e-16
 
 
 def test_tweedie_p_and_phi_estimation_2p1_disp2_est():
@@ -60,6 +62,7 @@ def test_tweedie_p_and_phi_estimation_2p1_disp2_est():
     # Estimate from R tweedie.profile: p= 2.163265 ;  phi= 2.62834 
     assert abs(model_ml.actual_params["tweedie_variance_power"] - 2.1632) < 2e-4
     assert abs(model_ml.actual_params["init_dispersion_parameter"] - 2.62834) < 2e-4
+    assert abs(model_ml.actual_params["init_dispersion_parameter"] - model_ml._model_json["output"]["dispersion"]) <1e-16
 
 
 def measure_time(t):
