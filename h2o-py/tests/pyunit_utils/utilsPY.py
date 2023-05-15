@@ -4617,3 +4617,45 @@ def download_mojo(model, mojo_zip_path=None, genmodel_path=None):
 def test_java_scoring(model, frame, predictions, epsilon):
     fr = H2OFrame._expr(ExprNode("model.testJavaScoring", model, frame, predictions, epsilon))
     return fr.flatten() == 1
+
+def checkLogWeightWarning(weightColName, wantWarnMessage=False):
+    """
+    This method will scrup the logs and check to make sure that no warning message regarding the weight column is found
+    in the h2o logs.
+    :param weightColName: name of weight columns that the warning message is going to check against
+    :param wantWarnMessage: boolean, if true will make sure warning message about weight column is found.
+    :return: None.  Will throw an error when warning message about the weightColName is found.
+    """
+    import zipfile
+    import codecs
+    import tempfile
+    
+    TMPDIR = tempfile.TemporaryDirectory()
+    logFileName = "h2oLogs.zip"
+    h2o.download_all_logs(dirname=TMPDIR.name, filename=logFileName)
+    numWarning = 0
+    logFile = os.path.join(TMPDIR.name, logFileName)
+    warningStatement = "WARN water.default: Test/Validation dataset is missing weights column '"+weightColName+"'"
+    with zipfile.ZipFile(logFile, 'r') as zip:
+        zip.extractall(TMPDIR.name)
+        for oneName in zip.namelist():
+            if ".zip" in oneName:
+                fileName = os.path.join(TMPDIR.name, oneName)
+                with zipfile.ZipFile(fileName) as zip2:
+                    zip2.extractall(TMPDIR.name)
+                    filenames = zip2.namelist()
+                    for oneFile in filenames:
+                        with zip2.open(oneFile) as f:
+                            for line in f:
+                                strline = codecs.decode(line)
+                                if warningStatement in strline:
+                                    numWarning = numWarning+1
+                                    print(line)
+    print("total number of weight column warning messages found: {0}".format(numWarning))
+    if wantWarnMessage:
+        assert numWarning > 0, "there should be warning messages regarding weights column in test/validation " \
+                                "datasets but are not found."
+    else:
+        assert numWarning == 0, "there should be no warning messages regarding weights column in test/validation " \
+                            "datasets but are found."
+
