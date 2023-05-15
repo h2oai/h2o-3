@@ -1417,9 +1417,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public void setZValues(double [] zValues, double dispersion, boolean dispersionEstimated) {
     _output._zvalues = zValues;
-    _output._dispersion = dispersion;
-    _output._dispersionEstimated = dispersionEstimated;
+    setDispersion(dispersion, dispersionEstimated);
   }
+  
+  public void setDispersion(double dispersion, boolean dispersionEstimated) {
+    _output._dispersion = dispersion;
+    _output._dispersionEstimated = dispersionEstimated; 
+  }
+  
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
