@@ -9,13 +9,12 @@ on:
     branches:
       - 'master'
       - 'rel-*'
-      - 'devops/snyk-optimization'
 permissions:
   contents: read
 
 jobs:
   snyk_scan_test:
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
