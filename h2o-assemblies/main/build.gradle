@@ -23,6 +23,9 @@ dependencies {
     }
     api project(":h2o-parquet-parser")
     api project(":h2o-k8s-int")
+    api("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
+        transitive = false
+    }
 
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
