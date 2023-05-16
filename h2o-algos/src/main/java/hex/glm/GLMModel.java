@@ -740,8 +740,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
           probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
           return w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1)) 
-                  + w * (Gamma.digamma(2) - Gamma.digamma(yr + 1) 
-                  - Gamma.digamma(1 - yr + 1));
+                  + w * (Gamma.logGamma(2) - Gamma.logGamma(yr + 1) 
+                  - Gamma.logGamma(1 - yr + 1));
         case quasibinomial:
           // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
           probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
@@ -758,16 +758,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             return 0;
           return w * ((MathUtils.y_log_y(yr, probabilityOf1)) + MathUtils.y_log_y(1 - yr, 1 - probabilityOf1));
         case poisson:
-          return w * (yr * log(prediction) - prediction - Gamma.digamma(yr + 1)); // gamma(n) = (n-1)!
+          return w * (yr * log(prediction) - prediction - Gamma.logGamma(yr + 1)); // gamma(n) = (n-1)!
         case negativebinomial:
-          return yr * log(_invTheta * prediction / w) - (yr + w/_invTheta) * log(1 + _invTheta * prediction / w) 
-                  + log(Gamma.gamma(yr + w/_invTheta) / (Gamma.gamma(yr + 1) * Gamma.gamma(w/_invTheta)));
+          double invThetaEstimated = 1 / _dispersion_estimated;
+          return yr * log(invThetaEstimated * prediction / w) - (yr + w/invThetaEstimated) * log(1 + invThetaEstimated * prediction / w) 
+                  + log(Gamma.gamma(yr + w / invThetaEstimated) / (Gamma.gamma(yr + 1) * Gamma.gamma(w / invThetaEstimated)));
         case gamma:
-          return w * log(w * yr / prediction) - w * yr / prediction - log(yr) - Gamma.digamma(w);
+          return w * log(w * yr / prediction) - w * yr / prediction - log(yr) - Gamma.logGamma(w); // todo -add dispersion estimated
         case tweedie:
           if (DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
-            return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, 
-                    _init_dispersion_parameter);
+            return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _dispersion_estimated);
           } else {
             return .5 * deviance(yr, ym[0]);
           }
