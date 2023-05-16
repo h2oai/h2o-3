@@ -98,8 +98,8 @@ public class GLMTestAICLikelihood extends TestUtil {
         yr = responseCol.at(index);
         probabilityOf1 = pred.numCols() > 1 ? pred.vec(2).at(index) : pred.vec(0).at(index); // probability of 1 equals prediction
         logLike +=  w * (trainData.vec("CAPSULE").at(index) * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1))
-                + w * (Gamma.digamma(2) - Gamma.digamma(yr + 1)
-                - Gamma.digamma(1 - yr + 1));
+                + w * (Gamma.logGamma(2) - Gamma.logGamma(yr + 1)
+                - Gamma.logGamma(1 - yr + 1));
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
       double aic = -2*logLike + 2*model._output.rank();
@@ -224,7 +224,7 @@ public class GLMTestAICLikelihood extends TestUtil {
         yr = responseCol.at(index);
         prediction = pred.vec(0).at(index);
         if(!Double.isNaN(yr) && !Double.isNaN(prediction)) {
-          logLike += yr * log(prediction) - prediction - Gamma.digamma(yr + 1);
+          logLike += yr * log(prediction) - prediction - Gamma.logGamma(yr + 1);
         }
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
@@ -259,11 +259,13 @@ public class GLMTestAICLikelihood extends TestUtil {
       double logLike = 0.0;
       double prediction;
       double yr;
+      double inv_theta_estimated = 1 / model._parms._dispersion_estimated;
+      
       for (int index=0; index<nRow; index++) {
         yr = responseCol.at(index);
         prediction = pred.vec(0).at(index);
-        logLike += yr * log(parms._invTheta * prediction) - (yr + 1/parms._invTheta) * log(1 + parms._invTheta * prediction)
-                + log(Gamma.gamma(yr + 1/parms._invTheta) / (Gamma.gamma(yr + 1) * Gamma.gamma(1/parms._invTheta)));
+        logLike += yr * log(inv_theta_estimated * prediction) - (yr + 1/inv_theta_estimated) * log(1 + inv_theta_estimated * prediction)
+                + log(Gamma.gamma(yr + 1/inv_theta_estimated) / (Gamma.gamma(yr + 1) * Gamma.gamma(1/inv_theta_estimated)));
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
       double aic = -2*logLike + 2*model._output.rank();
@@ -297,12 +299,12 @@ public class GLMTestAICLikelihood extends TestUtil {
       double logLike = 0.0;
       double prediction;
       double yr;
-      double digamma = Gamma.digamma(1);
+      double logGamma = Gamma.logGamma(1);
       for (int index=0; index<nRow; index++) {
         yr = responseCol.at(index);
         prediction = pred.vec(0).at(index);
         if(!Double.isNaN(yr) && !Double.isNaN(prediction)) {
-          logLike += log(yr / prediction) - yr / prediction - log(yr) - digamma;
+          logLike += log(yr / prediction) - yr / prediction - log(yr) - logGamma;
         }
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
@@ -376,6 +378,7 @@ public class GLMTestAICLikelihood extends TestUtil {
       Scope.track(pred);
       // only check that loglikelihood is calculated
       double logLike = ((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood;
+      // todo - check not zero
       assertNotEquals("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood, 0.0, logLike);
       double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
