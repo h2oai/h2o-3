@@ -9,6 +9,7 @@ on:
     branches:
       - 'master'
       - 'rel-*'
+      - 'devops/snyk-optimization'
 permissions:
   contents: read
 
@@ -43,7 +44,13 @@ jobs:
         continue-on-error: true
         run: |
           unset CI # By default GH actions will set it to true. Therefore it will affect isCi flag in build.gradle (line #7)
-          snyk test --all-sub-projects -d --fail-on=all --package-manager=gradle
+          snyk test \
+            --all-sub-projects \
+            -d \
+            --fail-on=all \
+            --package-manager=gradle \
+            --print-deps \
+            --configuration-matching='^\(compile\|runtime\)'
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -131,7 +138,14 @@ jobs:
             echo ""
             echo "##### SCAN $file START #####"
             echo ""
-            snyk monitor --org=h2o-3 --remote-repo-url=h2o-3/${{ steps.extract_ref.outputs.ref }} --file=$file --project-name=H2O-3/h2o-3/${{ steps.extract_ref.outputs.ref }}/$file -d --skip-unresolved 
+            snyk monitor \
+              --org=h2o-3 \
+              --remote-repo-url=h2o-3/${{ steps.extract_ref.outputs.ref }} \
+              --file=$file --project-name=H2O-3/h2o-3/${{ steps.extract_ref.outputs.ref }}/$file \
+              -d \
+              --skip-unresolved \
+              --print-deps \
+              --configuration-matching='^\(compile\|runtime\)'
             echo "##### SCAN $file END #####"
           done
         env:
