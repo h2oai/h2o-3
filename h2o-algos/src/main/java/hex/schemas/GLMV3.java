@@ -211,7 +211,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "random columns indices for HGLM.")
     public int[] random_columns;
 
-    @API(help = "if true, will return likelihood function value for HGLM.") // not gridable
+    @API(help = "if true, will return likelihood function value.") // not gridable
     public boolean calc_like;
     
     @API(help="if true, will generate variable inflation factors for numerical predictors.  Default to false.", 
