@@ -406,27 +406,27 @@ public class GLMTestAICLikelihood extends TestUtil {
       parms._calc_like = true;
       final GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
+      assert model != null;
       model._output.resetThreshold(0.5);
       final Frame pred = model.score(trainData);
       Scope.track(pred);
-      // only check that loglikelihood is calculated
+      
+      // check that loglikelihood is calculated in training and validation metrics and is not calculated for CV
       double logLikeTrain = ((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood;
       double logLikeCrossval =  ((ModelMetricsRegressionGLM) model._output._cross_validation_metrics)._loglikelihood;
-      double logLikeValidation = ((ModelMetricsRegressionGLM) model._output._validation_metrics)._loglikelihood;      
-      
+      double logLikeValidation = ((ModelMetricsRegressionGLM) model._output._validation_metrics)._loglikelihood;
+      assertNotEquals(0.0, logLikeTrain);
+      assertNotEquals(0.0, logLikeValidation);
+      // the loglikelihood for the CV is not calculated, so it equals to 0.0
+      assertEquals(0.0, logLikeCrossval, 1e-7);
+
+      // check that AIC is calculated in training, cross-validation and validation metrics
       double aicTrain = ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC;
       double aicCrossval =  ((ModelMetricsRegressionGLM) model._output._cross_validation_metrics)._AIC;
       double aicValidation = ((ModelMetricsRegressionGLM) model._output._validation_metrics)._AIC;
-      System.out.println(logLikeTrain + " " + logLikeCrossval + " " + logLikeValidation);
-      System.out.println(aicTrain + " " + aicCrossval + " " + aicValidation);
-      assertNotEquals("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood, 0.0, logLikeTrain);
-      double aicTrainManual = -2*logLikeTrain + 2*model._output.rank();
-      double aicCrossvalManual = -2*logLikeCrossval + 2*model._output.rank();
-      double aicValidationManual = -2*logLikeValidation + 2*model._output.rank();
-      System.out.println(aicTrainManual + " " + aicCrossvalManual + " " + aicValidationManual);
-      assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aicTrainManual+" and they are different.", Math.abs(aicTrainManual-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
-      System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
-//      System.out.println(logLike + " " + aic);
+      assertNotEquals(0.0, aicTrain);
+      assertNotEquals(0.0, aicCrossval);
+      assertNotEquals(0.0, aicValidation);
     } finally {
       Scope.exit();
     }
