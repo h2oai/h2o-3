@@ -769,7 +769,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                   - log(yr) - Gamma.logGamma(w * invPhiEst);
         case tweedie:
           if (DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
-            return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _dispersion_estimated);
+            return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _init_dispersion_parameter);
           } else {
             return .5 * deviance(yr, ym[0]);
           }
