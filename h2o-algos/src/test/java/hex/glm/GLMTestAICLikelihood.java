@@ -370,6 +370,7 @@ public class GLMTestAICLikelihood extends TestUtil {
       parms._response_column = "CAPSULE";
       parms._ignored_columns = new String[]{"ID"};
       parms._calc_like = true;
+      parms._tweedie_variance_power = 1.5;
       final GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
       model._output.resetThreshold(0.5);
