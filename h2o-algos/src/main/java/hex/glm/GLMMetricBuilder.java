@@ -47,9 +47,10 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     _computeMetrics = computeMetrics;
     _intercept = intercept;
     _ymu = ymu;
-    _familyAllowsFinalLikelihoodCalculation = Arrays.asList(Family.multinomial, Family.gaussian, Family.binomial,
-            Family.quasibinomial, Family.fractionalbinomial, Family.poisson, Family.negativebinomial, 
-            Family.gamma, Family.tweedie).contains(_glmf._family);
+    _familyAllowsFinalLikelihoodCalculation = _glmf == null ? false 
+            : Arrays.asList(Family.multinomial, Family.gaussian, Family.binomial, Family.quasibinomial, 
+                    Family.fractionalbinomial, Family.poisson, Family.negativebinomial, Family.gamma, Family.tweedie)
+            .contains(_glmf._family);
     if(_computeMetrics) {
       if (domain!=null && domain.length==1 && domain[0].contains("HGLM")) {
         _metricBuilder = new MetricBuilderHGLM(domain);
