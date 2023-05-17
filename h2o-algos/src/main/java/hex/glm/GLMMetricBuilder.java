@@ -39,6 +39,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   final boolean _intercept;
   private final double [] _ymu;
   final boolean _computeMetrics;
+  private final boolean _familyAllowsFinalLikelihoodCalculation;
   public GLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, MultinomialAucType aucType){
     super(domain == null?0:domain.length, domain);
     _glmf = glmf;
@@ -46,6 +47,9 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     _computeMetrics = computeMetrics;
     _intercept = intercept;
     _ymu = ymu;
+    _familyAllowsFinalLikelihoodCalculation = Arrays.asList(Family.multinomial, Family.gaussian, Family.binomial,
+            Family.quasibinomial, Family.fractionalbinomial, Family.poisson, Family.negativebinomial, 
+            Family.gamma, Family.tweedie).contains(_glmf._family);
     if(_computeMetrics) {
       if (domain!=null && domain.length==1 && domain[0].contains("HGLM")) {
         _metricBuilder = new MetricBuilderHGLM(domain);
@@ -84,10 +88,8 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     if(weight == 0)return ds;
     _metricBuilder.perRow(ds,yact,weight,offset,m);
     GLMModel gm = (GLMModel) m;
-    if ((gm._finalScoring && gm._parms._calc_like && Arrays.asList(Family.multinomial, Family.gaussian, Family.binomial, 
-                    Family.quasibinomial, Family.fractionalbinomial, Family.poisson, Family.negativebinomial, 
-                    Family.gamma, Family.tweedie).contains(_glmf._family)) /*final scoring, _calc_like flag is on*/
-    || (!gm._finalScoring && _glmf._family.equals(Family.negativebinomial)) /*model build*/) {
+    if ((gm._finalScoring && gm._parms._calc_like && _familyAllowsFinalLikelihoodCalculation) /*final scoring, _calc_like flag is on*/ 
+            || (!gm._finalScoring && _glmf._family.equals(Family.negativebinomial)) /*model build*/) {
       _log_likelihood += m.likelihood(weight, yact[0], ds);
     }
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
