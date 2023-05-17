@@ -764,7 +764,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return yr * log(invThetaEstimated * prediction / w) - (yr + w/invThetaEstimated) * log(1 + invThetaEstimated * prediction / w) 
                   + log(Gamma.gamma(yr + w / invThetaEstimated) / (Gamma.gamma(yr + 1) * Gamma.gamma(w / invThetaEstimated)));
         case gamma:
-          return w * log(w * yr / prediction) - w * yr / prediction - log(yr) - Gamma.logGamma(w); // todo -add dispersion estimated
+          double invPhiEst = 1 / _dispersion_estimated;
+          return w * invPhiEst * log(w * yr * invPhiEst / prediction) - w * yr * invPhiEst / prediction 
+                  - log(yr) - Gamma.logGamma(w * invPhiEst);
         case tweedie:
           if (DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
             return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _dispersion_estimated);

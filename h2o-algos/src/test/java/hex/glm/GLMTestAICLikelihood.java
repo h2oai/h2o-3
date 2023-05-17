@@ -299,12 +299,14 @@ public class GLMTestAICLikelihood extends TestUtil {
       double logLike = 0.0;
       double prediction;
       double yr;
-      double logGamma = Gamma.logGamma(1);
+      double inv_phi_estimated = 1 / model._parms._dispersion_estimated;
+      double logGammaPhi = Gamma.logGamma(inv_phi_estimated);
       for (int index=0; index<nRow; index++) {
         yr = responseCol.at(index);
         prediction = pred.vec(0).at(index);
         if(!Double.isNaN(yr) && !Double.isNaN(prediction)) {
-          logLike += log(yr / prediction) - yr / prediction - log(yr) - logGamma;
+          logLike += inv_phi_estimated * log(yr * inv_phi_estimated / prediction) 
+                  - yr * inv_phi_estimated / prediction - log(yr) - logGammaPhi;
         }
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood)<1e-6);
