@@ -5,10 +5,7 @@ import warnings
 from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
 
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
-except:
-    from io import StringIO  # py3
+from io import StringIO
 
 import h2o
 import numpy as np

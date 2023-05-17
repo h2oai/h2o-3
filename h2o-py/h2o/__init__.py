@@ -5,18 +5,19 @@
 :mod:`h2o` -- module for using H2O services.
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 from codecs import open
 import os
 import sys
 import zipfile
 import warnings
 
-if sys.version_info.major < 3 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
+if sys.version_info.major < 3:
+    raise Exception("H2O-3 runs only on Python 3. Your Python version is %s." % sys.version)
+    
+if sys.version_info.minor < 6:
     warnings.showwarning(
-        "Your Python version is %s. The support for this version will be removed in H2O 3.42.0.1." % sys.version,
-        DeprecationWarning,
+        "Your Python version %s is not supported. Officially supported versions are 3.6.x - 3.9.x" % sys.version,
+        Warning,
         "h2o",
         1)
 

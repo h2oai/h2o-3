@@ -4,8 +4,6 @@
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 from collections import OrderedDict
 
 from h2o.display import H2ODisplay, display, repr_def, format_to_html, format_to_multiline

@@ -19,7 +19,7 @@ class CheckDB:
             results = cursor.fetchone()
             # Check if anything at all is returned
             if results:
-                print "\n*****Connection is Healthy to Accuracy Test Database.*****\n"
+                print("\n*****Connection is Healthy to Accuracy Test Database.*****\n")
             else:
                 return "\n*****Connection might not be healthy. Nothing returned from query.*****\n"
         except mysql.connector.Error as err:
@@ -53,7 +53,7 @@ class CheckDB:
             pipe += " %-"+"%ss |" % (w,)
             separator += '-'*w + '--+'
 
-        print "\n*****Size of each database in MySQL Server in GB:*****"
+        print("\n*****Size of each database in MySQL Server in GB:*****")
         print(separator)
         print(pipe % tuple(columns))
         print(separator)
@@ -88,7 +88,7 @@ class CheckDB:
                 pipe += " %-"+"%ss |" % (w,)
                 separator += '-'*w + '--+'
 
-            print "\n*****Tables currently in the h2o database:*****"
+            print("\n*****Tables currently in the h2o database:*****")
             print(separator)
             print(pipe % tuple(columns))
             print(separator)
@@ -119,7 +119,7 @@ class CheckDB:
             pipe += " %-"+"%ss |" % (w,)
             separator += '-'*w + '--+'
 
-        print "\n*****Tables currently in the mr_unit database:*****"
+        print("\n*****Tables currently in the mr_unit database:*****")
         print(separator)
         print(pipe % tuple(columns))
         print(separator)
@@ -153,7 +153,7 @@ class CheckDB:
             pipe += " %-"+"%ss |" % (w,)
             separator += '-'*w + '--+'
 
-        print "\n*****Size of every table in mysql server in MB (desc order):*****"
+        print("\n*****Size of every table in mysql server in MB (desc order):*****")
         print(separator)
         print(pipe % tuple(columns))
         print(separator)
@@ -170,7 +170,7 @@ class CheckDB:
         cursor.execute(" SELECT * FROM accounts;")
 
         results = cursor.fetchall()
-        print cursor.description
+        print(cursor.description)
         widths = []
         columns = []
         pipe = '|'
@@ -187,7 +187,7 @@ class CheckDB:
             pipe += " %-"+"%ss |" % (w,)
             separator += '-'*w + '--+'
 
-        print "\n*****Current and Total Connections per Host:*****"
+        print("\n*****Current and Total Connections per Host:*****")
         print(separator)
         print(pipe % tuple(columns))
         print(separator)

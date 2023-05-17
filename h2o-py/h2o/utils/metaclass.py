@@ -6,7 +6,6 @@ This module provides helper functions to write code that is backward-compatible.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
-from __future__ import division, print_function, absolute_import
 from h2o.utils.compatibility import *  # NOQA
 
 from functools import wraps
@@ -16,8 +15,16 @@ import warnings
 from h2o.exceptions import H2ODeprecationWarning
 
 
-def h2o_meta(*args):
-    return with_metaclass(H2OMeta, *args)
+def h2o_meta(*bases):
+    class metaclass(type):
+
+        def __new__(cls, name, this_bases, d):
+            return H2OMeta(name, bases, d)
+
+        @classmethod
+        def __prepare__(cls, name, this_bases):
+            return H2OMeta.__prepare__(name, bases)
+    return type.__new__(metaclass, 'temporary_class', (), {})
 
 
 def fullname(fn):

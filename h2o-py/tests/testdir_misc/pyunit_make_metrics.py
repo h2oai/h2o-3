@@ -5,8 +5,6 @@ Test suite for h2o.make_metrics().
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import sys
 sys.path.insert(1, "../../")
 import h2o

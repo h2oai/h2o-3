@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys, os
 
 from h2o.exceptions import H2OJobCancelled

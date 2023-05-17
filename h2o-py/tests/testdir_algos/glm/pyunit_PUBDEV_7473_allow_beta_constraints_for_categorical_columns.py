@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from tests import pyunit_utils

@@ -1,4 +1,3 @@
-from __future__ import print_function
 import fault_tolerance_utils as utils
 import h2o
 import unittest

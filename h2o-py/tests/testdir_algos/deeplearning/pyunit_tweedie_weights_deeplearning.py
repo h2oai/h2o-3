@@ -1,4 +1,3 @@
-from __future__ import division
 from past.utils import old_div
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))

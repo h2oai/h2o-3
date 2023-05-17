@@ -3,7 +3,6 @@
 .. note::
     Classes in this module are used at runtime as mixins: their methods can (and should) be accessed directly from a trained grid.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 #-----------------------------------------------------------------------------------------------------------------------

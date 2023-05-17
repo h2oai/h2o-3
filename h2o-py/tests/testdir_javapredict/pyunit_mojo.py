@@ -5,8 +5,6 @@ Test the "MOJO" format of the model.
 
 This really is an integration test, not a unit test.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import csv
 import os
 import random

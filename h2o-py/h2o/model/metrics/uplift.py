@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import, print_function, unicode_literals
-
 import h2o
 from h2o.model import MetricsBase
 from h2o.plot import get_matplotlib_pyplot

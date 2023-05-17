@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 
 from h2o.exceptions import H2OResponseError

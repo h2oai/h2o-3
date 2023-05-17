@@ -1,5 +1,3 @@
-from future import standard_library
-standard_library.install_aliases()
 import sys
 sys.path.insert(1,"../../")
 import h2o

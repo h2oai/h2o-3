@@ -77,5 +77,5 @@ for fun in funcs:
         for case in funcs[fun][path]:
             funf.write(case + "\n")
 
-print "\n" + str(len(not_found)) + " functions not found."
-print "No test cases found: " + ", ".join([str(fun) for fun in not_found])
+print("\n" + str(len(not_found)) + " functions not found.")
+print("No test cases found: " + ", ".join([str(fun) for fun in not_found]))

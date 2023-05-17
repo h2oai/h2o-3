@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 """Information about the backend H2O cluster."""
-from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 import json
@@ -102,7 +101,7 @@ class H2OCluster(H2OSchema):
         if prompt:
             question = "Are you sure you want to shutdown the H2O instance running at %s (Y/N)? " \
                        % h2o.connection().base_url
-            response = input(question)  # works in Py2 & Py3 because redefined in h2o.utils.compatibility module
+            response = input(question)
         else:
             response = "Y"
         if response.lower() in {"y", "yes"}:
