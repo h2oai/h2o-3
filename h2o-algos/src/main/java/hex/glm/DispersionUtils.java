@@ -264,15 +264,13 @@ public class DispersionUtils {
         }
     };
 
-    public static double estimateNegBinomialDispersionMomentMethod(GLMModel model, double[] beta, DataInfo dinfo, Vec weights, Vec response) {
-        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
-                1, Vec.T_NUM, dinfo._adaptedFrame);
-        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+    public static double estimateNegBinomialDispersionMomentMethod(GLMModel model, double[] beta, DataInfo dinfo, Vec weights, Vec response, Vec mu) {
         class MomentMethodThetaEstimation extends MRTask<MomentMethodThetaEstimation> {
             double _muSqSum;
             double _sSqSum;
             double _muSum;
             double _wSum;
+
             @Override
             public void map(Chunk[] cs) {
                 // mu, y, w
@@ -292,10 +290,11 @@ public class DispersionUtils {
                 _muSum += mrt._muSum;
                 _wSum += mrt._wSum;
             }
-        };
+        }
+        ;
         MomentMethodThetaEstimation mm = new MomentMethodThetaEstimation().doAll(mu, response, weights);
 
-        return mm._muSqSum/(mm._sSqSum - mm._muSum/mm._wSum);
+        return mm._muSqSum / (mm._sSqSum - mm._muSum / mm._wSum);
     }
 
 
