@@ -49,7 +49,7 @@ def glm_ll_aic():
     print(ll)
     print(aic)
 
-    glm = H2OGeneralizedLinearEstimator(calc_like=True, nfolds=3, family="tweedie")
+    glm = H2OGeneralizedLinearEstimator(calc_like=True, nfolds=3, family="tweedie", tweedie_variance_power=1.5)
     glm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
     ll = glm.loglikelihood(train=True, valid=True)
     aic = glm.aic(train=True, valid=True)
