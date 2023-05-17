@@ -1298,6 +1298,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               // dispersion value estimation for tweedie family does not require 
               // parameters compute_p_values and remove_collinear_columns
               _parms._dispersion_parameter_method = ml;
+              // disable regularization as ML is supported only without regularization
+              _parms._lambda = new double[] {0.0};
             default:
               // other families does not require dispersion parameter estimation
           }
