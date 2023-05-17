@@ -1731,7 +1731,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (expensive) {
             vec = test.anyVec().makeCon(1);
             toDelete.put(vec._key, "adapted missing vectors");
-            msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
+            // cross-validation generated weights will not be found in test/validation dataset.  This warning is
+            // invalid.  We will suppress this warning.
+            if (!names[i].contains("_internal_cv_weights_")) {
+              msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" +
+                      names[i] + "' (needed because a response was found and metrics are to be computed): " +
+                      "substituting in a column of 1s"));
+            }
           }
           else if (isTreatment && computeMetrics) {
             throw new IllegalArgumentException("Test/Validation dataset is missing treatment column '" + treatment + "'");

@@ -2473,62 +2473,67 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double delta;
       double theta;
       boolean converged = false;
-      if (iterCnt == 1) {
-        theta = estimateNegBinomialDispersionMomentMethod(_model, betaCnd, _dinfo, weights, response);
-      } else {
-        theta = _parms._theta;
+      try {
+        Scope.enter();
         DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
                 1, Vec.T_NUM, _dinfo._adaptedFrame);
-        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+        Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
 
-        NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
-        delta = _parms._dispersion_learning_rate * nbGrad._grad / nbGrad._hess;
-        double bestLLH = Math.max(-previousNLLH, nbGrad._llh);
-        double bestTheta = theta;
+        if (iterCnt == 1) {
+          theta = estimateNegBinomialDispersionMomentMethod(_model, betaCnd, _dinfo, weights, response, mu);
+        } else {
+          theta = _parms._theta;
+          NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
+          delta = _parms._dispersion_learning_rate * nbGrad._grad / nbGrad._hess;
+          double bestLLH = Math.max(-previousNLLH, nbGrad._llh);
+          double bestTheta = theta;
 
-        delta = Double.isFinite(delta) ? delta : 1; // NaN can occur in extreme datasets so try to get out of this neighborhood just by linesearch
+          delta = Double.isFinite(delta) ? delta : 1; // NaN can occur in extreme datasets so try to get out of this neighborhood just by linesearch
 
-        // Golden section search for the optimal size of delta
-        // Set lowerbound to -10 or lowest value that will keep theta > 0 which ever is bigger
-        // Negative value here helps with datasets where we use to diverge, I'm not sure yet if it's caused by some
-        // numerical issues or if the likelihood can get multimodal for some cases.
-        double lowerBound = (theta + 10 * delta < 0) ? (1 - 1e-15) * theta / delta : -10;
-        double upperBound = (theta - 1e3 * delta < 0) ? (1 - 1e-15) * theta / delta : 1e3;
-        double d = upperBound - lowerBound;
+          // Golden section search for the optimal size of delta
+          // Set lowerbound to -10 or lowest value that will keep theta > 0 which ever is bigger
+          // Negative value here helps with datasets where we use to diverge, I'm not sure yet if it's caused by some
+          // numerical issues or if the likelihood can get multimodal for some cases.
+          double lowerBound = (theta + 10 * delta < 0) ? (1 - 1e-15) * theta / delta : -10;
+          double upperBound = (theta - 1e3 * delta < 0) ? (1 - 1e-15) * theta / delta : 1e3;
+          double d = upperBound - lowerBound;
 
-        for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
-          d *= 0.618;  // division by golden ratio
-          final double lowerBoundProposal = upperBound - d;
-          final double upperBoundProposal = lowerBound + d;
-          NegativeBinomialGradientAndHessian nbLower = new NegativeBinomialGradientAndHessian(theta - lowerBoundProposal * delta).doAll(mu, response, weights);
-          NegativeBinomialGradientAndHessian nbUpper = new NegativeBinomialGradientAndHessian(theta - upperBoundProposal * delta).doAll(mu, response, weights);
+          for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
+            d *= 0.618;  // division by golden ratio
+            final double lowerBoundProposal = upperBound - d;
+            final double upperBoundProposal = lowerBound + d;
+            NegativeBinomialGradientAndHessian nbLower = new NegativeBinomialGradientAndHessian(theta - lowerBoundProposal * delta).doAll(mu, response, weights);
+            NegativeBinomialGradientAndHessian nbUpper = new NegativeBinomialGradientAndHessian(theta - upperBoundProposal * delta).doAll(mu, response, weights);
 
-          if (nbLower._llh >= nbUpper._llh) {
-            upperBound = upperBoundProposal;
-            if (nbLower._llh > bestLLH) {
-              bestLLH = nbLower._llh;
-              bestTheta = nbLower._theta;
+            if (nbLower._llh >= nbUpper._llh) {
+              upperBound = upperBoundProposal;
+              if (nbLower._llh > bestLLH) {
+                bestLLH = nbLower._llh;
+                bestTheta = nbLower._theta;
+              }
+            } else {
+              lowerBound = lowerBoundProposal;
+              if (nbUpper._llh > bestLLH) {
+                bestLLH = nbUpper._llh;
+                bestTheta = nbUpper._theta;
+              }
             }
-          } else {
-            lowerBound = lowerBoundProposal;
-            if (nbUpper._llh > bestLLH) {
-              bestLLH = nbUpper._llh;
-              bestTheta = nbUpper._theta;
+            if (Math.abs((upperBoundProposal - lowerBoundProposal) * Math.max(1, delta / Math.max(_parms._theta, bestTheta))) < _parms._dispersion_epsilon || _job.stop_requested()) {
+              break;
             }
           }
-          if (Math.abs((upperBoundProposal - lowerBoundProposal) * Math.max(1, delta / Math.max(_parms._theta, bestTheta))) < _parms._dispersion_epsilon || _job.stop_requested()) {
-            break;
-          }
+
+          theta = bestTheta;
+          converged = (nbGrad._llh + previousNLLH) <= _parms._objective_epsilon || !Double.isFinite(theta);
         }
+        delta = _parms._theta - theta;
+        converged = converged && (Math.abs(delta) / Math.max(_parms._theta, theta) < _parms._dispersion_epsilon);
 
-        theta = bestTheta;
-        converged = (nbGrad._llh + previousNLLH) <= _parms._objective_epsilon || !Double.isFinite(theta);
+        updateTheta(theta);
+        return converged;
+      } finally {
+        Scope.exit();
       }
-      delta = _parms._theta - theta;
-      converged = converged &&  (Math.abs(delta) / Math.max(_parms._theta, theta) < _parms._dispersion_epsilon);
-
-      updateTheta(theta);
-      return converged;
     }
 
     private void fitLBFGS() {
