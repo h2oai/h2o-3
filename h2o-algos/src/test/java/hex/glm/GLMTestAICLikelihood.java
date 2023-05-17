@@ -3,7 +3,6 @@ package hex.glm;
 import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsRegressionGLM;
 import org.apache.commons.math3.special.Gamma;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
@@ -260,7 +259,6 @@ public class GLMTestAICLikelihood extends TestUtil {
       double prediction;
       double yr;
       double inv_theta_estimated = 1 / model._parms._dispersion_estimated;
-      
       for (int index=0; index<nRow; index++) {
         yr = responseCol.at(index);
         prediction = pred.vec(0).at(index);
@@ -380,7 +378,6 @@ public class GLMTestAICLikelihood extends TestUtil {
       Scope.track(pred);
       // only check that loglikelihood is calculated
       double logLike = ((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood;
-      // todo - check not zero
       assertNotEquals("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood, 0.0, logLike);
       double aic = -2*logLike + 2*model._output.rank();
       assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aic+" and they are different.", Math.abs(aic-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
