@@ -387,4 +387,48 @@ public class GLMTestAICLikelihood extends TestUtil {
       Scope.exit();
     }
   }
+
+  // test tweedie
+  @Test
+  public void testCrossvalAICLikelihood() {
+    Scope.enter();
+    try {
+      final Frame trainData = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+      final Frame validData = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+      Scope.track(trainData);
+      final GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+      parms._train = trainData._key;
+      parms._family = GLMModel.GLMParameters.Family.gaussian;
+      parms._valid = validData._key;
+      parms._nfolds = 3;
+      parms._response_column = "CAPSULE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._calc_like = true;
+      final GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+      model._output.resetThreshold(0.5);
+      final Frame pred = model.score(trainData);
+      Scope.track(pred);
+      // only check that loglikelihood is calculated
+      double logLikeTrain = ((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood;
+      double logLikeCrossval =  ((ModelMetricsRegressionGLM) model._output._cross_validation_metrics)._loglikelihood;
+      double logLikeValidation = ((ModelMetricsRegressionGLM) model._output._validation_metrics)._loglikelihood;      
+      
+      double aicTrain = ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC;
+      double aicCrossval =  ((ModelMetricsRegressionGLM) model._output._cross_validation_metrics)._AIC;
+      double aicValidation = ((ModelMetricsRegressionGLM) model._output._validation_metrics)._AIC;
+      System.out.println(logLikeTrain + " " + logLikeCrossval + " " + logLikeValidation);
+      System.out.println(aicTrain + " " + aicCrossval + " " + aicValidation);
+      assertNotEquals("Log likelihood from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood, 0.0, logLikeTrain);
+      double aicTrainManual = -2*logLikeTrain + 2*model._output.rank();
+      double aicCrossvalManual = -2*logLikeCrossval + 2*model._output.rank();
+      double aicValidationManual = -2*logLikeValidation + 2*model._output.rank();
+      System.out.println(aicTrainManual + " " + aicCrossvalManual + " " + aicValidationManual);
+      assertTrue("AIC from model: "+((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC+".  Manual AIC: "+aicTrainManual+" and they are different.", Math.abs(aicTrainManual-((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC)<1e-6);
+      System.out.println(((ModelMetricsRegressionGLM) model._output._training_metrics)._loglikelihood + " " + ((ModelMetricsRegressionGLM) model._output._training_metrics)._AIC);
+//      System.out.println(logLike + " " + aic);
+    } finally {
+      Scope.exit();
+    }
+  }
 }
