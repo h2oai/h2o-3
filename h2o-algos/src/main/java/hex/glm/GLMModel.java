@@ -739,9 +739,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case binomial:
           // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
           probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
-          return w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1)) 
-                  + w * (Gamma.logGamma(2) - Gamma.logGamma(yr + 1) 
-                  - Gamma.logGamma(1 - yr + 1));
+          return w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1));
         case quasibinomial:
           // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
           probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction

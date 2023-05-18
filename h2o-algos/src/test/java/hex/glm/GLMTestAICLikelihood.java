@@ -96,9 +96,7 @@ public class GLMTestAICLikelihood extends TestUtil {
       for (int index=0; index<nRow; index++) {
         yr = responseCol.at(index);
         probabilityOf1 = pred.numCols() > 1 ? pred.vec(2).at(index) : pred.vec(0).at(index); // probability of 1 equals prediction
-        logLike +=  w * (trainData.vec("CAPSULE").at(index) * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1))
-                + w * (Gamma.logGamma(2) - Gamma.logGamma(yr + 1)
-                - Gamma.logGamma(1 - yr + 1));
+        logLike +=  w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1));
       }
       assertTrue("Log likelihood from model: "+((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood+".  Manual loglikelihood: "+logLike+" and they are different.", Math.abs(logLike-((ModelMetricsBinomialGLM) model._output._training_metrics)._loglikelihood)<1e-6);
       double aic = -2*logLike + 2*model._output.rank();
