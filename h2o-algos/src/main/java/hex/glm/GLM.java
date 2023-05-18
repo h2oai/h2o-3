@@ -2826,7 +2826,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               se = 1.0 / oneOverSe;
             } else if (negativebinomial.equals(_parms._family)) {
               se = _parms._theta;
-              System.out.println("SE for theta is: " + se);
             } else if (_tweedieDispersionOnly) {
               se = estimateTweedieDispersionOnly(_parms, _model, _job, beta, _state.activeData());
             }
