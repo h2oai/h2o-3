@@ -758,6 +758,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case poisson:
           return w * (yr * log(prediction) - prediction - Gamma.logGamma(yr + 1)); // gamma(n) = (n-1)!
         case negativebinomial:
+          // the estimated dispersion parameter is theta. The likelihood formula requires k. Theta=1/k.
           double invThetaEstimated = 1 / _dispersion_estimated;
           return yr * log(invThetaEstimated * prediction / w) - (yr + w/invThetaEstimated) * log(1 + invThetaEstimated * prediction / w) 
                   + log(Gamma.gamma(yr + w / invThetaEstimated) / (Gamma.gamma(yr + 1) * Gamma.gamma(w / invThetaEstimated)));
