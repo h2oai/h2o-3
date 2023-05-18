@@ -1282,11 +1282,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _tweedieDispersionOnly = true;
       
         // likelihood calculation for gaussian, gamma, negativebinomial and tweedie families requires dispersion parameter estimation
-        // _dispersion_parameter_method: gaussian - pearson; gamma, negativebinomial, tweedie - ml.
+        // _dispersion_parameter_method: gaussian - pearson (default); gamma, negativebinomial, tweedie - ml.
         if(!_parms._HGLM && _parms._calc_like) {
           switch (_parms._family) {
             case gaussian:
-              _parms._dispersion_parameter_method = pearson;
               _parms._compute_p_values = true;
               _parms._remove_collinear_columns = true;
               break;
