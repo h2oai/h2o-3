@@ -84,13 +84,14 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
         public double _obj_reg = -1.0;
         public double[] _lambda = new double[]{0.0};
         public boolean _use_all_factor_levels = false;
-        public boolean _build_glm_model = true;
+        public boolean _build_glm_model = false;
         public GLMModel.GLMParameters.Influence _influence;  // if set to dfbetas will calculate the difference of betas obtained from including and excluding a data row
+        public boolean _multinode_mode = false; // for maxrsweep only, if true will run on multiple nodes in cluster
         
         public enum Mode {
             allsubsets, // use combinatorial, exponential runtime
             maxr, // use sequential replacement but calls GLM to build all models, slow but can use cross-validation and validation dataset to build more robust results
-            maxrsweep, // use sequential replacement, use sweep to generate GLM coefficients, small cpm
+            maxrsweep,  // perform incremental maxrsweep without using sweeping vectors, only on CPM.
             backward // use backward selection
         }
         @Override
@@ -345,7 +346,10 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
                               int actualCPMSize, int[] predsubset, double[][] lastCPM, double r2Scale, 
                               CoeffNormalization coeffN, int[][] pred2CPMIndex, DataInfo dinfo) {
             int lastCPMIndex = actualCPMSize-1;
-            _best_r2_values[index] = 1-r2Scale * lastCPM[lastCPMIndex][lastCPMIndex];
+            if (lastCPM[lastCPMIndex][lastCPMIndex] == Double.MAX_VALUE)
+                _best_r2_values[index] = -1;
+            else
+                _best_r2_values[index] = 1-r2Scale * lastCPM[lastCPMIndex][lastCPMIndex];
             extractCoeffs(predictorNames, allCoefNames, lastCPM, index, hasIntercept, actualCPMSize, predsubset, coeffN,
                     pred2CPMIndex, dinfo);
             updateAddedRemovedPredictors(index);

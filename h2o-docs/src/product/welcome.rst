@@ -23,11 +23,10 @@ At a minimum, we recommend the following for compatibility with H2O:
    -  Ubuntu 12.04
    -  RHEL/CentOS 6 or later
 
--  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
+-  **Languages**: R and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
 
-   -  Scala 2.10 or later
    -  R version 3 or later
-   -  Python 2.7.x, 3.5.x, 3.6.x 
+   -  Python 3.6.x, 3.7.x, 3.8.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 

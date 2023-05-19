@@ -52,7 +52,7 @@ def test_prostate():
     h2o_glm.train(x=list(range(2, h2o_data.ncol)), y=1, training_frame=h2o_data )
 
     for i in range(len(h2o_glm._model_json['output']['coefficients_table'][0])):
-        for constraint in beta_constraints.as_data_frame().get_values():
+        for constraint in beta_constraints.as_data_frame().to_numpy():
             if (h2o_glm._model_json['output']['coefficients_table'][0][i].startswith(constraint[0])):
                 assert h2o_glm._model_json['output']['coefficients_table'][1][i] >= constraint[1]
                 assert h2o_glm._model_json['output']['coefficients_table'][1][i] <= constraint[2]

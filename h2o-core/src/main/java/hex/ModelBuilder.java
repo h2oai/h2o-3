@@ -1819,21 +1819,27 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
+    String dataset = name.substring(name.length()-5);
     double rebalanceRatio = rebalanceRatio();
     int nonEmptyChunks = original_fr.anyVec().nonEmptyChunks();
     if (nonEmptyChunks >= chunks * rebalanceRatio) {
       if (chunks>1)
-        Log.info(name.substring(name.length()-5)+ " dataset already contains " + nonEmptyChunks + " (non-empty) " +
+        Log.info(dataset + " dataset already contains " + nonEmptyChunks + " (non-empty) " +
               " chunks. No need to rebalance. [desiredChunks=" + chunks, ", rebalanceRatio=" + rebalanceRatio + "]");
       return original_fr;
     }
-    Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
+    raiseReproducibilityWarning(dataset, chunks);
+    Log.info("Rebalancing " + dataset  + " dataset into " + chunks + " chunks.");
     Key newKey = Key.makeUserHidden(name + ".chunks" + chunks);
     RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
     H2O.submitTask(rb).join();
     Frame rebalanced_fr = DKV.get(newKey).get();
     Scope.track(rebalanced_fr);
     return rebalanced_fr;
+  }
+
+  protected void raiseReproducibilityWarning(String datasetName, int chunks) {
+    // for children
   }
 
   private double rebalanceRatio() {

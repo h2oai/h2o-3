@@ -104,6 +104,21 @@ def is_func_var_kw(instr): # Py <= 3.5
 def is_method_call(instr): # Py >= 3.7
     return "CALL_METHOD" == instr
 
+def is_dictionary_merge(instr): # Py >= 3.9
+    return "DICT_MERGE" == instr
+
+def is_list_extend(instr): # Py >= 3.9
+    return "LIST_EXTEND" == instr
+
+def is_list_to_tuple(instr): # Py >= 3.9
+    return "LIST_TO_TUPLE" == instr
+
+def is_build_list(instr):
+    return "BUILD_LIST" == instr
+
+def is_build_map(instr):
+    return "BUILD_MAP" == instr
+
 def is_callable(instr):
     return is_func(instr) or is_func_kw(instr) or is_func_ex(instr) or is_method_call(instr)
 
@@ -250,6 +265,10 @@ def _opcode_read_arg(start_index, ops, keys):
         return [_load_fast(op), return_idx]
     elif is_load_outer_scope(instr):
         return [_load_outer_scope(op), return_idx]
+    elif is_build_list(instr):
+        return _build_args(start_index, ops, keys)
+    elif is_build_map(instr):
+        return _build_kwargs(start_index, ops, keys)
     return op, return_idx
 
 
@@ -263,6 +282,28 @@ def _unop_bc(op, idx, ops, keys):
     arg, idx = _opcode_read_arg(idx, ops, keys)
     return ExprNode(op, arg), idx
 
+
+def _build_args(idx, ops, keys):
+    instr, nargs = _get_instr(ops, idx)
+    idx -= 1
+    args = []
+    while nargs > 0:
+        new_arg, idx = _opcode_read_arg(idx, ops, keys)
+        args.insert(0, new_arg)
+        nargs -= 1
+    return args, idx
+
+
+def _build_kwargs(idx, ops, keys):
+    instr, nargs = _get_instr(ops, idx)
+    kwargs = dict()
+    idx -= 1
+    while nargs > 0:
+        val, idx = _opcode_read_arg(idx, ops, keys)
+        key, idx = _opcode_read_arg(idx, ops, keys)
+        kwargs[key] = val
+        nargs -= 1
+    return kwargs, idx
 
 def _call_func_bc(nargs, idx, ops, keys):
     """
@@ -342,6 +383,13 @@ def _call_func_ex_bc(flags, idx, ops, keys):
                         key, idx = _opcode_read_arg(idx, ops, keys)
                         kwargs[key] = val
                         nargs -= 1
+        elif is_dictionary_merge(instr):
+            idx -= 1
+            kwargs = dict()
+            while nargs + 1 > 0:
+                new_kwargs, idx = _opcode_read_arg(idx, ops, keys)
+                kwargs.update(new_kwargs)
+                nargs -= 1
         else:
             # load **kwargs
             kwargs, idx = _opcode_read_arg(idx, ops, keys)
@@ -349,9 +397,14 @@ def _call_func_ex_bc(flags, idx, ops, keys):
         kwargs = {}
 
     instr, nargs = _get_instr(ops, idx)
-    if is_builder(instr):  # if there are positional args, it will start with a BUILD_TUPLE instr
+    while is_list_to_tuple(instr):
+        idx = idx - 1
+        instr, nargs = _get_instr(ops, idx)
+    if is_builder(instr) or is_list_extend(instr):
         idx -= 1
         args = []
+        if is_list_extend(instr):
+            nargs += 1
         while nargs > 0:
             new_args, idx = _opcode_read_arg(idx, ops, keys)
             args.insert(0, *new_args)

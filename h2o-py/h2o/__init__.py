@@ -11,6 +11,14 @@ from codecs import open
 import os
 import sys
 import zipfile
+import warnings
+
+if sys.version_info.major < 3 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
+    warnings.showwarning(
+        "Your Python version is %s. The support for this version will be removed in H2O 3.42.0.1." % sys.version,
+        DeprecationWarning,
+        "h2o",
+        1)
 
 __no_export = set(dir())  # variables defined above this are not exported
 
@@ -67,7 +75,6 @@ except:
 
 if __version__.endswith("99999"):
     print(__buildinfo__)
-
 
 try:
     # Export explain functions that are useful for lists of models

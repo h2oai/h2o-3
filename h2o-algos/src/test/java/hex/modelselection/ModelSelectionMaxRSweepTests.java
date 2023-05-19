@@ -7,12 +7,12 @@ import hex.gram.Gram;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
+import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,9 +62,10 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             List<Integer> correctIgnoredPreds = new ArrayList<>(Arrays.asList(0, 3, 16, 17));
             List<Integer> ignoredCols = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 10, 11, 12, 32, 33));
             List<String> ignoredPredsNames = new ArrayList<>();
+            List<String> ignoredCoefsNames = new ArrayList<>();
             String[] predictornames = dinfo._adaptedFrame.names();
             List<String> correctIgnoredPredNames = correctIgnoredPreds.stream().map(x -> predictornames[x]).collect(Collectors.toList());
-            List<Integer> ignoredFullPreds = findFullDupPred(dinfo, ignoredCols, ignoredPredsNames, predictornames);
+            List<Integer> ignoredFullPreds = findFullDupPred(dinfo, ignoredCols, ignoredPredsNames, ignoredCoefsNames, predictornames);
             // check that ignored predictor columns are generated correctly.
             assert ignoredFullPreds.size() == ignoredCols.size();
             int equalCounts = (int) IntStream.range(0, ignoredCols.size()).filter(x -> ignoredCols.get(x) == ignoredFullPreds.get(x)).count();
@@ -74,6 +75,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
                     "expected and actual removed predictor names list sizes are not equal.";
             equalCounts = (int) IntStream.range(0, ignoredPredsNames.size()).filter(x -> correctIgnoredPredNames.get(x).equals(ignoredPredsNames.get(x))).count();
             assert equalCounts == ignoredPredsNames.size() : "actual and expected removed predictor names are not the same.";
+            assertTrue(ignoredFullPreds.size()==ignoredCoefsNames.size());
         } finally {
             Scope.exit();
         }
@@ -90,22 +92,26 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             Frame origF=Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));;
             ModelSelectionModel.ModelSelectionParameters parms=new ModelSelectionModel.ModelSelectionParameters();;
             DataInfo dinfo = setup(origF, parms);
-            List<Integer> correctIgnoredPreds = new ArrayList<>(Arrays.asList(0, 3, 10, 16, 17));
-            List<Integer> correctIgnoredFullPreds = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 10, 11, 12, 26, 32, 33));
+            List<Integer> correctIgnoredPredsInd = new ArrayList<>(Arrays.asList(0, 3, 10, 16, 17));
+            List<Integer> correctIgnoredFullCoefInd = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 10, 11, 12, 26, 32, 33));
             List<Integer> ignoredCols = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 10, 11, 12, 17, 21, 26, 32, 33));
             List<String> ignoredPredsNames = new ArrayList<>();
+            List<String> ignoredCoefNames = new ArrayList<>();
             String[] predictornames = dinfo._adaptedFrame.names();
-            List<String> correctIgnoredPredNames = correctIgnoredPreds.stream().map(x -> predictornames[x]).collect(Collectors.toList());
-            List<Integer> ignoredFullPreds = findFullDupPred(dinfo, ignoredCols, ignoredPredsNames, predictornames);
+            List<String> correctIgnoredPredNames = correctIgnoredPredsInd.stream().map(x -> predictornames[x]).collect(Collectors.toList());
+            List<Integer> ignoredFullCoefInd = findFullDupPred(dinfo, ignoredCols, ignoredPredsNames, ignoredCoefNames, 
+                    predictornames);
+            
             // check that ignored predictor columns are generated correctly.
-            assert ignoredFullPreds.size() == correctIgnoredFullPreds.size();
-            int equalCounts = (int) IntStream.range(0, correctIgnoredFullPreds.size()).filter(x -> correctIgnoredFullPreds.get(x) == ignoredFullPreds.get(x)).count();
-            assert equalCounts == ignoredFullPreds.size() : "expected and actual predictor columns are not equal.";
+            assert ignoredFullCoefInd.size() == correctIgnoredFullCoefInd.size();
+            int equalCounts = (int) IntStream.range(0, correctIgnoredFullCoefInd.size()).filter(x -> correctIgnoredFullCoefInd.get(x) == ignoredFullCoefInd.get(x)).count();
+            assert equalCounts == ignoredFullCoefInd.size() : "expected and actual predictor columns are not equal.";
             // check that the correct duplicated predictor names are removed.
             assert correctIgnoredPredNames.size() == ignoredPredsNames.size() :
                     "expected and actual removed predictor names list sizes are not equal.";
             equalCounts = (int) IntStream.range(0, ignoredPredsNames.size()).filter(x -> correctIgnoredPredNames.get(x).equals(ignoredPredsNames.get(x))).count();
             assert equalCounts == ignoredPredsNames.size() : "actual and expected removed predictor names are not the same.";
+            assertTrue(ignoredFullCoefInd.size()==ignoredCoefNames.size());
         } finally {
             Scope.exit();
         }
@@ -198,7 +204,8 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
     }
 
     /***
-     * This will test for the correct mapping of predictors to cpm indices with duplicated predictors
+     * This will test for the correct mapping of predictors to cpm indices with duplicated predictors that needs to 
+     * be removed.
      */
     @Test
     public void testPredInd2CPMIndDuplicateCols() {
@@ -209,31 +216,33 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             DataInfo dinfo = setup(origF, parms);
 
             // keep only first enum
-            List<Integer> droppedPreds = IntStream.range(1, 20).boxed().collect(Collectors.toList());
+            List<Integer> droppedPreds = IntStream.range(1, 36).boxed().collect(Collectors.toList());
             int[][] correctMap = new int[][]{{0,1,2,3}};
             testCorrectPred2CPMMap(dinfo, 1, droppedPreds, correctMap);
             // keep all enums
-            droppedPreds = IntStream.range(10, 20).boxed().collect(Collectors.toList());
+            droppedPreds = IntStream.range(26, 36).boxed().collect(Collectors.toList());
             correctMap = new int[][]{{0,1,2,3}, {4,5,6}, {7,8,9}, {10,11,12}, {13,14,15}, {16,17}, {18,19}, {20,21}, {22,23}, {24,25}};
             testCorrectPred2CPMMap(dinfo, 10, droppedPreds, correctMap);
             // keep all numerical columns
-            droppedPreds = IntStream.range(0,10).boxed().collect(Collectors.toList());
+            droppedPreds = IntStream.range(0,26).boxed().collect(Collectors.toList());
             correctMap = new int[][]{{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}};
             testCorrectPred2CPMMap(dinfo, 10, droppedPreds, correctMap);
             // keep only even predictors
-            droppedPreds = new ArrayList<>(Arrays.asList(1,3,5,7,9,11,13,15,17,19));
+            droppedPreds = new ArrayList<>(Arrays.asList(4,10,16,20,24,27,29,31,33,35));
             correctMap = new int[][]{{0,1,2,3}, {4,5,6}, {7,8,9}, {10,11},{12,13},{14},{15},{16},{17},{18}};
             testCorrectPred2CPMMap(dinfo, 10, droppedPreds, correctMap);
             // keep only odd predictors
-            droppedPreds = new ArrayList<>(Arrays.asList(0,2,4,6,8,10,12,14,16,18));
+            droppedPreds = new ArrayList<>(Arrays.asList(0,7,13,18,22,26,28,30,32,34));
             correctMap = new int[][]{{0,1,2},{3,4,5},{6,7},{8,9},{10,11},{12}, {13}, {14},{15},{16}};
             testCorrectPred2CPMMap(dinfo, 10, droppedPreds, correctMap);
             // keep first enum and first numerical
-            droppedPreds = new ArrayList<>(Arrays.asList(1,2,3,4,5,6,7,8,9,11,12,13,14,15,16,17,18,19));
+            droppedPreds = IntStream.range(0,36).boxed().collect(Collectors.toList());
+            droppedPreds.removeAll(Arrays.asList(0,1,2,3,26));
             correctMap = new int[][]{{0,1,2,3}, {4}};
             testCorrectPred2CPMMap(dinfo, 2, droppedPreds, correctMap);
             // keep last enum and last numerical
-            droppedPreds = new ArrayList<>(Arrays.asList(0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18));
+            droppedPreds = IntStream.range(0,36).boxed().collect(Collectors.toList());
+            droppedPreds.removeAll(Arrays.asList(24,25,35));
             correctMap = new int[][]{{0,1}, {2}};
             testCorrectPred2CPMMap(dinfo, 2, droppedPreds, correctMap);
         } finally {
@@ -445,7 +454,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         int newPredCPMLength = pred2CPMIndices[newPredInd].length;
         double[][] smallCPM = extractPredSubsetsCPM(allCPM, predIndices, pred2CPMIndices, hasIntercept);
         SweepVector[][] sweepVectors = sweepCPM(smallCPM, sweepIndices, true);
-        double[][] rightSizeCPM = addNewPred2CPM(allCPM, smallCPM, allPreds, pred2CPMIndices, hasIntercept);
+        double[][] rightSizeCPM = addNewPred2CPM(allCPM, null, smallCPM, allPreds, pred2CPMIndices, hasIntercept);
         if (newPredCPMLength == 1) {
             applySweepVectors2NewPred(sweepVectors, rightSizeCPM, newPredCPMLength, null);
         } else {
@@ -466,7 +475,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         int newPredCPMLength = pred2CPMIndices[newPredInd].length;
         double[][] smallCPM = extractPredSubsetsCPM(allCPM, predIndices, pred2CPMIndices, hasIntercept);
         SweepVector[][] sweepVectors = sweepCPM(smallCPM, sweepIndices, true);
-        double[][] rightSizeCPM = addNewPred2CPM(allCPM, smallCPM, allPreds, pred2CPMIndices, hasIntercept);
+        double[][] rightSizeCPM = addNewPred2CPM(allCPM, null, smallCPM, allPreds, pred2CPMIndices, hasIntercept);
         if (pred2CPMIndices[newPredInd].length > 1) {
             SweepVector[][] newSweepVec = mapBasicVector2Multiple(sweepVectors, newPredCPMLength);
             oneSweepWSweepVector(newSweepVec[0], rightSizeCPM, sweepIndices[0], newPredCPMLength);
@@ -486,150 +495,6 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             assertTrue(Math.abs(rSweepVector[index]-sweepVec[index]._value)<1e-6);
         }
     }
-
-    /**
-     * In this test, I want to test and make sure that the following methods are working:
-     *  - updateSV4NewPred
-     *  - sweepCPMNewPred
-     */
-    @Test
-    public void testReplaceCPMwNewPred() {
-        double[][] forwardCPMOrig = new double[][]{{50000.0, -7.958078640513122E-13, 3.979039320256561E-13, 
-                2.2737367544323206E-13, 1.1652900866465643E-12, 4.689582056016661E-13, -4.547473508864641E-13, 
-                1.2221335055073723E-12, 6.608047442568932E-13, 122346.71425169753}, {-7.958078640513122E-13, 49999.0,
-                -345.6139787378465, -205.35413258920994, 253.29361004290251, 308.5874618379251, 56.84257753101841,
-                -143.108688427594, 143.11727542499693, -1852537.2069261894}, {3.979039320256561E-13, 
-                -345.6139787378465, 49999.00000000001, 6.2282639257916514, -91.95828276351028, -115.23819328439825, 
-                -163.12536216455945, 585.5553268287405, 249.7592249542846, 1815126.8928365733}, 
-                {2.2737367544323206E-13, -205.35413258920994, 6.2282639257916514, 49999.0, 93.6080023311965,
-                180.38909518825784, 336.9634862705478, 126.58829573823623, -187.75488919015658, 1797504.437143965},
-                {1.1652900866465643E-12, 253.29361004290251, -91.95828276351028, 93.6080023311965, 49998.99999999999,
-                234.90806821539226, -174.76753981209666, -415.1970001204393, 208.42665517330633, -1768751.0314145735}, 
-                {4.689582056016661E-13, 308.5874618379251, -115.23819328439825, 180.38909518825784, 234.90806821539226,
-                49999.00000000001, 76.18684561711362, 70.78228811424982, -267.03987968155207, -1755817.796321408}, 
-                {-4.547473508864641E-13, 56.84257753101841, -163.12536216455945, 336.9634862705478, 
-                -174.76753981209666, 76.18684561711362, 49999.0, 119.30508493851517, 150.32124911394152, 
-                1747644.8783670785}, {1.2221335055073723E-12, -143.108688427594, 585.5553268287405, 126.58829573823623,
-                -415.1970001204393, 70.78228811424982, 119.30508493851517, 49999.0, -4.219695487168629,
-                -1634928.905372516}, {6.608047442568932E-13, 143.11727542499693, 249.7592249542846, 
-                -187.75488919015658, 208.42665517330633, -267.03987968155207, 150.32124911394152, -4.219695487168629,
-                49998.99999999999, 1684727.2390496698}, {122346.71425169753, -1852537.2069261894, 1815126.8928365733,
-                1797504.437143965, -1768751.0314145735, -1755817.796321408, 1747644.8783670785, -1634928.905372516,
-                1684727.2390496698, 4.542312022970976E9}};
-
-        int[] sweepIndices = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
-        SweepVector[][] originalSV =  sweepCPM(forwardCPMOrig, sweepIndices, true);
-        int cpmIndex = forwardCPMOrig.length-1;
-
-        double[][] CPMNoSweptReplaced100 = new double[][]{{50000.0, -7.958078640513122E-13, 3.979039320256561E-13, 
-                2.2737367544323206E-13, 1.1652900866465643E-12, 4.689582056016661E-13, -4.547473508864641E-13, 
-                -5.826450433232822E-13, 6.608047442568932E-13, 122346.71425169753}, {-7.958078640513122E-13, 49999.0,
-                -345.6139787378465, -205.35413258920994, 253.29361004290251, 308.5874618379251, 56.84257753101841,
-                -114.69387539976455, 143.11727542499693, -1852537.2069261894}, {3.979039320256561E-13, 
-                -345.6139787378465, 49999.00000000001, 6.2282639257916514, -91.95828276351028, -115.23819328439825,
-                -163.12536216455945, 88.65144562616075, 249.7592249542846, 1815126.8928365733}, 
-                {2.2737367544323206E-13, -205.35413258920994, 6.2282639257916514, 49999.0, 93.6080023311965,
-                180.38909518825784, 336.9634862705478, -208.96637046945852, -187.75488919015658, 1797504.437143965}, 
-                {1.1652900866465643E-12, 253.29361004290251, -91.95828276351028, 93.6080023311965, 49998.99999999999,
-                234.90806821539226, -174.76753981209666, 386.5044736700327, 208.42665517330633, -1768751.0314145735}, 
-                {4.689582056016661E-13, 308.5874618379251, -115.23819328439825, 180.38909518825784, 234.90806821539226,
-                49999.00000000001, 76.18684561711362, -85.20464948988825, -267.03987968155207, -1755817.796321408}, 
-                {-4.547473508864641E-13, 56.84257753101841, -163.12536216455945, 336.9634862705478, 
-                -174.76753981209666, 76.18684561711362, 49999.0, -71.27696079239956, 150.32124911394152, 
-                1747644.8783670785}, {-5.826450433232822E-13, -114.69387539976455, 88.65144562616075, 
-                -208.96637046945852, 386.5044736700327, -85.20464948988825, -71.27696079239956, 49999.00000000001,
-                431.326600219485, -1691641.472797731}, {6.608047442568932E-13, 143.11727542499693, 249.7592249542846,
-                -187.75488919015658, 208.42665517330633, -267.03987968155207, 150.32124911394152, 431.326600219485,
-                49998.99999999999, 1684727.2390496698}, {122346.71425169753, -1852537.2069261894, 1815126.8928365733,
-                1797504.437143965, -1768751.0314145735, -1755817.796321408, 1747644.8783670785, -1691641.472797731,
-                1684727.2390496698, 4.542312022970976E9}};
-        int[] replacementPredIndices = new int[]{77, 96, 74, 75, 87, 88, 85, 6};
-        ModelSelection.SweepModel bestModel = new ModelSelection.SweepModel(replacementPredIndices, forwardCPMOrig,
-                originalSV, forwardCPMOrig[cpmIndex][cpmIndex]);
-
-        int numSweep = sweepIndices.length;
-        double[][][] correctSVM = new double[numSweep+1][][];
-        double[][] startCPM  = ArrayUtils.deepClone(CPMNoSweptReplaced100);
-        correctSVM[0] = ArrayUtils.deepClone(startCPM);
-        for (int index=0; index<numSweep; index++) {
-            sweepCPM(startCPM, new int[]{index}, false);
-            correctSVM[index+1] = ArrayUtils.deepClone(startCPM);
-        }
-        SweepVector[][] correctSV = sweepCPM(CPMNoSweptReplaced100, sweepIndices, true);
-        
-        double[][] cpmSweptReplaced100UnsweptPredBehindReplaced = new double[][]{{2.0E-5, 3.201891160038978E-22, 
-                -1.5764248359833566E-22, -8.928130882178259E-23, -4.663582437088764E-22, -1.8768805992674142E-22, 
-                1.802818211414199E-22, -5.826450433232822E-13, 1.3219328713400555E-17, 2.4469342850339517}, 
-                {3.201891160038978E-22, 2.0002987753672538E-5, 1.3771498130208506E-7, 8.292563653986642E-8,
-                -1.0073946849400272E-7, -1.2292930060903938E-7, -2.3015257926214256E-8, -114.69387539976455,
-                0.002889969553821915, -36.30344770276342}, {-1.5764248359833566E-22, 1.3771498130208506E-7, 
-                2.000173502528362E-5, -2.5951251532267034E-9, 3.611087701741959E-8, 4.49906309131463E-8, 
-                6.5175702968484E-8, 88.65144562616075, 0.005021123947728915, 36.01693775408436}, 
-                {-8.928130882178259E-23, 8.292563653986642E-8, -2.5951251532267034E-9, 2.0001982239333215E-5, 
-                -3.800448531821329E-8, -7.229786864964464E-8, -1.3492686872108926E-7, -208.96637046945852, 
-                -0.0037531471332681596, 35.7536766242638}, {-4.663582437088764E-22, -1.0073946849400272E-7, 
-                3.611087701741959E-8, -3.800448531821329E-8, 2.0001732562065185E-5, -9.3238646280667E-8, 
-                7.054501420044328E-8, 386.5044736700327, 0.004206134061447402, -34.907231185426525}, 
-                {-1.8768805992674142E-22, -1.2292930060903938E-7, 4.49906309131463E-8, -7.229786864964464E-8, 
-                -9.3238646280667E-8, 2.0002007065512908E-5, -3.003052941110811E-8, -85.20464948988825, 
-                -0.0053580634091829156, -34.82800764931544}, {1.802818211414199E-22, -2.3015257926214256E-8, 
-                6.5175702968484E-8, -1.3492686872108926E-7, 7.054501420044328E-8, -3.003052941110811E-8, 
-                2.000184048470361E-5, -71.27696079239956, 0.0030677419878852776, 34.802472799989175}, 
-                {-5.826450433232822E-13, -114.69387539976455, 88.65144562616075, -208.96637046945852, 
-                386.5044736700327, -85.20464948988825, -71.27696079239956, 49999.00000000001, 431.326600219485, 
-                -1691641.472797731}, {-1.3219328713400555E-17, -0.002889969553821915, -0.005021123947728915, 
-                0.0037531471332681596, -0.004206134061447402, 0.0053580634091829156, -0.0030677419878852776, 
-                431.326600219485, 49993.85901781235, 1680383.833989036}, {-2.4469342850339517, 36.30344770276342, 
-                -36.01693775408436, -35.7536766242638, 34.907231185426525, 34.82800764931544, -34.802472799989175, 
-                -1691641.472797731, 1680383.833989036, 4.1614002561532125E9}};
-        
-        double[][] cpmSweptReplaced100 = new double[][]{{2.0E-5, 3.196101465161939E-22, -1.5058688521666574E-22,
-                -8.904229499644892E-23, -4.692995897186566E-22, -1.8837700701293293E-22, 1.822590868023714E-22,
-                -5.826450433232822E-13, -2.644632727315847E-22, 2.446934285033952}, {3.196101465161939E-22, 
-                2.0003305092168775E-5, 1.373643535013321E-7, 8.257090027642731E-8, -1.0004278825304895E-7, 
-                -1.2332046606092006E-7, -2.2968393912427673E-8, -114.69387539976455, -5.780154289964054E-8, 
-                -36.49279626012891}, {-1.5058688521666574E-22, 1.373643535013321E-7, 2.0004972421053125E-5, 
-                -2.3844957495585706E-9, 3.459916126844147E-8, 4.4799780521274465E-8, 6.60402188236639E-8, 
-                88.65144562616075, -1.0045591532834093E-7, 36.241413366137415}, {-8.904229499644892E-23, 
-                8.257090027642731E-8, -2.3844957495585706E-9, 2.0002390316351033E-5, -3.8736064227916566E-8, 
-                -7.182096595644172E-8, -1.3503755132187345E-7, -208.96637046945852, 7.506762659804055E-8, 
-                35.96436844793575}, {-4.692995897186566E-22, -1.0004278825304895E-7, 3.459916126844147E-8, 
-                -3.8736064227916566E-8, 2.0003455200174627E-5, -9.39352031734195E-8, 7.040935439686753E-8, 
-                386.5044736700327, -8.411808167349468E-8, -35.3268979933469}, {-1.8837700701293293E-22, 
-                -1.2332046606092006E-7, 4.4799780521274465E-8, -7.182096595644172E-8, -9.39352031734195E-8, 
-                2.0002625441322806E-5, -3.028861207765157E-8, -85.20464948988825, 1.0717175007630091E-7, 
-                -34.59794521081789}, {1.822590868023714E-22, -2.2968393912427673E-8, 6.60402188236639E-8, 
-                -1.3503755132187345E-7, 7.040935439686753E-8, -3.028861207765157E-8, 2.0002142002791998E-5, 
-                -71.27696079239956, -6.136667203061276E-8, 34.77941766646261}, {-5.826450433232822E-13, 
-                -114.69387539976455, 88.65144562616075, -208.96637046945852, 386.5044736700327, -85.20464948988825,
-                -71.27696079239956, 49999.00000000001, 431.326600219485, -1691641.472797731}, {-2.644632727315847E-22,
-                -5.780154289964054E-8, -1.0045591532834093E-7, 7.506762659804055E-8, -8.411808167349468E-8,
-                1.0717175007630091E-7, -6.136667203061276E-8, 431.326600219485, 2.0002456857516552E-5, 
-                33.60876880907906}, {-2.446934285033952, 36.49279626012891, -36.241413366137415, -35.96436844793575,
-                35.3268979933469, 34.59794521081789, -34.77941766646261, -1691641.472797731, -33.60876880907906, 
-                4.0483385894687824E9}};
-
-        int[] newPredSweepIndex = new int[]{7};
-        List<Integer> newSweepList = Arrays.stream(newPredSweepIndex).boxed().collect(Collectors.toList());
-        int svLenHalfPerSweep = originalSV[0].length/2;
-        int lastSVIndex = svLenHalfPerSweep-2;
-        double[][] cpmSweptReplaced100_2 = ArrayUtils.deepClone(cpmSweptReplaced100UnsweptPredBehindReplaced);
-
-        for (int index=0; index<newPredSweepIndex[0]; index++) {
-            SweepVector[] newSV = updateSV4NewPred(originalSV[index], cpmSweptReplaced100, newSweepList, index, svLenHalfPerSweep, lastSVIndex);
-            sweepCPMNewPredwSVs(cpmSweptReplaced100, index, newSV, newSweepList); // sweep newly replaced predictor
-            sweepCPMNewPredwSVs(correctSVM[index], index, correctSV[index], newSweepList);
-            assertEqualSV(newSV, correctSV[index]);
-            assertCorrectReplacedPred(correctSVM[index+1], cpmSweptReplaced100, newPredSweepIndex, 1e-12);
-        }
-        
-        updateCPMSV(bestModel, cpmSweptReplaced100_2, newPredSweepIndex, new ArrayList<>(Arrays.asList(0,1,2,3,4,5,6,7,8)), newPredSweepIndex);
-        for (int index=0; index<correctSV.length; index++) {
-            System.out.println("sweeping index "+index);
-            assertEqualSV(correctSV[index], bestModel._sweepVector[index]);
-        }
-        assert2DArraysEqual(bestModel._CPM, correctSVM[correctSVM.length-1], 1e-12);
-    }
     
     public void assertCorrectReplacedPred(double[][] cpm1, double[][] cpm2, int[] predIndices, double tol) {
         int predLen = predIndices.length;
@@ -642,28 +507,6 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
                 assertTrue("Expected: " + cpm1[cInd][rInd]+" Actual: "+cpm2[cInd][rInd] + " at row "+cInd+"" +
                         " and col "+rInd, Math.abs(cpm1[cInd][rInd]-cpm2[cInd][rInd])<tol);
             }
-        }
-    }
-    
-    @Test
-    public void testGenNewSV() {
-        final double[][] cpmOnePred = new double[][]{{50000.0, -7.958078640513122E-13, 122346.71425169753}, 
-                {-7.958078640513122E-13, 49999.0, -1852537.2069261894},{122346.71425169753, -1852537.2069261894, 
-                4.542312022970976E9}};
-        final double[][] cpmTwoPred = new double[][]{{50000.0, -7.958078640513122E-13, 3.979039320256561E-13, 
-                122346.71425169753},{-7.958078640513122E-13, 49999.0, -345.6139787378465, -1852537.2069261894},
-                {3.979039320256561E-13, -345.6139787378465, 49999.00000000001, 1815126.8928365733}, 
-                {122346.71425169753, -1852537.2069261894, 1815126.8928365733, 4.542312022970976E9}};
-        SweepVector[][] sVectorsOnePred = sweepCPM(cpmOnePred, new int[]{0, 1}, true);
-        final double[][] sweptCPMTwoPred = new double[][]{{2.0E-5, 3.1832951221076914E-22, 3.979039320256561E-13, 
-                2.4469342850339504},{3.1832951221076914E-22, 2.000040000800016E-5, -345.6139787378465, 
-                -37.05148516822715},{3.979039320256561E-13, -345.6139787378465, 49999.00000000001, 1815126.8928365733}, 
-                {-2.4469342850339504, 37.05148516822715, 1815126.8928365733, 4.473373393755198E9}};
-        SweepVector[][] sVectorsTwoPred = sweepCPM(cpmTwoPred, new int[]{0, 1}, true);
-        int numSV = sVectorsOnePred.length;
-        for (int index=0; index<numSV; index++) {
-            SweepVector[] newSV = genNewSV(sVectorsOnePred[index], sweptCPMTwoPred, 1, index);
-            assertEqualSV(newSV, sVectorsTwoPred[index]);
         }
     }
     
@@ -681,42 +524,104 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
 
     @Test
     public void testPerformAllSweepingNoSweepVector() {
-        final double[][] cpm = new double[][]{{10.000000, -3.925113,  1.192877, -2.675484,  3.657043},
-                {-3.925113,  9.961056,  4.638419,  1.719902, -2.373317},
-                {1.192877,  4.638419,  9.649718, -1.855625,  3.444272},
-                {-2.675484,  1.719902, -1.855625,  6.197150, -3.117239},
-                {3.657043, -2.373317,  3.444272, -3.117239,  3.636824}};
-        final double[][] cpmAfterSweep0N1 = new double[][]{{0.1182966,  0.04661430,  0.3573300, -0.23632874,  0.3219854},
-                {0.0466143,  0.11875914,  0.6064598,  0.07953825, -0.1113826},
-                {-0.3573300, -0.60645976,  6.4104528, -1.94264564 , 3.5768221},
-                {0.2363287, -0.07953825, -1.9426456,  5.42805824, -2.0642052},
-                {-0.3219854,  0.11138257,  3.5768221, -2.06420516, 2.1949635}};
+        final double[][] cpm = new double[][]{{10.000000, -3.925113, 1.192877, -2.675484, 3.657043},
+                {-3.925113, 9.961056, 4.638419, 1.719902, -2.373317},
+                {1.192877, 4.638419, 9.649718, -1.855625, 3.444272},
+                {-2.675484, 1.719902, -1.855625, 6.197150, -3.117239},
+                {3.657043, -2.373317, 3.444272, -3.117239, 3.636824}};
+        final double[][] cpmAfterSweep0N1 = new double[][]{{0.1182966, 0.04661430, 0.3573300, -0.23632874, 0.3219854},
+                {0.0466143, 0.11875914, 0.6064598, 0.07953825, -0.1113826},
+                {-0.3573300, -0.60645976, 6.4104528, -1.94264564, 3.5768221},
+                {0.2363287, -0.07953825, -1.9426456, 5.42805824, -2.0642052},
+                {-0.3219854, 0.11138257, 3.5768221, -2.06420516, 2.1949635}};
         assertCorrectAllSweeping(clone2DArray(cpm), new int[]{0, 1}, cpmAfterSweep0N1);
         assertCorrectAllSweeping(clone2DArray(cpm), new int[]{1, 0}, cpmAfterSweep0N1);
-        final double[][] cpmAfterSweep0N1N2 = new double[][]{{0.13821485,  0.08041945, -0.05574177, -0.1280422,  0.1226070},
-                {0.08041945,  0.17613316, -0.09460483,  0.2633219, -0.4497672},
-                {-0.05574177, -0.09460483,  0.15599522, -0.3030434,  0.5579671},
-                {0.12804222, -0.26332191,  0.30304344,  4.8393522, -0.9802727},
-                {-0.12260698,  0.44976719, -0.55796715, -0.9802727,  0.1992143}};
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{0,1,2}, cpmAfterSweep0N1N2);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{0,2,1}, cpmAfterSweep0N1N2);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{2,0,1}, cpmAfterSweep0N1N2);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{2,1,0}, cpmAfterSweep0N1N2);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{1,2,0}, cpmAfterSweep0N1N2);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{1,0,2}, cpmAfterSweep0N1N2);
-        final double[][] cpmAfterSweep0N1N2N3 = new double[][]{{0.14160266,  0.07345233, -0.04772369,  0.02645855,  0.0966703864},
-                {0.07345233,  0.19046119, -0.11109422, -0.05441263, -0.3964279716},
-                {-0.04772369, -0.11109422,  0.17497200,  0.06262066,  0.4965818245},
-                {0.02645855, -0.05441263,  0.06262066,  0.20663923, -0.2025627940},
-                {-0.09667039,  0.39642797, -0.49658182,  0.20256279,  0.0006474807}};
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{0,1,2,3}, cpmAfterSweep0N1N2N3);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{0,2,1,3}, cpmAfterSweep0N1N2N3);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{3,2,1,0}, cpmAfterSweep0N1N2N3);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{3,1,2,0}, cpmAfterSweep0N1N2N3);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{1,0,2,3}, cpmAfterSweep0N1N2N3);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{1,3,0,2}, cpmAfterSweep0N1N2N3);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{2,3,1,0}, cpmAfterSweep0N1N2N3);
-        assertCorrectSweeping(clone2DArray(cpm), new int[]{2,1,0,3}, cpmAfterSweep0N1N2N3);
+        final double[][] cpmAfterSweep0N1N2 = new double[][]{{0.13821485, 0.08041945, -0.05574177, -0.1280422, 0.1226070},
+                {0.08041945, 0.17613316, -0.09460483, 0.2633219, -0.4497672},
+                {-0.05574177, -0.09460483, 0.15599522, -0.3030434, 0.5579671},
+                {0.12804222, -0.26332191, 0.30304344, 4.8393522, -0.9802727},
+                {-0.12260698, 0.44976719, -0.55796715, -0.9802727, 0.1992143}};
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{0, 1, 2}, cpmAfterSweep0N1N2);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{0, 2, 1}, cpmAfterSweep0N1N2);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{2, 0, 1}, cpmAfterSweep0N1N2);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{2, 1, 0}, cpmAfterSweep0N1N2);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{1, 2, 0}, cpmAfterSweep0N1N2);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{1, 0, 2}, cpmAfterSweep0N1N2);
+        final double[][] cpmAfterSweep0N1N2N3 = new double[][]{{0.14160266, 0.07345233, -0.04772369, 0.02645855, 0.0966703864},
+                {0.07345233, 0.19046119, -0.11109422, -0.05441263, -0.3964279716},
+                {-0.04772369, -0.11109422, 0.17497200, 0.06262066, 0.4965818245},
+                {0.02645855, -0.05441263, 0.06262066, 0.20663923, -0.2025627940},
+                {-0.09667039, 0.39642797, -0.49658182, 0.20256279, 0.0006474807}};
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{0, 1, 2, 3}, cpmAfterSweep0N1N2N3);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{0, 2, 1, 3}, cpmAfterSweep0N1N2N3);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{3, 2, 1, 0}, cpmAfterSweep0N1N2N3);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{3, 1, 2, 0}, cpmAfterSweep0N1N2N3);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{1, 0, 2, 3}, cpmAfterSweep0N1N2N3);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{1, 3, 0, 2}, cpmAfterSweep0N1N2N3);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{2, 3, 1, 0}, cpmAfterSweep0N1N2N3);
+        assertCorrectSweeping(clone2DArray(cpm), new int[]{2, 1, 0, 3}, cpmAfterSweep0N1N2N3);
+    }
+
+    @Test
+    public void testParallelSweep() {
+        Scope.enter();
+        try {
+            int[] sweepTrack = new int[]{1, 1, 1, 1, 1};
+            String[] predictorNames = new String[]{"1", "2", "3", "intercept", "XTY"};
+            final double[][] cpm = new double[][]{{10.000000, -3.925113, 1.192877, -2.675484, 3.657043},
+                    {-3.925113, 9.961056, 4.638419, 1.719902, -2.373317},
+                    {1.192877, 4.638419, 9.649718, -1.855625, 3.444272},
+                    {-2.675484, 1.719902, -1.855625, 6.197150, -3.117239},
+                    {3.657043, -2.373317, 3.444272, -3.117239, 3.636824}};
+            Frame cpmNoSweep = extractCPM(cpm, predictorNames);
+            Scope.track(cpmNoSweep);
+            final double[][] cpmAfterSweep0N1 = new double[][]{{0.1182966, 0.04661430, 0.3573300, -0.23632874, 0.3219854},
+                    {0.0466143, 0.11875914, 0.6064598, 0.07953825, -0.1113826},
+                    {-0.3573300, -0.60645976, 6.4104528, -1.94264564, 3.5768221},
+                    {0.2363287, -0.07953825, -1.9426456, 5.42805824, -2.0642052},
+                    {-0.3219854, 0.11138257, 3.5768221, -2.06420516, 2.1949635}};
+            Frame cpmAfterSweep0N1F = extractCPM(cpmAfterSweep0N1, predictorNames);
+            Scope.track(cpmAfterSweep0N1F);
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{0, 1}, cpmAfterSweep0N1F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{1, 0}, cpmAfterSweep0N1F, sweepTrack.clone());
+            final double[][] cpmAfterSweep0N1N2 = new double[][]{{0.13821485, 0.08041945, -0.05574177, -0.1280422, 0.1226070},
+                    {0.08041945, 0.17613316, -0.09460483, 0.2633219, -0.4497672},
+                    {-0.05574177, -0.09460483, 0.15599522, -0.3030434, 0.5579671},
+                    {0.12804222, -0.26332191, 0.30304344, 4.8393522, -0.9802727},
+                    {-0.12260698, 0.44976719, -0.55796715, -0.9802727, 0.1992143}};
+            Frame cpmAfterSweep0N1N2F = extractCPM(cpmAfterSweep0N1N2, predictorNames);
+            Scope.track(cpmAfterSweep0N1N2F);
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{0, 1, 2}, cpmAfterSweep0N1N2F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{0, 2, 1}, cpmAfterSweep0N1N2F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{2, 0, 1}, cpmAfterSweep0N1N2F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{2, 1, 0}, cpmAfterSweep0N1N2F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{1, 2, 0}, cpmAfterSweep0N1N2F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{1, 0, 2}, cpmAfterSweep0N1N2F, sweepTrack.clone());
+            final double[][] cpmAfterSweep0N1N2N3 = new double[][]{{0.14160266, 0.07345233, -0.04772369, 0.02645855, 0.0966703864},
+                    {0.07345233, 0.19046119, -0.11109422, -0.05441263, -0.3964279716},
+                    {-0.04772369, -0.11109422, 0.17497200, 0.06262066, 0.4965818245},
+                    {0.02645855, -0.05441263, 0.06262066, 0.20663923, -0.2025627940},
+                    {-0.09667039, 0.39642797, -0.49658182, 0.20256279, 0.0006474807}};
+            Frame cpmAfterSweep0N1N2N3F = extractCPM(cpmAfterSweep0N1N2N3, predictorNames);
+            Scope.track(cpmAfterSweep0N1N2N3F);
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{0, 1, 2, 3}, cpmAfterSweep0N1N2N3F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{0, 2, 1, 3}, cpmAfterSweep0N1N2N3F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{3, 2, 1, 0}, cpmAfterSweep0N1N2N3F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{3, 1, 2, 0}, cpmAfterSweep0N1N2N3F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{1, 0, 2, 3}, cpmAfterSweep0N1N2N3F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{1, 3, 0, 2}, cpmAfterSweep0N1N2N3F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{2, 3, 1, 0}, cpmAfterSweep0N1N2N3F, sweepTrack.clone());
+            assertCorrectSweepParallel(extractCPM(cpm, predictorNames), new int[]{2, 1, 0, 3}, cpmAfterSweep0N1N2N3F, sweepTrack.clone());
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    public Frame extractCPM(double[][] cpmA, String[] predictorNames) {
+        Frame cpm = new water.util.ArrayUtils().frame(Key.make(), predictorNames, cpmA);
+        Scope.track(cpm);
+        DKV.put(cpm);
+        return cpm;
     }
 
     @Test
@@ -743,6 +648,11 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
     public static void assertCorrectAllSweeping(double[][] cpm, int[] sweepIndice, double[][] correctCPM) {
         sweepCPM(cpm, sweepIndice, false);
         assert2DArraysEqual(correctCPM, cpm, 1e-6);
+    }
+
+    public static void assertCorrectSweepParallel(Frame cpm, int[] sweepIndice, Frame correctCPM, int[] trackSweep) {
+        sweepCPMParallel(cpm, sweepIndice, trackSweep);
+        TestUtil.assertFrameEquals(correctCPM, cpm, 1e-6);
     }
 
     // test perform one sweep without considering sweeping vectors.  We test with sweeping one index at a time, 
@@ -798,6 +708,84 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         assertCorrectSweeping(clone2DArray(cpm), new int[]{2,1,0,3}, cpmAfterSweep0N1N2N3);
     }
 
+    @Test
+    public void testOneSweepParallel() {
+        Scope.enter();
+        try {
+            final double[][] cpm = new double[][]{{10.000000, -3.925113, 1.192877, -2.675484, 3.657043},
+                    {-3.925113, 9.961056, 4.638419, 1.719902, -2.373317},
+                    {1.192877, 4.638419, 9.649718, -1.855625, 3.444272},
+                    {-2.675484, 1.719902, -1.855625, 6.197150, -3.117239},
+                    {3.657043, -2.373317, 3.444272, -3.117239, 3.636824}};
+            final double[][] cpmAfterSweep0 = new double[][]{{0.1000000, -0.3925113, 0.1192877, -0.2675484, 0.3657043},
+                    {0.3925113, 8.4204048, 5.1066367, 0.6697443, -0.9378863},
+                    {-0.1192877, 5.1066367, 9.5074224, -1.5364727, 3.0080318},
+                    {0.2675484, 0.6697443, -1.5364727, 5.4813285, -2.1388030},
+                    {-0.3657043, -0.9378863, 3.0080318, -2.1388030, 2.2994276}};
+            String[] predNames = new String[]{"1", "2", "3", "intercept", "XTT"};
+            int[] trackSweep = new int[]{1,1,1,1,1};
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{0}, 
+                    extractCPM(cpmAfterSweep0, predNames), trackSweep);
+            final double[][] cpmAfterSweep0N1 = new double[][]{{0.1182966, 0.04661430, 0.3573300, -0.23632874, 0.3219854},
+                    {0.0466143, 0.11875914, 0.6064598, 0.07953825, -0.1113826},
+                    {-0.3573300, -0.60645976, 6.4104528, -1.94264564, 3.5768221},
+                    {0.2363287, -0.07953825, -1.9426456, 5.42805824, -2.0642052},
+                    {-0.3219854, 0.11138257, 3.5768221, -2.06420516, 2.1949635}};
+            assertCorrectSweepParallel(extractCPM(cpmAfterSweep0, predNames), new int[]{1}, 
+                    extractCPM(cpmAfterSweep0N1, predNames), trackSweep);
+            trackSweep = new int[]{1,1,1,1,1};
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), 
+                    new int[]{0, 1}, extractCPM(cpmAfterSweep0N1, predNames), trackSweep);
+            trackSweep = new int[]{1,1,1,1,1};
+            assertCorrectSweepParallel(extractCPM(cpm, predNames),
+                    new int[]{1,0}, extractCPM(cpmAfterSweep0N1, predNames), trackSweep);
+            final double[][] cpmAfterSweep0N1N2 = new double[][]{{0.13821485, 0.08041945, -0.05574177, -0.1280422, 0.1226070},
+                    {0.08041945, 0.17613316, -0.09460483, 0.2633219, -0.4497672},
+                    {-0.05574177, -0.09460483, 0.15599522, -0.3030434, 0.5579671},
+                    {0.12804222, -0.26332191, 0.30304344, 4.8393522, -0.9802727},
+                    {-0.12260698, 0.44976719, -0.55796715, -0.9802727, 0.1992143}};
+            assertCorrectSweepParallel(extractCPM(cpmAfterSweep0N1, predNames), new int[]{2}, 
+                    extractCPM(cpmAfterSweep0N1N2, predNames), trackSweep);
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{0,1,2},
+                    extractCPM(cpmAfterSweep0N1N2, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{0,2,1},
+                    extractCPM(cpmAfterSweep0N1N2, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{2,0,1},
+                    extractCPM(cpmAfterSweep0N1N2, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{2,1,0},
+                    extractCPM(cpmAfterSweep0N1N2, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{1,2,0},
+                    extractCPM(cpmAfterSweep0N1N2, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{1,0,2},
+                    extractCPM(cpmAfterSweep0N1N2, predNames), new int[]{1,1,1,1,1});
+            final double[][] cpmAfterSweep0N1N2N3 = new double[][]{{0.14160266, 0.07345233, -0.04772369, 0.02645855, 0.0966703864},
+                    {0.07345233, 0.19046119, -0.11109422, -0.05441263, -0.3964279716},
+                    {-0.04772369, -0.11109422, 0.17497200, 0.06262066, 0.4965818245},
+                    {0.02645855, -0.05441263, 0.06262066, 0.20663923, -0.2025627940},
+                    {-0.09667039, 0.39642797, -0.49658182, 0.20256279, 0.0006474807}};
+            assertCorrectSweepParallel(extractCPM(cpmAfterSweep0N1N2, predNames), new int[]{3},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{-1,-1,-1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{0, 1, 2, 3},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{0, 2, 1, 3},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{3, 2, 1, 0},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{3, 1, 2, 0},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{1, 0, 2, 3},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{1, 3, 0, 2},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{2, 3, 1, 0},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{1,1,1,1,1});
+            assertCorrectSweepParallel(extractCPM(cpm, predNames), new int[]{2, 1, 0, 3},
+                    extractCPM(cpmAfterSweep0N1N2N3, predNames), new int[]{1,1,1,1,1});
+        } finally {
+            Scope.exit();
+        }
+    }
+
     public static double[][] clone2DArray(double[][] cpm) {
         int cpmDim = cpm.length;
         double[][] cpmClone = new double[cpmDim][cpmDim];
@@ -819,6 +807,50 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             performOneSweep(cpm, null, sweepIndice[index], false);
 
         assert2DArraysEqual(correctCPM, cpm, 1e-6);
+    }
+    
+    @Test
+    public void testExtractSubsetCPMFrame() {
+        Scope.enter();
+        try {
+            final double[] vecValues = new double[]{1, 0.1, 0.2, 0.3, 0.4};
+            final double[] vecValues2 = new double[]{0.1, 0.2, 0.3, 0.4, 1};
+            final double[] resp = new double[]{2};
+            final double[][] allCPM = generateCPM(vecValues2, resp);
+            final double[][] allCPMInterceptFirst = generateCPM(vecValues, resp);
+            String[] predNames = new String[]{"1","2","3","4","intercept","XTY"};
+
+            // tests with intercept
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0}, {}, {}, {}}, allCPMInterceptFirst, new int[]{0}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0, 1}, {}, {}, {}}, allCPMInterceptFirst, new int[]{0}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0, 1, 2}, {}, {}, {}}, allCPMInterceptFirst, new int[]{0}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0, 1, 2, 3}, {}, {}, {}}, allCPMInterceptFirst, new int[]{0}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {1}, {}, {}}, allCPMInterceptFirst, new int[]{1}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {1, 2}, {}, {}}, allCPMInterceptFirst, new int[]{1}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {1, 2, 3}, {}, {}}, allCPMInterceptFirst, new int[]{1}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {2}, {}}, allCPMInterceptFirst, new int[]{2}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {2, 3}, {}}, allCPMInterceptFirst, new int[]{2}, true);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {}, {3}}, allCPMInterceptFirst, new int[]{3}, true);
+
+            // tests with intercept
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0}, {}, {}, {}, {}}, allCPM, new int[]{0}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0, 1}, {}, {}, {}, {}}, allCPM, new int[]{0}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0, 1, 2}, {}, {}, {}, {}}, allCPM, new int[]{0}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0, 1, 2, 3}, {}, {}, {}, {}}, allCPM, new int[]{0}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{0, 1, 2, 3, 4}, {}, {}, {}, {}}, allCPM, new int[]{0}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {1}, {}, {}, {}}, allCPM, new int[]{1}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {1, 2}, {}, {}, {}}, allCPM, new int[]{1}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {1, 2, 3}, {}, {}, {}}, allCPM, new int[]{1}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {1, 2, 3, 4}, {}, {}, {}}, allCPM, new int[]{1}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {2}, {}, {}}, allCPM, new int[]{2}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {2, 3}, {}, {}}, allCPM, new int[]{2}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {2, 3, 4}, {}, {}}, allCPM, new int[]{2}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {}, {3}, {}}, allCPM, new int[]{3}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {}, {3, 4}, {}}, allCPM, new int[]{3}, false);
+            assertCorrectCPMExtractionFrame(extractCPM(allCPM, predNames), new int[][]{{}, {}, {}, {}, {4}, {}}, allCPM, new int[]{4}, false);
+        } finally {
+            Scope.exit();
+        }
     }
 
     @Test
@@ -879,6 +911,29 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         return genCPM;
     }
 
+    public static void assertCorrectCPMExtractionFrame(Frame allCPM, int[][] pred2CMPIndices,
+                                                  double[][] CPMInterceptFirst, int[] predIndices, boolean hasIntercept) {
+        double[][] extractedCpm = extractPredSubsetsCPMFrame(allCPM, predIndices, pred2CMPIndices,
+                hasIntercept);
+        List<Integer> predIndicesList = Arrays.stream(pred2CMPIndices[predIndices[0]]).boxed().collect(Collectors.toList());
+        if (hasIntercept) {
+            predIndicesList = Arrays.stream(pred2CMPIndices[predIndices[0]]).map(x -> x + 1).boxed().collect(Collectors.toList());
+            predIndicesList.add(0,0);
+        }
+        int allCPMSize = allCPM.numCols();
+        predIndicesList.add(allCPMSize-1);
+        int cpmDim = predIndicesList.size();
+        double[][] correctCPM = new double[cpmDim][cpmDim];
+        // generate correct matrix
+        for (int rIndex=0; rIndex<cpmDim; rIndex++) {
+            for (int cIndex=rIndex; cIndex<cpmDim; cIndex++) {
+                correctCPM[rIndex][cIndex] = CPMInterceptFirst[predIndicesList.get(rIndex)][predIndicesList.get(cIndex)];
+                correctCPM[cIndex][rIndex] = CPMInterceptFirst[predIndicesList.get(cIndex)][predIndicesList.get(rIndex)];
+            }
+        }
+        assert2DArraysEqual(correctCPM, extractedCpm, 1e-6);
+    }
+    
     public static void assertCorrectCPMExtraction(double[][] allCPM, int[][] pred2CMPIndices,
                                                   double[][] CPMInterceptFirst, int[] predIndices, boolean hasIntercept) {
         double[][] extractedCpm = extractPredSubsetsCPM(allCPM, predIndices, pred2CMPIndices,
@@ -903,6 +958,46 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
     }
 
     @Test
+    public void testAddNewPred2CPMFrame() {
+        Scope.enter();
+        try {
+            final double[][] allCPM = new double[][]{{10.0000000, 1.2775780, -2.3233446, 5.5573236, -2.6207931,
+                    -0.8321198, -2.275524}, {1.2775780, 6.9109954, -0.6907638, 1.6104894, -0.2288084, 1.0167696,
+                    -4.049839}, {-2.3233446, -0.6907638, 2.9167538, -0.9018913, -0.8793179, -1.6471318, 2.448738},
+                    {5.5573236, 1.6104894, -0.9018913, 11.4569287, -1.9699385, -2.2898801, -2.018988}, {-2.6207931,
+                    -0.2288084, -0.8793179, -1.9699385, 6.9525541, -0.2876347, 2.896199}, {-0.8321198, 1.0167696,
+                    -1.6471318, -2.2898801, -0.2876347, 11.3756280, -8.946720}, {-2.2755243, -4.0498392, 2.4487380,
+                    -2.0189880, 2.8961986, -8.9467197, 10.464016}};
+            int[][] predInd2CPMIndices = new int[][]{{0, 1, 2}, {3, 4}, {5}};
+            boolean hasIntercept = false;
+            String[] predNames = new String[]{"1", "2", "3", "4", "5", "intercept", "xty"};
+            // pred 0 is chosen and we want to add predictor 1
+            assertCorrectAddNewPred2CPM(allCPM, extractCPM(allCPM, predNames), new int[]{0, 1, 2}, predInd2CPMIndices,
+                    new int[]{0}, 1, hasIntercept);
+            // pred 2, 1 are added, want to add pred 0
+            assertCorrectAddNewPred2CPM(allCPM, extractCPM(allCPM, predNames), new int[]{0, 1, 2}, predInd2CPMIndices,
+                    new int[]{2, 1}, 0, hasIntercept);
+            // pred 0, 2 are added want to add pred 1
+            assertCorrectAddNewPred2CPM(allCPM, extractCPM(allCPM, predNames), new int[]{0, 1, 2, 3}, predInd2CPMIndices,
+                    new int[]{0, 2}, 1, hasIntercept);
+            // with intercept
+            predInd2CPMIndices = new int[][]{{0, 1}, {2}, {3}, {4}};
+            hasIntercept = true;
+            // pred 3,2 are chosen, add 0
+            assertCorrectAddNewPred2CPM(allCPM, extractCPM(allCPM, predNames), new int[]{0, 1, 2}, predInd2CPMIndices,
+                    new int[]{3, 2}, 0, hasIntercept);
+            // pred 2,3,1 are chosen, add 0
+            assertCorrectAddNewPred2CPM(allCPM, extractCPM(allCPM, predNames), new int[]{0, 1, 2, 3}, predInd2CPMIndices,
+                    new int[]{2, 3, 1}, 0, hasIntercept);
+            // pred 0, 1 are chosen, add 2
+            assertCorrectAddNewPred2CPM(allCPM, extractCPM(allCPM, predNames), new int[]{0, 1, 2, 3}, predInd2CPMIndices,
+                    new int[]{0, 1}, 2, hasIntercept);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
     public void testAddNewPred2CPM() {
         final double[][] allCPM = new double[][]{{10.0000000,  1.2775780, -2.3233446,  5.5573236, -2.6207931,
                 -0.8321198, -2.275524}, {1.2775780,  6.9109954, -0.6907638,  1.6104894, -0.2288084,  1.0167696,
@@ -914,24 +1009,25 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         int[][] predInd2CPMIndices = new int[][]{{0, 1, 2}, {3, 4}, {5}};
         boolean hasIntercept = false;
         // pred 0 is chosen and we want to add predictor 1
-        assertCorrectAddNewPred2CPM(allCPM, new int[]{0,1,2}, predInd2CPMIndices, new int[]{0}, 1, hasIntercept);
+        assertCorrectAddNewPred2CPM(allCPM,null, new int[]{0,1,2}, predInd2CPMIndices, new int[]{0}, 1, hasIntercept);
         // pred 2, 1 are added, want to add pred 0
-        assertCorrectAddNewPred2CPM(allCPM, new int[]{0,1,2}, predInd2CPMIndices, new int[]{2,1}, 0, hasIntercept);
+        assertCorrectAddNewPred2CPM(allCPM, null,new int[]{0,1,2}, predInd2CPMIndices, new int[]{2,1}, 0, hasIntercept);
         // pred 0, 2 are added want to add pred 1
-        assertCorrectAddNewPred2CPM(allCPM, new int[]{0,1,2,3}, predInd2CPMIndices, new int[]{0,2}, 1, hasIntercept);
+        assertCorrectAddNewPred2CPM(allCPM, null,new int[]{0,1,2,3}, predInd2CPMIndices, new int[]{0,2}, 1, hasIntercept);
         // with intercept
         predInd2CPMIndices = new int[][]{{0,1},{2},{3},{4}};
         hasIntercept = true;
         // pred 3,2 are chosen, add 0
-        assertCorrectAddNewPred2CPM(allCPM, new int[]{0,1,2}, predInd2CPMIndices, new int[]{3,2}, 0, hasIntercept);
+        assertCorrectAddNewPred2CPM(allCPM, null,new int[]{0,1,2}, predInd2CPMIndices, new int[]{3,2}, 0, hasIntercept);
         // pred 2,3,1 are chosen, add 0
-        assertCorrectAddNewPred2CPM(allCPM, new int[]{0,1,2,3}, predInd2CPMIndices, new int[]{2,3,1}, 0, hasIntercept);
+        assertCorrectAddNewPred2CPM(allCPM, null, new int[]{0,1,2,3}, predInd2CPMIndices, new int[]{2,3,1}, 0, hasIntercept);
         // pred 0, 1 are chosen, add 2
-        assertCorrectAddNewPred2CPM(allCPM, new int[]{0,1,2,3}, predInd2CPMIndices, new int[]{0,1}, 2, hasIntercept);
+        assertCorrectAddNewPred2CPM(allCPM, null, new int[]{0,1,2,3}, predInd2CPMIndices, new int[]{0,1}, 2, hasIntercept);
     }
 
-    public static void assertCorrectAddNewPred2CPM(double[][] allCPM, int[] sweepIndices, int[][] predInd2CPMIndices,
-                                                   int[] pred2Include, int pred2Add, boolean hasIntercept) {
+    public static void assertCorrectAddNewPred2CPM(double[][] allCPM, Frame allCPMFrame, int[] sweepIndices,
+                                                   int[][] predInd2CPMIndices, int[] pred2Include, int pred2Add,
+                                                   boolean hasIntercept) {
         // manually generated the cpm after new predictor is included
         int[] allPred = new int[pred2Include.length+1];
         System.arraycopy(pred2Include, 0, allPred, 0, pred2Include.length);
@@ -941,7 +1037,7 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
         // addNewPred2CPM generated from program
         double[][] smallCPM = extractPredSubsetsCPM(allCPM, pred2Include, predInd2CPMIndices, hasIntercept);
         sweepCPM(smallCPM, sweepIndices, hasIntercept);
-        double[][] subsetCPM = addNewPred2CPM(allCPM, smallCPM, allPred, predInd2CPMIndices, hasIntercept);
+        double[][] subsetCPM = addNewPred2CPM(allCPM, allCPMFrame, smallCPM, allPred, predInd2CPMIndices, hasIntercept);
 
         // program generated subsetCPM is correct if it equals to smallCPM on part of the matrix that is swept.
         int subsetCPMLastInd = subsetCPM.length-1;
@@ -997,11 +1093,20 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             parms._train = origF._key;
             parms._mode = maxrsweep;
             parms._build_glm_model = false;
+            parms._multinode_mode = false;
             ModelSelectionModel modelMaxRSweep = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Frame resultFrameSweep = modelMaxRSweep.result();
             Scope.track(resultFrameSweep);
             Scope.track_generic(modelMaxRSweep);
-            
+            parms._multinode_mode = true;
+            ModelSelectionModel modelMaxRSweepMNode = new hex.modelselection.ModelSelection(parms).trainModel().get();
+            Frame resultFrameSweepMNode = modelMaxRSweepMNode.result();
+            Scope.track(resultFrameSweepMNode);
+            Scope.track_generic(modelMaxRSweepMNode);
+            TestUtil.assertIdenticalUpToRelTolerance(new Frame(resultFrameSweep.vec(1)), new Frame(resultFrameSweepMNode.vec(1)), 1e-6);
+            TestUtil.assertIdenticalUpToRelTolerance(new Frame(resultFrameSweep.vec(2)), new Frame(resultFrameSweepMNode.vec(2)), 0);
+
+            parms._multinode_mode = false;
             parms._build_glm_model = true;
             ModelSelectionModel modelMaxRSweepGLM = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Frame resultFrameSweepGLM = modelMaxRSweepGLM.result();
@@ -1044,13 +1149,21 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             Scope.track(resultFrameSweep);
             Scope.track_generic(modelMaxRSweep);
             
+            parms._multinode_mode = true;
             parms._build_glm_model = true;
+            ModelSelectionModel modelMaxRSweepMN = new hex.modelselection.ModelSelection(parms).trainModel().get();
+            Frame resultFrameSweepMN = modelMaxRSweepMN.result();
+            Scope.track(resultFrameSweepMN);
+            Scope.track_generic(modelMaxRSweepMN);
+
+            parms._multinode_mode = false;
             ModelSelectionModel modelMaxRSweepGLM = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Frame resultFrameSweepGLM = modelMaxRSweepGLM.result();
             Scope.track(resultFrameSweepGLM);
             Scope.track_generic(modelMaxRSweepGLM);
+            TestUtil.assertIdenticalUpToRelTolerance(new Frame(resultFrameSweepGLM.vec(2)), new Frame(resultFrameSweepMN.vec(2)), 1e-6);
+            TestUtil.assertIdenticalUpToRelTolerance(new Frame(resultFrameSweepGLM.vec(3)), new Frame(resultFrameSweepMN.vec(3)), 0);
             
-
             parms._mode = maxr;
             ModelSelectionModel modelMaxR = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Scope.track_generic(modelMaxR);
@@ -1097,6 +1210,15 @@ public class ModelSelectionMaxRSweepTests extends TestUtil {
             Frame resultFrameSweepGLM = modelMaxRSweepGLM.result();
             Scope.track(resultFrameSweepGLM);
             
+            parms._multinode_mode = true;
+            ModelSelectionModel modelMaxRSweepGLMMN = new hex.modelselection.ModelSelection(parms).trainModel().get();
+            Scope.track_generic(modelMaxRSweepGLMMN);
+            Frame resultFrameSweepGLMMN = modelMaxRSweepGLMMN.result();
+            Scope.track(resultFrameSweepGLMMN);
+            TestUtil.assertIdenticalUpToRelTolerance(new Frame(resultFrameSweepGLM.vec(2)), new Frame(resultFrameSweepGLMMN.vec(2)), 1e-6);
+            TestUtil.assertIdenticalUpToRelTolerance(new Frame(resultFrameSweepGLM.vec(3)), new Frame(resultFrameSweepGLMMN.vec(3)), 0);
+            
+            parms._multinode_mode = false;
             parms._mode = maxr;
             ModelSelectionModel modelMaxR = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Scope.track_generic(modelMaxR);

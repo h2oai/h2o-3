@@ -2,6 +2,67 @@
 
 ## H2O
 
+### Kurka (3.40.0.4) - 4/28/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html</a>
+
+#### Bug
+- [[PUBDEV-9050]](https://h2oai.atlassian.net/browse/PUBDEV-9050) - Fixed the deprecation warning thrown for Python 2.7 and 3.5.
+
+#### Improvement
+- [[PUBDEV-9048]](https://h2oai.atlassian.net/browse/PUBDEV-9048) - Added official support for Python 3.9.
+
+#### Docs
+- [[PUBDEV-9049]](https://h2oai.atlassian.net/browse/PUBDEV-9049) - Removed mention of support for Python 2.7 and Python 3.5 from documentation.
+- [[PUBDEV-8049]](https://h2oai.atlassian.net/browse/PUBDEV-8049) - Reorganized supervised and unsupervised algorithm parameters by algorithm-specific, common, and shared-tree (for tree-based algorithms). Updated parameter descriptions for all supervised and unsupervised algorithms. Shifted all shared GLM family parameters to the GLM algorithm page.
+
+#### Security
+- [[PUBDEV-9072]](https://h2oai.atlassian.net/browse/PUBDEV-9072) - Addressed CVE-2023-1370 by removing the vulnerability from h2o-steam.jar.
+
+### Kurka (3.40.0.3) - 4/4/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/3/index.html</a>
+
+#### Improvement
+- [[PUBDEV-9043]](https://h2oai.atlassian.net/browse/PUBDEV-9043) - Added GAM Knot Locations to Model Output.
+- [[PUBDEV-9039]](https://h2oai.atlassian.net/browse/PUBDEV-9039) - Addressed CVE-2014-125087 in h2o-steam.jar
+
+#### Engineering Story
+- [[PUBDEV-9040]](https://h2oai.atlassian.net/browse/PUBDEV-9040) - Disabled execution of tests in client mode.
+- [[PUBDEV-9035]](https://h2oai.atlassian.net/browse/PUBDEV-9035) - Deprecated support for Python 2.7 and 3.5.
+
+#### Docs
+- [[PUBDEV-9036]](https://h2oai.atlassian.net/browse/PUBDEV-9036) - Introduced a page describing MOJO capabilities.
+- [[PUBDEV-9023]](https://h2oai.atlassian.net/browse/PUBDEV-9023) - Updated the DRF documentation page to reflect what dataset is used to calculate the model metric.
+- [[PUBDEV-9004]](https://h2oai.atlassian.net/browse/PUBDEV-9004) - Updated and rearranged the hyper-parameter list in the Grid Search documentation page.
+
+### Kurka (3.40.0.2) - 3/9/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/2/index.html</a>
+
+#### Bug
+- [[PUBDEV-8998]](https://h2oai.atlassian.net/browse/PUBDEV-8998) - Fixed dependency on numpy in Fairness-related code.
+- [[PUBDEV-8997]](https://h2oai.atlassian.net/browse/PUBDEV-8997) - Added ability to debug GBM reproducibility by looking at tree structure with `equal_gbm_model_tree_structure`.
+
+#### Improvement
+- [[PUBDEV-8708]](https://h2oai.atlassian.net/browse/PUBDEV-8708) - Fixed the deviance computation for GBM Poisson distribution.
+
+#### New Feature
+- [[PUBDEV-9009]](https://h2oai.atlassian.net/browse/PUBDEV-9009) - Added `save_plot_path` parameter for Fairness plotting allowing you to save plots.
+
+#### Task
+- [[PUBDEV-8954]](https://h2oai.atlassian.net/browse/PUBDEV-8954) - Implemented incremental MaxRSweep without using sweep vectors.
+- [[PUBDEV-8952]](https://h2oai.atlassian.net/browse/PUBDEV-8952) - Removed duplicate predictors for ModelSelection’s MaxRSweep.
+
+#### Engineering Story
+- [[PUBDEV-9005]](https://h2oai.atlassian.net/browse/PUBDEV-9005) - Pointed MLOps integration to internal.dedicated environment.
+
+#### Docs
+- [[PUBDEV-9008]](https://h2oai.atlassian.net/browse/PUBDEV-9008) - Added warning that `max_runtime_secs` cannot always produce reproducible models.
+- [[PUBDEV-9007]](https://h2oai.atlassian.net/browse/PUBDEV-9007) - Added example for how to save a file as a parquet.
+- [[PUBDEV-8990]](https://h2oai.atlassian.net/browse/PUBDEV-8990) - Added example for how to connect to an H2O cluster by name.
+- [[PUBDEV-8889]](https://h2oai.atlassian.net/browse/PUBDEV-8889) - Added information on the implementation of the `eval_metric` for XGBoost.
+
 ### Kurka (3.40.0.1) - 2/8/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/1/index.html</a>

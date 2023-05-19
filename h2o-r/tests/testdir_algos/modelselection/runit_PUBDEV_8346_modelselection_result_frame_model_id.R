@@ -16,9 +16,13 @@ testModelSelectionResultFrameModelID <- function() {
   resultFrameMaxr <- h2o.result(maxrModel)
   bestModelIDsMaxr <- maxrModel@model$best_model_ids
   maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
-  mode="maxrsweep")
+  mode="maxrsweep", build_glm_model=TRUE)
   resultFrameMaxrsweep <- h2o.result(maxrsweepModel)
   bestModelIDsMaxrsweep <- maxrsweepModel@model$best_model_ids
+  maxrsweepModelMM <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
+                                         mode="maxrsweep", build_glm_model=TRUE, multinode_mode=TRUE)
+  resultFrameMaxrsweepMM <- h2o.result(maxrsweepModelMM)
+  bestModelIDsMaxrsweepMM <- maxrsweepModelMM@model$best_model_ids
 
   for (ind in c(1:numModel)) {
     glmModelAllsubsets <- h2o.getModel(resultFrameAllsubsets[ind, 2])
@@ -31,13 +35,22 @@ testModelSelectionResultFrameModelID <- function() {
     predFrameMaxr <- h2o.predict(glmModelMaxr, bhexFV)
     glmModel2Maxr <- h2o.getModel(bestModelIDsMaxr[[ind]]$name)
     predFrame2Maxr <- h2o.predict(glmModel2Maxr, bhexFV)
+    compareFrames(predFrameMaxr, predFrame2Maxr, prob=1, tolerance = 1e-6)
     compareFrames(predFrameAllsubsets, predFrame2Maxr, prob=1, tolerance = 1e-6)
     
     glmModelMaxrsweep <- h2o.getModel(resultFrameMaxrsweep[ind, 2])
     predFrameMaxrsweep <- h2o.predict(glmModelMaxrsweep, bhexFV)
     glmModel2Maxrsweep <- h2o.getModel(bestModelIDsMaxrsweep[[ind]]$name)
     predFrame2Maxrsweep <- h2o.predict(glmModel2Maxrsweep, bhexFV)
+    compareFrames(predFrameMaxrsweep, predFrame2Maxrsweep, prob=1, tolerance = 1e-6)
     compareFrames(predFrameAllsubsets, predFrame2Maxrsweep, prob=1, tolerance = 1e-6)
+
+    glmModelMaxrsweepMM <- h2o.getModel(resultFrameMaxrsweepMM[ind, 2])
+    predFrameMaxrsweepMM <- h2o.predict(glmModelMaxrsweepMM, bhexFV)
+    glmModel2MaxrsweepMM <- h2o.getModel(bestModelIDsMaxrsweepMM[[ind]]$name)
+    predFrame2MaxrsweepMM <- h2o.predict(glmModel2MaxrsweepMM, bhexFV)
+    compareFrames(predFrameMaxrsweepMM, predFrame2MaxrsweepMM, prob=1, tolerance = 1e-6)
+    compareFrames(predFrameAllsubsets, predFrame2MaxrsweepMM, prob=1, tolerance = 1e-6)
   }
 }
 

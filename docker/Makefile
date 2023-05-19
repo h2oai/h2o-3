@@ -6,7 +6,7 @@ VERSION ?= dev
 PUSH ?= 0
 H2O_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 NO_CACHE ?= --no-cache
-BASE_FROM_IMAGE := nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
+BASE_FROM_IMAGE := nvidia/cuda:12.1.0-devel-ubuntu22.04
 
 dev-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-base:$(VERSION) \
@@ -59,7 +59,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-base: dev-python-3.6
+dev-r-base: dev-python-3.7
 endif
 dev-r-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base:$(VERSION) \
@@ -152,7 +152,24 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-mojocompat: dev-python-3.6
+dev-python-3.9-jdk-%: dev-python-3.9
+endif
+dev-python-3.9-jdk-%:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.9-jdk-$*:$(VERSION) \
+		$(NO_CACHE) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.9 \
+		--build-arg INSTALL_JAVA_VERSION=$* \
+		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.9-jdk-$*:$(VERSION)
+endif
+
+ifneq ($(CI), 1)
+dev-mojocompat: dev-python-3.7
+
 endif
 dev-mojocompat:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-mojocompat:$(VERSION) \

@@ -129,6 +129,11 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
+   mojo-capabilities
+
+.. toctree::
+   :maxdepth: 2
+
    flow
 
 .. toctree::

@@ -139,9 +139,11 @@ def to_H2OFrame():
     pyunit_utils.check_dims_values(python_obj, the_frame, rows=3, cols=5)
 
     #   d. jagged
-    python_obj = np.array([[6,7,8,9,10], [1,2,3,4], [3,2,2]])
-    the_frame = h2o.H2OFrame(python_obj)
-    pyunit_utils.check_dims_values(python_obj, the_frame, rows=3, cols=5)
+    # newer versions of numpy doesn't allow to create jagged multidimensional arrays.
+    if sys.version_info.major != 3 or sys.version_info.minor != 9:
+        python_obj = np.array([[6,7,8,9,10], [1,2,3,4], [3,2,2]])
+        the_frame = h2o.H2OFrame(python_obj)
+        pyunit_utils.check_dims_values(python_obj, the_frame, rows=3, cols=5)
 
     ## 6. pandas.DataFrame
     #   a. single row

@@ -87,9 +87,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  max_predictor_number=1,  # type: int
                  min_predictor_number=1,  # type: int
                  mode="maxr",  # type: Literal["allsubsets", "maxr", "maxrsweep", "backward"]
-                 build_glm_model=True,  # type: bool
+                 build_glm_model=False,  # type: bool
                  p_values_threshold=0.0,  # type: float
                  influence=None,  # type: Optional[Literal["dfbetas"]]
+                 multinode_mode=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -314,8 +315,8 @@ class H2OModelSelectionEstimator(H2OEstimator):
         :param build_glm_model: For maxrsweep mode only.  If true, will return full blown GLM models with the desired
                predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
                forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby
-               using the predictor subsets themselves.  Default to true.
-               Defaults to ``True``.
+               using the predictor subsets themselves.  Defaults to false.
+               Defaults to ``False``.
         :type build_glm_model: bool
         :param p_values_threshold: For mode='backward' only.  If specified, will stop the model building process when
                all coefficientsp-values drop below this threshold
@@ -325,6 +326,10 @@ class H2OModelSelectionEstimator(H2OEstimator):
                excluded in the dataset.
                Defaults to ``None``.
         :type influence: Literal["dfbetas"], optional
+        :param multinode_mode: For maxrsweep only.  If enabled, will attempt to perform sweeping action using multiple
+               nodes in the cluster.  Defaults to false.
+               Defaults to ``False``.
+        :type multinode_mode: bool
         """
         super(H2OModelSelectionEstimator, self).__init__()
         self._parms = {}
@@ -387,6 +392,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
         self.build_glm_model = build_glm_model
         self.p_values_threshold = p_values_threshold
         self.influence = influence
+        self.multinode_mode = multinode_mode
 
     @property
     def training_frame(self):
@@ -1199,9 +1205,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
         For maxrsweep mode only.  If true, will return full blown GLM models with the desired predictorsubsets.  If
         false, only the predictor subsets, predictor coefficients are returned.  This is forspeeding up the model
         selection process.  The users can choose to build the GLM models themselvesby using the predictor subsets
-        themselves.  Default to true.
+        themselves.  Defaults to false.
 
-        Type: ``bool``, defaults to ``True``.
+        Type: ``bool``, defaults to ``False``.
         """
         return self._parms.get("build_glm_model")
 
@@ -1238,6 +1244,21 @@ class H2OModelSelectionEstimator(H2OEstimator):
     def influence(self, influence):
         assert_is_type(influence, None, Enum("dfbetas"))
         self._parms["influence"] = influence
+
+    @property
+    def multinode_mode(self):
+        """
+        For maxrsweep only.  If enabled, will attempt to perform sweeping action using multiple nodes in the cluster.
+        Defaults to false.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("multinode_mode")
+
+    @multinode_mode.setter
+    def multinode_mode(self, multinode_mode):
+        assert_is_type(multinode_mode, None, bool)
+        self._parms["multinode_mode"] = multinode_mode
 
 
     def get_regression_influence_diagnostics(self, predictor_size=None):

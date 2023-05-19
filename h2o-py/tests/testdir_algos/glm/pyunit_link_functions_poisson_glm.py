@@ -15,7 +15,7 @@ def link_functions_poisson():
   h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip"))
 
   sm_data = pd.read_csv(zipfile.ZipFile(pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip")).
-                        open("prostate_complete.csv")).as_matrix()
+                        open("prostate_complete.csv")).values
   sm_data_response = sm_data[:,9]
   sm_data_features = sm_data[:,1:9]
 
@@ -30,7 +30,7 @@ def link_functions_poisson():
 
   print("Create statsmodel model with canonical link: LOG")
   sm_model_log = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                        family=sm.families.Poisson(sm.families.links.log)).fit()
+                        family=sm.families.Poisson(sm.families.links.log())).fit()
 
   print("Compare model deviances for link function log")
   h2o_deviance_log = old_div(h2o_model_log.residual_deviance(), h2o_model_log.null_deviance())
@@ -43,7 +43,7 @@ def link_functions_poisson():
 
   print("Create statsmodel models with link: IDENTITY")
   sm_model_id = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                       family=sm.families.Poisson(sm.families.links.identity)).fit()
+                       family=sm.families.Poisson(sm.families.links.identity())).fit()
 
   print("Compare model deviances for link function identity")
   h2o_deviance_id = old_div(h2o_model_id.residual_deviance(), h2o_model_id.null_deviance())

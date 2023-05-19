@@ -32,8 +32,8 @@ dependencies {
         exclude group: "org.apache.hadoop"
     }
     // Force latest version Hadoop with unused components excluded - we need Hadoop for Parquet and S3A export 
-    api "org.apache.hadoop:hadoop-hdfs-client:3.3.3"
-    api("org.apache.hadoop:hadoop-common:3.3.3") {
+    api "org.apache.hadoop:hadoop-hdfs-client:3.3.5"
+    api("org.apache.hadoop:hadoop-common:3.3.5") {
         exclude group: "com.sun.jersey"
         exclude group: "javax.servlet"
         exclude group: "org.apache.avro"
@@ -42,7 +42,7 @@ dependencies {
         exclude group: "org.eclipse.jetty"
         exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
     }
-    api("org.apache.hadoop:hadoop-aws:3.3.3") {
+    api("org.apache.hadoop:hadoop-aws:3.3.5") {
         exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
     }
     // aws-java-sdk-dynamodb is required for S3A support, S3A import throws NoClassDefFoundError (AmazonDynamoDBException)
@@ -53,7 +53,7 @@ dependencies {
     api "org.apache.commons:commons-compress:1.21"
     // Force specific Parquet version to avoid dependency on vulnerable FasterXML jackson-mapper-asl
     api "org.apache.parquet:parquet-hadoop:1.12.2"
-    api("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.3") {
+    api("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.5") {
         transitive = false
     }
     // Google OAuth force version
@@ -62,6 +62,15 @@ dependencies {
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
             because 'Fixes CVE-2022-42003'
+        }
+        api('net.minidev:json-smart:2.4.10') {
+            because 'Fixes CVE-2023-1370'
+        }
+        api('org.codehaus.jettison:jettison:1.5.4') {
+            because 'Fixes CVE-2023-1436'
+            because 'Fixes CVE-2022-45693'
+            because 'Fixes CVE-2022-45685'
+            because 'Fixes CVE-2022-40150'
         }
     }
 }

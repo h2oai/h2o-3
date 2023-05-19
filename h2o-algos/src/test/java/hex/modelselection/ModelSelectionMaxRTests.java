@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.Log;

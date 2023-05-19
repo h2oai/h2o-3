@@ -1522,4 +1522,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             LinkFunctionFactory.getLinkFunction(gbmMojoModel._link_function));
   }
 
+  @Override
+  protected void raiseReproducibilityWarning(String datasetName, int chunks) {
+    warn("auto_rebalance", "Rebalancing " + datasetName  + " dataset into " + chunks + " chunks. This model won't be reproducible on the different hardware configuration.");
+  }
 }

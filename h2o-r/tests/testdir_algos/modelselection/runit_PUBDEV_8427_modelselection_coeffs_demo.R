@@ -34,6 +34,14 @@ testModelSelectionCoeffs <- function() {
    coeffsNormMaxrsweep <- h2o.coef_norm(maxrsweepModel) # list of standardized coefficients from model built from each predictor size
    print(coeffsNormMaxrsweep)
 
+   maxrsweepModelMM <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel,
+                                         mode="maxrsweep", multinode_mode=TRUE)
+   resultMaxrsweepMM <- h2o.result(maxrsweepModelMM) # H2OFrame containing best model_ids, best_r2_value, predictor subsets
+   print(resultMaxrsweepMM)
+   coeffsMaxrsweepMM <- h2o.coef(maxrsweepModelMM) # list of coefficients from model built from each predictor size
+   print(coeffsMaxrsweepMM)
+   coeffsNormMaxrsweepMM <- h2o.coef_norm(maxrsweepModelMM) # list of standardized coefficients from model built from each predictor size
+   print(coeffsNormMaxrsweepMM)
     
   for (index in seq(numModel)) {
     oneModelCoeffAllsubsets <- h2o.coef(allsubsetsModel, index)
@@ -56,6 +64,13 @@ testModelSelectionCoeffs <- function() {
     coefsMaxrsweep <- coeffsNormMaxrsweep[[index]]
     coefsAllsubsets <- coeffsNormAllsubsets[[index]]
     expect_equal(coefsMaxrsweep[order(coefsMaxrsweep)], coefsAllsubsets[order(coefsAllsubsets)], tolerance=1e-6)
+
+    oneModelCoeffMaxrsweepMM <- h2o.coef(maxrsweepModelMM, index)
+    oneModelCoeffNormMaxrsweepMM <- h2o.coef_norm(maxrsweepModelMM, index)
+    expect_equal(coeffsMaxrsweep[[index]], oneModelCoeffMaxrsweepMM, tolerance=1e-6)
+    expect_equal(coeffsNormMaxrsweep[[index]], oneModelCoeffNormMaxrsweepMM, tolerance=1e-6)
+    coefsMaxrsweepMM <- coeffsNormMaxrsweepMM[[index]]
+    expect_equal(coefsMaxrsweepMM[order(coefsMaxrsweep)], coefsAllsubsets[order(coefsAllsubsets)], tolerance=1e-6)
   }
 }
 

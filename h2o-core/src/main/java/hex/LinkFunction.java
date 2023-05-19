@@ -1,9 +1,8 @@
 package hex;
 
-import water.Iced;
-
 import hex.genmodel.utils.LinkFunctionType;
 import org.apache.commons.math3.distribution.NormalDistribution;
+import water.Iced;
 
 /**
  * Link function class to calculate link, link inverse and string link inverse functions.
@@ -108,12 +107,12 @@ class LogFunction extends LinkFunction {
 
     @Override
     public double link(double f) {
-        return LogExpUtil.log(f);
+        return DistributionFactory.LogExpUtil.log(f);
     }
 
     @Override
     public double linkInv(double f) {
-        return LogExpUtil.exp(f);
+        return DistributionFactory.LogExpUtil.exp(f);
     }
 
     @Override
@@ -129,11 +128,11 @@ class LogitFunction extends LinkFunction {
     }
 
     @Override
-    public double link(double f) { return LogExpUtil.log(f / (1 - f)); }
+    public double link(double f) { return DistributionFactory.LogExpUtil.log(f / (1 - f)); }
 
     @Override
     public double linkInv(double f) {
-        return 1 / (1 + LogExpUtil.exp(-f));
+        return 1 / (1 + DistributionFactory.LogExpUtil.exp(-f));
     }
 
     @Override
@@ -154,11 +153,11 @@ class OlogitFunction extends LinkFunction {
     }
 
     @Override
-    public double link(double f) { return LogExpUtil.log(f / (1 - f)); }
+    public double link(double f) { return DistributionFactory.LogExpUtil.log(f / (1 - f)); }
 
     @Override
     public double linkInv(double f) {
-        return 1 / (1 + LogExpUtil.exp(-f));
+        return 1 / (1 + DistributionFactory.LogExpUtil.exp(-f));
     }
 
     @Override
@@ -174,10 +173,10 @@ class OloglogFunction extends LinkFunction {
     }
 
     @Override
-    public double link(double f) { return LogExpUtil.log(-1 * LogExpUtil.log(1-f) ); }
+    public double link(double f) { return DistributionFactory.LogExpUtil.log(-1 * DistributionFactory.LogExpUtil.log(1-f) ); }
 
     @Override
-    public double linkInv(double f) { return 1 - LogExpUtil.exp(-1 * LogExpUtil.exp(f)); }
+    public double linkInv(double f) { return 1 - DistributionFactory.LogExpUtil.exp(-1 * DistributionFactory.LogExpUtil.exp(f)); }
 
     @Override
     public String linkInvString(String f) { return expString("1. * "+expString("(-1. * "+expString("("+f+")")+")")); }

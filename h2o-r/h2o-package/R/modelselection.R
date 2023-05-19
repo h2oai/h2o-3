@@ -122,11 +122,13 @@
 #' @param build_glm_model \code{Logical}. For maxrsweep mode only.  If true, will return full blown GLM models with the desired
 #'        predictorsubsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is
 #'        forspeeding up the model selection process.  The users can choose to build the GLM models themselvesby using
-#'        the predictor subsets themselves.  Default to true. Defaults to TRUE.
+#'        the predictor subsets themselves.  Defaults to false. Defaults to FALSE.
 #' @param p_values_threshold For mode='backward' only.  If specified, will stop the model building process when all coefficientsp-values
 #'        drop below this threshold  Defaults to 0.
 #' @param influence If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the
 #'        dataset. Must be one of: "dfbetas".
+#' @param multinode_mode \code{Logical}. For maxrsweep only.  If enabled, will attempt to perform sweeping action using multiple nodes
+#'        in the cluster.  Defaults to false. Defaults to FALSE.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -193,9 +195,10 @@ h2o.modelSelection <- function(x,
                                max_predictor_number = 1,
                                min_predictor_number = 1,
                                mode = c("allsubsets", "maxr", "maxrsweep", "backward"),
-                               build_glm_model = TRUE,
+                               build_glm_model = FALSE,
                                p_values_threshold = 0,
-                               influence = c("dfbetas"))
+                               influence = c("dfbetas"),
+                               multinode_mode = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -328,6 +331,8 @@ h2o.modelSelection <- function(x,
     parms$p_values_threshold <- p_values_threshold
   if (!missing(influence))
     parms$influence <- influence
+  if (!missing(multinode_mode))
+    parms$multinode_mode <- multinode_mode
 
   # Error check and build model
   model <- .h2o.modelJob('modelselection', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -387,9 +392,10 @@ h2o.modelSelection <- function(x,
                                                max_predictor_number = 1,
                                                min_predictor_number = 1,
                                                mode = c("allsubsets", "maxr", "maxrsweep", "backward"),
-                                               build_glm_model = TRUE,
+                                               build_glm_model = FALSE,
                                                p_values_threshold = 0,
                                                influence = c("dfbetas"),
+                                               multinode_mode = FALSE,
                                                segment_columns = NULL,
                                                segment_models_id = NULL,
                                                parallelism = 1)
@@ -527,6 +533,8 @@ h2o.modelSelection <- function(x,
     parms$p_values_threshold <- p_values_threshold
   if (!missing(influence))
     parms$influence <- influence
+  if (!missing(multinode_mode))
+    parms$multinode_mode <- multinode_mode
 
   # Build segment-models specific parameters
   segment_parms <- list()
