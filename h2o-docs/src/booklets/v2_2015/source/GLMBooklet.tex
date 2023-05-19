@@ -571,6 +571,34 @@ The corresponding deviance is equal to:
 \centering
 \includegraphics[scale=0.5]{../../../product/images/tweedie_deviance.png}
 \end{figure}
+
+\paragraph{Tweedie Variance Power Maximum Likelihood} 
+
+Depending on $p$, $y$, and $\phi$, different methods are used for this log likelihood estimation. To start, let:
+
+$$\xi = \frac{\phi}{y^{2-p}}$$
+
+If $p=2$, then it will use the log likelihood of the Gamma distribution:
+
+$$\log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{\phi} \log (\frac{1}{\phi \mu}) - \log \text{Gamma} \frac{1}{\phi} + \log (y)(\frac{1}{\phi} -1) + (-\frac{1}{\phi \mu} y) & y>0 \\\end{cases}$$
+
+If $p=3$, then it will use the inverse Gaussian distribution:
+
+$$\log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{2} \Big(-log (\phi \mu) \log (2 \pi) -3 \log \big( \frac{y}{\mu} - \frac{(\frac{y}{\mu} -1)^2}{\phi \mu \frac{y}{\mu}} \Big) - \log (\mu) & y>0 \\\end{cases}$$
+
+If $p<2$ and $\xi \leq 0.01$, then it will use the Fourier inversion method.
+
+If $p>2$ and $\xi \geq 1$, then it will also use the Fourier inversion method.
+
+Everything else will use the Series method. However, if the Series method fails (output of \texttt{NaN}), then it will try the Fourier inversion method instead.
+
+If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the $\xi$ criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
+
+Here is the general usage for Tweedie variance power maximum likelihood:
+\begin{itemize}
+\item with \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = True} as it will optimize the Tweedie variance power.
+\item with \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = False} as it will optimize both Tweedie variance power and the dispersion parameter.
+\end{itemize}
    
 \subsubsection{Negative Binomial Models}
 
@@ -638,7 +666,7 @@ If there are weights introduced to each data row, $equation 1$ will become:
 
 $$f \Big( y; \theta, \frac{\phi}{w} \Big) = a \Big( y, \frac{\phi}{w}, p \Big) \exp \Big[ \frac{w}{\phi} \big\{ y\theta - k(\theta) \big\} \Big]$$
 
-\textbf{$\alpha (y, \phi) when 1<p<2$}
+\paragraph{$\alpha (y, \phi) when 1<p<2$}
 
 For $Y=0$,
 
@@ -663,7 +691,7 @@ The $W_j$ terms are all positive. The following figure plots for $\mu = 0.5, p=1
 \includegraphics[scale=0.25]{images/dispersion_param_fig1.png}
 \end{figure}
 
-\textbf{$\alpha (y, \phi) when p > 2$}
+\paragraph{$\alpha (y, \phi) when p > 2$}
 
 Here, you have,
 
