@@ -10,6 +10,7 @@ public class ModelMetricsBinomialGLMGeneric extends ModelMetricsBinomialGeneric 
   public final double _resDev;
   public final double _nullDev;
   public final double _AIC;
+  public final double _loglikelihood;
   public final TwoDimTable _coefficients_table;
 
   public ModelMetricsBinomialGLMGeneric(Model model, Frame frame, long nobs, double mse, String[] domain,
@@ -17,7 +18,7 @@ public class ModelMetricsBinomialGLMGeneric extends ModelMetricsBinomialGeneric 
                                         CustomMetric customMetric, double mean_per_class_error, TwoDimTable thresholds_and_metric_scores,
                                         TwoDimTable max_criteria_and_metric_scores, TwoDimTable confusion_matrix,
                                         long nullDegreesOfFreedom, long residualDegreesOfFreedom, double resDev, double nullDev,
-                                        double aic, TwoDimTable coefficients_table, double r2, String description) {
+                                        double aic, TwoDimTable coefficients_table, double r2, String description, double loglikelihood) {
     super(model, frame, nobs, mse, domain, sigma, auc, logloss, gainsLiftTable, customMetric, mean_per_class_error,
             thresholds_and_metric_scores, max_criteria_and_metric_scores, confusion_matrix, r2, description);
     _nullDegreesOfFreedom = nullDegreesOfFreedom;
@@ -26,5 +27,6 @@ public class ModelMetricsBinomialGLMGeneric extends ModelMetricsBinomialGeneric 
     _nullDev = nullDev;
     _AIC = aic;
     _coefficients_table = coefficients_table;
+    _loglikelihood = loglikelihood;
   }
 }

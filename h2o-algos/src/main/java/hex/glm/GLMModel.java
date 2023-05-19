@@ -11,6 +11,7 @@ import hex.util.EffectiveParametersUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
+import org.apache.commons.math3.special.Gamma;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static hex.DistributionFactory.LogExpUtil.log;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
 import static hex.glm.GLMModel.GLMOutput.calculatePValuesFromZValues;
@@ -304,11 +306,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override
-  public double likelihood(double w, double y, double f) {
+  public double likelihood(double w, double y, double[] f) {
     if (w == 0) {
       return 0;
+    } else if (_finalScoring){
+      // time-consuming calculation for the final scoring
+      return _parms.likelihood(w, y, f);
     } else {
-      return w*(_parms.likelihood(y, f));
+      // optimized calculation for model build
+      return w*(_parms.likelihood(y, f[0]));
     }
   }
 
@@ -359,6 +365,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public static class GLMParameters extends Model.Parameters {
     static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver"};
+    final static double LOG2PI = Math.log(2 * Math.PI);
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip
     }
@@ -375,6 +382,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public Solver _solver = Solver.AUTO;
     public double _tweedie_variance_power;
     public double _tweedie_link_power;
+    public double _dispersion_estimated;
     public double _theta; // 1/k and is used by negative binomial distribution only
     public double _invTheta;
     public double [] _alpha;
@@ -628,6 +636,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _link = l;
       this._theta=theta;
       this._invTheta = 1.0/theta;
+      this._dispersion_estimated = _init_dispersion_parameter;
     }
 
     public final double variance(double mu){
@@ -706,7 +715,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      return deviance((double)yr,(double)ym);
     }
 
-    public final double likelihood(double yr, double ym){ 
+    // likelihood calculation used for the model building
+    public final double likelihood(double yr, double ym){
       if (_family.equals(Family.negativebinomial)) {
         return ((yr>0 && ym>0)?
                 (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
@@ -716,6 +726,55 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _init_dispersion_parameter);
       }  else
         return .5 * deviance(yr,ym);
+    }
+
+    // more time-consuming likelihood calculation used for the final scoring
+    public final double likelihood(double w, double yr, double[] ym) {
+      double prediction = ym[0];
+      double probabilityOf1;
+      switch (_family) {
+        case gaussian:
+          return -.5 * (w * Math.pow(yr - prediction , 2) / _dispersion_estimated 
+                  + log(_dispersion_estimated / w) + LOG2PI);
+        case binomial:
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
+          return w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1));
+        case quasibinomial:
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
+          if (yr == prediction)
+            return 0;
+          else if (prediction > 1) // check what are possible values?
+            return -w * (yr * log(probabilityOf1));
+          else
+            return -w * (yr * log(probabilityOf1) + (1 - yr) * log(1 - probabilityOf1));
+        case fractionalbinomial:
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
+          if (yr == prediction)
+            return 0;
+          return w * ((MathUtils.y_log_y(yr, probabilityOf1)) + MathUtils.y_log_y(1 - yr, 1 - probabilityOf1));
+        case poisson:
+          return w * (yr * log(prediction) - prediction - Gamma.logGamma(yr + 1)); // gamma(n) = (n-1)!
+        case negativebinomial:
+          // the estimated dispersion parameter is theta. The likelihood formula requires k. Theta=1/k.
+          double invThetaEstimated = 1 / _dispersion_estimated;
+          return yr * log(invThetaEstimated * prediction / w) - (yr + w/invThetaEstimated) * log(1 + invThetaEstimated * prediction / w) 
+                  + log(Gamma.gamma(yr + w / invThetaEstimated) / (Gamma.gamma(yr + 1) * Gamma.gamma(w / invThetaEstimated)));
+        case gamma:
+          double invPhiEst = 1 / _dispersion_estimated;
+          return w * invPhiEst * log(w * yr * invPhiEst / prediction) - w * yr * invPhiEst / prediction 
+                  - log(yr) - Gamma.logGamma(w * invPhiEst);
+        case tweedie:
+          return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _init_dispersion_parameter);
+        case multinomial:
+          // if probability is not given, then it is 1.0 if prediction equals to the real y and 0 othervice
+          double predictedProbabilityOfActualClass = ym.length > 1 ? ym[(int) yr + 1] : (prediction == yr ? 1.0 : 0.0);
+          return w * log(predictedProbabilityOfActualClass);
+        default:
+          throw new RuntimeException("unknown family " + _family);
+      }
     }
 
     public final double linkDeriv(double x) { // note: compute an inverse of what R does
@@ -1337,6 +1396,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final double    _ySigma;
   public final long      _nobs;
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
+  public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 

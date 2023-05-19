@@ -8,17 +8,19 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
   public final double _resDev;
   public final double _nullDev;
   public final double _AIC;
+  public final double _loglikelihood;
 
   public ModelMetricsBinomialGLM(Model model, Frame frame, long nobs, double mse, String[] domain,
                                  double sigma, AUC2 auc, double logloss, double resDev, double nullDev,
                                  double aic, long nDof, long rDof, GainsLift gainsLift,
-                                 CustomMetric customMetric) {
+                                 CustomMetric customMetric, double loglikelihood) {
     super(model, frame, nobs, mse, domain, sigma, auc, logloss, gainsLift, customMetric);
     _resDev = resDev;
     _nullDev = nullDev;
     _AIC = aic;
     _nullDegreesOfFreedom = nDof;
     _residualDegreesOfFreedom = rDof;
+    _loglikelihood = loglikelihood;
   }
 
   @Override
@@ -62,17 +64,19 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     public final double _resDev;
     public final double _nullDev;
     public final double _AIC;
+    public final double _loglikelihood;
 
     public ModelMetricsMultinomialGLM(Model model, Frame frame, long nobs, double mse, String[] domain,
                                       double sigma, ConfusionMatrix cm, float [] hr, double logloss,
                                       double resDev, double nullDev, double aic, long nDof, long rDof,
-                                      MultinomialAUC auc, CustomMetric customMetric) {
+                                      MultinomialAUC auc, CustomMetric customMetric, double loglikelihood) {
       super(model, frame, nobs,  mse, domain, sigma, cm, hr, logloss, auc, customMetric);
       _resDev = resDev;
       _nullDev = nullDev;
       _AIC = aic;
       _nullDegreesOfFreedom = nDof;
       _residualDegreesOfFreedom = rDof;
+      _loglikelihood = loglikelihood;
     }
 
     @Override
@@ -117,17 +121,19 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     public final double _resDev;
     public final double _nullDev;
     public final double _AIC;
+    public final double _loglikelihood;
 
     public ModelMetricsOrdinalGLM(Model model, Frame frame, long nobs, double mse, String[] domain,
-                                      double sigma, ConfusionMatrix cm, float [] hr, double logloss,
-                                      double resDev, double nullDev, double aic, long nDof, long rDof,
-                                      CustomMetric customMetric) {
+                                  double sigma, ConfusionMatrix cm, float [] hr, double logloss,
+                                  double resDev, double nullDev, double aic, long nDof, long rDof,
+                                  CustomMetric customMetric, double loglikelihood) {
       super(model, frame, nobs,  mse, domain, sigma, cm, hr, logloss, customMetric);
       _resDev = resDev;
       _nullDev = nullDev;
       _AIC = aic;
       _nullDegreesOfFreedom = nDof;
       _residualDegreesOfFreedom = rDof;
+      _loglikelihood = loglikelihood;
     }
 
     @Override

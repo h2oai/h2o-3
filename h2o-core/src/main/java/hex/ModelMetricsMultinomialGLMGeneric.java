@@ -11,13 +11,15 @@ public class ModelMetricsMultinomialGLMGeneric extends ModelMetricsMultinomialGe
   public final double _resDev;
   public final double _nullDev;
   public final double _AIC;
+  public final double _loglikelihood;
   public final TwoDimTable _coefficients_table;
 
   public ModelMetricsMultinomialGLMGeneric(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma,
                                            TwoDimTable confusion_matrix, TwoDimTable hit_ratio_table, double logloss, CustomMetric customMetric,
                                            double mean_per_class_error, long nullDegreesOfFreedom, long residualDegreesOfFreedom,
                                            double resDev, double nullDev, double aic, TwoDimTable coefficients_table, double r2,
-                                           TwoDimTable multinomial_auc_table, TwoDimTable multinomial_aucpr_table, MultinomialAucType type, final String description) {
+                                           TwoDimTable multinomial_auc_table, TwoDimTable multinomial_aucpr_table, MultinomialAucType type, 
+                                           final String description, double loglikelihood) {
     super(model, frame, nobs, mse, domain, sigma, confusion_matrix, hit_ratio_table, logloss, customMetric, mean_per_class_error, r2,
             multinomial_auc_table, multinomial_aucpr_table, type, description);
     _nullDegreesOfFreedom = nullDegreesOfFreedom;
@@ -26,5 +28,6 @@ public class ModelMetricsMultinomialGLMGeneric extends ModelMetricsMultinomialGe
     _nullDev = nullDev;
     _AIC = aic;
     _coefficients_table = coefficients_table;
+    _loglikelihood = loglikelihood;
   }
 }

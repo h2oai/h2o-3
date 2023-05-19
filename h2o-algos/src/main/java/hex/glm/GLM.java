@@ -1281,6 +1281,29 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_parms._fix_tweedie_variance_power && !_parms._fix_dispersion_parameter)
           _tweedieDispersionOnly = true;
       
+        // likelihood calculation for gaussian, gamma, negativebinomial and tweedie families requires dispersion parameter estimation
+        // _dispersion_parameter_method: gaussian - pearson (default); gamma, negativebinomial, tweedie - ml.
+        if(!_parms._HGLM && _parms._calc_like) {
+          switch (_parms._family) {
+            case gaussian:
+              _parms._compute_p_values = true;
+              _parms._remove_collinear_columns = true;
+              break;
+            case gamma:
+            case negativebinomial:
+              _parms._compute_p_values = true;
+              _parms._remove_collinear_columns = true;
+            case tweedie:
+              // dispersion value estimation for tweedie family does not require 
+              // parameters compute_p_values and remove_collinear_columns
+              _parms._dispersion_parameter_method = ml;
+              // disable regularization as ML is supported only without regularization
+              _parms._lambda = new double[] {0.0};
+            default:
+              // other families does not require dispersion parameter estimation
+          }
+        }
+        
       if (_parms.hasCheckpoint()) {
         if (!Family.gaussian.equals(_parms._family))  // Gaussian it not iterative and therefore don't care
           _checkPointFirstIter = true;  // mark the first iteration during iteration process of training
@@ -2778,7 +2801,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
 
-      if (_parms._compute_p_values) { // compute p-values, standard error, estimate dispersion parameters...
+      if (_parms._compute_p_values) { // compute p-values, standard error, estimate dispersion parameters... 
         double se = _parms._init_dispersion_parameter;
         boolean seEst = false;
         double[] beta = _state.beta();  // standardized if _parms._standardize=true, original otherwise
@@ -2807,6 +2830,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               se = estimateTweedieDispersionOnly(_parms, _model, _job, beta, _state.activeData());
             }
           }
+          // save estimation to the _params, so it is available for params.likelihood computation
+          _parms._dispersion_estimated = se;
         }
         double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
        // double[][] inv = cholInv(); // from non-standardized predictors
@@ -3462,8 +3487,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.setVcov(_vcov);
         _model.update(_job._key);
       }
-      if (!_parms._HGLM)  // no need to do for HGLM
+      if (!_parms._HGLM) {  // no need to do for HGLM
+        _model._finalScoring = true; // enables likelihood calculation while scoring
         scoreAndUpdateModel();
+        _model._finalScoring = false; // avoid calculating likelihood in case of further updates
+      }
       
       if (dfbetas.equals(_parms._influence))
         genRID();

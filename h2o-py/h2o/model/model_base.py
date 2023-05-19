@@ -1038,6 +1038,25 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         for k, v in tm.items(): m[k] = None if v is None else v.aic()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def loglikelihood(self, train=False, valid=False, xval=False):
+        """
+        Get the log likelihood.
+
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If ``train=True``, then return the log likelihood value for the training data.
+        :param bool valid: If ``valid=True``, then return the log likelihood value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the log likelihood value for the validation data.
+
+        :returns: The log likelihood.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in viewitems(tm): m[k] = None if v is None else v.loglikelihood()
+        return list(m.values())[0] if len(m) == 1 else m
+
     def gini(self, train=False, valid=False, xval=False):
         """
         Get the Gini coefficient.

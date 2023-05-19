@@ -208,6 +208,7 @@ reference:
       - h2o.log2
       - h2o.log10
       - h2o.logAndEcho
+      - h2o.loglikelihood
       - h2o.logloss
       - h2o.ls
       - h2o.lstrip

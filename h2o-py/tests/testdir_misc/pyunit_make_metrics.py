@@ -13,7 +13,7 @@ from h2o.estimators import H2OGradientBoostingEstimator
 from h2o.model import H2OBinomialModelMetrics
 from h2o.estimators import H2OUpliftRandomForestEstimator
 
-base_metric_methods = ['aic', 'auc', 'gini', 'logloss', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'mse',
+base_metric_methods = ['aic', 'loglikelihood', 'auc', 'gini', 'logloss', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'mse',
                        'nobs', 'aucpr', 'pr_auc', 'r2', 'rmse', 'rmsle',
                        'residual_deviance', 'residual_degrees_of_freedom', 'null_deviance', 'null_degrees_of_freedom']
 max_metrics = list(H2OBinomialModelMetrics.maximizing_metrics)
@@ -108,7 +108,7 @@ def pyunit_make_metrics(weights_col=None):
 
     # Testing base metric methods
     # FIXME: check the same failures for other ModelMetrics impl. and then fix'emall or move them out of base class...
-    base_metrics_methods_failing_on_H2OBinomialModelMetrics = ['aic', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'rmsle']
+    base_metrics_methods_failing_on_H2OBinomialModelMetrics = ['aic', 'loglikelihood', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'rmsle']
     for metric_method in (m for m in base_metric_methods if m not in base_metrics_methods_failing_on_H2OBinomialModelMetrics):
         m0mm = getattr(m0, metric_method)()
         m1mm = getattr(m1, metric_method)()
