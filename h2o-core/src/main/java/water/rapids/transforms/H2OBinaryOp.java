@@ -68,7 +68,7 @@ public class H2OBinaryOp extends H2OColOp {
   @Override protected String lookup(String op) { return binaryOps.get(op)==null?op:binaryOps.get(op); }
   @Override protected boolean paramIsRow() { return _leftIsCol || _riteIsCol; }
   @Override protected String addRowParam() {
-    return "      _params.put(\""+ (_leftIsCol?"leftArg":"rightArg") + "\", " +
+    return "      _params.put(\""+ (_riteIsCol?"rightArg":"leftArg") + "\", " +
             "new String[]{String.valueOf(row.get(\"" +_binCol+ "\"))}); // write over the previous value\n";
   }
   private static boolean isBinaryOp(String op) { return binaryOps.get(op)!=null; }
