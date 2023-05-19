@@ -160,15 +160,15 @@ def measure_time(t):
 def run_random_test():
     import random
     tests = [
-        test_tweedie_p_and_phi_estimation_2p6_disp2_est,  # 1547.11469818s
-        test_tweedie_p_and_phi_estimation_2p5_phi_2p5_no_link_power_est,  # 1700.5806319029998s
-        test_tweedie_p_and_phi_estimation_3_phi_0p5_no_link_power_est,  # 2992.1222389420004s
-        test_tweedie_p_and_phi_estimation_3_no_link_power_est,  # 2969.200690304s
-        test_tweedie_p_and_phi_estimation_3_phi_1p5_no_link_power_est,  # 1295.719605385002s
-        test_tweedie_p_and_phi_estimation_5_no_link_power_est,  # 2117.0419905989984s
-        test_tweedie_p_and_phi_estimation_5_phi_0p5_no_link_power_est,  # 2783.940797473999s
+        test_tweedie_p_and_phi_estimation_2p6_disp2_est,  # 1547.11469818s -> 1418.9195188410001s -> 613.7193842849999s
+        test_tweedie_p_and_phi_estimation_2p5_phi_2p5_no_link_power_est,  # 1700.5806319029998s -> 1537.708712792s -> 752.2378191370001s
+        test_tweedie_p_and_phi_estimation_3_phi_0p5_no_link_power_est,  # 2992.1222389420004s ->  2801.2481954240006s -> 1314.5836838070002s
+        test_tweedie_p_and_phi_estimation_3_no_link_power_est,  # 2969.200690304s ->  3250.5404198899987s ->  1438.913372169s
+        test_tweedie_p_and_phi_estimation_3_phi_1p5_no_link_power_est,  # 1295.719605385002s -> 1491.1029589709997s -> 789.1963182149993s
+        test_tweedie_p_and_phi_estimation_5_no_link_power_est,  # 2117.0419905989984s -> 2520.0094414819996s -> 1221.1567296999992s
+        test_tweedie_p_and_phi_estimation_5_phi_0p5_no_link_power_est,  # 2783.940797473999s -> 2976.205751714s -> 1513.149319389s
     ]
-    return random.choices(tests, weights=[1295.0 / w for w in [1547, 1700, 2992, 2969, 1295, 2117, 2783]])
+    return [random.choice(tests)]
 
 
 pyunit_utils.run_tests(run_random_test())

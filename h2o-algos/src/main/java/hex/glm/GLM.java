@@ -2456,6 +2456,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       final double originalP = _parms._tweedie_variance_power;
       final double originalPhi = _parms._init_dispersion_parameter;
       final double contractRatio = 0.5;
+      final double pMin = 1 + 1e-10;
+      final double pZeroMax = 2 - 1e-10;
+      final double phiMin = 1e-10;
       double bestLLH = Double.NEGATIVE_INFINITY, bestP = 1.5, bestPhi = 1, p, phi, centroidP, centroidPhi, diffP, diffPhi, diffInParams, diffInLLH;
       boolean converged = false;
       Scope.enter();
@@ -2464,17 +2467,64 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
       try {
         // Nelder-Mead
-        TweedieEstimator teTmp, teReflected, teExtended, teContractedIn, teContractedOut;
-        // high likelihood (to be sorted later)
-        TweedieEstimator teHigh = new TweedieEstimator(1.5, 1)
-                .compute(mu, response, weights);
-        // middle likelihood
-        TweedieEstimator teMiddle = new TweedieEstimator(response.min() > 0 ? 3 : 1.75, 0.5)
-                .compute(mu, response, weights);
-        // low likelihood
-        TweedieEstimator teLow = new TweedieEstimator(response.min() > 0 ? 2 : 1.2, 2)
-                .compute(mu, response, weights);
+        TweedieEstimator teTmp, teReflected, teExtended, teContractedIn, teContractedOut, teHigh, teMiddle, teLow;
+        if (iterCnt > 1) {
+          // keep the previous estimate as the centroid of the triangle (unless we encounter some constraint)
+          // using the previous estimate as one of the points can lead to getting stuck in local optimum since the likelihood is not perfectly smooth
+          final double radius = 0.05 * _parms._dispersion_learning_rate;
+          // rotate the simplex every iteration by 2/15*PI => every 5th iteration has the same points just with different names
+          // this should make it less likely to get stuck in a local optimum
+          double aP = originalP + Math.cos(Math.PI / 7.5 * iterCnt) * radius,
+                  aPhi = originalPhi + Math.sin(Math.PI / 7.5 * iterCnt) * radius,
+                  bP = originalP + Math.cos(Math.PI / 7.5 * iterCnt + 2 * Math.PI / 3) * radius,
+                  bPhi = originalPhi + Math.sin(Math.PI / 7.5 * iterCnt + 2 * Math.PI / 3) * radius,
+                  cP = originalP + Math.cos(Math.PI / 7.5 * iterCnt + 4 * Math.PI / 3) * radius,
+                  cPhi = originalPhi + Math.sin(Math.PI / 7.5 * iterCnt + 4 * Math.PI / 3) * radius;
 
+          final double minPDiff = Math.min(aP - pMin, Math.min(bP - pMin, cP - pMin)),
+                  minPhiDiff = Math.min(aPhi - phiMin, Math.min(bPhi - phiMin, cPhi - phiMin));
+
+          if (minPDiff < 0) {
+            // shift the simplex to be in the allowed region
+            aP -= minPDiff;
+            bP -= minPDiff;
+            cP -= minPDiff;
+          }
+
+          if (minPhiDiff < 0) {
+            // shift the simplex to be in the allowed region
+            aPhi -= minPhiDiff;
+            bPhi -= minPhiDiff;
+            cPhi -= minPhiDiff;
+          }
+
+          if (response.min() <= 0) {
+            // makes no sense to evaluate p >= 2 as it has -Infty log likelihood => shift the simplex
+            final double maxPDiff = Math.max(aP - pZeroMax, Math.max(bP - pZeroMax, cP - pZeroMax));
+            if (maxPDiff > 0) {
+              // shift the simplex
+              aP -= maxPDiff;
+              bP -= maxPDiff;
+              cP -= maxPDiff;
+            }
+          }
+          // high likelihood (to be sorted later)
+          teHigh = new TweedieEstimator(aP, aPhi).compute(mu, response, weights);
+          // middle likelihood
+          teMiddle = new TweedieEstimator(bP, bPhi).compute(mu, response, weights);
+          // low likelihood
+          teLow = new TweedieEstimator(cP, cPhi).compute(mu, response, weights);
+        } else {
+          // high likelihood (to be sorted later)
+          teHigh = new TweedieEstimator(1.5, 1)
+                  .compute(mu, response, weights);
+          // middle likelihood
+          teMiddle = new TweedieEstimator(response.min() > 0 ? 3 : 1.75, 0.5)
+                  .compute(mu, response, weights);
+          // low likelihood
+          teLow = new TweedieEstimator(response.min() > 0 ? 2 : 1.2, 2)
+                  .compute(mu, response, weights);
+        }
         // 1. Sort
         if (teLow._loglikelihood > teHigh._loglikelihood) {
           teTmp = teLow;
@@ -2492,8 +2542,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           teMiddle = teTmp;
         }
         for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
-          if (!(Double.isFinite(teLow._loglikelihood) && Double.isFinite(teHigh._loglikelihood)))
+          if (!(Double.isFinite(teLow._loglikelihood) || Double.isFinite(teHigh._loglikelihood))) {
+            Log.info("Nelder-Mead dispersion (phi) and variance power (p) estimation: beta iter: " + iterCnt +
+                    "; Nelder-Mead iter: " + i +
+                    "; estimated p: " + bestP + "; estimated phi: " + bestPhi +
+                    "; log(Likelihood): " + bestLLH + "; Not finite likelihoods for both high and low point - skipping p and phi estimation for this iteration.");
             return false;
+          }
           // 2. Reflect
           centroidP = (teMiddle._p + teHigh._p) / 2.0;
           centroidPhi = (teMiddle._phi + teHigh._phi) / 2.0;
@@ -2502,9 +2557,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // reflected p and phi
           p = teLow._p + 2 * diffP;
           phi = teLow._phi + 2 * diffPhi;
-          p = Math.max(p, 1 + 1e-10);
-          if (response.min() <= 0) p = Math.min(p, 2 - 1e-10);
-          phi = Math.max(phi, 1e-10);
+          p = Math.max(p, pMin);
+          if (response.min() <= 0) p = Math.min(p, pZeroMax);
+          phi = Math.max(phi, phiMin);
           teReflected = new TweedieEstimator(p, phi).compute(mu, response, weights);
 
           if (teReflected._loglikelihood > teMiddle._loglikelihood && teReflected._loglikelihood < teHigh._loglikelihood) {
@@ -2513,9 +2568,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // 3. Extend
             p += diffP;
             phi += diffPhi;
-            p = Math.max(p, 1 + 1e-10);
-            if (response.min() <= 0) p = Math.min(p, 2 - 1e-10);
-            phi = Math.max(phi, 1e-10);
+            p = Math.max(p, pMin);
+            if (response.min() <= 0) p = Math.min(p, pZeroMax);
+            phi = Math.max(phi, phiMin);
 
             if (p == teReflected._p && phi == teReflected._phi)
               teExtended = teReflected; // if it gets out of bounds don't let it go further
@@ -2530,13 +2585,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // 4. Contract
             if (teReflected._loglikelihood < teMiddle._loglikelihood) {
               // Contract out
-              p = Math.max(teLow._p + (1 + contractRatio) * diffP, 1 + 1e-10);
-              phi = Math.max(teLow._phi + (1 + contractRatio) * diffPhi, 1e-10);
+              p = Math.max(teLow._p + (1 + contractRatio) * diffP, pMin);
+              phi = Math.max(teLow._phi + (1 + contractRatio) * diffPhi, phiMin);
               teContractedOut = new TweedieEstimator(p, phi).compute(mu, response, weights);
 
               // Contract in 
-              p = Math.max(teLow._p + (1 - contractRatio) * diffP, 1 + 1e-10);
-              phi = Math.max(teLow._phi + (1 - contractRatio) * diffPhi, 1e-10);
+              p = Math.max(teLow._p + (1 - contractRatio) * diffP, pMin);
+              phi = Math.max(teLow._phi + (1 - contractRatio) * diffPhi, phiMin);
               teContractedIn = new TweedieEstimator(p, phi).compute(mu, response, weights);
 
               if (teContractedOut._loglikelihood > teContractedIn._loglikelihood)
@@ -2584,24 +2639,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
 
           diffInParams = Math.max(
-                  Math.abs((Math.abs(teHigh._p - teMiddle._p) - Math.abs(teMiddle._p - teLow._p)) / (Math.abs(teHigh._p - teMiddle._p) + Math.abs(teMiddle._p - teLow._p) + _parms._dispersion_epsilon)),
-                  Math.abs((Math.abs(teHigh._phi - teMiddle._phi) - Math.abs(teMiddle._phi - teLow._phi)) / (Math.abs(teHigh._phi - teMiddle._phi) + Math.abs(teMiddle._phi - teLow._phi) + _parms._dispersion_epsilon))
+                  Math.max(Math.abs(teHigh._p - teMiddle._p), Math.abs(teHigh._p - teLow._p)),
+                  Math.max(
+                          Math.max(Math.abs(teLow._p - teMiddle._p), Math.abs(teHigh._phi - teMiddle._phi)),
+                          Math.max(Math.abs(teHigh._phi - teLow._phi), Math.abs(teLow._phi - teMiddle._phi))
+                  )
           );
           diffInLLH = Math.abs((teMiddle._loglikelihood - teLow._loglikelihood) / (teHigh._loglikelihood + _parms._dispersion_epsilon));
 
           Log.info("Nelder-Mead dispersion (phi) and variance power (p) estimation: beta iter: " + iterCnt +
-                  "; Nelder-Mead iter: "+i+
-                  "; estimated p: " + bestP + "; estimated phi: " + bestPhi + 
+                  "; Nelder-Mead iter: " + i +
+                  "; estimated p: " + bestP + "; estimated phi: " + bestPhi +
                   "; log(Likelihood): " + bestLLH + "; diff in params: " + diffInParams + "; diff in LLH: " + diffInLLH +
                   "; dispersion_epsilon: " + _parms._dispersion_epsilon);
 
           converged = diffInParams < _parms._dispersion_epsilon && diffInLLH < _parms._dispersion_epsilon;
           if (converged)
             break;
-      }
+        }
 
         updateTweedieParms(bestP, bestPhi);
-        
+
         return Math.abs(originalP - bestP) < _parms._dispersion_epsilon && Math.abs(originalPhi - bestPhi) < _parms._dispersion_epsilon && converged;
       } finally {
         Scope.exit();
@@ -2995,6 +3053,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               se = _parms._theta;
             } else if (_tweedieDispersionOnly) {
               se = estimateTweedieDispersionOnly(_parms, _model, _job, beta, _state.activeData());
+              if (!Double.isFinite(se))
+                Log.warn("Tweedie dispersion parameter estimation diverged. "+
+                        "Estimation of both dispersion and variance power might have better luck.");
             }
           }
           // save estimation to the _params, so it is available for params.likelihood computation

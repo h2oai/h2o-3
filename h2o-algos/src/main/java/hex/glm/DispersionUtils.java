@@ -110,6 +110,14 @@ public class DispersionUtils {
                     return dispersionList.get(loglikelihoodList.indexOf(Collections.max(loglikelihoodList)));
                 }
             }
+            if (loglikelihoodList.size() > 10) {
+                if (loglikelihoodList.stream().skip(loglikelihoodList.size() - 3).noneMatch((x) -> x != null && Double.isFinite(x))) {
+                    Log.warn("tweedie dispersion parameter estimation got stuck in numerically unstable region.");
+                    tDispersion.cleanUp();
+                    // If there's NaN Collections.max picks it
+                    return Double.NaN;
+                }
+            }
             // get new update to dispersion
             update = computeTask._dLogLL / computeTask._d2LogLL;
             if (Math.abs(update) < 1e-3) { // line search for speedup and increase magnitude of change

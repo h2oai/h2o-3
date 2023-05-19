@@ -204,8 +204,7 @@ def run_random_test():
         test_tweedie_var_power_estimation_5_no_link_power_est,  # takes 830s -> 964s
         test_tweedie_var_power_estimation_5_phi_0p5_no_link_power_est,  # takes 1151s -> 1221s
     ]
-    return random.choices(tests, weights=[49.0/w for w in [49, 434, 1064, 685, 1444, 1314, 964, 1221]])
-    # weights=[531.0/w for w in [531, 1034, 1968, 1185, 2654, 2309, 830, 1151]])
+    return [random.choice(tests)]
 
 
 pyunit_utils.run_tests(run_random_test())
