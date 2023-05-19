@@ -33,7 +33,7 @@ public class StringSplitTransform extends MojoTransform {
             if (a[i] != null) {
                 String[] split = a[i].split(_regex);
                 int nCol = Math.min(_numberOfOutputCols, split.length);
-                for (int j = 0; j < nCol; i++) {
+                for (int j = 0; j < nCol; j++) {
                     outputs[j][i] = split[j];
                 }
             }
