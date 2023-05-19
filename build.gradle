@@ -17,7 +17,7 @@ buildscript {
             }
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
-            mavenCentral()  
+            mavenCentral()
         }
     }
 
@@ -249,12 +249,12 @@ subprojects {
             maven {
                 url "https://repository.cloudera.com/artifactory/cloudera-repos/"
             }
- //           maven {
- //               url "https://repo.hortonworks.com/content/repositories/releases/"
- //           }
- //           maven {
- //               url "https://repo.hortonworks.com/content/repositories/jetty-hadoop/"
- //           }
+            maven {
+                url "https://repo.hortonworks.com/content/repositories/releases/"
+            }
+            maven {
+                url "https://repo.hortonworks.com/content/repositories/jetty-hadoop/"
+            }
             maven {
                 url "https://repository.mapr.com/maven/"
             }
