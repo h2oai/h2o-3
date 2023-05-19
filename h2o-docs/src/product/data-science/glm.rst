@@ -1718,7 +1718,8 @@ linear model.
 
 When inverted: :math:`\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)`
 
-**Maximum Likelihood Estimation**
+Maximum Likelihood Estimation
+'''''''''''''''''''''''''''''
 
 For an initial rough estimate of the parameters :math:`\hat{\beta}`, use the estimate to generate fitted values: :math:`\mu_{i}=g^{-1}(\hat{\eta_{i}})`
 
@@ -1740,7 +1741,41 @@ Regress :math:`z_{i}` on the predictors :math:`x_{i}` using the weights :math:`w
 
 This process is repeated until the estimates :math:`\hat{\beta}` change by less than the specified amount.
 
-**Cost of computation**
+**Tweedie Variance Power Maximum Likelihood**
+
+Depending on :math:`p`, :math:`y`, and :math:`\phi`, different methods are used for this log likelihood estimation. To start, let:
+
+.. math::
+   
+   \xi = \frac{\phi}{y^{2-p}}
+
+If :math:`p=2`, then it will use the log likelihood of the Gamma distribution:
+
+.. math::
+
+   \log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{\phi} \log (\frac{1}{\phi \mu}) - \log \text{Gamma} \frac{1}{\phi} + \log (y)(\frac{1}{\phi} -1) + (-\frac{1}{\phi \mu} y) & y>0 \\\end{cases}
+
+If :math:`p=3`, then it will use the inverse Gaussian distribution:
+
+.. math::
+   
+   \log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{2} \Big(-log (\phi \mu) \log (2 \pi) -3 \log \big( \frac{y}{\mu} - \frac{(\frac{y}{\mu} -1)^2}{\phi \mu \frac{y}{\mu}} \Big) - \log (\mu) & y>0 \\\end{cases}
+
+If :math:`p<2` and :math:`\xi \leq 0.01`, then it will use the Fourier inversion method.
+
+If :math:`p>2` and :math:`\xi \geq 1`, then it will also use the Fourier inversion method.
+
+Everything else will use the Series method. However, if the Series method fails (output of ``NaN``), then it will try the Fourier inversion method instead.
+
+If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the :math:`\xi` criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
+
+Here is the general usage for Tweedie variance power maximum likelihood:
+
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = True`` as it will optimize the Tweedie variance power
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will optimize both Tweedie variance power and the dispersion parameter
+
+Cost of computation
+'''''''''''''''''''
 
 H2O can process large data sets because it relies on parallel processes.
 Large data sets are divided into smaller data sets and processed
