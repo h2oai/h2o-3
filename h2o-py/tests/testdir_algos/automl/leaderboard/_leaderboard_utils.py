@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import h2o
 
 all_algos = ["DeepLearning", "DRF", "GBM", "GLM", "XGBoost", "StackedEnsemble"]

@@ -5,7 +5,6 @@ Disassembly support.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *
 
 import dis
@@ -156,14 +155,11 @@ except ImportError:
         i = 0
         n = len(code)
         while i < n:
-            op = ord(code[i]) if PY2 else code[i]
+            op = code[i]
             pos = i
             i += 1
             if op >= dis.HAVE_ARGUMENT:
-                if PY2:
-                    arg = ord(code[i]) + ord(code[i+1])*256 + extended_arg
-                else: # to support Python version (3,3.5)
-                    arg = code[i] + code[i+1]*256 + extended_arg
+                arg = code[i] + code[i+1]*256 + extended_arg
                 extended_arg = 0
                 i += 2
                 if op == dis.EXTENDED_ARG:
@@ -464,18 +460,13 @@ def _get_h2o_frame_method_args(op, *args, **kwargs):
     fr_cls = h2o.H2OFrame
     if not hasattr(fr_cls, op):
         raise ValueError("Unimplemented: op <%s> not bound in H2OFrame" % op)
-    if PY2:
-        argspec = inspect.getargspec(getattr(fr_cls, op))
-        argnames = argspec.args[1:]
-        argdefs = list(argspec.defaults or [])
-    else:
-        argnames = []
-        argdefs = []
-        for name, param in inspect.signature(getattr(fr_cls, op)).parameters.items():
-            if name == "self": continue
-            if param.kind == inspect._VAR_KEYWORD: continue
-            argnames.append(name)
-            argdefs.append(param.default)
+    argnames = []
+    argdefs = []
+    for name, param in inspect.signature(getattr(fr_cls, op)).parameters.items():
+        if name == "self": continue
+        if param.kind == inspect._VAR_KEYWORD: continue
+        argnames.append(name)
+        argdefs.append(param.default)
     method_args = list(args) + argdefs[len(args):]
     for a in kwargs: method_args[argnames.index(a)] = kwargs[a]
     return method_args

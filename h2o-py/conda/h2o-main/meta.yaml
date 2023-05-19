@@ -12,13 +12,11 @@ requirements:
     - python
     - pip >=9.0.1
     - setuptools
-    - future >=0.15.2
     - tabulate >=0.7.5
     - requests >=2.10
 
   run:
     - python
-    - future >=0.15.2
     - tabulate >=0.7.5
     - requests >=2.10
 

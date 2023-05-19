@@ -1,12 +1,5 @@
-# Py2 compat
-from __future__ import print_function
-from future import standard_library
-
 from h2o import H2OFrame
 from h2o.expr import ExprNode
-
-standard_library.install_aliases()
-from past.builtins import basestring
 
 # standard lib
 from contextlib import contextmanager
@@ -33,10 +26,7 @@ import urllib.request, urllib.error, urllib.parse
 import uuid # call uuid.uuid4() to generate unique uuid numbers
 import numbers
 
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without string support, only unicode)
-except:
-    from io import StringIO  # py3
+from io import StringIO
     
 # 3rd parties
 try:
@@ -53,7 +43,6 @@ import scipy.special
 sys.path.insert(1, "../../")
 
 import h2o
-from h2o.utils.compatibility import PY2
 from h2o.model import H2OBinomialModel, H2OClusteringModel, H2OMultinomialModel, H2OOrdinalModel, H2ORegressionModel, H2OAnomalyDetectionModel
 from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
     H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
@@ -138,8 +127,6 @@ class _XStringIO(io.StringIO):
         self._alt = alt
         
     def write(self, s):
-        if PY2:
-            s = unicode(s)
         if self._alt is not None:
             self._alt.write(s)
         return super(_XStringIO, self).write(s)
@@ -787,8 +774,8 @@ def expect_model_param(models, attribute_name, expected_values):
     if type(expected_values) != list:
         expected_values = [expected_values]
     # limit precision. Rounding happens in some models like RF
-    actual_values = [x if isinstance(x,basestring) else round(float(x),5) for x in actual_values]
-    expected_values = [x if isinstance(x,basestring) else round(float(x),5) for x in expected_values]
+    actual_values = [x if isinstance(x, str) else round(float(x),5) for x in actual_values]
+    expected_values = [x if isinstance(x, str) else round(float(x),5) for x in expected_values]
     print("actual values: {0}".format(actual_values))
     print("expected values: {0}".format(expected_values))
     actual_values_len = len(actual_values)
@@ -4617,3 +4604,45 @@ def download_mojo(model, mojo_zip_path=None, genmodel_path=None):
 def test_java_scoring(model, frame, predictions, epsilon):
     fr = H2OFrame._expr(ExprNode("model.testJavaScoring", model, frame, predictions, epsilon))
     return fr.flatten() == 1
+
+def checkLogWeightWarning(weightColName, wantWarnMessage=False):
+    """
+    This method will scrup the logs and check to make sure that no warning message regarding the weight column is found
+    in the h2o logs.
+    :param weightColName: name of weight columns that the warning message is going to check against
+    :param wantWarnMessage: boolean, if true will make sure warning message about weight column is found.
+    :return: None.  Will throw an error when warning message about the weightColName is found.
+    """
+    import zipfile
+    import codecs
+    import tempfile
+    
+    TMPDIR = tempfile.TemporaryDirectory()
+    logFileName = "h2oLogs.zip"
+    h2o.download_all_logs(dirname=TMPDIR.name, filename=logFileName)
+    numWarning = 0
+    logFile = os.path.join(TMPDIR.name, logFileName)
+    warningStatement = "WARN water.default: Test/Validation dataset is missing weights column '"+weightColName+"'"
+    with zipfile.ZipFile(logFile, 'r') as zip:
+        zip.extractall(TMPDIR.name)
+        for oneName in zip.namelist():
+            if ".zip" in oneName:
+                fileName = os.path.join(TMPDIR.name, oneName)
+                with zipfile.ZipFile(fileName) as zip2:
+                    zip2.extractall(TMPDIR.name)
+                    filenames = zip2.namelist()
+                    for oneFile in filenames:
+                        with zip2.open(oneFile) as f:
+                            for line in f:
+                                strline = codecs.decode(line)
+                                if warningStatement in strline:
+                                    numWarning = numWarning+1
+                                    print(line)
+    print("total number of weight column warning messages found: {0}".format(numWarning))
+    if wantWarnMessage:
+        assert numWarning > 0, "there should be warning messages regarding weights column in test/validation " \
+                                "datasets but are not found."
+    else:
+        assert numWarning == 0, "there should be no warning messages regarding weights column in test/validation " \
+                            "datasets but are found."
+

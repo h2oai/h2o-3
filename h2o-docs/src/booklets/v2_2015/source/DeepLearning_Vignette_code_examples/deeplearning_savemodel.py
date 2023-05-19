@@ -4,5 +4,5 @@ model_path = h2o.save_model(
         #path = "/tmp/mymodel",
         force = True)
 
-print model_path
+print(model_path)
 # /tmp/mymodel/DeepLearning_model_python_1441838096933

@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 import sys
 sys.path.insert(1, "../../../")
 import h2o

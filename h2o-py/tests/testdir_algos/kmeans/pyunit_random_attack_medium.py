@@ -1,4 +1,3 @@
-from __future__ import print_function
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.kmeans import H2OKMeansEstimator

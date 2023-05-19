@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 from h2o.model import ModelBase
@@ -373,7 +372,7 @@ class H2OBinomialUpliftModel(ModelBase):
     def _delegate_to_metrics(self, method, train=False, valid=False, **kwargs):
         tm = ModelBase._get_metrics(self, train, valid, xval=None)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             if v is None:
                 m[k] = None
             elif hasattr(v, method) and callable(getattr(v, method)):

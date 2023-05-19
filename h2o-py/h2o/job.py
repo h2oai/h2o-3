@@ -5,8 +5,6 @@ Handler to an asynchronous task executed on the remote server.
 A job is an object with states: CREATED, RUNNING, DONE, FAILED, CANCELLED
 A job can be polled for completion and reports the current progress as long as it is RUNNING.
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
-
 import functools as ft
 import warnings
 import time

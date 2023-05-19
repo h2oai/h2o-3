@@ -17,8 +17,6 @@ parser is more tedious than fixing that newline.
 :copyright: 2016 H2O.ai
 :license: Apache License Version 2.0
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import re
 import sys
 import tokenize
@@ -597,7 +595,7 @@ class ImportBlock(ParsedBase):
     A block of `import ...` statements.
 
     This block may contain an optional Comment at the beginning, and then one or more :class:`ImportExpr`essions. The
-    type of this block can be one of: "future", "stdlib", "third-party", "first-party" or "mixed".
+    type of this block can be one of: "stdlib", "third-party", "first-party" or "mixed".
     """
 
     def _parse(self):
@@ -636,9 +634,7 @@ class ImportExpr(ParsedBase):
     def __init__(self, tokens):
         super(ImportExpr, self).__init__(tokens)
         self._module_name = tokens[1].str
-        if self._module_name == "__future__":
-            self._type = "future"
-        elif self._module_name in ImportExpr.KNOWN_STDLIB:
+        if self._module_name in ImportExpr.KNOWN_STDLIB:
             self._type = "stdlib"
         elif self._module_name == "." or self._module_name in ImportExpr.KNOWN_FIRST_PARTY:
             self._type = "first-party"

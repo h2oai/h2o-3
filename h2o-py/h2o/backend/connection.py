@@ -12,7 +12,6 @@ Class for communication with an H2O server.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 import atexit
@@ -260,7 +259,7 @@ class H2OConnection(h2o_meta()):
         hc = H2OConnection.open(...)
 
     Once opened, the connection remains active until the script exits (or until you explicitly :meth:`close` it).
-    If the script exits with an exception, then the connection will fail to close, and the backend server will
+    If the script exits with an exception, then the connection will fail to close, and the backend server will.
     keep all the temporary frames and the open session.
 
     Alternatively, you can use this class as a context manager, which will ensure that the connection gets closed
@@ -723,7 +722,7 @@ class H2OConnection(h2o_meta()):
         """
         if not data: return None
         res = {}
-        for key, value in viewitems(data):
+        for key, value in data.items():
             if value is None: continue  # don't send args set to None so backend defaults take precedence
             if isinstance(value, list):
                 value = stringify_list(value)
@@ -759,14 +758,14 @@ class H2OConnection(h2o_meta()):
         if not self._is_logging: return
         msg = "\n---- %d --------------------------------------------------------\n" % self._requests_counter
         msg += "[%s] %s\n" % (time.strftime("%H:%M:%S"), endpoint)
-        if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
+        if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in params.items())
         if json is not None:
             import json as j
             msg += "     json: %s\n" % j.dumps(json)
         if filename is not None: 
             msg += "     file: %s\n" % filename
         elif data is not None:
-            msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
+            msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in data.items())
         self._log_message(msg + "\n")
 
     def _log_end_transaction(self, start_time, response):
@@ -968,7 +967,7 @@ def _deprecated_post(self, url_suffix, **kwargs):
     endpoint = "POST /%d/%s" % (restver, url_suffix)
     filename = None
     if "file_upload_info" in kwargs:
-        filename = next(iter(viewvalues(kwargs.pop("file_upload_info"))))
+        filename = next(iter(kwargs.pop("file_upload_info").values()))
     return self.request(endpoint, data=kwargs, filename=filename)
 
 def _deprecated_delete(self, url_suffix, **kwargs):

@@ -284,7 +284,6 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         from h2o.estimators.gbm import H2OGradientBoostingEstimator
         from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
         from h2o.grid.grid_search import H2OGridSearch
-        from __future__ import print_function
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O

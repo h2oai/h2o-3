@@ -36,7 +36,7 @@ regionName = 'us-east-1'
 # No need to change anything below here.
 #--------------------------------------------------------------------------
 
-print 'Using boto version', boto.Version
+print('Using boto version', boto.Version)
 if (debug):
     boto.set_stream_logger('h2o-ec2')
 ec2 = boto.ec2.connect_to_region(regionName, debug=debug)
@@ -49,9 +49,9 @@ for reservation in reservations:
         if 'Name' in instance.tags:
             instanceName = instance.tags['Name'];
         if instanceName.startswith(instanceNameRoot):
-            print '   ', instance
-            print '       ', instanceName
-            print '       ', instance.public_dns_name
-            print '       ', instance.ip_address
-            print '       ', instance.private_dns_name
-            print '       ', instance.private_ip_address
+            print('   ', instance)
+            print('       ', instanceName)
+            print('       ', instance.public_dns_name)
+            print('       ', instance.ip_address)
+            print('       ', instance.private_dns_name)
+            print('       ', instance.private_ip_address)
