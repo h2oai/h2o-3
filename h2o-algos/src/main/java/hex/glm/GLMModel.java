@@ -698,7 +698,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
           if (DispersionMethod.ml.equals(_dispersion_parameter_method)) {
-            return TweedieVariancePowerMLEstimator.deviance(yr, ym, _tweedie_variance_power);
+            return TweedieEstimator.deviance(yr, ym, _tweedie_variance_power);
           }
           double theta = _tweedie_variance_power == 1
             ?Math.log(y1/ym)
@@ -723,7 +723,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                         yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
                 ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
       }  else if (Family.tweedie.equals(_family) && DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
-        return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _init_dispersion_parameter);
+        return -TweedieEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _init_dispersion_parameter);
       }  else
         return .5 * deviance(yr,ym);
     }
@@ -767,7 +767,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return w * invPhiEst * log(w * yr * invPhiEst / prediction) - w * yr * invPhiEst / prediction 
                   - log(yr) - Gamma.logGamma(w * invPhiEst);
         case tweedie:
-          return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _init_dispersion_parameter);
+          return -TweedieEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _init_dispersion_parameter);
         case multinomial:
           // if probability is not given, then it is 1.0 if prediction equals to the real y and 0 othervice
           double predictedProbabilityOfActualClass = ym.length > 1 ? ym[(int) yr + 1] : (prediction == yr ? 1.0 : 0.0);
@@ -963,8 +963,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     final NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     
-    public GLMWeightsFun(GLMParameters parms) {this(parms._family,parms._link, parms._tweedie_variance_power, 
-            parms._tweedie_link_power, parms._theta, parms._init_dispersion_parameter, GLMParameters.DispersionMethod.ml.equals(parms._dispersion_parameter_method) && !parms._fix_tweedie_variance_power);}
+    public GLMWeightsFun(GLMParameters parms) {
+      this(parms._family,parms._link, parms._tweedie_variance_power,
+              parms._tweedie_link_power, parms._theta, parms._init_dispersion_parameter,
+              GLMParameters.DispersionMethod.ml.equals(parms._dispersion_parameter_method) && !parms._fix_tweedie_variance_power);
+    }
 
     public GLMWeightsFun(Family fam, Link link, double var_power, double link_power, double theta, double dispersion, boolean varPowerEstimation) {
       _family = fam;
@@ -1150,7 +1153,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
           if (_varPowerEstimation)
-            return TweedieVariancePowerMLEstimator.deviance(yr, ym, _var_power);
+            return TweedieEstimator.deviance(yr, ym, _var_power);
           double val;
           if (_var_power==1) {
             val = yr*Math.log(y1/ym)-(yr-ym);
@@ -1230,7 +1233,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
           if (_varPowerEstimation)
-            return -TweedieVariancePowerMLEstimator.logLikelihood(yr, ym, _var_power, _dispersion);
+            return -TweedieEstimator.logLikelihood(yr, ym, _var_power, _dispersion);
          //  we ignore the a(y,phi,p) term in the likelihood calculation here since we are not optimizing over them
           double temp = 0;
           if (_var_power==1) {
@@ -1414,9 +1417,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public void setZValues(double [] zValues, double dispersion, boolean dispersionEstimated) {
     _output._zvalues = zValues;
-    _output._dispersion = dispersion;
-    _output._dispersionEstimated = dispersionEstimated;
+    setDispersion(dispersion, dispersionEstimated);
   }
+  
+  public void setDispersion(double dispersion, boolean dispersionEstimated) {
+    _output._dispersion = dispersion;
+    _output._dispersionEstimated = dispersionEstimated; 
+  }
+  
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
