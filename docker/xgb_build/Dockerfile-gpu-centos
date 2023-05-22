@@ -4,7 +4,6 @@ MAINTAINER h2oai "h2o.ai"
 ARG JENKINS_UID='2117'
 ARG JENKINS_GID='2117'
 ARG H2O_BRANCH='h2o3'
-ARG PYTHON_VERSIONS='3.6'
 
 RUN \
     curl -s https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo | sed 's/\$releasever/7/g' > /etc/yum.repos.d/epel-apache-maven.repo && \
