@@ -243,6 +243,9 @@ subprojects {
                 allowInsecureProtocol = true
                 url "${localNexusLocation}/public"
             }
+            maven {
+                url "https://oss.sonatype.org/content/groups/staging/"
+            }
         } else {
             mavenCentral()
             maven {
