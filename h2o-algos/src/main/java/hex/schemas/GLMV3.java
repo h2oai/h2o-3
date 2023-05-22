@@ -64,7 +64,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "link",
             "rand_link", // link function for random components, array
             "startval",  // initial starting values for fixed and randomized coefficients, double array
-            "calc_like", // HGLM, true will return likelhood function value
+            "calc_like", // true will return likelihood function value
             "HGLM",  // boolean: true - enabled HGLM, false - normal GLM
             "prior",
             "cold_start", // if true, will start GLM model from initial values and conditions
@@ -211,7 +211,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "random columns indices for HGLM.")
     public int[] random_columns;
 
-    @API(help = "if true, will return likelihood function value for HGLM.") // not gridable
+    @API(help = "if true, will return likelihood function value.") // not gridable
     public boolean calc_like;
     
     @API(help="if true, will generate variable inflation factors for numerical predictors.  Default to false.", 

@@ -102,7 +102,7 @@ public class GenericModelOutput extends Model.Output {
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
                             convertTable(binomial._confusion_matrix), glmBinomial._nullDegreesOfFreedom, glmBinomial._residualDegreesOfFreedom,
                             glmBinomial._resDev, glmBinomial._nullDev, glmBinomial._AIC, convertTable(modelAttributesGLM._coefficients_table),
-                            glmBinomial._r2, glmBinomial._description);
+                            glmBinomial._r2, glmBinomial._description, glmBinomial._loglikelihood);
                 } else {
                     return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], binomial._sigma,
@@ -126,7 +126,7 @@ public class GenericModelOutput extends Model.Output {
                             glmMultinomial._mean_per_class_error, glmMultinomial._nullDegreesOfFreedom, glmMultinomial._residualDegreesOfFreedom,
                             glmMultinomial._resDev, glmMultinomial._nullDev, glmMultinomial._AIC, convertTable(modelAttributesGLM._coefficients_table),
                             glmMultinomial._r2, convertTable(glmMultinomial._multinomial_auc), convertTable(glmMultinomial._multinomial_aucpr),
-                            MultinomialAucType.valueOf((String)modelAttributes.getParameterValueByName("auc_type")), glmMultinomial._description);
+                            MultinomialAucType.valueOf((String)modelAttributes.getParameterValueByName("auc_type")), glmMultinomial._description, glmMultinomial._loglikelihood);
                 } else {
                     final MojoModelMetricsMultinomial multinomial = (MojoModelMetricsMultinomial) mojoMetrics;
                     return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
@@ -147,7 +147,7 @@ public class GenericModelOutput extends Model.Output {
                             regressionGLM._sigma, regressionGLM._mae, regressionGLM._root_mean_squared_log_error, regressionGLM._mean_residual_deviance,
                             customMetric(regressionGLM), regressionGLM._r2,
                             regressionGLM._nullDegreesOfFreedom, regressionGLM._residualDegreesOfFreedom, regressionGLM._resDev,
-                            regressionGLM._nullDev, regressionGLM._AIC, convertTable(modelAttributesGLM._coefficients_table));
+                            regressionGLM._nullDev, regressionGLM._AIC, regressionGLM._loglikelihood, convertTable(modelAttributesGLM._coefficients_table));
                 } else {
                     MojoModelMetricsRegression metricsRegression = (MojoModelMetricsRegression) mojoMetrics;
 
@@ -174,7 +174,7 @@ public class GenericModelOutput extends Model.Output {
                             ordinalMetrics._domain, ordinalMetrics._sigma, convertTable(ordinalMetrics._cm), ordinalMetrics._hit_ratios,
                             ordinalMetrics._logloss, customMetric(ordinalMetrics),
                             ordinalMetrics._r2, ordinalMetrics._nullDegreesOfFreedom, ordinalMetrics._residualDegreesOfFreedom, ordinalMetrics._resDev,
-                            ordinalMetrics._nullDev, ordinalMetrics._AIC, convertTable(modelAttributesGLM._coefficients_table),
+                            ordinalMetrics._nullDev, ordinalMetrics._AIC, ordinalMetrics._loglikelihood, convertTable(modelAttributesGLM._coefficients_table),
                             convertTable(ordinalMetrics._hit_ratio_table), ordinalMetrics._mean_per_class_error, ordinalMetrics._description);
                 } else {
                     MojoModelMetricsOrdinal ordinalMetrics = (MojoModelMetricsOrdinal) mojoMetrics;

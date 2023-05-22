@@ -12,6 +12,9 @@ public class ModelMetricsRegressionGLMGenericV3 extends ModelMetricsRegressionV3
 
   @API(help = "AIC", direction = API.Direction.OUTPUT)
   public double AIC;
+  
+  @API(help = "log likelihood", direction = API.Direction.OUTPUT)
+  public double loglikelihood;
 
   @API(help="null DOF", direction= API.Direction.OUTPUT)
   public long null_degrees_of_freedom;
@@ -26,6 +29,7 @@ public class ModelMetricsRegressionGLMGenericV3 extends ModelMetricsRegressionV3
   public ModelMetricsRegressionGLMGenericV3 fillFromImpl(ModelMetricsRegressionGLMGeneric modelMetrics) {
     super.fillFromImpl(modelMetrics);
     this.AIC = modelMetrics._AIC;
+    this.loglikelihood = modelMetrics._loglikelihood;
     this.residual_deviance = modelMetrics._resDev;
     this.null_deviance = modelMetrics._nullDev;
     this.null_degrees_of_freedom = modelMetrics._nullDegressOfFreedom;

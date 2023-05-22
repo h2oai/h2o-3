@@ -14,4 +14,5 @@ public class MojoModelMetricsMultinomialGLM extends MojoModelMetricsMultinomial 
   @SerializedName("null_deviance")
   public double _nullDev;
   public double _AIC;
+  public double _loglikelihood;
 }

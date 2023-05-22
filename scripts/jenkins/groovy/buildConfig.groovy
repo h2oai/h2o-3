@@ -316,7 +316,7 @@ class BuildConfig {
       changeType != "D" && // was not deleted
               change.startsWith('h2o-py/') && change.contains("pyunit_") &&
               change.lastIndexOf("pyunit_") > change.lastIndexOf("/") && // Allow to run "pyunit_*" files inside of "pyunit_*" directory but do not allow e.g. utilsPY.py to run
-              !change.contains("pyunit_explain") && // takes too much time to run
+              !change.contains("pyunit_explain") && !change.endsWith("_large.py") && // takes too much time to run
               !change.contains("pyunit_h2oassembly_download_mojo")
     }.collect {
       it.key.replaceFirst(".*pyunit_", "pyunit_") // Extract only filename from path
