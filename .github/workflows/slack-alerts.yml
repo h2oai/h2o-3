@@ -12,7 +12,7 @@ jobs:
       id: slack
       uses: slackapi/slack-github-action@v1.23.0
       with:
-        channel-id: 'github-issues'
+        channel-id: 'h2o-3-github-issues'
         payload: |
           {
             "text": ":github: *H2O-3 GitHub Issue Opened*",
