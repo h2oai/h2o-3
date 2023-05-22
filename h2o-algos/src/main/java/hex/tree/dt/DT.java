@@ -196,7 +196,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
         // [count0, count1, ...]
         int[] countsByClass = countClasses(actualLimits);
-        if (nodeIndex == 1) {
+        if (nodeIndex == 0) {
             Log.info("Classes counts in dataset: 0 - " + countsByClass[0] + ", 1 - " + countsByClass[1]);
         }
         // compute node depth
