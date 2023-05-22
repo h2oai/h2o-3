@@ -341,7 +341,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
          * Build the tree iteratively starting from the root node.
          */
         private void buildDTIteratively() {
-            _tree = new double[(int) Math.pow(2, _parms._max_depth + 1)][3];
+            _tree = new double[(int) Math.pow(2, _parms._max_depth + 1) - 1][3];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits(_train));
             // build iteratively each node of the tree (each cell of the array) by picking limits from the queue
