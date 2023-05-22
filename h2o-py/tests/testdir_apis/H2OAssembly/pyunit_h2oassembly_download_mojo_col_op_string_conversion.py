@@ -6,7 +6,7 @@ from h2o.transforms.preprocessing import *
 from h2o.pipeline import H2OMojoPipeline
 
 
-def h2oassembly_download_mojo_col_op_string_unary():
+def h2oassembly_download_mojo_string_conversion_function():
     test_string_conversion_function(H2OFrame.ascharacter)
     test_string_conversion_function(H2OFrame.asfactor)
     
@@ -45,6 +45,6 @@ def test_string_conversion_function(function):
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_string_unary)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_string_conversion_function, init_options={"extra_classpath": ["/tmp/mojo/mojo2-runtime-2.7.13.jar"]})
 else:
-    h2oassembly_download_mojo_col_op_string_unary()
+    h2oassembly_download_mojo_string_conversion_function()

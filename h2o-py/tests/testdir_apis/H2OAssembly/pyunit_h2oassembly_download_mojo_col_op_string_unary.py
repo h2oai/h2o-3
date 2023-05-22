@@ -56,6 +56,6 @@ def test_unary_string_function(function, **params):
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_string_unary)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_string_unary, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_col_op_string_unary()

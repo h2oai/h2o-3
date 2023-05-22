@@ -40,6 +40,6 @@ def h2oassembly_download_mojo_col_op_string_split():
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_string_split)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_string_split, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_col_op_string_split()

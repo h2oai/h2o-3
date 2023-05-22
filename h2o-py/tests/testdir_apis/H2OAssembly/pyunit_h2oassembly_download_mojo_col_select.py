@@ -31,6 +31,6 @@ def h2oassembly_download_mojo_col_select():
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_select)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_select, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_col_select()

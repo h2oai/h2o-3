@@ -52,6 +52,6 @@ def test_numeric_conversion_function(function, frame,  **params):
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_numeric_conversion)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_numeric_conversion, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_col_op_numeric_conversion()

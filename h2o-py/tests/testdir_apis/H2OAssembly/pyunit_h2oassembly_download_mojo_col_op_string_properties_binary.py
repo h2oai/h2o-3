@@ -53,6 +53,6 @@ def test_binary_string_properties_function(function, **params):
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_string_properties_binary)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_string_properties_binary, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_col_op_string_properties_binary()

@@ -63,6 +63,10 @@ lookup-fault-tolerance-tests: init-lookup
 lookup-explain-tests: init-lookup
 	find h2o-r/tests -name '*explain*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*explain*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+	
+lookup-mojo-to-assembly-tests: init-lookup
+	find h2o-r/tests -name '*h2oassembly_download_mojo*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests -name '*h2oassembly_download_mojo*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
 lookup-demos-tests: init-lookup
 	mkdir h2o-{r,py}/tests/testdir_demos
@@ -144,11 +148,17 @@ test-py-demos-new-scikit:
 test-pyunit-demos:
 	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
-test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests lookup-explain-tests
+test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests lookup-explain-tests lookup-mojo-to-assembly-tests
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --excludelist .lookup.txt
 
 test-pyunit-explain: lookup-explain-tests
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 3 --jvm.xmx 4g --testlist .lookup.txt
+	
+test-pyunit-mojo2: lookup-mojo-to-assembly-tests
+	export MOJO2_VERSION="2.7.11.1"
+	cd h2o-py/tests/
+	wget https://repo1.maven.org/maven2/ai/h2o/mojo2-runtime/${MOJO2_VERSION}/mojo2-runtime-${MOJO2_VERSION}.jar
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && ../../scripts/run.py --jvm.cp mojo2-runtime-${MOJO2_VERSION}.jar --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --testlist .lookup.txt
 
 test-pyunit-single-node:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 4g --testlist ../../tests/pyunitSingleNodeList

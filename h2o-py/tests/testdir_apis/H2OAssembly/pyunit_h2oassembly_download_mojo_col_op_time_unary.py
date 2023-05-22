@@ -51,6 +51,6 @@ def test_time_unary_function(function):
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_time_unary)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_time_unary, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_col_op_time_unary()

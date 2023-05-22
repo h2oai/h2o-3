@@ -69,6 +69,6 @@ def test_unary_math_function(function, **params):
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_math_unary)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_col_op_math_unary, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_col_op_math_unary()

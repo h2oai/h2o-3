@@ -44,6 +44,6 @@ def h2oassembly_download_mojo_inplace_pipeline():
     
     
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_inplace_pipeline)
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_inplace_pipeline, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_inplace_pipeline()
