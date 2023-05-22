@@ -337,89 +337,43 @@ public class DTTest extends TestUtil {
         try {
 
             DT dt = new DT(p);
-            long start_training_dt = System.currentTimeMillis();
             DTModel model = dt.trainModel().get();
-            long end_training_dt = System.currentTimeMillis();
 
             assertNotNull(model);
             Scope.track_generic(model);
 
-            long start_predicting_dt = System.currentTimeMillis();
             Frame out = model.score(test);
-            long end_predicting_dt = System.currentTimeMillis();
 
             Scope.track_generic(out);
             assertEquals(test.numRows(), out.numRows());
-
-//            writePredictionsToFile("./predictions_" + datasetName + "_sdt.csv", out.vec(0).toCategoricalVec(), p._response_column);
-
-//            System.out.println("Scoring: " + model.testJavaScoring(test, out, 1e-3));
-//            System.out.println(test.vec(p._response_column));
-            if(out.vec(0).length() < 100000) {
-                System.out.println(Arrays.toString(FrameUtils.asInts(out.vec(0).toCategoricalVec())));
-                System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p._response_column))));
-            }
 
             ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(
                     test.vec(p._response_column).toCategoricalVec(),
                     out.vec(0).toCategoricalVec());
             System.out.println("DT:");
             System.out.println("Accuracy: " + cm.accuracy());
-//            System.out.println("Precision: " + cm.precision());
-//            System.out.println("Recall: " + cm.recall());
-//            System.out.println("Specificity: " + cm.specificity());
             System.out.println("F1: " + cm.f1());
-//            System.out.println("F2: " + cm.f2());
 
-//            System.out.println(Arrays.deepToString(((CompressedSDT) DKV.getGet(model._output.treeKey)).nodes));
 
             train.toCategoricalCol(p1._response_column);
 
             DRF drf = new DRF(p1);
-            long start_training_drf = System.currentTimeMillis();
             DRFModel model1 = drf.trainModel().get();
-            long end_training_drf = System.currentTimeMillis();
 
             assertNotNull(model1);
             Scope.track_generic(model1);
 
-            long start_predicting_drf = System.currentTimeMillis();
             Frame out1 = model1.score(test);
-            long end_predicting_drf = System.currentTimeMillis();
-            
 
             Scope.track_generic(out1);
             assertEquals(test.numRows(), out1.numRows());
-//            writePredictionsToFile("./predictions_" + datasetName + "_drf.csv", out1.vec(0).toCategoricalVec(), p1._response_column);
-            
-//            System.out.println("Scoring: " + model1.testJavaScoring(test, out1, 1e-3));
-//            System.out.println(test.vec(p._response_column));
-//            System.out.println(Arrays.toString(FrameUtils.asInts(out1.vec(0))));
-//            System.out.println(Arrays.toString(FrameUtils.asInts(test.vec(p1._response_column))));
 
             ConfusionMatrix cm1 = ConfusionMatrixUtils.buildCM(
                     test.vec(p1._response_column).toCategoricalVec(),
                     out1.vec(0).toCategoricalVec());
             System.out.println("DRF:");
             System.out.println("Accuracy: " + cm1.accuracy());
-//            System.out.println("Precision: " + cm1.precision());
-//            System.out.println("Recall: " + cm1.recall());
-//            System.out.println("Specificity: " + cm1.specificity());
             System.out.println("F1: " + cm1.f1());
-//            System.out.println("F2: " + cm1.f2());
-
-            
-            
-//            System.out.println("Training sdt Time in milli seconds: "
-//                    + (end_training_sdt - start_training_sdt));
-//            System.out.println("Prediction sdt Time in milli seconds: "
-//                    + (end_predicting_sdt - start_predicting_sdt));
-//
-//            System.out.println("Training drf Time in milli seconds: "
-//                    + (end_training_drf - start_training_drf));
-//            System.out.println("Prediction drf Time in milli seconds: "
-//                    + (end_predicting_drf - start_predicting_drf));
-            
         } finally {
             Scope.exit();
         }
