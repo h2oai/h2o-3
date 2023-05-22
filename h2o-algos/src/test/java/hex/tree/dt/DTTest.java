@@ -353,27 +353,32 @@ public class DTTest extends TestUtil {
             System.out.println("DT:");
             System.out.println("Accuracy: " + cm.accuracy());
             System.out.println("F1: " + cm.f1());
+            
+            // check for model metrics
+            assertNotNull(model._output._training_metrics);
+            assertNotEquals(0, model._output._training_metrics._MSE);
+            assertNotEquals(0, model._output._training_metrics.auc_obj()._auc);
 
 
-            train.toCategoricalCol(p1._response_column);
-
-            DRF drf = new DRF(p1);
-            DRFModel model1 = drf.trainModel().get();
-
-            assertNotNull(model1);
-            Scope.track_generic(model1);
-
-            Frame out1 = model1.score(test);
-
-            Scope.track_generic(out1);
-            assertEquals(test.numRows(), out1.numRows());
-
-            ConfusionMatrix cm1 = ConfusionMatrixUtils.buildCM(
-                    test.vec(p1._response_column).toCategoricalVec(),
-                    out1.vec(0).toCategoricalVec());
-            System.out.println("DRF:");
-            System.out.println("Accuracy: " + cm1.accuracy());
-            System.out.println("F1: " + cm1.f1());
+//            train.toCategoricalCol(p1._response_column);
+//
+//            DRF drf = new DRF(p1);
+//            DRFModel model1 = drf.trainModel().get();
+//
+//            assertNotNull(model1);
+//            Scope.track_generic(model1);
+//
+//            Frame out1 = model1.score(test);
+//
+//            Scope.track_generic(out1);
+//            assertEquals(test.numRows(), out1.numRows());
+//
+//            ConfusionMatrix cm1 = ConfusionMatrixUtils.buildCM(
+//                    test.vec(p1._response_column).toCategoricalVec(),
+//                    out1.vec(0).toCategoricalVec());
+//            System.out.println("DRF:");
+//            System.out.println("Accuracy: " + cm1.accuracy());
+//            System.out.println("F1: " + cm1.f1());
         } finally {
             Scope.exit();
         }

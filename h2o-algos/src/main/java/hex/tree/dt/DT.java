@@ -2,10 +2,12 @@ package hex.tree.dt;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import hex.ModelMetrics;
 import hex.tree.dt.binning.BinAccumulatedStatistics;
 import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
 import hex.tree.dt.mrtasks.GetClassCountsMRTask;
+import hex.tree.dt.mrtasks.ScoreDTTask;
 import org.apache.commons.math3.util.Precision;
 import org.apache.log4j.Logger;
 import water.DKV;
@@ -331,6 +333,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             DKV.put(compressedDT);
             _job.update(1);
             _model.update(_job);
+            makeModelMetrics();
 //            System.out.println("Tree: " + compressedDT.toString());
 //            System.out.println("Rules: " + String.join("\n", compressedDT.getListOfRules()));
             Log.debug("Tree:");
@@ -380,6 +383,22 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     public boolean isSupervised() {
         return true;
     }
+
+    protected final void makeModelMetrics() {
+        ModelMetrics.MetricBuilder metricsBuilder = new ScoreDTTask(_model).doAll(_train).getMetricsBuilder();
+        ModelMetrics modelMetrics = metricsBuilder.makeModelMetrics(_model, _parms.train(), null, null);
+        _model._output._training_metrics = modelMetrics;
+        // Score again on validation data
+        if( _parms._valid != null) {
+            Frame v = new Frame(valid());
+            metricsBuilder = new ScoreDTTask(_model).doAll(v).getMetricsBuilder();
+            _model._output._validation_metrics = metricsBuilder.makeModelMetrics(_model, v, null, null);
+        }
+        
+//            out._model_summary = createModelSummaryTable(out._ntrees, out._treeStats);
+//            out._scoring_history = createScoringHistoryTable();
+        }
+        
 
 
     /**
