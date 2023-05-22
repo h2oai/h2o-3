@@ -11,13 +11,9 @@ RUN \
     yum install -y centos-release-scl && \
     yum install -y devtoolset-8-toolchain python3 zip java-1.8.0-openjdk-devel apache-maven wget git unzip make
 
-# Install Python versions above
-COPY xgb_build/scripts/install_python_version_centos /usr/sbin/
+# Install virtualenv
 RUN \
-    pip3 install virtualenv && \
-    chmod a+x /usr/sbin/install_python_version_centos && \
-    sync && \
-    /usr/sbin/install_python_version_centos
+    pip3 install virtualenv
 
 # Install deps for pythons and cmake
 RUN \
