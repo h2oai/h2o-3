@@ -1054,7 +1054,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.loglikelihood()
+        for k, v in tm.items(): m[k] = None if v is None else v.loglikelihood()
         return list(m.values())[0] if len(m) == 1 else m
 
     def gini(self, train=False, valid=False, xval=False):
