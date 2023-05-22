@@ -33,7 +33,6 @@ public class AssemblyHandler extends Handler {
     Assembly assembly = new Assembly(Key.make("assembly_"+Key.make().toString()), steps.toArray(new Transform[steps.size()]));
     ass.result = new KeyV3.FrameKeyV3(assembly.fit((Frame)DKV.getGet(ass.frame.key()))._key);
     ass.assembly = new KeyV3.AssemblyKeyV3(assembly._key);
-    System.out.println("PUT: " + ass.assembly.key().toString());
     DKV.put(assembly);
     return ass;
   }
