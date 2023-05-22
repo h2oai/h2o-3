@@ -276,6 +276,9 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     private class DTDriver extends Driver {
 
         private void dtChecks() {
+            if (_parms._max_depth < 1) {
+                error("_parms._max_depth", "Max depth has to be at least 1");
+            }
             if (_train.hasNAs()) {
                 error("_train", "NaNs are not supported yet");
             }
