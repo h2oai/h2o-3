@@ -347,7 +347,7 @@ class _BackwardsCompatible(MetaFeature):
                 return attr
             except AttributeError:
                 pass
-            if name in self._bci:
+            if name != '_bci' and name in self._bci:
                 return self._bci[name]
             return getattr(new_clz, name)
 
