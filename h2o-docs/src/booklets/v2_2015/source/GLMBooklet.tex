@@ -577,7 +577,9 @@ The corresponding deviance is equal to:
 
 The density for the maximum likelihood function for Tweedie can be written as:
 
-$$f( y; \theta, \phi) = a (y, \phi, p) \exp \Big[ \frac{1}{\phi} \big\{ y \theta - k(\theta) \big\} \Big] \quad \text{Equation 1}$$
+\begin{equation} \label{eq:1}
+f( y; \theta, \phi) = a (y, \phi, p) \exp \Big[ \frac{1}{\phi} \big\{ y \theta - k(\theta) \big\} \Big]
+\end{equation}
 
 where:
 
@@ -589,7 +591,7 @@ where:
 \item the value of $\alpha (y,\phi)$ depends on the value of $p$
 \end{itemize}
 
-If there are weights introduced to each data row, $equation 1$ will become:
+If there are weights introduced to each data row, equation \ref{eq:1} will become:
 
 $$f \Big( y; \theta, \frac{\phi}{w} \Big) = a \Big( y, \frac{\phi}{w}, p \Big) \exp \Big[ \frac{w}{\phi} \big\{ y\theta - k(\theta) \big\} \Big]$$
 
@@ -597,19 +599,27 @@ $$f \Big( y; \theta, \frac{\phi}{w} \Big) = a \Big( y, \frac{\phi}{w}, p \Big) \
 
 For $Y=0$,
 
-$$P(Y=0) = \exp \Big\{-\frac{\mu^{2-p}}{\phi (2-p)} \Big\} \quad \text{Equation 2}$$
+\begin{equation} \label{eq:2}
+P(Y=0) = \exp \Big\{-\frac{\mu^{2-p}}{\phi (2-p)} \Big\}
+\end{equation}
 
 For $Y>0$,
 
-$$a(y, \phi, p) = \frac{1}{y} W(y, \phi, p) \quad \text{Equation 3}$$
+\begin{equation} \label{eq:3}
+a(y, \phi, p) = \frac{1}{y} W(y, \phi, p)
+\end{equation}
 
 with $W(y, \phi, p) = \sum^{\infty}_{j=1} W_j$ and 
 
-$$W_j = \frac{y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)} (2-p)^j j!T(-j\alpha)} \quad \text{Equation 4}$$
+\begin{equation} \label{eq:4}
+W_j = \frac{y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)} (2-p)^j j!T(-j\alpha)}
+\end{equation}
 
-If weight is applied to each row, $equation 4$ becomes:
+If weight is applied to each row, equation \ref{eq:4} becomes:
 
-$$W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2-p)^j j!T(-j \alpha)} \quad \text{Equation 5}$$
+\begin{equation} \label{eq:5}
+W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2-p)^j j!T(-j \alpha)}
+\end{equation}
 
 The $W_j$ terms are all positive. The following figure plots for $\mu = 0.5, p=1.5, \phi =1. y=0.1$.
 
@@ -622,15 +632,21 @@ The $W_j$ terms are all positive. The following figure plots for $\mu = 0.5, p=1
 
 Here, you have,
 
-$$a(y, \phi, p) = \frac{1}{\pi y}V(y,\phi, p) \quad \text{Equation 6}$$
+\begin{equation} \label{eq:6}
+a(y, \phi, p) = \frac{1}{\pi y}V(y,\phi, p)
+\end{equation}
 
 and $V = \sum^{\infty}_{k=1} V_k$ where
 
-$$V_k = \frac{T(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{T(1+k)(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 7}$$
+\begin{equation} \label{eq:7}
+V_k = \frac{T(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{T(1+k)(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha)
+\end{equation}
 
-Note that $0 < \alpha < 1$ for $p > 2$. The $V_k$ terms are both positive and negative. This will limit the numerical accuracy that is obtained in summing it as shown in the following image. Again, if weights are applied to each row of the dataset, $equation 6$ becomes:
+Note that $0 < \alpha < 1$ for $p > 2$. The $V_k$ terms are both positive and negative. This will limit the numerical accuracy that is obtained in summing it as shown in the following image. Again, if weights are applied to each row of the dataset, equation \ref{eq:6} becomes:
 
-$$V_k = \frac{T(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{T(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 8}$$
+\begin{equation} \label{eq:8}
+V_k = \frac{T(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{T(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha)
+\end{equation}
 
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_tweedie_dispersion_example.R}
@@ -665,6 +681,10 @@ Here is the general usage for Tweedie variance power maximum likelihood:
 \item with \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = True} as it will optimize the Tweedie variance power.
 \item with \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = False} as it will optimize both Tweedie variance power and the dispersion parameter.
 \end{itemize}
+
+\subparagraph{Optimization Procedure}
+
+When estimating just the Tweedie variance power, it use the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power $p>1+10^{-10}$ and dispersion $\phi >10^{-10}$.
    
 \subsubsection{Negative Binomial Models}
 
