@@ -156,7 +156,7 @@ test-pyunit-explain: lookup-explain-tests
 	
 test-pyunit-mojo2: lookup-mojo-to-assembly-tests
 	export MOJO2_VERSION="2.7.11.1" && cd h2o-py/tests/ && \
-	wget https://repo1.maven.org/maven2/ai/h2o/mojo2-runtime/$MOJO2_VERSION/mojo2-runtime-$MOJO2_VERSION.jar && \
+	wget https://repo1.maven.org/maven2/ai/h2o/mojo2-runtime/$$MOJO2_VERSION/mojo2-runtime-$$MOJO2_VERSION.jar && \
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && ../../scripts/run.py --jvm.cp mojo2-runtime-${MOJO2_VERSION}.jar --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --testlist .lookup.txt
 
 test-pyunit-single-node:
