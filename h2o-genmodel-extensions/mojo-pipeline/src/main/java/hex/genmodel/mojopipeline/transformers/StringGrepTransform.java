@@ -18,7 +18,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StringGrepTransform extends MojoTransform {
-    
     Pattern _pattern =  null;
     Boolean _invert = null;
 
