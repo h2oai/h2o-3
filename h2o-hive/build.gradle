@@ -9,6 +9,9 @@ compileJava {
   options.debug = true
 }
 
+def parquetVersion = binding.variables.get("parquetVersion") ?
+        binding.variables.get("parquetVersion") : defaultParquetVersion
+
 dependencies {
   // the versions here are not important - user will provide the correct versions at runtime
   api "org.apache.hive:hive-jdbc:1.1.0-cdh5.10.0"
@@ -22,7 +25,7 @@ dependencies {
   api(project(':h2o-persist-hdfs')) {
     transitive = false
   }
-  api("org.apache.parquet:parquet-avro:${defaultParquetVersion}")
+  api("org.apache.parquet:parquet-avro:${parquetVersion}")
   api project(":h2o-core")
 
   testImplementation "junit:junit:${junitVersion}"
