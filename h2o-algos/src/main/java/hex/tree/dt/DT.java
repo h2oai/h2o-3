@@ -47,7 +47,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     transient Random _rand;
 
     public final static double EPSILON = 1e-6;
-    public final static double MIN_IMPROVEMENT = 1e-6; // todo - specify to each criterion when there will be move of them
+    public final static double MIN_IMPROVEMENT = 1e-6; // todo - specify to each criterion when there will be more of them
 
     private static final Logger LOG = Logger.getLogger(DT.class);
 
