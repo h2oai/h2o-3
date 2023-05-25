@@ -1743,7 +1743,15 @@ This process is repeated until the estimates :math:`\hat{\beta}` change by less 
 
 **Tweedie Likelihood Calculation**
 
-You only calculate Tweedie likelihood when you estimate the Tweedie variance power or the Tweedie variance power with dispersion. The calculation in this section is used to estimate the full log likelihood. When you fix the Tweedie variance power, you will use a simpler formula (unless you are estimating dispersion). When fixing the Tweedie variance power for dispersion estimation, you use the Series method.
+There are three different estimations you calculate Tweedie likelihood for:
+
+- when you fix the variance power and estimate the dispersion parameter;
+- when you fix the dispersion parameter and estimate the variance power; or
+- when you estimate both the variance power and dispersion parameter.
+
+The calculation in this section is used to estimate the full log likelihood. When you fix the Tweedie variance power, you will use a simpler formula (unless you are estimating dispersion). When fixing the Tweedie variance power for dispersion estimation, you use the Series method.
+
+When you fix the variance power and estimate the dispersion parameter, the Series method is used to perform the estimation. In this case, you can actually separate the GLM coefficient estimation and the dispersion parameter estimation at the end of the GLM model building process. Standard Newton's method is used to estimate the dispersion parameter using the Series method which is an approximation of the Tweedie likelihood function.
 
 Depending on :math:`p`, :math:`y`, and :math:`\phi`, different methods are used for this log likelihood estimation. To start, let:
 
@@ -1771,14 +1779,19 @@ Everything else will use the Series method. However, if the Series method fails 
 
 If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the :math:`\xi` criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
 
-Here is the general usage for Tweedie variance power maximum likelihood:
+Here are the general usages for Tweedie variance power and dispersion parameter estimation using maximum likelihood:
 
-- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = True`` as it will optimize the Tweedie variance power
-- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will optimize both Tweedie variance power and the dispersion parameter
+- ``fix_tweedie_variance_power = True`` and ``fix_dispersion_parameter = False`` as it will use the Tweedie variance power set in parameter ``tweedie_variance_power`` and estimate the dispersion parameter starting with the value set in parameter ``init_dispersion_parameter``;
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = True`` as it will use the dispersion parameter value in parameter ``init_dispersion_parameter`` and estimate the tweedie variance power starting with the value set in parameter ``tweedie_variance_power``;
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will estimate both the variance power and dispersion parameter using the values set in ``tweedie_variance_power`` and ``init_dispersion_parameter`` respectively.
 
 *Optimization Procedure*
 
 When estimating just the Tweedie variance power, it uses the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power :math:`p>1+10^{-10}` and dispersion :math:`\phi >10^{-10}`. If the Nelder-Mead seems to be stuck in local optimum, you might want to try increasing the ``dispersion_learning_rate``.
+
+.. note::
+   
+   (Applicable for Gamma, Tweedie, and Negative Binomial families) If you set ``dispersion_parameter_method="ml"``, then ``solver`` must be set to ``"IRLSM"``.
 
 Cost of computation
 '''''''''''''''''''

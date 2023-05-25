@@ -676,10 +676,12 @@ Everything else will use the Series method. However, if the Series method fails 
 
 If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the $\xi$ criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
 
-Here is the general usage for Tweedie variance power maximum likelihood:
+Here are the general usages for Tweedie variance power and dispersion parameter estimation using maximum likelihood:
 \begin{itemize}
-\item with \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = True} as it will optimize the Tweedie variance power.
-\item with \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = False} as it will optimize both Tweedie variance power and the dispersion parameter.
+\item \texttt{fix\_tweedie\_variance\_power = True} and \\ \texttt{fix\_dispersion\_parameter = False} as it will use the Tweedie variance power set in parameter \texttt{tweedie\_variance\_power} and estimate the dispersion parameter starting with the values set in parameter \texttt{init\_dispersion\_parameter};
+\item  \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = True} as it will use the dispersion parameter value set in parameter \texttt{init\_dispersion\_parameter} and estimate the Tweedie variance power starting with the value set in parameter \texttt{tweedie\_variance\_power};
+\item  \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = False} as it will estimate both the variance power and dispersion parameter using the values set in \\ \texttt{tweedie\_variance\_power} and \texttt{init\_dispersion\_parameter} respectively.
+
 \end{itemize}
 
 \subparagraph{Optimization Procedure}
