@@ -1783,7 +1783,7 @@ Here are the general usages for Tweedie variance power and dispersion parameter 
 
 - ``fix_tweedie_variance_power = True`` and ``fix_dispersion_parameter = False`` as it will use the Tweedie variance power set in parameter ``tweedie_variance_power`` and estimate the dispersion parameter starting with the value set in parameter ``init_dispersion_parameter``;
 - ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = True`` as it will use the dispersion parameter value in parameter ``init_dispersion_parameter`` and estimate the Tweedie variance power starting with the value set in parameter ``tweedie_variance_power``;
-- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will estimate both the variance power and dispersion parameter using the values set in ``tweedie_variance_power`` and ``init_dispersion_parameter`` respectively.
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will estimate both the variance power and dispersion parameter starting with the values set in ``tweedie_variance_power`` and ``init_dispersion_parameter`` respectively.
 
 *Optimization Procedure*
 
