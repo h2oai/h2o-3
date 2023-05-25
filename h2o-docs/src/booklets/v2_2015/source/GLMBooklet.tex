@@ -654,7 +654,7 @@ V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{\Gamma(1+k)w^
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_dispersion_example.py}
 
-\paragraph{Tweedie Variance Power Maximum Likelihood} 
+\paragraph{Tweedie Variance Power Estimation} 
 
 Depending on $p$, $y$, and $\phi$, different methods are used for this log likelihood estimation. To start, let:
 
@@ -687,6 +687,8 @@ Here are the general usages for Tweedie variance power and dispersion parameter 
 \subparagraph{Optimization Procedure}
 
 When estimating just the Tweedie variance power, it use the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power $p>1+10^{-10}$ and dispersion $\phi >10^{-10}$.
+
+\textbf{Note}: If you specify the maximum likelihood method for the dispersion parameter method (\texttt{dispersion\_parameter\_method = "ml"}) for the Negative Binomial, Gamma, or Tweedie families, then you must also set \texttt{solver} equal to \texttt{"IRLSM"}.
    
 \subsubsection{Negative Binomial Models}
 

@@ -8,6 +8,7 @@ response = "x"
 # Build and train the model:
 model = H2OGeneralizedLinearEstimator(family="tweedie", 
       	  lambda_=0, 
+      	  solver="IRLSM",
       	  compute_p_values=True, 
       	  dispersion_parameter_method="pearson", 
     	  init_dispersion_parameter=0.5, 
