@@ -821,13 +821,13 @@ with :math:`W(y, \phi, p) = \sum^{\infty}_{j=1} W_j` and
 
 .. math::
    
-   W_j = \frac{y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)} (2-p)^j j!T(-j\alpha)} \quad \text{Equation 4}
+   W_j = \frac{y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)} (2-p)^j j! \Gamma(-j\alpha)} \quad \text{Equation 4}
 
 If weight is applied to each row, *equation 4* becomes:
 
 .. math::
    
-   W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2-p)^j j!T(-j \alpha)} \quad \text{Equation 5}
+   W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2-p)^j j! \Gamma(-j \alpha)} \quad \text{Equation 5}
 
 The :math:`W_j` terms are all positive. The following figure plots for :math:`\mu = 0.5, p=1.5, \phi =1. y=0.1`.
 
@@ -847,13 +847,13 @@ and :math:`V = \sum^{\infty}_{k=1} V_k` where
 
 .. math::
    
-   V_k = \frac{T(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{T(1+k)(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 7}
+   V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{\Gamma(1+k)(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 7}
 
 Note that :math:`0 < \alpha < 1` for :math:`p>2`. The :math:`V_k` terms are both positive and negative. This will limit the numerical accuracy that is obtained in summing it as shown in the following image. Again, if weights are applied to each row of the dataset, *equation 6* becomes:
 
 .. math::
    
-   V_k = \frac{T(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{T(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 8}
+   V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{\Gamma(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 8}
 
 In the following figure, we use :math:`\mu =0.5,p=2.5,\phi =1, y=0.1`.
 
