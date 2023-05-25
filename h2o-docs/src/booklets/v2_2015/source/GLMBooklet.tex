@@ -645,7 +645,7 @@ V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{\Gamma(1+k)(
 Note that $0 < \alpha < 1$ for $p > 2$. The $V_k$ terms are both positive and negative. This will limit the numerical accuracy that is obtained in summing it as shown in the following image. Again, if weights are applied to each row of the dataset, equation \ref{eq:6} becomes:
 
 \begin{equation} \label{eq:8}
-V_k = \frac{T(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{T(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha)
+V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{\Gamma(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha)
 \end{equation}
 
 \waterExampleInR
