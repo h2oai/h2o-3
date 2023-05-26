@@ -821,13 +821,13 @@ with :math:`W(y, \phi, p) = \sum^{\infty}_{j=1} W_j` and
 
 .. math::
    
-   W_j = \frac{y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)} (2-p)^j j!T(-j\alpha)} \quad \text{Equation 4}
+   W_j = \frac{y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)} (2-p)^j j! \Gamma(-j\alpha)} \quad \text{Equation 4}
 
 If weight is applied to each row, *equation 4* becomes:
 
 .. math::
    
-   W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2-p)^j j!T(-j \alpha)} \quad \text{Equation 5}
+   W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2-p)^j j! \Gamma(-j \alpha)} \quad \text{Equation 5}
 
 The :math:`W_j` terms are all positive. The following figure plots for :math:`\mu = 0.5, p=1.5, \phi =1. y=0.1`.
 
@@ -847,13 +847,13 @@ and :math:`V = \sum^{\infty}_{k=1} V_k` where
 
 .. math::
    
-   V_k = \frac{T(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{T(1+k)(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 7}
+   V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{\Gamma(1+k)(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 7}
 
 Note that :math:`0 < \alpha < 1` for :math:`p>2`. The :math:`V_k` terms are both positive and negative. This will limit the numerical accuracy that is obtained in summing it as shown in the following image. Again, if weights are applied to each row of the dataset, *equation 6* becomes:
 
 .. math::
    
-   V_k = \frac{T(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{T(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 8}
+   V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{\Gamma(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha) \quad \text{Equation 8}
 
 In the following figure, we use :math:`\mu =0.5,p=2.5,\phi =1, y=0.1`.
 
@@ -1718,7 +1718,8 @@ linear model.
 
 When inverted: :math:`\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)`
 
-**Maximum Likelihood Estimation**
+Maximum Likelihood Estimation
+'''''''''''''''''''''''''''''
 
 For an initial rough estimate of the parameters :math:`\hat{\beta}`, use the estimate to generate fitted values: :math:`\mu_{i}=g^{-1}(\hat{\eta_{i}})`
 
@@ -1740,7 +1741,60 @@ Regress :math:`z_{i}` on the predictors :math:`x_{i}` using the weights :math:`w
 
 This process is repeated until the estimates :math:`\hat{\beta}` change by less than the specified amount.
 
-**Cost of computation**
+**Tweedie Likelihood Calculation**
+
+There are three different estimations you calculate Tweedie likelihood for:
+
+- when you fix the variance power and estimate the dispersion parameter;
+- when you fix the dispersion parameter and estimate the variance power; or
+- when you estimate both the variance power and dispersion parameter.
+
+The calculation in this section is used to estimate the full log likelihood. When you fix the Tweedie variance power, you will use a simpler formula (unless you are estimating dispersion). When fixing the Tweedie variance power for dispersion estimation, you use the Series method.
+
+When you fix the variance power and estimate the dispersion parameter, the Series method is used to perform the estimation. In this case, you can actually separate the GLM coefficient estimation and the dispersion parameter estimation at the end of the GLM model building process. Standard Newton's method is used to estimate the dispersion parameter using the Series method which is an approximation of the Tweedie likelihood function.
+
+Depending on :math:`p`, :math:`y`, and :math:`\phi`, different methods are used for this log likelihood estimation. To start, let:
+
+.. math::
+   
+   \xi = \frac{\phi}{y^{2-p}}
+
+If :math:`p=2`, then it will use the log likelihood of the Gamma distribution:
+
+.. math::
+
+   \log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{\phi} \log (\frac{1}{\phi \mu}) - \log \text{Gamma} \frac{1}{\phi} + \log (y)(\frac{1}{\phi} -1) + (-\frac{1}{\phi \mu} y) & y>0 \\\end{cases}
+
+If :math:`p=3`, then it will use the inverse Gaussian distribution:
+
+.. math::
+   
+   \log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{2} \Big(-log (\phi \mu) \log (2 \pi) -3 \log \big( \frac{y}{\mu} - \frac{(\frac{y}{\mu} -1)^2}{\phi \mu \frac{y}{\mu}} \Big) - \log (\mu) & y>0 \\\end{cases}
+
+If :math:`p<2` and :math:`\xi \leq 0.01`, then it will use the Fourier inversion method.
+
+If :math:`p>2` and :math:`\xi \geq 1`, then it will also use the Fourier inversion method.
+
+Everything else will use the Series method. However, if the Series method fails (output of ``NaN``), then it will try the Fourier inversion method instead.
+
+If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the :math:`\xi` criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
+
+Here are the general usages for Tweedie variance power and dispersion parameter estimation using maximum likelihood:
+
+- ``fix_tweedie_variance_power = True`` and ``fix_dispersion_parameter = False`` as it will use the Tweedie variance power set in parameter ``tweedie_variance_power`` and estimate the dispersion parameter starting with the value set in parameter ``init_dispersion_parameter``;
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = True`` as it will use the dispersion parameter value in parameter ``init_dispersion_parameter`` and estimate the Tweedie variance power starting with the value set in parameter ``tweedie_variance_power``;
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will estimate both the variance power and dispersion parameter starting with the values set in ``tweedie_variance_power`` and ``init_dispersion_parameter`` respectively.
+
+*Optimization Procedure*
+
+When estimating just the Tweedie variance power, it uses the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power :math:`p>1+10^{-10}` and dispersion :math:`\phi >10^{-10}`. If the Nelder-Mead seems to be stuck in local optimum, you might want to try increasing the ``dispersion_learning_rate``.
+
+.. note::
+   
+   (Applicable for Gamma, Tweedie, and Negative Binomial families) If you set ``dispersion_parameter_method="ml"``, then ``solver`` must be set to ``"IRLSM"``.
+
+Cost of computation
+'''''''''''''''''''
 
 H2O can process large data sets because it relies on parallel processes.
 Large data sets are divided into smaller data sets and processed
