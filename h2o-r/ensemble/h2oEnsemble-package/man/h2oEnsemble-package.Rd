@@ -14,7 +14,7 @@ Package: \tab h2oEnsemble\cr
 Type: \tab Package\cr
 Version: \tab 0.2.1\cr
 Date: \tab 2017-08-02\cr
-License: \tab Apache License (== 2.0)\cr
+License: \tab GNU Affero General Public License (== 3.0)\cr
 }
 }
 \author{

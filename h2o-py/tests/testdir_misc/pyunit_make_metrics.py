@@ -3,7 +3,7 @@
 Test suite for h2o.make_metrics().
 
 :copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
+:license:   AGNU Affero General Public License v3.0 (see LICENSE for details)
 """
 import sys
 sys.path.insert(1, "../../")

@@ -3,7 +3,7 @@
 h2o -- module for using H2O services.
 
 :copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
+:license:   GNU Affero General Public License v3.0 (see LICENSE for details)
 """
 from contextlib import contextmanager
 import os

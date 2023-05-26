@@ -2,7 +2,7 @@
 """
 Model utils
 :copyright: (c) 2020 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
+:license:   GNU Affero General Public License v3.0 (see LICENSE for details)
 """
 
 from ..expr import ExprNode

@@ -3,7 +3,7 @@
 H2O MOJO Pipeline.
 
 :copyright: (c) 2018 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
+:license:   GNU Affero General Public License v3 (see LICENSE for details)
 """
 import h2o
 from h2o.expr import ExprNode

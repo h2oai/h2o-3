@@ -186,7 +186,7 @@ public abstract class AbstractMojoWriter {
 
     writekv("h2o_version", model.projectVersion());
     writekv("mojo_version", mojoVersion());
-    writekv("license", "Apache License Version 2.0");
+    writekv("license", "GNU Affero General Public License v3.0");
     writekv("algo", model.algoName().toLowerCase());
     writekv("algorithm", model.algoFullName());
     writekv("endianness", ByteOrder.nativeOrder());

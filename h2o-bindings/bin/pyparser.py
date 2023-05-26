@@ -15,7 +15,7 @@ removed. Lastly, parsing may break if the file does not contain a \n in the last
 parser is more tedious than fixing that newline.
 
 :copyright: 2016 H2O.ai
-:license: Apache License Version 2.0
+:license: GNU Affero General Public License v3.0
 """
 import re
 import sys

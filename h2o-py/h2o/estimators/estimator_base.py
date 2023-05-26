@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 #
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
+# Copyright 2016 H2O.ai;  GNU Affero General Public License v3.0 (see LICENSE for details)
 #
 from h2o.utils.compatibility import *  # NOQA
 

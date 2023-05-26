@@ -3,7 +3,7 @@
 This module provides helper functions to write code that is backward-compatible.
 
 :copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
+:license:   GNU Affero General Public License v3 (see LICENSE for details)
 """
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
 from h2o.utils.compatibility import *  # NOQA

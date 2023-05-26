@@ -3,7 +3,7 @@
 Text progress bar for long-running jobs.
 
 :copyright: (c) 2016 H2O.ai
-:license:   Apache License Version 2.0 (see LICENSE for details)
+:license:   GNU Affero General Public License v3 (see LICENSE for details)
 """
 from h2o.utils.compatibility import *  # NOQA
 

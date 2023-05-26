@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 # Copyright: (c) 2016 H2O.ai
-# License:   Apache License Version 2.0 (see LICENSE for details)
+# License:   GNU Affero General Public License v3 (see LICENSE for details)
 """
 Classes for communication with backend H2O servers.
 

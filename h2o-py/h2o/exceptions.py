@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 # Copyright: (c) 2016 H2O.ai
-# License:   Apache License Version 2.0 (see LICENSE for details)
+# License:   GNU Affero General Public License v3.0 (see LICENSE for details)
 """
 :mod:`h2o.exceptions` -- all exceptions classes in h2o module.
 

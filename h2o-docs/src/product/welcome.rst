@@ -9,7 +9,7 @@ H2O’s REST API allows access to all the capabilities of H2O from an external p
 
 The speed, quality, ease-of-use, and model-deployment for the various cutting edge Supervised and Unsupervised algorithms like Deep Learning, Tree Ensembles, and GLRM make H2O a highly sought after API for big data data science.
 
-H2O is licensed under the `Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
+H2O is licensed under the `GNU Affero General Public License v3.0 <https://www.gnu.org/licenses/agpl.txt>`_.
 
 Requirements
 ------------

@@ -264,7 +264,7 @@ The Java API is generated and accessible from the [download page](http://h2o.ai/
 
 - [Central repository](http://search.maven.org/#search%7Cga%7C1%7Cai.h2o)
 - [View code on Github](https://github.com/h2oai/h2o-3/tree/{{last_commit_hash}})
-- [Apache License](https://github.com/h2oai/h2o-3/blob/master/LICENSE)
+- [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.txt)
 
 ---
 

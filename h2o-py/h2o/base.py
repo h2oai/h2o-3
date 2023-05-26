@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 # Copyright: (c) 2019 H2O.ai
-# License:   Apache License Version 2.0 (see LICENSE for details)
+# License:   GNU Affero General Public License v3.0 (see LICENSE for details)
 """
 :mod:`base` -- base/abstract H2O classes used internally.
 """

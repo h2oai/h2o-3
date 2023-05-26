@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2016 H2O.ai; Apache License Version 2.0;  -*- encoding: utf-8 -*-
+# Copyright 2016 H2O.ai; GNU Affero General Public License v3;  -*- encoding: utf-8 -*-
 """Read h2opy configuration file(s)."""
 
 import io

@@ -1,7 +1,7 @@
 Contributing to H2O
 ============================
 
-H2O is an open source project released under the Apache Software Licence v2.  Open Source projects live by their user and developer communities.  We welcome and encourage your contributions of any kind!
+H2O is an open source project released under the GNU Affero General Public License v3.  Open Source projects live by their user and developer communities.  We welcome and encourage your contributions of any kind!
 
 There are many different kinds of people who make use of H2O for their daily work: 
 

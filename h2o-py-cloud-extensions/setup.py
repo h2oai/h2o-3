@@ -38,7 +38,7 @@ setup(
     author_email='support@h2o.ai',
 
     # Choose your license
-    license='Apache v2',
+    license='AGPLv3',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -60,7 +60,7 @@ setup(
         "Topic :: Scientific/Engineering :: Information Analysis",
 
         # Pick your license as you wish (should match "license" above)
-        "License :: OSI Approved :: Apache Software License",
+        "License :: OSI Approved :: GNU Affero General Public License v3",
 
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
