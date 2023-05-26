@@ -41,6 +41,8 @@ Algorithm-specific parameters
 
 - **build_null_model**: If set, will build a model with only the intercept.  This option defaults to ``False``.
 
+-  **calc_like**: Specify whether to return likelihood function value for HGLM or normal GLM. Setting this option to ``True`` enables the calculation of the full log likelihood and full AIC. This option defaults to ``False`` (disabled).
+
 - **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, this will break out of the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``0.0001``.
 
 - **dispersion_learning_rate**: (Applicable only when ``dispersion_parameter_method="ml"``) This value controls how much the dispersion parameter estimate will be changed when the calculated loglikelihood actually decreases with the new dispersion. In this case, instead of setting *dispersion = dispersion + change*, it is *dispersion + dispersion_learning_rate* :math:`\times` *change*. This option must be > 0 and defaults to ``0.5``.
@@ -65,8 +67,6 @@ Algorithm-specific parameters
 
 HGLM parameters
 '''''''''''''''
-
--  **calc_like**: Specify whether to return likelihood function value for HGLM. This option defaults to ``False`` (disabled).
 
 -  `HGLM <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built. If disabled (default), then a GLM model will be built. 
 
@@ -1341,6 +1341,223 @@ You can extract the columns in the Coefficients Table by specifying ``names``, `
 
 For an example, refer `here <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#examples>`__.
 
+GLM Likelihood
+~~~~~~~~~~~~~~
+
+Maximum Likelihood Estimation
+'''''''''''''''''''''''''''''
+
+For an initial rough estimate of the parameters :math:`\hat{\beta}` you use the estimate to generate fitted values: :math:`\mu_{i}=g^{-1}(\hat{\eta_{i}})`
+
+Let :math:`z` be a working dependent variable such that :math:`z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}`,
+
+ where :math:`\frac{d\eta_{i}}{d\mu_{i}}` is the derivative of the link function evaluated at the trial estimate.
+
+Calculate the iterative weights: :math:`w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}`
+
+ where :math:`b^{\prime\prime}` is the second derivative of :math:`b(\theta_{i})` evaluated at the trial estimate.
+
+Assume :math:`a_{i}(\phi)` is of the form :math:`\frac{\phi}{p_{i}}`. The weight :math:`w_{i}` is inversely proportional to the variance of the working dependent variable :math:`z_{i}` for current parameter estimates and proportionality factor :math:`\phi`.
+
+Regress :math:`z_{i}` on the predictors :math:`x_{i}` using the weights :math:`w_{i}` to obtain new estimates of :math:`\beta`. 
+
+  :math:`\hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}`
+
+ where :math:`\mathbf{X}` is the model matrix, :math:`\mathbf{W}` is a diagonal matrix of :math:`w_{i}`, and :math:`\mathbf{z}` is a vector of the working response variable :math:`z_{i}`.
+
+This process is repeated until the estimates :math:`\hat{\beta}` change by less than the specified amount.
+
+Likelihood and AIC
+''''''''''''''''''
+
+During model training, simplified formulas of likelihood and AIC are used. After the model is built, the full formula is used to calculate the output of the full log likelihood and full AIC values.
+
+.. note::
+   
+   The log likelihood value is not available in the cross-validation metrics. The AIC value is available and is calculated using the original simplified formula independent of the log likelihood.
+
+The following are the supported GLM families and formulae (the log likelihood is calculated for the *i* th observation).
+
+**Gaussian**: 
+
+.. math::
+   
+   l(\mu_i (\beta); y_i, w_i) = - \frac{1}{2} \Big[ \frac{w_i (y_i - \mu_i)^2}{\phi} + \log \big(\frac{\phi}{w_i} \big) + \log (2 \pi) \Big]
+   
+where 
+
+- :math:`\phi` is the dispersion parameter estimation 
+- :math:`\mu_i` is the prediction
+- :math:`y_i` is the real value of the target variable
+
+.. note::
+   
+   You must estimate the dispersion parameter. During initialization, ``compute_p_values`` and ``remove_collinear_columns`` must be set to ``True`` to facilitate this estimation process. Also, ``dispersion_parameter_method`` must be set to ``"pearson"``.
+
+**Binomial**:
+
+.. math::
+   
+   l \big(\mu_i (\beta); y_i, w_i \big) = w_i \big(y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1-\mu_i \} \big)
+
+where
+
+- :math:`\mu_i` is the probability of 1
+- :math:`y_i` is the real value of the target variable
+
+**Quasibinomial**:
+
+- If the predicted value equals :math:`y_i`, log likelihood is 0
+- If :math:`\mu_i >1` then :math:`l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \}`
+- Otherwise, :math:`l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1- \mu_i \}` where
+   
+   - :math:`mu_i` is the probability of 1
+   - :math:`y_i` is the real value of the target variable
+
+**Fractional Binomial**:
+
+.. math::
+   
+   l(\mu_i (\beta); y_i) = w_i \Big(y_i \times \log \big(\frac{y_i}{\mu_i} \big) + (1-y_i) \times \log \big(\frac{1-y_i}{1-\mu_i} \big) \Big)
+
+where
+
+- :math:`\mu_i` is the probability of 1
+- :math:`y_i` is the real value of the target variable
+
+**Poisson**:
+
+.. math::
+   
+   l(\mu_i (\beta); y_i) = w_i \big(y_i \times \log (\mu_i) - \mu_i - \log (\Gamma (y_i +1)) \big)
+
+where
+
+- :math:`\mu_i` is the prediction
+- :math:`y_i` is the real value of the target variable
+
+**Negative Binomial**:
+
+.. math::
+   
+   l(\mu_i (\beta); y_i, w_i) = y_i \log \big(\frac{k \mu}{w_i} \big) - \big(y_i + \frac{w_i}{k} \big) \log \big(1 + \frac{k \mu}{w_i} \big) + \log \Big(\frac{\Gamma \big( y_i = \frac{w_i}{k} \big)} {\Gamma (y_i +1) \Gamma \big(\frac{w_i}{k}\big)} \Big)
+
+where
+
+- :math:`\mu_i` is the prediction
+- :math:`y_i` is the real value of the target variable
+- :math:`k = \frac{1}{\phi}` is the dispersion parameter estimation
+
+.. note::
+   
+   You must estimate the dispersion parameter. During initialization, ``compute_p_values`` and ``remove_collinear_columns`` must be set to ``True`` to facilitate this estimation process. Also, ``dispersion_parameter_method`` must be set to ``"ml"``.
+
+   Since ``dispersion_parameter_method="ml"`` only works without regularization, you disable regularization by setting ``lambda`` equal to an array of ``0.0``.
+
+**Gamma**:
+
+.. math::
+   
+   l(\mu_i (\beta); y_i, w_i) = \frac{w_i}{\phi} \log \big( \frac{w_i y_i}{\phi \mu_i} \big) - \frac{w_i y_i}{\phi \mu_i} - \log (y_i) - \log \big(\Gamma \big(\frac{w)i}{\phi} \big) \big)
+
+where
+
+- :math:`\mu_i` is the prediction
+- :math:`y_i` is the real value of the target variable
+- :math:`\phi` is the dispersion parameter estimation
+
+.. note::
+   
+   You must estimate the dispersion parameter. During initialization, ``compute_p_values`` and ``remove_collinear_columns`` must be set to ``True`` to facilitate this estimation process. Also, ``dispersion_parameter_method`` must be set to ``"ml"``.
+
+   Since ``dispersion_parameter_method="ml"`` only works without regularization, you disable regularization by setting ``lambda`` equal to an array of ``0.0``.
+
+**Multinomial**:
+
+.. math::
+   
+   l(\mu_i(\beta); y_i) = w_i \log (\mu_i)
+
+where :math:`\mu_i` is the predicted probability of the actual class :math:`y_i`
+
+**Tweedie**:
+
+The Tweedie calculation is located in the section `Tweedie Likelihood Calculation <#tweedie-likelihood-calculation>`__.
+
+.. note::
+   
+   You must estimate the dispersion parameter. During initialization, ``compute_p_values`` and ``remove_collinear_columns`` must be set to ``True`` to facilitate this estimation process. Also, ``dispersion_parameter_method`` must be set to ``"ml"``.
+
+   Since ``dispersion_parameter_method="ml"`` only works without regularization, you disable regularization by setting ``lambda`` equal to an array of ``0.0``.
+
+Final AIC Calculation
+^^^^^^^^^^^^^^^^^^^^^
+
+The final AIC in the output metric is calculated using the standard formula, utilizing the previously computed log likelihood.
+
+.. math::
+   
+   \text{AIC} = -2LL + 2p
+
+where
+
+- :math:`p` is the number of parameters estimated in the model
+- :math:`LL` is the log likelihood
+
+To manage computational intensity, ``calc_like`` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, ``calc_like=False``, but you can set it to ``True`` to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
+
+**Tweedie Likelihood Calculation**
+
+There are three different estimations you calculate Tweedie likelihood for:
+
+- when you fix the variance power and estimate the dispersion parameter;
+- when you fix the dispersion parameter and estimate the variance power; or
+- when you estimate both the variance power and dispersion parameter.
+
+The calculation in this section is used to estimate the full log likelihood. When you fix the Tweedie variance power, you will use a simpler formula (unless you are estimating dispersion). When fixing the Tweedie variance power for dispersion estimation, you use the Series method.
+
+When you fix the variance power and estimate the dispersion parameter, the Series method is used to perform the estimation. In this case, you can actually separate the GLM coefficient estimation and the dispersion parameter estimation at the end of the GLM model building process. Standard Newton's method is used to estimate the dispersion parameter using the Series method which is an approximation of the Tweedie likelihood function.
+
+Depending on :math:`p`, :math:`y`, and :math:`\phi`, different methods are used for this log likelihood estimation. To start, let:
+
+.. math::
+   
+   \xi = \frac{\phi}{y^{2-p}}
+
+If :math:`p=2`, then it will use the log likelihood of the Gamma distribution:
+
+.. math::
+
+   \log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{\phi} \log (\frac{1}{\phi \mu}) - \log \text{Gamma} \frac{1}{\phi} + \log (y)(\frac{1}{\phi} -1) + (-\frac{1}{\phi \mu} y) & y>0 \\\end{cases}
+
+If :math:`p=3`, then it will use the inverse Gaussian distribution:
+
+.. math::
+   
+   \log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{2} \Big(-log (\phi \mu) \log (2 \pi) -3 \log \big( \frac{y}{\mu} - \frac{(\frac{y}{\mu} -1)^2}{\phi \mu \frac{y}{\mu}} \Big) - \log (\mu) & y>0 \\\end{cases}
+
+If :math:`p<2` and :math:`\xi \leq 0.01`, then it will use the Fourier inversion method.
+
+If :math:`p>2` and :math:`\xi \geq 1`, then it will also use the Fourier inversion method.
+
+Everything else will use the Series method. However, if the Series method fails (output of ``NaN``), then it will try the Fourier inversion method instead.
+
+If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the :math:`\xi` criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
+
+Here are the general usages for Tweedie variance power and dispersion parameter estimation using maximum likelihood:
+
+- ``fix_tweedie_variance_power = True`` and ``fix_dispersion_parameter = False`` as it will use the Tweedie variance power set in parameter ``tweedie_variance_power`` and estimate the dispersion parameter starting with the value set in parameter ``init_dispersion_parameter``;
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = True`` as it will use the dispersion parameter value in parameter ``init_dispersion_parameter`` and estimate the Tweedie variance power starting with the value set in parameter ``tweedie_variance_power``;
+- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will estimate both the variance power and dispersion parameter using the values set in ``tweedie_variance_power`` and ``init_dispersion_parameter`` respectively.
+
+*Optimization Procedure*
+
+When estimating just the Tweedie variance power, it uses the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power :math:`p>1+10^{-10}` and dispersion :math:`\phi >10^{-10}`. If the Nelder-Mead seems to be stuck in local optimum, you might want to try increasing the ``dispersion_learning_rate``.
+
+.. note::
+   
+   (Applicable for Gamma, Tweedie, and Negative Binomial families) If you set ``dispersion_parameter_method="ml"``, then ``solver`` must be set to ``"IRLSM"``.
+
 Variable Inflation Factors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1717,81 +1934,6 @@ linear model.
   :math:`g(\mu_{i})=\eta_{i}=\mathbf{x_{i}^{\prime}}\beta`
 
 When inverted: :math:`\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)`
-
-Maximum Likelihood Estimation
-'''''''''''''''''''''''''''''
-
-For an initial rough estimate of the parameters :math:`\hat{\beta}`, use the estimate to generate fitted values: :math:`\mu_{i}=g^{-1}(\hat{\eta_{i}})`
-
-Let :math:`z` be a working dependent variable such that :math:`z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}`,
-
- where :math:`\frac{d\eta_{i}}{d\mu_{i}}` is the derivative of the link function evaluated at the trial estimate.
-
-Calculate the iterative weights: :math:`w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}`
-
- where :math:`b^{\prime\prime}` is the second derivative of :math:`b(\theta_{i})` evaluated at the trial estimate.
-
-Assume :math:`a_{i}(\phi)` is of the form :math:`\frac{\phi}{p_{i}}`. The weight :math:`w_{i}` is inversely proportional to the variance of the working dependent variable :math:`z_{i}` for current parameter estimates and proportionality factor :math:`\phi`.
-
-Regress :math:`z_{i}` on the predictors :math:`x_{i}` using the weights :math:`w_{i}` to obtain new estimates of :math:`\beta`. 
-
-  :math:`\hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}`
-
- where :math:`\mathbf{X}` is the model matrix, :math:`\mathbf{W}` is a diagonal matrix of :math:`w_{i}`, and :math:`\mathbf{z}` is a vector of the working response variable :math:`z_{i}`.
-
-This process is repeated until the estimates :math:`\hat{\beta}` change by less than the specified amount.
-
-**Tweedie Likelihood Calculation**
-
-There are three different estimations you calculate Tweedie likelihood for:
-
-- when you fix the variance power and estimate the dispersion parameter;
-- when you fix the dispersion parameter and estimate the variance power; or
-- when you estimate both the variance power and dispersion parameter.
-
-The calculation in this section is used to estimate the full log likelihood. When you fix the Tweedie variance power, you will use a simpler formula (unless you are estimating dispersion). When fixing the Tweedie variance power for dispersion estimation, you use the Series method.
-
-When you fix the variance power and estimate the dispersion parameter, the Series method is used to perform the estimation. In this case, you can actually separate the GLM coefficient estimation and the dispersion parameter estimation at the end of the GLM model building process. Standard Newton's method is used to estimate the dispersion parameter using the Series method which is an approximation of the Tweedie likelihood function.
-
-Depending on :math:`p`, :math:`y`, and :math:`\phi`, different methods are used for this log likelihood estimation. To start, let:
-
-.. math::
-   
-   \xi = \frac{\phi}{y^{2-p}}
-
-If :math:`p=2`, then it will use the log likelihood of the Gamma distribution:
-
-.. math::
-
-   \log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{\phi} \log (\frac{1}{\phi \mu}) - \log \text{Gamma} \frac{1}{\phi} + \log (y)(\frac{1}{\phi} -1) + (-\frac{1}{\phi \mu} y) & y>0 \\\end{cases}
-
-If :math:`p=3`, then it will use the inverse Gaussian distribution:
-
-.. math::
-   
-   \log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{2} \Big(-log (\phi \mu) \log (2 \pi) -3 \log \big( \frac{y}{\mu} - \frac{(\frac{y}{\mu} -1)^2}{\phi \mu \frac{y}{\mu}} \Big) - \log (\mu) & y>0 \\\end{cases}
-
-If :math:`p<2` and :math:`\xi \leq 0.01`, then it will use the Fourier inversion method.
-
-If :math:`p>2` and :math:`\xi \geq 1`, then it will also use the Fourier inversion method.
-
-Everything else will use the Series method. However, if the Series method fails (output of ``NaN``), then it will try the Fourier inversion method instead.
-
-If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the :math:`\xi` criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
-
-Here are the general usages for Tweedie variance power and dispersion parameter estimation using maximum likelihood:
-
-- ``fix_tweedie_variance_power = True`` and ``fix_dispersion_parameter = False`` as it will use the Tweedie variance power set in parameter ``tweedie_variance_power`` and estimate the dispersion parameter starting with the value set in parameter ``init_dispersion_parameter``;
-- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = True`` as it will use the dispersion parameter value in parameter ``init_dispersion_parameter`` and estimate the Tweedie variance power starting with the value set in parameter ``tweedie_variance_power``;
-- ``fix_tweedie_variance_power = False`` and ``fix_dispersion_parameter = False`` as it will estimate both the variance power and dispersion parameter starting with the values set in ``tweedie_variance_power`` and ``init_dispersion_parameter`` respectively.
-
-*Optimization Procedure*
-
-When estimating just the Tweedie variance power, it uses the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power :math:`p>1+10^{-10}` and dispersion :math:`\phi >10^{-10}`. If the Nelder-Mead seems to be stuck in local optimum, you might want to try increasing the ``dispersion_learning_rate``.
-
-.. note::
-   
-   (Applicable for Gamma, Tweedie, and Negative Binomial families) If you set ``dispersion_parameter_method="ml"``, then ``solver`` must be set to ``"IRLSM"``.
 
 Cost of computation
 '''''''''''''''''''

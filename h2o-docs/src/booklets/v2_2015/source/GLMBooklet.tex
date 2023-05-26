@@ -658,6 +658,7 @@ V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{\Gamma(1+k)w^
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_dispersion_example.py}
 
 \paragraph{Tweedie Variance Power Estimation} 
+\label{par:tweevar}
 
 Depending on $p$, $y$, and $\phi$, different methods are used for this log likelihood estimation. To start, let:
 
@@ -1397,6 +1398,128 @@ Retrieve these statistics using the following accessor functions:
 
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_accessors.py}
+
+\subsubsection{GLM Likelihood and AIC}
+
+During model training, simplified formulas of likelihood and AIC are used. After the model is built, the full formula is used to calculate the output of the full log likelihood and full AIC values.
+
+\textbf{Note:} The log likelihood value is not available in the cross-validation metrics. The AIC value is available and is calculated using the original simplified formula independent of the log likelihood.
+
+The following are the supported GLM families and formulae (the log likelihood is calculated for the  \emph{i}th observation).
+
+\textbf{Gaussian:}
+
+$$l(\mu_i (\beta); y_i, w_i) = - \frac{1}{2} \Big[ \frac{w_i (y_i - \mu_i)^2}{\phi} + \log \big(\frac{\phi}{w_i} \big) + \log (2 \pi) \Big]$$
+
+where
+
+\begin{itemize}
+\item $\phi$ is the dispersion parameter estimation
+\item $\mu_i$ is the prediction
+\item $y_i$ is the real value of the target variable
+\end{itemize}
+
+\emph{Note:} You must estimate the dispersion parameter. During initialization, \texttt{compute\_p\_values} and \texttt{remove\_collinear\_columns)} must be set to \texttt{True} to facilitate this estimation process. Also, \texttt{dispersion\_parameter\_method} must be set to \texttt{"pearson"}.
+
+\textbf{Binomial:}
+
+$$l \big(\mu_i (\beta); y_i, w_i \big) = w_i \big(y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1-\mu_i \} \big)$$
+
+where
+\begin{itemize}
+\item $\mu_i$ is the probability of 1
+\item $y_i$ is the real value of the target variable
+\end{itemize} 
+
+
+\textbf{Quasibinomial:}
+
+\begin{itemize}
+\item If the predicted value equals $y_i$, log likelihood is 0
+\item If $\mu_i >1$ then $l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \}$
+\item Otherwise, $l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1- \mu_i \}$ where
+\begin{itemize}
+\item $\mu_i$ is the probability of 1
+\item $y_i$ is the real value of the target variable
+\end{itemize}
+\end{itemize}
+
+\textbf{Fractional Binomial:}
+
+$$l(\mu_i (\beta); y_i) = w_i \Big(y_i \times \log \big(\frac{y_i}{\mu_i} \big) + (1-y_i) \times \log \big(\frac{1-y_i}{1-\mu_i} \big) \Big)$$
+
+where
+
+\begin{itemize}
+\item $\mu_i$ is the probability of 1
+\item $y_i$ is the real value of the target variable
+\end{itemize}
+
+\textbf{Poisson:}
+
+$$l(\mu_i (\beta); y_i) = w_i \big(y_i \times \log (\mu_i) - \mu_i - \log (\Gamma (y_i +1)) \big)$$
+
+where
+
+\begin{itemize}
+\item $\mu_i$ is the prediction
+\item $y_i$ is the real value of the target variable
+\end{itemize}
+
+\textbf{Negative Binomial:}
+
+$$l(\mu_i (\beta); y_i, w_i) = y_i \log \big(\frac{k \mu}{w_i} \big) - \big(y_i + \frac{w_i}{k} \big) \log \big(1 + \frac{k \mu}{w_i} \big) + \log \Big(\frac{\Gamma \big( y_i = \frac{w_i}{k} \big)} {\Gamma (y_i +1) \Gamma \big(\frac{w_i}{k}\big)} \Big)$$
+
+where
+
+\begin{itemize}
+\item $\mu_i$ is the prediction
+\item $y_i$ is the real value of the target variable
+\item $k = \frac{1}{\phi}$ is the dispersion parameter estimation
+\end{itemize}
+
+\emph{Note:} You must estimate the dispersion parameter. During initialization, \texttt{compute\_p\_values} and \texttt{remove\_collinear\_columns)} must be set to \texttt{True} to facilitate this estimation process. Also, \texttt{dispersion\_parameter\_method} must be set to \texttt{"ml"}. Since texttt{dispersion\_parameter\_method} only works without regularization, you disable regularization by setting \texttt{lambda} equal to an array of \texttt{0.0}.
+
+\textbf{Gamma:}
+
+$$l(\mu_i (\beta); y_i, w_i) = \frac{w_i}{\phi} \log \big( \frac{w_i y_i}{\phi \mu_i} \big) - \frac{w_i y_i}{\phi \mu_i} - \log (y_i) - \log \big(\Gamma \big(\frac{w)i}{\phi} \big) \big)$$
+
+where
+
+\begin{itemize}
+\item $\mu_i$ is the prediction
+\item $y_i$ is the real value of the target variable
+\item $\phi$ is the dispersion parameter estimation
+\end{itemize}
+
+\emph{Note:} You must estimate the dispersion parameter. During initialization, \texttt{compute\_p\_values} and \texttt{remove\_collinear\_columns)} must be set to \texttt{True} to facilitate this estimation process. Also, \texttt{dispersion\_parameter\_method} must be set to \texttt{"ml"}. Since texttt{dispersion\_parameter\_method} only works without regularization, you disable regularization by setting \texttt{lambda} equal to an array of \texttt{0.0}.
+
+\textbf{Multinomial:}
+
+$$l(\mu_i(\beta); y_i) = w_i \log (\mu_i)$$
+
+where $\mu_i$ is the predicted probability of the actual class $y_i$
+
+\textbf{Tweedie:}
+
+The Tweedie calculation is located in the section \ref{par:tweevar}.
+
+\emph{Note:} You must estimate the dispersion parameter. During initialization, \texttt{compute\_p\_values} and \texttt{remove\_collinear\_columns)} must be set to \texttt{True} to facilitate this estimation process. Also, \texttt{dispersion\_parameter\_method} must be set to \texttt{"ml"}. Since texttt{dispersion\_parameter\_method} only works without regularization, you disable regularization by setting \texttt{lambda} equal to an array of \texttt{0.0}.
+
+\paragraph{Final AIC Calculation}
+
+The final AIC in the output metric is calculated using the standard formula, utilizing the previously computed log likelihood.
+
+$$\text{AIC} = -2LL + 2p$$
+
+where
+
+\begin{itemize}
+\item $p$ is the number of parameters estimated in the model
+\item $LL$ is the log likelihood
+\end{itemize}
+
+To manage computational intensity, \texttt{calc\_like} is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, \texttt{calc\_like=False}, but you can set it to \texttt{True} to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
 
 \subsection{Confusion Matrix}
 
