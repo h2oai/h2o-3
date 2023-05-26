@@ -3266,15 +3266,16 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> df[['cylinders','economy_20mpg']] = df[['cylinders','economy_20mpg']].asfactor()
         >>> df[['cylinders','economy_20mpg']].describe()
         """
-        for colname in self.names:
-            t = self.types[colname]
-            if t not in {"bool", "int", "string", "enum"}:
-                raise H2OValueError("Only 'int' or 'string' are allowed for "
-                                    "asfactor(), got %s:%s " % (colname, t))
+        if self._is_frame:
+            for colname in self.names:
+                t = self.types[colname]
+                if t not in {"bool", "int", "string", "enum"}:
+                    raise H2OValueError("Only 'int' or 'string' are allowed for "
+                                        "asfactor(), got %s:%s " % (colname, t))
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {name: "enum" for name in self.types}
-        else:
+        elif self._is_frame:
             raise H2OTypeError("Types are not available in result")
         
         return fr

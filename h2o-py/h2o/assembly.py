@@ -302,6 +302,21 @@ class H2OAssembly(object):
         return list(zip(*self.steps))[0][:-1]
 
 
+    def download_mojo(self, file_name="", path="."):
+        """
+        Convert the munging operations performed on H2OFrame into a MOJO 2 artifact.
+        
+        :param file_name:  (str) Name of Mojo 2 artifact.
+        :param path:  (str) Local Path on a user side  serving as target for  Mojo 2 artifact.
+        :return: Streamed file.
+        """
+        assert_is_type(file_name, str)
+        assert_is_type(path, str)
+        if file_name == "":
+            file_name = "AssemblyMOJO_" + str(uuid.uuid4())
+        return h2o.api("GET /99/Assembly.fetch_mojo_pipeline/%s/%s" % (self.id, file_name), save_to=path)
+
+
     def to_pojo(self, pojo_name="", path="", get_jar=True):
         """
         Convert the munging operations performed on H2OFrame into a POJO.

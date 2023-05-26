@@ -121,6 +121,10 @@ def call(final pipelineContext) {
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Assembly to MOJO2', target: 'test-pyunit-mojo2', pythonVersion: '3.7',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
@@ -221,6 +225,12 @@ def call(final pipelineContext) {
     [
       stageName: 'REST Smoke Test', target: 'test-rest-smoke', pythonVersion: '3.6', javaVersion: 8,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: 'python-3.6-jdk-8'
+    ],
+    [
+      stageName: 'Java 8 Mojo Pipeline JUnit', target: 'test-junit-mojo-pipeline-jenkins', pythonVersion: '3.6', javaVersion: 8,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: 'python-3.6-jdk-8'
     ],

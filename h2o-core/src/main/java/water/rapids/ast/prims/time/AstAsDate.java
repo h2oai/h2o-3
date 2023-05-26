@@ -55,7 +55,7 @@ public class AstAsDate extends AstPrimitive {
 
       @Override
       public void setupLocal() {
-        _fmt = ParseTime.forStrptimePattern(format).withZone(ParseTime.getTimezone());
+        _fmt = water.util.ParseTime.forStrptimePattern(format).withZone(ParseTime.getTimezone());
       }
 
       @Override
