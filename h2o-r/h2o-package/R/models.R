@@ -5999,27 +5999,29 @@ setMethod('show', 'H2ONode',
             print.H2ONode(object)
           })
 
-print.H2ONode <- function(node){
-  cat("Node ID", node@id, "\n\n")
-  if (inherits(node, "H2OLeafNode")){
-    cat("Terminal node. Prediction is", node@prediction)
+#' @method print H2ONode
+#' @export
+print.H2ONode <- function(x, ...){
+  cat("Node ID", x@id, "\n\n")
+  if (inherits(x, "H2OLeafNode")){
+    cat("Terminal node. Prediction is", x@prediction)
     return()
   }
 
 
-  if(!is.null(node@left_child)) cat("Left child node ID =", node@left_child@id, "\n") else cat("There is no left child \n")
-  if(!is.null(node@right_child)) cat("Right child node ID =", node@right_child@id,"\n") else cat("There is no right child \n")
+  if(!is.null(x@left_child)) cat("Left child node ID =", x@left_child@id, "\n") else cat("There is no left child \n")
+  if(!is.null(x@right_child)) cat("Right child node ID =", x@right_child@id,"\n") else cat("There is no right child \n")
   cat("\n")
-  cat("Splits on column", node@split_feature, "\n")
+  cat("Splits on column", x@split_feature, "\n")
 
-  if(is.na(node@threshold)){
-    if(!is.null(node@left_child)) cat("  - Categorical levels going to the left node:", node@left_levels, "\n")
-    if(!is.null(node@right_child)) cat("  - Categorical levels to the right node:", node@right_levels, "\n")
+  if(is.na(x@threshold)){
+    if(!is.null(x@left_child)) cat("  - Categorical levels going to the left node:", x@left_levels, "\n")
+    if(!is.null(x@right_child)) cat("  - Categorical levels to the right node:", x@right_levels, "\n")
   } else {
-    cat("Split threshold <", node@threshold,"to the left node, >=",node@threshold ,"to the right node\n")
+    cat("Split threshold <", x@threshold,"to the left node, >=",x@threshold ,"to the right node\n")
   }
   cat("\n")
-  if(!is.na(node@na_direction)) cat("NA values go to the", node@na_direction,"node")
+  if(!is.na(x@na_direction)) cat("NA values go to the", x@na_direction,"node")
 }
 
 #'
@@ -6079,9 +6081,11 @@ setMethod('show', 'H2OTree',
             print.H2OTree(object)
           })
 
-print.H2OTree <- function(tree){
-  cat(paste0("Tree related to model '", tree@model_id,"'. Tree number is"), paste0(tree@tree_number,", tree class is '",tree@tree_class, "'\n"))
-  cat("The tree has", length(tree), "nodes")
+#' @method print H2OTree
+#' @export
+print.H2OTree <- function(x, ...){
+  cat(paste0("Tree related to model '", x@model_id,"'. Tree number is"), paste0(x@tree_number,", tree class is '",x@tree_class, "'\n"))
+  cat("The tree has", length(x), "nodes")
 }
 
 #'

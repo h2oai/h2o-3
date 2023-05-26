@@ -954,7 +954,13 @@ case_insensitive_match_arg <- function(arg, choices) {
   )
 }
 
-print.H2OExplanation <- function(object, ..., render = "AUTO") {
+#' @method print H2OExplanation
+#' @export
+print.H2OExplanation <- function(x, ...) {
+  args <- list(...)
+  if (is.null(args$render))
+    args$render <- "AUTO"
+  render <- args$render
   if (render == "html") {
     if (!(requireNamespace("htmltools", quietly = TRUE) &&
       requireNamespace("plotly", quietly = TRUE) &&
@@ -988,13 +994,13 @@ print.H2OExplanation <- function(object, ..., render = "AUTO") {
   }
 
   if (render == "html") {
-    result <- htmltools::browsable(htmltools::tagList(.render(object, render = render)))
+    result <- htmltools::browsable(htmltools::tagList(.render(x, render = render)))
     if (.is_plotting_to_rnotebook()) {
       return(invisible(print(result)))
     }
     return(result)
   } else {
-    invisible(tryCatch(.render(object, render = render), error = function(e) message(e$message)))
+    invisible(tryCatch(.render(x, render = render), error = function(e) message(e$message)))
   }
 }
 

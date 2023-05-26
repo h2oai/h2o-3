@@ -27,7 +27,7 @@ Note that no actual data is stored in the R workspace; and no actual work is car
 
 }
 \author{
-Maintainer: Erin LeDell <erin@h2o.ai>
+Maintainer: Tomas Fryda <tomas.fryda@h2o.ai>
 }
 \references{
 \itemize{
