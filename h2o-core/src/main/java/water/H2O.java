@@ -44,13 +44,13 @@ import java.util.concurrent.atomic.AtomicLong;
 final public class H2O {
   public static final String DEFAULT_JKS_PASS = "h2oh2o";
   public static final int H2O_DEFAULT_PORT = 54321;
-  public static final Map<Integer, String> GITHUB_DISCUSSIONS = createMap();
+  public static final Map<Integer, Integer> GITHUB_DISCUSSIONS = createMap();
   
-  static Map<Integer, String> createMap() {
-    String[] GHDiscussion = new String[]{"15512", "15513", "15514", "15515", "15516", "15517", "15518", "15519",
-            "15520", "15521", "15522", "15523", "15524", "15525"};
+  static Map<Integer, Integer> createMap() {
+    Integer[] GHDiscussion = new Integer[]{15512, 15513, 15514, 15515, 15516, 15517, 15518, 15519, 15520, 15521, 15522,
+            15523, 15524, 15525};
     Integer[] techNoteNumber = new Integer[]{1,2,3,4,5,7,9,10,11,12,13,14,15,16};
-    Map<Integer, String> mapTNToGH = new HashMap<>();
+    Map<Integer, Integer> mapTNToGH = new HashMap<>();
     int mapLen = GHDiscussion.length;
     for (int index=0; index<mapLen; index++)
       mapTNToGH.put(techNoteNumber[index], GHDiscussion[index]);
