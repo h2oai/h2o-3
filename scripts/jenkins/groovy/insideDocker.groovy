@@ -1,7 +1,5 @@
 def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, customArgs='',addToDockerGroup = false, awsCredsPrefix = '', block) {
 
-  def DEFAULT_DNS = '172.16.0.200'
-
   if (customArgs == null) {
     customArgs = ''
   }
@@ -33,7 +31,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
                 dockerGroupIdAdd = "--group-add ${dockerGroupId}"
               }
             }
-            docker.image(image).inside("--init ${dockerGroupIdAdd} --add-host=nexus:172.17.0.53 --dns ${DEFAULT_DNS} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
+            docker.image(image).inside("--init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
               sh """
               id
               printenv | sort
