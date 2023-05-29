@@ -48,7 +48,11 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
     _threshold = threshold;
     _output = output;
     
-    _responseIndex = fr.find(_parms._response_column);
+    if (fr.vec(_parms._response_column).isBad()) {
+      _responseIndex = -1;
+    } else {
+      _responseIndex = fr.find(_parms._response_column);
+    }
     _offsetIndex = fr.find(_parms._offset_column);
     _preds = scoreChunk(chks, XGBoostPredict.OutputType.PREDICT);
   }

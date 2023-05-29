@@ -171,7 +171,7 @@ public class XGBoostUtils {
             trainMat.setBaseMargin(off);
         }
         resp = Arrays.copyOf(resp, len);
-        //trainMat.setLabel(resp);
+        trainMat.setLabel(resp);
         return trainMat;
     }
 
