@@ -375,11 +375,10 @@ public class InfogramCVValidTest  extends TestUtil {
     
     public static void assertCorrectCVCore(InfogramModel infogramModel, InfogramModel.InfogramParameters params, Frame trainF) {
         long[] validNonZeroRows = new long[]{285, 284};
-        double[][] cmiRaw = new double[][]{{0,0,0,0,0},{0.1154018143206148, 0.0, 0.059270071809912395, 
-                0.053851119106329115, 0.0}};
-        String[][] validColNames = new String[][]{{"concave_points_worst", "radius_worst", "perimeter_worst",
-                "texture_worst", "area_worst"},{"concave_points_worst", "concave_points_mean", "area_worst", 
-                "radius_worst", "texture_worst"}};
+        double[][] cmiRaw = new double [][]{{0.0740886597141513, 0.06680054529745522, 0.0, 0.010589279492509235, 0.00354537095549301},
+                {0.07689334414132229, 0.0, 0.028545715203748073, 0.002795096913999734, 0.006658503429222945}};
+        String[][] validColNames = new String[][]{{"concave_points_worst", "texture_worst", "radius_worst", "area_worst", "perimeter_worst"},
+                {"texture_worst", "concave_points_mean", "area_worst", "concave_points_worst", "radius_worst"}};
         double[] mainRelevance = new double[]{0.34372355964840223, 1.0, 0.22668974589585472, 0.04829270617635511, 
                 0.12967891871933077};
         String[] mainColNames = new String[]{"concave_points_worst", "radius_worst", "concave_points_mean", 
@@ -421,7 +420,7 @@ public class InfogramCVValidTest  extends TestUtil {
             }
         }
         assertArrayEquals(calculatedCmiRaw, cmiRawManual, 1e-6);    // compare cmi_raw calculations
-        // generate cmi and check that is is correct
+        // generate cmi and check that is correct
         double[] calculatedCmi = vec2array(relCmiKeyCV.vec(4));
         double[] manualCmi = new double[numPred];
         double oneOvermaxCMI = 1.0/ArrayUtils.maxValue(cmiRawManual);
@@ -618,16 +617,10 @@ public class InfogramCVValidTest  extends TestUtil {
 
     public static void assertCorrectCVSafe(InfogramModel infogramModel) {
         long[] validNonZeroRows = new long[]{3454,3453};
-        double[][] cmiRaw = new double[][]{{0.0112466313376575760, 0, 0.011181541634240677, 0.005919207126032999, 
-                0.003763971206082628, 0.0, 0.0016720556657749963, 2.1858827102438916E-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
-                0.0}, {0.008229504140717436, 0.0, 0.007422460612105386, 0.004307029194700496, 0.003067660070028344, 
-                0.0, 8.305386172429152E-4, 0.0, 0.0, 2.9469488065148042E-5, 0.0, 0.0, 0.0, 0.0, 0.0}};
-        String[][] validColNames = new String[][]{{"c_charge_degree", "end", "juv_misd_count", "juv_fel_count", 
-                "juv_other_count", "event", "days_b_screening_arrest", "start", "priors_count", "decile_score", 
-                "v_decile_score", "score_text", "v_score_text", "priors_count.1", "decile_score.1"}, 
-                {"juv_other_count", "end", "days_b_screening_arrest", "juv_fel_count", "start", "event", 
-                        "juv_misd_count", "decile_score", "priors_count", "v_score_text", "score_text", 
-                        "v_decile_score", "c_charge_degree", "decile_score.1", "priors_count.1"}};
+        double[][] cmiRaw = new double[][]{{0.5724240823304241, 0.49538631399928285, 0.08931514015582542, 0.08931514015582542, 0.07769862704423769, 0.07769862704423769, 0.06339896155155711, 0.04204048453203135, 0.025171185599880297, 0.017537162997962152, 0.009121361241773651, 0.011998999469123306, 0.010971434455554263, 0.008674291823460023, 0.0076452997045523},
+                {0.5463757380373683, 0.5044681055598337, 0.09110353480455802, 0.09110353480455802, 0.06541477175441757, 0.06541477175441757, 0.05996846597569727, 0.03708853658710587, 0.027427326130934904, 0.016798382736979645, 0.013812236652105958, 0.01150201605853618, 0.00716852653446054, 0.00694939077877077, 0.005481070985486669}};
+        String[][] validColNames = new String[][]{{"end", "event", "priors_count", "priors_count.1", "decile_score", "decile_score.1", "score_text", "v_decile_score", "v_score_text", "days_b_screening_arrest", "start", "c_charge_degree", "juv_other_count", "juv_fel_count", "juv_misd_count"},
+                {"end", "event", "priors_count", "priors_count.1", "decile_score", "decile_score.1", "score_text", "v_decile_score", "v_score_text", "juv_other_count", "days_b_screening_arrest", "start", "juv_misd_count", "juv_fel_count", "c_charge_degree"}};
         double[] mainRelevance = new double[]{1.0,  0.22232788946634713, 0.010488736091117714, 0.0, 
                 0.016795647759374355, 0.0, 0.0018857970710325917, 0.00401633133386085, 0.01452655439713657, 
                 2.574920854711118E-4, 0.004113058086770913, 0.0012933419572252322, 0.0014052131829135543, 
