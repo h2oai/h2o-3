@@ -61,22 +61,6 @@ public enum BinningStrategy {
             if (step == 0) {
                 return null;
             }
-            double stepExponent = computeExponentForTheFeature(step);
-            // if step is grater than one, remove decimal part (round to the nearest int)
-            if (stepExponent > 0) {
-                step = Math.round(step);
-            } else {
-                // if step is more than 2 positions less precise than selected decimal limit, 
-                // set lower decimal limit to work with lower values
-                if (stepExponent < DECIMALS_TO_CONSIDER * (-1) + 2) {
-                    int newDecimalsToConsider = (int) Math.floor(stepExponent) * (-1) + 2;
-                    Log.debug("DECIMALS_TO_CONSIDER: " + newDecimalsToConsider);
-                    step = roundToNDecimalPoints(step, newDecimalsToConsider);
-                } else {
-                    step = roundToNDecimalPoints(step, DECIMALS_TO_CONSIDER);
-                }
-            }
-            Log.debug("New step: " + step);
             // get thresholds which are minimums and maximums of bins (including min amd max)
             List<Double> binningValues = new ArrayList<>();
             for (double value = featureLimits._min; value <= featureLimits._max; value += step) {
