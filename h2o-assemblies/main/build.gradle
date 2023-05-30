@@ -24,9 +24,8 @@ dependencies {
     api project(":h2o-k8s-int")
 
     constraints {
-        api('com.fasterxml.jackson.core:jackson-databind:2.15.1') {
+        api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
             because 'Fixes CVE-2022-42003'
-            because 'Fixes PRISMA-2023-0067'
         }
     }
 }
