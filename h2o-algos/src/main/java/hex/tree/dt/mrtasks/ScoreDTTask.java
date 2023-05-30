@@ -8,11 +8,12 @@ import water.fvec.Chunk;
 
 public class ScoreDTTask extends MRTask<ScoreDTTask> {
     private DTModel _model;
-
+    private int _responseIdx;
     private ModelMetrics.MetricBuilder _metricsBuilder;
 
     public ScoreDTTask(DTModel _model) {
         this._model = _model;
+        this._responseIdx = _model._output.responseIdx();
     }
 
     @Override
@@ -22,7 +23,7 @@ public class ScoreDTTask extends MRTask<ScoreDTTask> {
         double [] tmp = new double[_model._output.nfeatures()];
         for (int row = 0; row < cs[0]._len; row++) {
             preds = _model.score0(cs, 0, row, tmp, preds);
-            _metricsBuilder.perRow(preds, new float[]{(float) cs[0].atd(cs.length - 1)}, _model);
+            _metricsBuilder.perRow(preds, new float[]{(float) cs[_responseIdx].atd(row)}, _model);
         }
     }
 
