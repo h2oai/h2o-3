@@ -41,7 +41,7 @@ Algorithm-specific parameters
 
 - **build_null_model**: If set, will build a model with only the intercept.  This option defaults to ``False``.
 
--  **calc_like**: Specify whether to return likelihood function value for HGLM or normal GLM. Setting this option to ``True`` enables the calculation of the full log likelihood and full AIC. This option defaults to ``False`` (disabled).
+-  **calc_like**: Specify whether to return likelihood function value for HGLM or normal GLM. Setting this option to ``True`` while disabling ``HGLM`` will enable the calculation of the full log likelihood and full AIC. This option defaults to ``False`` (disabled).
 
 - **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, this will break out of the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``0.0001``.
 
@@ -1370,7 +1370,7 @@ This process is repeated until the estimates :math:`\hat{\beta}` change by less 
 Likelihood and AIC
 ''''''''''''''''''
 
-During model training, simplified formulas of likelihood and AIC are used. After the model is built, the full formula is used to calculate the output of the full log likelihood and full AIC values.
+During model training, simplified formulas of likelihood and AIC are used. After the model is built, the full formula is used to calculate the output of the full log likelihood and full AIC values. The full formula is used to calculate the output of the full log likelihood and full AIC values if the parameter ``calc_like`` is set to ``True``.
 
 .. note::
    
@@ -1392,7 +1392,7 @@ where
 
 .. note::
    
-   You must estimate the dispersion parameter. During initialization, ``compute_p_values`` and ``remove_collinear_columns`` must be set to ``True`` to facilitate this estimation process. Also, ``dispersion_parameter_method`` must be set to ``"pearson"``.
+   For Gaussian family, you need the dispersion parameter estimate in order to calculate the full log likelihood and AIC. Hence, when ``calc_like`` is set to ``True``, the parameters ``compute_p_values`` and ``remove_collinear_columns`` are set to ``True``. The parameter ``dispersion_parameter_method`` is set to ``"pearson"`` by default. However, you can set the ``dispersion_parameter_method`` to ``deviance`` if you prefer.
 
 **Binomial**:
 
@@ -1411,7 +1411,7 @@ where
 - If :math:`\mu_i >1` then :math:`l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \}`
 - Otherwise, :math:`l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1- \mu_i \}` where
    
-   - :math:`mu_i` is the probability of 1
+   - :math:`\mu_i` is the probability of 1
    - :math:`y_i` is the real value of the target variable
 
 **Fractional Binomial**:
@@ -1440,7 +1440,7 @@ where
 
 .. math::
    
-   l(\mu_i (\beta); y_i, w_i) = y_i \log \big(\frac{k \mu}{w_i} \big) - \big(y_i + \frac{w_i}{k} \big) \log \big(1 + \frac{k \mu}{w_i} \big) + \log \Big(\frac{\Gamma \big( y_i = \frac{w_i}{k} \big)} {\Gamma (y_i +1) \Gamma \big(\frac{w_i}{k}\big)} \Big)
+   l(\mu_i (\beta); y_i, w_i) = y_i \log \big(\frac{k \mu}{w_i} \big) - \big(y_i + \frac{w_i}{k} \big) \log \big(1 + \frac{k \mu}{w_i} \big) + \log \Big(\frac{\Gamma \big( y_i + \frac{w_i}{k} \big)} {\Gamma (y_i +1) \Gamma \big(\frac{w_i}{k}\big)} \Big)
 
 where
 
@@ -1450,15 +1450,13 @@ where
 
 .. note::
    
-   You must estimate the dispersion parameter. During initialization, ``compute_p_values`` and ``remove_collinear_columns`` must be set to ``True`` to facilitate this estimation process. Also, ``dispersion_parameter_method`` must be set to ``"ml"``.
-
-   Since ``dispersion_parameter_method="ml"`` only works without regularization, you disable regularization by setting ``lambda`` equal to an array of ``0.0``.
+   For Negative Binomial family, you need the dispersion parameter estimate. When the parameter ``calc_like`` is set to ``True``, the parameters ``compute_p_values`` and ``remove_collinear_columns`` are set to ``True`` for you. By default, the parameter ``dispersion_parameter_method`` is set to ``"pearson"``. However, you can set ``dispersion_parameter_method`` to ``"deviance"`` or ``"ml"`` if you prefer.
 
 **Gamma**:
 
 .. math::
    
-   l(\mu_i (\beta); y_i, w_i) = \frac{w_i}{\phi} \log \big( \frac{w_i y_i}{\phi \mu_i} \big) - \frac{w_i y_i}{\phi \mu_i} - \log (y_i) - \log \big(\Gamma \big(\frac{w)i}{\phi} \big) \big)
+   l(\mu_i (\beta); y_i, w_i) = \frac{w_i}{\phi} \log \big( \frac{w_i y_i}{\phi \mu_i} \big) - \frac{w_i y_i}{\phi \mu_i} - \log (y_i) - \log \big(\Gamma \big(\frac{w_i}{\phi} \big) \big)
 
 where
 
@@ -1468,9 +1466,7 @@ where
 
 .. note::
    
-   You must estimate the dispersion parameter. During initialization, ``compute_p_values`` and ``remove_collinear_columns`` must be set to ``True`` to facilitate this estimation process. Also, ``dispersion_parameter_method`` must be set to ``"ml"``.
-
-   Since ``dispersion_parameter_method="ml"`` only works without regularization, you disable regularization by setting ``lambda`` equal to an array of ``0.0``.
+   For Gamma family, you need the dispersion parameter estimate. When the parameter ``calc_like`` is set to ``True``, the parameters ``compute_p_values`` and ``remove_collinear_columns`` are set to ``True`` for you. By default, the parameter ``dispersion_parameter_method`` is set to ``"pearson"``. However, you can set ``dispersion_parameter_method`` to ``"deviance"`` or ``"ml"`` if you prefer.
 
 **Multinomial**:
 
@@ -1486,9 +1482,7 @@ The Tweedie calculation is located in the section `Tweedie Likelihood Calculatio
 
 .. note::
    
-   You must estimate the dispersion parameter. During initialization, ``compute_p_values`` and ``remove_collinear_columns`` must be set to ``True`` to facilitate this estimation process. Also, ``dispersion_parameter_method`` must be set to ``"ml"``.
-
-   Since ``dispersion_parameter_method="ml"`` only works without regularization, you disable regularization by setting ``lambda`` equal to an array of ``0.0``.
+   For Tweedie family, you need the dispersion parameter estimate. When the parameter ``calc_like`` is set to ``True``, the ``dispersion_parameter_method`` is set to ``"ml"`` which provides you with the best log likelihood estimation.
 
 Final AIC Calculation
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1501,12 +1495,13 @@ The final AIC in the output metric is calculated using the standard formula, uti
 
 where
 
-- :math:`p` is the number of parameters estimated in the model
+- :math:`p` is the number of non-zero coefficients estimated in the model
 - :math:`LL` is the log likelihood
 
-To manage computational intensity, ``calc_like`` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, ``calc_like=False``, but you can set it to ``True`` to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
+To manage computational intensity, ``calc_like`` is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, ``calc_like=False``, but you can set it to ``True`` and the parameter ``HGLM`` to ``False`` to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
 
-**Tweedie Likelihood Calculation**
+Tweedie Likelihood Calculation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are three different estimations you calculate Tweedie likelihood for:
 
