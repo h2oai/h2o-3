@@ -3,7 +3,7 @@
 H2O Segment Models.
 
 :copyright: (c) 2020 H2O.ai
-:license:   GNU Affero General Public License v3.0 (see LICENSE for details)
+:license:   GNU Affero General Public License v3 (see LICENSE for details)
 """
 from h2o.base import Keyed
 from h2o.frame import H2OFrame

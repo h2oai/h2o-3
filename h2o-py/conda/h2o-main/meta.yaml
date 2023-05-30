@@ -22,5 +22,5 @@ requirements:
 
 about:
   home: https://github.com/h2oai/h2o-3.git
-  license: GNU Affero General Public License v3.0
+  license: GNU Affero General Public License v3
   license_family: AGPL

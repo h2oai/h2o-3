@@ -3,7 +3,7 @@
 //    https://github.com/dmlc/xgboost/blob/master/src/tree/tree_model.cc
 // All credit for this implementation goes to XGBoost Contributors:
 //    https://github.com/dmlc/xgboost/blob/master/CONTRIBUTORS.md
-// Licensed under GNU Affero General Public License v3.0
+// Licensed under GNU Affero General Public License v3
 package hex.genmodel.algos.tree;
 
 import ai.h2o.algos.tree.INode;
