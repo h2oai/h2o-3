@@ -648,8 +648,13 @@ endif
 
 check-leaks:
 	-grep -H -R --exclude-dir=smalldata --exclude-dir=bigdata --include "*.log" --include "*.out" --include "out.*" --exclude leak-check.out -E "`cat tests/leakCheckKeywords | tr '\n' '|' | sed 's/|\s*$$//'`" 2>&1 > leak-check.out
-	@if [ -n "`cat leak-check.out`" ]; then\
-		echo "Credentials leaked! Please check $(PWD)/leak-check.out"; \
+	@if [ -e leak-check.out ]; then \
+		if [ -s leak-check.out ]; then \
+			echo "Credentials leaked! Please check $(PWD)/leak-check.out"; \
+			exit 1; \
+		fi \
+	else \
+		echo "$(PWD)/leak-check.out doesn't exist"; \
 		exit 1; \
 	fi
 
