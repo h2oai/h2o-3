@@ -358,7 +358,11 @@ public class DTTest extends TestUtil {
             assertNotNull(model._output._training_metrics);
             assertNotEquals(0, model._output._training_metrics._MSE);
             assertNotEquals(0, model._output._training_metrics.auc_obj()._auc);
-
+            if (p._valid != null) {
+                assertNotNull(model._output._validation_metrics);
+                assertNotEquals(0, model._output._validation_metrics._MSE);
+                assertNotEquals(0, model._output._validation_metrics.auc_obj()._auc);
+            }
 
 //            train.toCategoricalCol(p1._response_column);
 //
