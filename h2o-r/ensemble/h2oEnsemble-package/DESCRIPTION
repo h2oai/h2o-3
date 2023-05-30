@@ -6,7 +6,7 @@ Date: 2017-08-02
 Author: Erin LeDell
 Maintainer: Erin LeDell <erin@h2o.ai>
 Description: H2O Ensemble implements the Super Learner ensemble (stacking) algorithm using the H2O R interface to provide base learning algorithms.   
-License: GNU Affero General Public License (== 3.0)
+License: GNU Affero General Public License (== 3)
 Depends: h2o (>= 3.8.1.3)
 Imports: utils, stats
 Suggests: testthat, cvAUC
