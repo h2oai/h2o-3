@@ -1,8 +1,6 @@
 package hex.tree.dt;
 
 import hex.ConfusionMatrix;
-import hex.tree.drf.DRF;
-import hex.tree.drf.DRFModel;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import water.Scope;
@@ -16,11 +14,7 @@ import water.runner.H2ORunner;
 import water.test.util.ConfusionMatrixUtils;
 import water.util.FrameUtils;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 
@@ -185,17 +179,6 @@ public class DTTest extends TestUtil {
         }
     }
 
-    private void writePredictionsToFile(String path, Vec predictions, String prediction_column) {
-        File csvOutputFile = new File(path);
-        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
-            pw.println(prediction_column);
-            IntStream.range(0, (int) predictions.length()).mapToDouble(predictions::at)
-                    .mapToLong(Math::round).forEach(pw::println);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-        assertTrue(csvOutputFile.exists());
-    }
 
     @Test
     public void testProstateSmallData() {
@@ -211,20 +194,21 @@ public class DTTest extends TestUtil {
         DTModel.DTParameters p =
                 new DTModel.DTParameters();
         p._train = train._key;
+        p._valid = train._key;
         p._seed = 0xDECAF;
-        p._max_depth = 12;
+        p._max_depth = 5;
+        p._min_rows = 10;
         p._response_column = "CAPSULE";
 
-        DRFModel.DRFParameters p1 =
-                new DRFModel.DRFParameters();
-        p1._ntrees = 1;
-        p1._max_depth = 12;
-        p1._response_column = "CAPSULE";
-        p1._train = train._key;
-        p1._seed = 0xDECAF;
+        testDataset(test, p);
 
-        testDataset(train, test, p, p1, "prostate");
+        p._max_depth = 10;
+        testDataset(test, p);
+
+        p._max_depth = 15;
+        testDataset(test, p);
         
+        Scope.exit();
     }
 
     @Test
@@ -240,20 +224,18 @@ public class DTTest extends TestUtil {
         DTModel.DTParameters p =
                 new DTModel.DTParameters();
         p._train = train._key;
+        p._valid = train._key;
         p._seed = 0xDECAF;
-        p._max_depth = 12;
+        p._max_depth = 2;
+        p._min_rows = 10;
         p._response_column = "IsDepDelayed";
 
-        DRFModel.DRFParameters p1 =
-                new DRFModel.DRFParameters();
-        p1._ntrees = 1;
-        p1._max_depth = 12;
-        p1._response_column = "IsDepDelayed";
-        p1._train = train._key;
-        p1._seed = 0xDECAF;
+        testDataset(test, p);
 
-        testDataset(train, test, p, p1, "airlines");
+        p._max_depth = 5;
+        testDataset(test, p);
         
+        Scope.exit();
     }
     
 
@@ -267,19 +249,12 @@ public class DTTest extends TestUtil {
         DTModel.DTParameters p =
                 new DTModel.DTParameters();
         p._train = train._key;
+        p._valid = train._key;
         p._seed = 0xDECAF;
         p._max_depth = 3;
         p._response_column = "label";
 
-        DRFModel.DRFParameters p1 =
-                new DRFModel.DRFParameters();
-        p1._ntrees = 1;
-        p1._max_depth = 3;
-        p1._response_column = "label";
-        p1._train = train._key;
-        p1._seed = 0xDECAF;
-
-        testDataset(train, test, p, p1, "BigSynthetic");
+        testDataset(test, p);
     }
 
     @Test
@@ -292,19 +267,12 @@ public class DTTest extends TestUtil {
         DTModel.DTParameters p =
                 new DTModel.DTParameters();
         p._train = train._key;
+        p._valid = train._key;
         p._seed = 0xDECAF;
         p._max_depth = 5;
         p._response_column = "Class";
 
-        DRFModel.DRFParameters p1 =
-                new DRFModel.DRFParameters();
-        p1._ntrees = 1;
-        p1._max_depth = 5;
-        p1._response_column = "Class";
-        p1._train = train._key;
-        p1._seed = 0xDECAF;
-
-        testDataset(train, test, p, p1, "CreditCard");
+        testDataset(test, p);
     }
 
     @Test
@@ -317,24 +285,15 @@ public class DTTest extends TestUtil {
         DTModel.DTParameters p =
                 new DTModel.DTParameters();
         p._train = train._key;
+        p._valid = train._key;
         p._seed = 0xDECAF;
         p._max_depth = 5;
         p._response_column = "label";
 
-        DRFModel.DRFParameters p1 =
-                new DRFModel.DRFParameters();
-        p1._ntrees = 1;
-        p1._max_depth = 5;
-        p1._response_column = "label";
-        p1._train = train._key;
-        p1._seed = 0xDECAF;
-        
-        testDataset(train, test, p, p1, "HIGGS");
-        
+        testDataset(test, p);
     }
     
-    public void testDataset(Frame train, Frame test, DTModel.DTParameters p, DRFModel.DRFParameters p1, String datasetName) {
-        try {
+    public void testDataset(Frame test, DTModel.DTParameters p) {
 
             DT dt = new DT(p);
             DTModel model = dt.trainModel().get();
@@ -350,6 +309,7 @@ public class DTTest extends TestUtil {
             ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(
                     test.vec(p._response_column).toCategoricalVec(),
                     out.vec(0).toCategoricalVec());
+            System.out.println("Max depth: " + p._max_depth);
             System.out.println("DT:");
             System.out.println("Accuracy: " + cm.accuracy());
             System.out.println("F1: " + cm.f1());
@@ -363,28 +323,5 @@ public class DTTest extends TestUtil {
                 assertNotEquals(0, model._output._validation_metrics._MSE);
                 assertNotEquals(0, model._output._validation_metrics.auc_obj()._auc);
             }
-
-//            train.toCategoricalCol(p1._response_column);
-//
-//            DRF drf = new DRF(p1);
-//            DRFModel model1 = drf.trainModel().get();
-//
-//            assertNotNull(model1);
-//            Scope.track_generic(model1);
-//
-//            Frame out1 = model1.score(test);
-//
-//            Scope.track_generic(out1);
-//            assertEquals(test.numRows(), out1.numRows());
-//
-//            ConfusionMatrix cm1 = ConfusionMatrixUtils.buildCM(
-//                    test.vec(p1._response_column).toCategoricalVec(),
-//                    out1.vec(0).toCategoricalVec());
-//            System.out.println("DRF:");
-//            System.out.println("Accuracy: " + cm1.accuracy());
-//            System.out.println("F1: " + cm1.f1());
-        } finally {
-            Scope.exit();
-        }
     }
 }
