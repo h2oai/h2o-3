@@ -139,3 +139,7 @@ Examples
 		target_variable = 'CAPSULE'
 		prostate[target_variable] = prostate[target_variable].asfactor()
 
+References
+~~~~~~~~~~
+
+T. Hastie, R. Tibshirani, J. Friedman, “The elements of Statistical Learning Data Mining, Inference and Prediction”, Chapter 9.2, Second Edition, Springer Series in Statistics, 2017.
