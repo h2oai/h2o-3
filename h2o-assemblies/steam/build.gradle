@@ -72,6 +72,9 @@ dependencies {
             because 'Fixes CVE-2022-45685'
             because 'Fixes CVE-2022-40150'
         }
+        api('org.jetbrains.kotlin:kotlin-stdlib:1.4.32') {
+            because 'Fixes CVE-2020-29582'
+        }
     }
 }
 
