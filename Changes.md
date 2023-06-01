@@ -2,6 +2,37 @@
 
 ## H2O
 
+### release-name (3.42.0.1) - 6/x/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-new/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-new/1/index.html</a>
+
+#### Bug
+- [[PUBDEV-9097]](https://h2oai.atlassian.net/browse/PUBDEV-9097) - Fixed Infogram cross-validation with weights.
+- [[PUBDEV-9096]](https://h2oai.atlassian.net/browse/PUBDEV-9096) - Updated R package maintainer.
+- [[PUBDEV-9087]](https://h2oai.atlassian.net/browse/PUBDEV-9087) - Fixed leaks in GLM’s Negative Binomial estimation.
+
+#### Improvement
+- [[PUBDEV-9085]](https://h2oai.atlassian.net/browse/PUBDEV-9085) - Changed `warning` tag to `info` tag when weights are not provided during validation/test dataset scoring when weights are present in training. 
+- [[PUBDEV-9081]](https://h2oai.atlassian.net/browse/PUBDEV-9081) - Removed support for Python 2.7 and 3.5.
+- [[PUBDEV-8985]](https://h2oai.atlassian.net/browse/PUBDEV-8985) - Upgraded the default parquet library to 1.12.3 for standalone jar.
+
+#### New Feature
+- [[PUBDEV-8947]](https://h2oai.atlassian.net/browse/PUBDEV-8947) - Implemented AIC metric for all GLM model families.
+- [[PUBDEV-8899]](https://h2oai.atlassian.net/browse/PUBDEV-8899) - Implemented Tweedie variance power maximum likelihood estimation for GLM.
+- [[PUBDEV-8793]](https://h2oai.atlassian.net/browse/PUBDEV-8793) - Added ability to convert H2OAssembly to a MOJO2 artifact.
+
+#### Docs
+- [[issue-15474]](https://github.com/h2oai/h2o-3/issues/15474) - Added link to AutoML Wave app from AutoML user guide.
+- [[PUBDEV-9088]](https://h2oai.atlassian.net/browse/PUBDEV-9088) - Updated authors and editors for GLM booklet.
+- [[PUBDEV-8894]](https://h2oai.atlassian.net/browse/PUBDEV-8894) -  Added documentation on Tweedie variance power maximum likelihood estimation to GLM booklet and user guide.
+- [[PUBDEV-8461]](https://h2oai.atlassian.net/browse/PUBDEV-8461) - Improved user guide documentation for Generalized Additive Models algorithm.
+
+#### Security
+- [[PUBDEV-9105]](https://h2oai.atlassian.net/browse/PUBDEV-9105) - Addressed CVE-2020-29582 in h2o-steam.jar.
+- [[PUBDEV-9103]](https://h2oai.atlassian.net/browse/PUBDEV-9103) - Addressed CVE-2023-26048 and CVE-2023-26049 by upgrading Jetty for minimal and steam jar.
+- [[PUBDEV-9100]](https://h2oai.atlassian.net/browse/PUBDEV-9100) - Addressed PRISMA-2023-0067 in h2o-steam.jar.
+- [[PUBDEV-9080]](https://h2oai.atlassian.net/browse/PUBDEV-9080) - Addressed CVE-2023-1436, CVE-2022-45693, CVE-2022-45685, and CVE-2022-40150 by upgrading org.codehaus.jettison:jettison in h2o-steam.jar.
+
 ### Kurka (3.40.0.4) - 4/28/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zz_kurka/4/index.html</a>
