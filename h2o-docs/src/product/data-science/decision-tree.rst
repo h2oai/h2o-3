@@ -12,12 +12,12 @@ Defining a Decision Tree Model
 
 All parameters are optional unless specified as *required*.
 
-Shared tree-based algorithm parameters
-''''''''''''''''''''''''''''''''''''''
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
--  `max_depth <algo-params/max_depth.html>`__: Specify the maximum depth of the final decision tree. Higher values will make the model more complex and can lead to overfitting. The final depth can be less than the definied ``max_depth`` if another stopped criteria is met firtst. Setting this value to ``0`` specifies no limit. This value defaults to ``20``. 
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum depth of the final decision tree. The final depth can be less than the definied ``max_depth`` if another stopped criteria is met first. This value defaults to ``20``. 
 
--  `min_rows <algo-params/min_rows.html>`__ (Python) / **node_size** (R): Specify the minimum number of observations for a leaf. This value defaults to ``10``.
+-  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf. This value defaults to ``10``.
 
 Common parameters
 '''''''''''''''''
@@ -56,6 +56,8 @@ Common parameters
     **Python only**: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
     
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
 -  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
@@ -125,6 +127,16 @@ Examples
 		target_variable <- 'CAPSULE'
 		prostate[target_variable] <- as.factor(prostate['CAPSULE'])
 
+		# Split the dataset into train and test:
+		splits <- h2o.splitFrame(data = prostate, ratios = 0.7, seed =1)
+		train <- splits[[1]]
+		test <- splits[[2]]
+
+		# Build and train the model:
+		h2o_dt <- h2o.decision_tree(y = target_variable, training_frame = train, max_depth = 5)
+
+		# Predict on the test data:
+		h2o_pred <- h2o.predict(h2o_dt, test)$predict
 
 	.. code-tab:: python
 
@@ -132,12 +144,22 @@ Examples
 		from h2o.estimators import H2ODecisionTreeEstimator
 		h2o.init()
 
-		# Import the prostate dataset:
+		# Import the prostatedataset:
 		prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
 		# Set the target variable:
 		target_variable = 'CAPSULE'
 		prostate[target_variable] = prostate[target_variable].asfactor()
+
+		# Split the dataset into train and test:
+		train, test = prostate.split(ratios=[.7])
+
+		# Build and train the model:
+		sdt_h2o = H2ODecisionTreeEstimator(model_id="decision_tree.hex", max_depth=5)
+		sdt_h2o.train(y=target_variable, training_frame=train)
+
+		# Predict on the test data:
+		pred_test = sdt_h2o.predict(test)
 
 References
 ~~~~~~~~~~
