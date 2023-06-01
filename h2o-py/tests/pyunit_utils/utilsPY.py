@@ -4607,22 +4607,37 @@ def test_java_scoring(model, frame, predictions, epsilon):
 
 def checkLogWeightWarning(weightColName, wantWarnMessage=False):
     """
-    This method will scrup the logs and check to make sure that no warning message regarding the weight column is found
-    in the h2o logs.
+    This method will scrub the logs and check to make sure that no warning message regarding the weight column is or
+     is not found in the h2o logs depending on the setting of wantWarnMessage.  
     :param weightColName: name of weight columns that the warning message is going to check against
-    :param wantWarnMessage: boolean, if true will make sure warning message about weight column is found.
-    :return: None.  Will throw an error when warning message about the weightColName is found.
+    :param wantWarnMessage: boolean, if true will make sure warning message about weight column is found.  Otherwise,
+        it will make sure the warning message about weight column is not found.
+    :return: None.  Will throw an error when warning message about the weightColName is supposed to be found but is not
+        or when the warning message is not supposed to be found but is found.  This depends on the setting of parameter
+        wantWarnMessage.
+    """
+    warningStatement = "WARN water.default: Test/Validation dataset is missing weights column '"+weightColName+"'"
+    checkLogWarning(warningStatement, wantWarnMessage)
+
+
+def checkLogWarning(warning_phrase, wantWarnMessage=False):
+    """
+    This method will scrup the logs and check to make sure that no warning message found in warning_phrase is found
+    in the h2o logs.
+    :param warning_phrase: warning message to consider
+    :param wantWarnMessage: boolean, if true will make sure warning message is found.  Else, it will make sure that the 
+        warning message is not found in the logs.
+    :return: None.  Will throw an error when warning message is or is not found according to the setting of wantWarnMessage.
     """
     import zipfile
     import codecs
     import tempfile
-    
+
     TMPDIR = tempfile.TemporaryDirectory()
     logFileName = "h2oLogs.zip"
     h2o.download_all_logs(dirname=TMPDIR.name, filename=logFileName)
     numWarning = 0
     logFile = os.path.join(TMPDIR.name, logFileName)
-    warningStatement = "WARN water.default: Test/Validation dataset is missing weights column '"+weightColName+"'"
     with zipfile.ZipFile(logFile, 'r') as zip:
         zip.extractall(TMPDIR.name)
         for oneName in zip.namelist():
@@ -4635,14 +4650,12 @@ def checkLogWeightWarning(weightColName, wantWarnMessage=False):
                         with zip2.open(oneFile) as f:
                             for line in f:
                                 strline = codecs.decode(line)
-                                if warningStatement in strline:
-                                    numWarning = numWarning+1
+                                if warning_phrase in strline:
+                                    numWarning = numWarning + 1
                                     print(line)
-    print("total number of weight column warning messages found: {0}".format(numWarning))
+    print("total number of warning messages found: {0}".format(numWarning))
     if wantWarnMessage:
-        assert numWarning > 0, "there should be warning messages regarding weights column in test/validation " \
-                                "datasets but are not found."
+        assert numWarning > 0, "there should be warning messages {0}} " \
+                               "received but are not found.".format(warning_phrase)
     else:
-        assert numWarning == 0, "there should be no warning messages regarding weights column in test/validation " \
-                            "datasets but are found."
-
+        assert numWarning == 0, "there should be no warning messages ({0}) found but are found.".format(warning_phrase)
