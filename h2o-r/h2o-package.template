@@ -15,7 +15,7 @@ Type: \tab Package\cr
 Version: \tab SUBST_PROJECT_VERSION\cr
 Branch: \tab SUBST_PROJECT_BRANCH\cr
 Date: \tab SUBST_PROJECT_DATE\cr
-License: \tab GNU Affero General Public License (== 3)\cr
+License: \tab AGPL-3\cr
 Depends: \tab R (>= 2.13.0), RCurl, jsonlite, statmod, tools, methods, utils\cr
 }
 
