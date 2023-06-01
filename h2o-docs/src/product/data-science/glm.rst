@@ -41,7 +41,7 @@ Algorithm-specific parameters
 
 - **build_null_model**: If set, will build a model with only the intercept.  This option defaults to ``False``.
 
--  **calc_like**: Specify whether to return likelihood function value for HGLM or normal GLM. Setting this option to ``True`` while disabling ``HGLM`` will enable the calculation of the full log likelihood and full AIC. This option defaults to ``False`` (disabled). 
+-  **calc_like**: Specify whether to return likelihood function value for HGLM or normal GLM. Setting this option to ``True`` while disabling ``HGLM`` will enable the calculation of the full log likelihood and full AIC. This option defaults to ``False`` (disabled).
 
 - **dispersion_epsilon**: If changes in dispersion parameter estimation or loglikelihood value is smaller than ``dispersion_epsilon``, this will break out of the dispersion parameter estimation loop using maximum likelihood. This option defaults to ``0.0001``.
 
