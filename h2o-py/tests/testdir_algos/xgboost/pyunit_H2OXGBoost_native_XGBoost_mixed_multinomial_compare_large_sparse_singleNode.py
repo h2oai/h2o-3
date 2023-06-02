@@ -9,8 +9,11 @@ The goal of this test is to compare the results of H2OXGBoost and natibve XGBoos
 The dataset contains both numerical and enum columns.
 '''
 def comparison_test_dense():
-    if sys.version.startswith("2"):
+    if sys.version_info.major == 2:
         print("native XGBoost tests only supported on python3")
+        return
+    if sys.version_info.major == 3 and sys.version_info.minor == 9:
+        print("native XGBoost tests only doesn't run on Python 3.9 for now.")
         return
     import xgboost as xgb
     assert H2OXGBoostEstimator.available() is True

@@ -39,7 +39,7 @@ automl.multiple_runs.test <- function() {
         seed = 4321,
         training_frame = train,
         validation_frame = test,
-        max_models = 3,
+        max_models = 5,
         project_name = "run_2.hex"
     )
     leaderboard_keys_2 <- list_keys_containing("leaderboard") 

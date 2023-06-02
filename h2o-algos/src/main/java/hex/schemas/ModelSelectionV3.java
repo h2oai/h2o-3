@@ -68,15 +68,18 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "nparallelism",
                 "max_predictor_number",  // denote maximum number of predictors to build models for
                 "min_predictor_number",
-                "mode", // naive, maxr, backward
-                "p_values_threshold"
+                "mode", // naive, maxr, maxrsweep, backward
+                "build_glm_model",
+                "p_values_threshold",
+                "influence",
+                "multinode_mode"
         };
 
         @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
         public long seed;
 
         // Input fields
-        @API(help = "Family. For MaxR, only gaussian.  For backward, ordinal and multinomial families are not supported",
+        @API(help = "Family. For maxr/maxrsweep, only gaussian.  For backward, ordinal and multinomial families are not supported",
                 values = {"AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson",
                         "gamma", "tweedie", "negativebinomial"}, level = API.Level.critical)
         // took tweedie out since it's not reliable
@@ -111,6 +114,18 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min", 
                 level = API.Level.critical)
         public boolean lambda_search;
+
+        @API(help = "For maxrsweep only.  If enabled, will attempt to perform sweeping action using multiple nodes in " +
+                "the cluster.  Defaults to false.",
+                level = API.Level.critical)
+        public boolean multinode_mode;
+
+        @API(help = "For maxrsweep mode only.  If true, will return full blown GLM models with the desired predictor" +
+                "subsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is for" +
+                "speeding up the model selection process.  The users can choose to build the GLM models themselves" +
+                "by using the predictor subsets themselves.  Defaults to false.",
+                level = API.Level.critical)
+        public boolean build_glm_model;
 
         @API(help="Stop early when there is no more relative improvement on train or validation (if provided)")
         public boolean early_stopping;
@@ -152,20 +167,20 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 " solver ", level = API.Level.expert)
         public double beta_epsilon;
 
-        @API(help = "Converge if  objective value changes less than this."+ " Default indicates: If lambda_search"+
+        @API(help = "Converge if  objective value changes less than this."+ " Default (of -1.0) indicates: If lambda_search"+
                 " is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set to False" +
                 " and lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other value" +
                 " of lambda the default value of objective_epsilon is set to .0001.", level = API.Level.expert)
         public double objective_epsilon;
 
         @API(help = "Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS" +
-                " solver. Default indicates: If lambda_search is set to False and lambda is equal to zero, the" +
+                " solver. Default (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the" +
                 " default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If " +
                 "lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.",
                 level = API.Level.expert)
         public double gradient_epsilon;
 
-        @API(help="Likelihood divider in objective value computation, default is 1/nobs")
+        @API(help="Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs")
         public double obj_reg;
 
         @API(help = "Link function.", level = API.Level.secondary, values = {"family_default", "identity", "logit", "log",
@@ -183,8 +198,9 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 valuesProvider = ModelSelectionModeProvider.class,
                 help = "Mode: Used to choose model selection algorithms to use.  Options include "
                         + "'allsubsets' for all subsets, "
-                        + "'maxr' for MaxR, "
-                        + "'backward' for backward selection"
+                        + "'maxr' that uses sequential replacement and GLM to build all models, slow but works with cross-validation, validation frames for more robust results, "
+                        + "'maxrsweep' that uses sequential replacement and sweeping action, much faster than 'maxr', "
+                        + "'backward' for backward selection."
         )
         public ModelSelectionModel.ModelSelectionParameters.Mode mode;
 
@@ -270,6 +286,10 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         @API(help = "For mode='backward' only.  If specified, will stop the model building process when all coefficients" +
                 "p-values drop below this threshold ", level = API.Level.expert)
         public double p_values_threshold;
+
+        @API(help = "If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in " +
+                "the dataset.", values = { "dfbetas" }, level = API.Level.expert, gridable = false)
+        public GLMModel.GLMParameters.Influence influence;
     }
 
     public static final class ModelSelectionModeProvider extends EnumValuesProvider<ModelSelectionModel.ModelSelectionParameters.Mode> {

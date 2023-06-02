@@ -33,11 +33,14 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 public class PersistManager {
 
   public static final int MAX_BACKENDS = 8;
-
+  public static final int VALUE_DRIVE = MAX_BACKENDS;
+  
   /** Property which enable HDFS as default fallback persistent layer. For example,
    * if swift fs is regirestered properly under HDFS and user specifies swift based URI, the persist
    * layer forwards the request through HDFS API. */
   private static final String PROP_ENABLE_HDFS_FALLBACK = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.fallback";
+
+  private static final String PROP_FORCE_HDFS_FOR_S3 = SYSTEM_PROP_PREFIX + "persist.enable.hdfs.for.s3";
 
   /** Persistence schemes; used as file prefixes eg "hdfs://some_hdfs_path/some_file" */
   public interface Schemes {
@@ -69,30 +72,36 @@ public class PersistManager {
 
   private Persist[] I;
   private PersistHex HEX = new PersistHex(); // not part of I because it cannot be a backend for DKV
+  private PersistH2O persistH2O = new PersistH2O();
   private PersistStatsEntry[] stats;
   public PersistStatsEntry[] getStats() { return stats; }
 
-  public boolean isHdfsPath(String path) {
+  boolean isS3Path(String path) {
     String s = path.toLowerCase();
-    if (s.startsWith("hdfs:")
-        || s.startsWith("s3:")
-        || s.startsWith("s3n:")
-        || s.startsWith("s3a:")
-        || s.startsWith("maprfs:")
-        || useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(path)) {
-      return true;
+    return s.startsWith("s3:");
+  }
+
+  public boolean isHdfsPath(String path) {
+    if (isS3Path(path) && !forceHdfsForS3()) {
+      return false; // S3 will only be handled by HDFS Persist if it is enabled
     }
-    return false;
+    String s = path.toLowerCase();
+    return s.startsWith("hdfs:")
+            || s.startsWith("s3:")
+            || s.startsWith("s3n:")
+            || s.startsWith("s3a:")
+            || s.startsWith("maprfs:")
+            || useHdfsAsFallback() && I[Value.HDFS] != null && I[Value.HDFS].canHandle(path);
   }
 
   private void validateHdfsConfigured() {
-    if (!isHdfsConfigured()) {
-      throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
+    if (hdfsNotConfigured()) {
+      throw new H2OIllegalArgumentException("HDFS and S3A support is not configured");
     }
   }
 
-  private boolean isHdfsConfigured() {
-    return I[Value.HDFS] != null;
+  private boolean hdfsNotConfigured() {
+    return I[Value.HDFS] == null;
   }
   
   public boolean isGcsPath(String path) {
@@ -107,12 +116,12 @@ public class PersistManager {
     if (! key.isChunkKey()) {
       throw new IllegalArgumentException("Only Chunk keys are supported for HEX schema");
     }
-    return PersistHex.HEX_PATH_PREFIX + key.toString();
+    return PersistHex.HEX_PATH_PREFIX + key;
   }
 
   public PersistManager(URI iceRoot) {
-    I = new Persist[MAX_BACKENDS];
-    stats = new PersistStatsEntry[MAX_BACKENDS];
+    I = new Persist[MAX_BACKENDS + 1];
+    stats = new PersistStatsEntry[I.length];
     for (int i = 0; i < stats.length; i++) {
       stats[i] = new PersistStatsEntry();
     }
@@ -190,6 +199,15 @@ public class PersistManager {
     } catch (Throwable ignore) {
       Log.info("GCS subsystem not available");
     }
+
+    try {
+      Class<?> klass = Class.forName("water.persist.PersistDrive");
+      java.lang.reflect.Constructor<?> constructor = klass.getConstructor();
+      I[VALUE_DRIVE] = (Persist) constructor.newInstance();
+      Log.info("Drive subsystem successfully initialized");
+    } catch (Throwable ignore) {
+      Log.info("Drive subsystem not available");
+    }
   }
 
   public void store(int backend, Value v) throws IOException {
@@ -240,7 +258,7 @@ public class PersistManager {
       ikey = I[Value.S3].uriToKey(uri);
     } else if ("hdfs".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
-    } else if ("s3".equals(scheme) || "s3n".equals(scheme) || "s3a".equals(scheme)) {
+    } else if ("s3n".equals(scheme) || "s3a".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("gs".equals(scheme)) {
       ikey = I[Value.GCS].uriToKey(uri);
@@ -289,10 +307,14 @@ public class PersistManager {
       else {
         return new ArrayList<>();
       }
+    } else if(s.startsWith(PersistH2O.PREFIX)) {
+      return persistH2O.calcTypeaheadMatches(filter, limit);
     } else if(s.startsWith("s3://")) {
       return I[Value.S3].calcTypeaheadMatches(filter, limit);
     } else if(s.startsWith("gs://")) {
       return I[Value.GCS].calcTypeaheadMatches(filter, limit);
+    } else if(s.startsWith("drive://")) {
+      return I[VALUE_DRIVE].calcTypeaheadMatches(filter, limit);
     } else if (s.startsWith("hdfs:")
                || s.startsWith("s3n:")
                || s.startsWith("s3a:")
@@ -400,12 +422,17 @@ public class PersistManager {
       I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("http".equals(scheme) || "https".equals(scheme)) {
       I[Value.HTTP].importFiles(path, pattern, files, keys, fails, dels);
+    } else if (PersistH2O.SCHEME.equals(scheme)) {
+      persistH2O.importFiles(path, pattern, files, keys, fails, dels);
     } else if ("s3".equals(scheme)) {
       if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
       I[Value.S3].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("gs".equals(scheme)) {
       if (I[Value.GCS] == null) throw new H2OIllegalArgumentException("GCS support is not configured");
       I[Value.GCS].importFiles(path, pattern, files, keys, fails, dels);
+    } else if ("drive".equals(scheme)) {
+      if (I[VALUE_DRIVE] == null) throw new H2OIllegalArgumentException("Drive support is not configured");
+      I[VALUE_DRIVE].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("hdfs".equals(scheme) ||
         "s3n:".equals(scheme) ||
         "s3a:".equals(scheme) ||
@@ -495,6 +522,8 @@ public class PersistManager {
       return arr;
     } else if (isGcsPath(path)) {
       return I[Value.GCS].list(path);
+    } else if (isS3Path(path)) {
+      return I[Value.S3].list(path);
     }
 
     File dir = new File(path);
@@ -519,38 +548,32 @@ public class PersistManager {
       return b;
     } else if (isGcsPath(path)) {
       return I[Value.GCS].exists(path);
+    } else if (isS3Path(path)) {
+      return I[Value.S3].exists(path);
     }
 
     File f = new File(path);
     return f.exists();
   }
 
-  public boolean isDirectory(String path) {
-    if (isHdfsPath(path)) {
-      validateHdfsConfigured();
-      boolean b = I[Value.HDFS].isDirectory(path);
-      return b;
-    }
-
-    File f = new File(path);
-    return f.isDirectory();
-  }
-
   /**
    * Checks whether a given path is either an empty directory or it doesn't yet exist.
    * This is trivial if the filesystem where the path leads is distributed.
    * If we are working with a local filesystem we need to make sure that this property
-   * is satisfied on all of the nodes.
+   * is satisfied on all the nodes.
    * @param path path we want to check
    * @return true the path is an empty or non-existent directory everywhere, false otherwise
    */
-  public boolean isEmptyDirectoryAllNodes(String path) {
+  public boolean isEmptyDirectoryAllNodes(final String path) {
     if (isHdfsPath(path)) {
       validateHdfsConfigured();
       if (! I[Value.HDFS].exists(path)) return true;
       if (! I[Value.HDFS].isDirectory(path)) return false;
       PersistEntry[] content = I[Value.HDFS].list(path);
       return (content == null) || (content.length == 0);
+    } else if (isS3Path(path)) {
+      PersistEntry[] content = I[Value.S3].list(path);
+      return content.length == 0;
     }
 
     return new CheckLocalDirTask(path).doAllNodes()._result;
@@ -636,10 +659,11 @@ public class PersistManager {
   public long length(String path) {
     if (isHdfsPath(path)) {
       validateHdfsConfigured();
-      long l = I[Value.HDFS].length(path);
-      return l;
+      return I[Value.HDFS].length(path);
     } else if (isGcsPath(path)) {
       return I[Value.GCS].length(path);
+    } else if (isS3Path(path)) {
+      return I[Value.S3].length(path);
     }
 
     File f = new File(path);
@@ -653,12 +677,13 @@ public class PersistManager {
   public InputStream open(String path) {
     if (isHdfsPath(path)) {
       validateHdfsConfigured();
-      InputStream os = I[Value.HDFS].open(path);
-      return os;
+      return I[Value.HDFS].open(path);
     } else if (isGcsPath(path)) {
       return I[Value.GCS].open(path);
     } else if (isHexPath(path)) {
       return HEX.open(path);
+    } else if (isS3Path(path)) {
+      return I[Value.S3].open(path);
     }
 
     try {
@@ -696,7 +721,7 @@ public class PersistManager {
       }
     }
     // fallback
-    if (!isHdfsConfigured()) {
+    if (hdfsNotConfigured()) {
       throw new IllegalArgumentException(String.format(
               "Failed to open Vec '%s' for reading. " +
               "Persistence backend doesn't provide implementation of a Seekable InputStream and HDFS fallback is not available.", 
@@ -715,6 +740,8 @@ public class PersistManager {
       return b;
     } else if (isGcsPath(path)){
       return I[Value.GCS].mkdirs(path);
+    } else if (isS3Path(path)) {
+      return I[Value.S3].mkdirs(path);
     }
 
     File f = new File(path);
@@ -731,6 +758,9 @@ public class PersistManager {
     if (isGcsPath(fromPath) || isGcsPath(toPath)) {
       return I[Value.GCS].rename(fromPath, toPath);
     }
+    if (isS3Path(fromPath) || isS3Path(toPath)) {
+      return I[Value.S3].rename(fromPath, toPath);
+    }
 
     File f = new File(fromPath);
     File t = new File(toPath);
@@ -746,6 +776,8 @@ public class PersistManager {
       return I[Value.GCS].create(path, overwrite);
     } else if (isHexPath(path)) {
       return HEX.create(path, overwrite);
+    } if (isS3Path(path)) {
+      return I[Value.S3].create(path, overwrite);
     }
 
     try {
@@ -769,6 +801,8 @@ public class PersistManager {
       return b;
     } else if (isGcsPath(path)) {
       return I[Value.GCS].delete(path);
+    } else if (isS3Path(path)) {
+      return I[Value.S3].delete(path);
     }
 
     File f = new File(path);
@@ -852,4 +886,9 @@ public class PersistManager {
   static boolean useHdfsAsFallback() {
     return System.getProperty(PROP_ENABLE_HDFS_FALLBACK, "true").equals("true");
   }
+
+  static boolean forceHdfsForS3() {
+    return Boolean.parseBoolean(System.getProperty(PROP_FORCE_HDFS_FOR_S3, "false"));
+  }
+
 }

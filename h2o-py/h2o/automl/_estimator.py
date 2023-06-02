@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import functools as ft
 from inspect import getdoc
 import re
@@ -21,18 +19,23 @@ _params_doc_ = dict()  # holds the doc per param extracted from H2OAutoML constr
 
 
 def _extract_params_doc(docstr):
-    pat = re.compile(r"^:param (\w+ )?(?P<name>\w+):\s?(?P<doc>.*)")  # match param doc-start in Sphinx format ":param type name: description"
+    pat = re.compile(r"^:param (?P<type>.*? )?(?P<name>\w+):\s?(?P<doc>.*)")  # match param doc-start in Sphinx format ":param type name: description"
     lines = docstr.splitlines()
-    param, doc = None, None
+    param, ptype, pdoc = None, None, None
     for l in lines:
         m = pat.match(l)
         if m:
             if param:
-                _params_doc_[param] = "\n".join(doc)
+                fulldoc = "\n".join(pdoc)
+                if ptype:
+                    fulldoc += "\n\nType: %s" % ptype
+                _params_doc_[param] = fulldoc
+
             param = m.group('name')
-            doc = [m.group('doc')]
+            ptype = m.group('type')
+            pdoc = [m.group('doc')]
         elif param:
-            doc.append(l)
+            pdoc.append(l)
 
 
 def _aml_property(param_path, name=None, types=None, validate_fn=None, freezable=False, set_input=True):
@@ -134,6 +137,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  max_runtime_secs=None,
                  max_runtime_secs_per_model=None,
                  max_models=None,
+                 distribution="AUTO",
                  stopping_metric="AUTO",
                  stopping_tolerance=None,
                  stopping_rounds=3,
@@ -169,17 +173,37 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Requires ``balance_classes``.
             Defaults to ``5.0``.
         :param int max_runtime_secs: Specify the maximum time that the AutoML process will run for.
-            If neither ``max_runtime_secs`` nor ``max_models`` are specified by the user, then ``max_runtime_secs`` dynamically
+            If both ``max_runtime_secs`` and ``max_models`` are specified, then the AutoML run will stop as soon as it hits either of these limits.
+            If neither ``max_runtime_secs`` nor ``max_models`` are specified, then ``max_runtime_secs`` dynamically
             defaults to 3600 seconds (1 hour). Otherwise, defaults to ``0`` (no limit).
         :param int max_runtime_secs_per_model: Controls the max time the AutoML run will dedicate to each individual model.
             Defaults to ``0`` (disabled: no time limit).
+            Note that models constrained by a time budget are not guaranteed reproducible.
         :param int max_models: Specify the maximum number of models to build in an AutoML run, excluding the Stacked Ensemble models.
             Defaults to ``None`` (disabled: no limitation).
+            Always set this parameter to ensure AutoML reproducibility: all models are then trained until convergence and none is constrained by a time budget.
+        :param Union[str, dict] distribution: Distribution function used by algorithms that support it; other algorithms
+            use their defaults.  Possible values: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
+            "tweedie", "laplace", "quantile", "huber", "custom", and for parameterized distributions dictionary form is
+            used to specify the parameter, e.g., ``dict(type="tweedie", tweedie_power=1.5)``.
+            Defaults to ``AUTO``.
         :param str stopping_metric: Specifies the metric to use for early stopping. 
             The available options are:
-            ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
-            ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``aucpr``, ``"lift_top_group"``,
-            ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
+            
+                - ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression)
+                - ``"deviance"``
+                - ``"logloss"``
+                - ``"mse"``
+                - ``"rmse"``
+                - ``"mae"``
+                - ``"rmsle"``
+                - ``"auc"``
+                - ``aucpr``
+                - ``"lift_top_group"``
+                - ``"misclassification"``
+                - ``"mean_per_class_error"``
+                - ``"r2"``
+                
             Defaults to ``"AUTO"``.
         :param float stopping_tolerance: Specify the relative tolerance for the metric-based stopping criterion to stop a grid search and
             the training of individual models within the AutoML run.
@@ -240,9 +264,30 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Deleting them will save memory in the H2O cluster. 
             Defaults to ``False``.
         :param sort_metric: Metric to sort the leaderboard by at the end of an AutoML run. 
-            For binomial classification choose between ``"auc"``, ``"aucpr"``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
-            For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
-            For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``.
+            For binomial classification, select from the following options:
+            
+                - ``"auc"``
+                - ``"aucpr"``
+                - ``"logloss"``
+                - ``"mean_per_class_error"``
+                - ``"rmse"``
+                - ``"mse"``
+                
+            For multinomial classification, select from the following options:
+            
+                - ``"mean_per_class_error"``
+                - ``"logloss"``
+                - ``"rmse"``
+                - ``"mse"``
+                
+            For regression, select from the following options:
+
+                - ``"deviance"``
+                - ``"rmse"``
+                - ``"mse"``
+                - ``"mae"``
+                - ``"rmlse"``
+                
             Defaults to ``"AUTO"`` (This translates to ``"auc"`` for binomial classification, ``"mean_per_class_error"`` for multinomial classification, ``"deviance"`` for regression).
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
@@ -287,6 +332,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
 
         self.project_name = project_name
         self.nfolds = nfolds
+        self.distribution = distribution
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -404,11 +450,45 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     def __validate_frame(self, fr, name=None, required=False):
         return H2OFrame._validate(fr, name, required=required)
 
+    def __validate_distribution(self, distribution):
+        if is_type(distribution, str):
+            distribution = distribution.lower()
+            if distribution == "custom":
+                raise H2OValueError('Distribution "custom" has to be specified as a '
+                                    'dictionary with their respective parameters, e.g., '
+                                    '`dict(type = \"custom\", custom_distribution_func = \"...\"))`.')
+            return distribution
+        if is_type(distribution, dict):
+            dist = distribution["type"].lower()
+            allowed_distribution_parameters = dict(
+                custom='custom_distribution_func',
+                huber='huber_alpha',
+                quantile='quantile_alpha',
+                tweedie='tweedie_power'
+            )
+            assert distribution.get(allowed_distribution_parameters.get(dist)) is not None or len(distribution) == 1, (
+                    "Distribution dictionary should contain distribution and a distribution "
+                    "parameter. For example `dict(type=\"{}\", {}=...)`."
+            ).format(dist, allowed_distribution_parameters[dist])
+            if distribution["type"] == "custom" and "custom_distribution_func" not in distribution.keys():
+                raise H2OValueError('Distribution "custom" has to be specified as a '
+                            'dictionary with their respective parameters, e.g., '
+                            '`dict(type = \"custom\", custom_distribution_func = \"...\"))`.')
+            if allowed_distribution_parameters.get(dist) in distribution.keys():
+                setattr(self, "_"+allowed_distribution_parameters[dist], distribution[allowed_distribution_parameters[dist]])
+            return dist
+
+
     _extract_params_doc(getdoc(__init__))
     project_name = _aml_property('build_control.project_name', types=(None, str), freezable=True,
                                  validate_fn=__validate_project_name)
     nfolds = _aml_property('build_control.nfolds', types=(int,), freezable=True,
                            validate_fn=__validate_nfolds)
+    distribution = _aml_property('build_control.distribution', types=(str, dict), freezable=True, validate_fn=__validate_distribution)
+    _custom_distribution_func = _aml_property('build_control.custom_distribution_func', types=(str,), freezable=True)
+    _huber_alpha = _aml_property('build_control.huber_alpha', types=(numeric,), freezable=True)
+    _tweedie_power = _aml_property('build_control.tweedie_power', types=(numeric,), freezable=True)
+    _quantile_alpha = _aml_property('build_control.quantile_alpha', types=(numeric,), freezable=True)
     balance_classes = _aml_property('build_control.balance_classes', types=(bool,), freezable=True)
     class_sampling_factors = _aml_property('build_control.class_sampling_factors', types=(None, [numeric]), freezable=True)
     max_after_balance_size = _aml_property('build_control.max_after_balance_size', types=(None, numeric), freezable=True)

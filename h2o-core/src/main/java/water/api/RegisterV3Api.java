@@ -269,6 +269,10 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /3/FriedmansPopescusH", ModelsHandler.class, "makeFriedmansPopescusH",
             "Fetch Friedman Popescus H.");
 
+    context.registerEndpoint("makeRules",
+            "POST /3/SignificantRules", ModelsHandler.class, "makeSignificantRulesTable",
+            "Fetch significant rules table.");
+
     context.registerEndpoint("fetchPDP",
             "GET /3/PartialDependence/{name}", ModelsHandler.class, "fetchPartialDependence",
             "Fetch partial dependence data.");
@@ -440,7 +444,7 @@ public class RegisterV3Api extends AbstractRegister {
             "Execute an Rapids AstRoot.");
 
     context.registerEndpoint("_assembly_toJava",
-            "GET /99/Assembly.java/{assembly_id}/{pojo_name}", AssemblyHandler.class, "toJava",
+            "GET /99/Assembly.java/{assembly_id}/{file_name}", AssemblyHandler.class, "toJava",
             "Generate a Java POJO from the Assembly");
 
     context.registerEndpoint("_assembly_fit",

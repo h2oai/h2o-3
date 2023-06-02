@@ -24,8 +24,7 @@ Examples
 	.. code-tab:: r R
 
 		# Import the prostate dataset:
-		prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-		prostate <- h2o.uploadFile(path = prostate_path)
+		prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
 		# Request quantiles for the parsed dataset
 		quantile(prostate)

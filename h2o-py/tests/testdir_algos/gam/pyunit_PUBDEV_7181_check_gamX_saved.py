@@ -1,5 +1,3 @@
-from __future__ import division
-from __future__ import print_function
 import sys
 sys.path.insert(1, "../../../")
 import h2o
@@ -24,6 +22,7 @@ def test_gam_gamColumns():
     gamFrameAns = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv"))
     gamFrameAns = gamFrameAns.cbind(h2o.import_file(pyunit_utils.locate("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C7Gam_center.csv")))
     gamFrameAns = gamFrameAns.cbind(h2o.import_file(pyunit_utils.locate("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C8Gam_center.csv")))
+    gamFrameAns.set_names(gamFrame.names)
     pyunit_utils.compare_frames_local(gamFrameAns, gamFrame)
     print("gam gamcolumn test completed successfully")
 

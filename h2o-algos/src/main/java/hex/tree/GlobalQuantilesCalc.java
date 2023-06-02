@@ -16,19 +16,27 @@ class GlobalQuantilesCalc {
     /**
      * Calculates split points for histogram type = QuantilesGlobal.
      * 
-     * @param fr (adapted) training frame
-     * @param weightsColumn name of column containing observation weights (optional) 
+     * @param trainFr (adapted) training frame
+     * @param weightsColumn name of column containing observation weights (optional)
+     * @param priorSplitPoints optional pre-existing split points for some columns
      * @param N number of bins
      * @param nbins_top_level number of top-level bins
      * @return array of split points for each feature column of the input training frame
      */
-    static double[][] splitPoints(Frame fr, String weightsColumn, final int N, int nbins_top_level) {
-        Key<Frame> rndKey = Key.make();
-        DKV.put(rndKey, fr);
+    static double[][] splitPoints(Frame trainFr, String weightsColumn, 
+                                  double[][] priorSplitPoints, final int N, int nbins_top_level) {
+        final int[] frToTrain = new int[trainFr.numCols()];
+        final Frame fr = collectColumnsForQuantile(trainFr, weightsColumn, priorSplitPoints, frToTrain);
+        final double[][] splitPoints = new double[trainFr.numCols()][];
+        if (fr.numCols() == 0 || weightsColumn != null && fr.numCols() == 1 && weightsColumn.equals(fr.name(0))) {
+            return splitPoints;
+        }
+        Key<Frame> tmpFrameKey = Key.make();
+        DKV.put(tmpFrameKey, fr);
         QuantileModel qm = null;
         try {
             QuantileModel.QuantileParameters p = new QuantileModel.QuantileParameters();
-            p._train = rndKey;
+            p._train = tmpFrameKey;
             p._weights_column = weightsColumn;
             p._combine_method = QuantileModel.CombineMethod.INTERPOLATE;
             p._probs = new double[N];
@@ -39,13 +47,13 @@ class GlobalQuantilesCalc {
             job.remove();
             double[][] origQuantiles = qm._output._quantiles;
             //pad the quantiles until we have nbins_top_level bins
-            double[][] splitPoints = new double[origQuantiles.length][];
-            for (int i = 0; i < origQuantiles.length; ++i) {
-                if (!fr.vec(i).isNumeric() || fr.vec(i).isCategorical() || fr.vec(i).isBinary() || origQuantiles[i].length <= 1) {
+            for (int q = 0; q < origQuantiles.length; q++) {
+                if (origQuantiles[q].length <= 1) {
                     continue;
                 }
+                final int i = frToTrain[q];
                 // make the quantiles split points unique
-                splitPoints[i] = ArrayUtils.makeUniqueAndLimitToRange(origQuantiles[i], fr.vec(i).min(), fr.vec(i).max());
+                splitPoints[i] = ArrayUtils.makeUniqueAndLimitToRange(origQuantiles[q], fr.vec(q).min(), fr.vec(q).max());
                 if (splitPoints[i].length <= 1) //not enough split points left - fall back to regular binning
                     splitPoints[i] = null;
                 else
@@ -54,11 +62,31 @@ class GlobalQuantilesCalc {
             }
             return splitPoints;
         } finally {
-            DKV.remove(rndKey);
+            DKV.remove(tmpFrameKey);
             if (qm != null) {
                 qm.delete();
             }
         }
+    }
+
+    static Frame collectColumnsForQuantile(Frame trainFr, String weightsColumn, double[][] priorSplitPoints,
+                                           int[] frToTrainMap) {
+        final Frame fr = new Frame();
+        final int weightsIdx = trainFr.find(weightsColumn);
+        for (int i = 0; i < trainFr.numCols(); ++i) {
+            if (i != weightsIdx) {
+                if (priorSplitPoints != null && priorSplitPoints[i] != null) {
+                    continue;
+                }
+                if (!trainFr.vec(i).isNumeric() || trainFr.vec(i).isCategorical() ||
+                        trainFr.vec(i).isBinary() || trainFr.vec(i).isConst()) {
+                    continue;
+                }
+            }
+            frToTrainMap[fr.numCols()] = i;
+            fr.add(trainFr.name(i), trainFr.vec(i));
+        }
+        return fr;
     }
 
 }

@@ -1,16 +1,25 @@
 package hex.glm;
 
+import water.DKV;
+import water.Key;
 import water.MemoryManager;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
+import static water.fvec.Vec.T_NUM;
+import static water.fvec.Vec.T_STR;
 
 public class GLMUtils {
-
   /***
    * From the gamColnames, this method attempts to translate to the column indices in adaptFrame.
    * @param adaptFrame
@@ -32,6 +41,66 @@ public class GLMUtils {
       }
     }
     return gamColIndices;
+  }
+  
+  public static GLMModel.GLMParameters[] genGLMParameters(GLMModel.GLMParameters parms, String[] validPreds,
+                                                          String[] predictorNames) {
+    int numPreds = validPreds.length;
+    if (numPreds > 0) {
+      GLMModel.GLMParameters[] params = new GLMModel.GLMParameters[numPreds];
+      String[] frameNames = parms.train().names();
+      List<String> predList = Stream.of(predictorNames).collect(Collectors.toList());
+      if (parms._weights_column != null)
+        predList.add(parms._weights_column);
+      String[] ignoredCols = Arrays.stream(frameNames).filter(x -> !predList.contains(x)).collect(Collectors.toList()).toArray(new String[0]);
+      for (int index=0; index < numPreds; index++) {
+        params[index] = new GLMModel.GLMParameters(gaussian);
+        params[index]._response_column = validPreds[index];
+        params[index]._train = parms.train()._key;
+        params[index]._lambda = new double[]{0.0};
+        params[index]._alpha = new double[]{0.0};
+        params[index]._compute_p_values = true;
+        params[index]._ignored_columns = ignoredCols;
+        params[index]._weights_column = parms._weights_column;
+      }
+      return params;
+    } else {
+      return null;
+    }
+  }
+
+  public static void removePredictors(GLMModel.GLMParameters parms, Frame train) {
+    List<String> nonPredictors = Arrays.stream(parms.getNonPredictors()).collect(Collectors.toList());
+    String[] colNames = parms.train().names();
+    List<String> removeCols = Arrays.stream(colNames).filter(x -> !nonPredictors.contains(x)).collect(Collectors.toList());
+    for (String removeC : removeCols)
+      train.remove(removeC);
+  }
+  
+  public static Frame expandedCatCS(Frame beta_constraints, GLMModel.GLMParameters parms) {
+    byte[] csByteType = new byte[]{T_STR, T_NUM, T_NUM};
+    String[] bsColNames = beta_constraints.names();
+    Frame betaCSCopy = beta_constraints.deepCopy(Key.make().toString());
+    betaCSCopy.replace(0, betaCSCopy.vec(0).toStringVec()).remove();
+    DKV.put(betaCSCopy);
+    FrameUtils.ExpandCatBetaConstraints expandCatBS = new FrameUtils.ExpandCatBetaConstraints(beta_constraints,
+            parms.train()).doAll(csByteType, betaCSCopy, true);
+    Frame csWithEnum = expandCatBS.outputFrame(Key.make(), bsColNames, null);
+    betaCSCopy.delete();
+    return csWithEnum;
+  }
+
+  public static boolean findEnumInBetaCS(Frame betaCS, GLMModel.GLMParameters parms) {
+    List<String> colNames = Arrays.asList(parms.train().names());
+    String[] types = parms.train().typesStr();
+    Vec v = betaCS.vec("names");
+    int nRow = (int) betaCS.numRows();
+    for (int index=0; index<nRow; index++) {
+      int colIndex = colNames.indexOf(v.stringAt(index));
+      if (colIndex >= 0 && "Enum".equals(types[colIndex]))
+        return true;
+    }
+    return false;
   }
   
   public static GLM.GLMGradientInfo copyGInfo(GLM.GLMGradientInfo ginfo) {
@@ -246,5 +315,54 @@ public class GLMUtils {
       smoothval += calSmoothNess(beta[classInd], penaltyMatrix, gamColIndices);
     }
     return smoothval;
+  }
+  
+  public static String[] genDfbetasNames(GLMModel model) {
+    double[] stdErr = model._output.stdErr();
+    String[] names = Arrays.stream(model._output.coefficientNames()).map(x -> "DFBETA_"+x).toArray(String[]::new);
+    List<String> namesList = new ArrayList<>();
+    int numCoeff = names.length;
+    for (int index=0; index<numCoeff; index++)
+      if (!Double.isNaN(stdErr[index]))
+        namesList.add(names[index]);
+    return namesList.stream().toArray(String[]::new);
+  }
+  
+  public static double[] genNewBeta(int newBetaLength, double[] beta, double[] stdErr) {
+    double[] newBeta = new double[newBetaLength];
+    int oldLen = stdErr.length;
+    int count = 0;
+    for (int index=0; index<oldLen; index++)
+      if (!Double.isNaN(stdErr[index]))
+        newBeta[count++] = beta[index];
+
+    return newBeta;
+  }
+
+  public static void removeRedCols(double[] row2Array, double[] reducedArray, double[] stdErr) {
+    int count=0;
+    int betaSize = row2Array.length;
+    for (int index=0; index<betaSize; index++)
+      if (!Double.isNaN(stdErr[index]))
+        reducedArray[count++] = row2Array[index];
+  }
+  
+  public static Frame buildRIDFrame(GLMModel.GLMParameters parms, Frame train, Frame RIDFrame) {
+    Vec responseVec = train.remove(parms._response_column);
+    Vec weightsVec = null;
+    Vec offsetVec = null;
+    Vec foldVec = null;
+    if (parms._offset_column != null)
+      offsetVec = train.remove(parms._offset_column);
+    if (parms._weights_column != null) // move weight vector to be the last vector before response variable
+      weightsVec = train.remove(parms._weights_column);
+      train.add(RIDFrame.names(), RIDFrame.removeAll());
+    if (weightsVec != null)
+      train.add(parms._weights_column, weightsVec);
+    if (offsetVec != null)
+      train.add(parms._offset_column, offsetVec);
+    if (responseVec != null)
+      train.add(parms._response_column, responseVec);
+    return train;
   }
 }

@@ -8,12 +8,12 @@ import ai.h2o.mojos.runtime.api.backend.ReaderBackend;
 import ai.h2o.mojos.runtime.frame.*;
 import ai.h2o.mojos.runtime.lic.LicenseException;
 import ai.h2o.mojos.runtime.frame.MojoColumn.Type;
+import mojo.spec.PipelineOuterClass;
 import water.*;
 import water.fvec.*;
 import water.parser.BufferedString;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -29,7 +29,7 @@ public class MojoPipeline extends Iced<MojoPipeline> {
     _mojoData = mojoData;
     _mojoPipelineMeta = readPipelineMeta(_mojoData);
   }
-
+  
   public Frame transform(Frame f, boolean allowTimestamps) {
     Frame adaptedFrame = adaptFrame(f, allowTimestamps);
     byte[] types = outputTypes();
@@ -219,6 +219,13 @@ public class MojoPipeline extends Iced<MojoPipeline> {
             @Override
             void convertValue(int i, MojoRowBuilder target) {
               target.setDouble(_col, _c.atd(i));
+            }
+          };
+        else if (type == Type.Int32)
+          return new MojoChunkConverter(c, col) {
+            @Override
+            void convertValue(int i, MojoRowBuilder target) {
+              target.setInt(_col, (int)_c.at8(i));
             }
           };
         else

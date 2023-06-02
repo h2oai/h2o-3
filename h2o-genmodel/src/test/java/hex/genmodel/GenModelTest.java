@@ -1,9 +1,8 @@
 package hex.genmodel;
 
+import hex.ModelCategory;
 import org.junit.Test;
 
-import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
@@ -12,7 +11,7 @@ import static org.junit.Assert.*;
 public class GenModelTest {
 
   @Test
-  public void testKMeansDistance() throws Exception {
+  public void testKMeansDistance() {
     double[] center = new double[]{1.2, 0.8, 1.0};
     double[] point = new double[]{1.0, Double.NaN, 1.8};
     double dist = GenModel.KMeans_distance(center, point, new String[center.length][]);
@@ -20,7 +19,7 @@ public class GenModelTest {
   }
 
   @Test
-  public void testKMeansDistanceExtended() throws Exception {
+  public void testKMeansDistanceExtended() {
     double[] center = new double[]{1.2, 0.8, 1.0};
     float[] point = new float[]{1.0f, Float.NaN, 1.8f};
     double dist = GenModel.KMeans_distance(center, point, new int[]{-1,-1,-1}, new double[3], new double[3]);
@@ -71,6 +70,40 @@ public class GenModelTest {
     final String[] outputNames = mojo.getOutputNames();
     assertArrayEquals(new String[]{"predict", "p0", "p1"}, outputNames);
   }
-  
+
+  @Test
+  public void testGetOutputDomainsSmoke() {
+    for (final ModelCategory mc : ModelCategory.values()) {
+      if (mc.equals(ModelCategory.Unknown))
+        continue;
+      GenModel model = new GenModel(new String[]{"c1", "c2", "c3"}, new String[][]{null, null, new String[]{"a", "b"}}, "c3") {
+        @Override
+        public ModelCategory getModelCategory() {
+          return mc;
+        }
+
+        @Override
+        public String getUUID() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public double[] score0(double[] row, double[] preds) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isSupervised() {
+          return true;
+        }
+
+        @Override
+        public String[] getOutputNames() {
+          return new String[]{"predict", "p0", "p1"};
+        }
+      };
+      assertNotNull(model.getOutputDomains());
+    }
+  }
 
 }

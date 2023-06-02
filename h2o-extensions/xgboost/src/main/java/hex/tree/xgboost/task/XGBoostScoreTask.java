@@ -13,7 +13,7 @@ import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 
-public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
+public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> { // used to score model metrics
 
     private final XGBoostOutput _output;
     private final int _weightsChunkId;

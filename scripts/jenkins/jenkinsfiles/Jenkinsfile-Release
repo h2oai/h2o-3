@@ -352,55 +352,58 @@ EOF
                     if (params.BUILD_CONDA) {
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
+                        final def artifacts = ['main', 'client']
                         final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { Double.parseDouble(it) >= 3.6 }
 
                         // build for all Python versions
-                        for (pyVersion in pyVersions) {
-                            def uploadToCondaStageName = "Build Py${pyVersion} Conda Packages"
-                            stage(uploadToCondaStageName) {
-                                withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
-                                    pipelineContext.getBuildSummary().addStageSummary(this, uploadToCondaStageName, env.BUILD_NUMBER_DIR)
-                                    pipelineContext.getBuildSummary().setStageDetails(this, uploadToCondaStageName, env.NODE_NAME, env.WORKSPACE)
-                                    try {
-                                        insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
-                                            sh """
-                                                export CONDA_PKGS_DIRS=${env.BUILD_NUMBER_DIR}/h2o-py/build/conda_cache
-                                                mkdir -p \$CONDA_PKGS_DIRS
-                                                cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build/main
-                                                cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/main/conda
-                                                # Create conda package for current platform
-                                                conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion} --channel conda-forge
-                                                # Get name of the package
-                                                CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o --py ${pyVersion} --output-folder "." --output | tail -1)
-                                                PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
-                                                # Convert conda package for all other platforms
-                                                conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
+                        for (artifact in artifacts) {
+                            for (pyVersion in pyVersions) {
+                                def uploadToCondaStageName = "Build Py${pyVersion} Conda Packages: $artifact"
+                                stage(uploadToCondaStageName) {
+                                    withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
+                                        pipelineContext.getBuildSummary().addStageSummary(this, uploadToCondaStageName, env.BUILD_NUMBER_DIR)
+                                        pipelineContext.getBuildSummary().setStageDetails(this, uploadToCondaStageName, env.NODE_NAME, env.WORKSPACE)
+                                        try {
+                                            insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                                sh """
+                                                    export CONDA_PKGS_DIRS=${env.BUILD_NUMBER_DIR}/h2o-py/build/conda_cache
+                                                    mkdir -p \$CONDA_PKGS_DIRS
+                                                    cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build/${artifact}
+                                                    cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/${artifact}/conda
+                                                    # Create conda package for current platform
+                                                    conda build h2o-${artifact} --output-folder "." --no-anaconda-upload --py ${pyVersion} --channel anaconda
+                                                    # Get name of the package
+                                                    CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o-${artifact} --py ${pyVersion} --output-folder "." --output | tail -1)
+                                                    PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
+                                                    # Convert conda package for all other platforms
+                                                    conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
 
-                                                s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
-                                                s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
-                                                s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
+                                                    s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
+                                                    s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
+                                                    s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
 
-                                                if [ "\$UPLOAD_TO_ANACONDA" = true ]; then
-                                                    if [ "\$TEST_RELEASE" = true ]; then
-                                                        echo 'Upload to conda ignored, because this is a TEST_RELEASE'
+                                                    if [ "\$UPLOAD_TO_ANACONDA" = true ]; then
+                                                        if [ "\$TEST_RELEASE" = true ]; then
+                                                            echo 'Upload to conda ignored, because this is a TEST_RELEASE'
+                                                        else
+                                                            echo '****** Upload to Conda ******'
+                                                            # Right now packages for all platforms are in the current directory
+                                                            # upload all distribution packages
+                                                            anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
+                                                            anaconda upload osx-64/\${PKG_NAME}
+                                                            anaconda upload linux-64/\${PKG_NAME}
+                                                            anaconda upload win-64/\${PKG_NAME}
+                                                        fi
                                                     else
-                                                        echo '****** Upload to Conda ******'
-                                                        # Right now packages for all platforms are in the current directory
-                                                        # upload all distribution packages
-                                                        anaconda login --username ${ANACONDA_USERNAME} --password ${ANACONDA_PASSWORD}
-                                                        anaconda upload osx-64/\${PKG_NAME}
-                                                        anaconda upload linux-64/\${PKG_NAME}
-                                                        anaconda upload win-64/\${PKG_NAME}
+                                                        echo '****** WARNING! Upload to Conda suppressed ******'
                                                     fi
-                                                else
-                                                    echo '****** WARNING! Upload to Conda suppressed ******'
-                                                fi
-                                            """
+                                                """
+                                            }
+                                            pipelineContext.getBuildSummary().markStageSuccessful(this, uploadToCondaStageName)
+                                        } catch (Exception e) {
+                                            pipelineContext.getBuildSummary().markStageFailed(this, uploadToCondaStageName)
+                                            e.printStackTrace()
                                         }
-                                        pipelineContext.getBuildSummary().markStageSuccessful(this, uploadToCondaStageName)
-                                    } catch (Exception e) {
-                                        pipelineContext.getBuildSummary().markStageFailed(this, uploadToCondaStageName)
-                                        e.printStackTrace()
                                     }
                                 }
                             }
@@ -416,7 +419,7 @@ EOF
                                 try {
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         echo "Check Conda package for Python ${pyVersion}"
-                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate future requests"
+                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate requests"
                                         sh "s3cmd get ${condaS3Dir}/linux-64/${pkgName}"
                                         sh """
                                                 bash -c \"\"\"
@@ -536,8 +539,8 @@ EOF
 
                 if (params.BUILD_H2O_DOCKER) {
                     def assemblies = [
-                        main: "open-source",
-                        steam: "steam"
+                        main: "h2o-open-source-k8s",
+                        steam: "h2o-open-source-k8s-minimal"
                     ]
                     assemblies.each { assemblyName, imageType ->
                         def BUILD_H2O_DOCKER_STAGE_NAME = "Build H2O Docker container (${imageType})"
@@ -553,7 +556,7 @@ EOF
                                       ]) {
                                     env["H2O_ASSEMBLY"] = assemblyName
                                     if (params.TEST_RELEASE) {
-                                        env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-${imageType}-k8s-test"
+                                        env["DOCKER_IMAGE_NAME"] = "opsh2oai/${imageType}-test"
                                         // Test release goes to opsh2oai namespace
                                         env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
                                         // the most recent test build is always latest
@@ -564,7 +567,7 @@ EOF
                                           make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
                                         """
                                     } else {
-                                        env["DOCKER_IMAGE_NAME"] = "h2oai/h2o-${imageType}-k8s"
+                                        env["DOCKER_IMAGE_NAME"] = "h2oai/${imageType}"
                                         // Normal releases go to h2oai/ namespace
                                         if (env.NIGHTLY_BUILD) {
                                             // If the build is not a test build and is nightly, then re-write the latest nightly

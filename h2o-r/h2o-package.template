@@ -27,11 +27,11 @@ Note that no actual data is stored in the R workspace; and no actual work is car
 
 }
 \author{
-Maintainer: Erin LeDell <erin@h2o.ai>
+Maintainer: Tomas Fryda <tomas.fryda@h2o.ai>
 }
 \references{
 \itemize{
-  \item \href{https://www.h2o.ai}{H2O.ai Homepage}
+  \item \href{https://h2o.ai}{H2O.ai Homepage}
   \item \href{https://docs.h2o.ai/h2o/latest-stable/h2o-docs/index.html}{H2O User Guide}
   \item \href{https://github.com/h2oai/h2o-3}{H2O on GitHub}
   }

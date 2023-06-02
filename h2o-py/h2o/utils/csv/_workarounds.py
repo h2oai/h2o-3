@@ -4,20 +4,18 @@ import io
 import csv
 import warnings
 
-from ._common import PY2
-
 ESCAPECHAR = '\\'
 
 
 def issue12178(escapechar=ESCAPECHAR):
-    with (io.BytesIO() if PY2 else io.StringIO(newline='')) as stream:
+    with (io.StringIO(newline='')) as stream:
         csv.writer(stream, escapechar=escapechar).writerow([escapechar])
         line = stream.getvalue()
     return (escapechar * 2) not in line
 
 
 def issue31590(line='spam%s\neggs,spam\r\n' % ESCAPECHAR, escapechar=ESCAPECHAR):
-    with (io.BytesIO(line) if PY2 else io.StringIO(line, newline='')) as stream:
+    with (io.StringIO(line, newline='')) as stream:
         reader = csv.reader(stream, quoting=csv.QUOTE_NONE, escapechar=escapechar)
         row = next(reader)
     return len(row) != 2

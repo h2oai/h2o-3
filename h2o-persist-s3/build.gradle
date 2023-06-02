@@ -11,13 +11,14 @@ dependencies {
   api "com.amazonaws:aws-java-sdk-sts:${awsJavaSdkVersion}" // Required by WebIdentityTokenCredentialsProvider from AWS SDK
   api "org.apache.httpcomponents:httpclient:${httpClientVersion}"
   api "javax.xml.bind:jaxb-api:2.3.1"
+  compileOnly project(":h2o-persist-hdfs")
 
   testImplementation project(":h2o-test-support")
   testImplementation "com.adobe.testing:s3mock:2.1.28"
   testImplementation "com.adobe.testing:s3mock-junit4:2.1.28"
   testRuntimeOnly project(":${defaultWebserverModule}")
   testRuntimeOnly project(":h2o-parquet-parser")
-  testRuntimeOnly project(":h2o-persist-hdfs")
+  testImplementation project(":h2o-persist-hdfs")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

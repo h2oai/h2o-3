@@ -398,7 +398,7 @@ h2o.loadModel <- function(path) {
 #' @param path A path on the machine this python session is currently connected to, specifying the location of the model to upload.
 #' @return Returns a new \linkS4class{H2OModel} object.
 #' @seealso \code{\link{h2o.saveModel}}, \code{\link{h2o.download_model}}
-#' @export
+#' @examples
 #' \dontrun{
 #' # library(h2o)
 #' # h2o.init()

@@ -6,6 +6,7 @@ import hex.genmodel.algos.tree.ContributionComposer;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -207,6 +208,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  public interface RowToTreeAssignment {
+
+    Frame rowToTreeAssignment(Frame frame, Key<Frame> destination_key, Job<Frame> j);
+  }
+
   public interface ExemplarMembers {
     Frame scoreExemplarMembers(Key<Frame> destination_key, int exemplarIdx);
   }
@@ -334,12 +340,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Special values:
      *  -1 == AUTO; use precision=8 for classification, precision=unlimited for everything else
      *  0; disabled
-     *  
+     *
      *  for classification problems consider eg.:
      *     4 to keep only first 4 decimal places (consumes 75% less memory)
      *  or 8 to keep 8 decimal places (consumes 50% less memory)
      */
-    public int _keep_cross_validation_predictions_precision = -1; 
+    public int _keep_cross_validation_predictions_precision = -1;
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public boolean _auto_rebalance = true;
@@ -376,9 +382,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
     }
-    
+
     public Key<ModelPreprocessor>[] _preprocessors;
-    
+
     public long _seed = -1;
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
@@ -405,7 +411,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _offset_column;
     public String _fold_column;
     public String _treatment_column;
-    
+
     // Check for constant response
     public boolean _check_constant_response = true;
 
@@ -423,6 +429,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Maximum allowed runtime in seconds for model training. Use 0 to disable.
      */
     public double _max_runtime_secs = 0;
+
+    /** Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
+     *  Value 0 means do not use time constraint for the main model.
+     *  More details in {@link ModelBuilder#setMaxRuntimeSecsForMainModel()}.
+     */
+    public double _main_model_time_budget_factor = 0;
 
     /**
      * Early stopping based on convergence of stopping_metric.
@@ -500,7 +512,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Bins for Gains/Lift table, if applicable. Ignored if G/L are not calculated.
      */
     public int _gainslift_bins = -1;
-    
+
     public MultinomialAucType _auc_type = MultinomialAucType.AUTO;
 
     /**
@@ -609,6 +621,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               } else if (c.getComponentType() == Long.TYPE){
                 long[] arr = (long[]) f.get(this);
                 xs = xs * P + (long) Arrays.hashCode(arr);
+              } else if (c.getComponentType() == Boolean.TYPE){
+                boolean[] arr = (boolean[]) f.get(this);
+                xs = xs * P + (long) Arrays.hashCode(arr);
               } else {
                 Object[] arr = (Object[]) f.get(this);
                 xs = xs * P + (long) Arrays.deepHashCode(arr);
@@ -619,7 +634,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
           } catch (ClassCastException t) {
-            throw H2O.fail(); //no support yet for int[][] etc.
+            throw H2O.fail("Failed to calculate checksum for the parameter object", t); //no support yet for int[][] etc.
           }
         } else {
           try {
@@ -642,7 +657,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       xs ^= (train() == null ? 43 : train().checksum()) * (valid() == null ? 17 : valid().checksum());
       return xs;
     }
-    
+
     private void addToUsedIfColumn(Set<String> usedColumns, Set<String> allColumns, String value) {
       if (value == null) return;
       if (allColumns.contains(value)) {
@@ -654,7 +669,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Looks for all String parameters with the word 'column' in the parameter name, if
      * the parameter value is present in supplied array of strings, it will be added to the
      * returned set of used columns.
-     * 
+     *
      * @param trainNames names of columns in the training frame
      * @return set of names of columns present in the params as well as the training frame names
      */
@@ -749,6 +764,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public final int getMaxCategoricalLevels() {
       return _max_categorical_levels;
     }
+
+    public void setDistributionFamily(DistributionFamily distributionFamily){
+      _distribution = distributionFamily;
+    }
+
+    public DistributionFamily getDistributionFamily() {
+      return _distribution;
+    }
   }
 
   public ModelMetrics addModelMetrics(final ModelMetrics mm) {
@@ -776,9 +799,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public static class InteractionSpec extends Iced {
-    private String[] _columns;
-    private StringPair[] _pairs;
-    private String[] _interactionsOnly;
+    private final String[] _columns;
+    private final StringPair[] _pairs;
+    private final String[] _interactionsOnly;
     private String[] _ignored; // list of columns that can be dropped if they are not used in any interaction
 
     private InteractionSpec(String[] columns, StringPair[] pairs, String[] interactionsOnly, String[] ignored) {
@@ -789,6 +812,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         _ignored = ignored.clone();
         Arrays.sort(_ignored);
       }
+    }
+
+    public String[] getInteractionsOnly() {
+      return _interactionsOnly;
     }
 
     public static InteractionSpec allPairwise(String[] columns) {
@@ -875,7 +902,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (interactionIDs[i] == -1)
             throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactionIDs[i]);
         }
-        allPairwise =  Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
+        allPairwise =  Model.InteractionPair.generatePairwiseInteractionsFromList(f, interactionIDs);
       }
       if (_pairs != null) {
         Arrays.sort(interactionIDs);
@@ -890,7 +917,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             throw new IllegalArgumentException("Invalid interactions specified (second column is missing): " + p.toJsonString() + " in " + Arrays.toString(f.names()));
           if (Arrays.binarySearch(interactionIDs, aIdx) >= 0 && Arrays.binarySearch(interactionIDs, bIdx) >= 0)
             continue; // This interaction is already included in set of all pairwise interactions
-          allExplicit[n++] = new InteractionPair(aIdx, bIdx, null, null);
+          allExplicit[n++] = new InteractionPair(f, aIdx, bIdx, f.vec(aIdx).domain(), f.vec(bIdx).domain());
         }
         if (n != allExplicit.length) {
           InteractionPair[] resized = new InteractionPair[n];
@@ -1105,17 +1132,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public InteractionBuilder interactionBuilder() { return null; }
     // Vec layout is  [c1,c2,...,cn, w?, o?, f?, u?, r]
     // cn are predictor cols, r is response, w is weights, o is offset, f is fold and t is treatment - these are optional
+    protected int lastSpecialColumnIdx() {
+      return _names.length - 1 - (isSupervised()?1:0);
+    }
     public int weightsIdx() {
       if(!_hasWeights) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1 - (hasFold()?1:0) - (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasOffset()?1:0) - (hasFold()?1:0) - (hasTreatment()?1:0);
     }
     public int offsetIdx() {
       if(!_hasOffset) return -1;
-      return _names.length - (isSupervised()?1:0) - (hasFold()?1:0) - 1 - (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasFold()?1:0) - (hasTreatment()?1:0);
     }
     public int foldIdx() {
       if(!_hasFold) return -1;
-      return _names.length - (isSupervised()?1:0) - 1 -  (hasTreatment()?1:0);
+      return lastSpecialColumnIdx() - (hasTreatment()?1:0);
     }
     
     public int responseIdx() {
@@ -1185,6 +1215,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     public synchronized Key<ModelMetrics>[] getModelMetrics() { return Arrays.copyOf(_model_metrics, _model_metrics.length); }
+
+    public synchronized void changeModelMetricsKey(Key modelkey) {
+      for (Key<ModelMetrics> modelMetrics : _model_metrics) {
+        modelMetrics.get().setModelKey(modelkey);
+      }
+    }
 
     protected long checksum_impl() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
@@ -1307,7 +1343,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return _dist.deviance(w, y, f);
   }
 
-  public double likelihood(double w, double y, double f) {
+  public double likelihood(double w, double y, double[] f) {
     return 0.0; // place holder.  This function is overridden in GLM.
   }
 
@@ -1695,7 +1731,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (expensive) {
             vec = test.anyVec().makeCon(1);
             toDelete.put(vec._key, "adapted missing vectors");
-            msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
+            // cross-validation generated weights will not be found in test/validation dataset.  This warning is
+            // invalid.  We will suppress this warning.
+            if (!names[i].contains("_internal_cv_weights_")) {
+              msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" +
+                      names[i] + "' (needed because a response was found and metrics are to be computed): " +
+                      "substituting in a column of 1s"));
+            }
           }
           else if (isTreatment && computeMetrics) {
             throw new IllegalArgumentException("Test/Validation dataset is missing treatment column '" + treatment + "'");
@@ -1824,6 +1866,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   
   public Frame result() {
+    throw new UnsupportedOperationException("this model doesn't support constant frame results");
+  }
+
+  public Frame transform(Frame fr) {
     throw new UnsupportedOperationException("this model doesn't support constant frame results");
   }
 
@@ -2008,21 +2054,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String [] names = new String[ncols];
     if(output.hasTreatment()){
       names[0] = "uplift_predict";
+      names[1] = "p_y1_ct1";
+      names[2] = "p_y1_ct0";
     } else {
       names[0] = "predict";
-    }
-    for(int i = 1; i < names.length; ++i) {
-      names[i] = output.classNames()[i - 1];
-      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
-      try {
-        Integer.valueOf(names[i]);
-        if(output.hasTreatment()){
-          names[i] = i == 1? "p_y1_ct1" : "p_y1_ct0";
-        } else {
+      for (int i = 1; i < names.length; ++i) {
+        names[i] = output.classNames()[i - 1];
+        // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
+        try {
+          Integer.valueOf(names[i]);
           names[i] = "p" + names[i];
+        } catch (Throwable t) {
+          // do nothing, non-integer names are fine already
         }
-      } catch (Throwable t) {
-        // do nothing, non-integer names are fine already
       }
     }
     return names;
@@ -2726,7 +2770,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame fr = new Frame(data);
     boolean computeMetrics = data.vec(_output.responseName()) != null && !data.vec(_output.responseName()).isBad();
     try {
-      String[] warns = adaptTestForTrain(fr,true, computeMetrics);
+      String[] warns = adaptTestForJavaScoring(fr, computeMetrics);
       if( warns.length > 0 )
         System.err.println(Arrays.toString(warns));
 
@@ -2774,6 +2818,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         double[] predictions = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
         // Compare predictions, counting mis-predicts
+        final int compVecLen = _output.isBinomialClassifier() ? 3 : pvecs.length; // POJO doesn't have calibrated probs
         for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= options._fraction) continue;
           num_total++;
@@ -2782,7 +2827,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           for (int col = 0; col < features.length; col++) // Build feature set
             features[col] = dvecs[col].at(row);
           genmodel.score0(features, predictions);            // POJO predictions
-          for (int col = _output.isClassifier() ? 1 : 0; col < pvecs.length; col++) { // Compare predictions
+          for (int col = _output.isClassifier() ? 1 : 0; col < compVecLen; col++) { // Compare predictions
             double d = pvecs[col].at(row);                  // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
             if (!MathUtils.compare(predictions[col], d, options._abs_epsilon, rel_epsilon)) {
@@ -2860,6 +2905,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
+        final int compVecLen = i == 0 && _output.isBinomialClassifier() ? 3 : pvecs.length; // POJO doesn't have calibrated probs
         for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= options._fraction) continue;
 
@@ -2904,6 +2950,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 case KLime:
                   p = epmw.predictKLime(rowData);
                   break;
+                case CoxPH:
+                  p = epmw.predictCoxPH(rowData, offset);
+                  break;
                 default:
                   throw new UnsupportedOperationException("Predicting with offset current not supported for " + genmodel.getModelCategory());
               }
@@ -2925,7 +2974,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double[] actual_preds = new double[pvecs.length];
           String[] decisionPath = null;
           int[] nodeIds = null;
-          for (int col = 0; col < pvecs.length; col++) { // Compare predictions
+          for (int col = 0; col < compVecLen; col++) { // Compare predictions
             double d = pvecs[col].at(row); // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
             double d2 = Double.NaN;
@@ -2944,7 +2993,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 break;
               case Binomial:
                 BinomialModelPrediction bmp = (BinomialModelPrediction) p;
-                d2 = (col == 0) ? bmp.labelIndex : bmp.classProbabilities[col - 1];
+                d2 = (col == 0) ?
+                        bmp.labelIndex
+                        :
+                        col > bmp.classProbabilities.length && bmp.calibratedClassProbabilities != null ?
+                                bmp.calibratedClassProbabilities[col - bmp.classProbabilities.length - 1]
+                                :
+                                bmp.classProbabilities[col - 1];
                 decisionPath = bmp.leafNodeAssignments;
                 nodeIds = bmp.leafNodeAssignmentIds;
                 break;
@@ -2988,7 +3043,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
           // Verify the correctness of the prediction
           num_total++;
-          for (int col = genmodel.isClassifier() ? 1 : 0; col < pvecs.length; col++) {
+          for (int col = genmodel.isClassifier() ? 1 : 0; col < compVecLen; col++) {
             if (!MathUtils.compare(actual_preds[col], expected_preds[col], options._abs_epsilon, rel_epsilon)) {
               num_errors++;
               if (num_errors < 20) {
@@ -3009,6 +3064,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     } finally {
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, data);  // Remove temp keys.
     }
+  }
+  protected String[] adaptTestForJavaScoring(Frame test, boolean computeMetrics) {
+    return adaptTestForTrain(test, true, computeMetrics);
   }
 
   private static void checkSerializable(MojoModel mojoModel) {
@@ -3123,6 +3181,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  TODO: refactor the CreateInteractions to be useful here and in InteractionWrappedVec
    */
   public static class InteractionPair extends Iced<InteractionPair> {
+    public final String  _name1, _name2;
     private int _v1,_v2;
 
     private String[] _v1Enums;
@@ -3130,8 +3189,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     private int _hash;
     private boolean _needsAllFactorLevels;
 
-    private InteractionPair() {}
-    private InteractionPair(int v1, int v2, String[] v1Enums, String[] v2Enums) {
+    private InteractionPair(Frame f, int v1, int v2, String[] v1Enums, String[] v2Enums) {
+      _name1 = f.name(v1);
+      _name2 = f.name(v2);
       _v1=v1;_v2=v2;_v1Enums=v1Enums;_v2Enums=v2Enums;
       // hash is column ints; Item 9 p.47 of Effective Java
       _hash=17;
@@ -3158,7 +3218,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * @param indexes An array of column indices.
      * @return An array of interaction pairs
      */
-    public static InteractionPair[] generatePairwiseInteractionsFromList(int... indexes) {
+    public static InteractionPair[] generatePairwiseInteractionsFromList(Frame f, int... indexes) {
       if( null==indexes ) return null;
       if( indexes.length < 2 ) {
         if( indexes.length==1 && indexes[0]==-1 ) return null;
@@ -3168,7 +3228,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int idx=0;
       for(int i=0;i<indexes.length;++i)
         for(int j=i+1;j<indexes.length;++j)
-          res[idx++] = new InteractionPair(indexes[i],indexes[j],null,null);
+          res[idx++] = new InteractionPair(f, indexes[i],indexes[j],f.vec(indexes[i]).domain(),f.vec(indexes[j]).domain());
       return res;
     }
 
@@ -3184,6 +3244,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public int getV1() { return _v1; }
     public int getV2() { return _v2; }
+
+    public boolean isNumeric() {
+      return _v1Enums == null && _v2Enums == null;
+    }
   }
 
   /**
@@ -3305,18 +3369,41 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IOException when writing MOJO fails
    */
   public MojoModel toMojo() throws IOException {
+    MojoReaderBackend mojoReaderBackend = convertToInMemoryMojoReader();
+    return MojoModel.load(mojoReaderBackend);
+  }
+
+  /**
+   * Convenience method to convert Model to a MOJO representation. Please be aware that converting models
+   * to MOJOs using this function will require sufficient memory (to hold the mojo representation and interim
+   * serialized representation as well).
+   *
+   * @param readMetadata If true, parses also model metadata (model performance metrics... {@link ModelAttributes})
+   *                     Model metadata are not required for scoring, it is advised to leave this option disabled
+   *                     if you want to use MOJO for inference only.
+   * @return instance of MojoModel
+   * @throws IOException when writing MOJO fails
+   */
+  public MojoModel toMojo(boolean readMetadata) throws IOException {
+    MojoReaderBackend mojoReaderBackend = convertToInMemoryMojoReader();
+    return ModelMojoReader.readFrom(mojoReaderBackend, readMetadata);
+  }
+  
+  MojoReaderBackend convertToInMemoryMojoReader() throws IOException {
     if (! haveMojo())
       throw new IllegalStateException("Model doesn't support MOJOs.");
     try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
       this.getMojo().writeTo(os);
-      MojoReaderBackend mojoReaderBackend = MojoReaderBackendFactory.createReaderBackend(
+      return MojoReaderBackendFactory.createReaderBackend(
               new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
-      return MojoModel.load(mojoReaderBackend);
     }
   }
 
   public ModelDescriptor modelDescriptor() {
-    return new ModelDescriptor() {
+    return new H2OModelDescriptor();
+  }
+
+  protected class H2OModelDescriptor implements ModelDescriptor {
       @Override
       public String[][] scoringDomains() { return Model.this.scoringDomains(); }
       @Override
@@ -3328,7 +3415,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       @Override
       public String offsetColumn() { return _output.offsetName(); }
       @Override
-      public String weightsColumn() { return _output.offsetName(); }
+      public String weightsColumn() { return _output.weightsName(); }
       @Override
       public String foldColumn() { return _output.foldName(); }
       @Override
@@ -3359,7 +3446,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String[] getOrigNames() { return _output._origNames; }
       @Override
       public String[][] getOrigDomains() { return _output._origDomains; }
-    };
   }
 
   /**

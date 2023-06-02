@@ -1569,12 +1569,13 @@ Examples:
         #split the data into training and validation sets:
         cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
         train <- cars_splits[[1]]
-        valid <- cars_splits[[2]
+        valid <- cars_splits[[2]]
 
         # build and train the model using the deviance stopping metric:
-        cars_gbm <- h2o.gbm(x = predictors, y = repsonse, 
+        cars_gbm <- h2o.gbm(x = predictors, y = response, 
                             training_frame = train, validation_frame = valid, 
                             stopping_metric = "deviance", stopping_rounds = 3, 
+                            score_tree_interval = 5,
                             stopping_tolerance = 1e-2, seed = 1234)
 
         # retrieve the mse value:
@@ -1598,6 +1599,7 @@ Examples:
         cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "deviance", 
                                                 stopping_rounds = 3, 
                                                 stopping_tolerance = 1e-2, 
+                                                score_tree_interval = 5,
                                                 seed = 1234)
         cars_gbm.train(x = predictors, y = response, 
                        training_frame = train, validation_frame = valid)
@@ -1615,51 +1617,56 @@ Examples:
 .. tabs::
    .. code-tab:: r R
 
-        # import the cars dataset:
-        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-
+        # import the prostate dataset:
+        prostate <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        
         # set the predictors and response columns:
-        predictors <- c("economy", "cylinders", "displacement", "power", "weight")
-        response = "acceleration"
-
+        prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+        predictors <- c("AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
+        response <- "CAPSULE"
+        
         #split the data into training and validation sets:
-        cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
-        train <- cars_splits[[1]]
-        valid <- cars_splits[[2]
-
+        prostate_splits <- h2o.splitFrame(data = prostate, ratio = 0.8, seed = 1234)
+        
+        train <- prostate_splits[[1]]
+        valid <- prostate_splits[[2]]
+                             
         # build and train the model using the mean_per_class_error stopping metric:
-        cars_gbm <- h2o.gbm(x = predictors, y = repsonse, 
-                            training_frame = train, validation_frame = test, 
-                            stopping_metric = "mean_per_class_error", stopping_rounds = 3, 
-                            stopping_tolerance = 1e-2, seed = 1234)
-
+        prostate_gbm <- h2o.gbm(x = predictors, y = response,
+                           training_frame = train, validation_frame = valid,
+                           stopping_metric = "mean_per_class_error", stopping_rounds = 3,
+                           score_tree_interval = 5,
+                           stopping_tolerance = 1e-2, seed = 1234)
+        
         # retrieve the mse value:
-        h2o.mse(cars_gbm, valid = TRUE)
+        h2o.mse(prostate_gbm, valid = TRUE)
 
 
    .. code-tab:: python
 
-        # import H2OGradientBoostingEstimator and the cars dataset:
+        # import H2OGradientBoostingEstimator and the prostate dataset:
         from h2o.estimators import H2OGradientBoostingEstimator
-        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        prostate = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
         # set the predictors and response columns:
-        predictors = ["economy","cylinders","displacement","power","weight"]
-        response = "acceleration"
+        prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+        predictors = ["AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"]
+        response = "CAPSULE"
 
         # split the data into training and validation sets:
-        train, valid = cars.split_frame(ratios=[.8],seed=1234)
+        train, valid = prostate.split_frame(ratios=[.8],seed=1234)
 
         # build and train the model using the meanperclasserror stopping metric:
-        cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "meanperclasserror", 
+        prostate_gbm = H2OGradientBoostingEstimator(stopping_metric = "meanperclasserror", 
                                                 stopping_rounds = 3, 
                                                 stopping_tolerance = 1e-2, 
+                                                score_tree_interval = 5,
                                                 seed = 1234)
-        cars_gbm.train(x=predictors, y=repsonse, 
+        prostate_gbm.train(x=predictors, y=response, 
                        training_frame=train, validation_frame=valid)
 
         # retrieve the mse value:
-        cars_gbm.mse(valid = True)
+        prostate_gbm.mse(valid = True)
 
 In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can also be used as the stopping metric. 
 
@@ -1733,6 +1740,10 @@ Examples:
 
         # build the confusion matrix:
         gbm.confusion_matrix(train)
+
+.. note::
+    
+    Because we use an online version of the algorithm to calculate the histogram of the predictors for the confusion matrix, the confusion matrix returns an approximation of the actual histogram and, therefore, will not match the exact values.
 
 Variable Importances
 ''''''''''''''''''''
@@ -2120,15 +2131,7 @@ Example:
                          gainslift_bins = 20)
 
         # Plot the Gains/Lift chart:
-        gain_table <- model@model$training_metrics@metrics$gains_lift_table
-        plot(gain_table$cumulative_data_fraction,
-             gain_table$cumulative_capture_rate,'l', 
-             ylim = c(0,1.5), col = "dodgerblue3",
-             xlab = "cumulative data fraction",
-             ylab = "cumulative capture rate, cumulative lift",
-             main = "Gains/Lift")
-        lines(gain_table$cumulative_data_fraction,
-              gain_table$cumulative_lift, col = "orange")
+        h2o.gains_lift_plot(model)
 
     .. code-tab:: python
 
@@ -2146,24 +2149,7 @@ Example:
                     training_frame=airlines)
 
         # Plot the Gains/Lift chart:
-        gl = model.gains_lift()
-        X = gl['cumulative_data_fraction']
-        Y = gl['cumulative_capture_rate']
-        YC = gl['cumulative_lift']
-
-        plt = get_matplotlib_pyplot(server=False, raise_if_not_available=True)
-        plt.figure(figsize=(10,10))
-        plt.grid(True)
-        plt.plot(X, Y, zorder=10, label='cumulative capture rate')
-        plt.plot(X, YC, zorder=10, label='cumulative lift')
-        plt.legend(loc=4, fancybox=True, framealpha=0.5)
-        plt.xlim(0, 1)
-        plt.ylim(0, 1.5)
-        plt.xlabel('cumulative data fraction')
-        plt.ylabel('cumulative capture rate, cumulative lift')
-        plt.title('Gains/Lift')
-        fig = plt.gcf()
-        plt.show()
+        model.gains_lift_plot()
 
 .. figure:: images/gainslift_plot.png
     :alt: Gains/Lift Plot
@@ -2410,6 +2396,115 @@ Multinomial Examples
   :alt: Multinomial Partial Dependence Plot
   :scale: 30%
 
+Leaderboard
+~~~~~~~~~~~
+Leaderboard is used for comparing multiple models. The models are ranked by a default metric based on the problem type (the second column of the leaderboard).
+In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error.
+In regression problems, the default sort metric is RMSE. Some additional metrics are also provided, for convenience.
+A different sort metric can be used by specifying the ``sort_metric`` argument.
+
+Leaderboard uses metrics calculated on the ``leaderboard_frame``.
+If you don't specify the ``leaderboard_frame``, you can use the ``scoring_data`` argument to specify what metrics should be used.
+The default value is ``AUTO`` which means that the leaderboard will try to use metrics from cross-validation and
+if not available then validation and if validation metrics aren't available it will use the training metrics.
+This is applied on per-model basis which can cause leaderboard to compare apples and oranges.
+You can specify one of ``xval``, ``valid``, or ``train`` to be certain that the comparison is using the same metrics.
+
+To help users assess the complexity of the models, the ``h2o.make_leaderboard`` function has an ``extra_columns`` parameter.
+This parameter allows you to specify which (if any) optional columns should be added to the leaderboard.
+This defaults to None.
+
+Allowed options include:
+
+ - ``training_time_ms``: A column providing the training time of each model in milliseconds. (Note that this doesn’t include the training of cross validation models.)
+ - ``predict_time_per_row_ms``: A column providing the average prediction time by the model for a single row.
+ - ``ALL``: Adds columns for both ``training_time_ms`` and ``predict_time_per_row_ms``.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+
+    h2o.init()
+
+    # Import a sample binary outcome dataset into H2O
+    data <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+    test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+
+    # Identify predictors and response
+    y <- "response"
+    x <- setdiff(names(data), y)
+
+    # For binary classification, response should be a factor
+    data[, y] <- as.factor(data[, y])
+    test[, y] <- as.factor(test[, y])
+
+    # Split data into train & validation
+    ss <- h2o.splitFrame(data, seed = 1)
+    train <- ss[[1]]
+    valid <- ss[[2]]
+
+    # GBM hyperparameters
+    gbm_params1 <- list(learn_rate = c(0.01, 0.1),
+                        max_depth = c(3, 5, 9),
+                        sample_rate = c(0.8, 1.0),
+                        col_sample_rate = c(0.2, 0.5, 1.0))
+
+    # Train and validate a cartesian grid of GBMs
+    gbm_grid1 <- h2o.grid("gbm", x = x, y = y,
+                          grid_id = "gbm_grid1",
+                          training_frame = train,
+                          validation_frame = valid,
+                          ntrees = 100,
+                          seed = 1,
+                          hyper_params = gbm_params1)
+
+    h2o.make_leaderboard(gbm_grid1, test)
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    from h2o.grid.grid_search import H2OGridSearch
+
+    h2o.init()
+
+    # Import a sample binary outcome dataset into H2O
+    data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+    test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+
+    # Identify predictors and response
+    x = data.columns
+    y = "response"
+    x.remove(y)
+
+    # For binary classification, response should be a factor
+    data[y] = data[y].asfactor()
+    test[y] = test[y].asfactor()
+
+    # Split data into train & validation
+    ss = data.split_frame(seed = 1)
+    train = ss[0]
+    valid = ss[1]
+
+    # GBM hyperparameters
+    gbm_params1 = {'learn_rate': [0.01, 0.1],
+                    'max_depth': [3, 5, 9],
+                    'sample_rate': [0.8, 1.0],
+                    'col_sample_rate': [0.2, 0.5, 1.0]}
+
+    # Train and validate a cartesian grid of GBMs
+    gbm_grid1 = H2OGridSearch(model=H2OGradientBoostingEstimator,
+                              grid_id='gbm_grid1',
+                              hyper_params=gbm_params1)
+    gbm_grid1.train(x=x, y=y,
+                    training_frame=train,
+                    validation_frame=valid,
+                    ntrees=100,
+                    seed=1)
+
+    h2o.make_leaderboard(gbm_grid1, test)
+
 
 Prediction
 ----------
@@ -2564,9 +2659,12 @@ Using the previous example, run the following to predict the leaf node assignmen
 Predict Contributions
 ~~~~~~~~~~~~~~~~~~~~~
 
-In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
+In H2O-3, each returned H2OFrame has the specific shape of *#rows, #features + 1*. This includes a feature contribution column for each input feature. The last column of this table is the model bias (the column is the same for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of a tree-based model is the sum of the predictions of the individual trees prior to applying the inverse link function to retrieve the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction.
 
-H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model. If you have SHAP installed, then graphical representations can be retrieved in Python using `SHAP functions <https://shap.readthedocs.io/en/latest/#>`__. (Note that retrieving graphs via R is not yet supported.) An .ipynb demo showing this example is also available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb>`__.
+We support TreeSHAP for DRF, GBM, and XGBoost. For these problems, ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions as SHAP (SHapley Additive exPlanation) values on an H2O model.
+
+You can use methods from `model explainability <explain.html#shap-summary>`__ to plot SHAP. If you have SHAP installed, graphical representations can be retrieved in Python using `SHAP functions <https://shap.readthedocs.io/en/latest/#>`__.
+Retrieving graphs via R is not yet supported. An `.ipynb demo showing this example <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb>`__ is also available.
 
 **Note**: Multinomial classification models are currently not supported.
 
@@ -2574,7 +2672,7 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
 .. tabs::
    .. code-tab:: r R
   
-        # Predict the contributions using the GBM model and test data.
+        # Predict the contributions using the GBM model and test data:
         contributions <- h2o.predict_contributions(model, prostate_test)
         contributions
 
@@ -2586,12 +2684,18 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         5 -0.02015455  0.06589284 -1.5968542 -0.9778085 -0.2434755
         6 -0.33494386 -0.58143651 -0.4093136  0.5271149 -0.2434755
 
-        [90 rows x 5 columns] 
+        [90 rows x 5 columns]
+
+        # Plot SHAP summary plot:
+        h2o.shap_summary_plot(model, prostate_test)
+
+        # Plot SHAP contributions for one instance (e.g., row 5):
+        h2o.shap_explain_row_plot(model, prostate_test, row_index = 5)
 
 
    .. code-tab:: python
 
-        # Predict the contributions using the GBM model and test data.
+        # Predict the contributions using the GBM model and test data:
         contributions = model.predict_contributions(test)
         contributions
 
@@ -2610,29 +2714,36 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
 
         [90 rows x 5 columns]
 
+        # Plot SHAP summary plot:
+        model.shap_summary_plot(test)
+
+        # Plot SHAP contributions for one instance (e.g., row 5):
+        model.shap_explain_row_plot(test, row_index=5)
+
+        # OR using the shap package:
         # Import required packages for running SHAP commands
         import shap
 
-        # Load JS visualization code
+        # Load JS visualization code:
         shap.initjs()
 
-        # Convert the H2OFrame to use with SHAP's visualization functions
-        contributions_matrix = contributions.as_data_frame().as_matrix()
+        # Convert the H2OFrame to use with SHAP's visualization functions:
+        contributions_matrix = contributions.as_data_frame().values
 
-        # Calculate SHAP values for all features
+        # Calculate SHAP values for all features:
         shap_values = contributions_matrix[:,0:4]
 
-        # Expected values is the last returned column
+        # Expected values is the last returned column:
         expected_value = contributions_matrix[:,4].min()
 
-        # Visualize the training set predictions
+        # Visualize the training set predictions:
         X=["AGE","RACE","PSA","GLEASON"]
         shap.force_plot(expected_value, shap_values, X)
 
-        # Summarize the effects of all the features
+        # Summarize the effects of all the features:
         shap.summary_plot(shap_values, X)
 
-        # View the same summary as a bar chart
+        # View the same summary as a bar chart:
         shap.summary_plot(shap_values, X, plot_type="bar")
 
 

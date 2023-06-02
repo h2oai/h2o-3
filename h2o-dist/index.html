@@ -8,9 +8,8 @@
     </title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
-    <style type="text/css">
+    <style>
       /* Reset */
       html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video { margin: 0;    padding: 0;    border: 0;    font-size: 100%;    font: inherit;    vertical-align: baseline; } /* HTML5 display-role reset for older browsers */
       article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section { display: block; }
@@ -163,6 +162,92 @@
         border-top: 1px solid #ddd;
       }
 
+      .btn {
+          float:right;
+          position: relative;
+          display: inline-block;
+          padding: 3px 8px;
+          font-size: 13px;
+          font-weight: bold;
+          line-height: 20px;
+          color: #333;
+          white-space: nowrap;
+          vertical-align: middle;
+          cursor: pointer;
+          background-color: #eee;
+          background-image: -webkit-linear-gradient(#fcfcfc, #eee);
+          background-image: linear-gradient(#fcfcfc, #eee);
+          border: 1px solid #d5d5d5;
+          border-radius: 3px;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          -webkit-appearance: none;
+          -webkit-transition:all .5s linear;
+          transition:all .5s linear;
+          -moz-transition:all .5s linear;
+          -ms-transition:all .5s linear;
+      }
+      
+      .btn.copy_button {
+          border: solid 1px transparent;
+          height: 30px;
+          width: 30px;
+          background: transparent;
+          background-image: none;
+          position: relative;
+          margin: 10px 10px 0 0;
+          outline: none;
+      }
+      
+      .btn.copy_button:hover {
+          background: #fff;
+      }
+
+      .btn.copy_button:focus, .btn.copy_button:active {
+          border-color: #4c8b36;
+          background: #fff;
+      }
+
+      .copy_button:before {
+          position: absolute;
+          content: '\1F4CB';
+          height: 30px;
+          width: 30px;
+          font-size: 24px;
+          color: #222;
+          top: 5px;
+          left: -1px;
+      }
+      
+      .copy_button.tooltipped:after {
+          content: 'Copied!';
+          display: block;
+          position: absolute;
+          background-color: #222;
+          color: #fff;
+          font-weight: normal;
+          border-radius: 3px;
+          top: 35px;
+          left: -20px;
+          padding: 5px 10px;
+      }
+      
+      .copy_button.tooltipped.tooltipped-s:after {
+          content: 'Copied!';
+      }
+
+      .copy_button.tooltipped.tooltipped-e:after {
+          content: 'Copying not supported!';
+          background-color: #9f1006;
+          left: -60px;
+      }
+      
+      .pre {
+          white-space: pre;
+      }
+
     </style>
     <script>
       function initializeTabs() {
@@ -178,6 +263,8 @@
         var kubernetesTab = document.getElementById('quickstart-kubernetes-tab');
         var mavenPanel = document.getElementById('quickstart-maven');
         var kubernetesPanel = document.getElementById('quickstart-kubernetes');
+        var otherArtifactsTab = document.getElementById('quickstart-other-artifacts-tab');
+        var otherArtifactsPanel = document.getElementById('quickstart-other-artifacts');
         var showZipTab = function() {
           zipPanel.style.display = 'block';
           zipTab.className = 'active';
@@ -191,6 +278,8 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
         var showRTab = function() {
           zipPanel.style.display = 'none';
@@ -205,6 +294,8 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
         var showPyTab = function() {
           zipPanel.style.display = 'none';
@@ -219,6 +310,8 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
         var showHadoopTab = function(){
           zipPanel.style.display = 'none';
@@ -233,6 +326,8 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
         var showMavenTab = function(){
           zipPanel.style.display = 'none';
@@ -247,6 +342,8 @@
           mavenTab.className = 'active';
           kubernetesPanel.style.display = 'none';
           kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
         };
       var showKubernetesTab = function(){
           zipPanel.style.display = 'none';
@@ -261,13 +358,32 @@
           mavenTab.className = '';
           kubernetesPanel.style.display = 'block';
           kubernetesTab.className = 'active';
+          otherArtifactsPanel.style.display = 'none';
+          otherArtifactsTab.className = '';
       };
+      var showOtherArtifactsTab = function(){
+          zipPanel.style.display = 'none';
+          zipTab.className = '';
+          rPanel.style.display = 'none';
+          rTab.className = '';
+          pyPanel.style.display = 'none';
+          pyTab.className = '';
+          hadoopPanel.style.display = 'none';
+          hadoopTab.className = '';
+          mavenPanel.style.display = 'none';
+          mavenTab.className = '';
+          kubernetesPanel.style.display = 'none';
+          kubernetesTab.className = '';
+          otherArtifactsPanel.style.display = 'block';
+          otherArtifactsTab.className = 'active';
+      };      
         zipTab.onclick = showZipTab;
         rTab.onclick = showRTab;
         pyTab.onclick= showPyTab;
         hadoopTab.onclick = showHadoopTab;
         mavenTab.onclick = showMavenTab;
         kubernetesTab.onclick = showKubernetesTab;
+        otherArtifactsTab.onclick = showOtherArtifactsTab;
         var hash = window.location.hash;
         if(hash && hash.indexOf('#R') == 0) {
           showRTab();
@@ -280,6 +396,12 @@
         }
         if (hash && hash.indexOf('#Maven') == 0) {
           showMavenTab();
+        }
+        if (hash && hash.indexOf('#Kubernetes') == 0) {
+          showKubernetesTab();
+        }
+        if (hash && hash.indexOf('#OtherArtifacts') == 0) {
+          showOtherArtifactsTab();
         }
       }
       <!-- DOM 0 style without jquery -->
@@ -431,105 +553,8 @@
           <span id = "quickstart-hadoop-tab">Install on Hadoop</span>
           <span id = "quickstart-maven-tab">Use from Maven</span>
           <span id = "quickstart-kubernetes-tab">Kubernetes</span>
+          <span id = "quickstart-other-artifacts-tab">Other Artifacts</span>
         </div>
-        <!-- Clipboard Icon !-->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/octicons/2.4.1/octicons.min.css">
-        <script type="text/javascript" src="ZeroClipboard.min.js"></script>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
-        <script src="//app-ab12.marketo.com/js/forms2/js/forms2.min.js"></script>
-        <form id="mktoForm_1016"></form>
-
-        <script></script>
-
-          <script type="text/javascript">
-            $(document).ready(function () {
-                  document.getElementById('download-zip').addEventListener('click', function(){setTimeout(function() {location.href='h2o-SUBST_PROJECT_VERSION.zip'}, 500)})
-                  var firstAdd=false;
-                  ZeroClipboard.config({moviePath:'ZeroClipboard.swf'});
-                  var clip = new ZeroClipboard($(".copy_button"));
-
-
-                  $(".copy_button").click(function(event){
-                    event.preventDefault();
-                    MktoForms2.loadForm("//app-ab12.marketo.com", "644-PKX-778", 1113, function (form){MktoForms2.lightbox(form).show();});
-
-                      MktoForms2.whenReady(function (form) {
-                          if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
-                          {
-                            $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
-                            $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
-                            $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Copied!</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
-                          }
-						  else{
-							$(".mktoModalMain .abc h1").html("Copied!");
-						  }
-                    });
-
-
-                  });
-                  $("#download-zip").click(function(event){
-                    event.preventDefault();
-                    MktoForms2.loadForm("//app-ab12.marketo.com", "644-PKX-778", 1113, function (form){MktoForms2.lightbox(form).show();});
-
-                      MktoForms2.whenReady(function (form) {
-                          if($(".mktoModalMain").first().html().indexOf('class="abc"')==-1)
-                          {
-                            $(".mktoModalMain").first().prepend('<img alt="Deep Learning Booklet" itemprop="image" src="https://s3.amazonaws.com/titlepages.leanpub.com/deeplearning/large?1437107332" style="float:left">');
-                            $(".mktoModalMain form").wrap('<div class="abc" style="width:330px;float:left;margin-left:10px"></div>');
-                            $(".abc").first().prepend('<h1 style="text-align:center;margin-top:12px;font-size:19px">Downloading...</h1><p style="margin: 17px 12px 14px 12px;text-align:center;font-size: 13px;">Sign up below to get access to our Deep Learning book.</p>');
-                          }
-						  else{
-							$(".mktoModalMain .abc h1").html("Downloading...");
-						}
-                    });
-
-
-                  });
-
-                  clip.on( 'mouseover', function(client) {
-                    console.log('mouseover');
-                  } );
-
-                  clip.on('complete', function (client, args) {
-                      alert('clipDetail complete');
-                  });
-              });
-        </script>
-        <style>
-          .btn {
-              float:right;
-              position: relative;
-              display: inline-block;
-              padding: 3px 8px;
-              font-size: 13px;
-              font-weight: bold;
-              line-height: 20px;
-              color: #333;
-              white-space: nowrap;
-              vertical-align: middle;
-              cursor: pointer;
-              background-color: #eee;
-              background-image: -webkit-linear-gradient(#fcfcfc, #eee);
-              background-image: linear-gradient(#fcfcfc, #eee);
-              border: 1px solid #d5d5d5;
-              border-radius: 3px;
-              -webkit-user-select: none;
-              -moz-user-select: none;
-              -ms-user-select: none;
-              user-select: none;
-              -webkit-appearance: none;
-              -webkit-transition:all .5s linear;
-              transition:all .5s linear;
-              -moz-transition:all .5s linear;
-              -ms-transition:all .5s linear;
-
-          }
-          .octicon-clippy{font-size:30px;}
-          .zeroclipboard-is-hover .octicon-clippy{
-            color:#4388db !important;
-          }
-
-        </style>
         <div id="panels">
           <div id="quickstart-zip">
             <div id="downloads">
@@ -539,9 +564,7 @@
             <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
             <p>2. From your terminal, run:</p>
 
-            <button class="btn copy_button" id="btnCopy1" data-copied-hint="Copied!" data-clipboard-target='to_copy1'>
-              <span class="octicon octicon-clippy"></span>
-            </button>
+            <button class="btn copy_button" id="btnCopy1" data-clipboard-target='#to_copy1'></button>
             <p class="terminal" id="to_copy1">
               cd ~/Downloads<br/>
               unzip h2o-SUBST_PROJECT_VERSION.zip<br/>
@@ -554,20 +577,21 @@
             <div id="quickstart-py" style="display:none">
                 <h2>Use H<sub>2</sub>O directly from Python</h2>
 
-                <p>1. Prerequisite:    Python 2.7.x, 3.5.x to 3.7.x</p>
+                <p>1. Prerequisite:    Python 3.6.x to 3.8.x</p>
                 <p>2. Install dependencies (prepending with `sudo` if needed):</p>
-                 <button class="btn copy_button" id="btnCopy8" data-copied-hint="Copied!" data-clipboard-target='to_copy8'>
-              <span class="octicon octicon-clippy"></span>
-            </button>
+                 <button class="btn copy_button" id="btnCopy8" data-clipboard-target='#to_copy8'></button>
                 <p class="terminal" id="to_copy8">
                     pip install requests<br/>
                     pip install tabulate<br/>
                     pip install future
                 </p>
+                <p> Optional: install `matplotlib` (required for plotting in Python):</p>
+                  <button class="btn copy_button" id="btnCopy12" data-clipboard-target='#to_copy12'></button>
+                <p class="terminal" id="to_copy12">
+                    pip install matplotlib<br/>
+                </p>
                 <p>At the command line, copy and paste these commands one line at a time:</p>
-                  <button class="btn copy_button" id="btnCopy2" data-copied-hint="Copied!" data-clipboard-target='to_copy2'>
-                    <span class="octicon octicon-clippy"></span>
-                  </button>
+                  <button class="btn copy_button" id="btnCopy2" data-clipboard-target='#to_copy2'></button>
                 <p class="terminal" id="to_copy2">
                     <em># The following command removes the H<sub>2</sub>O module for Python.</em><br/>
                     pip uninstall h2o<br/>
@@ -577,10 +601,8 @@
 
                 <h2>Conda Installation</h2>
                 <p>Available at https://anaconda.org/h2oai/h2o/</p>
-                  <button class="btn copy_button" id="btnCopy9" data-copied-hint="Copied!" data-clipboard-target='to_copy8'>
-                <span class="octicon octicon-clippy"></span>
-            </button>
             <p>To install this package with conda run:</p>
+                <button class="btn copy_button" id="btnCopy9" data-clipboard-target='#to_copy9'></button>
             <p class="terminal" id="to_copy9">conda install -c h2oai h2o</p>
             </div>
 
@@ -588,9 +610,7 @@
                 <h2>Use H<sub>2</sub>O directly from R</h2>
 
                 <p>Copy and paste these commands into R one line at a time:</p>
-                  <button class="btn copy_button" id="btnCopy3" data-copied-hint="Copied!" data-clipboard-target='to_copy3'>
-                    <span class="octicon octicon-clippy"></span>
-                  </button>
+                  <button class="btn copy_button" id="btnCopy3" data-clipboard-target='#to_copy3'></button>
                 <p class="terminal" id="to_copy3"data-clipboard-target='to_copy3'>
                     <em># The following two commands remove any previously installed H<sub>2</sub>O packages for R.</em><br/>
                     if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }<br/>
@@ -613,23 +633,17 @@
           <div id="quickstart-hadoop" style="display:none">
             <h2>Run H<sub>2</sub>O on Hadoop in just 3 steps</h2>
             <p>1. Download H<sub>2</sub>O for your version of Hadoop. This is a zip file that contains everything you need to get started.</p>
-            <button class="btn copy_button" id="btnCopy4" data-copied-hint="Copied!" data-clipboard-target='to_copy4'>
-              <span class="octicon octicon-clippy"></span>
-            </button>
+            <button class="btn copy_button" id="btnCopy4" data-clipboard-target='#to_copy4'></button>
             <p class="terminal" id="to_copy4"></p>
             <p>2. Unpack the zip file and launch a 6g instance of H<sub>2</sub>O: </p>
-             <button class="btn copy_button" id="btnCopy7" data-copied-hint="Copied!" data-clipboard-target='to_copy7'>
-              <span class="octicon octicon-clippy"></span>
-            </button>
+             <button class="btn copy_button" id="btnCopy7" data-clipboard-target='#to_copy7'></button>
             <p class="terminal" id="to_copy7">
                 unzip h2o-SUBST_PROJECT_VERSION-*.zip<br/>
                 cd h2o-SUBST_PROJECT_VERSION-*<br/>
                 hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g<br/>
             </p>
             <p>3. Point your browser to H2O (see "Open H2O Flow in your web browser" in the output below):</p>
-            <button class="btn copy_button" id="btnCopy5" data-copied-hint="Copied!" data-clipboard-target='to_copy5'>
-              <span class="octicon octicon-clippy"></span>
-            </button>
+            <button class="btn copy_button" id="btnCopy5" data-clipboard-target='#to_copy5'></button>
             <p class="terminal" id="to_copy5">
                 Determining driver host interface for mapper->driver callback...<br/>
                 [Possible callback IP address: 172.16.2.181]<br/>
@@ -654,9 +668,7 @@
               <h2>Gradle-style specification for Maven artifacts</h2>
 
               <p>See the <a href="https://github.com/h2oai/h2o-droplets">h2o-droplets github repository</a> for a working example.</p>
-              <button class="btn copy_button" id="btnCopy6" data-copied-hint="Copied!" data-clipboard-target='to_copy6'>
-              <span class="octicon octicon-clippy"></span>
-            </button>
+              <button class="btn copy_button" id="btnCopy6" data-clipboard-target='#to_copy6'></button>
               <p class="terminal" id="to_copy6"/>
 def h2oProjectVersion = "SUBST_PROJECT_VERSION"</br>
 </br>
@@ -680,13 +692,14 @@ dependencies {</br>
                 <h2>Setup H<sub>2</sub>O on Kubernetes using Helm</h2>
                     <p><a href="https://helm.sh/" target="_blank">Helm</a> can be used to deploy H2O into a kubernetes cluster. Helm requires the KUBECONFIG environment variable to be set up properly, or stating the kubeconfig destination explicitly. Please refer to Helm's documentation
                     for further information.</p>
-                <pre>
+                <button class="btn copy_button" id="btnCopy11" data-clipboard-target='#to_copy11'></button>
+                
                     <p class="terminal" id="to_copy11">
-helm repo add h2o https://charts.h2o.ai
-helm install basic-h2o h2o/h2o
-helm test basic-h2o
+                        helm repo add h2o https://charts.h2o.ai<br/>
+                        helm install basic-h2o h2o/h2o<br/>
+                        helm test basic-h2o
                     </p>
-                </pre>
+                
 
                 <p>There are various settings and modifications available. To inspect the configuration options available, use the  "helm inspect values h2o/h2o --version SUBST_PROJECT_VERSION" command.</p>
                 
@@ -694,11 +707,8 @@ helm test basic-h2o
                 <p>1. Set-up kubernetes cluster and kubectl.</p>
                 <p>2. (Optional) Adjust the 'default' namespace in the following YAML, if required.</p>
     
-                <button class="btn copy_button" id="btnCopy10" data-copied-hint="Copied!" data-clipboard-target='btnCopy10'>
-                    <span class="octicon octicon-clippy"></span>
-                </button>
-            <pre>
-                <p class="terminal" id="to_copy10">
+                <button class="btn copy_button" id="btnCopy10" data-clipboard-target='#to_copy10'></button>
+                <p class="terminal pre" id="to_copy10">
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -762,7 +772,6 @@ spec:
     port: 80
     targetPort: 54321
                 </p>
-            </pre>
                 
                 <p>
                     Environment variables:<br/><br/>
@@ -776,7 +785,33 @@ spec:
                 <p>4. (Optional) Adjust the YAML file to spawn more nodes or allocate more resources for the H2O cluster.</p>
                 
             </div>
-
+            <div id="quickstart-other-artifacts" style="display:none">
+              <h2>A lightweight assembly jar with minimum dependencies</h2>
+              <p>1. Download the <a href="h2o-steam-SUBST_PROJECT_VERSION.jar" target="_blank">h2o-steam-SUBST_PROJECT_VERSION.jar</a> artifact or from terminal, run:</p>
+                <button class="btn copy_button" id="btnCopyOther1" data-clipboard-target='#to_copy_other1'></button>
+                <p class="terminal" id="to_copy_other1">
+                    wget <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/h2o-steam-SUBST_PROJECT_VERSION.jar<br/>
+                </p>
+              <p>2. From your terminal, run:</p>
+              <button class="btn copy_button" id="btnCopyOther2" data-clipboard-target='#to_copy_other2'></button>
+              <p class="terminal" id="to_copy_other2">
+                  java -jar h2o-steam-SUBST_PROJECT_VERSION.jar<br/>
+              </p>
+              <p>3. Point your browser to <a href="http://localhost:54321/" target="_blank">http://localhost:54321</a>
+                
+              <h2>A Python client without H<sub>2</sub>O backend</h2>
+                <p>1. To remove any previously installed form of the H<sub>2</sub>O Python client, run:</p>
+                <button class="btn copy_button" id="btnCopyOther3" data-clipboard-target='#to_copy_other3'></button>
+                <p class="terminal" id="to_copy_other3">
+                    pip uninstall h2o_client<br/>
+                    pip uninstall h2o<br/>
+                </p>
+                <p>2. Install a backendless H<sub>2</sub>O-3 Python client by running the following:</p>
+                <button class="btn copy_button" id="btnCopyOther4" data-clipboard-target='#to_copy_other4'></button>
+                <p class="terminal" id="to_copy_other4">
+                    pip install <script type="text/javascript">var url = location.href; var url2 = url.substring(0, url.lastIndexOf("/")); document.write(url2);</script>/Python/SUBST_CLIENT_WHEEL_FILE_NAME<br/>
+                </p>
+            </div>
         </div>
         <div id="documentation">
           <h2>User Documentation</h2>
@@ -788,5 +823,45 @@ spec:
         </div>
       </div>
     </div>
+    <script type="text/javascript">
+        let copyButtons = document.querySelectorAll('.copy_button');
+        for (let i = 0; i < copyButtons.length; i++) {
+            copyButtons[i].addEventListener('click', copyToClipboard);
+            copyButtons[i].addEventListener('mouseleave', clearTooltip);
+            copyButtons[i].addEventListener('blur', clearTooltip);
+            copyButtons[i].setAttribute('aria-label', 'Copy');
+            copyButtons[i].setAttribute('title', 'Copy');
+        }
+
+        function copyToClipboard(event) {
+            const targetId = event.target.dataset.clipboardTarget;
+            if (!targetId) {
+                console.error('No targetId found');
+                return;
+            }
+            const text = document.getElementById(targetId.replace('#',''))?.innerText;
+            if (!text) {
+                console.error(`No copyable element or text found for ID ${targetId}`);
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                showTooltip(event.target, 'tooltipped-s');
+            }, (_error) => {
+                showTooltip(event.target, 'tooltipped-e');
+            });
+        }
+
+        function clearTooltip(e) {
+            const target = e.target;
+            setTimeout(() => {
+                target.setAttribute('class', 'btn copy_button');
+            }, 1000);
+        }
+
+        function showTooltip(elem, className) {
+            elem.setAttribute('class', `btn copy_button tooltipped ${className}`);
+        }
+    </script>
   </body>
 </html>
+

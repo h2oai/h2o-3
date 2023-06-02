@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys, os, datetime as dt
 
 sys.path.insert(1, os.path.join("..","..",".."))
@@ -64,8 +63,8 @@ def test_train_verbosity():
     assert "Stopping tolerance set by the user is" in warn.out.text
     assert "AutoML duration" not in warn.out.text
     assert "AutoML duration" in info.out.text
-    assert "Time assigned for" not in info.out.text
-    assert "Time assigned for" in debug.out.text
+    assert "No time limitation for" not in info.out.text
+    assert "No time limitation for" in debug.out.text
 
 
 pu.run_tests([

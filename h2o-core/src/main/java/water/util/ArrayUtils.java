@@ -93,7 +93,12 @@ public class ArrayUtils {
   }
 
   public static double[][] outerProduct(double[] x, double[] y){
-    double[][] result = new double[x.length][y.length];
+    return outerProduct(null, x, y);
+  }
+  
+  public static double[][] outerProduct(double[][] result, double[] x, double[] y) {
+    if (result == null)
+      result = new double[x.length][y.length];
     for(int i = 0; i < x.length; i++) {
       for(int j = 0; j < y.length; j++)
         result[i][j] = x[i] * y[j];
@@ -358,15 +363,17 @@ public class ArrayUtils {
     for (int i=0; i<nums.length; i++) nums[i] *= n;
     return nums;
   }
-  public static double[] mult(double[] nums, double n) {
-//    assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
-    for (int i=0; i<nums.length; i++) nums[i] *= n;
-    return nums;
-  }
   public static double[][] mult(double[][] ary, double n) {
     if(ary == null) return null;
     for (double[] row : ary) mult(row, n);
     return ary;
+  }
+
+  public static double[] mult(double[] nums, double n) {
+//    assert !Double.isInfinite(n) : "Trying to multiply " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
+    if (nums != null)
+      for (int i=0; i<nums.length; i++) nums[i] *= n;
+    return nums;
   }
 
   public static double[] mult(double[] nums, double[] nums2) {
@@ -1369,6 +1376,18 @@ public class ArrayUtils {
     if( b.length==0 ) return a;
     String[] c = Arrays.copyOf(a,a.length+b.length);
     System.arraycopy(b,0,c,a.length,b.length);
+    return c;
+  }
+
+  static public String[] insert( String[] a, String[] b, int pos ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    String[] c = new String[a.length + b.length];
+    System.arraycopy(a, 0, c, 0, pos);
+    System.arraycopy(b, 0, c, pos, b.length);
+    System.arraycopy(a, pos, c, pos + b.length, a.length - pos);
     return c;
   }
 

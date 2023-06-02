@@ -44,7 +44,7 @@ public class EventLog extends Keyed<EventLog> {
   private static String idForRun(Key runKey) {
     if (null == runKey)
       return "Events_dummy";
-    return "Events_" + runKey.toString();
+    return "Events_" + runKey;
   }
 
   /** Add a Debug EventLogEntry and log. */
@@ -120,5 +120,70 @@ public class EventLog extends Keyed<EventLog> {
   @Override
   public String toString() {
     return this.toTwoDimTable().toString();
+  }
+
+  public Logger asLogger(Stage stage) {
+    final EventLog el = this;
+    return new Logger() {
+      @Override
+      public void trace(String message) {
+        el.debug(stage, message);
+      }
+
+      @Override
+      public void debug(String message) {
+        el.debug(stage, message);
+      }
+
+      @Override
+      public void info(String message) {
+        el.info(stage, message);
+      }
+
+      @Override
+      public void warn(String message) {
+        el.warn(stage, message);
+      }
+
+      @Override
+      public void error(String message) {
+        el.error(stage, message);
+      }
+
+      @Override
+      public void fatal(String message) {
+        el.error(stage, message);
+      }
+
+      @Override
+      public boolean isTraceEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isDebugEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isInfoEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isWarnEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isErrorEnabled() {
+        return true;
+      }
+
+      @Override
+      public boolean isFatalEnabled() {
+        return true;
+      }
+    };
   }
 }

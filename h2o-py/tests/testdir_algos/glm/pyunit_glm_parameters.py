@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import h2o
 from h2o.estimators import H2OGeneralizedLinearEstimator
 from h2o.exceptions import H2OTypeError

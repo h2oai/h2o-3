@@ -42,7 +42,7 @@ automl.leaderboard_sort_metric.test <- function() {
                      project_name = "r_lbsm_test_aml2",
                      sort_metric = "RMSE")
   aml2@leaderboard
-  expect_equal(names(aml2@leaderboard), c("model_id", "rmse", "mean_residual_deviance", "mse", "mae", "rmsle"))
+  expect_equal(names(aml2@leaderboard), c("model_id", "rmse", "mse", "mae", "rmsle", "mean_residual_deviance"))
   # check that rmse col is sorted already
   rmse_col <- as.vector(aml2@leaderboard[,"rmse"])
   expect_equal(identical(rmse_col, sort(rmse_col, decreasing = FALSE)), TRUE)
@@ -51,8 +51,8 @@ automl.leaderboard_sort_metric.test <- function() {
   aml2 <- h2o.automl(y = 'runoffnew', training_frame = fr2, max_models = 2,
                      project_name = "r_lbsm_test_aml2_auto")
   aml2@leaderboard
-  # check that leaderboard is sorted by mean_residual_deviance
-  mrd_col <- as.vector(aml2@leaderboard[,"mean_residual_deviance"])
+  # check that leaderboard is sorted by rmse
+  mrd_col <- as.vector(aml2@leaderboard[,"rmse"])
   expect_equal(identical(mrd_col, sort(mrd_col, decreasing = FALSE)), TRUE)
   
   

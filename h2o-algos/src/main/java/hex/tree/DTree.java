@@ -410,7 +410,7 @@ public class DTree extends Iced {
 
         nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._intOpt, hasNAs,
                 h._seed*0xDECAF+(way+1), parms,
-                h._globalQuantilesKey, cs, h._checkFloatSplits, customSplitPoints);
+                h._globalSplitPointsKey, cs, h._checkFloatSplits, customSplitPoints);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;

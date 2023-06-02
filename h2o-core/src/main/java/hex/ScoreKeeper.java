@@ -31,8 +31,10 @@ public class ScoreKeeper extends Iced {
   public double _r2 = Double.NaN;
   public double _anomaly_score = Double.NaN;
   public double _anomaly_score_normalized = Double.NaN;
-  public double _AUUC;
-  public double _qini;
+  public double _AUUC = Double.NaN;
+  public double _auuc_normalized = Double.NaN;
+  public double _qini = Double.NaN;
+  public int _auuc_nbins = 0;
 
   public ScoreKeeper() {}
 
@@ -67,10 +69,18 @@ public class ScoreKeeper extends Iced {
   }
 
   public boolean isEmpty() {
-    return Double.isNaN(_mse) && Double.isNaN(_logloss) && Double.isNaN(_anomaly_score_normalized); // at least one of them should always be filled
+    return Double.isNaN(_mse) && 
+            Double.isNaN(_logloss) && 
+            Double.isNaN(_anomaly_score_normalized) &&
+            Double.isNaN(_custom_metric); // at least one of them should always be filled
   }
 
   public void fillFrom(ModelMetrics m) {
+    if (m == null) return;
+    fillFrom(m, m._custom_metric);
+  }
+
+  public void fillFrom(ModelMetrics m, CustomMetric customMetric) {
     if (m == null) return;
     _mse = m._MSE;
     _rmse = m.rmse();
@@ -112,10 +122,13 @@ public class ScoreKeeper extends Iced {
       ((ScoreKeeperAware) m).fillTo(this);
     } else if (m instanceof ModelMetricsBinomialUplift){
       _AUUC = ((ModelMetricsBinomialUplift)m).auuc();
+      _auuc_normalized = ((ModelMetricsBinomialUplift)m).auucNormalized();
       _qini = ((ModelMetricsBinomialUplift)m).qini();
+      _auuc_nbins = ((ModelMetricsBinomialUplift)m).nbins();
     }
-    if (m._custom_metric != null )
-      _custom_metric =  m._custom_metric.value;
+    if (customMetric != null ) {
+      _custom_metric = customMetric.value;
+    }
   }
 
   public interface IStoppingMetric {
@@ -456,6 +469,7 @@ public class ScoreKeeper extends Iced {
         ", _hitratio=" + Arrays.toString(_hitratio) +
         ", _lift=" + _lift +
         ", _anomaly_score_normalized=" + _anomaly_score_normalized +
+        ", _custom_metric=" + _custom_metric +
         '}';
   }
 

@@ -11,7 +11,7 @@ public class RuleFitModelV3 extends ModelSchemaV3<RuleFitModel, RuleFitModelV3, 
   public static final class RuleFitModelOutputV3 extends ModelOutputSchemaV3<RuleFitModel.RuleFitOutput, RuleFitModelOutputV3> {
 
     // Output
-    @API(help = "The estimated coefficients and language representations (in case it is a rule) for each of the significant baselearners.")
+    @API(help = "The estimated coefficients without language representations for each of the significant baselearners.")
     public TwoDimTableV3 rule_importance;
 
     @API(help = "Intercept.")

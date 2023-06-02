@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """Pyunit for h2o.utils.typechecks."""
-from __future__ import absolute_import, division, print_function
-
 import math
 
 from h2o import H2OFrame

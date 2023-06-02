@@ -70,21 +70,21 @@ amiID = 'ami-63953319'
 
 # Note: this python script was initially developed with boto 2.13.3.
 def botoVersionMismatch():
-    print 'WARNING:  Unsupported boto version.  Please upgrade boto to at least 2.13.x and try again.'
-    print 'Comment this out to run anyway.'
-    print 'Exiting.'
+    print('WARNING:  Unsupported boto version.  Please upgrade boto to at least 2.13.x and try again.')
+    print('Comment this out to run anyway.')
+    print('Exiting.')
     sys.exit(1)
 
 if not 'AWS_ACCESS_KEY_ID' in os.environ:
-    print 'ERROR: You must set AWS_ACCESS_KEY_ID in the environment.'
+    print('ERROR: You must set AWS_ACCESS_KEY_ID in the environment.')
     sys.exit(1)
 
 if not 'AWS_SECRET_ACCESS_KEY' in os.environ:
-    print 'ERROR: You must set AWS_SECRET_ACCESS_KEY in the environment.'
+    print('ERROR: You must set AWS_SECRET_ACCESS_KEY in the environment.')
     sys.exit(1)
 
 if not 'AWS_SSH_PRIVATE_KEY_FILE' in os.environ:
-    print 'ERROR: You must set AWS_SSH_PRIVATE_KEY_FILE in the environment.'
+    print('ERROR: You must set AWS_SSH_PRIVATE_KEY_FILE in the environment.')
     sys.exit(1)
 
 publicFileName = 'nodes-public'
@@ -94,7 +94,7 @@ if not dryRun:
     fpublic = open(publicFileName, 'w')
     fprivate = open(privateFileName, 'w')
 
-print 'Using boto version', boto.Version
+print('Using boto version', boto.Version)
 if True:
     botoVersionArr = boto.Version.split(".")
     if (botoVersionArr[0] != 2):
@@ -106,7 +106,7 @@ if (debug):
     boto.set_stream_logger('h2o-ec2')
 ec2 = boto.ec2.connect_to_region(regionName, debug=debug)
 
-print 'Launching', numInstancesToLaunch, 'instances.'
+print('Launching', numInstancesToLaunch, 'instances.')
 
 if spotBid is None:
     reservation = ec2.run_instances(
@@ -148,22 +148,22 @@ else:
 
             # unrecoverable error without increasing the spot bid
             elif request.status.code == u'price-too-low':
-                print request.status.message
-                print 'Cancelling Spot requests...'
+                print(request.status.message)
+                print('Cancelling Spot requests...')
                 # get original request ids since some requests may have already been fulfilled
                 ec2.cancel_spot_instance_requests(
                     request_ids=[request.id for request in spotRequests],
                 )
 
-                print 'Exiting...'
+                print('Exiting...')
                 sys.exit(1)
 
-            print request.id, request.status.message
+            print(request.id, request.status.message)
 
-        print '%s/%s requests fulfilled' % (len(fulfilled), numInstancesToLaunch)
+        print('%s/%s requests fulfilled' % (len(fulfilled), numInstancesToLaunch))
 
         if requestIDs:
-            print 'Waiting for remaining requests to be fulfilled...'
+            print('Waiting for remaining requests to be fulfilled...')
             time.sleep(5)
 
     reservation = ec2.get_all_instances(
@@ -173,51 +173,51 @@ else:
 instances = reservation.instances
 
 for i, instance in enumerate(instances):
-    print 'Waiting for instance', i+1, 'of', numInstancesToLaunch, '...'
+    print('Waiting for instance', i+1, 'of', numInstancesToLaunch, '...')
     instance.update()
     while instance.state != 'running':
-        print '    .'
+        print('    .')
         time.sleep(1)
         instance.update()
-    print '    instance', i+1, 'of', numInstancesToLaunch, 'is up.'
+    print('    instance', i+1, 'of', numInstancesToLaunch, 'is up.')
     name = instanceNameRoot + str(i)
     instance.add_tag('Name', value=name)
 
-print
-print 'Creating output files: ', publicFileName, privateFileName
-print
+print("")
+print('Creating output files: ', publicFileName, privateFileName)
+print("")
 
 for i, instance in enumerate(instances):
     instanceName = instance.tags.get('Name', '')
 
-    print 'Instance', i+1, 'of', numInstancesToLaunch
-    print '    Name:   ', instanceName
-    print '    PUBLIC: ', instance.public_dns_name
-    print '    PRIVATE:', instance.private_ip_address
-    print
+    print('Instance', i+1, 'of', numInstancesToLaunch)
+    print('    Name:   ', instanceName)
+    print('    PUBLIC: ', instance.public_dns_name)
+    print('    PRIVATE:', instance.private_ip_address)
+    print("")
     fpublic.write(instance.public_dns_name + '\n')
     fprivate.write(instance.private_ip_address + '\n')
 
 fpublic.close()
 fprivate.close()
 
-print 'Sleeping for 60 seconds for ssh to be available...'
+print('Sleeping for 60 seconds for ssh to be available...')
 time.sleep(60)
 
 d = os.path.dirname(os.path.realpath(__file__))
 
-print 'Testing ssh access...'
+print('Testing ssh access...')
 cmd = d + '/' + 'h2o-cluster-test-ssh.sh'
 rv = os.system(cmd)
 if rv != 0:
-    print 'Failed.'
+    print('Failed.')
     sys.exit(1)
 
-print
-print 'Distributing flatfile...'
+print("")
+print('Distributing flatfile...')
 cmd = d + '/' + 'h2o-cluster-distribute-flatfile.sh'
 rv = os.system(cmd)
 if rv != 0:
-    print 'Failed.'
+    print('Failed.')
     sys.exit(1)
 # Distribute flatfile script already prints success when it completes.

@@ -1,6 +1,3 @@
-from __future__ import division
-from __future__ import print_function
-from past.utils import old_div
 import sys
 sys.path.insert(1, "../../../")
 import h2o

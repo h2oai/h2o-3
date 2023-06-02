@@ -35,9 +35,13 @@ public class NanoResponse {
    * Convenience method that makes an InputStream out of given text.
    */
   public NanoResponse(String status, String mimeType, String txt) {
+    this(status, mimeType, StringUtils.bytesOf(txt));
+  }
+
+  public NanoResponse(String status, String mimeType, byte[] data) {
     this.status = status;
     this.mimeType = mimeType;
-    this.data = new ByteArrayInputStream(StringUtils.bytesOf(txt));
+    this.data = new ByteArrayInputStream(data);
   }
 
   public void writeTo(OutputStream os) {

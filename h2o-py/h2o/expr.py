@@ -5,7 +5,6 @@ Rapids expressions. These are helper classes for H2OFrame.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 from collections import OrderedDict
@@ -23,6 +22,7 @@ from h2o.backend.connection import H2OConnectionError
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 from h2o.model.model_base import ModelBase
 from h2o.expr_optimizer import optimize
+
 
 class ExprNode(object):
     """
@@ -258,8 +258,6 @@ class ExprNode(object):
         return h2o.api("POST /99/Rapids", data={"ast": expr, "session_id": h2o.connection().session_id})
 
 
-
-
 class ASTId:
     def __init__(self, name=None):
         if name is None:
@@ -268,8 +266,6 @@ class ASTId:
 
     def __repr__(self):
         return self.name
-
-
 
 
 class H2OCache(object):
@@ -351,11 +347,13 @@ class H2OCache(object):
                 self.names_valid() and
                 self.types_valid())
 
-    def fill(self, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):
+    def fill(self, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False, force=False):
         assert self._id is not None
-        if self._data is not None:
-            if rows <= len(self):
-                return
+        if (not force 
+            and self._data is not None
+            and rows <= len(self)
+        ):
+            return
         req_params = {
             "row_count": rows,
             "row_offset": rows_offset,
@@ -374,6 +372,7 @@ class H2OCache(object):
         self._names = [c["label"] for c in res["columns"]]
         self._types = dict(zip(self._names, [c["type"] for c in res["columns"]]))
         self._fill_data(res)
+        return res
 
     def _fill_data(self, json):
         self._data = OrderedDict()
@@ -398,16 +397,17 @@ class H2OCache(object):
 
     def _tabulate(self, tablefmt="simple", rollups=False, rows=10):
         """Pretty tabulated string of all the cached data, and column names"""
-        if not self.is_valid(): self.fill(rows=rows)
+        if not self.is_valid(): 
+            self.fill(rows=rows)
         # Pretty print cached data
         d = OrderedDict()
         # If also printing the rollup stats, build a full row-header
         if rollups:
-            col = next(iter(viewvalues(self._data)))  # Get a sample column
+            col = next(iter(self._data.values()))  # Get a sample column
             lrows = len(col['data'])  # Cached rows being displayed
             d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"] + list(map(str, range(lrows)))
         # For all columns...
-        for k, v in viewitems(self._data):
+        for k, v in self._data.items():
             x = v['data']  # Data to display
             t = v["type"]  # Column type
             if t == "enum":

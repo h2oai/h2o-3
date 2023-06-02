@@ -245,19 +245,23 @@ public class %s extends GenModel {
 """
 
 
+def combined_pojo_class_name(glm_model, gbm_model):
+    return "Combined_" + glm_model.model_id + "_" + gbm_model.model_id
+
+
 # Expand the template and embed POJOs for the submodels in a single java file 
 def generate_combined_pojo(glm_model, gbm_model):
     glm_pojo_src = get_embeddable_pojo_source(glm_model)
     gbm_pojo_src = get_embeddable_pojo_source(gbm_model)
 
     results_dir = pyunit_utils.locate("results")
-    combined_pojo_name = "Combined_" + glm_model.model_id + "_" + gbm_model.model_id
+    combined_pojo_name = combined_pojo_class_name(glm_model, gbm_model)
     combined_pojo_path = os.path.join(results_dir, combined_pojo_name + ".java")
     combined_pojo_src = TEMPLATE % (combined_pojo_name, combined_pojo_name,
                                     glm_model.model_id, gbm_model.model_id, glm_pojo_src, gbm_pojo_src)
     with open(combined_pojo_path, "w") as combined_file:
         combined_file.write(combined_pojo_src)
-    return combined_pojo_path
+    return combined_pojo_name, combined_pojo_path
 
 
 def get_embeddable_pojo_source(model):
@@ -302,11 +306,11 @@ def generate_and_import_combined_pojo():
     weather = weather.drop("ChangeTemp")
     weather = weather.drop("ChangeTempDir")
 
-    combined_pojo_path = generate_combined_pojo(glm_model, gbm_model)
+    (combined_pojo_name, combined_pojo_path) = generate_combined_pojo(glm_model, gbm_model)
     print("Combined POJO was stored in: " + combined_pojo_path)
 
-    # FIXME: https://h2oai.atlassian.net/browse/PUBDEV-8561 We need to make this work for upload_mojo as well
-    pojo_model = h2o.import_mojo(combined_pojo_path)
+    # Note: when using upload_mojo - always specify model_id=<POJO class name>
+    pojo_model = h2o.upload_mojo(combined_pojo_path, model_id=combined_pojo_name)
 
     # Testing begins
 

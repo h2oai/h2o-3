@@ -1,7 +1,9 @@
 package hex.tree;
 
+import hex.Model;
 import hex.ModelMojoWriter;
 import hex.glm.GLMModel;
+import hex.isotonic.IsotonicRegressionModel;
 import water.DKV;
 import water.Key;
 import water.Value;
@@ -30,12 +32,23 @@ public abstract class SharedTreeMojoWriter<
     int ntreesPerClass = model.binomialOpt() && nclasses == 2 ? 1 : nclasses;
     writekv("n_trees", model._output._ntrees);
     writekv("n_trees_per_class", ntreesPerClass);
-    if (model._output._calib_model != null) {
-      GLMModel calibModel = model._output._calib_model;
-      double[] beta = calibModel.beta();
-      assert beta.length == nclasses; // n-1 coefficients + 1 intercept
-      writekv("calib_method", "platt");
-      writekv("calib_glm_beta", beta);
+    if (model._output.isCalibrated()) {
+      final CalibrationHelper.CalibrationMethod calibMethod = model._output.getCalibrationMethod();
+      final Model<?, ?, ?> calibModel = model._output.calibrationModel();
+      writekv("calib_method", calibMethod.getId());
+      switch (calibMethod) {
+        case PlattScaling:
+          double[] beta = ((GLMModel) calibModel).beta();
+          assert beta.length == nclasses; // n-1 coefficients + 1 intercept
+          writekv("calib_glm_beta", beta);
+          break;
+        case IsotonicRegression:
+          IsotonicRegressionModel isotonic = (IsotonicRegressionModel) calibModel;
+          write(isotonic.toIsotonicCalibrator());
+          break;
+        default:
+          throw new UnsupportedOperationException("MOJO is not (yet) support for calibration model " + calibMethod);
+      }
     }
     writekv("_genmodel_encoding", model.getGenModelEncoding());
     String[] origNames = model._output._origNames;

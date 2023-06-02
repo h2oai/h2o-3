@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 """Information about the backend H2O cluster."""
-from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 import json
@@ -10,7 +9,7 @@ import time
 
 import h2o
 from h2o.exceptions import H2OConnectionError, H2OServerError
-from h2o.display import H2ODisplay
+from h2o.display import H2OTableDisplay
 from h2o.schemas import H2OSchema
 from h2o.utils.typechecks import assert_is_type
 from h2o.utils.shared_utils import get_human_readable_bytes, get_human_readable_time
@@ -102,7 +101,7 @@ class H2OCluster(H2OSchema):
         if prompt:
             question = "Are you sure you want to shutdown the H2O instance running at %s (Y/N)? " \
                        % h2o.connection().base_url
-            response = input(question)  # works in Py2 & Py3 because redefined in h2o.utils.compatibility module
+            response = input(question)
         else:
             response = "Y"
         if response.lower() in {"y", "yes"}:
@@ -131,13 +130,13 @@ class H2OCluster(H2OSchema):
         keys = _cluster_status_info_keys
         values = self._get_cluster_status_info_values()
         table = [[k+":", values[i]] for i, k in enumerate(keys)]
-        H2ODisplay(table)
+        H2OTableDisplay(table, prefer_pandas=False).show()
 
         if detailed:
             keys = _cluster_status_detailed_info_keys
-            header = ["Nodes info:"] + ["Node %d" % (i + 1) for i in range(len(self.nodes))]
+            columns = ["Nodes info:"] + ["Node %d" % (i + 1) for i in range(len(self.nodes))]
             table = [[k]+[node[k] for node in self.nodes] for k in keys]
-            H2ODisplay(table=table, header=header)
+            H2OTableDisplay(table=table, columns_labels=columns, prefer_pandas=False).show()
 
     def get_status(self):
         """
@@ -236,8 +235,8 @@ class H2OCluster(H2OSchema):
                 print("Warning:", message)
         # Check age of the install
         if self.build_too_old:
-            print(("Warning: Your H2O cluster version is too old ({})!"
-                   "Please download and install the latest version from http://h2o.ai/download/"
+            print(("Warning: Your H2O cluster version is ({}) old.  There may be a newer version available.\n"
+                   "Please download and install the latest version from: https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
                    ).format(self.build_age))
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -283,7 +282,7 @@ class H2OCluster(H2OSchema):
                   self.cloud_internal_timezone,
                   self.datafile_parser_timezone,
                   self.version,
-                  "{} {}".format(self.build_age, ("!!!" if self.build_too_old else "")),
+                  self.build_age,
                   self.cloud_name,
                   self.cloud_size,
                   get_human_readable_bytes(free_mem),

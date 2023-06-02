@@ -185,7 +185,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return newMB;
   }
 
-  /** All the parameters required to build the model. */
+  /** All the parameters required to build the model. 
+   * The values of this property will be used as actual parameters of the model. */
   public P _parms;              // Not final, so CV can set-after-clone
 
   /** All the parameters required to build the model conserved in the input form, with AUTO values not evaluated yet. */
@@ -533,9 +534,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected int nModelsInParallel(int folds, int defaultParallelization) {
     if (!_parms._parallelize_cross_validation) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
     int parallelization = defaultParallelization;
-    if (_train.byteSize() < 1e6) 
+    if (_train.byteSize() < smallDataSize())
       parallelization = folds; //for small data, parallelize over CV models
     return Math.min(parallelization, H2O.ARGS.nthreads);
+  }
+
+  protected long smallDataSize() {
+    return (long) 1e6;
   }
 
   private double maxRuntimeSecsPerModel(int cvModelsCount, int parallelization) {
@@ -842,7 +847,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      if (!cvModelBuilders[i].getName().equals("infogram")) {
+      if (makeCVMetrics(cvModelBuilders[i])) {
         M cvModel = cvModelBuilders[i].dest().get();
         cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
         if (nclasses() == 2 /* need holdout predictions for gains/lift table */
@@ -868,6 +873,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     
     fs.blockForPending();
     return mbs;
+  }
+
+  protected boolean makeCVMetrics(ModelBuilder<?, ?, ?> cvModelBuilder) {
+    return !cvModelBuilder.getName().equals("infogram");
   }
 
   private boolean useParallelMainModelBuilding(int nFolds) {
@@ -918,7 +927,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       predKeys[i] = Key.make(cvModelBuilders[i].getPredictionKey());
     }
     
-    cv_makeAggregateModelMetircs(mbs);
+    cv_makeAggregateModelMetrics(mbs);
     
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || mainModel.isDistributionHuber())) {
@@ -988,7 +997,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     DKV.put(mainModel);
   }
   
-  public void cv_makeAggregateModelMetircs(ModelMetrics.MetricBuilder[] mbs){
+  public void cv_makeAggregateModelMetrics(ModelMetrics.MetricBuilder[] mbs){
     for (int i = 1; i < mbs.length; ++i) {
       mbs[0].reduceForCV(mbs[i]);
     }
@@ -996,6 +1005,26 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   private String getPredictionKey() {
     return "prediction_"+_result.toString();
+  }
+
+  /** Set max_runtime_secs for the main model.
+   * Using _main_model_time_budget_factor to determine if and how we should restrict the time for the main model.
+   * In general, we should use 0 or > 1 to be reasonably certain that the main model will have time to converge.
+   * if _main_model_time_budget_factor < 0, main_model_time_budget_factor is applied on remaining time to get max runtime secs.
+   * if _main_model_time_budget_factor == 0, do not restrict time for the main model.
+   * if _main_model_time_budget_factor > 0, use max_runtime_secs estimate using nfolds (doesn't depend on the remaining time).
+   */
+  protected void setMaxRuntimeSecsForMainModel() {
+    if (_parms._max_runtime_secs == 0) return;
+    if (_parms._main_model_time_budget_factor < 0) {
+      // strict version that uses the actual remaining time or 1 sec in case we ran out of time
+      _parms._max_runtime_secs = Math.max(1, -_parms._main_model_time_budget_factor * remainingTimeSecs());
+    } else {
+      int nFolds = nFoldWork();
+      // looser version that uses max of remaining time and estimated remaining time based on number of folds
+      _parms._max_runtime_secs = Math.max(remainingTimeSecs(),
+              _parms._main_model_time_budget_factor * maxRuntimeSecsPerModel(nFolds, nModelsInParallel(nFolds)) * nFolds /((double) nFolds - 1));
+    }
   }
 
   /** Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
@@ -1074,6 +1103,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final boolean isClassifier() { return nclasses() > 1; }
 
   protected boolean validateStoppingMetric() {
+    return true;
+  }
+
+  protected boolean validateBinaryResponse() {
     return true;
   }
 
@@ -1300,6 +1333,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (log_level == Log.ERRR) _error_count++;
   }
 
+  public ValidationMessage[] getMessagesByFieldAndSeverity(String fieldName, byte logLevel) {
+    return Arrays.stream(_messages)
+            .filter((msg) -> msg._field_name.equals(fieldName) && msg._log_level == logLevel)
+            .toArray(ValidationMessage[]::new);
+  }
+
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
     return validationMessage(Log.ERRR);
@@ -1480,8 +1519,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._check_constant_response && _response.isConst()) {
           error("_response", "Response cannot be constant.");
         }
-        if(_nclass == 1 && _response.isBinary(true)) {
-          warn("_response", "Response is numeric, so the regression model will be trained. However, the cardinality is equaled to two, so if you want to train a classification model, convert the response column to categorical before training.");
+        if (validateBinaryResponse() && _nclass == 1 && _response.isBinary(true)) {
+          warn("_response", 
+                  "We have detected that your response column has only 2 unique values (0/1). " +
+                  "If you wish to train a binary model instead of a regression model, " +
+                  "convert your target column to categorical before training."
+          );
         }
       }
       if (! _parms._balance_classes)
@@ -1501,7 +1544,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
-            if(_parms._distribution == DistributionFamily.quasibinomial){
+            if(_parms.getDistributionFamily() == DistributionFamily.quasibinomial){
               String[] quasiDomains = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
               MRUtils.ClassDistQuasibinomial cdmt =
                       _weights != null ? new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response);
@@ -1653,9 +1696,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.custom || _parms._stopping_metric == ScoreKeeper.StoppingMetric.custom_increasing) {
-      if (_parms._custom_metric_func == null) {
-        error("_stopping_metric", "Custom metric function needs to be defined in order to use it for early stopping.");
-      }
+      checkCustomMetricForEarlyStopping();
     }
     if (_parms._max_runtime_secs < 0) {
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
@@ -1667,6 +1708,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_export_checkpoints_dir", "Checkpoints directory path must point to a writable path.");
         }
       }
+    }
+  }
+
+  protected void checkCustomMetricForEarlyStopping() {
+    if (_parms._custom_metric_func == null) {
+      error("_custom_metric_func", "Custom metric function needs to be defined in order to use it for early stopping.");
     }
   }
 
@@ -1772,21 +1819,27 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
+    String dataset = name.substring(name.length()-5);
     double rebalanceRatio = rebalanceRatio();
     int nonEmptyChunks = original_fr.anyVec().nonEmptyChunks();
     if (nonEmptyChunks >= chunks * rebalanceRatio) {
       if (chunks>1)
-        Log.info(name.substring(name.length()-5)+ " dataset already contains " + nonEmptyChunks + " (non-empty) " +
+        Log.info(dataset + " dataset already contains " + nonEmptyChunks + " (non-empty) " +
               " chunks. No need to rebalance. [desiredChunks=" + chunks, ", rebalanceRatio=" + rebalanceRatio + "]");
       return original_fr;
     }
-    Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
+    raiseReproducibilityWarning(dataset, chunks);
+    Log.info("Rebalancing " + dataset  + " dataset into " + chunks + " chunks.");
     Key newKey = Key.makeUserHidden(name + ".chunks" + chunks);
     RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
     H2O.submitTask(rb).join();
     Frame rebalanced_fr = DKV.get(newKey).get();
     Scope.track(rebalanced_fr);
     return rebalanced_fr;
+  }
+
+  protected void raiseReproducibilityWarning(String datasetName, int chunks) {
+    // for children
   }
 
   private double rebalanceRatio() {

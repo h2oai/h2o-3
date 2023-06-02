@@ -68,6 +68,10 @@
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
+#' @param splines_non_negative Valid for I-spline (bs=2) only.  True if the I-splines are monotonically increasing (and monotonically non-
+#'        decreasing) and False if the I-splines are monotonically decreasing (and monotonically non-increasing).  If
+#'        specified, must be the same size as gam_columns.  Values for other spline types will be ignored.  Default to
+#'        true.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations Defaults to -1.
@@ -103,11 +107,11 @@
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR",
+#'        "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing". Defaults to
+#'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
@@ -118,14 +122,22 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
-#' @param num_knots Number of knots for gam predictors
-#' @param knot_ids String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns
+#' @param num_knots Number of knots for gam predictors.  If specified, must specify one for each gam predictor.  For monotone
+#'        I-splines, mininum = 2, for cs spline, minimum = 3.  For thin plate, minimum is size of polynomial basis + 2.
+#' @param spline_orders Order of I-splines or NBSplineTypeI M-splines used for gam predictors. If specified, must be the same size as
+#'        gam_columns.  For I-splines, the spline_orders will be the same as the polynomials used to generate the
+#'        splines.  For M-splines, the polynomials used to generate the splines will be spline_order-1.  Values for bs=0
+#'        or 1 will be ignored.
+#' @param knot_ids Array storing frame keys of knots.  One for each gam column set specified in gam_columns
 #' @param standardize_tp_gam_cols \code{Logical}. standardize tp (thin plate) predictor columns Defaults to FALSE.
 #' @param scale_tp_penalty_mat \code{Logical}. Scale penalty matrix for tp (thin plate) smoothers as in R Defaults to FALSE.
-#' @param bs Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for thin
-#'        plate regression with SVD.  If specified, must be the same size as gam_columns
+#' @param bs Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for monotone
+#'        I-splines, 3 for NBSplineTypeI M-splines (refer to doc here: https://h2oai.atlassian.net/browse/PUBDEV-8835).
+#'        If specified, must be the same size as gam_columns
 #' @param scale Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
 #' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
+#' @param store_knot_locations \code{Logical}. If set to true, will return knot locations as double[][] array for gam column names found
+#'        knots_for_gam.  Default to false. Defaults to FALSE.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @examples
@@ -173,6 +185,7 @@ h2o.gam <- function(x,
                     plug_values = NULL,
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
+                    splines_non_negative = NULL,
                     intercept = TRUE,
                     non_negative = FALSE,
                     max_iterations = -1,
@@ -199,12 +212,14 @@ h2o.gam <- function(x,
                     max_runtime_secs = 0,
                     custom_metric_func = NULL,
                     num_knots = NULL,
+                    spline_orders = NULL,
                     knot_ids = NULL,
                     standardize_tp_gam_cols = FALSE,
                     scale_tp_penalty_mat = FALSE,
                     bs = NULL,
                     scale = NULL,
                     keep_gam_cols = FALSE,
+                    store_knot_locations = FALSE,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -297,6 +312,8 @@ h2o.gam <- function(x,
     parms$compute_p_values <- compute_p_values
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
+  if (!missing(splines_non_negative))
+    parms$splines_non_negative <- splines_non_negative
   if (!missing(intercept))
     parms$intercept <- intercept
   if (!missing(non_negative))
@@ -345,6 +362,8 @@ h2o.gam <- function(x,
     parms$custom_metric_func <- custom_metric_func
   if (!missing(num_knots))
     parms$num_knots <- num_knots
+  if (!missing(spline_orders))
+    parms$spline_orders <- spline_orders
   if (!missing(knot_ids))
     parms$knot_ids <- knot_ids
   if (!missing(gam_columns))
@@ -359,6 +378,8 @@ h2o.gam <- function(x,
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
+  if (!missing(store_knot_locations))
+    parms$store_knot_locations <- store_knot_locations
   if (!missing(auc_type))
     parms$auc_type <- auc_type
 
@@ -420,6 +441,7 @@ h2o.gam <- function(x,
                                     plug_values = NULL,
                                     compute_p_values = FALSE,
                                     remove_collinear_columns = FALSE,
+                                    splines_non_negative = NULL,
                                     intercept = TRUE,
                                     non_negative = FALSE,
                                     max_iterations = -1,
@@ -446,12 +468,14 @@ h2o.gam <- function(x,
                                     max_runtime_secs = 0,
                                     custom_metric_func = NULL,
                                     num_knots = NULL,
+                                    spline_orders = NULL,
                                     knot_ids = NULL,
                                     standardize_tp_gam_cols = FALSE,
                                     scale_tp_penalty_mat = FALSE,
                                     bs = NULL,
                                     scale = NULL,
                                     keep_gam_cols = FALSE,
+                                    store_knot_locations = FALSE,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
@@ -549,6 +573,8 @@ h2o.gam <- function(x,
     parms$compute_p_values <- compute_p_values
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
+  if (!missing(splines_non_negative))
+    parms$splines_non_negative <- splines_non_negative
   if (!missing(intercept))
     parms$intercept <- intercept
   if (!missing(non_negative))
@@ -597,6 +623,8 @@ h2o.gam <- function(x,
     parms$custom_metric_func <- custom_metric_func
   if (!missing(num_knots))
     parms$num_knots <- num_knots
+  if (!missing(spline_orders))
+    parms$spline_orders <- spline_orders
   if (!missing(knot_ids))
     parms$knot_ids <- knot_ids
   if (!missing(gam_columns))
@@ -611,6 +639,8 @@ h2o.gam <- function(x,
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
+  if (!missing(store_knot_locations))
+    parms$store_knot_locations <- store_knot_locations
   if (!missing(auc_type))
     parms$auc_type <- auc_type
 
@@ -644,6 +674,38 @@ h2o.gam <- function(x,
 }
 
 
+#' Extracts the knot locations from model output if it is enabled.
+#'
+#' @param model is a H2OModel with algorithm name of gam
+#' @param gam_column will only extract the knot locations for the specific gam_columns.  Else, return all.
+#' @export 
+h2o.get_knot_locations <- function(model, gam_column=NULL) {
+    if (!model@allparameters$store_knot_locations) {
+        stop("knot locations are not available, please set store_knot_locations to TRUE")
+    }
+    if (is.null(gam_column)) {
+        return(model@model$knot_locations)
+    }
+    gam_columns <- model@model$gam_knot_column_names
+    if (gam_column %in% gam_columns) {
+        return(model@model$knot_locations[which(gam_columns==gam_column)])
+    } else {
+        stop(paste(gam_column, "is not a valid gam column", sep=" "))
+    }
+}
+
+#' Extracts the gam column names corresponding to the knot locations from model output if it is enabled.
+#'
+#' @param model is a H2OModel with algorithm name of gam
+#' @export 
+h2o.get_gam_knot_column_names <- function(model) {
+    if (!model@allparameters$store_knot_locations) {
+        stop("knot locations are not available, please set store_knot_locations to TRUE")
+    }
+    return(model@model$gam_knot_column_names)
+
+}
+    
     .h2o.fill_gam <- function(model, parameters, allparams) {
         if (is.null(model$scoring_history))
             model$scoring_history <- model$glm_scoring_history
@@ -651,4 +713,5 @@ h2o.gam <- function(x,
             model$model_summary <- model$glm_model_summary
         return(model)
     }
+
 

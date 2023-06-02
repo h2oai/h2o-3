@@ -448,7 +448,10 @@ public class TestFrameBuilder {
       for (long numPerChunk : chunkLayout) {
         sum += numPerChunk;
       }
-      throwIf(sum > numRows, "Chunk layout contains bad elements. Total sum is higher then available number of elements.");
+      throwIf(sum > numRows, "Total chunk capacity is higher then available number of elements. " +
+              "Check withChunkLayout() and make sure that sum of the arguments is equal to number of the rows in frame.");
+      throwIf(sum < numRows, "Not enough chunk capacity to store " + numRows + " rows. " +
+              "Check withChunkLayout() and make sure that sum of the arguments is equal to number of the rows in frame.");
     } else {
       // create chunk layout - by default 1 chunk
       chunkLayout = new long[]{numRows};

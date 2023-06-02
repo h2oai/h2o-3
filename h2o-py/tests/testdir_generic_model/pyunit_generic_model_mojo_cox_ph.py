@@ -5,7 +5,7 @@ sys.path.insert(1,"../../")
 
 import h2o
 from h2o.estimators import H2OCoxProportionalHazardsEstimator
-from h2o.model.metrics_base import H2OModelMetricsRegressionCoxPH
+from h2o.model.metrics.coxph import H2ORegressionCoxPHModelMetrics
 from tests import pyunit_utils
 from tests.testdir_generic_model import compare_params
 
@@ -38,13 +38,13 @@ def test(x, ties, stratify_by, use_all_factor_levels):
     model.show()
     compare_params(coxph, model)
 
-    assert isinstance(model.model_performance(), H2OModelMetricsRegressionCoxPH)
+    assert isinstance(model.model_performance(), H2ORegressionCoxPHModelMetrics)
     assert coxph.model_performance().concordance() == model.model_performance().concordance()
     assert coxph.model_performance().concordant() == model.model_performance().concordant()
     assert coxph.model_performance().tied_y() == model.model_performance().tied_y()
 
     # also check we can get metrics on new data
-    assert isinstance(model.model_performance(test_data=heart_test), H2OModelMetricsRegressionCoxPH)
+    assert isinstance(model.model_performance(test_data=heart_test), H2ORegressionCoxPHModelMetrics)
     
     predictions = model.predict(heart_test)
     predictions_orig = coxph.predict(heart_test)

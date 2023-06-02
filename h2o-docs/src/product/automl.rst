@@ -1,9 +1,9 @@
-.. figure:: images/h2o-automl-logo.jpg
+.. figure:: images/h2o-automl-logo.png
    :alt: H2O AutoML
-   :scale: 15%
+   :scale: 50%
    :align: center
 
-AutoML: Automatic Machine Learning
+H2O AutoML: Automatic Machine Learning
 ==================================
 
 In recent years, the demand for machine learning experts has outpaced the supply, despite the surge of people entering the field.  To address this gap, there have been big strides in the development of user-friendly machine learning software that can be used by non-experts.  The first steps toward simplifying machine learning involved developing simple, unified interfaces to a variety of machine learning algorithms (e.g. H2O).
@@ -18,7 +18,7 @@ H2O offers a number of `model explainability <http://docs.h2o.ai/h2o/latest-stab
 AutoML Interface
 ----------------
 
-The H2O AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column and optionally specify a time constraint or limit on the number of total models trained. 
+The H2O AutoML interface is designed to have as few parameters as possible so that all the user needs to do is point to their dataset, identify the response column and optionally specify a time constraint or limit on the number of total models trained.  Below are the parameters that can be set by the user in the R and Python interfaces. See the `Web UI via H2O Wave <#web-ui-via-h2o-wave>`__ section below for information on how to use the H2O Wave web interface for AutoML.
 
 In both the R and Python API, AutoML uses the same data-related arguments, ``x``, ``y``, ``training_frame``, ``validation_frame``, as the other H2O algorithms.  Most of the time, all you'll need to do is specify the data arguments. You can then configure values for ``max_runtime_secs`` and/or ``max_models`` to set explicit time or number-of-model limits on your run.  
 
@@ -35,11 +35,11 @@ Required Data Parameters
 Required Stopping Parameters
 ''''''''''''''''''''''''''''
 
-One of the following stopping strategies (time or number-of-model based) must be specified.  When both options are set, then the AutoML run will stop as soon as it hits one of either of these limits. 
+One of the following stopping strategies (time or number-of-model based) must be specified.  When both options are set, then the AutoML run will stop as soon as it hits one of either When both options are set, then the AutoML run will stop as soon as it hits either of these limits.
 
 - `max_runtime_secs <data-science/algo-params/max_runtime_secs.html>`__: This argument specifies the maximum time that the AutoML process will run for. The default is 0 (no limit), but dynamically sets to 1 hour if none of ``max_runtime_secs`` and ``max_models`` are specified by the user.
 
-- `max_models <data-science/algo-params/max_models.html>`__: Specify the maximum number of models to build in an AutoML run, excluding the Stacked Ensemble models.  Defaults to ``NULL/None``. 
+- `max_models <data-science/algo-params/max_models.html>`__: Specify the maximum number of models to build in an AutoML run, excluding the Stacked Ensemble models.  Defaults to ``NULL/None``. Always set this parameter to ensure AutoML reproducibility: all models are then trained until convergence and none is constrained by a time budget.
 
 
 Optional Parameters
@@ -72,9 +72,9 @@ Optional Miscellaneous Parameters
 
 - `max_after_balance_size <data-science/algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). Defaults to 5.0.  (The value can be less than 1.0).
 
-- `max_runtime_secs_per_model <data-science/algo-params/max_runtime_secs_per_model.html>`__: Specify the max amount of time dedicated to the training of each individual model in the AutoML run. Defaults to 0 (disabled). Note that setting this parameter can affect AutoML reproducibility.
+- `max_runtime_secs_per_model <data-science/algo-params/max_runtime_secs_per_model.html>`__: Specify the max amount of time dedicated to the training of each individual model in the AutoML run. Defaults to 0 (disabled). Note that models constrained by a time budget are not guaranteed reproducible.
 
--  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
+- `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
     
     - ``AUTO``: This defaults to ``logloss`` for classification and ``deviance`` for regression.
     - ``deviance`` (mean residual deviance)
@@ -331,13 +331,13 @@ Leaderboard
 
 The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If you would like to score the models on a specific dataset, you can specify the ``leaderboard_frame`` argument in the AutoML run, and then the leaderboard will show scores on that dataset instead. 
 
-The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
+The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is RMSE.  Some additional metrics are also provided, for convenience.
 
 To help users assess the complexity of ``AutoML`` models, the ``h2o.get_leaderboard`` function has been been expanded by allowing an ``extra_columns`` parameter. This parameter allows you to specify which (if any) optional columns should be added to the leaderboard. This defaults to None. Allowed options include:
 
 - ``training_time_ms``: A column providing the training time of each model in milliseconds. (Note that this doesn't include the training of cross validation models.)
 - ``predict_time_per_row_ms``: A column providing the average prediction time by the model for a single row.
-- ``ALL``: Adds columns for both training_time_ms and predict_time_per_row_ms.
+- ``ALL``: Adds columns for both ``training_time_ms`` and ``predict_time_per_row_ms``.
 
 Using the previous example, you can retrieve the leaderboard as follows:
 
@@ -363,7 +363,7 @@ Here is an example of a leaderboard (with all columns) for a binary classificati
    :align: center
 
 
-
+To create a leaderboard with metrics from a new ``leaderboard_frame`` `h2o.make_leaderboard <performance-and-prediction.html#leaderboard>`__ can be used.
 
 Examine Models
 ~~~~~~~~~~~~~~
@@ -426,8 +426,8 @@ Once you have retreived the model in R or Python, you can inspect the model para
 .. tabs::
    .. code-tab:: r R
 
-        # View the non-default parameter values for the XGBoost model above
-        xgb@parameters
+        # View the parameter values for the XGBoost model selected above
+        xgb@params$actual
 
    .. code-tab:: python
 
@@ -464,6 +464,36 @@ When using Python or R clients, you can also access meta information with the fo
         # Get training timing info
         info = aml.training_info
 
+
+
+Web UI via H2O Wave
+--------------------
+
+In addition to the R and Python APIs and the Flow Web UI, H2O AutoML also has a `modern web interface <https://github.com/h2oai/wave-h2o-automl>`__ built using H2O.ai's open source Python `Wave platform <https://wave.h2o.ai/>`__.  Wave can be run locally on your 
+machine or in the cloud.  To run Wave locally, you can follow the instructions to install Wave `here <https://wave.h2o.ai/docs/installation>`__ and then follow the instructions 
+in the H2O AutoML Wave `README <https://github.com/h2oai/wave-h2o-automl#readme>`__ to start the app.  The app features a simple interface to 
+upload your data and run AutoML, and then explore the results using several interactive visualizations built on the H2O Model Explainability suite.  
+Below are a few screenhots of the app, though more visualizations are available than what is shown below.
+
+.. figure:: images/h2o-automl-wave-1.png
+   :alt: H2O AutoML Wave UI
+   :scale: 90%
+   :align: center
+
+.. figure:: images/h2o-automl-wave-2.png
+   :alt: H2O AutoML Wave UI
+   :scale: 90%
+   :align: center   
+
+.. figure:: images/h2o-automl-wave-3.png
+   :alt: H2O AutoML Wave UI
+   :scale: 90%
+   :align: center
+
+.. figure:: images/h2o-automl-wave-4.png
+   :alt: H2O AutoML Wave UI
+   :scale: 90%
+   :align: center   
 
 
 Experimental Features
@@ -509,13 +539,28 @@ FAQ
 
   AutoML includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
 
-  - XGBoost is not available on Windows machines.
+  - XGBoost is not currently available on Windows machines, or on OS X with the new Apple M1 chip.  Please check the JIRA tickets for `Windows <https://h2oai.atlassian.net/browse/PUBDEV-8523>`__ and `Apple M1 <https://h2oai.atlassian.net/browse/PUBDEV-8482>`__ for updates. 
   - XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__. You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
-
 
 -   **Why doesn't AutoML use all the time that it's given?** 
 
   If you're using 3.34.0.1 or later, AutoML should use all the time that it's given using ``max_runtime_secs``.  However, if you're using an earlier version, then early stopping was enabled by default and you can stop early.  With early stopping, AutoML will stop once there's no longer "enough" incremental improvement.  The user can tweak the early stopping paramters to be more or less sensitive.  Set ``stopping_rounds`` higher if you want to slow down early stopping and let AutoML train more models before it stops. 
+
+-   **Does AutoML support MOJOs?**
+
+  AutoML will always produce a model which has a `MOJO <save-and-load-model.html#supported-mojos>`__. Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable. 
+
+-   **Why doesn't AutoML use all the time that it's given?** 
+
+  If you're using 3.34.0.1 or later, AutoML should use all the time that it's given using ``max_runtime_secs``.  However, if you're using an earlier version, then early stopping was enabled by default and you can stop early.  With early stopping, AutoML will stop once there's no longer "enough" incremental improvement.  The user can tweak the early stopping paramters to be more or less sensitive.  Set ``stopping_rounds`` higher if you want to slow down early stopping and let AutoML train more models before it stops. 
+
+-   **Does AutoML support MOJOs?**
+
+  AutoML will always produce a model which has a `MOJO <save-and-load-model.html#supported-mojos>`__. Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable. 
+
+-   **What is the history of H2O AutoML?**
+
+  The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017>`__ on June 6, 2017 by Erin LeDell, and is based on research from her `PhD thesis <https://github.com/ledell/phd-thesis>`__.  New features and performance improvements have been made in every major version of H2O since the initial release. 
 
 
 Resources
@@ -524,13 +569,13 @@ Resources
 - `AutoML Tutorial <https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl>`__ (R and Python notebooks)
 - Intro to AutoML + Hands-on Lab `(1 hour video) <https://www.youtube.com/watch?v=42Oo8TOl85I>`__ `(slides) <https://www.slideshare.net/0xdata/intro-to-automl-handson-lab-erin-ledell-machine-learning-scientist-h2oai>`__
 - Scalable Automatic Machine Learning in H2O `(1 hour video) <https://www.youtube.com/watch?v=j6rqrEYQNdo>`__ `(slides) <https://www.slideshare.net/0xdata/scalable-automatic-machine-learning-in-h2o-89130971>`__
-- `AutoML Roadmap <https://0xdata.atlassian.net/issues/?filter=21603>`__
+- There are many slidedecks in the `H2O Meetups repo <hhttps://github.com/h2oai/h2o-meetups>`__ that cover AutoML, as well as many videos on `YouTube <https://www.youtube.com/results?search_query=h2o+automl+erin+ledell>`__ that cover it as well.
 
 
 Citation
 --------
 
-If you're citing the H2O AutoML algorithm in a paper, please cite our paper from the `7th ICML Workshop on Automated Machine Learning (AutoML) <https://sites.google.com/view/automl2020/home>`__.  A formatted version of the citation would look like this: 
+If you're citing the H2O AutoML algorithm in a paper, please cite our paper from the `7th ICML Workshop on Automated Machine Learning (AutoML) <https://sites.google.com/view/automl2020/home>`__. A formatted version of the citation would look like this: 
 
 Erin LeDell and Sebastien Poirier. *H2O AutoML: Scalable Automatic Machine Learning*. 7th ICML Workshop on Automated Machine Learning (AutoML), July 2020. URL https://www.automl.org/wp-content/uploads/2020/07/AutoML_2020_paper_61.pdf. 
 
@@ -550,7 +595,7 @@ If you are using Bibtex:
 
 
 
-The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017>`__ on June 6, 2017.  If you need to cite a particular version of the H2O AutoML algorithm, you can use an additional citation (using the appropriate version replaced below) as follows:
+If you need to cite a particular version of the H2O AutoML algorithm, you can use an additional citation (using the appropriate version replaced below) as follows:
 
 ::
 
@@ -566,6 +611,8 @@ The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com
 
 Information about how to cite the H2O software in general is covered in the `H2O FAQ <faq/general.html#i-am-writing-an-academic-research-paper-and-i-would-like-to-cite-h2o-in-my-bibliography-how-should-i-do-that>`__.
 
+We would love to hear how you've used H2O AutoML, 
+so if you have a paper that references it, please let us know by opening an issue or submitting a PR to the `Awesome H2O repo <https://github.com/h2oai/awesome-h2o#research-papers>`__ on Github.  This is the place that we keep track of papers that use H2O AutoML, and H2O generally.
 
 Random Grid Search Parameters
 -----------------------------
@@ -674,4 +721,4 @@ This table shows the Deep Learning values that are searched over when performing
 Additional Information
 ----------------------
 
-AutoML development is tracked `here <https://0xdata.atlassian.net/issues/?filter=20700>`__. This page lists all open or in-progress AutoML JIRA tickets.
+H2O AutoML development is tracked in the `h2o-3 Github repo <https://github.com/h2oai/h2o-3/issues>`__.

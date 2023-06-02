@@ -70,25 +70,30 @@
 #'        training/validation frame, use with conjunction missing_values_handling = PlugValues)
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
+#' @param dispersion_parameter_method Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only. Must be one
+#'        of: "deviance", "pearson", "ml". Defaults to pearson.
+#' @param init_dispersion_parameter Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion parameter.  If
+#'        fix_dispersion_parameter is set, this value will be used in the calculation of p-values.Default to 1.0.
+#'        Defaults to 1.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations Defaults to -1.
-#' @param objective_epsilon Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
-#'        value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to zero,
-#'        the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
+#' @param objective_epsilon Converge if  objective value changes less than this. Default (of -1.0) indicates: If lambda_search is set to
+#'        True the value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal
+#'        to zero, the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
 #'        objective_epsilon is set to .0001. Defaults to -1.
 #' @param beta_epsilon Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
 #'        Defaults to 0.0001.
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
-#'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
-#'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
-#'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
+#'        (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the default value of
+#'        gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True,
+#'        the conditional values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
 #' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
 #' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
-#' @param calc_like \code{Logical}. if true, will return likelihood function value for HGLM. Defaults to FALSE.
+#' @param calc_like \code{Logical}. if true, will return likelihood function value. Defaults to FALSE.
 #' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
 #'        to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
@@ -106,14 +111,14 @@
 #'        max_active_predictors is set to 5000 otherwise it is set to 100000000. Defaults to -1.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
-#' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
+#' @param obj_reg Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs Defaults to -1.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR",
+#'        "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing". Defaults to
+#'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
@@ -128,6 +133,27 @@
 #'        algo. Defaults to FALSE.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
+#' @param dispersion_epsilon If changes in dispersion parameter estimation or loglikelihood value is smaller than dispersion_epsilon, will
+#'        break out of the dispersion parameter estimation loop using maximum likelihood. Defaults to 0.0001.
+#' @param tweedie_epsilon In estimating tweedie dispersion parameter using maximum likelihood, this is used to choose the lower and
+#'        upper indices in the approximating of the infinite series summation. Defaults to 8e-17.
+#' @param max_iterations_dispersion Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood.
+#'        Defaults to 3000.
+#' @param build_null_model \code{Logical}. If set, will build a model with only the intercept.  Default to false. Defaults to FALSE.
+#' @param fix_dispersion_parameter \code{Logical}. Only used for Tweedie, Gamma and Negative Binomial GLM.  If set, will use the dispsersion
+#'        parameter in init_dispersion_parameter as the standard error and use it to calculate the p-values. Default to
+#'        false. Defaults to FALSE.
+#' @param generate_variable_inflation_factors \code{Logical}. if true, will generate variable inflation factors for numerical predictors.  Default to false.
+#'        Defaults to FALSE.
+#' @param fix_tweedie_variance_power \code{Logical}. If true, will fix tweedie variance power value to the value set in tweedie_variance_power.
+#'        Defaults to TRUE.
+#' @param dispersion_learning_rate Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. It must be
+#'        > 0.  This controls how much the dispersion parameter estimate is to be changed when the calculated
+#'        loglikelihood actually decreases with the new dispersion.  In this case, instead of setting new dispersion =
+#'        dispersion + change, we set new dispersion = dispersion + dispersion_learning_rate * change. Defaults to 0.5.
+#'        Defaults to 0.5.
+#' @param influence If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the
+#'        dataset. Must be one of: "dfbetas".
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -208,6 +234,8 @@ h2o.glm <- function(x,
                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                     plug_values = NULL,
                     compute_p_values = FALSE,
+                    dispersion_parameter_method = c("deviance", "pearson", "ml"),
+                    init_dispersion_parameter = 1,
                     remove_collinear_columns = FALSE,
                     intercept = TRUE,
                     non_negative = FALSE,
@@ -237,7 +265,16 @@ h2o.glm <- function(x,
                     max_runtime_secs = 0,
                     custom_metric_func = NULL,
                     generate_scoring_history = FALSE,
-                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
+                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                    dispersion_epsilon = 0.0001,
+                    tweedie_epsilon = 8e-17,
+                    max_iterations_dispersion = 3000,
+                    build_null_model = FALSE,
+                    fix_dispersion_parameter = FALSE,
+                    generate_variable_inflation_factors = FALSE,
+                    fix_tweedie_variance_power = TRUE,
+                    dispersion_learning_rate = 0.5,
+                    influence = c("dfbetas"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -340,6 +377,10 @@ h2o.glm <- function(x,
     parms$plug_values <- plug_values
   if (!missing(compute_p_values))
     parms$compute_p_values <- compute_p_values
+  if (!missing(dispersion_parameter_method))
+    parms$dispersion_parameter_method <- dispersion_parameter_method
+  if (!missing(init_dispersion_parameter))
+    parms$init_dispersion_parameter <- init_dispersion_parameter
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
   if (!missing(intercept))
@@ -396,6 +437,24 @@ h2o.glm <- function(x,
     parms$generate_scoring_history <- generate_scoring_history
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(dispersion_epsilon))
+    parms$dispersion_epsilon <- dispersion_epsilon
+  if (!missing(tweedie_epsilon))
+    parms$tweedie_epsilon <- tweedie_epsilon
+  if (!missing(max_iterations_dispersion))
+    parms$max_iterations_dispersion <- max_iterations_dispersion
+  if (!missing(build_null_model))
+    parms$build_null_model <- build_null_model
+  if (!missing(fix_dispersion_parameter))
+    parms$fix_dispersion_parameter <- fix_dispersion_parameter
+  if (!missing(generate_variable_inflation_factors))
+    parms$generate_variable_inflation_factors <- generate_variable_inflation_factors
+  if (!missing(fix_tweedie_variance_power))
+    parms$fix_tweedie_variance_power <- fix_tweedie_variance_power
+  if (!missing(dispersion_learning_rate))
+    parms$dispersion_learning_rate <- dispersion_learning_rate
+  if (!missing(influence))
+    parms$influence <- influence
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -458,6 +517,8 @@ h2o.glm <- function(x,
                                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                                     plug_values = NULL,
                                     compute_p_values = FALSE,
+                                    dispersion_parameter_method = c("deviance", "pearson", "ml"),
+                                    init_dispersion_parameter = 1,
                                     remove_collinear_columns = FALSE,
                                     intercept = TRUE,
                                     non_negative = FALSE,
@@ -488,6 +549,15 @@ h2o.glm <- function(x,
                                     custom_metric_func = NULL,
                                     generate_scoring_history = FALSE,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                    dispersion_epsilon = 0.0001,
+                                    tweedie_epsilon = 8e-17,
+                                    max_iterations_dispersion = 3000,
+                                    build_null_model = FALSE,
+                                    fix_dispersion_parameter = FALSE,
+                                    generate_variable_inflation_factors = FALSE,
+                                    fix_tweedie_variance_power = TRUE,
+                                    dispersion_learning_rate = 0.5,
+                                    influence = c("dfbetas"),
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -595,6 +665,10 @@ h2o.glm <- function(x,
     parms$plug_values <- plug_values
   if (!missing(compute_p_values))
     parms$compute_p_values <- compute_p_values
+  if (!missing(dispersion_parameter_method))
+    parms$dispersion_parameter_method <- dispersion_parameter_method
+  if (!missing(init_dispersion_parameter))
+    parms$init_dispersion_parameter <- init_dispersion_parameter
   if (!missing(remove_collinear_columns))
     parms$remove_collinear_columns <- remove_collinear_columns
   if (!missing(intercept))
@@ -651,6 +725,24 @@ h2o.glm <- function(x,
     parms$generate_scoring_history <- generate_scoring_history
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(dispersion_epsilon))
+    parms$dispersion_epsilon <- dispersion_epsilon
+  if (!missing(tweedie_epsilon))
+    parms$tweedie_epsilon <- tweedie_epsilon
+  if (!missing(max_iterations_dispersion))
+    parms$max_iterations_dispersion <- max_iterations_dispersion
+  if (!missing(build_null_model))
+    parms$build_null_model <- build_null_model
+  if (!missing(fix_dispersion_parameter))
+    parms$fix_dispersion_parameter <- fix_dispersion_parameter
+  if (!missing(generate_variable_inflation_factors))
+    parms$generate_variable_inflation_factors <- generate_variable_inflation_factors
+  if (!missing(fix_tweedie_variance_power))
+    parms$fix_tweedie_variance_power <- fix_tweedie_variance_power
+  if (!missing(dispersion_learning_rate))
+    parms$dispersion_learning_rate <- dispersion_learning_rate
+  if (!missing(influence))
+    parms$influence <- influence
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

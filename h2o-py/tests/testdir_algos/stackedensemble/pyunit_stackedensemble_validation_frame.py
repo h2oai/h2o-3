@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import print_function
-
 import h2o
 
 import sys
+
+import h2o.model.metrics.binomial
+
 sys.path.insert(1,"../../../")  # allow us to run this standalone
 
 from h2o.estimators.random_forest import H2ORandomForestEstimator
@@ -68,7 +69,7 @@ def test_suite_stackedensemble_validation_frame(blending=False):
         se_valid = train_stacked_ensemble(ds, base_models, validation_frame=ds.valid)
         
         assert se_valid.model_performance(valid=True) is not None
-        assert type(se_valid.model_performance(valid=True)) == h2o.model.metrics_base.H2OBinomialModelMetrics
+        assert type(se_valid.model_performance(valid=True)) == h2o.model.metrics.binomial.H2OBinomialModelMetrics
         assert type(se_valid.auc(valid=True)) == float
                     
         

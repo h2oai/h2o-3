@@ -2,10 +2,12 @@ package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.BoosterParms;
 import ai.h2o.xgboost4j.java.*;
+import hex.tree.xgboost.EvalMetric;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
 import water.nbhm.NonBlockingHashMap;
+import water.util.Log;
 
 import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
@@ -15,14 +17,16 @@ public class XGBoostUpdater extends Thread {
 
   private static final Logger LOG = Logger.getLogger(XGBoostUpdater.class);
 
-  private static long WORK_START_TIMEOUT_SECS = 5 * 60; // Each Booster task should start before this timer expires
-  private static long INACTIVE_CHECK_INTERVAL_SECS = 60;
+  private static final long WORK_START_TIMEOUT_SECS = 5 * 60; // Each Booster task should start before this timer expires
+  private static final long INACTIVE_CHECK_INTERVAL_SECS = 60;
 
   private static final NonBlockingHashMap<Key, XGBoostUpdater> updaters = new NonBlockingHashMap<>();
 
   private final Key _modelKey;
   private final DMatrix _trainMat;
+  private final DMatrix _validMat;
   private final BoosterParms _boosterParms;
+  private final String _evalMetricSpec;
   private final byte[] _checkpointBoosterBytes;
   private final Map<String, String> _rabitEnv;
 
@@ -30,17 +34,20 @@ public class XGBoostUpdater extends Thread {
   private volatile SynchronousQueue<Object> _out;
 
   private BoosterWrapper _booster;
+  private volatile EvalMetric _evalMetric;
 
   private XGBoostUpdater(
-      Key modelKey, DMatrix trainMat, BoosterParms boosterParms, 
+      Key modelKey, DMatrix trainMat, DMatrix validMat, BoosterParms boosterParms, 
       byte[] checkpointBoosterBytes, Map<String, String> rabitEnv
   ) {
     super("XGBoostUpdater-" + modelKey);
     _modelKey = modelKey;
     _trainMat = trainMat;
+    _validMat = validMat;
     _boosterParms = boosterParms;
     _checkpointBoosterBytes = checkpointBoosterBytes;
     _rabitEnv = rabitEnv;
+    _evalMetricSpec = (String) _boosterParms.get().get("eval_metric");
     _in = new SynchronousQueue<>();
     _out = new SynchronousQueue<>();
   }
@@ -71,6 +78,9 @@ public class XGBoostUpdater extends Thread {
       updaters.remove(_modelKey);
       try {
         _trainMat.dispose();
+        if (_validMat != null) {
+          _validMat.dispose();
+        }
         if (_booster != null)
           _booster.dispose();
       } catch (Exception e) {
@@ -114,7 +124,8 @@ public class XGBoostUpdater extends Thread {
     @Override
     public Booster call() throws XGBoostError {
       if ((_booster == null) && _tid == 0) {
-        _booster = new BoosterWrapper(_checkpointBoosterBytes, _boosterParms.get(), _trainMat);        
+        _booster = new BoosterWrapper(_checkpointBoosterBytes, _boosterParms.get(), _trainMat, _validMat);
+        _evalMetric = computeEvalMetric();
         // Force Booster initialization; we can call any method that does "lazy init"
         byte[] boosterBytes = _booster.toByteArray();
         LOG.info("Initial Booster created, size=" + boosterBytes.length);
@@ -122,17 +133,58 @@ public class XGBoostUpdater extends Thread {
         // Do one iteration
         assert _booster != null;
         _booster.update(_trainMat, _tid);
+        _evalMetric = computeEvalMetric();
         _booster.saveRabitCheckpoint();
       }
       return _booster.getBooster();
     }
 
+    private EvalMetric computeEvalMetric() throws XGBoostError {
+      if (_evalMetricSpec == null) {
+        return null;
+      }
+      final String evalMetricVal = _booster.evalSet(_trainMat, _validMat, _tid);
+      return parseEvalMetric(evalMetricVal);
+    }
+    
     @Override
     public String toString() {
       return "Boosting Iteration (tid=" + _tid + ")";
     }
   }
 
+  private EvalMetric parseEvalMetric(String evalMetricVal) {
+    return parseEvalMetric(_evalMetricSpec, _validMat != null, evalMetricVal);
+  }
+  
+  static EvalMetric parseEvalMetric(String evalMetricSpec, boolean hasValid, String evalMetricVal) {
+    final String[] parts = evalMetricVal.split("\t");
+    final int expectedParts = hasValid ? 3 : 2;
+    if (parts.length != expectedParts) {
+      Log.err("Evaluation metric cannot be parsed, unexpected number of elements. Value: '" + evalMetricSpec + "'.");
+      return EvalMetric.empty(evalMetricSpec);
+    }
+    double trainVal, validVal = Double.NaN;
+    trainVal = parseEvalMetricPart(parts[1]);
+    if (hasValid) {
+      validVal = parseEvalMetricPart(parts[2]);
+    }
+    return new EvalMetric(evalMetricSpec, trainVal, validVal);
+  }
+
+  static double parseEvalMetricPart(String evalMetricVal) {
+    final int sepPos = evalMetricVal.lastIndexOf(":");
+    if (sepPos >= 0) {
+      String valStr = evalMetricVal.substring(sepPos + 1).trim();
+      try {
+        return Double.parseDouble(valStr);
+      } catch (Exception e) {
+        Log.err("Failed to parse value of evaluation metric: '" + evalMetricVal + "'.", e);
+      }
+    }
+    return Double.NaN;
+  }
+  
   private class SerializeBooster implements BoosterCallable<byte[]> {
     @Override
     public byte[] call() throws XGBoostError {
@@ -152,6 +204,10 @@ public class XGBoostUpdater extends Thread {
     }
   }
 
+  EvalMetric getEvalMetric() {
+    return _evalMetric;
+  }
+
   Booster doUpdate(int tid) {
     try {
       return invoke(new UpdateBooster(tid));
@@ -160,9 +216,9 @@ public class XGBoostUpdater extends Thread {
     }
   }
 
-  static XGBoostUpdater make(Key modelKey, DMatrix trainMat, BoosterParms boosterParms,
+  static XGBoostUpdater make(Key modelKey, DMatrix trainMat, DMatrix validMat, BoosterParms boosterParms,
                              byte[] checkpoint, Map<String, String> rabitEnv) {
-    XGBoostUpdater updater = new XGBoostUpdater(modelKey, trainMat, boosterParms, checkpoint, rabitEnv);
+    XGBoostUpdater updater = new XGBoostUpdater(modelKey, trainMat, validMat, boosterParms, checkpoint, rabitEnv);
     updater.setUncaughtExceptionHandler(LoggingExceptionHandler.INSTANCE);
     if (updaters.putIfAbsent(modelKey, updater) != null)
       throw new IllegalStateException("XGBoostUpdater for modelKey=" + modelKey + " already exists!");

@@ -109,8 +109,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
-  public void cv_makeAggregateModelMetircs(ModelMetrics.MetricBuilder[] mbs){
-    super.cv_makeAggregateModelMetircs(mbs);
+  public void cv_makeAggregateModelMetrics(ModelMetrics.MetricBuilder[] mbs){
+    super.cv_makeAggregateModelMetrics(mbs);
     ((ModelMetricsClustering.MetricBuilderClustering) mbs[0])._within_sumsqe = null;
     ((ModelMetricsClustering.MetricBuilderClustering) mbs[0])._size = null;
   }

@@ -7,7 +7,7 @@ description = "H2O R Package"
 //apply plugin: 'water.gradle.plugins.manageLocalClouds'
 
 dependencies {
-    api project(path: ":h2o-assemblies:main", configuration: 'shadow')
+    api project(path: ":h2o-assemblies:${mainAssemblyName}", configuration: 'shadow')
 }
 
 def getOS() {
@@ -234,7 +234,7 @@ def testsPath = new File("./tests")
 
 task smokeTest(type: Exec) {
     workingDir testsPath
-	def args = ['python', 'run.py', '--wipeall', '--testsize', 's']
+	def args = ['python', '../../scripts/run.py', '--wipeall', '--testsize', 's']
     if (project.hasProperty("jacocoCoverage")) {
         args << '--jacoco'
     }

@@ -49,4 +49,11 @@ public class XGBoostExecReq extends Iced<XGBoostExecReq> implements BootstrapFre
         }
     }
 
+    public static class GetEvalMetric extends XGBoostExecReq {
+        @Override
+        public String toString() {
+            return "XGBoostExecReq.GetEvalMetric{}";
+        }
+    }
+
 }

@@ -179,4 +179,8 @@ public class CompressedTree extends Keyed<CompressedTree> {
     }
   }
 
+  public long getSeed() {
+    return _seed;
+  }
+
 }

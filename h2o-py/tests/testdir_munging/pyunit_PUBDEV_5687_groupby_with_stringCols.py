@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -27,7 +26,7 @@ def group_by():
     grouped.mean(na="all").median(na="all").max(na="all").min(na="all").sum(na="all")
     print(grouped.get_frame())
     print("Checking number of warning messages...")
-    check_warnings(2, buffer) # make sure we receieved two warning, one per string row
+    check_warnings(2, buffer) # make sure we received two warning, one per string row
 
 def check_warnings(warnNumber, buffer):
     warn_phrase = "UserWarning"

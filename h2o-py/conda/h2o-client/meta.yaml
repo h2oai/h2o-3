@@ -1,0 +1,26 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: h2o_client
+  version: {{ data.get("version") }}
+
+source:
+  path: ../..
+
+requirements:
+  build:
+    - python
+    - pip >=9.0.1
+    - setuptools
+    - tabulate >=0.7.5
+    - requests >=2.10
+
+  run:
+    - python
+    - tabulate >=0.7.5
+    - requests >=2.10
+
+about:
+  home: https://github.com/h2oai/h2o-3.git
+  license: Apache License Version 2.0
+  license_family: Apache

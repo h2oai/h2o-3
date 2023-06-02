@@ -16,7 +16,9 @@ import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
@@ -63,10 +65,14 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
         error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
     }
-    if (_parms._distribution == DistributionFamily.quasibinomial)
-      error("_distribution", "Quasibinomial distribution is not supported for DRF in current H2O.");
-    if (_parms._distribution == DistributionFamily.custom)
-      error("_distribution", "Custom distribution is not supported for DRF in current H2O.");
+    DistributionFamily[] allowed_distributions = new DistributionFamily[] {
+            DistributionFamily.AUTO,
+            DistributionFamily.bernoulli,
+            DistributionFamily.multinomial,
+            DistributionFamily.gaussian,
+    };
+    if (!ArrayUtils.contains(allowed_distributions, _parms._distribution))
+      error("_distribution", _parms._distribution.name() + " distribution is not supported for DRF in current H2O.");
     if (_parms._distribution == DistributionFamily.AUTO) {
       if (_nclass == 1) _parms._distribution = DistributionFamily.gaussian;
       if (_nclass >= 2) _parms._distribution = DistributionFamily.multinomial;
@@ -192,7 +198,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // inverse of the first (and that the same columns were picked)
           if( k==1 && _nclass==2 && _model.binomialOpt()) continue;
           ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
-          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), null,true, null), null, null); // The "root" node
+          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalSplitPointsKeys(), null, true, null), null, null); // The "root" node
         }
       }
 

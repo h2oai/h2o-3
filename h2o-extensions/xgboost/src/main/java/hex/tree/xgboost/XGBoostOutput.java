@@ -3,15 +3,14 @@ package hex.tree.xgboost;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ScoreKeeper;
-import hex.glm.GLMModel;
-import hex.tree.PlattScalingHelper;
+import hex.tree.CalibrationHelper;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class XGBoostOutput extends Model.Output implements Model.GetNTrees, PlattScalingHelper.OutputWithCalibration {
+public class XGBoostOutput extends Model.Output implements Model.GetNTrees, CalibrationHelper.OutputWithCalibration {
   public XGBoostOutput(XGBoost b) {
     super(b);
     _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
@@ -22,6 +21,7 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Plat
   int _cats;
   int[] _catOffsets;
   boolean _useAllFactorLevels;
+  boolean _useValidForScoreKeeping;
   public boolean _sparse;
 
   public int _ntrees;
@@ -29,11 +29,14 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Plat
   public ScoreKeeper[/*ntrees+1*/] _scored_valid;
   public ScoreKeeper[] scoreKeepers() {
     List<ScoreKeeper> skl = new ArrayList<>();
-    ScoreKeeper[] ska = _validation_metrics != null ? _scored_valid : _scored_train;
+    ScoreKeeper[] ska = trainedWithValidation() ? _scored_valid : _scored_train;
     for( ScoreKeeper sk : ska )
       if (!sk.isEmpty())
         skl.add(sk);
     return skl.toArray(new ScoreKeeper[0]);
+  }
+  private boolean trainedWithValidation() {
+    return _validation_metrics != null || _useValidForScoreKeeping;
   }
   public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
   public TwoDimTable _variable_importances; // gain
@@ -46,7 +49,7 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Plat
   public XgbVarImp _varimp;
   public TwoDimTable _native_parameters;
 
-  public GLMModel _calib_model;
+  public Model<?, ?, ?> _calib_model;
 
   @Override
   public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
@@ -69,7 +72,13 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Plat
   }
 
   @Override
-  public GLMModel calibrationModel() {
+  public Model<?, ?, ?> calibrationModel() {
     return _calib_model;
   }
+
+  @Override
+  public void setCalibrationModel(Model<?, ?, ?> model) {
+    _calib_model = model;
+  }
+
 }

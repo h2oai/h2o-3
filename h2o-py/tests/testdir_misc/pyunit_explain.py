@@ -1,7 +1,9 @@
-from __future__ import print_function
-
 import os
 import sys
+
+import pandas as pd
+
+from h2o.grid import H2OGridSearch
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import matplotlib
@@ -34,6 +36,38 @@ def test_get_xy():
     estimated_x, estimated_y = ex._get_xy(gbm2)
     assert set(x) == set(estimated_x)
     assert y == estimated_y
+
+
+def test_varimp():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
+    y = "quality"
+    # get at most one column from each type
+    cols_to_test = []
+    for col, typ in train.types.items():
+        for ctt in cols_to_test:
+            if typ == train.types[ctt] or col == y:
+                break
+        else:
+            cols_to_test.append(col)
+
+    aml = H2OAutoML(seed=1234, max_models=5)
+    aml.train(y=y, training_frame=train)
+
+    assert aml.varimp(use_pandas=True).shape == (12, 5)
+    assert h2o.explanation.varimp(aml.leaderboard[aml.leaderboard["model_id"].grep("Stacked", invert=True, output_logical=True), :].head(3), num_of_features=3, use_pandas=True).shape == (3, 3)
+
+    varimp_1 = aml.varimp(use_pandas=False)
+    assert varimp_1[0].shape == (12, 5)
+    assert len(varimp_1[1]) == 5
+    assert len(varimp_1[2]) == 12
+
+    varimp_2 = h2o.explanation.varimp(aml.leaderboard[aml.leaderboard["model_id"].grep("Stacked", invert=True, output_logical=True), :].head(4), num_of_features=3, use_pandas=False)
+    assert varimp_2[0].shape == (3, 4)
+    assert len(varimp_2[1]) == 4
+    assert len(varimp_2[2]) == 3
+
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(aml.leaderboard[aml.leaderboard["model_id"].grep("Stacked", invert=True, output_logical=True), :].head(3), num_of_features=3).figure(), matplotlib.pyplot.Figure)
 
 
 def test_explanation_single_model_regression():
@@ -277,6 +311,11 @@ def test_explanation_automl_binomial_classification():
     # test variable importance heatmap plot
     assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
+
+    # test that num_of_features is propagated
+    for n_features in [1, 3, 5]:
+        assert n_features == len(aml.varimp_heatmap(num_of_features=n_features).figure().get_axes()[0].get_yticks())
+        matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
@@ -619,8 +658,219 @@ def test_learning_curve_for_algos_not_present_in_automl():
     matplotlib.pyplot.close()
 
 
+def test_explanation_timeseries():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/timeSeries/CreditCard-ts_train.csv"))
+    x = ["MONTH", "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_STATUS", "PAY_AMT", "BILL_AMT"]
+    y = "DEFAULT_PAYMENT_NEXT_MONTH"
+
+    # Make sure it works with missing values as well
+    train[[5, 7, 11, 13, 17], "MONTH"] = float("nan")
+
+    cols_to_test = []
+    for col, typ in train.types.items():
+        for ctt in cols_to_test:
+            if typ == train.types[ctt] or col == y:
+                break
+        else:
+            cols_to_test.append(col)
+
+    gbm = H2OGradientBoostingEstimator()
+    gbm.train(x, y, training_frame=train)
+
+    # test shap summary
+    assert isinstance(gbm.shap_summary_plot(train).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    # test shap explain row
+    assert isinstance(gbm.shap_explain_row_plot(train, 1).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    # test residual analysis
+    assert isinstance(gbm.residual_analysis_plot(train).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    # test pd_plot
+    for col in cols_to_test:
+        assert isinstance(gbm.pd_plot(train, col).figure(), matplotlib.pyplot.Figure)
+
+    # test ICE plot
+    for col in cols_to_test:
+        assert isinstance(gbm.ice_plot(train, col).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
+    # test explain
+    assert isinstance(gbm.explain(train, render=False), H2OExplanation)
+
+    # test explain row
+    assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
+
+
+def test_explanation_automl_pareto_front():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    aml = H2OAutoML(seed=1234, max_models=5)
+    aml.train(y=y, training_frame=train)
+
+    assert isinstance(aml.pareto_front(train).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(aml.pareto_front(None, "mse", "rmse").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+def test_explanation_grid_pareto_front():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    gbm_params1 = {'learn_rate': [0.01, 0.1],
+                   'max_depth': [3, 5, 9]}
+
+    # Train and validate a cartesian grid of GBMs
+    grid = H2OGridSearch(model=H2OGradientBoostingEstimator,
+                         grid_id='gbm_grid1',
+                         hyper_params=gbm_params1)
+    grid.train(y=y, training_frame=train, seed=1)
+
+    assert isinstance(grid.pareto_front(train).figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(grid.pareto_front(train, "mse", "rmse").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+def test_explanation_some_dataframe_pareto_front():
+    import pandas as pd
+    df = pd.DataFrame({"A": [1, 2, 3, 4, 5], "b": [4, 1, 3, 5, 2], "c": [5, 4, 3, 2, 1]})
+    h2o_df = h2o.H2OFrame(df)
+
+    assert isinstance(h2o.explanation.pareto_front(df, "A", "c").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert isinstance(h2o.explanation.pareto_front(h2o_df, "A", "c").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+
+def test_pareto_front_corner_cases():
+    df = pd.DataFrame(dict(
+        name=("top left", "left", "left", "bottom left", "bottom", "bottom", "bottom right", "right", "right", "top right", "top", "top", "inner"),
+        x   =(         0,      0,      0,             0,      0.3,      0.6,              1,       1,       1,           1,   0.7,   0.4,    0.5),
+        y   =(         1,    0.8,    0.2,             0,        0,        0,              0,    0.35,    0.65,           1,     1,     1,    0.5)
+    ))
+
+    tl = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=True, left=True)
+    tr = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=True, left=False)
+    bl = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=False, left=True)
+    br = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=False, left=False)
+
+    assert tl.shape == (1,)
+    assert tr.shape == (1,)
+    assert bl.shape == (1,)
+    assert br.shape == (1,)
+
+    assert (df.loc[list(tl), "name"] == "top left").all()
+    assert (df.loc[list(tr), "name"] == "top right").all()
+    assert (df.loc[list(bl), "name"] == "bottom left").all()
+    assert (df.loc[list(br), "name"] == "bottom right").all()
+
+    df = pd.DataFrame(dict(
+        name=("top left", "top left", "bottom left", "bottom left", "bottom left", "bottom right", "bottom right", "bottom right", "top right", "top right", "top right", "top left", "inner"),
+        x   =(       0.1,          0,             0,           0.1,           0.3,      0.6,                  0.9,              1,           1,         0.9,         0.7,        0.4,    0.5),
+        y   =(       0.9,        0.8,           0.2,           0.1,             0,        0,                  0.1,           0.35,        0.65,         0.9,           1,          1,    0.5)
+    ))
+
+    tl = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=True, left=True)
+    tr = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=True, left=False)
+    bl = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=False, left=True)
+    br = h2o.explanation._explain._calculate_pareto_front(df["x"].values, df["y"].values, top=False, left=False)
+
+    assert tl.shape == (3,)
+    assert tr.shape == (3,)
+    assert bl.shape == (3,)
+    assert br.shape == (3,)
+
+    assert (df.loc[list(tl), "name"] == "top left").all()
+    assert (df.loc[list(tr), "name"] == "top right").all()
+    assert (df.loc[list(bl), "name"] == "bottom left").all()
+    assert (df.loc[list(br), "name"] == "bottom right").all()
+
+def test_fairness_plots():
+    data = h2o.upload_file(pyunit_utils.locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+
+    x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',]
+        # 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6' ]
+    y = "default payment next month"
+    protected_columns = ['SEX', 'EDUCATION', 'MARRIAGE',]
+
+    for c in [y]+protected_columns:
+        data[c] = data[c].asfactor()
+
+    train, test = data.split_frame([0.98])
+    print(test.nrow)
+    reference = ["1", "2", "2"]  # university educated single man
+    favorable_class = "0"  # no default next month
+
+    aml = H2OAutoML(max_models=12)
+    aml.train(x, y, train)
+
+    models = [h2o.get_model(m[0]) for m in aml.leaderboard["model_id"].as_data_frame(False, False)]
+    da = h2o.explanation.disparate_analysis(models, test, protected_columns, reference, favorable_class)
+
+    assert isinstance(h2o.explanation.pareto_front(da, "auc", "air_min", optimum="top right").figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
+
+    assert isinstance(aml.get_best_model("deeplearning").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+    assert isinstance(aml.get_best_model("drf").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+    assert isinstance(aml.get_best_model("gbm").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+    assert isinstance(aml.get_best_model("glm").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+    assert isinstance(aml.get_best_model("xgboost").inspect_model_fairness(test, protected_columns, reference, favorable_class, figsize=(6, 3)), H2OExplanation)
+    matplotlib.pyplot.close("all")
+
+
+def test_pd_plot_row_value():
+    import random
+    import matplotlib.pyplot as plt
+    def assert_row_value(fig, row_val, col):
+        lines = [line for line in fig.axes[0].lines if len(line._y) == 2 and line.get_linestyle() == ":"]
+        assert len(lines) == 1
+        indicator_line = lines[0]
+        if isinstance(row_val, float):
+            print(col, "=>", indicator_line._x[0], "==", row_val)
+            assert indicator_line._x[0] == row_val
+        else:
+            print(col, "=>", fig.axes[0].get_xticklabels()[int(indicator_line._x[0])].get_text(), "==", row_val)
+            assert fig.axes[0].get_xticklabels()[int(indicator_line._x[0])].get_text() == row_val
+        plt.close()
+
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    train["name"] = train["name"].asfactor()
+    y = "fare"
+
+    gbm = H2OGradientBoostingEstimator(seed=1234, model_id="my_awesome_model")
+    gbm.train(y=y, training_frame=train)
+
+    for _ in range(20):
+        i = random.randrange(train.nrows)
+        print("\ntrain[" ,i, ", :]")
+        assert_row_value(gbm.pd_plot(train, "name", row_index=i).figure(), train[i, "name"], "name")
+        assert_row_value(gbm.pd_plot(train, "age", row_index=i).figure(), train[i, "age"], "age")
+
+    i = 408  # Male
+    print("\ntrain[" ,i, ", :]")
+    assert_row_value(gbm.pd_plot(train, "sex", row_index=i).figure(), train[i, "sex"], "sex")
+
+    i = 533  # Female
+    print("\ntrain[" ,i, ", :]")
+    assert_row_value(gbm.pd_plot(train, "sex", row_index=i).figure(), train[i, "sex"], "sex")
+
+
 pyunit_utils.run_tests([
     test_get_xy,
+    test_varimp,
     test_explanation_single_model_regression,
     test_explanation_automl_regression,
     test_explanation_list_of_models_regression,
@@ -631,4 +881,11 @@ pyunit_utils.run_tests([
     test_explanation_automl_multinomial_classification,
     test_explanation_list_of_models_multinomial_classification,
     test_learning_curve_for_algos_not_present_in_automl,
+    test_explanation_timeseries,
+    test_explanation_automl_pareto_front,
+    test_explanation_grid_pareto_front,
+    test_explanation_some_dataframe_pareto_front,
+    test_pareto_front_corner_cases,
+    test_pd_plot_row_value,
+    test_fairness_plots,
     ])

@@ -99,7 +99,6 @@ As you have noticed, we define a number of special classes to facilitate type co
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 import importlib
@@ -116,20 +115,10 @@ __all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNume
            "assert_is_type", "assert_matches", "assert_satisfies", "is_type")
 
 
-if PY2:
-    # noinspection PyProtectedMember
-    from h2o.utils.compatibility import _native_unicode, _native_long
-    _str_type = (str, _native_unicode)
-    _int_type = (int, _native_long)
-    _num_type = (int, _native_long, float)
-    _primitive_type = (str, int, float, bool, _native_unicode, _native_long)
-else:
-    _str_type = str
-    _int_type = int
-    _num_type = (int, float)
-    _primitive_type = (str, int, float, bool, bytes)
-
-
+_str_type = str
+_int_type = int
+_num_type = (int, float)
+_primitive_type = (str, int, float, bool, bytes)
 
 
 def is_type(var, *args):
@@ -142,9 +131,9 @@ def is_type(var, *args):
     return _check_type(var, U(*args))
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Special types
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 class MagicType(object):
     """Abstract "special" type."""
@@ -273,7 +262,7 @@ class Dict(MagicType):
         """Return True if the variable matches this type, and False otherwise."""
         if not isinstance(var, dict): return False
         if any(key not in self._types for key in var): return False
-        for key, ktype in viewitems(self._types):
+        for key, ktype in self._types.items():
             val = var.get(key, None)
             if not _check_type(val, ktype):
                 return False
@@ -282,7 +271,7 @@ class Dict(MagicType):
     def name(self, src=None):
         """Return string representing the name of this type."""
         return "{%s}" % ", ".join("%s: %s" % (key, _get_type_name(ktype, src))
-                                  for key, ktype in viewitems(self._types))
+                                  for key, ktype in self._types.items())
 
 
 class BoundInt(MagicType):
@@ -595,8 +584,8 @@ def _check_type(var, vtype):
                 all(_check_type(var[i], vtype[i]) for i in range(len(vtype))))
     if isinstance(vtype, dict):
         # ``vtype`` is a dict literal
-        ttkv = U(*viewitems(vtype))
-        return isinstance(var, dict) and all(_check_type(kv, ttkv) for kv in viewitems(var))
+        ttkv = U(*(vtype.items()))
+        return isinstance(var, dict) and all(_check_type(kv, ttkv) for kv in var.items())
     if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
         return vtype(var)
     raise RuntimeError("Ivalid type %r in _check_type()" % vtype)
@@ -637,7 +626,7 @@ def _get_type_name(vtype, dump=None):
         return "(%s)" % ", ".join(_get_type_name(item, dump) for item in vtype)
     if isinstance(vtype, dict):
         return "dict(%s)" % ", ".join("%s: %s" % (_get_type_name(tk, dump), _get_type_name(tv, dump))
-                                      for tk, tv in viewitems(vtype))
+                                      for tk, tv in vtype.items())
     if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
         if vtype.__name__ == "<lambda>":
             return _get_lambda_source_code(vtype, dump)

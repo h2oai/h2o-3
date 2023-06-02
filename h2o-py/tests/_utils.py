@@ -57,16 +57,11 @@ def load_module(name, dir_path, no_conflict=True):
             dir=dir_path,
             existing=conflict.__file__
         ))
-    try:  # Py3
-        spec = importlib.util.spec_from_file_location(name, os.path.join(dir_path, name+".py"))
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[name] = module
-        spec.loader.exec_module(module)
-        return module
-    except AttributeError:  # Py2
-        import imp
-        spec = imp.find_module(name, [dir_path])
-        return imp.load_module(name, *spec)
+    spec = importlib.util.spec_from_file_location(name, os.path.join(dir_path, name+".py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def load_utilities(test_file=None):

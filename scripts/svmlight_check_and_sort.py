@@ -23,7 +23,7 @@ if __name__ == "__main__":
             target = splits[0]
             features = splits[1:]
             d = {int(a[0]):int(a[1]) for a in [feat.split(':') for feat in features]}
-            dsorted = sorted(d.iteritems(), key=itemgetter(0), reverse=False)
+            dsorted = sorted(d.items(), key=itemgetter(0), reverse=False)
             with open(output, "a") as g:
                 g.write(target + ' ')
                 prev_i=-1

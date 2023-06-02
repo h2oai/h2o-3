@@ -29,7 +29,7 @@ dependencies {
     testImplementation "junit:junit:${junitVersion}"
 
     // Generator dependencies
-    srcGenCompile project(path: ":h2o-assemblies:main", configuration: "shadow")
+    srcGenCompile project(path: ":h2o-assemblies:${mainAssemblyName}", configuration: "shadow")
 }
 
 sourceSets {

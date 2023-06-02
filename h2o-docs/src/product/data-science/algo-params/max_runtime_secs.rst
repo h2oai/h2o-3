@@ -19,6 +19,10 @@ When performing a grid search, this option specifies the maximum runtime in seco
 
 Specifying ``max_runtime_secs=0`` disables this option, thus allowing for an unlimited amount of runtime.
 
+.. warning::
+	``max_runtime_secs`` cannot always produce a reproducible model for GBM, DRF, XGBoost, Isolation Forest, or Uplift DRF.
+
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 

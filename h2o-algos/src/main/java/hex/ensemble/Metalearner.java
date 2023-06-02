@@ -116,6 +116,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     parms._max_runtime_secs = _maxRuntimeSecs;
     parms._weights_column = _model._parms._weights_column;
     parms._offset_column = _model._parms._offset_column;
+    parms._main_model_time_budget_factor = _model._parms._main_model_time_budget_factor;
   }
 
   protected void setCrossValidationParams(P parms) {

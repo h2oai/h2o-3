@@ -125,7 +125,10 @@ In order to reproduce the model on a machine with a different number of CPU core
 
 ``"Rebalancing train dataset into 145 chunks."``
 
-**If the logs show that rebalancing has occurred, reproducibility is not possible.** If the logs do not mention rebalancing, continue to Step 2.
+.. warning::
+    If the logs show that rebalancing has occurred, reproducibility is not possible.
+
+If the logs do not mention rebalancing, continue to Step 2.
 
 
    .. tabs::
@@ -185,7 +188,8 @@ In order to reproduce the model on a machine with a different number of CPU core
 
 ``"Rebalancing train dataset into 145 chunks."``
 
-**If the logs show that rebalancing has occurred, you will not be able to reproduce the model.**
+.. warning::
+    If the logs show that rebalancing has occurred, use ``auto_rebalance = False``, which switches off rebalance but can significantly increase training time.
 
 How do I reproduce a model where model training was not triggered from the leader node?
 #######################################################################################
@@ -372,3 +376,27 @@ The **Node Information** subtable stores monitoring information for each node. T
 - ``os_version``: OS version
 - ``machine_physical_mem``: Machine physical memory
 - ``machine_locale``: Machine locale
+
+Can I access the row to tree assignments for my model?
+######################################################
+
+``row_to_tree_assignment`` provides the row to tree assignments for the model and the provided training data. This feature allows you to debug the model and assists with replicating the model.
+
+**Note**: Multinomial classification models generate a tree for each category, and each tree uses the same sample of data.
+
+.. tabs::
+   .. code-tab:: python
+
+      # Import the prostate dataset:
+      prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+      # Set the response:
+      response = "CAPSULE"
+      prostate[response] = prostate[response].asfactor()
+
+      # Build and train the model:
+      gbm_model = H2OGradientBoostingEstimator(ntrees=3, sample_rate=0.6, seed=1234)
+      gbm_model.train(y=response, training_frame=prostate)
+
+      # Access the row to tree assignments:
+      gbm_model.row_to_tree_assignment(prostate)

@@ -6,9 +6,7 @@ This module provides helper functions to write code that is backward-compatible.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
-from __future__ import division, print_function, absolute_import
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import _str_type
 
 from functools import wraps
 import inspect
@@ -17,8 +15,16 @@ import warnings
 from h2o.exceptions import H2ODeprecationWarning
 
 
-def h2o_meta(*args):
-    return with_metaclass(H2OMeta, *args)
+def h2o_meta(*bases):
+    class metaclass(type):
+
+        def __new__(cls, name, this_bases, d):
+            return H2OMeta(name, bases, d)
+
+        @classmethod
+        def __prepare__(cls, name, this_bases):
+            return H2OMeta.__prepare__(name, bases)
+    return type.__new__(metaclass, 'temporary_class', (), {})
 
 
 def fullname(fn):
@@ -61,10 +67,10 @@ def deprecated_params(deprecations):
                 if k in old:
                     new = deprecations[k]
                     new_tup = (((lambda ov: None), None) if new in [None, ()] 
-                               else ((lambda ov: {new: ov}), None) if isinstance(new, _str_type)
+                               else ((lambda ov: {new: ov}), None) if isinstance(new, str_type)
                                else (new, None) if callable(new)
                                else ((lambda ov: None), new[1]) if isinstance(new, tuple) and new[0] is None
-                               else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], _str_type)
+                               else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], str_type)
                                else new)
                     assert isinstance(new_tup, tuple), (
                             "`deprecations` values must be one of: "
@@ -186,6 +192,43 @@ class _DeprecatedFunction(object):
 deprecated_fn = _DeprecatedFunction
 
 
+def deprecated_params_order(old_sig, is_called_with_old_sig):
+    """
+    Creates a deprecated property order and provide a correct function call
+    :param old_sig: list of strings in old property order
+    :param is_called_with_old_sig: Function that return true if the function is called with different order
+    :return: function call with correct parameter order and deprecation warning or the same function call
+
+    :example::
+
+        def _is_called_with_old_sig(*args, **kwargs): return len(args) > 0 and isinstance(args[0], bool)
+
+        class Foo:
+
+            @deprecated_params_order(old_sig=["param2", "param1"], is_called_with_old_sig=_is_called_with_old_sig)
+            def method(self, param1, param2):
+                pass
+    """
+
+    def handle_deprecated_params_order(fn):
+
+        @wraps(fn)
+        def wrapper(self, *args, **kwargs):
+
+            if is_called_with_old_sig and is_called_with_old_sig(*args, **kwargs):
+                warnings.warn("please check and use the new signature of method "+fullname(fn), H2ODeprecationWarning, 2)
+                for i, arg in enumerate(args):
+                    kw = old_sig[i]
+                    kwargs[kw] = arg
+                return fn(self, **kwargs)
+            else:
+                return fn(self, *args, **kwargs)
+
+        return wrapper
+
+    return handle_deprecated_params_order
+
+
 class MetaFeature(object):
     """To be implemented by meta features exposed through the ``H2OMeta` metaclass"""
 
@@ -304,7 +347,7 @@ class _BackwardsCompatible(MetaFeature):
                 return attr
             except AttributeError:
                 pass
-            if name in self._bci:
+            if name != '_bci' and name in self._bci:
                 return self._bci[name]
             return getattr(new_clz, name)
 

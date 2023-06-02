@@ -320,11 +320,15 @@ public class Env extends Iced {
     // Segment Models
     init(new AstSegmentModelsAsFrame());
     
-    // Reset model threshold
+    // Models
     init(new AstModelResetThreshold());
-
-    // Permutation Variable Importance
+    init(new AstTestJavaScoring());
     init(new AstPermutationVarImp());
+
+    init(new AstFairnessMetrics());
+
+    // Make Leaderboard
+    init(new AstMakeLeaderboard());
 
     // Filters
     init(new AstDropDuplicates());
@@ -334,6 +338,9 @@ public class Env extends Iced {
     
     // generate result frame
     init(new AstResultFrame());
+
+    // generate transform frame
+    init(new AstTransformFrame());
 
     // Custom (eg. algo-specific)
     for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())

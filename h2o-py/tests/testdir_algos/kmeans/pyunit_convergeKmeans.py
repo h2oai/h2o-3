@@ -1,4 +1,3 @@
-from __future__ import division
 from builtins import zip
 from builtins import range
 from past.utils import old_div

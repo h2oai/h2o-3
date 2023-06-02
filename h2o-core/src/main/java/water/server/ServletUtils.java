@@ -122,6 +122,20 @@ public class ServletUtils {
     response.sendError(sc, msg);
   }
 
+  public static InputStream extractInputStream(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    final InputStream is;
+    final String contentType = request.getContentType();
+    
+    // The Python client sends requests with null content-type when uploading large files,
+    // whereas Sparkling Water proxy sends requests with content-type set to application/octet-stream.
+    if (contentType == null || contentType.equals("application/octet-stream")) {
+      is = request.getInputStream();
+    } else {
+      is = extractPartInputStream(request, response);
+    }
+    return is;
+  }
+  
   public static InputStream extractPartInputStream (HttpServletRequest request, HttpServletResponse response) throws
       IOException {
     String ct = request.getContentType();

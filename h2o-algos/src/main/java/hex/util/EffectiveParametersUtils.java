@@ -4,6 +4,7 @@ import hex.AUUC;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.CalibrationHelper;
 import hex.tree.SharedTreeModel;
 import hex.tree.uplift.UpliftDRFModel;
 
@@ -75,4 +76,11 @@ public class EffectiveParametersUtils {
             params._uplift_metric = UpliftDRFModel.UpliftDRFParameters.UpliftMetricType.KL;
         }
     }
+
+    public static void initCalibrationMethod(CalibrationHelper.ParamsWithCalibration params) {
+        if (params.getCalibrationMethod() == CalibrationHelper.CalibrationMethod.AUTO) {
+            params.setCalibrationMethod(CalibrationHelper.CalibrationMethod.PlattScaling);
+        }
+    }
+
 }

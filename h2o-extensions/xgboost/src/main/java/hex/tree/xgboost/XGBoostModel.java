@@ -12,8 +12,7 @@ import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.FriedmanPopescusH;
-import hex.tree.PlattScalingHelper;
-import hex.tree.SharedTreeModel;
+import hex.tree.CalibrationHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import hex.util.EffectiveParametersUtils;
@@ -48,7 +47,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   public XGBoostModelInfo model_info() { return model_info; }
 
-  public static class XGBoostParameters extends Model.Parameters implements Model.GetNTrees, PlattScalingHelper.ParamsWithCalibration {
+  public static class XGBoostParameters extends Model.Parameters implements Model.GetNTrees, CalibrationHelper.ParamsWithCalibration {
     public enum TreeMethod {
       auto, exact, approx, hist
     }
@@ -130,9 +129,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _reg_alpha = 0;
     public float _scale_pos_weight = 1;
 
-    // Platt scaling
+    // Platt scaling (by default)
     public boolean _calibrate_model;
     public Key<Frame> _calibration_frame;
+    public CalibrationHelper.CalibrationMethod _calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
 
     // Dart specific (booster == dart)
     public DartSampleType _sample_type = DartSampleType.uniform;
@@ -142,6 +142,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _skip_drop = 0;
     public int[] _gpu_id; // which GPU to use
     public Backend _backend = Backend.auto;
+
+    public String _eval_metric;
+    public boolean _score_eval_metric_only;
 
     public String algoName() { return "XGBoost"; }
     public String fullName() { return "XGBoost"; }
@@ -205,6 +208,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     @Override
+    public CalibrationHelper.CalibrationMethod getCalibrationMethod() {
+      return _calibration_method;
+    }
+
+    @Override
+    public void setCalibrationMethod(CalibrationHelper.CalibrationMethod calibrationMethod) {
+      _calibration_method = calibrationMethod;
+    }
+
+    @Override
     public Parameters getParams() {
       return this;
     }
@@ -227,7 +240,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   public XGBoostModel(Key<XGBoostModel> selfKey, XGBoostParameters parms, XGBoostOutput output, Frame train, Frame valid) {
     super(selfKey,parms,output);
-    final DataInfo dinfo = makeDataInfo(train, valid, _parms, output.nclasses());
+    final DataInfo dinfo = makeDataInfo(train, valid, _parms);
     DKV.put(dinfo);
     setDataInfoToOutput(dinfo);
     model_info = new XGBoostModelInfo(parms, dinfo);
@@ -239,6 +252,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     EffectiveParametersUtils.initFoldAssignment(_parms);
     _parms._backend = getActualBackend(_parms, true);
     _parms._tree_method = getActualTreeMethod(_parms);
+    EffectiveParametersUtils.initCalibrationMethod(_parms);
   }
 
   public static XGBoostParameters.TreeMethod getActualTreeMethod(XGBoostParameters p) {
@@ -420,6 +434,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (p._scale_pos_weight != 1)
       params.put("scale_pos_weight", p._scale_pos_weight);
 
+    // objective function
     if (nClasses==2) {
       params.put("objective", ObjectiveType.BINARY_LOGISTIC.getId());
     } else if (nClasses==1) {
@@ -440,6 +455,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("num_class", nClasses);
     }
     assert ObjectiveType.fromXGBoost((String) params.get("objective")) != null;
+
+    // evaluation metric
+    if (p._eval_metric != null) {
+      params.put("eval_metric", p._eval_metric);
+    }
 
     final int nthreadMax = getMaxNThread();
     final int nthread = p._nthread != -1 ? Math.min(p._nthread, nthreadMax) : nthreadMax;
@@ -585,29 +605,24 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostModelMetrics(_output, data, originalData, isTrain, this).compute();
   }
 
-  /**
-   * Score an XGBoost model on training and validation data (optional)
-   * Note: every row is scored, all observation weights are assumed to be equal
-   * @param _train training data in the form of matrix
-   * @param _valid validation data (optional, can be null)
-   */
-  final void doScoring(Frame _train, Frame _trainOrig, Frame _valid, Frame _validOrig) {
-    ModelMetrics mm = makeMetrics(_train, _trainOrig, true, "Metrics reported on training frame");
+  final void doScoring(Frame train, Frame trainOrig, CustomMetric trainCustomMetric,
+                       Frame valid, Frame validOrig, CustomMetric validCustomMetric) {
+    ModelMetrics mm = makeMetrics(train, trainOrig, true, "Metrics reported on training frame");
     _output._training_metrics = mm;
-    _output._scored_train[_output._ntrees].fillFrom(mm);
+    _output._scored_train[_output._ntrees].fillFrom(mm, trainCustomMetric);
     addModelMetrics(mm);
     // Optional validation part
-    if (_valid!=null) {
-      mm = makeMetrics(_valid, _validOrig, false, "Metrics reported on validation frame");
+    if (valid != null) {
+      mm = makeMetrics(valid, validOrig, false, "Metrics reported on validation frame");
       _output._validation_metrics = mm;
-      _output._scored_valid[_output._ntrees].fillFrom(mm);
+      _output._scored_valid[_output._ntrees].fillFrom(mm, validCustomMetric);
       addModelMetrics(mm);
     }
   }
 
   @Override
   protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
-    return PlattScalingHelper.postProcessPredictions(predictFr, j, _output);
+    return CalibrationHelper.postProcessPredictions(predictFr, j, _output);
   }
 
   @Override
@@ -946,6 +961,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+
+    for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
+      Vec col = adaptFrm.vec(colId);
+      if (col.isBad()) {
+        throw new UnsupportedOperationException(
+                "Calculating of H statistics error: row " + adaptFrm.name(colId) + " is missing.");
+      }
+    }
+
     int nclasses = this._output.nclasses() > 2 ? this._output.nclasses() : 1;
     SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
     for (int i = 0; i < this._parms._ntrees; i++) {
@@ -956,7 +982,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     }
 
-    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
+    return FriedmanPopescusH.h(adaptFrm, vars, this._parms._learn_rate, sharedTreeSubgraphs);
   }
 
 

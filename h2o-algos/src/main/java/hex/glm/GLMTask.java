@@ -18,11 +18,15 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.MathUtils.BasicStats;
+
 import java.util.Arrays;
 
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.deviance;
+import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
 import static hex.glm.GLMUtils.updateGradGam;
 import static hex.glm.GLMUtils.updateGradGamMultinomial;
+import static org.apache.commons.math3.special.Gamma.*;
 
 /**
  * All GLM related distributed tasks:
@@ -688,10 +692,13 @@ public abstract class GLMTask  {
 
   static double sumOper(double y, double multiplier, int opVal) {
     double summation = 0.0;
-      for (int val = 0; val < y; val++) {
-        double temp = opVal==0?Math.log((val+multiplier)/(val+1)):1.0/(val*multiplier*multiplier+multiplier);
-        summation += opVal==0?temp:(opVal==1?temp:(opVal==2?temp*temp*(2*val*multiplier+1):Math.log(multiplier+val)));
-      }
+    if (opVal == 0){
+      return logGamma(y + multiplier) - logGamma(multiplier) - logGamma(y + 1);
+    }
+    for (int val = 0; val < y; val++) {
+      double temp = 1.0/(val*multiplier*multiplier+multiplier);
+      summation += opVal==1?temp:(opVal==2?temp*temp*(2*val*multiplier+1):Math.log(multiplier+val));
+    }
     return summation;
   }
   
@@ -749,13 +756,13 @@ public abstract class GLMTask  {
   public static class GLMGaussianGradientTask extends GLMGradientTask {
     public GLMGaussianGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta) {
       super(jobKey,dinfo,parms._obj_reg,lambda,beta);
-      assert parms._family == Family.gaussian && parms._link == Link.identity;
+      assert parms._family == gaussian && parms._link == Link.identity;
     }
 
     public GLMGaussianGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta, 
                                    double[][][] penaltyMat, int[][] gamCol) {
       super(jobKey,dinfo,parms._obj_reg,lambda,beta, penaltyMat, gamCol);
-      assert parms._family == Family.gaussian && parms._link == Link.identity;
+      assert parms._family == gaussian && parms._link == Link.identity;
     }
 
     @Override
@@ -1512,9 +1519,17 @@ public abstract class GLMTask  {
     private transient GLMWeights _w;
     private transient GLMWeightsFun _glmfTweedie; // only needed for Tweedie
     //    final double _lambda;
-    double wsum, wsumu;
+    double wsum, sumOfRowWeights;
     double _sumsqe;
     int _c = -1;
+    
+    public double[] getXY() {
+      return _xy;
+    }
+    
+    public double getYY() {
+      return _yy;
+    }
 
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw,double [] beta) {
       super(null,dinfo,jobKey);
@@ -1545,7 +1560,7 @@ public abstract class GLMTask  {
       _w = new GLMWeights();
       if (_glmf._family.equals(Family.tweedie)) {
         _glmfTweedie = new GLMModel.GLMWeightsFun(_glmf._family, _glmf._link, _glmf._var_power, _glmf._link_power,
-                _glmf._theta);
+                _glmf._theta, _glmf._dispersion, _glmf._varPowerEstimation);
       }
     }
     
@@ -1558,7 +1573,7 @@ public abstract class GLMTask  {
       if(r.isBad() || r.weight == 0) return;
       ++_nobs;
       double y = r.response(0);
-      _yy += y*y;
+      _yy += r.weight*y*y;
       final int numStart = _dinfo.numStart();
       double wz,w;
       if(_glmf._family == Family.multinomial) {
@@ -1585,7 +1600,7 @@ public abstract class GLMTask  {
         wz = w*(y - r.offset);
       }
       wsum+=w;
-      wsumu+=r.weight; // just add the user observation weight for the scaling.
+      sumOfRowWeights +=r.weight; // just add the user observation weight for the scaling.
       for(int i = 0; i < r.nBins; ++i)
         _xy[r.binIds[i]] += wz;
       for(int i = 0; i < r.nNums; ++i){
@@ -1607,7 +1622,7 @@ public abstract class GLMTask  {
       _gram.add(git._gram);
       _nobs += git._nobs;
       wsum += git.wsum;
-      wsumu += git.wsumu;
+      sumOfRowWeights += git.sumOfRowWeights;
       _likelihood += git._likelihood;
       _sumsqe += git._sumsqe;
       _yy += git._yy;
@@ -2060,7 +2075,7 @@ public abstract class GLMTask  {
         else
           randlink = params._rand_link[index];
         randGLMs[index] = new GLMWeightsFun(params._rand_family[index], randlink,
-                params._tweedie_variance_power, params._tweedie_link_power, 0);
+                params._tweedie_variance_power, params._tweedie_link_power, 0, params._init_dispersion_parameter, false);
       }
       return randGLMs;
     }
@@ -2091,7 +2106,7 @@ public abstract class GLMTask  {
       } else {  // load from dinfo: response, zi, etai and maybe weightID for prior_weight
         usingWpsi = false;
         glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-                _parms._tweedie_link_power, 0);
+                _parms._tweedie_link_power, 0, _parms._init_dispersion_parameter, false);
         zdevChunkInfo = getCorrectChunk(_dinfo._adaptedFrame, 0, chkStartRowIdx, chunks4ZDev, _dinfoWCol,
                 zdevChunkInfo);
       }
@@ -2111,7 +2126,7 @@ public abstract class GLMTask  {
                     rowAbsIndex, chunks4ZDev, _dinfoWCol, zdevChunkInfo);
             if (glmfun==null)
               glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-                      _parms._tweedie_link_power, 0);
+                      _parms._tweedie_link_power, 0, _parms._init_dispersion_parameter, false);
           }
           zdevAbsRelRowNumber = usingWpsi?(int)(rowIndex+rowOffset):rowIndex+zdevChunkInfo[2];
         }  else if (usingWpsi && (zdevAbsRelRowNumber-zdevChunkInfo[0]) >= zdevChunkInfo[1]) {  // load from wprior_wpsi
@@ -2265,7 +2280,7 @@ public abstract class GLMTask  {
         else
           randlink = params._rand_link[index];
         randGLMs[index] = new GLMWeightsFun(params._rand_family[index], randlink,
-                params._tweedie_variance_power, params._tweedie_link_power, 0);
+                params._tweedie_variance_power, params._tweedie_link_power, 0, params._init_dispersion_parameter, false);
       }
       return randGLMs;
     }
@@ -2340,7 +2355,7 @@ public abstract class GLMTask  {
         int[] zdevChunkInfo = new int[3];
 
         glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-                _parms._tweedie_link_power, 0);
+                _parms._tweedie_link_power, 0, _parms._init_dispersion_parameter, false);
         zdevChunkInfo = getCorrectChunk(_dinfo._adaptedFrame, 0, chkStartRowIdx, chunks4ZDev, _dinfoWCol,
                 zdevChunkInfo);
         int zdevAbsRelRowNumber = zdevChunkInfo[2];
@@ -2356,7 +2371,7 @@ public abstract class GLMTask  {
           }
             if (glmfun == null)
               glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-                      _parms._tweedie_link_power, 0);
+                      _parms._tweedie_link_power, 0, _parms._init_dispersion_parameter, false);
           _sumDev += setZDevEta(chunks4ZDev, chunks, rowIndex,  zdevAbsRelRowNumber, glmfun);
           setHv(chunksqMatrix, chunks[1], rowIndex, qMatrixRelRow);  // get hv from qmatrix only
           qMatrixRelRow++;
@@ -2665,7 +2680,7 @@ public abstract class GLMTask  {
     @Override
     public void map(Chunk[] chunks) { // chunks from _dinfo._adaptedFrame
       GLMWeightsFun glmfun = new GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-              _parms._tweedie_link_power, 0);
+              _parms._tweedie_link_power, 0,_parms._init_dispersion_parameter, false);
       Row row = _dinfo.newDenseRow(); // one row of fixed effects/columns
       double eta, mu, temp, zi, wdata;
       for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk of _dinfo._adaptedFrame
@@ -3095,7 +3110,7 @@ public abstract class GLMTask  {
         final int numStart = _dinfo.numStart();
         double d = 1;
         eta = r.innerProduct(_betaw);
-        if (_params._family == Family.gaussian && _params._link == Link.identity) {
+        if (_params._family == gaussian && _params._link == Link.identity) {
           w = r.weight;
           z = y - r.offset;
           mu = 0;
@@ -3134,31 +3149,29 @@ public abstract class GLMTask  {
       _likelihood += git._likelihood;
       super.reduce(git);
     }
-
-
   }
 
-
-  public static class ComputeSETsk extends FrameTask2<ComputeSETsk> {
-//    final double [] _betaOld;
+  public static class ComputeSEorDEVIANCETsk extends FrameTask2<ComputeSEorDEVIANCETsk> {
     final double [] _betaNew;
     double _sumsqe;
     double _wsum;
+    GLMParameters _parms;
+    GLMModel _model;
 
-    public ComputeSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, /*, double [] betaOld,*/ double [] betaNew, GLMParameters parms) {
+    public ComputeSEorDEVIANCETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, double [] betaNew, GLMParameters parms,
+                                  GLMModel model) {
       super(cmp, dinfo, jobKey);
-//      _betaOld = betaOld;
       _glmf = new GLMWeightsFun(parms);
       _betaNew = betaNew;
+      _parms = parms;
+      _model = model;
     }
-
-    transient double _sparseOffsetOld = 0;
+    
     transient double _sparseOffsetNew = 0;
     final GLMWeightsFun _glmf;
     transient GLMWeights _glmw;
     @Override public void chunkInit(){
       if(_sparse) {
-//        _sparseOffsetOld = GLM.sparseOffset(_betaNew, _dinfo);
         _sparseOffsetNew = GLM.sparseOffset(_betaNew, _dinfo);
       }
       _glmw = new GLMWeights();
@@ -3168,23 +3181,119 @@ public abstract class GLMTask  {
     protected void processRow(Row r) {
       double z = r.response(0) - r.offset;
       double w = r.weight;
-      if(_glmf._family != Family.gaussian) {
-//        double etaOld = r.innerProduct(_betaOld) + _sparseOffsetOld;
+      if (_glmf._family != gaussian) {
         double etaOld = r.innerProduct(_betaNew) + _sparseOffsetNew;
-        _glmf.computeWeights(r.response(0),etaOld,r.offset,r.weight,_glmw);
+        _glmf.computeWeights(r.response(0), etaOld, r.offset, r.weight, _glmw);
         z = _glmw.z;
         w = _glmw.w;
       }
-      double eta = _glmf._family.equals(Family.tweedie)?r.innerProduct(_betaNew) + _sparseOffsetNew+r.offset:r.innerProduct(_betaNew) + _sparseOffsetNew;
-      double xmu = _glmf._family.equals(Family.tweedie)?_glmf.linkInv(eta):0;
-      _sumsqe += _glmf._family.equals(Family.tweedie)?
-              ((r.response(0)-xmu)*(r.response(0)-xmu))*r.weight/Math.pow(xmu, _glmf._var_power):
-              w*(eta - z)*(eta - z);
-
+      double eta = _glmf._family.equals(Family.tweedie) ? r.innerProduct(_betaNew) + _sparseOffsetNew + r.offset : r.innerProduct(_betaNew) + _sparseOffsetNew;
+      double xmu = _glmf._family.equals(Family.tweedie) ? _glmf.linkInv(eta) : 0;
+      if (deviance.equals(_parms._dispersion_parameter_method)) {  // deviance option
+        if (!gaussian.equals(_glmf._family)) {
+          _sumsqe += Double.isNaN(_glmw.dev) ? 0 : _glmw.dev;
+        } else {
+          double d = _model.deviance(r.weight, z, _glmf.linkInv(eta));
+          _sumsqe += Double.isNaN(d) ? 0 : d;
+        }
+      } else { // default or pearson
+        _sumsqe += _glmf._family.equals(Family.tweedie) ?
+                ((r.response(0) - xmu) * (r.response(0) - xmu)) * r.weight / Math.pow(xmu, _glmf._var_power) :
+                w * (eta - z) * (eta - z);
+      }
       _wsum += Math.sqrt(w);
     }
+    
     @Override
-    public void reduce(ComputeSETsk c){_sumsqe += c._sumsqe; _wsum += c._wsum;}
+    public void reduce(ComputeSEorDEVIANCETsk c){_sumsqe += c._sumsqe; _wsum += c._wsum;}
+  }
+
+  /***
+   * This function will assist in the estimation of dispersion factors using maximum likelihood
+   */
+  public static class ComputeGammaMLSETsk extends FrameTask2<ComputeGammaMLSETsk> {
+    final double [] _betaNew;
+    double _sumlnyiOui;
+    double _sumyiOverui;
+    double _wsum;
+
+    public ComputeGammaMLSETsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, double [] betaNew, GLMParameters parms) {
+      super(cmp, dinfo, jobKey);
+      _glmf = new GLMWeightsFun(parms);
+      _betaNew = betaNew;
+    }
+    
+    transient double _sparseOffsetNew = 0;
+    final GLMWeightsFun _glmf;
+    transient GLMWeights _glmw;
+    @Override public void chunkInit(){
+      if(_sparse) {
+        _sparseOffsetNew = GLM.sparseOffset(_betaNew, _dinfo);
+      }
+      _glmw = new GLMWeights();
+    }
+
+    @Override
+    protected void processRow(Row r) {
+      double z = r.response(0) - r.offset;  // response
+      double w = r.weight;
+      if (z > 0  & w > 0) {
+        double eta = _glmf._family.equals(Family.tweedie) ? r.innerProduct(_betaNew) + _sparseOffsetNew + r.offset
+                : r.innerProduct(_betaNew) + _sparseOffsetNew;
+        double xmu = _glmf.linkInv(eta); // ui
+        double temp = w * z / xmu;
+        _sumyiOverui += temp;
+        _sumlnyiOui += w*Math.log(temp);
+        _wsum += w;
+      }
+    }
+    @Override
+    public void reduce(ComputeGammaMLSETsk c){
+      _sumlnyiOui += c._sumlnyiOui;
+      _sumyiOverui += c._sumyiOverui;
+      _wsum += c._wsum;}
+  }
+
+  /***
+   * This function will assist in the estimation of dispersion factors using maximum likelihood
+   */
+  public static class ComputeDiTriGammaTsk extends FrameTask2<ComputeDiTriGammaTsk> {
+    double _sumDigamma;
+    double _sumTrigamma;
+    double _alpha;
+    double[] _betaNew;
+
+    public ComputeDiTriGammaTsk(H2OCountedCompleter cmp, DataInfo dinfo, Key jobKey, double[] betaNew, GLMParameters parms, double alpha) {
+      super(cmp, dinfo, jobKey);
+      _glmf = new GLMWeightsFun(parms);
+      _alpha = alpha;
+      _betaNew = betaNew;
+    }
+
+    transient double _sparseOffsetNew = 0;
+    final GLMWeightsFun _glmf;
+    transient GLMWeights _glmw;
+    @Override public void chunkInit(){
+      if(_sparse) {
+        _sparseOffsetNew = GLM.sparseOffset(_betaNew, _dinfo);
+      }
+      _glmw = new GLMWeights();
+    }
+
+    @Override
+    protected void processRow(Row r) {
+      double z = r.response(0) - r.offset;  // response
+      double w = r.weight;
+      if (z > 0  & w > 0) {
+        _sumDigamma += w*digamma(w*_alpha);
+        _sumTrigamma += w*w*trigamma(w*_alpha);
+      }
+    }
+    @Override
+    public void reduce(ComputeDiTriGammaTsk c){
+      _sumDigamma += c._sumDigamma;
+      _sumTrigamma += c._sumTrigamma;
+    }
   }
 
   static class GLMIncrementalGramTask extends MRTask<GLMIncrementalGramTask> {

@@ -11,11 +11,11 @@ import hex.schemas.*;
 import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
-import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Entry point class to load and access the supported metalearners.
@@ -125,7 +125,6 @@ public class Metalearners {
     }
 
     static class MetalearnerWithDistribution extends SimpleMetalearner {
-        protected DistributionFamily[] _supportedDistributionFamilies;
         protected MetalearnerWithDistribution(String algo) {
             super(algo);
         }
@@ -134,7 +133,10 @@ public class Metalearners {
             super.validateParams(parms);
 
             // Check if distribution family is supported and if not pick a basic one
-            if (!ArrayUtils.contains(_supportedDistributionFamilies, parms._distribution)) {
+            ModelBuilder mb = ModelBuilder.make(parms);
+            mb.init(false);
+            if (!Stream.of("_distribution", "_family")
+                    .allMatch((field) -> mb.getMessagesByFieldAndSeverity(field, Log.ERRR).length == 0)) {
                 DistributionFamily distribution;
                 if (_model._output.nclasses() == 1) {
                     distribution = DistributionFamily.gaussian;
@@ -156,18 +158,6 @@ public class Metalearners {
     static class DLMetalearner extends MetalearnerWithDistribution {
         public DLMetalearner() {
             super(Algorithm.deeplearning.name());
-            _supportedDistributionFamilies = new DistributionFamily[]{
-                    DistributionFamily.AUTO,
-                    DistributionFamily.bernoulli,
-                    DistributionFamily.multinomial,
-                    DistributionFamily.gaussian,
-                    DistributionFamily.poisson,
-                    DistributionFamily.gamma,
-                    DistributionFamily.laplace,
-                    DistributionFamily.quantile,
-                    DistributionFamily.huber,
-                    DistributionFamily.tweedie,
-            };
         }
 
     }
@@ -175,32 +165,12 @@ public class Metalearners {
     static class DRFMetalearner extends MetalearnerWithDistribution {
         public DRFMetalearner() {
             super(Algorithm.drf.name());
-            _supportedDistributionFamilies = new DistributionFamily[]{
-                    DistributionFamily.AUTO,
-                    DistributionFamily.bernoulli,
-                    DistributionFamily.multinomial,
-                    DistributionFamily.gaussian,
-            };
         }
     }
 
     static class GBMMetalearner extends MetalearnerWithDistribution {
         public GBMMetalearner() {
             super(Algorithm.gbm.name());
-            _supportedDistributionFamilies = new DistributionFamily[]{
-                    DistributionFamily.AUTO,
-                    DistributionFamily.bernoulli,
-                    DistributionFamily.quasibinomial,
-                    DistributionFamily.multinomial,
-                    DistributionFamily.gaussian,
-                    DistributionFamily.poisson,
-                    DistributionFamily.gamma,
-                    DistributionFamily.laplace,
-                    DistributionFamily.quantile,
-                    DistributionFamily.huber,
-                    DistributionFamily.tweedie,
-                    DistributionFamily.custom,
-            };
         }
     }
 

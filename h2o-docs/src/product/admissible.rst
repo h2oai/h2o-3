@@ -52,7 +52,7 @@ The interface is designed to be simple and aligned with the standard modeling in
    .. code-tab:: python
 
         # Generate and plot the infogram
-        ig = H2OInfoGram()
+        ig = H2OInfogram()
         ig.train(x=x, y=y, training_frame=train)
         ig.plot()
 
@@ -255,12 +255,14 @@ The code below generates an infogram, and we plot the infogram and view the data
 
         h2o.init()
                 
-        # Import hmda dataset
+        # Import HMDA dataset
         f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
         col_types <- list(by.col.name = c("high_priced"), 
                           types = c("factor"))
         df <- h2o.importFile(path = f, col.types = col_types)
 
+        # We will split the data so that we can test/compare performance
+        # of admissible vs non-admissible models later
         splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
         train <- splits[[1]]
         test <- splits[[2]]
@@ -297,7 +299,7 @@ The code below generates an infogram, and we plot the infogram and view the data
 
         h2o.init()
 
-        # Import credit dataset
+        # Import HDMA dataset
         f = "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
         col_types = {'high_priced': "enum"}
         df = h2o.import_file(path=f, col_types=col_types)
@@ -358,12 +360,12 @@ Using the HMDA infogram example above, we can extend the infogram analysis to ev
    .. code-tab:: r R
 
         # Building on the HMDA code as above, we train and evaluate an Admissible GBM and 
-        # compare that with a GBM trained on all un-protected features:
+        # compare that with a GBM trained on all unprotected features:
 
-        # Admissible features
+        # Admissible columns
         acols <- ig@admissible_features
 
-        # Un-protected columns
+        # Unprotected columns
         ucols <- setdiff(x, pcols)
 
         # Train an Admissible GBM
@@ -388,17 +390,16 @@ Using the HMDA infogram example above, we can extend the infogram analysis to ev
    .. code-tab:: python
  
         # Building on the HMDA code as above, we train and evaluate an Admissible GBM and 
-        # compare that with a GBM trained on all un-protected features:
+        # compare that with a GBM trained on all unprotected features:
 
         # Admissible columns
         acols = ig.get_admissible_features()
         
-        # Un-protected columns
+        # Unprotected columns
         ucols = list(set(x).difference(pcols))
         
-        from h2o.estimators.gbm import H2OGradientBoostingEstimator
-
         # Train an Admissible GBM
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
         agbm = H2OGradientBoostingEstimator(seed=1)
         agbm.train(x=acols, y=y, training_frame=train)
 
@@ -424,7 +425,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
 .. tabs::
    .. code-tab:: r R
 
-        # Building on the HMDA infogram code, we execute AutoML with all un-protected features, 
+        # Building on the HMDA infogram code, we execute AutoML with all unprotected features, 
         # and then we run AutoML with only the admissible features:
 
         # Admissible AutoML
@@ -433,7 +434,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
                            max_runtime_secs = 60*10, 
                            seed = 1)
 
-        # Un-protected AutoML
+        # Unprotected AutoML
         aml <- h2o.automl(x = ucols, y = y, 
                           training_frame = train,
                           max_runtime_secs = 60*10, 
@@ -443,13 +444,13 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
         h2o.auc(h2o.performance(aaml@leader, test))
         # 0.8264549
 
-        # Un-protected AutoML test AUC
+        # Unprotected AutoML test AUC
         h2o.auc(h2o.performance(aml@leader, test))                     
         # 0.8501232
 
    .. code-tab:: python
  
-        # Building on the HMDA infogram code, we execute AutoML with all un-protected features, 
+        # Building on the HMDA infogram code, we execute AutoML with all unprotected features, 
         # and then we run AutoML with only the admissible features:
 
         from h2o.automl import H2OAutoML
@@ -458,7 +459,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
         aaml = H2OAutoML(max_runtime_secs=60*10, seed=1)
         aaml.train(x=acols, y=y, training_frame=train)
 
-        # Un-protected AutoML
+        # Unprotected AutoML
         aml = H2OAutoML(max_runtime_secs=60*10, seed=1)
         aml.train(x=ucols, y=y, training_frame=train)
 
@@ -466,7 +467,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
         aaml.leader.model_performance(test).auc()
         # 0.8264549
 
-        # Un-protected AutoML test AUC
+        # Unprotected AutoML test AUC
         aml.leader.model_performance(test).auc()
         # 0.8501232
 
@@ -507,6 +508,307 @@ In R, the output is stored in the slots of an ``H2OInfogram`` class object, so t
         ig.get_admissible_cmi()
         ig.get_admissible_cmi_raw()
 
+Train Subset Models
+^^^^^^^^^^^^^^^^^^^
+
+Infogram allows you to build models on different feature subset which are selected using the infogram.
+This approach can be viewed as iteratively decreasing the infogram's threshold values and building a model for each subset.
+
+.. tabs::
+   .. code-tab:: r R
+
+        # Train AutoML's for different subsets with max_models = 13 and seed = 1
+        da <- h2o.infogram_train_subset_models(ig, h2o.automl, train, test, y, protected_columns, reference, favorable_class, max_models = 13, seed = 1)
+
+        # Shows extended leaderboard with basic fairness metrics
+        print(da)
+
+   .. code-tab:: python
+
+        from h2o.automl import H2OAutoML
+
+        # Train AutoML's for different subsets with max_models = 13 and seed = 1
+        da = ig.train_subset_models(H2OAutoML, y, train, test, protected_columns, reference, favorable_class, max_models=1, seed=1)
+
+        # Shows extended leaderboard with basic fairness metrics
+        display(da)
+
+The output from the ``train_subset_models`` is either an extended leaderboard (for Core Infogram) or a disparate impact analysis table.
+
+Disparate Impact Analysis
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Disparate impact analysis consists of the extended leaderboard and summary statistics from the ``fairness_metrics``.
+These include variance of accuracy, corrected variance, and summary statistics (min, mean, median, max) from adverse
+impact ratio (air), significant adverse impact ratio (calculated only using the intersections with p-value < ``alpha``), and p-value.
+
+.. tabs::
+   .. code-tab:: r R
+
+        f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+        col_types <- list(by.col.name = c("high_priced"),
+                          types = c("factor"))
+        df <- h2o.importFile(path = f, col.types = col_types)
+
+        splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+        train <- splits[[1]]
+        test <- splits[[2]]
+
+        # Response column and predictor columns
+        y <- "high_priced"
+        x <- c("loan_amount",
+               "loan_to_value_ratio",
+               "loan_term",
+               "intro_rate_period",
+               "property_value",
+               "income",
+               "debt_to_income_ratio")
+
+        # Fairness related information
+        protected_columns <- c("derived_race", "derived_sex")
+        reference <- c("White", "Male")
+        favorable_class <- "0"
+
+        # Train some models
+        gbm1 <- h2o.gbm(x, y, train)
+        gbm2 <- h2o.gbm(x, y, train, ntrees = 5)
+
+        # Produce the disparate impact analysis table
+        h2o.disparate_analysis(list(gbm1, gbm2), test, protected_columns = protected_columns,
+                               reference = reference, favorable_class = favorable_class)
+
+        # Or you can use H2OAutoML to generate set of models
+        aml <- h2o.automl(x, y, training_frame = train, max_models = 3)
+
+        # Produce the disparate impact analysis table
+        h2o.disparate_analysis(aml, test, protected_columns = protected_columns,
+                               reference = reference, favorable_class = favorable_class)
+
+   .. code-tab:: python
+
+        # Import HDMA dataset
+        f = "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+        col_types = {'high_priced': "enum"}
+        df = h2o.import_file(path=f, col_types=col_types)
+
+        train, test = df.split_frame(ratios=[0.8], seed=1)
+
+        # Response column and predictor columns
+        y = "high_priced"
+        x =  ["loan_amount",
+              "loan_to_value_ratio",
+              "loan_term",
+              "intro_rate_period",
+              "property_value",
+              "income",
+              "debt_to_income_ratio"]
+
+        # Fairness related information
+        protected_columns = ["derived_race", "derived_sex"]
+        reference = ["White", "Male"]
+        favorable_class = "0"
+
+        # Train some models
+        gbm1 = H2OGradientBoostingEstimator()
+        gbm1.train(x, y, train)
+
+        gbm2 = H2OGradientBoostingEstimator(ntrees=5)
+        gbm2.train(x, y, train)
+
+        h2o.explanation.disparate_analysis([gbm1, gbm2], test, protected_columns, reference, favorable_class)
+
+        # Or you can use H2OAutoML to generate a set of models
+        aml = H2OAutoML(max_models=3)
+        aml.train(x, y, train)
+        h2o.explanation.disparate_analysis(aml, test, protected_columns, reference, favorable_class)
+
+
+Fairness Metrics
+^^^^^^^^^^^^^^^^
+
+The information in the disparate impact analysis is aggregated for purposes of model selection. To get more details, you
+can use the ``.fairness_metrics()``/``h2o.calculate_fairness_metrics()`` for a single model. This function returns a dictionary
+with one ``overview`` frame and number of intersections frames with prefix ``thresholds_and_metrics_`` and the rest of the name
+is an identifier for the intersection. These frames contain more information that can be used for creation Receiver Operation
+Characteristics or Precision-Recall Curves.
+
+.. tabs::
+   .. code-tab:: r R
+
+        f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+        col_types <- list(by.col.name = c("high_priced"),
+                          types = c("factor"))
+        df <- h2o.importFile(path = f, col.types = col_types)
+
+        splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+        train <- splits[[1]]
+        test <- splits[[2]]
+
+        # Response column and predictor columns
+        y <- "high_priced"
+        x <- c("loan_amount",
+               "loan_to_value_ratio",
+               "loan_term",
+               "intro_rate_period",
+               "property_value",
+               "income",
+               "debt_to_income_ratio")
+
+        # Fairness related information
+        protected_columns <- c("derived_race", "derived_sex")
+        reference <- c("White", "Male")
+        favorable_class <- "0"
+
+        # Train some models
+        gbm1 <- h2o.gbm(x, y, train)
+        h2o.calculate_fairness_metrics(gbm1, test, protected_columns, reference, favorable_class)
+
+
+   .. code-tab:: python
+
+        # Import HDMA dataset
+        f = "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+        col_types = {'high_priced': "enum"}
+        df = h2o.import_file(path=f, col_types=col_types)
+
+        # We will split the data so that we can test/compare performance
+        # of admissible vs non-admissible models later
+        train, test = df.split_frame(ratios=[0.8], seed=1)
+
+        # Response column and predictor columns
+        y = "high_priced"
+        x =  ["loan_amount",
+              "loan_to_value_ratio",
+              "loan_term",
+              "intro_rate_period",
+              "property_value",
+              "income",
+              "debt_to_income_ratio"]
+
+        # Fairness related information
+        protected_columns = ["derived_race", "derived_sex"]
+        reference = ["White", "Male"]
+        favorable_class = "0"
+
+        # Train some models
+        gbm1 = H2OGradientBoostingEstimator()
+        gbm1.train(x, y, train)
+        gbm1.fairness_metrics(test, protected_columns, reference, favorable_class)
+
+
+Inspect Model Fairness
+^^^^^^^^^^^^^^^^^^^^^^
+
+Ensuring fairness of any particular model is hard and time consuming process as a start you can use the ``inspect_model_fairness``.
+This will produce a similar output as H2O's model explainability but focused on model fairness.
+
+First part of the output is related to different metrics for individual intersections (determined using the ``protected_columns``).
+The metrics are model performance metrics (``AUC``, ``AUCPR``, ``F1``, ...), size of the intersection relative (``selectedRatio``) and absolute (``total``),
+model performance metrics related to the reference group (``AIR_AUC``, ``AIR_AUCPR``, ...), and ``p-value`` which is obtained
+by using Fisher’s exact test or G-test (depending on the size of the intersections) to test that being selected (positive response) is independent to being
+in the reference group or a particular protected group.
+
+Then it produces bar plots that visualize those aforementioned metrics.
+
+Then ROC and Precision-Recall Curve plots are produced.
+These plots can be produced using ``model.fair_roc_plot``/``h2o.fair_roc_plot`` and ``model.fair_pr_plot``/``h2o.fair_pr_plot`` respectively.
+
+
+After that permutation variable importance is calculated to get some ordering of the features that are subsequently used in
+PDP and for tree-based models SHAP plots.
+
+.. figure:: images/infogram_fair_roc.png
+   :alt: H2O Fair PDP
+   :scale: 60%
+   :align: center
+
+.. figure:: images/infogram_fair_prc.png
+   :alt: H2O Fair PDP
+   :scale: 60%
+   :align: center
+
+The PDP plots show one curve per intersection. Ideally, the lines should be overlapping as those intersections are created just based of the protected columns.
+This kind of PDP plot can be created using ``model.fair_pd_plot``/``h2o.fair_pd_plot``.
+
+.. figure:: images/infogram_fair_pdp.png
+   :alt: H2O Fair PDP
+   :scale: 60%
+   :align: center
+
+The SHAP plots show one row per intersection. Each dot in SHAP plot represents one observation (row).
+This kind of SHAP plot can be obtained using ``model.fair_shap_plot``/``h2o.fair_shap_plot``.
+
+.. figure:: images/infogram_fair_shap.png
+   :alt: H2O Fair SHAP plot
+   :scale: 60%
+   :align: center
+
+.. tabs::
+   .. code-tab:: r R
+
+        f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+        col_types <- list(by.col.name = c("high_priced"),
+                          types = c("factor"))
+        df <- h2o.importFile(path = f, col.types = col_types)
+
+        splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+        train <- splits[[1]]
+        test <- splits[[2]]
+
+        # Response column and predictor columns
+        y <- "high_priced"
+        x <- c("loan_amount",
+               "loan_to_value_ratio",
+               "loan_term",
+               "intro_rate_period",
+               "property_value",
+               "income",
+               "debt_to_income_ratio")
+
+        # Fairness related information
+        protected_columns <- c("derived_race", "derived_sex")
+        reference <- c("White", "Male")
+        favorable_class <- "0"
+
+        # Train some models
+        gbm1 <- h2o.gbm(x, y, train)
+        h2o.inspect_model_fairness(gbm1, test, protected_columns, reference, favorable_class)
+
+
+   .. code-tab:: python
+
+        # Import HDMA dataset
+        f = "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+        col_types = {'high_priced': "enum"}
+        df = h2o.import_file(path=f, col_types=col_types)
+
+        # We will split the data so that we can test/compare performance
+        # of admissible vs non-admissible models later
+        train, test = df.split_frame(ratios=[0.8], seed=1)
+
+        # Response column and predictor columns
+        y = "high_priced"
+        x =  ["loan_amount",
+              "loan_to_value_ratio",
+              "loan_term",
+              "intro_rate_period",
+              "property_value",
+              "income",
+              "debt_to_income_ratio"]
+
+        # Fairness related information
+        protected_columns = ["derived_race", "derived_sex"]
+        reference = ["White", "Male"]
+        favorable_class = "0"
+
+        # Train some models
+        gbm1 = H2OGradientBoostingEstimator()
+        gbm1.train(x, y, train)
+        gbm1.inspect_model_fairness(test, protected_columns, reference, favorable_class)
+
+
+Here you can see the output from `Python <admissibleml-code-examples/Train-model-subsets-Python.html>`_ (`.ipynb <admissibleml-code-examples/Train-model-subsets-Python.ipynb>`_)
+and `R <admissibleml-code-examples/Train-model-subsets-R.html>`_ (`.Rmd <admissibleml-code-examples/Train-model-subsets-R.Rmd>`_).
 
 Glossary
 --------
@@ -528,3 +830,7 @@ References
 ----------
 
 Subhadeep Mukhopadhyay. *InfoGram and Admissible Machine Learning*, August 2021. `arXiv URL <https://arxiv.org/abs/2108.07380>`__.
+
+LUM, Kristian, ZHANG, Yunfeng and BOWER, Amanda. *De-biasing “bias” measurement*, June 2022. `arXiv Url <https://arxiv.org/abs/2205.05770>`__.
+
+HARDT, Moritz, PRICE, Eric and SREBRO, Nathan. *Equality of Opportunity in Supervised Learning*, October 2016. `arXiv Url <https://arxiv.org/abs/1610.02413>`__.

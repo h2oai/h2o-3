@@ -21,7 +21,6 @@ H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H
 * [Sparkling Water](#Sparkling)
 * [Documentation](#Documentation)
 * [Citing H2O](#Citing)
-* [Roadmap](#Roadmap)
 * [Community](#Community) / [Advisors](#Advisors) / [Investors](#Investors)
 
 <a name="Downloading"></a>
@@ -150,7 +149,6 @@ Building `h2o` requires a properly set up R environment with [required packages]
 
 ```
 grip
-future
 tabulate
 requests
 wheel
@@ -235,6 +233,23 @@ git pull
 open target/docs-website/h2o-docs/index.html
 ```
 
+#### Recipe 5:  Building using a Makefile
+
+Root of the git repository contains a Makefile with convenient shortcuts for frequent build targets used in development.
+To build `h2o.jar` while skipping tests and also the building of alternative assemblies, execute 
+
+```
+make
+```
+
+To build `h2o.jar` using the minimal assembly, run
+```
+make minimal
+```
+
+The minimal assembly is well suited for developement of H2O machine learning algorithms. It doesn't bundle some heavyweight
+dependencies (like Hadoop) and using it saves build time as well as need to download large libraries from Maven repositories.
+
 <a name="SetupWin"></a>
 ### 4.3. Setup on Windows
 
@@ -243,7 +258,7 @@ open target/docs-website/h2o-docs/index.html
 
 ##### Step 2: Install required Python packages:
 
-    pip install grip future tabulate wheel
+    pip install grip tabulate wheel
 
 ##### Step 3: Install JDK
 
@@ -368,7 +383,7 @@ Install pip package manager:
 
 Next install required packages:
 
-    sudo pip install wheel requests future tabulate  
+    sudo pip install wheel requests tabulate  
 
 ##### Step 5. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
@@ -507,11 +522,18 @@ Pre-built H2O-on-Hadoop zip files are available on the [download page](http://h2
 To build H2O with Hadoop support yourself, first install sphinx for python: `pip install sphinx`
 Then start the build by entering  the following from the top-level h2o-3 directory:
 
-    (export BUILD_HADOOP=1; ./gradlew build -x test)
-    ./gradlew dist
+    export BUILD_HADOOP=1;
+    ./gradlew build -x test;
+    ./gradlew dist;
 
 This will create a directory called 'target' and generate zip files there.  Note that `BUILD_HADOOP` is the default behavior when the username is `jenkins` (refer to `settings.gradle`); otherwise you have to request it, as shown above.
 
+To build the zip files only for selected distributions use the `H2O_TARGET` env variable together with `BUILD_HADOOP`, for example:
+
+    export BUILD_HADOOP=1;
+    export H2O_TARGET=hdp2.5,hdp2.6
+    ./gradlew build -x test;
+    ./gradlew dist;
 
 ### Adding support for a new version of Hadoop
 
@@ -684,31 +706,8 @@ Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Dee
 
 Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>.
 
-<a name="Roadmap"></a>
-## 10. Roadmap
-
-### H2O 3.36.01 - Winter 2021
-
-* [[PUBDEV-4940]](https://h2oai.atlassian.net/browse/PUBDEV-4940) Uplift Trees
-* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - Infogram
-* RuleFit improvements (multinomial support, rule deduplication and consolidation)
-* Backward elimination in MAXR
-* Improved support for CDP (S3A with IDBroker)
-* Support for Java 16 and 17, Python 3.8
-
-### H2O 3.38.01 - Spring 2022
-
-* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - stage 2 (algos)
-* Multi-Output Regression in Deep Learning
-* GAM Improvements (support for Monotonic Splines)
-* XGBoost Upgrade
-* Data Ingest Improvements (Secured Hive in Standalone/K8S)
-* Extended Isolation Forest MOJO
-* Uplift MOJO
-* New features ICE plots
-
 <a name="Community"></a>
-## 11. Community
+## 10. Community
 
 H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
 

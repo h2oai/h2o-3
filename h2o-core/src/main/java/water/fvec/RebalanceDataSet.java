@@ -29,18 +29,19 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
   /**
    * Constructor for make-compatible task.
-   *
    * To be used to make frame compatible with other frame (i.e. make all vecs compatible with other vector group and rows-per-chunk).
    */
-  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey) {this(modelFrame,srcFrame,dstKey,null,null);}
-  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey, H2O.H2OCountedCompleter cmp, Key jobKey) {
-    super(cmp);
+  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key<?> dstKey) {
+    this(modelFrame.anyVec().espc(), modelFrame.anyVec().group(), srcFrame, dstKey);
+  }
+  public RebalanceDataSet(long[] espc, Vec.VectorGroup vg, Frame srcFrame, Key<?> dstKey) {
+    super(null);
     _in = srcFrame;
-    _jobKey = jobKey;
+    _jobKey = null;
     _okey = dstKey;
-    _espc = modelFrame.anyVec().espc(); // Get prior layout
-    _vg = modelFrame.anyVec().group();
-    _nchunks = modelFrame.anyVec().nChunks();
+    _espc = espc;
+    _vg = vg;
+    _nchunks = espc.length - 1;
   }
 
   public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks) { this(srcFrame, dstKey,nchunks,null,null);}
@@ -128,4 +129,28 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
       }
     }
   }
+
+  /**
+   * Rebalance a (small) frame into a single chunk. This function
+   * is useful after filtering/aggregating the frame.
+   * @param fr frame to rebalance
+   * @return rebalanced frame, installed into DKV with a random key
+   */
+  public static Frame toSingleChunk(Frame fr) {
+    Key<Frame> singleKey = Key.make();
+    return toSingleChunk(fr, singleKey);
+  }
+
+  /**
+   * Rebalance a (small) frame into a single chunk. This function
+   * is useful after filtering/aggregating the frame.
+   * @param fr frame to rebalance
+   * @param destinationKey key for the new single-chunk Frame
+   * @return rebalanced frame, keyed using destinationKey
+   */
+  public static Frame toSingleChunk(Frame fr, Key<Frame> destinationKey) {
+    H2O.submitTask(new RebalanceDataSet(fr, destinationKey, 1)).join();
+    return destinationKey.get();
+  }
+  
 }

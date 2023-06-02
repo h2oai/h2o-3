@@ -26,7 +26,8 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
             "rule_generation_ntrees",
             "auc_type",
             "remove_duplicates",
-            "lambda"
+            "lambda",
+            "max_categorical_levels",
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable).", gridable = true)

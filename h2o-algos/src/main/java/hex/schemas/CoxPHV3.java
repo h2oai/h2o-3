@@ -63,7 +63,8 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
     @API(help="A list of pairwise (first order) column interactions.", direction= API.Direction.INPUT, level= API.Level.expert)
     public StringPairV3[] interaction_pairs;
 
-    @API(help="(Internal. For development only!) Indicates whether to use all factor levels.", direction = API.Direction.INPUT, level = API.Level.expert)
+    @API(help="(Internal. For development only!) Indicates whether to use all factor levels.", 
+            direction = API.Direction.INPUT, level = API.Level.expert, gridable=true)
     public boolean use_all_factor_levels;
 
     @API(level = API.Level.expert, direction = API.Direction.INOUT, help = "Run on a single node to reduce the effect of network overhead (for smaller datasets)")

@@ -10,6 +10,7 @@ import org.junit.runner.RunWith;
 import water.*;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -508,4 +509,35 @@ public class FrameTest {
     }
   }
 
+  @Test
+  public void testMakeSimilarlyDistributed() {
+    try {
+      Scope.enter();
+      final int[] dataBig = ArrayUtils.seq(0, 1001);
+      final int[] dataSmall = ArrayUtils.seq(0, 231);
+
+      final Frame big = new TestFrameBuilder()
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, dataBig)
+              .withChunkLayout(10, 0, 300, 400, 50, 0, 0, 241, 0)
+              .build();
+      final Frame small = new TestFrameBuilder()
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, dataSmall)
+              .build();
+
+      Frame redistSmall = big.makeSimilarlyDistributed(small, Key.make());
+      Scope.track(redistSmall);
+      assertFrameEquals(small, redistSmall, 0);
+
+      int[] chunkSizes = new int[redistSmall.anyVec().nChunks()];
+      for (int i = 0; i < chunkSizes.length; i++) {
+        chunkSizes[i] = redistSmall.anyVec().chunkLen(i);
+      }
+      assertArrayEquals(new int[]{4, 0, 69, 92, 11, 0, 0, 55}, chunkSizes);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }

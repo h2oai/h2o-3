@@ -7,8 +7,7 @@ import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLMTask;
-import hex.tree.PlattScalingHelper;
+import hex.tree.CalibrationHelper;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.exec.LocalXGBoostExecutor;
 import hex.tree.xgboost.exec.RemoteXGBoostExecutor;
@@ -25,6 +24,7 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
@@ -37,11 +37,10 @@ import static hex.tree.xgboost.util.GpuUtils.*;
 import static water.H2O.technote;
 
 /** 
- * Gradient Boosted Trees
- * Based on "Elements of Statistical Learning, Second Edition, page 387"
+ * H2O XGBoost
  */
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> 
-    implements PlattScalingHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
+    implements CalibrationHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
   private static final Logger LOG = Logger.getLogger(XGBoost.class);
   
@@ -79,12 +78,21 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
-    if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
-      if (_parms._gpu_id != null && _parms._gpu_id.length > 0) {
-        return _parms._gpu_id.length;
-      } else {
-        return numGPUs(H2O.CLOUD.members()[0]);
-      }
+    /*
+      Concept of XGBoost CV parallelization:
+        - for CPU backend use regular strategy with defaultParallelization = 2
+        - for GPU backend:
+            - running on GPU in parallel might not be faster in all cases - but H2O currently has overhead in scoring,
+              and scoring is done always on CPU - we want to keep GPU busy the whole training, the idea is when one model
+              is being scored (on CPU) the other one is running on GPU and the GPU is never idle
+            - data up to a certain limit can run 2 models parallel per GPU
+            - big data take the whole GPU
+     */
+    if (_parms._parallelize_cross_validation &&
+            XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      int numGPUs = _parms._gpu_id != null && _parms._gpu_id.length > 0 ? _parms._gpu_id.length : numGPUs(H2O.CLOUD.members()[0]);
+      int parallelizationPerGPU = _train.byteSize() < parallelTrainingSizeLimit() ? 2 : 1;
+      return numGPUs * parallelizationPerGPU;
     } else {
       return nModelsInParallel(folds, 2);
     }
@@ -100,7 +108,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
    *  and each subclass will start with "super.init();".  This call is made
    *  by the front-end whenever the GUI is clicked, and needs to be fast;
    *  heavy-weight prep needs to wait for the trainModel() call.
-   *
    *  Validate the learning rate and distribution family. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
@@ -114,7 +121,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (H2O.ARGS.client && _parms._build_tree_one_node)
       error("_build_tree_one_node", "Cannot run on a single node in client mode.");
     if (expensive) {
-      if (_response.naCnt() > 0) {
+      if (_response != null && _response.naCnt() > 0) {
         error("_response_column", "Response contains missing values (NAs) - not supported by XGBoost.");
       }
       if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
@@ -136,29 +143,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (_parms._max_depth < 0) error("_max_depth", "_max_depth must be >= 0.");
     if (_parms._max_depth == 0) _parms._max_depth = Integer.MAX_VALUE;
 
-    // Initialize response based on given distribution family.
-    // Regression: initially predict the response mean
-    // Binomial: just class 0 (class 1 in the exact inverse prediction)
-    // Multinomial: Class distribution which is not a single value.
-
-    // However there is this weird tension on the initial value for
-    // classification: If you guess 0's (no class is favored over another),
-    // then with your first GBM tree you'll typically move towards the correct
-    // answer a little bit (assuming you have decent predictors) - and
-    // immediately the Confusion Matrix shows good results which gradually
-    // improve... BUT the Means Squared Error will suck for unbalanced sets,
-    // even as the CM is good.  That's because we want the predictions for the
-    // common class to be large and positive, and the rare class to be negative
-    // and instead they start around 0.  Guessing initial zero's means the MSE
-    // is so bad, that the R^2 metric is typically negative (usually it's
-    // between 0 and 1).
-
-    // If instead you guess the mean (reversed through the loss function), then
-    // the zero-tree XGBoost model reports an MSE equal to the response variance -
-    // and an initial R^2 of zero.  More trees gradually improves the R^2 as
-    // expected.  However, all the minority classes have large guesses in the
-    // wrong direction, and it takes a long time (lotsa trees) to correct that
-    // - so your CM sucks for a long time.
     if (expensive) {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
@@ -176,9 +160,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         for (Map.Entry<String, Object> incompat : incompats.entrySet())
           error("_backend", "GPU backend is not available for parameter setting '" + incompat.getKey() + " = " + incompat.getValue() + "'. Use CPU backend instead.");
     }
-
-    if (_parms._distribution == DistributionFamily.quasibinomial)
-      error("_distribution", "Quasibinomial is not supported for XGBoost in current H2O.");
+    DistributionFamily[] allowed_distributions = new DistributionFamily[] {
+            DistributionFamily.AUTO,
+            DistributionFamily.bernoulli,
+            DistributionFamily.multinomial,
+            DistributionFamily.gaussian,
+            DistributionFamily.poisson,
+            DistributionFamily.gamma,
+            DistributionFamily.tweedie,
+    };
+    if (!ArrayUtils.contains(allowed_distributions, _parms._distribution))
+      error("_distribution", _parms._distribution.name() + " is not supported for XGBoost in current H2O.");
 
     if (unsupportedCategoricalEncoding()) {
       error("_categorical_encoding", _parms._categorical_encoding + " encoding is not supported for XGBoost in current H2O.");
@@ -270,7 +262,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         !_parms._build_tree_one_node)
       error("_tree_method", "exact is not supported in distributed environment, set build_tree_one_node to true to use exact");
 
-    PlattScalingHelper.initCalibration(this, _parms, expensive);
+    CalibrationHelper.initCalibration(this, _parms, expensive);
+  }
+
+  protected void checkCustomMetricForEarlyStopping() {
+    if (_parms._eval_metric == null) {
+      error("_eval_metric", "Evaluation metric needs to be defined in order to use it for early stopping.");
+    }
   }
 
   private void checkPositiveRate(String paramName, double rateValue) {
@@ -297,6 +295,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return H2O.getSysBoolProperty("xgboost.multinode.gpu.enabled", false);
   }
 
+  static long parallelTrainingSizeLimit() {
+    long defaultLimit = (long) 1e9; // 1GB; current GPUs typically have at least 8GB of memory - plenty of buffer left
+    String limitSpec = H2O.getSysProperty("xgboost.gpu.parallelTrainingSizeLimit", Long.toString(defaultLimit));
+    return Long.parseLong(limitSpec);
+  }
+
+  static boolean prestartExternalClusterForCV() {
+    return H2O.getSysBoolProperty("xgboost.external.cv.prestart", false);
+  }
+
   @Override
   public XGBoost getModelBuilder() {
     return this;
@@ -317,7 +325,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return true;
   }
 
-  static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
+  static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms) {
     DataInfo dinfo = new DataInfo(
             train,
             valid,
@@ -332,18 +340,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
             parms._offset_column != null,
             parms._fold_column != null
     );
-    // Checks and adjustments:
-    // 1) observation weights (adjust mean/sigmas for predictors and response)
-    // 2) NAs (check that there's enough rows left)
-    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, false, true, true).doAll(dinfo._adaptedFrame);
-    if (parms._weights_column != null && parms._offset_column != null) {
-      LOG.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
-    }
-    if (parms._weights_column != null && parms._offset_column == null) {
-      dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
-      if (nClasses == 1)
-        dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
-    }
+    assert !dinfo._predictor_transform.isMeanAdjusted() : "Unexpected predictor transform, it shouldn't be mean adjusted";
+    assert !dinfo._predictor_transform.isSigmaScaled() : "Unexpected predictor transform, it shouldn't be sigma scaled";
+    assert !dinfo._response_transform.isMeanAdjusted() : "Unexpected response transform, it shouldn't be mean adjusted";
+    assert !dinfo._response_transform.isSigmaScaled() : "Unexpected response transform, it shouldn't be sigma scaled";
     dinfo.coefNames(); // cache the coefficient names
     dinfo.coefOriginalColumnIndices(); // cache the original column indices
     assert dinfo._coefNames != null && dinfo._coefOriginalIndices != null;
@@ -358,10 +358,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (original_chunks == 1)
         return original_fr;
       LOG.info("Rebalancing " + name.substring(name.length()-5) + " dataset onto a single node.");
-      Key newKey = Key.make(name + ".1chk");
-      RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, 1);
-      H2O.submitTask(rb).join();
-      Frame singleChunkFr = DKV.get(newKey).get();
+      Key<Frame> newKey = Key.make(name + ".1chk");
+      Frame singleChunkFr = RebalanceDataSet.toSingleChunk(original_fr, newKey);
       Scope.track(singleChunkFr);
       return singleChunkFr;
     } else {
@@ -380,38 +378,24 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
       buildModel();
     }
-
-    final void buildModel() {
-      if ((XGBoostModel.XGBoostParameters.Backend.auto.equals(_parms._backend) || XGBoostModel.XGBoostParameters.Backend.gpu.equals(_parms._backend)) &&
-              hasGPU(_parms._gpu_id) && (H2O.getCloudSize() == 1 || allowMultiGPU()) && _parms.gpuIncompatibleParams().isEmpty()) {
-        int[] lockedGpus = null;
-        try {
-          lockedGpus = XGBoostGPULock.lock(_parms._gpu_id);
-          buildModelImpl();
-        } finally {
-          if (lockedGpus != null) XGBoostGPULock.unlock(lockedGpus);
-        }
-      } else {
-        buildModelImpl();
-      }
-    }
     
-    private XGBoostExecutor makeExecutor(XGBoostModel model) throws IOException {
+    private XGBoostExecutor makeExecutor(XGBoostModel model, boolean useValidFrame) throws IOException {
+      final Frame valid = useValidFrame ? _valid : null;
       if (H2O.ARGS.use_external_xgboost) {
-        return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train, _job);
+        return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train, valid, _job);
       } else {
         String remoteUriFromProp = H2O.getSysProperty("xgboost.external.address", null);
         if (remoteUriFromProp == null) {
-          return new LocalXGBoostExecutor(model, _train);
+          return new LocalXGBoostExecutor(model, _train, valid);
         } else {
           String userName = H2O.getSysProperty("xgboost.external.user", null);
           String password = H2O.getSysProperty("xgboost.external.password", null);
-          return new RemoteXGBoostExecutor(model, _train, remoteUriFromProp, userName, password);
+          return new RemoteXGBoostExecutor(model, _train, valid, remoteUriFromProp, userName, password);
         }
       }
     }
 
-    final void buildModelImpl() {
+    final void buildModel() {
       final XGBoostModel model;
       if (_parms.hasCheckpoint()) {
         XGBoostModel checkpoint = DKV.get(_parms._checkpoint).<XGBoostModel>get().deepClone(_result);
@@ -436,7 +420,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       XGBoostUtils.createFeatureMap(model, _train);
       XGBoostVariableImportance variableImportance = model.setupVarImp();
-      try (XGBoostExecutor exec = makeExecutor(model)) {
+      boolean scoreValidFrame = _valid != null && _parms._eval_metric != null;
+      LOG.info("Need to score validation frame by XGBoost native backend: " + scoreValidFrame);
+      try (XGBoostExecutor exec = makeExecutor(model, scoreValidFrame)) {
         model.model_info().updateBoosterBytes(exec.setup());
         scoreAndBuildTrees(model, exec, variableImportance);
       } catch (Exception e) {
@@ -482,12 +468,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     private void scoreAndBuildTrees(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp) {
+      long scoringTime = 0;
       for (int tid = 0; tid < _ntrees; tid++) {
         if (_job.stop_requested() && tid > 0) break;
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, exec, varImp, false);
+        long scoringStart = System.currentTimeMillis();
+        boolean scored = doScoring(model, exec, varImp, false, _parms._score_eval_metric_only);
+        scoringTime += System.currentTimeMillis() - scoringStart;
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           LOG.info("Early stopping triggered - stopping XGBoost training");
+          LOG.info("Setting actual ntrees to the " + model._output._ntrees);
+          _parms._ntrees = model._output._ntrees;
           break;
         }
 
@@ -526,9 +517,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       
       _job.update(0, "Scoring the final model");
       // Final scoring
-      doScoring(model, exec, varImp, true);
+      long scoringStart = System.currentTimeMillis();
+      doScoring(model, exec, varImp, true, _parms._score_eval_metric_only);
+      scoringTime += System.currentTimeMillis() - scoringStart;
       // Finish remaining work (if stopped early)
       _job.update(_parms._ntrees-model._output._ntrees);
+      Log.info("In-training scoring took " + scoringTime + "ms.");
     }
 
     private boolean monotonicityConstraintCheckEnabled() {
@@ -692,7 +686,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
 
-    private boolean doScoring(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp, boolean finalScoring) {
+    private boolean doScoring(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp,
+                              boolean finalScoring, boolean scoreEvalMetricOnly) {
       boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
@@ -710,19 +705,34 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (_parms._score_each_iteration || finalScoring || // always score under these circumstances
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
+        final XGBoostOutput out = model._output;
+        final boolean boosterUpdated;
         _timeLastScoreStart = now;
-        model.model_info().updateBoosterBytes(exec.updateBooster());
-        model.doScoring(_train, _parms.train(), _valid, _parms.valid());
+        CustomMetric customMetricTrain = _parms._eval_metric != null ? toCustomMetricTrain(exec.getEvalMetric()) : null;
+        CustomMetric customMetricValid = _parms._eval_metric != null && _valid != null ? toCustomMetricValid(exec.getEvalMetric()) : null;
+        if (!finalScoring && scoreEvalMetricOnly && customMetricTrain != null) {
+          out._scored_train[out._ntrees]._custom_metric = customMetricTrain.value;
+          if (customMetricValid != null) {
+            out._useValidForScoreKeeping = true;
+            out._scored_valid[out._ntrees]._custom_metric = customMetricValid.value;
+          }
+          boosterUpdated = false;
+        } else {
+          model.model_info().updateBoosterBytes(exec.updateBooster());
+          boosterUpdated = true;
+          model.doScoring(_train, _parms.train(), customMetricTrain, _valid, _parms.valid(), customMetricValid);
+        }
         _timeLastScoreEnd = System.currentTimeMillis();
-        XGBoostOutput out = model._output;
-        final Map<String, FeatureScore> varimp = varImp.getFeatureScores(model.model_info()._boosterBytes);
-        out._varimp = computeVarImp(varimp);
         out._model_summary = createModelSummaryTable(out._ntrees, null);
-        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null, false);
-        if (out._varimp != null) {
-          out._variable_importances = createVarImpTable(null, ArrayUtils.toDouble(out._varimp._varimp), out._varimp._names);
-          out._variable_importances_cover = createVarImpTable("Cover", ArrayUtils.toDouble(out._varimp._covers), out._varimp._names);
-          out._variable_importances_frequency = createVarImpTable("Frequency", ArrayUtils.toDouble(out._varimp._freqs), out._varimp._names);
+        out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null || _parms._eval_metric != null, false);
+        if (boosterUpdated) {
+          final Map<String, FeatureScore> varimp = varImp.getFeatureScores(model.model_info()._boosterBytes);
+          out._varimp = computeVarImp(varimp);
+          if (out._varimp != null) {
+            out._variable_importances = createVarImpTable(null, ArrayUtils.toDouble(out._varimp._varimp), out._varimp._names);
+            out._variable_importances_cover = createVarImpTable("Cover", ArrayUtils.toDouble(out._varimp._covers), out._varimp._names);
+            out._variable_importances_frequency = createVarImpTable("Frequency", ArrayUtils.toDouble(out._varimp._freqs), out._varimp._names);
+          }
         }
         model.update(_job);
         LOG.info(model);
@@ -731,12 +741,29 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       // Model Calibration (only for the final model, not CV models)
       if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
-        model._output._calib_model = PlattScalingHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model);
+        model._output.setCalibrationModel(
+                CalibrationHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model)
+        );
         model.update(_job);
       }
 
       return scored;
     }
+  }
+
+  static CustomMetric toCustomMetricTrain(EvalMetric evalMetric) {
+    return toCustomMetric(evalMetric, true);
+  }
+
+  static CustomMetric toCustomMetricValid(EvalMetric evalMetric) {
+    return toCustomMetric(evalMetric, false);
+  }
+
+  private static CustomMetric toCustomMetric(EvalMetric evalMetric, boolean isTrain) {
+    if (evalMetric == null) {
+      return null;
+    }
+    return CustomMetric.from(evalMetric._name, isTrain ? evalMetric._trainValue : evalMetric._validValue);
   }
 
   private static TwoDimTable createVarImpTable(String name, double[] rel_imp, String[] coef_names) {
@@ -766,6 +793,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   protected CVModelBuilder makeCVModelBuilder(ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization) {
     if (XGBoostModel.getActualBackend(_parms, false) == XGBoostModel.XGBoostParameters.Backend.gpu && parallelization > 1) {
       return new XGBoostGPUCVModelBuilder(_job, modelBuilders, parallelization, _parms._gpu_id);      
+    } else if (H2O.ARGS.use_external_xgboost && prestartExternalClusterForCV()) {
+      return new XGBoostExternalCVModelBuilder(_job, modelBuilders, parallelization, SteamExecutorStarter.getInstance());
     } else {
       return super.makeCVModelBuilder(modelBuilders, parallelization);
     }
@@ -775,7 +804,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions
     // Extract stopping conditions from each CV model, and compute the best stopping answer
     _parms._stopping_rounds = 0;
-    _parms._max_runtime_secs = 0;
+    setMaxRuntimeSecsForMainModel();
     int sum = 0;
     for (ModelBuilder mb : cvModelBuilders)
       sum += ((XGBoostOutput) DKV.<Model>getGet(mb.dest())._output)._ntrees;
