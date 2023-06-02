@@ -33,9 +33,11 @@
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
 
-\textsc{\small{Tomas Nykodym \hspace{10pt} Tom Kraljevic \hspace{10pt} Amy Wang \hspace{10pt} Wendy Wong}}
+\textsc{\small{Tomas Nykodym \hspace{10pt} Tom Kraljevic \hspace{10pt} Amy Wang}}
 
-\textsc{\small{Edited by: Angela Bartz}}
+\textsc{\small{Wendy Wong \hspace{10pt} Tomas Fryda}}
+
+\textsc{\small{Edited by: Angela Bartz \hspace{10pt} Hannah Tillman}}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -69,9 +71,10 @@
 
 Generalized Linear Modeling with H2O\\
 
-by Tomas Nykodym, Tom Kraljevic, Amy Wang \&\ Wendy Wong \\ 
+by Tomas Nykodym, Tom Kraljevic, Amy Wang \\ 
+Wendy Wong \&\ Tomas Fryda \\
 with assistance from Nadine Hussami \&\ Ariel Rao \\
-Edited by: Angela Bartz
+Edited by: Angela Bartz \&\ Hannah Tillman
 
 \bigskip
   Published by H2O.ai, Inc. \\
@@ -501,8 +504,10 @@ constant. It is usually used with the log link $g(\mu_i)= \log(\mu_i)$, or the i
 
 The model is fitted by solving the following likelihood maximization:
 
-$$  \max_{\beta,\beta_0} \  - \frac{1}{N}  \sum_{i=1}^N  \ \frac{y_i}{x_i^{\top}\beta+\beta_0 } + \log(x_i^{\top}\beta + \beta_0) -\lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right) $$
+$$  \max_{\beta,\beta_0} \  - \frac{1}{N} \left\{ \sum_{i=1}^N \ \frac{y_i}{u_i} + \log({u_i}) \right\}  - \lambda \left(  \alpha \| \beta \|_1 + \frac{1}{2}(1-\alpha)\| \beta \|_2^2  \right) $$
 %\[  \min\limits_{\beta,\beta_0} { {1 \over N}\sum\limits_{i=1}\limits^{N}{y_i \over (x_i^{T}\beta  + \beta_0)} - log({x_i^{T}\beta  + \beta_0})  + \lambda (\alpha \|\beta \|_1 + {1-\alpha \over 2}) \| \beta \|_2^2} \]
+
+where $u_i = e^{{x^{\top}_i} \beta + \beta_0}$ or $u_i = \frac{1}{x^{\top}_i \beta + \beta_o}$.
 
 The corresponding deviance is equal to:
 
@@ -569,6 +574,124 @@ The corresponding deviance is equal to:
 \centering
 \includegraphics[scale=0.5]{../../../product/images/tweedie_deviance.png}
 \end{figure}
+
+
+\paragraph{Tweedie Dispersion Parameter Estimation}
+
+The density for the maximum likelihood function for Tweedie can be written as:
+
+\begin{equation} \label{eq:1}
+f( y; \theta, \phi) = a (y, \phi, p) \exp \Big[ \frac{1}{\phi} \big\{ y \theta - k(\theta) \big\} \Big]
+\end{equation}
+
+where:
+
+\begin{itemize}
+\item $a (y, \phi, p), k(\theta)$ are suitable known functions
+\item $\phi$ is the dispersion parameter and is positive
+\item $\theta = \begin{cases} \frac{\mu ^{1-p}}{1-p} & p \neq 1 \\ \log (\mu) & p = 1 \\\end{cases}$
+\item $k(\theta) = \begin{cases} \frac{\mu ^{2-p}}{2-p} & p \neq 2 \\ \log (\mu) & p=2 \\\end{cases}$
+\item the value of $\alpha (y,\phi)$ depends on the value of $p$
+\end{itemize}
+
+If there are weights introduced to each data row, equation \ref{eq:1} will become:
+
+$$f \Big( y; \theta, \frac{\phi}{w} \Big) = a \Big( y, \frac{\phi}{w}, p \Big) \exp \Big[ \frac{w}{\phi} \big\{ y\theta - k(\theta) \big\} \Big]$$
+
+\subparagraph{$\alpha (y, \phi) when 1<p<2$}
+
+For $Y=0$,
+
+\begin{equation} \label{eq:2}
+P(Y=0) = \exp \Big\{-\frac{\mu^{2-p}}{\phi (2-p)} \Big\}
+\end{equation}
+
+For $Y>0$,
+
+\begin{equation} \label{eq:3}
+a(y, \phi, p) = \frac{1}{y} W(y, \phi, p)
+\end{equation}
+
+with $W(y, \phi, p) = \sum^{\infty}_{j=1} W_j$ and 
+
+\begin{equation} \label{eq:4}
+W_j = \frac{y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)} (2-p)^j j!\Gamma(-j\alpha)}
+\end{equation}
+
+If weight is applied to each row, equation \ref{eq:4} becomes:
+
+\begin{equation} \label{eq:5}
+W_j = \frac{w^{j(1-\alpha)}y^{-j \alpha}(p-1)^{\alpha j}}{\phi^{j(1-\alpha)}(2-p)^j j!\Gamma(-j \alpha)}
+\end{equation}
+
+The $W_j$ terms are all positive. The following figure plots for $\mu = 0.5, p=1.5, \phi =1. y=0.1$.
+
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.25]{images/dispersion_param_fig1.png}
+\end{figure}
+
+\subparagraph{$\alpha (y, \phi) \text{ when } p > 2$}
+
+Here, you have,
+
+\begin{equation} \label{eq:6}
+a(y, \phi, p) = \frac{1}{\pi y}V(y,\phi, p)
+\end{equation}
+
+and $V = \sum^{\infty}_{k=1} V_k$ where
+
+\begin{equation} \label{eq:7}
+V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha - 1)}(p-1)^{\alpha k}}{\Gamma(1+k)(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha)
+\end{equation}
+
+Note that $0 < \alpha < 1$ for $p > 2$. The $V_k$ terms are both positive and negative. This will limit the numerical accuracy that is obtained in summing it as shown in the following image. Again, if weights are applied to each row of the dataset, equation \ref{eq:6} becomes:
+
+\begin{equation} \label{eq:8}
+V_k = \frac{\Gamma(1+\alpha k)\phi^{k(\alpha -1)}(p-1)^{\alpha k}}{\Gamma(1+k)w^{k(\alpha -1)}(p-2)^ky^{\alpha k}}(-1)^k \sin (-k\pi \alpha)
+\end{equation}
+
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_tweedie_dispersion_example.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_tweedie_dispersion_example.py}
+
+\paragraph{Tweedie Variance Power Estimation} 
+\label{par:tweevar}
+
+Depending on $p$, $y$, and $\phi$, different methods are used for this log likelihood estimation. To start, let:
+
+$$\xi = \frac{\phi}{y^{2-p}}$$
+
+If $p=2$, then it will use the log likelihood of the Gamma distribution:
+
+$$\log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{\phi} \log (\frac{1}{\phi \mu}) - \log \text{Gamma} \frac{1}{\phi} + \log (y)(\frac{1}{\phi} -1) + (-\frac{1}{\phi \mu} y) & y>0 \\\end{cases}$$
+
+If $p=3$, then it will use the inverse Gaussian distribution:
+
+$$\log (p) = \begin{cases} - \infty & y=0 \\ \frac{1}{2} \Big(-log (\phi \mu) \log (2 \pi) -3 \log \big( \frac{y}{\mu} - \frac{(\frac{y}{\mu} -1)^2}{\phi \mu \frac{y}{\mu}} \Big) - \log (\mu) & y>0 \\\end{cases}$$
+
+If $p<2$ and $\xi \leq 0.01$, then it will use the Fourier inversion method.
+
+If $p>2$ and $\xi \geq 1$, then it will also use the Fourier inversion method.
+
+Everything else will use the Series method. However, if the Series method fails (output of \texttt{NaN}), then it will try the Fourier inversion method instead.
+
+If both the Series method and Fourier inversion method fail, or if the Fourier inversion method was chosen based on the $\xi$ criterium and it failed, it will then estimate the log likelihood using the Saddlepoint approximation.
+
+Here are the general usages for Tweedie variance power and dispersion parameter estimation using maximum likelihood:
+\begin{itemize}
+\item \texttt{fix\_tweedie\_variance\_power = True} and \\ \texttt{fix\_dispersion\_parameter = False} as it will use the Tweedie variance power set in parameter \texttt{tweedie\_variance\_power} and estimate the dispersion parameter starting with the values set in parameter \texttt{init\_dispersion\_parameter};
+\item  \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = True} as it will use the dispersion parameter value set in parameter \texttt{init\_dispersion\_parameter} and estimate the Tweedie variance power starting with the value set in parameter \texttt{tweedie\_variance\_power};
+\item \texttt{fix\_tweedie\_variance\_power = False} and \\ \texttt{fix\_dispersion\_parameter = False} as it will estimate both the variance power and dispersion parameter starting with the values set in \\ \texttt{tweedie\_variance\_power} and \texttt{init\_dispersion\_parameter} respectively.
+\end{itemize}
+
+\subparagraph{Optimization Procedure}
+
+When estimating just the Tweedie variance power, it use the golden section search. Once a small region is found, then it switches to Newton's method. If Newton's method fails (i.e. steps out of the bounds found by the golden section search), it uses the golden section search until convergence. When you optimize both Tweedie variance power and dispersion, it uses the Nelder-Mead method with constraints so that Tweedie variance power $p>1+10^{-10}$ and dispersion $\phi >10^{-10}$.
+
+\textbf{Note}: If you specify the maximum likelihood method for the dispersion parameter method (\texttt{dispersion\_parameter\_method = "ml"}) for the Negative Binomial, Gamma, or Tweedie families, then you must also set \texttt{solver} equal to \texttt{"IRLSM"}.
    
 \subsubsection{Negative Binomial Models}
 
@@ -592,8 +715,7 @@ $$ \mu_i=\left\{
 The  negative log likelihood $L(y_i,\mu_i)$ function is:
 
 \begin{multline*}
-$$^\text{max}_{\beta,\beta_0} \bigg[ \frac{-1}{N} \sum_{i=1}^{N}  \bigg \{ \bigg( \sum_{j=0}^{y_i-1} \text{log}(j + \theta^{-1} ) \bigg) - \text{log} (\Gamma (y_i + 1)) - (y_i + \theta^{-1}) \text{log} (1 + \alpha\mu_i) \\
-+ y_i \text{log}(\mu_i) + y_i \text{log} (\theta) \bigg \} \bigg]$$
+$$^\text{max}_{\beta,\beta_0} \bigg[ \frac{-1}{N} \sum_{i=1}^{N}  \bigg \{ \bigg( \sum_{j=0}^{y_i-1} \text{log}(j + \theta^{-1} ) \bigg) - \text{log} (\Gamma (y_i + 1)) - (y_i + \theta^{-1}) \text{log} (1 + \theta\mu_i) \\ + y_i \text{log}(\mu_i) + y_i \text{log} (\theta) \bigg \} \bigg]$$
 \end{multline*}
 
 The final penalized negative log likelihood is used to find the coefficients $\beta, \beta_0$ given a fixed $\theta$ value:
@@ -612,6 +734,24 @@ $$D = 2 \sum_{i=1}^{N} \bigg \{ y_i \text{log} \big(\frac{y_i}{\mu_i} \big) - (y
 
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_negativebinomial_example.py}
+
+\paragraph{Negative Binomia Dispersion Parameter Estimationl}
+
+GLM dispersion estimation using the maximum likelihood method for the negative binomial family is available when you set \\
+\texttt{dispersion\_parameter\_method='ml'}.
+
+The coefficients, or betas, are estimated using IRLSM. The dispersion parameter theta is estimated after each IRLSM iteration. After the first beta update, the initial theta estimate is made using the method of moments as a starting point. Then, theta is updated using the maximum likelihood in each iteration.
+
+While not converged:
+
+\begin{enumerate}
+\item Estimate coefficients (betas)
+\item Estimate dispersion (theta)
+\begin{itemize}
+\item If it is the first iteration: Theta $\gets$ Method of Moments estimate
+\item Otherwise: Theta $\gets$ Maximum Likelihood estimate using Newton's method with learning rate estimated using Golden section search
+\end{itemize}
+\end{enumerate}
 
 \subsection{Hierarchical GLM}
 
@@ -992,8 +1132,7 @@ hypothesis tests on the values of each coefficient. A high p-value means that a 
 (insiginificant) while a low p-value suggest that the coefficient is statistically significant.
 
 You can request p-values by setting the \\\texttt{compute\_p\_values} option. It can only be used with the
-\texttt{IRLSM} solver and no regularization. It is recommended that you also set the
-\texttt{remove\_collinear\_columns} option. Otherwise, H2O will return an error if it detects collinearity in the dataset and p-values are requested. 
+\texttt{IRLSM} solver. P-values and z-score can be computed with or without regularization. It is recommended that you also set the \texttt{remove\_collinear\_columns} option. Otherwise, H2O will return an error if it detects collinearity in the dataset and p-values are requested. 
 
 \textbf{Note:} GLM auto-standardizes the data by default (recommended). This changes the p-value of the constant term
 (intercept).
@@ -1259,6 +1398,128 @@ Retrieve these statistics using the following accessor functions:
 
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_accessors.py}
+
+\subsubsection{GLM Likelihood and AIC}
+
+During model training, simplified formulas of likelihood and AIC are used. After the model is built, the full formula is used to calculate the output of the full log likelihood and full AIC values. The full formula is used to calculate the output of the full log likelihood and full AIC values if the parameter \texttt{calc\_like} is set to \texttt{True}.
+
+\textbf{Note:} The log likelihood value is not available in the cross-validation metrics. The AIC value is available and is calculated using the original simplified formula independent of the log likelihood.
+
+The following are the supported GLM families and formulae (the log likelihood is calculated for the  \emph{i}th observation).
+
+\textbf{Gaussian:}
+
+$$l(\mu_i (\beta); y_i, w_i) = - \frac{1}{2} \Big[ \frac{w_i (y_i - \mu_i)^2}{\phi} + \log \big(\frac{\phi}{w_i} \big) + \log (2 \pi) \Big]$$
+
+where
+
+\begin{itemize}
+\item $\phi$ is the dispersion parameter estimation
+\item $\mu_i$ is the prediction
+\item $y_i$ is the real value of the target variable
+\end{itemize}
+
+\emph{Note:} For Gaussian family, you need the dispersion parameter estimate in order to calculate the full log likelihood and AIC. Hence, when \texttt{calc\_like} is set to \texttt{True}, the parameters \texttt{compute\_p\_values} and \texttt{remove\_collinear\_columns} must be set to \texttt{True}. The parameter  \texttt{dispersion\_parameter\_method} is set to \texttt{"pearson"} by default. However, you can also set \\ \texttt{dispersion\_parameter\_method} to \texttt{"deviance"} if you like.
+
+\textbf{Binomial:}
+
+$$l \big(\mu_i (\beta); y_i, w_i \big) = w_i \big(y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1-\mu_i \} \big)$$
+
+where
+\begin{itemize}
+\item $\mu_i$ is the probability of 1
+\item $y_i$ is the real value of the target variable
+\end{itemize} 
+
+
+\textbf{Quasibinomial:}
+
+\begin{itemize}
+\item If the predicted value equals $y_i$, log likelihood is 0
+\item If $\mu_i >1$ then $l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \}$
+\item Otherwise, $l(\mu_i (\beta); y_i) = y_i \log \{ \mu_i \} + (1-y_i) \log \{ 1- \mu_i \}$ where
+\begin{itemize}
+\item $\mu_i$ is the probability of 1
+\item $y_i$ is the real value of the target variable
+\end{itemize}
+\end{itemize}
+
+\textbf{Fractional Binomial:}
+
+$$l(\mu_i (\beta); y_i) = w_i \Big(y_i \times \log \big(\frac{y_i}{\mu_i} \big) + (1-y_i) \times \log \big(\frac{1-y_i}{1-\mu_i} \big) \Big)$$
+
+where
+
+\begin{itemize}
+\item $\mu_i$ is the probability of 1
+\item $y_i$ is the real value of the target variable
+\end{itemize}
+
+\textbf{Poisson:}
+
+$$l(\mu_i (\beta); y_i) = w_i \big(y_i \times \log (\mu_i) - \mu_i - \log (\Gamma (y_i +1)) \big)$$
+
+where
+
+\begin{itemize}
+\item $\mu_i$ is the prediction
+\item $y_i$ is the real value of the target variable
+\end{itemize}
+
+\textbf{Negative Binomial:}
+
+$$l(\mu_i (\beta); y_i, w_i) = y_i \log \big(\frac{k \mu}{w_i} \big) - \big(y_i + \frac{w_i}{k} \big) \log \big(1 + \frac{k \mu}{w_i} \big) + \log \Big(\frac{\Gamma \big( y_i + \frac{w_i}{k} \big)} {\Gamma (y_i +1) \Gamma \big(\frac{w_i}{k}\big)} \Big)$$
+
+where
+
+\begin{itemize}
+\item $\mu_i$ is the prediction
+\item $y_i$ is the real value of the target variable
+\item $k = \frac{1}{\phi}$ is the dispersion parameter estimation
+\end{itemize}
+
+\emph{Note:} For Negative Binomial family, you need the dispersion parameter estimate. When the parameter \texttt{calc\_like} is set to \texttt{True}, the parameters \texttt{compute\_p\_values} and \texttt{remove\_collinear\_columns} are set to \texttt{True} for you. By default, the parameter \texttt{dispersion\_parameter\_method} is set to \texttt{"pearson"}. However, you can set \texttt{dispersion\_parameter\_method} to \texttt{"deviance"} or \texttt{"ml"} if you prefer.
+
+\textbf{Gamma:}
+
+$$l(\mu_i (\beta); y_i, w_i) = \frac{w_i}{\phi} \log \big( \frac{w_i y_i}{\phi \mu_i} \big) - \frac{w_i y_i}{\phi \mu_i} - \log (y_i) - \log \big(\Gamma \big(\frac{w_i}{\phi} \big) \big)$$
+
+where
+
+\begin{itemize}
+\item $\mu_i$ is the prediction
+\item $y_i$ is the real value of the target variable
+\item $\phi$ is the dispersion parameter estimation
+\end{itemize}
+
+\emph{Note:} For Gamma family, you need the dispersion parameter estimate. When the parameter \texttt{calc\_like} is set to \texttt{True}, the parameters \texttt{compute\_p\_values} and \texttt{remove\_collinear\_columns} are set to \texttt{True} for you. By default, the parameter \texttt{dispersion\_parameter\_deviance} is set to \texttt{"pearson"}. However, you can set \texttt{dispersion\_parameter\_deviance} to \texttt{"deviance"} or \texttt{"ml"} if you prefer.
+
+\textbf{Multinomial:}
+
+$$l(\mu_i(\beta); y_i) = w_i \log (\mu_i)$$
+
+where $\mu_i$ is the predicted probability of the actual class $y_i$
+
+\textbf{Tweedie:}
+
+The Tweedie calculation is located in the section \ref{par:tweevar}.
+
+\emph{Note:} For Tweedie family, you need the dispersion parameter estimate. When parameter \texttt{calc\_like} is set to \texttt{True}, the parameter \\ \texttt{dispersion\_parameter\_method} is set to \texttt{"ml"} which provides you with the best log likelihood estimation.
+
+\paragraph{Final AIC Calculation}
+
+The final AIC in the output metric is calculated using the standard formula, utilizing the previously computed log likelihood.
+
+$$\text{AIC} = -2LL + 2p$$
+
+where
+
+\begin{itemize}
+\item $p$ is the number of non-zero coefficients estimated in the model
+\item $LL$ is the log likelihood
+\end{itemize}
+
+To manage computational intensity, \texttt{calc\_like} is used. This parameter was previously only used for HGLM models, but its utilization has been expanded. By default, \texttt{calc\_like=False}, but you can set it to \texttt{True} and \texttt{HGLM} to \texttt{False} to enable the calculation of the full log likelihood and full AIC. This computation is performed during the final scoring phase after the model finishes building.
 
 \subsection{Confusion Matrix}
 

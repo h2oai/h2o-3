@@ -2,14 +2,13 @@
 #
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
-from __future__ import division, print_function, absolute_import, unicode_literals
 # noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 
 from functools import partial
 
 import h2o
-from h2o.exceptions import H2OConnectionError
+from h2o.exceptions import H2OConnectionError, H2OServerError
 
 
 def define_classes_from_schema(classes, connection):
@@ -27,6 +26,10 @@ class H2OSchema(object):
     @classmethod
     def define_from_schema(cls, connection):
         meta = connection.request("GET %s" % cls._schema_endpoint_)
+
+        if not hasattr(meta, "fields"):
+            raise H2OServerError("Unexpected API output. Please verify server url and port. Response is '%s'" % meta)
+
         cls_vars = vars(cls).keys()
         for attr, dyn in cls._schema_attrs_.items():
             if dyn and attr in cls_vars:  # to not delete attributes that were not dynamically added in the current class

@@ -1902,7 +1902,7 @@ fit@model$cross_validation_predictions$name
 # Each fold's preds are stored in a N x 1 col, where the row values for non-active folds are set to zero
 # So we will compress this into a single 1-col H2O Frame (easier to digest)
 
-nfolds <- fit@parameters$nfolds
+nfolds <- fit@params$actual$nfolds
 predlist <- sapply(1:nfolds, function(v) h2o.getFrame(fit@model$cross_validation_predictions[[v]]$name)$predict, simplify = FALSE)
 cvpred_sparse <- h2o.cbind(predlist)  # N x V Hdf with rows that are all zeros, except corresponding to the v^th fold if that rows is associated with v
 pred <- apply(cvpred_sparse, 1, sum)  # These are the cross-validated predicted cluster IDs for each of the 1:N observations
@@ -1914,7 +1914,7 @@ This can be extended to other family types as well (multinomial, binomial, regre
 # helper function
 .compress_to_cvpreds <- function(h2omodel, family) {
   # return the frame_id of the resulting 1-col Hdf of cvpreds for learner l
-  V <- h2omodel@allparameters$nfolds
+  V <- h2omodel@params$actual$nfolds
   if (family %in% c("bernoulli", "binomial")) {
     predlist <- sapply(1:V, function(v) h2o.getFrame(h2omodel@model$cross_validation_predictions[[v]]$name)[,3], simplify = FALSE)
   } else {

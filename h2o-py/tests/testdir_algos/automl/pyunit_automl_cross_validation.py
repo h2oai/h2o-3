@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys, os
 from itertools import cycle, islice
 from random import uniform

@@ -68,10 +68,10 @@ class Person:
         return (len(self.resolved_list) + len(self.unresolved_list))
 
     def emit_issues_csv(self):
-        print (self.name + "," + str(len(self.resolved_list)) + "," + str(len(self.unresolved_list)))
+        print(self.name + "," + str(len(self.resolved_list)) + "," + str(len(self.unresolved_list)))
 
     def emit_story_points_csv(self):
-        print (self.name + "," + str(self.resolved_story_points) + "," + str(self.unresolved_story_points))
+        print(self.name + "," + str(self.resolved_story_points) + "," + str(self.unresolved_story_points))
 
     def emit_barchart(self):
         print("")
@@ -298,15 +298,15 @@ def parse_args(argv):
         i += 1
 
     if (g_user is None):
-        print "ERROR: user is not specified"
+        print("ERROR: user is not specified")
         usage()
 
     if (g_pass is None):
-        print "ERROR: pass is not specified"
+        print("ERROR: pass is not specified")
         usage()
 
     if (g_sprint is None):
-        print "ERROR: sprint is not specified"
+        print("ERROR: sprint is not specified")
         usage()
 
 

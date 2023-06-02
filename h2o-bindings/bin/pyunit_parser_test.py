@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """Test case for pyparser."""
-from __future__ import division, print_function
-
 import os
 import re
 import textwrap
 import tokenize
-
-from future.builtins import open
 
 import pyparser
 
@@ -33,7 +29,6 @@ Comment = pyparser.Comment
 Comment_banner = (pyparser.Comment, "banner")
 Comment_code = (pyparser.Comment, "code")
 Docstring = pyparser.Docstring
-Import_future = (pyparser.ImportBlock, "future")
 Import_stdlib = (pyparser.ImportBlock, "stdlib")
 Import_3rdpty = (pyparser.ImportBlock, "third-party")
 Import_1stpty = (pyparser.ImportBlock, "first-party")
@@ -210,11 +205,6 @@ def test_tokenization():
               NEWLINE, DEDENT, NAME("except"), NAME("OSError"), NAME("as"), NAME("e"), OP(":"), NEWLINE, INDENT,
               NAME("raise"), NEWLINE, DEDENT, DEDENT, END])
     check_code("""
-        if PY2:
-            def unicode():
-                raise RuntimeError   # disable this builtin function
-                                     # because it doesn't exist in Py3
-
         handler = lambda: None  # noop
                                 # (will redefine later)
 
@@ -222,9 +212,7 @@ def test_tokenization():
 
         # comment 1
         print("I'm done.")
-        """, [NL, NAME("if"), NAME("PY2"), OP(":"), NEWLINE, INDENT, NAME("def"), NAME("unicode"), OP("("), OP(")"),
-              OP(":"), NEWLINE, INDENT, NAME("raise"), NAME("RuntimeError"), COMMENT, NEWLINE, COMMENT, NL,
-              DEDENT, DEDENT, NL, NAME("handler"), OP("="), NAME("lambda"), OP(":"), NAME("None"), COMMENT, NEWLINE,
+        """, [NL, NAME("handler"), OP("="), NAME("lambda"), OP(":"), NAME("None"), COMMENT, NEWLINE,
               COMMENT, NL, NL, COMMENT, NL, NL, COMMENT, NL, NAME("print"), OP("("), STRING, OP(")"), NEWLINE, END])
     check_code("""
         def test3():
@@ -345,8 +333,6 @@ def test_pyparser():
 
         It's not supposed to be functional, or even functionable.
         \"\"\"
-        from __future__ import braces, antigravity
-
         # Standard library imports
         import sys
         import time
@@ -359,11 +345,6 @@ def test_pyparser():
 
 
         # Do some initalization for legacy python versions
-        if PY2:
-            def unicode():
-                raise RuntimeError   # disable this builtin function
-                                     # because it doesn't exist in Py3
-
         handler = lambda: None  # noop
                                 # (will redefine later)
 
@@ -388,7 +369,7 @@ def test_pyparser():
             # be
             # happy
             print("bar!")
-        # bye""", [Ws, Comment, Docstring, Import_future, Ws, Import_stdlib, Ws, Import_1stpty, Ws, Expression,
+        # bye""", [Ws, Comment, Docstring, Ws, Import_stdlib, Ws, Import_1stpty, Ws, Expression,
                    Ws, Expression, Ws, Comment_banner, Ws, Class, Ws, Comment_code, Ws, Function, Comment, Ws])
 
     for directory in [".", "../../h2o-py", "../../py"]:

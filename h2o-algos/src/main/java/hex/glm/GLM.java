@@ -43,15 +43,24 @@ import water.util.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static hex.ModelMetrics.calcVarImp;
+import static hex.gam.MatrixFrameUtils.GamUtils.copy2DArray;
+import static hex.gam.MatrixFrameUtils.GamUtils.keepFrameKeys;
 import static hex.glm.ComputationState.extractSubRange;
 import static hex.glm.ComputationState.fillSubRange;
+import static hex.glm.DispersionUtils.*;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.*;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
+import static hex.glm.GLMModel.GLMParameters.Influence.dfbetas;
+import static hex.glm.GLMModel.GLMParameters.Solver.IRLSM;
 import static hex.glm.GLMUtils.*;
+import static water.fvec.Vec.T_NUM;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -71,11 +80,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public double[][][] _penaltyMatrix = null;
   public String[][] _gamColnames = null;
   public int[][] _gamColIndices = null; // corresponding column indices in dataInfo
-  public static int _totalBetaLen;
-  public static int _betaLenPerClass;
+  public BetaInfo _betaInfo;
   private boolean _earlyStopEnabled = false;
   private boolean _checkPointFirstIter = false;  // indicate first iteration for checkpoint model
   private boolean _betaConstraintsOn = false;
+  private boolean _tweedieDispersionOnly = false;
 
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
@@ -121,10 +130,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private boolean _doInit = true;  // flag setting whether or not to run init
   private double [] _xval_deviances;  // store cross validation average deviance
   private double [] _xval_sd;         // store the standard deviation of cross-validation
+  private double [][] _xval_zValues;  // store cross validation average p-values
   private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True
   private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_historty=True
   private int[] _xval_iters_generate_SH; // store cv iterations combined from the various cv models
   private boolean _insideCVCheck = false; // detect if we are running inside cv_computeAndSetOptimalParameters
+  private boolean _enumInCS = false;  // true if there are enum columns in beta constraints
+  private Frame _betaConstraints = null;
+  private boolean _cvRuns = false;
+
   /**
    * GLM implementation of N-fold cross-validation.
    * We need to compute the sequence of lambdas for the main model so the folds share the same lambdas.
@@ -136,9 +150,135 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public void computeCrossValidation() {
     // init computes global list of lambdas
     init(true);
+    _cvRuns = true;
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
     super.computeCrossValidation();
+  }
+
+
+  /* This method aligns the submodels across CV folds. It will keep only those alpha values that were the best at least in
+   * one CV fold.
+   *
+   * In the following depiction each submodel is represented by a tuple (alpha_value, lambda_value). Ideally each CV fold
+   * should have the same submodels but there can be differences due to max_iteration and max_runtime_secs constraint.
+   * Iterations are reset when alpha value change which can cause missing model in the middle and max_runtime_secs constraint
+   * can cause missing submodels at the end of the submodel array.
+   *
+   *  CV1:                                                                                              Best submodel
+   *   +------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+-V------+
+   *   | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 | 1, 0.6 | 1, 0.5 | 1, 0.4 |
+   *   +------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *  CV2:                                          Best submodel
+   *   +------+--------+--------+--------+--------+-V------+------+--------+--------+--------+--------+----------+
+   *   | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 0, 0.5 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 | 0.8, 1 | 0.8, 0.9 |
+   *   +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+----------+
+   *
+   *    ||
+   *    ||
+   *   \  /
+   *    \/
+   *
+   *  Aligned Submodels:
+   *
+   *  CV1:
+   *  +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *  | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 |  NULL  | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 | 1, 0.6 | 1, 0.5 | 1, 0.4 |
+   *  +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *
+   *  CV2:
+   *  +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *  | 0, 1 | 0, 0.9 | 0, 0.8 | 0, 0.7 | 0, 0.6 | 0, 0.5 | 1, 1 | 1, 0.9 | 1, 0.8 | 1, 0.7 |  NULL  |  NULL  |  NULL  |
+   *  +------+--------+--------+--------+--------+--------+------+--------+--------+--------+--------+--------+--------+
+   *
+   */
+  private double[] alignSubModelsAcrossCVModels(ModelBuilder[] cvModelBuilders) {
+    // Get only the best alphas
+    double[] alphas = Arrays.stream(cvModelBuilders)
+            .mapToDouble(cv -> {
+              GLM g = (GLM)cv;
+              return g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value;
+            })
+            .distinct()
+            .toArray();
+
+    // Get corresponding indices for the best alphas and sort them in the same order as in _parms.alpha
+    int[] alphaIndices = new int[alphas.length];
+    int k = 0;
+    for (int i = 0; i < _parms._alpha.length; i++) {
+      for (int j = 0; j < alphas.length; j++) {
+        if (alphas[j] == _parms._alpha[i]) {
+          alphaIndices[k] = i;
+          if (k < j) {
+            // swap to keep the same order as in _parms.alpha
+            final double tmpAlpha = alphas[k];
+            alphas[k] = alphas[j];
+            alphas[j] = tmpAlpha;
+          }
+          k++;
+        }
+      }
+    }
+
+    // maximum index of alpha change across all the folds
+    int[] alphaChangePoints = new int[alphas.length + 1];
+    int[] alphaSubmodels = new int[_parms._alpha.length];
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      Map<Double, List<Submodel>> submodels = Arrays.stream(g._model._output._submodels)
+              .collect(Collectors.groupingBy(sm -> sm.alpha_value));
+      for (int j = 0; j < _parms._alpha.length; j++) {
+        alphaSubmodels[j] = Math.max(alphaSubmodels[j],
+                submodels.containsKey(_parms._alpha[j]) ? submodels.get(_parms._alpha[j]).size() : 0);
+      }
+    }
+
+    for (int i = 0; i < alphas.length; i++) {
+      alphaChangePoints[i + 1] = alphaChangePoints[i] + alphaSubmodels[alphaIndices[i]];
+    }
+
+    double[] alphasAndLambdas = new double[alphaChangePoints[alphas.length]*2];
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      Submodel[] alignedSubmodels = new Submodel[alphaChangePoints[alphas.length]];
+
+      double lastAlpha = -1;
+      int alphaIdx = -1;
+      k = 0;
+      int nNullsUntilSelectedSubModel = 0;
+      for (int j = 0; j < g._model._output._submodels.length; j++) {
+        if (lastAlpha != g._model._output._submodels[j].alpha_value) {
+          lastAlpha = g._model._output._submodels[j].alpha_value;
+
+          if (alphaIdx + 1 < alphas.length && lastAlpha == alphas[alphaIdx+1]) {
+            k = 0;
+            alphaIdx++;
+
+          if (g._model._output._selected_submodel_idx >= j)
+            nNullsUntilSelectedSubModel = alphaChangePoints[alphaIdx] - j;
+          }
+        }
+        if (alphaIdx < 0 || g._model._output._submodels[j].alpha_value != alphas[alphaIdx])
+          continue;
+        alignedSubmodels[alphaChangePoints[alphaIdx] + k] = g._model._output._submodels[j];
+        assert alphasAndLambdas[alphaChangePoints[alphaIdx] + k] == 0 || (
+                alphasAndLambdas[alphaChangePoints[alphaIdx] + k] == g._model._output._submodels[j].alpha_value &&
+                        alphasAndLambdas[alphaChangePoints[alphas.length] + alphaChangePoints[alphaIdx] + k] == g._model._output._submodels[j].lambda_value
+        );
+        alphasAndLambdas[alphaChangePoints[alphaIdx] + k] = g._model._output._submodels[j].alpha_value;
+        alphasAndLambdas[alphaChangePoints[alphas.length] + alphaChangePoints[alphaIdx] + k] = g._model._output._submodels[j].lambda_value;
+        k++;
+      }
+      assert g._model._output._selected_submodel_idx == g._model._output._best_submodel_idx;
+      assert g._model._output._selected_submodel_idx == g._model._output._best_lambda_idx;
+      assert (g._model._output._submodels[g._model._output._selected_submodel_idx].alpha_value ==
+              alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].alpha_value) &&
+              (g._model._output._submodels[g._model._output._selected_submodel_idx].lambda_value ==
+                      alignedSubmodels[g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel].lambda_value);
+      g._model._output._submodels = alignedSubmodels;
+      g._model._output.setSubmodelIdx(g._model._output._selected_submodel_idx + nNullsUntilSelectedSubModel, g._parms);
+    }
+    return alphasAndLambdas;
   }
 
   /**
@@ -153,42 +293,80 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    */
   @Override
   public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
-    if(_parms._max_runtime_secs != 0) _parms._max_runtime_secs = 0;
-      _xval_deviances = new double[_parms._lambda.length * _parms._alpha.length];
-      _xval_sd = new double[_parms._lambda.length * _parms._alpha.length];
+      setMaxRuntimeSecsForMainModel();
       double bestTestDev = Double.POSITIVE_INFINITY;
+      double[] alphasAndLambdas = alignSubModelsAcrossCVModels(cvModelBuilders);
+      int numOfSubmodels = alphasAndLambdas.length / 2;
       int lmin_max = 0;
-      for (int i = 0; i < cvModelBuilders.length; ++i) {  // find the highest best_submodel_idx we need to go through
-        GLM g = (GLM) cvModelBuilders[i];
-        lmin_max = Math.max(lmin_max, g._model._output._selected_submodel_idx);
+      boolean lambdasSorted = _parms._lambda.length >= 1;
+      for (int i = 1; i < _parms._lambda.length; i++) {
+        if (_parms._lambda[i] >= _parms._lambda[i - 1]) {
+          lambdasSorted = false;
+          break;
+        }
       }
+      if (lambdasSorted) {
+        for (int i = 0; i < cvModelBuilders.length; ++i) {  // find the highest best_submodel_idx we need to go through
+          GLM g = (GLM) cvModelBuilders[i];
+          lmin_max = Math.max(lmin_max, g._model._output._selected_submodel_idx + 1); // lmin_max is exclusive upper bound
+        }
+      } else {
+        lmin_max = numOfSubmodels; // Number of submodels
+      }
+
+      _xval_deviances = new double[lmin_max];
+      _xval_sd = new double[lmin_max];
+      _xval_zValues = new double[lmin_max][_state._nbetas];
+
       int lidx = 0; // index into submodel
       int bestId = 0;   // submodel indedx with best Deviance from xval
       int cnt = 0;
       for (; lidx < lmin_max; ++lidx) { // search through submodel with same lambda and alpha values
         double testDev = 0;
         double testDevSq = 0;
+        double[] zValues = new double[_state._nbetas];
+        double[] zValuesSq = new double[_state._nbetas];
         for (int i = 0; i < cvModelBuilders.length; ++i) {  // run cv for each lambda value
           GLM g = (GLM) cvModelBuilders[i];
-          if (g._model._output._submodels[lidx] != null) {
-            double lambda = g._model._output._submodels[lidx].lambda_value;
-            g._insideCVCheck = true;
-            g._driver.computeSubmodel(lidx, lambda, Double.NaN, Double.NaN);
-            g._insideCVCheck = false;
-            testDev += g._model._output._submodels[lidx].devianceValid;
-            testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
+          if (g._model._output._submodels[lidx] == null) {
+            double alpha = g._state.alpha();
+            try {
+              g._insideCVCheck = true;
+              g._state.setAlpha(alphasAndLambdas[lidx]); // recompute the submodel using the proper alpha value
+              g._driver.computeSubmodel(lidx, alphasAndLambdas[lidx + numOfSubmodels], Double.NaN, Double.NaN);
+            } finally {
+              g._insideCVCheck = false;
+              g._state.setAlpha(alpha);
+            }
+          }
+          assert alphasAndLambdas[lidx] == g._model._output._submodels[lidx].alpha_value &&
+                  alphasAndLambdas[lidx + numOfSubmodels] == g._model._output._submodels[lidx].lambda_value;
+
+          testDev += g._model._output._submodels[lidx].devianceValid;
+          testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
+          if(g._model._output._submodels[lidx].zValues != null) {
+            for (int z = 0; z < zValues.length; z++) {
+              zValues[z] += g._model._output._submodels[lidx].zValues[z];
+              zValuesSq[z] += g._model._output._submodels[lidx].zValues[z] * g._model._output._submodels[lidx].zValues[z];
+            }
           }
         }
         double testDevAvg = testDev / cvModelBuilders.length; // average testDevAvg for fixed submodel index
         double testDevSE = testDevSq - testDevAvg * testDev;
+        double[] zValuesAvg = Arrays.stream(zValues).map(z -> z / cvModelBuilders.length).toArray();
         _xval_sd[lidx] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
         _xval_deviances[lidx] = testDevAvg;
+        _xval_zValues[lidx] = zValuesAvg;
         if (testDevAvg < bestTestDev) {
           bestTestDev = testDevAvg;
           bestId = lidx;
         }
         // early stopping - no reason to move further if we're overfitting
-        if (testDevAvg > bestTestDev && ++cnt == 3) {
+        // cannot be used if we have multiple alphas
+        if ((_parms._alpha == null || _parms._alpha.length <= 1) &&
+                lambdasSorted &&
+                testDevAvg > bestTestDev &&
+                ++cnt == 3) {
           lmin_max = lidx;
           break;
         }
@@ -199,26 +377,68 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (Key k : g._toRemove)
             Keyed.remove(k);
       }
-      _parms._lambda = Arrays.copyOf(_parms._lambda, lmin_max + 1);
-      _xval_deviances = Arrays.copyOf(_xval_deviances, lmin_max + 1);
-      _xval_sd = Arrays.copyOf(_xval_sd, lmin_max + 1);
+
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
-        g._model._output.setSubmodelIdx(bestId);
+        g._model._output.setSubmodelIdx(bestId, g._parms);
       }
+
       double bestDev = _xval_deviances[bestId];
       double bestDev1se = bestDev + _xval_sd[bestId];
-      int bestId1se = bestId;
-      while (bestId1se > 0 && _xval_deviances[bestId1se - 1] <= bestDev1se)
-        --bestId1se;
-      _lambdaCVEstimate = ((GLM) cvModelBuilders[0])._model._output._submodels[bestId].lambda_value;
-      _bestCVSubmodel = bestId;
-      _model._output._lambda_1se = bestId1se; // submodel ide with bestDev+one sigma
-      _model._output._selected_submodel_idx = bestId; // set best submodel id here
+      int finalBestId = bestId;
+      Integer[] orderedLambdaIndices = IntStream
+                .range(0, lmin_max)
+                .filter(i -> alphasAndLambdas[i] == alphasAndLambdas[finalBestId]) // get just the lambdas corresponding to the selected alpha
+                .boxed()
+                .sorted((a,b) -> (int) Math.signum(alphasAndLambdas[b+numOfSubmodels] - alphasAndLambdas[a+numOfSubmodels]))
+                .toArray(Integer[]::new);
+      int bestId1se = IntStream
+                .range(0, orderedLambdaIndices.length)
+                .filter(i -> orderedLambdaIndices[i] == finalBestId)
+                .findFirst()
+                .orElse(orderedLambdaIndices.length - 1);
 
+      while (bestId1se > 0 && _xval_deviances[orderedLambdaIndices[bestId1se - 1]] <= bestDev1se)
+          --bestId1se;
+      // get the index into _parms.lambda/_xval_deviances etc
+      _lambdaCVEstimate = alphasAndLambdas[numOfSubmodels + bestId];
+      bestId1se = orderedLambdaIndices[bestId1se];
+      _model._output._lambda_1se = alphasAndLambdas[numOfSubmodels + bestId1se]; // submodel ide with bestDev+one sigma
+
+      // set the final selected alpha and lambda
+      _parms._alpha = new double[]{alphasAndLambdas[bestId]};
+      if (_parms._lambda_search) {
+        int newLminMax = 0;
+        int newBestId = 0;
+        for (int i = 0; i < lmin_max; i++) {
+          if (alphasAndLambdas[i] == _parms._alpha[0]) {
+            newLminMax++;
+            if (i < bestId) newBestId++;
+          }
+        }
+        _parms._lambda = Arrays.copyOf(_parms._lambda, newLminMax+1);
+        _model._output._selected_submodel_idx = newBestId;
+        _bestCVSubmodel = newBestId;
+        _xval_deviances = Arrays.copyOfRange(_xval_deviances, bestId-newBestId, lmin_max + 1);
+        _xval_sd = Arrays.copyOfRange(_xval_sd, bestId-newBestId, lmin_max + 1);
+        _xval_zValues = Arrays.copyOfRange(_xval_zValues, bestId-newBestId, lmin_max + 1);
+      } else {
+        _parms._lambda = new double[]{alphasAndLambdas[numOfSubmodels + bestId]};
+        _model._output._selected_submodel_idx = 0; // set best submodel id here
+        _bestCVSubmodel = 0;
+      }
+
+      // set max_iteration
+      _parms._max_iterations = (int) Math.ceil(1 + // iter >= max_iter => stop; so +1 to be able to get to the same iteration value
+              Arrays.stream(cvModelBuilders)
+                      .mapToDouble(cv -> ((GLM) cv)._model._output._submodels[finalBestId].iteration)
+                      .filter(Double::isFinite)
+                      .max()
+                      .orElse(_parms._max_iterations)
+      );
     if (_parms._generate_scoring_history)
       generateCVScoringHistory(cvModelBuilders);
-    
+
     for (int i = 0; i < cvModelBuilders.length; ++i) {
       GLM g = (GLM) cvModelBuilders[i];
       GLMModel gm = g._model;
@@ -226,7 +446,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       gm.update(_job);
       gm.unlock(_job);
     }
-    _doInit = false;
+    if (_betaConstraints != null) {
+      DKV.remove(_betaConstraints._key);
+      _betaConstraints.delete();
+      _betaConstraints = null;
+    }
+    _doInit = false;  // disable init for CV main model
   }
 
   /***
@@ -314,7 +539,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
   
   protected void checkMemoryFootPrint(DataInfo activeData) {
-    if (_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT) {
+    if (IRLSM.equals(_parms._solver)|| Solver.COORDINATE_DESCENT.equals(_parms._solver)) {
       int p = activeData.fullN();
       HeartBeat hb = H2O.SELF._heartbeat;
       long mem_usage = (long) (hb._cpus_allowed * (p * p + activeData.largestCat()) * 8/*doubles*/ * (1 + .5 * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.))); //one gram per core
@@ -333,7 +558,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   DataInfo _dinfo;
-
   private transient DataInfo _validDinfo;
   // time per iteration in ms
 
@@ -637,13 +861,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return multinomial.equals(_parms._family) || ordinal.equals(_parms._family) ||  
             (AUTO.equals(_parms._family) && nclasses() > 2);
   }
-
+  
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
     hide("_balance_classes", "Not applicable since class balancing is not required for GLM.");
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
+    if (_parms._influence != null && (_parms._nfolds > 0 || _parms._fold_column != null)) {
+      error("influence", " cross-validation is not allowed when influence is set to dfbetas.");
+    }
+    
     _parms.validate(this);
     if(_response != null) {
       if(!isClassifier() && _response.isCategorical())
@@ -681,7 +909,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             warn("_family", "Poisson and Negative Binomial expect non-negative integer response," +
                     " got floats.");
           if (Family.negativebinomial.equals(_parms._family))
-            if (_parms._theta <= 0 || _parms._theta > 1)
+            if (_parms._theta <= 0)// || _parms._theta > 1)
               error("_family", "Illegal Negative Binomial theta value.  Valid theta values be > 0" +
                       " and <= 1.");
             else
@@ -693,6 +921,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         case tweedie:
           if (_nclass != 1) error("_family", H2O.technote(2, "Tweedie requires the response to be numeric."));
+          if (ml.equals(_parms._dispersion_parameter_method)) {
+            // Check if response contains zeros if so limit variance power to (1,2)
+            if (_response.min() <= 0)
+              warn("_tweedie_var_power", "Response contains zeros and/or values lower than zero. "+
+                      "Tweedie variance power ML estimation will be limited between 1 and 2. Values lower than zero will be ignored.");
+          }
           break;
         case quasibinomial:
           if (_nclass != 1) error("_family", H2O.technote(2, "Quasi_binomial requires the response to be numeric."));
@@ -732,6 +966,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
     if (expensive) {
+      if (_parms._build_null_model) {
+        if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
+          error("build_null_model", " is only supported for tweedie, gamma and negativebinomial familes");
+        else
+          removePredictors(_parms, _train);
+      }
       if (_parms._max_iterations == 0)
         error("_max_iterations", H2O.technote(2, "if specified, must be >= 1."));
       if (error_count() > 0) return;
@@ -793,6 +1033,71 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error(_parms._non_negative ? "non_negative" : "beta_constraints",
                 " does not work with " + _parms._family + " family.");
       }
+      // maximum likelhood is only allowed for families tweedie, gamma and negativebinomial
+      if (ml.equals(_parms._dispersion_parameter_method) && !gamma.equals(_parms._family) && !tweedie.equals(_parms._family) && !negativebinomial.equals(_parms._family))
+        error("dispersion_parameter_mode", " ml can only be used for family gamma, tweedie, negative binomial.");
+      
+      if (ml.equals(_parms._dispersion_parameter_method)) {
+        if ((_parms._lambda == null && _parms._lambda_search) ||
+             _parms._lambda != null && Arrays.stream(_parms._lambda).anyMatch(v -> v != 0)) {
+          error("dispersion_parameter_method", "ML is supported only without regularization!");
+        } else {
+          if (_parms._lambda == null) {
+            info("lambda", "Setting lambda to 0 to disable regularization which is unsupported with ML dispersion estimation.");
+            _parms._lambda = new double[]{0.0};
+          }
+        }
+        if (_parms._fix_dispersion_parameter)
+          if (!(tweedie.equals(_parms._family) || gamma.equals(_parms._family) || negativebinomial.equals(_parms._family)))
+            error("fix_dispersion_parameter", " is only supported for gamma, tweedie, " +
+                    "negativebinomial families.");
+          
+        if (_parms._fix_tweedie_variance_power && tweedie.equals(_parms._family)) {
+          double minResponse = _parms.train().vec(_parms._response_column).min();
+          if (minResponse < 0)
+            error("response_column", " must >= 0 for tweedie_variance_power > 1 when using ml to" +
+                    " estimate the dispersion parameter.");
+
+          if (_parms._tweedie_variance_power > 2 && minResponse <= 0)
+            warn("response_column", " must > 0 when tweedie_variance_power > 2, such rows will be ignored.");
+        }
+        
+        if (_parms._dispersion_learning_rate <= 0 && tweedie.equals(_parms._family))
+          error("dispersion_learning_rate", "must > 0 and is only used with tweedie dispersion" +
+                  " parameter estimation using ml.");
+        
+        if (_parms._fix_tweedie_variance_power && tweedie.equals(_parms._family) && _parms._tweedie_variance_power > 1
+                && _parms._tweedie_variance_power < 1.2)
+          warn("tweedie_variance_power", "when tweedie_variance_power is close to 1 and < 1.2, " +
+                  "there is a potential of tweedie density function being multimodal.  This will cause the optimization" +
+                  " procedure to generate a dispsersion parameter estimation that is suboptimal.  To overcome this, " +
+                  "try to run the model building process with different init_dispersion_parameter values.");
+        if (!_parms._fix_tweedie_variance_power && !tweedie.equals(_parms._family))
+          error("fix_tweedie_variance_power", " can only be set to false for tweedie family.");
+        if (_parms._max_iterations_dispersion <= 0)
+          error("max_iterations_dispersion", " must > 0.");
+        if (_parms._dispersion_epsilon < 0)
+          error("dispersion_epsilon", " must >= 0.");
+        if (tweedie.equals(_parms._family)) {
+          if (_parms._tweedie_variance_power <= 1)
+            error("tweedie_variance_power", " must exceed 1.");
+          if (_parms._tweedie_variance_power == 1)
+            error("tweedie_variance_power", "Tweedie family with tweedie_variance_power=1.0 is " +
+                    "equivalent to the Poisson family.  Please use Poisson family instead.");
+          if (_parms._tweedie_variance_power == 2)
+            error("tweedie_variance_power", "Tweedie family with tweedie_variance_power=2.0 is " +
+                    "equivalent to the Gamma family.  Please use Gamma family instead.");
+          if (_parms._tweedie_epsilon <= 0)
+            error("tweedie_epsilon", " must exceed 0.");
+          if (_parms._tweedie_variance_power == 0)
+            // Later Null GLM model can fail if dispersion estimation is on (assert in TweedieEstimator)
+            // This way we make sure it will yield nice error from the model builder (i.e. not an assert error)
+            _parms._tweedie_variance_power = 1.5; 
+        }
+      }
+      
+      if (_parms._init_dispersion_parameter <= 0)
+        error("init_dispersion_parameter", " must exceed 0.0.");
 
       boolean standardizeQ = _parms._HGLM?false:_parms._standardize;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, standardizeQ ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
@@ -800,10 +1105,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _parms.imputeMissing(),
               _parms.makeImputer(), 
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
-      _totalBetaLen = multinomial.equals(_parms._family) || ordinal.equals(_parms._family)?
-              (_dinfo.fullN()+1)*nclasses():_dinfo.fullN()+1;
-      _betaLenPerClass = multinomial.equals(_parms._family) || ordinal.equals(_parms._family)?
-              _totalBetaLen/nclasses():_totalBetaLen;
+
+      if (_parms._generate_variable_inflation_factors) {
+        String[] vifPredictors = GLMModel.getVifPredictors(_train, _parms, _dinfo);
+        if (vifPredictors == null || vifPredictors.length == 0)
+          error("generate_variable_inflation_factors", " cannot be enabled for GLM models with " +
+                  "only non-numerical predictors.");
+      }
+      // for multiclass and fractional binomial we have one beta per class 
+      // for binomial and regression we have just one set of beta coefficients
+      int nBetas = fractionalbinomial.equals(_parms._family) ? 2 :
+              (multinomial.equals(_parms._family) || ordinal.equals(_parms._family)) ? nclasses() : 1;
+      _betaInfo = new BetaInfo(nBetas, _dinfo.fullN() + 1);
 
       if (gam.equals(_parms._glmType))
          _gamColIndices = extractAdaptedFrameIndices(_dinfo._adaptedFrame, _gamColnames, _dinfo._numOffsets[0]-_dinfo._cats);
@@ -819,7 +1132,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
-      _state = new ComputationState(_job, _parms, _dinfo, null, nclasses(), _penaltyMatrix, _gamColIndices);
+      _state = new ComputationState(_job, _parms, _dinfo, null, _betaInfo, _penaltyMatrix, _gamColIndices);
         
       // skipping extra rows? (outside of weights == 0)GLMT
       boolean skippingRows = (_parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.Skip && _train.hasNAs());
@@ -860,8 +1173,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       boolean betaContsOn = _parms._beta_constraints != null || _parms._non_negative;
       _betaConstraintsOn = (betaContsOn && (Solver.AUTO.equals(_parms._solver) ||
-              Solver.COORDINATE_DESCENT.equals(_parms._solver) || Solver.IRLSM.equals(_parms._solver )||
+              Solver.COORDINATE_DESCENT.equals(_parms._solver) || IRLSM.equals(_parms._solver )||
               Solver.L_BFGS.equals(_parms._solver)));
+      if (_parms._beta_constraints != null && !_enumInCS) { // will happen here if there is no CV
+        if (findEnumInBetaCS(_parms._beta_constraints.get(), _parms)) {
+          if (_betaConstraints == null) {
+            _betaConstraints = expandedCatCS(_parms._beta_constraints.get(), _parms);
+            DKV.put(_betaConstraints);
+          }
+          _enumInCS = true; // make sure we only do this once
+        }
+      }
       BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get()) 
               : new BetaConstraint();
       if (betaContsOn && !_betaConstraintsOn) {
@@ -875,8 +1197,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.setBC(bc);
       if(hasOffsetCol() && _parms._intercept && !ordinal.equals(_parms._family)) { // fit intercept
         GLMGradientSolver gslvr = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job,_parms, 
-                _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _penaltyMatrix, _gamColIndices) 
-                : new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
+                _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices) 
+                : new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _betaInfo);
         double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;
         Log.info(LogMsg("fitted intercept = " + x[0]));
         x[0] = _parms.linkInv(x[0]);
@@ -904,8 +1226,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             System.arraycopy(_parms._startval, 0, beta, 0, beta.length);
         }
         GLMGradientInfo ginfo = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job, _parms, _dinfo, 0, 
-                _state.activeBC(), _penaltyMatrix, _gamColIndices).getGradient(beta) : new GLMGradientSolver(_job, 
-                _parms, _dinfo, 0, _state.activeBC()).getGradient(beta);  // gradient obtained with zero penalty
+                _state.activeBC(), _betaInfo, _penaltyMatrix, _gamColIndices).getGradient(beta) : new GLMGradientSolver(_job, 
+                _parms, _dinfo, 0, _state.activeBC(), _betaInfo).getGradient(beta);  // gradient obtained with zero penalty
         _lmax = lmax(ginfo._gradient);
         _gmax = _lmax*Math.max(1e-2, _parms._alpha[0]); // each alpha should have its own best lambda
         _state.setLambdaMax(_lmax);
@@ -950,15 +1272,71 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-6 : 1e-4;
         if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
       }
+      
+      // check for correct setting for Tweedie ML dispersion parameter setting
+      if (_parms._fix_dispersion_parameter) { // only tweeide, NB, gamma are allowed to use this
+        if (!tweedie.equals(_parms._family) && !gamma.equals(_parms._family) && !negativebinomial.equals(_parms._family))
+          error("fix_dispersion_parameter", " is only allowed for tweedie, gamma and " +
+                  "negativebinomial families");
+      }
 
+        if (_parms._fix_tweedie_variance_power && !_parms._fix_dispersion_parameter)
+          _tweedieDispersionOnly = true;
+      
+        // likelihood calculation for gaussian, gamma, negativebinomial and tweedie families requires dispersion parameter estimation
+        // _dispersion_parameter_method: gaussian - pearson (default); gamma, negativebinomial, tweedie - ml.
+        if(!_parms._HGLM && _parms._calc_like) {
+          switch (_parms._family) {
+            case gaussian:
+              _parms._compute_p_values = true;
+              _parms._remove_collinear_columns = true;
+              break;
+            case gamma:
+            case negativebinomial:
+              _parms._compute_p_values = true;
+              _parms._remove_collinear_columns = true;
+            case tweedie:
+              // dispersion value estimation for tweedie family does not require 
+              // parameters compute_p_values and remove_collinear_columns
+              _parms._dispersion_parameter_method = ml;
+              // disable regularization as ML is supported only without regularization
+              _parms._lambda = new double[] {0.0};
+            default:
+              // other families does not require dispersion parameter estimation
+          }
+        }
+        
       if (_parms.hasCheckpoint()) {
         if (!Family.gaussian.equals(_parms._family))  // Gaussian it not iterative and therefore don't care
           _checkPointFirstIter = true;  // mark the first iteration during iteration process of training
-        if (!Solver.IRLSM.equals(_parms._solver))
+        if (!IRLSM.equals(_parms._solver))
           error("_checkpoint", "GLM checkpoint is supported only for IRLSM.  Please specify it " +
                   "explicitly.  Do not use AUTO or default");
         Value cv = DKV.get(_parms._checkpoint);
         CheckpointUtils.getAndValidateCheckpointModel(this, CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
+      }
+
+      if (_parms._influence != null) {
+        if (!(gaussian.equals(_parms._family) || binomial.equals(_parms._family)))
+          error("influence", " can only be specified for the gaussian and binomial families.");
+        
+        if (_parms._lambda == null)
+          _parms._lambda = new double[]{0.0};
+        
+        if (_parms._lambda != null && Arrays.stream(_parms._lambda).filter(x -> x>0).count() > 0) 
+          error("regularization", "regularization is not allowed when influence is set to dfbetas.  " +
+                  "Please set all lambdas to 0.0.");
+        
+        if (_parms._lambda_search)
+          error("lambda_search", "lambda_search and regularization are not allowed when influence is set to dfbetas.");
+        
+        if (Solver.AUTO.equals(_parms._solver))
+          _parms._solver = IRLSM;
+        else if (!Solver.IRLSM.equals(_parms._solver))
+          error("solver", "regression influence diagnostic is only calculated for IRLSM solver.");
+        
+        _parms._compute_p_values = true;  // automatically turned these on
+        _parms._remove_collinear_columns = true;
       }
       buildModel();
     }
@@ -1194,6 +1572,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public final class GLMDriver extends Driver implements ProgressMonitor {
     private long _workPerIteration;
     private transient double[][] _vcov;
+    private transient GLMTask.GLMIterationTask _gramInfluence;
+    private transient double[][] _cholInvInfluence;
 
     private void doCleanup() {
       try {
@@ -1417,7 +1797,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       DataInfo qTinfo = new DataInfo(qTransposed, null, true, DataInfo.TransformType.NONE,
               true, false, false);
       DKV.put(qTinfo._key, qTinfo);
-      Frame qTAugZW = (new BMulTask(_job._key, qTinfo, augZWTransposed).doAll(augZWTransposed.length, Vec.T_NUM,
+      Frame qTAugZW = (new BMulTask(_job._key, qTinfo, augZWTransposed).doAll(augZWTransposed.length, T_NUM,
               qTinfo._adaptedFrame)).outputFrame(Key.make("Q*Augz*W"), null, null);
       double[] qtaugzw = new FrameUtils.Vec2ArryTsk((int) qTAugZW.numRows()).doAll(qTAugZW.vec(0)).res;
       // backward solve to get new coefficients for fixed and random columns
@@ -1581,15 +1961,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     /**
      * This method will generate a training frame according to HGLM doc, build a gamma GLM model with dispersion
-     * factor set to 1 if enabled and calcluate the p-value if enabled.  It will return the GLM model.
-     *
-     * @param returnFrame
-     * @param constXYWeight
-     * @param devHvColIdx
-     * @param startRowIndex
-     * @param numRows
-     * @param computePValues
-     * @return
+     * parameter set to 1 if enabled and calcluate the p-value if enabled.  It will return the GLM model.
      */
     public GLMModel buildGammaGLM(Frame returnFrame, Frame constXYWeight, int[] devHvColIdx, long startRowIndex,
                                   long numRows, boolean computePValues) {
@@ -1646,8 +2018,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
             long t1 = System.currentTimeMillis();
             // GLMMultinomialUpdate needs to take beta that contains active columns described in _state.activeDataMultinomial()
-            if (_parms._remove_collinear_columns && _state.activeDataMultinomial()._activeCols != null && 
-            _betaLenPerClass != _state.activeDataMultinomial().activeCols().length) { // beta full length, need short beta
+            if (_parms._remove_collinear_columns && _state.activeDataMultinomial()._activeCols != null &&
+            _betaInfo._betaLenPerClass != _state.activeDataMultinomial().activeCols().length) { // beta full length, need short beta
               double[] shortBeta = _state.shrinkFullArray(beta);
               new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, shortBeta,
                               c).doAll(_state.activeDataMultinomial()._adaptedFrame);        
@@ -1695,7 +2067,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double[] beta = _state.betaMultinomial();
       int predSize = _dinfo.fullN();
       int predSizeP1 = predSize + 1;
-      int numClass = _state._nclasses;
+      int numClass = _state._nbetas;
       int numIcpt = numClass - 1;
       double[] betaCnd = new double[predSize];  // number of predictors
       _state.gslvr().getGradient(beta); // get new gradient info with correct l2pen value.
@@ -1825,6 +2197,559 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+      }
+    }
+
+    private void fitIRLSMML(Solver s) {
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      LineSearchSolver ls = null;
+      int iterCnt = _checkPointFirstIter ? _state._iter : 0;
+      boolean firstIter = iterCnt == 0;
+      final BetaConstraint bc = _state.activeBC();
+      double previousLLH = Double.POSITIVE_INFINITY;
+      boolean converged = false;
+      int sameLLH = 0;
+      Vec weights = _dinfo._weights
+              ? _dinfo.getWeightsVec()
+              : _dinfo._adaptedFrame.makeCompatible(new Frame(Vec.makeOne(_dinfo._adaptedFrame.numRows())))[0];
+      Vec response = _dinfo._adaptedFrame.vec(_dinfo.responseChunkId(0));
+      
+      try {
+        while (!converged && iterCnt < _parms._max_iterations && !_job.stop_requested()) {
+          iterCnt++;
+          long t1 = System.currentTimeMillis();
+          ComputationState.GramXY gram = _state.computeGram(betaCnd, s);
+          long t2 = System.currentTimeMillis();
+          if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) >
+                  _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
+            _state._lsNeeded = true;
+          } else {
+            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
+              Log.info("DONE after " + (iterCnt - 1) + " iterations (1)");
+              _model._betaCndCheckpoint = betaCnd;
+              converged = true;
+            }
+            if (!_checkPointFirstIter)
+              betaCnd = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
+                      : ADMM_solve(gram.gram, gram.xy); // this will shrink betaCnd if needed but this call may be skipped
+          }
+          firstIter = false;
+          _checkPointFirstIter = false;
+          long t3 = System.currentTimeMillis();
+          if (_state._lsNeeded) {
+            if (ls == null)
+              ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+                      ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
+                      : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
+            double[] oldBetaCnd = ls.getX();
+            if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
+              betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+            }
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
+              Log.info(LogMsg("Ls failed " + ls));
+              converged = true;
+            }
+            betaCnd = ls.getX();
+            if (_betaConstraintsOn)
+              bc.applyAllBounds(betaCnd);
+
+            if (!progress(betaCnd, ls.ginfo()))
+              converged = true;
+            long t4 = System.currentTimeMillis();
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } else {
+            if (_betaConstraintsOn) // apply beta constraints without LS
+              bc.applyAllBounds(betaCnd);
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          }
+
+          // Dispersion estimation part
+          if (negativebinomial.equals(_parms._family)){
+            converged = updateNegativeBinomialDispersion(iterCnt, _state.beta(), previousLLH, weights, response) && converged;
+            Log.info("GLM negative binomial dispersion estimation: iteration = "+iterCnt+"; theta = " + _parms._theta);
+          } else if (tweedie.equals(_parms._family)){
+            if (!_parms._fix_tweedie_variance_power) {
+              if (!_parms._fix_dispersion_parameter) {
+                converged = updateTweediePandPhi(iterCnt, _state.expandBeta(betaCnd), weights, response) && converged;
+                Log.info("GLM Tweedie p and phi estimation: iteration = " + iterCnt + "; p = " + _parms._tweedie_variance_power + "; phi = " + _parms._init_dispersion_parameter);
+              } else {
+                converged = updateTweedieVariancePower(iterCnt, _state.expandBeta(betaCnd), weights, response) && converged;
+                Log.info("GLM Tweedie variance power estimation: iteration = " + iterCnt + "; p = " + _parms._tweedie_variance_power);
+              }
+            }
+          }
+
+          if (Math.abs(previousLLH - gram.likelihood) < _parms._objective_epsilon)
+            sameLLH ++;
+          else
+            sameLLH = 0;
+          converged = converged || sameLLH > 10;
+          previousLLH = gram.likelihood;
+        }
+      } catch (NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+        warn("Regression with MLE training", "Got Non SPD matrix, stopped.");
+      }
+    }
+
+    private boolean updateTweedieVariancePower(int iterCnt, double[] betaCnd, Vec weights, Vec response) {
+      final double newtonThreshold = 0.1; // when d < newtonThreshold => use Newton's method
+      final double phi = _parms._init_dispersion_parameter;
+      final double originalP = _parms._tweedie_variance_power;
+      double bestLLH = Double.NEGATIVE_INFINITY, bestP = 1.5, lowerBound, upperBound, p = originalP;
+      int newtonFailures = 0;
+      boolean converged = false;
+      Scope.enter();
+      DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+              1, Vec.T_NUM, _dinfo._adaptedFrame);
+      Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
+
+      // Golden section search for p between 1  and 2 
+      lowerBound = 1 + 1e-16;
+      if (response.min() <= 0) {
+        upperBound = 2 - 1e-16;
+      } else {
+        upperBound = Double.POSITIVE_INFINITY;
+      }
+      // Let's assume the var power will be close to the one in last iteration and hopefully save some time 
+      if (iterCnt > 1) {
+        boolean forceInversion = (originalP > 1.95 && originalP < 2.1);
+        TweedieEstimator lo = new TweedieEstimator(
+                Math.max(lowerBound, p - 0.01),
+                phi, forceInversion).compute(mu, response, weights);
+        TweedieEstimator mid = new TweedieEstimator(p, phi, forceInversion).compute(mu, response, weights);
+        TweedieEstimator hi = new TweedieEstimator(
+                Math.min(upperBound, p + 0.01), phi, forceInversion).compute(mu, response, weights);
+        if (mid._loglikelihood > lo._loglikelihood && !Double.isNaN(lo._loglikelihood) && !Double.isNaN(mid._loglikelihood))
+          lowerBound = lo._p;
+        if (mid._loglikelihood > hi._loglikelihood && !Double.isNaN(mid._loglikelihood) && !Double.isNaN(hi._loglikelihood))
+          upperBound = hi._p;
+
+        if (bestLLH < lo._loglikelihood && lo._loglikelihood != 0 && !forceInversion) {
+          bestLLH = lo._loglikelihood;
+          bestP = lo._p;
+        }
+
+        if (bestLLH < mid._loglikelihood && mid._loglikelihood != 0 && !forceInversion) {
+          bestLLH = mid._loglikelihood;
+          bestP = mid._p;
+        }
+
+        if (bestLLH < hi._loglikelihood && hi._loglikelihood != 0 && !forceInversion) {
+          bestLLH = hi._loglikelihood;
+          bestP = hi._p;
+        }
+      }
+
+      if (upperBound == Double.POSITIVE_INFINITY) {
+        // look at p=2 and p=3 (cheap to compute)
+        TweedieEstimator tvp2 = new TweedieEstimator(2, phi).compute(mu, response, weights);
+        TweedieEstimator tvp3 = new TweedieEstimator(3, phi).compute(mu, response, weights);
+        double llhI = tvp3._loglikelihood, llhIm1 = tvp2._loglikelihood;
+        // pI == p_i, pIm1 == p_{i-1}, ...
+        double pI = 3, pIm1 = 2, pIm2 = lowerBound;
+
+        if (bestLLH < llhI && llhI != 0) {
+          bestLLH = llhI;
+          bestP = pI;
+        }
+
+        if (bestLLH < llhIm1 && llhIm1 != 0) {
+          bestLLH = llhIm1;
+          bestP = pIm1;
+        }
+
+        // if p(2) > p(3) => search in [1, 3]
+        // look at 3,6,12,24,48,96, ... until p(x_{i-1}) > p(x_i) => search in [x_{i-2}, x_i] 
+        while (llhIm1 < llhI) {
+          pIm2 = pIm1;
+          pIm1 = pI;
+          llhIm1 = llhI;
+          pI *= 2;
+          TweedieEstimator tvp = new TweedieEstimator(pI, phi).compute(mu, response, weights);
+          llhI = tvp._loglikelihood;
+
+          if (bestLLH < llhI && llhI != 0) {
+            bestLLH = llhI;
+            bestP = pI;
+          }
+        }
+        lowerBound = pIm2;
+        upperBound = pI;
+      }
+
+      double d = upperBound - lowerBound;
+      p = (upperBound + lowerBound) / 2;
+
+      for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
+        // likelihood, grad, and hess get unstable for the series method near 2, so I'm not using Newton's method for 
+        // this region and instead use "hybrid" (series+inversion) likelihood calculation
+        if (d < newtonThreshold && p >= lowerBound && p <= upperBound && newtonFailures < 3 && !(p >= 1.95 && p <= 2.1) && p < 2) {
+          // Use Newton's method in bracketed space
+          TweedieEstimator tvp = new TweedieEstimator(
+                  p,
+                  phi,
+                  false, true, true, false).compute(mu, response, weights);
+          if (tvp._loglikelihood > bestLLH && tvp._loglikelihood != 0) {
+            bestLLH = tvp._loglikelihood;
+            bestP = p;
+          } else {
+            newtonFailures++;
+          }
+          double delta = tvp._llhDp / tvp._llhDpDp;
+          p = p - delta;
+          if (Math.abs(delta) < _parms._dispersion_epsilon) {
+            converged = true;
+            break;
+          }
+          if (_job.stop_requested())
+            break;
+        } else {
+          if (d < newtonThreshold) {
+            newtonFailures++;
+          }
+          boolean forceInversion = (lowerBound > 1.95 && upperBound < 2.1); // behaves more stable - less -oo but tends to be lower sometimes than series+inversion hybrid 
+          d *= 0.618;  // division by golden ratio
+          final double lowerBoundProposal = upperBound - d;
+          final double upperBoundProposal = lowerBound + d;
+          TweedieEstimator lowerEst = new TweedieEstimator(
+                  lowerBoundProposal, phi, forceInversion).compute(mu, response, weights);
+          TweedieEstimator upperEst = new TweedieEstimator(
+                  upperBoundProposal, phi, forceInversion).compute(mu, response, weights);
+
+          if (forceInversion)
+            bestLLH = Math.max(lowerEst._loglikelihood, upperEst._loglikelihood);
+
+          if (lowerEst._loglikelihood >= upperEst._loglikelihood) {
+            upperBound = upperBoundProposal;
+            if (lowerEst._loglikelihood >= bestLLH && lowerEst._loglikelihood != 0) {
+              bestLLH = lowerEst._loglikelihood;
+              bestP = lowerEst._p;
+            }
+          } else {
+            lowerBound = lowerBoundProposal;
+            if (upperEst._loglikelihood >= bestLLH && upperEst._loglikelihood != 0) {
+              bestLLH = upperEst._loglikelihood;
+              bestP = upperEst._p;
+            }
+          }
+          p = (upperBound + lowerBound) / 2;
+          if (Math.abs((upperBoundProposal - lowerBoundProposal)) < _parms._dispersion_epsilon || _job.stop_requested()) {
+            bestP = (upperBoundProposal + lowerBoundProposal) / 2;
+            converged = true;
+            break;
+          }
+          if (!Double.isFinite(upperEst._loglikelihood) && !Double.isFinite(lowerEst._loglikelihood)) {
+            break;
+          }
+          if (upperEst._loglikelihood == 0 && lowerEst._loglikelihood == 0) {
+            break;
+          }
+        }
+      }
+      updateTweedieParms(bestP, phi);
+      Scope.exit();
+      return Math.abs(originalP - bestP) < _parms._dispersion_epsilon && converged;
+    }
+
+    private boolean updateTweediePandPhi(int iterCnt, double[] betaCnd, Vec weights, Vec response) {
+      final double originalP = _parms._tweedie_variance_power;
+      final double originalPhi = _parms._init_dispersion_parameter;
+      final double contractRatio = 0.5;
+      final double pMin = 1 + 1e-10;
+      final double pZeroMax = 2 - 1e-10;
+      final double phiMin = 1e-10;
+      double bestLLH = Double.NEGATIVE_INFINITY, bestP = 1.5, bestPhi = 1, p, phi, centroidP, centroidPhi, diffP, diffPhi, diffInParams, diffInLLH;
+      boolean converged = false;
+      Scope.enter();
+      DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+              1, Vec.T_NUM, _dinfo._adaptedFrame);
+      Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
+      try {
+        // Nelder-Mead
+        TweedieEstimator teTmp, teReflected, teExtended, teContractedIn, teContractedOut, teHigh, teMiddle, teLow;
+        if (iterCnt > 1) {
+          // keep the previous estimate as the centroid of the triangle (unless we encounter some constraint)
+          // using the previous estimate as one of the points can lead to getting stuck in local optimum since the likelihood is not perfectly smooth
+          final double radius = 0.05 * _parms._dispersion_learning_rate;
+          // rotate the simplex every iteration by 2/15*PI => every 5th iteration has the same points just with different names
+          // this should make it less likely to get stuck in a local optimum
+          double aP = originalP + Math.cos(Math.PI / 7.5 * iterCnt) * radius,
+                  aPhi = originalPhi + Math.sin(Math.PI / 7.5 * iterCnt) * radius,
+                  bP = originalP + Math.cos(Math.PI / 7.5 * iterCnt + 2 * Math.PI / 3) * radius,
+                  bPhi = originalPhi + Math.sin(Math.PI / 7.5 * iterCnt + 2 * Math.PI / 3) * radius,
+                  cP = originalP + Math.cos(Math.PI / 7.5 * iterCnt + 4 * Math.PI / 3) * radius,
+                  cPhi = originalPhi + Math.sin(Math.PI / 7.5 * iterCnt + 4 * Math.PI / 3) * radius;
+
+          final double minPDiff = Math.min(aP - pMin, Math.min(bP - pMin, cP - pMin)),
+                  minPhiDiff = Math.min(aPhi - phiMin, Math.min(bPhi - phiMin, cPhi - phiMin));
+
+          if (minPDiff < 0) {
+            // shift the simplex to be in the allowed region
+            aP -= minPDiff;
+            bP -= minPDiff;
+            cP -= minPDiff;
+          }
+
+          if (minPhiDiff < 0) {
+            // shift the simplex to be in the allowed region
+            aPhi -= minPhiDiff;
+            bPhi -= minPhiDiff;
+            cPhi -= minPhiDiff;
+          }
+
+          if (response.min() <= 0) {
+            // makes no sense to evaluate p >= 2 as it has -Infty log likelihood => shift the simplex
+            final double maxPDiff = Math.max(aP - pZeroMax, Math.max(bP - pZeroMax, cP - pZeroMax));
+            if (maxPDiff > 0) {
+              // shift the simplex
+              aP -= maxPDiff;
+              bP -= maxPDiff;
+              cP -= maxPDiff;
+            }
+          }
+          // high likelihood (to be sorted later)
+          teHigh = new TweedieEstimator(aP, aPhi).compute(mu, response, weights);
+          // middle likelihood
+          teMiddle = new TweedieEstimator(bP, bPhi).compute(mu, response, weights);
+          // low likelihood
+          teLow = new TweedieEstimator(cP, cPhi).compute(mu, response, weights);
+        } else {
+          // high likelihood (to be sorted later)
+          teHigh = new TweedieEstimator(1.5, 1)
+                  .compute(mu, response, weights);
+          // middle likelihood
+          teMiddle = new TweedieEstimator(response.min() > 0 ? 3 : 1.75, 0.5)
+                  .compute(mu, response, weights);
+          // low likelihood
+          teLow = new TweedieEstimator(response.min() > 0 ? 2 : 1.2, 2)
+                  .compute(mu, response, weights);
+        }
+        // 1. Sort
+        if (teLow._loglikelihood > teHigh._loglikelihood) {
+          teTmp = teLow;
+          teLow = teHigh;
+          teHigh = teTmp;
+        }
+        if (teMiddle._loglikelihood > teHigh._loglikelihood) {
+          teTmp = teMiddle;
+          teMiddle = teHigh;
+          teHigh = teTmp;
+        }
+        if (teLow._loglikelihood > teMiddle._loglikelihood) {
+          teTmp = teLow;
+          teLow = teMiddle;
+          teMiddle = teTmp;
+        }
+        for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
+          if (!(Double.isFinite(teLow._loglikelihood) || Double.isFinite(teHigh._loglikelihood))) {
+            Log.info("Nelder-Mead dispersion (phi) and variance power (p) estimation: beta iter: " + iterCnt +
+                    "; Nelder-Mead iter: " + i +
+                    "; estimated p: " + bestP + "; estimated phi: " + bestPhi +
+                    "; log(Likelihood): " + bestLLH + "; Not finite likelihoods for both high and low point - skipping p and phi estimation for this iteration.");
+            return false;
+          }
+          // 2. Reflect
+          centroidP = (teMiddle._p + teHigh._p) / 2.0;
+          centroidPhi = (teMiddle._phi + teHigh._phi) / 2.0;
+          diffP = centroidP - teLow._p;
+          diffPhi = centroidPhi - teLow._phi;
+          // reflected p and phi
+          p = teLow._p + 2 * diffP;
+          phi = teLow._phi + 2 * diffPhi;
+          p = Math.max(p, pMin);
+          if (response.min() <= 0) p = Math.min(p, pZeroMax);
+          phi = Math.max(phi, phiMin);
+          teReflected = new TweedieEstimator(p, phi).compute(mu, response, weights);
+
+          if (teReflected._loglikelihood > teMiddle._loglikelihood && teReflected._loglikelihood < teHigh._loglikelihood) {
+            teLow = teReflected;
+          } else if (teReflected._loglikelihood > teHigh._loglikelihood) {
+            // 3. Extend
+            p += diffP;
+            phi += diffPhi;
+            p = Math.max(p, pMin);
+            if (response.min() <= 0) p = Math.min(p, pZeroMax);
+            phi = Math.max(phi, phiMin);
+
+            if (p == teReflected._p && phi == teReflected._phi)
+              teExtended = teReflected; // if it gets out of bounds don't let it go further
+            else
+              teExtended = new TweedieEstimator(p, phi).compute(mu, response, weights);
+
+            if (teExtended._loglikelihood > teReflected._loglikelihood)
+              teLow = teExtended;
+            else
+              teLow = teReflected;
+          } else {
+            // 4. Contract
+            if (teReflected._loglikelihood < teMiddle._loglikelihood) {
+              // Contract out
+              p = Math.max(teLow._p + (1 + contractRatio) * diffP, pMin);
+              phi = Math.max(teLow._phi + (1 + contractRatio) * diffPhi, phiMin);
+              teContractedOut = new TweedieEstimator(p, phi).compute(mu, response, weights);
+
+              // Contract in 
+              p = Math.max(teLow._p + (1 - contractRatio) * diffP, pMin);
+              phi = Math.max(teLow._phi + (1 - contractRatio) * diffPhi, phiMin);
+              teContractedIn = new TweedieEstimator(p, phi).compute(mu, response, weights);
+
+              if (teContractedOut._loglikelihood > teContractedIn._loglikelihood)
+                teTmp = teContractedOut;
+              else
+                teTmp = teContractedIn;
+            } else
+              teTmp = teMiddle;
+
+            if (teTmp._loglikelihood > teMiddle._loglikelihood) {
+              teLow = teTmp;
+            } else {
+              // shrink
+              p = (teLow._p + teHigh._p) / 2;
+              phi = (teLow._phi + teHigh._phi) / 2;
+              teLow = new TweedieEstimator(p, phi).compute(mu, response, weights);
+
+              p = (teMiddle._p + teHigh._p) / 2;
+              phi = (teMiddle._phi + teHigh._phi) / 2;
+              teMiddle = new TweedieEstimator(p, phi).compute(mu, response, weights);
+            }
+          }
+
+          // 1. Sort
+          if (teLow._loglikelihood > teHigh._loglikelihood) {
+            teTmp = teLow;
+            teLow = teHigh;
+            teHigh = teTmp;
+          }
+          if (teMiddle._loglikelihood > teHigh._loglikelihood) {
+            teTmp = teMiddle;
+            teMiddle = teHigh;
+            teHigh = teTmp;
+          }
+          if (teLow._loglikelihood > teMiddle._loglikelihood) {
+            teTmp = teLow;
+            teLow = teMiddle;
+            teMiddle = teTmp;
+          }
+
+          if (bestLLH < teHigh._loglikelihood) {
+            bestLLH = teHigh._loglikelihood;
+            bestP = teHigh._p;
+            bestPhi = teHigh._phi;
+          }
+
+          diffInParams = Math.max(
+                  Math.max(Math.abs(teHigh._p - teMiddle._p), Math.abs(teHigh._p - teLow._p)),
+                  Math.max(
+                          Math.max(Math.abs(teLow._p - teMiddle._p), Math.abs(teHigh._phi - teMiddle._phi)),
+                          Math.max(Math.abs(teHigh._phi - teLow._phi), Math.abs(teLow._phi - teMiddle._phi))
+                  )
+          );
+          diffInLLH = Math.abs((teMiddle._loglikelihood - teLow._loglikelihood) / (teHigh._loglikelihood + _parms._dispersion_epsilon));
+
+          Log.info("Nelder-Mead dispersion (phi) and variance power (p) estimation: beta iter: " + iterCnt +
+                  "; Nelder-Mead iter: " + i +
+                  "; estimated p: " + bestP + "; estimated phi: " + bestPhi +
+                  "; log(Likelihood): " + bestLLH + "; diff in params: " + diffInParams + "; diff in LLH: " + diffInLLH +
+                  "; dispersion_epsilon: " + _parms._dispersion_epsilon);
+
+          converged = diffInParams < _parms._dispersion_epsilon && diffInLLH < _parms._dispersion_epsilon;
+          if (converged)
+            break;
+        }
+
+        updateTweedieParms(bestP, bestPhi);
+
+        return Math.abs(originalP - bestP) < _parms._dispersion_epsilon && Math.abs(originalPhi - bestPhi) < _parms._dispersion_epsilon && converged;
+      } finally {
+        Scope.exit();
+      }
+    }
+
+    private void updateTweedieParms(double p, double dispersion) {
+      if (!Double.isFinite(p)) return;
+      _parms.updateTweedieParams(p, _parms._tweedie_link_power, dispersion);
+      _model._parms.updateTweedieParams(p, _model._parms._tweedie_link_power, dispersion);
+      if (_state._glmw != null) {
+        _state._glmw = new GLMWeightsFun(_parms);
+      }
+    }
+
+    private void updateTheta(double theta){
+      if (_state._glmw != null) {
+         _state._glmw._theta = theta;
+         _state._glmw._invTheta = 1./theta;
+      }
+      _parms._theta = theta;
+      _parms._invTheta =1./theta;
+      _model._parms._theta = theta;
+      _model._parms._invTheta = 1./theta;
+    }
+
+    private boolean updateNegativeBinomialDispersion(int iterCnt, double[] betaCnd, double previousNLLH, Vec weights, Vec response) {
+      double delta;
+      double theta;
+      boolean converged = false;
+      try {
+        Scope.enter();
+        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(betaCnd, _model, _dinfo).doAll(
+                1, Vec.T_NUM, _dinfo._adaptedFrame);
+        Vec mu = Scope.track(gPred.outputFrame(Key.make(), new String[]{"prediction"}, null)).vec(0);
+
+        if (iterCnt == 1) {
+          theta = estimateNegBinomialDispersionMomentMethod(_model, betaCnd, _dinfo, weights, response, mu);
+        } else {
+          theta = _parms._theta;
+          NegativeBinomialGradientAndHessian nbGrad = new NegativeBinomialGradientAndHessian(theta).doAll(mu, response, weights);
+          delta = _parms._dispersion_learning_rate * nbGrad._grad / nbGrad._hess;
+          double bestLLH = Math.max(-previousNLLH, nbGrad._llh);
+          double bestTheta = theta;
+
+          delta = Double.isFinite(delta) ? delta : 1; // NaN can occur in extreme datasets so try to get out of this neighborhood just by linesearch
+
+          // Golden section search for the optimal size of delta
+          // Set lowerbound to -10 or lowest value that will keep theta > 0 which ever is bigger
+          // Negative value here helps with datasets where we use to diverge, I'm not sure yet if it's caused by some
+          // numerical issues or if the likelihood can get multimodal for some cases.
+          double lowerBound = (theta + 10 * delta < 0) ? (1 - 1e-15) * theta / delta : -10;
+          double upperBound = (theta - 1e3 * delta < 0) ? (1 - 1e-15) * theta / delta : 1e3;
+          double d = upperBound - lowerBound;
+
+          for (int i = 0; i < _parms._max_iterations_dispersion; i++) {
+            d *= 0.618;  // division by golden ratio
+            final double lowerBoundProposal = upperBound - d;
+            final double upperBoundProposal = lowerBound + d;
+            NegativeBinomialGradientAndHessian nbLower = new NegativeBinomialGradientAndHessian(theta - lowerBoundProposal * delta).doAll(mu, response, weights);
+            NegativeBinomialGradientAndHessian nbUpper = new NegativeBinomialGradientAndHessian(theta - upperBoundProposal * delta).doAll(mu, response, weights);
+
+            if (nbLower._llh >= nbUpper._llh) {
+              upperBound = upperBoundProposal;
+              if (nbLower._llh > bestLLH) {
+                bestLLH = nbLower._llh;
+                bestTheta = nbLower._theta;
+              }
+            } else {
+              lowerBound = lowerBoundProposal;
+              if (nbUpper._llh > bestLLH) {
+                bestLLH = nbUpper._llh;
+                bestTheta = nbUpper._theta;
+              }
+            }
+            if (Math.abs((upperBoundProposal - lowerBoundProposal) * Math.max(1, delta / Math.max(_parms._theta, bestTheta))) < _parms._dispersion_epsilon || _job.stop_requested()) {
+              break;
+            }
+          }
+
+          theta = bestTheta;
+          converged = (nbGrad._llh + previousNLLH) <= _parms._objective_epsilon || !Double.isFinite(theta);
+        }
+        delta = _parms._theta - theta;
+        converged = converged && (Math.abs(delta) / Math.max(_parms._theta, theta) < _parms._dispersion_epsilon);
+
+        updateTheta(theta);
+        return converged;
+      } finally {
+        Scope.exit();
       }
     }
 
@@ -2074,8 +2999,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               fitIRLSM_ordinal_default(solver);
             else if (gaussian.equals(_parms._family) && Link.identity.equals(_parms._link))
               fitLSM(solver);
-            else
-              fitIRLSM(solver);
+            else {
+              if (_parms._dispersion_parameter_method.equals(ml))
+                  fitIRLSMML(solver);
+              else
+                fitIRLSM(solver);
+            }
             break;
           case GRADIENT_DESCENT_LH:
           case GRADIENT_DESCENT_SQERR:
@@ -2092,38 +3021,79 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             throw H2O.unimpl();
         }
       }
-      if (_parms._compute_p_values) { // compute p-values
-        double se = 1;
-        boolean seEst = false;
-        double[] beta = _state.beta();
 
-        if (_parms._family != binomial && _parms._family != Family.poisson) {
+      // Make sure if we set dispersion for Tweedie p and phi estimation even without calculating p values
+      if (tweedie.equals(_parms._family) && !_parms._fix_dispersion_parameter && !_parms._fix_tweedie_variance_power) {
+        _model.setDispersion(_parms._init_dispersion_parameter, true);
+      }
+      if (_parms._compute_p_values) { // compute p-values, standard error, estimate dispersion parameters...
+        double se = _parms._init_dispersion_parameter;
+        boolean seEst = false;
+        double[] beta = _state.beta();  // standardized if _parms._standardize=true, original otherwise
+        Log.info("estimating dispersion parameter using method: " + _parms._dispersion_parameter_method);
+        if (_parms._family != binomial && _parms._family != Family.poisson && !_parms._fix_dispersion_parameter) {
           seEst = true;
-          ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
-          if (_parms._useDispersion1)
-            se = 1.0;
-          else
-            se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate
+          if (pearson.equals(_parms._dispersion_parameter_method) || 
+                  deviance.equals(_parms._dispersion_parameter_method)) {
+            if (_parms._useDispersion1) {
+              se = 1;
+            } else {
+              ComputeSEorDEVIANCETsk ct = new ComputeSEorDEVIANCETsk(null, _state.activeData(), _job._key, beta,
+                      _parms, _model).doAll(_state.activeData()._adaptedFrame);
+              se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // dispersion parameter estimate
+            }
+          } else if (ml.equals(_parms._dispersion_parameter_method)) {
+            if (gamma.equals(_parms._family)) {
+              ComputeGammaMLSETsk mlCT = new ComputeGammaMLSETsk(null, _state.activeData(), _job._key, beta,
+                      _parms).doAll(_state.activeData()._adaptedFrame);
+
+              double oneOverSe = estimateGammaMLSE(mlCT, 1.0 / se, beta, _parms, _state, _job, _model);
+              se = 1.0 / oneOverSe;
+            } else if (negativebinomial.equals(_parms._family)) {
+              se = _parms._theta;
+            } else if (_tweedieDispersionOnly) {
+              se = estimateTweedieDispersionOnly(_parms, _model, _job, beta, _state.activeData());
+              if (!Double.isFinite(se))
+                Log.warn("Tweedie dispersion parameter estimation diverged. "+
+                        "Estimation of both dispersion and variance power might have better luck.");
+            }
+          }
+          // save estimation to the _params, so it is available for params.likelihood computation
+          _parms._dispersion_estimated = se;
         }
         double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
+       // double[][] inv = cholInv(); // from non-standardized predictors
         Cholesky chol = _chol;
+        DataInfo activeData = _state.activeData();
         if (_parms._standardize) { // compute non-standardized t(X)%*%W%*%X
-          DataInfo activeData = _state.activeData();
           double[] beta_nostd = activeData.denormalizeBeta(beta);
           DataInfo.TransformType transform = activeData._predictor_transform;
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
-          Gram g = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          _gramInfluence = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta_nostd).doAll(activeData._adaptedFrame);
           activeData.setPredictorTransform(transform); // just in case, restore the transform
-          g.mul(_parms._obj_reg);
-          chol = g.cholesky(null);
           beta = beta_nostd;
+        } else {  // just rebuild gram with latest GLM coefficients
+          _gramInfluence = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta).doAll(activeData._adaptedFrame);
         }
+        Gram g = _gramInfluence._gram;
+        g.mul(_parms._obj_reg);
+        chol = g.cholesky(null);
         double[][] inv = chol.getInv();
+        if (_parms._influence != null) {
+          _cholInvInfluence = new double[inv.length][inv.length];
+          copy2DArray(inv, _cholInvInfluence);
+          ArrayUtils.mult(_cholInvInfluence, _parms._obj_reg);
+          g.mul(1.0/_parms._obj_reg);
+        }
         ArrayUtils.mult(inv, _parms._obj_reg * se);
+        
         _vcov = inv;
         for (int i = 0; i < zvalues.length; ++i)
           zvalues[i] = beta[i] / Math.sqrt(inv[i][i]);
+        // set z-values for the final model (might be overwritten later)
         _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
+        // save z-values to assign to the new submodel
+        _state.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), seEst);
       }
     }
 
@@ -2281,8 +3251,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Link tlink = tfamily.defaultLink;
         if (!(link == null))
           tlink = link[k];
-        GLMWeightsFun glmfun = new GLMWeightsFun(tfamily, tlink,
-                0, 0, 0);
+        GLMWeightsFun glmfun = new GLMWeightsFun(tfamily, tlink, 0, 0, 0, 1, false);
         int colLength = _randC[k];
         for (int col = 0; col < colLength; col++) {
           int index = k * colLength + col;
@@ -2488,16 +3457,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (continueFromPreviousSubmodel)
           sm = _model._output._submodels[i];
         else
-          _model.addSubmodel(sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain, 
-                  nullDevValid, _totalBetaLen));
+          _model.addSubmodel(i, sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain,
+                  nullDevValid, _betaInfo.totalBetaLength(), null, false));
       } else {  // this is also the path for HGLM model
         if (continueFromPreviousSubmodel) {
           sm = _model._output._submodels[i];
         } else {
-          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1, _totalBetaLen);// restart from last run
+          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1,
+                  _betaInfo.totalBetaLength(), _state.zValues(), _state.dispersionEstimated());// restart from last run
           if (_parms._HGLM) // add random coefficients for random effects/columns
             sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
-          _model.addSubmodel(sm);
+          _model.addSubmodel(i, sm);
         }
         if (_insideCVCheck && _parms._generate_scoring_history && !Solver.L_BFGS.equals(_parms._solver) && 
                 (multinomial.equals(_parms._family) || ordinal.equals(_parms._family))) {
@@ -2534,9 +3504,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if (_parms._HGLM) {
           sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, nullDevTrain, nullDevValid,
-                  _totalBetaLen);
+                  _betaInfo.totalBetaLength(), _state.zValues(), _state.dispersionEstimated());
           sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
-          _model.updateSubmodel(sm);
+          _model.updateSubmodel(i, sm);
         } else {
           double trainDev = _state.deviance() / _nobs;
           double validDev = Double.NaN;  // calculated from validation dataset below if present
@@ -2554,8 +3524,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (_parms._lambda_search)
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), 
                     _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
-          _model.updateSubmodel(sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
-                  trainDev, validDev, _totalBetaLen));
+          _model.updateSubmodel(i, sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
+                  trainDev, validDev, _betaInfo.totalBetaLength(), _state.zValues(), _state.dispersionEstimated()));
         }
       }
       return sm;
@@ -2566,7 +3536,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       try {
         doCompute();
       } finally {
-        if (_model != null) _model.unlock(_job);
+        if ((!_doInit || !_cvRuns) && _betaConstraints != null) {
+          DKV.remove(_betaConstraints._key);
+          _betaConstraints.delete();
+        }
+        if (_model != null) {
+          if (_parms._influence != null) {
+            final List<Key> keep = new ArrayList<>();
+            keepFrameKeys(keep, _model._output._regression_influence_diagnostics);
+            if (_parms._keepBetaDiffVar)
+              keepFrameKeys(keep, _model._output._betadiff_var);
+            Scope.untrack(keep.toArray(new Key[keep.size()]));
+          }
+          _model.unlock(_job);
+        }
       }
     }
     
@@ -2595,7 +3578,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       _model._output._start_time = System.currentTimeMillis(); //quickfix to align output duration with other models
-      _model._totalBetaLength = _totalBetaLen;
       if (_parms._lambda_search) {
         if (ordinal.equals(_parms._family))
           nullDevTrain = new GLMResDevTaskOrdinal(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();
@@ -2700,7 +3682,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if ((_parms._lambda_search || _parms._generate_scoring_history) && (_parms._score_each_iteration || 
                   timeSinceLastScoring() > _scoringInterval || ((_parms._score_iteration_interval > 0) &&
                   ((_state._iter % _parms._score_iteration_interval) == 0)))) {
-            _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount); // quick and easy way to set submodel parameters
+            _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount, _parms); // quick and easy way to set submodel parameters
             scoreAndUpdateModel(); // update partial results
           }
           _job.update(_workPerIteration, "iter=" + _state._iter + " lmb=" +
@@ -2725,22 +3707,33 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if (_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
-      if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate))
-        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel);  // reset best_submodel_idx to what xval has found
+      if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate) && _bestCVSubmodel < _model._output._submodels.length)
+        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel, _model._parms);  // reset best_submodel_idx to what xval has found
       else
-        _model._output.pickBestModel();
+        _model._output.pickBestModel(_model._parms);
       if (_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
         _model.setVcov(_vcov);
         _model.update(_job._key);
       }
-      if (!_parms._HGLM)  // no need to do for HGLM
+      if (!_parms._HGLM) {  // no need to do for HGLM
+        _model._finalScoring = true; // enables likelihood calculation while scoring
         scoreAndUpdateModel();
+        _model._finalScoring = false; // avoid calculating likelihood in case of further updates
+      }
+      
+      if (dfbetas.equals(_parms._influence))
+        genRID();
+      
+      if (_parms._generate_variable_inflation_factors) {
+        _model._output._vif_predictor_names = _model.buildVariableInflationFactors(_train, _dinfo);
+      }// build variable inflation factors for numerical predictors
       TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
               (null != _parms._valid), false, _model._output.getModelCategory(), false);
       _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
               scoring_history_early_stop);
       _model._output._varimp = _model._output.calculateVarimp();
       _model._output._variable_importances = calcVarImp(_model._output._varimp);
+      
       _model.update(_job._key);
 /*      if (_vcov != null) {
         _model.setVcov(_vcov);
@@ -2759,6 +3752,71 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+    /***
+     * Generate the regression influence diagnostic for gaussian and binomial families.  It takes the following steps:
+     * 1. generate the inverse of gram matrix;
+     * 2. generate sum of all columns of gram matrix;
+     * 3. task is called to generate the hat matrix equation 2 or equation 6 and the diagnostic in equation 3 or 7.
+     * 
+     * Note that redundant predictors are excluded.
+     */
+    public void genRID() {
+      final double[] beta = _dinfo.denormalizeBeta(_state.beta());// if standardize=true, standardized coeff, else non-standardized coeff
+      final double[] stdErr = _model._output.stdErr().clone();
+      final String[] names = genDfbetasNames(_model); // exclude redundant predictors
+      DataInfo.TransformType transform = DataInfo.TransformType.NONE;
+      // concatenate RIDFrame to the training data frame
+      if (_parms._standardize) {  // remove standardization
+        transform = _dinfo._predictor_transform;
+        _dinfo.setPredictorTransform(DataInfo.TransformType.NONE);
+      }
+      Frame RIDFrame = gaussian.equals(_parms._family) ? genRIDGaussian(_model._output.beta(), _cholInvInfluence, names) : 
+              genRIDBinomial(beta, _cholInvInfluence, stdErr, names);
+      Scope.track(RIDFrame);
+      Frame combinedFrame = buildRIDFrame(_parms, _train.deepCopy(Key.make().toString()), RIDFrame);
+      _model._output._regression_influence_diagnostics = combinedFrame.getKey();
+      DKV.put(combinedFrame);
+      if (_parms._standardize)
+        _dinfo.setPredictorTransform(transform);
+    }
+    
+    private Frame genRIDBinomial(double[] beta, double[][] inv, double[] stdErr, String[] names) {
+      RegressionInfluenceDiagnosticsTasks.RegressionInfluenceDiagBinomial ridBinomial = 
+              new RegressionInfluenceDiagnosticsTasks.RegressionInfluenceDiagBinomial(_job, beta, inv, _parms, _dinfo, stdErr);
+      ridBinomial.doAll(names.length, Vec.T_NUM, _dinfo._adaptedFrame);
+      return ridBinomial.outputFrame(Key.make(), names, new String[names.length][]);
+    }
+    
+    private Frame genRIDGaussian(final double[] beta, final double[][] inv, final String[] names) {
+      final double[] stdErr = _model._output.stdErr();
+      final double[][] gramMat = _gramInfluence._gram.getXX(); // not scaled by parms._obj_reg
+      RegressionInfluenceDiagnosticsTasks.ComputeNewBetaVarEstimatedGaussian betaMinusOne =
+              new RegressionInfluenceDiagnosticsTasks.ComputeNewBetaVarEstimatedGaussian(inv, _gramInfluence._xy, _job,
+                      _dinfo, gramMat, _gramInfluence.sumOfRowWeights, _gramInfluence._yy, stdErr);
+      betaMinusOne.doAll(names.length+1, Vec.T_NUM, _dinfo._adaptedFrame);
+      String[] namesVar = new String[names.length+1];
+      System.arraycopy(names, 0, namesVar, 0, names.length);
+      namesVar[names.length] = "varEstimate";
+      Frame newBetasVarEst = betaMinusOne.outputFrame(Key.make(), namesVar, new String[namesVar.length][]);
+      if (_parms._keepBetaDiffVar) {
+        DKV.put(newBetasVarEst);
+        _model._output._betadiff_var = newBetasVarEst._key;
+      } else {
+        Scope.track(newBetasVarEst);
+      }                      
+      double[] betaReduced; // exclude redundant predictors if present
+      if (names.length==beta.length) {  // no redundant column
+        betaReduced = beta;
+      } else {
+        betaReduced = new double[names.length];
+        removeRedCols(beta, betaReduced, stdErr);
+      }
+      RegressionInfluenceDiagnosticsTasks.RegressionInfluenceDiagGaussian genRid =
+              new RegressionInfluenceDiagnosticsTasks.RegressionInfluenceDiagGaussian(inv, betaReduced, _job);
+      genRid.doAll(names.length, Vec.T_NUM, newBetasVarEst);
+      return genRid.outputFrame(Key.make(), names, new String[names.length][]);
+    }
+    
     private boolean betaConstraintsCheckEnabled() {
       return Boolean.parseBoolean(getSysProperty("glm.beta.constraints.checkEnabled", "true")) &&
               !multinomial.equals(_parms._family) && !ordinal.equals(_parms._family);
@@ -2777,7 +3835,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int coeffsLen = bc._betaLB.length;
       for (int index=0; index < coeffsLen; index++) {
         if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
-          throw new H2OFailException("GLM model coefficients do not fall within beta constraint bounds.");
+          throw new H2OFailException("GLM model coefficient" + coeffs[index]+" exceeds beta constraint bounds.  Lower: "
+                  +bc._betaLB[index]+", upper: "+bc._betaUB[index]);
       }
     }
 
@@ -2885,7 +3944,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _earlyStop = _earlyStopEnabled && updateEarlyStop();
       }
     }
-
     // update user visible progress
     protected void updateProgress(boolean canScore) {
       assert !_parms._lambda_search || _parms._generate_scoring_history;
@@ -2910,7 +3968,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
   
   private Solver defaultSolver() {
-    Solver s = Solver.IRLSM;
+    Solver s = IRLSM;
     if (_parms._remove_collinear_columns) { // choose IRLSM if remove_collinear_columns is true
       Log.info(LogMsg("picked solver " + s));
       _parms._solver = s;
@@ -3366,22 +4424,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     final DataInfo _dinfo;
     final BetaConstraint _bc;
     final double _l2pen; // l2 penalty
-    double[][] _betaMultinomial;
     final Job _job;
+    final BetaInfo _betaInfo;
+
+    double[][] _betaMultinomial;
     double[][][] _penaltyMatrix;
     int[][] _gamColIndices;
 
-    public GLMGradientSolver(Job job, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc) {
+    public GLMGradientSolver(Job job, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc, BetaInfo bi) {
       _job = job;
       _bc = bc;
       _parms = glmp;
       _dinfo = dinfo;
       _l2pen = l2pen;
+      _betaInfo = bi;
     }
 
-    public GLMGradientSolver(Job job, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc, 
+    public GLMGradientSolver(Job job, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc, BetaInfo bi,
                              double[][][] penaltyMat, int[][] gamColInd) {
-      this(job, glmp, dinfo, l2pen, bc);
+      this(job, glmp, dinfo, l2pen, bc, bi);
       _penaltyMatrix = penaltyMat;
       _gamColIndices=gamColInd;
     }
@@ -3417,18 +4478,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (multinomial.equals(_parms._family) || ordinal.equals(_parms._family)) {
         // beta could contain active cols only for some classes and full predictors for other classes at this point
         if (_betaMultinomial == null) {
-          int nclasses = _totalBetaLen/_betaLenPerClass;
 //          assert beta.length % (_dinfo.fullN() + 1) == 0:"beta len = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
-          _betaMultinomial = new double[nclasses][]; // contains only active columns if rcc=true
-          for (int i = 0; i < nclasses; ++i)
+          _betaMultinomial = new double[_betaInfo._nBetas][]; // contains only active columns if rcc=true
+          for (int i = 0; i < _betaInfo._nBetas; ++i)
             _betaMultinomial[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);  // only active columns here
         }
         int off = 0;
         for (int i = 0; i < _betaMultinomial.length; ++i) { // fill _betaMultinomial class by coeffPerClass
-          if (!_parms._remove_collinear_columns || _dinfo._activeCols == null || _dinfo._activeCols.length == _betaLenPerClass)
+          if (!_parms._remove_collinear_columns || _dinfo._activeCols == null || _dinfo._activeCols.length == _betaInfo._betaLenPerClass)
             System.arraycopy(beta, off, _betaMultinomial[i], 0, _betaMultinomial[i].length);
           else  // _betaMultinomial only contains active columns
-            _betaMultinomial[i] = extractSubRange(_betaLenPerClass, i, _dinfo._activeCols, beta);
+            _betaMultinomial[i] = extractSubRange(_betaInfo._betaLenPerClass, i, _dinfo._activeCols, beta);
           off += _betaMultinomial[i].length;
         }
         GLMMultinomialGradientBaseTask gt = new GLMMultinomialGradientTask(_job, _dinfo, _l2pen, _betaMultinomial,
@@ -3479,7 +4539,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           gradient[gradient.length - 1] = 0;
         
         double gamSmooth = gam.equals(_parms._glmType)?
-                calSmoothNess(expandVec(beta, _dinfo._activeCols, _totalBetaLen), _penaltyMatrix, _gamColIndices):0;
+                calSmoothNess(expandVec(beta, _dinfo._activeCols, _betaInfo.totalBetaLength()), _penaltyMatrix, _gamColIndices):0;
         double obj = likelihood * _parms._obj_reg + .5 * _l2pen * ArrayUtils.l2norm2(beta, true)+gamSmooth;
         if (_bc != null && _bc._betaGiven != null && _bc._rho != null)
           obj = ProximalGradientSolver.proximal_gradient(gradient, obj, beta, _bc._betaGiven, _bc._rho);
@@ -3491,7 +4551,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public GradientInfo getObjective(double[] beta) {
       double l = new GLMResDevTask(_job._key,_dinfo,_parms,beta).doAll(_dinfo._adaptedFrame)._likelihood;
       double smoothness = gam.equals(_parms._glmType)?
-              calSmoothNess(expandVec(beta, _dinfo._activeCols, _totalBetaLen), _penaltyMatrix, _gamColIndices):0;
+              calSmoothNess(expandVec(beta, _dinfo._activeCols, _betaInfo.totalBetaLength()), _penaltyMatrix, _gamColIndices):0;
       return new GLMGradientInfo(l,l*_parms._obj_reg + .5*_l2pen*ArrayUtils.l2norm2(beta,true)
               +smoothness,null);
     }
@@ -3507,7 +4567,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return etaOffset;
   }
 
+  public static final class BetaInfo extends Iced<BetaInfo> {
+    public final int _nBetas;
+    public final int _betaLenPerClass;
 
+    public BetaInfo(int nBetas, int betaLenPerClass) {
+      _nBetas = nBetas;
+      _betaLenPerClass = betaLenPerClass;
+    }
+
+    public int totalBetaLength() {
+      return _nBetas * _betaLenPerClass;
+    }
+  }
+  
   public final class BetaConstraint extends Iced {
     double[] _betaStart;
     double[] _betaGiven;
@@ -3531,6 +4604,34 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+    public void setNonNegative(Frame otherConst) {
+      List<String> constraintNames = extractVec2List(otherConst); // maximum size = number of predictors, an integer
+      List<String> coeffNames = Arrays.stream(_dinfo.coefNames()).collect(Collectors.toList());
+      int numCoef = coeffNames.size();
+      for (int index=0; index<numCoef; index++) { // only changes beta constraints if not been specified before
+        if (!constraintNames.contains(coeffNames.get(index))) {  
+          _betaLB[index] = 0;
+          _betaUB[index] = Double.POSITIVE_INFINITY;
+        }
+      }
+    }
+
+    /**
+     * Extract predictor names in the constraint frame constraintF into a list.  Okay to extract into a list as
+     * the number of predictor is an integer and not long.
+     */
+    public List<String> extractVec2List(Frame constraintF) {
+      List<String> constraintNames = new ArrayList<>();
+      Vec.Reader vr = constraintF.vec(0).new Reader();
+      long numRows = constraintF.numRows();
+      
+      for (long index=0; index<numRows; index++) {
+        BufferedString bs = vr.atStr(new BufferedString(), index);
+        constraintNames.add(bs.toString());
+      }
+      return constraintNames;
+    }
+
     public void applyAllBounds(double[] beta) {
       int betaLength = beta.length;
       for (int index=0; index<betaLength; index++)
@@ -3551,10 +4652,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Frame transformedFrame = FrameUtils.encodeBetaConstraints(null, coefNames, coefOriginalNames, beta_constraints);
       return transformedFrame;
     }
-
+    
     public BetaConstraint(Frame beta_constraints) {
-      beta_constraints = encodeCategoricalsIfPresent(beta_constraints);
-      Vec v = beta_constraints.vec("names");
+     // beta_constraints = encodeCategoricalsIfPresent(beta_constraints); // null key
+      if (_enumInCS) {
+        if (_betaConstraints == null) {
+          beta_constraints = expandedCatCS(_parms._beta_constraints.get(), _parms);
+          DKV.put(beta_constraints);
+          _betaConstraints = beta_constraints;
+        } else {
+          beta_constraints = _betaConstraints;
+        }
+    }
+      Vec v = beta_constraints.vec("names");  // add v to scope.track does not work
       String[] dom;
       int[] map;
       if (v.isString()) {
@@ -3714,7 +4824,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         }
       }
-      if (_parms._non_negative) setNonNegative();
+      if (_parms._non_negative) {
+        if (gam.equals(_parms._glmType))
+          setNonNegative(beta_constraints);
+        else
+          setNonNegative();
+      }
       check();
     }
 

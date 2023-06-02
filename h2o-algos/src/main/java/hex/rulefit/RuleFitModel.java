@@ -14,7 +14,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
+import static hex.rulefit.RuleFitUtils.deduplicateRules;
+import static hex.rulefit.RuleFitUtils.sortRules;
+
+public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> implements SignificantRulesCollector{
     public enum Algorithm {DRF, GBM, AUTO}
 
     public enum ModelType {RULES, RULES_AND_LINEAR, LINEAR}
@@ -213,5 +216,11 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
                 return true;
         }
         return false;
+    }
+
+    @Override
+    public TwoDimTable getRuleImportanceTable() {
+        return RuleFitUtils.convertRulesToTable(sortRules(deduplicateRules(RuleFitUtils.getRules(glmModel.coefficients(),
+                ruleEnsemble, this._output.classNames(), this._output.nclasses()), _parms._remove_duplicates)), this._output.isClassifier() && this._output.nclasses() > 2, true);
     }
 }

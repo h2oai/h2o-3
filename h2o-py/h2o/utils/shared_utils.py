@@ -6,11 +6,19 @@
 """Shared utilities used by various classes, all placed here to avoid circular imports.
 
 This file INTENTIONALLY has NO module dependencies!
+
+TODO: clean up this file that turned into a waste bin over the years:
+- split this into more specific modules.
+- utility modules should have a specific name to limit the scope of the garbage we put in (like waste sorting).
+- utility modules should if possible be placed under appropriate parent module 
+  (e.g. model/mojo related utility functions should go under h2o.model)
+- utility functions used ONLY in tests should go to test utilities! no reason to export those to end users!
+- same for model_utils.py nearby
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 from .compatibility import *  # NOQA
 
 import csv
+import contextlib
 import io
 import itertools
 import os
@@ -21,6 +29,20 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+
+
+try:
+    from contextlib import AbstractContextManager
+except ImportError:
+    import abc
+    
+    class AbstractContextManager(metaclass=abc.ABCMeta):
+        @classmethod
+        def __subclasshook__(cls, C):
+            if cls is AbstractContextManager:
+                return all(any(m in SC.__dict__ for SC in C.__mro__) for m in ("__enter__", "__exit__"))
+            return NotImplemented
+
 
 from h2o.backend.server import H2OLocalServer
 from h2o.exceptions import H2OValueError
@@ -34,6 +56,38 @@ _id_ctr = 0
 _id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 
 __all__ = ('mojo_predict_csv', 'mojo_predict_pandas')
+
+
+class List(list):
+    """a list accepting attributes"""
+    pass
+
+
+class LookupSeq(tuple):
+    """
+    An immutable sequence implementation (actually a tuple) optimized for fast lookups.
+    Some code needs both random/indexed access on large lists and do many lookups `elem in my_list` (e.g. in a loop),
+    it is recommended to use this class in that case to avoid forgetting to build or use a set every time we need a lookup. 
+    
+    Note that this list is read-only as we don't want to have to synchronize the backed set used for the lookups.
+    """
+    def __new__(cls, seq=()):
+        """need to implement  __new__ to be able to extend tuple (not necessary for list)"""
+        return super(LookupSeq, cls).__new__(cls, seq)
+    
+    def __init__(self, seq=()):
+        self.__set = frozenset(self)  # lookup functions backed by a set
+        
+    def __contains__(self, item):
+        return item in self.__set
+    
+    def set(self):
+        """
+        use this for arithmetic operations on the elements to avoid confusion.
+        We still want this to behave like a list for the most part, 
+        and this is slightly faster than building a set from the list itself.
+        """
+        return self.__set
 
 
 def _py_tmp_key(append):
@@ -68,13 +122,6 @@ def temp_ctr():
 def is_module_available(mod):
     if mod in sys.modules and sys.modules[mod] is not None:  # fast track + safer in unusual environments 
         return True
-    if PY2:
-        import imp
-        try:
-            imp.find_module(mod)
-            return True
-        except ImportError:
-            return False
         
     import importlib.util
     return importlib.util.find_spec(mod) is not None
@@ -349,16 +396,6 @@ def get_human_readable_time(time_ms):
     return res.strip()
 
 
-def print2(msg, flush=False, end="\n"):
-    """
-    This function exists here ONLY because Sphinx.ext.autodoc gets into a bad state when seeing the print()
-    function. When in that state, autodoc doesn't display any errors or warnings, but instead completely
-    ignores the "bysource" member-order option.
-    """
-    print(msg, end=end)
-    if flush: sys.stdout.flush()
-
-
 def normalize_slice(s, total):
     """
     Return a "canonical" version of slice ``s``.
@@ -398,7 +435,7 @@ h2o_predictor_class = "hex.genmodel.tools.PredictCsv"
 
 
 def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classpath=None, java_options=None, 
-                        verbose=False, setInvNumNA=False, predict_contributions=False):
+                        verbose=False, setInvNumNA=False, predict_contributions=False, predict_calibrated=False):
     """
     MOJO scoring function to take a Pandas frame and use MOJO model as zip file to score.
 
@@ -412,6 +449,7 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
     :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
         (only for tree-based models).
+    :param predict_calibrated: if true, then return calibrated probabilities in addition to the predicted probabilities.
     :return: Pandas frame with predictions
     """
     tmp_dir = tempfile.mkdtemp()
@@ -426,14 +464,15 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
         mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path,
                          output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path,
                          classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA,
-                         predict_contributions=predict_contributions)
+                         predict_contributions=predict_contributions, predict_calibrated=predict_calibrated)
         return pandas.read_csv(prediction_csv_path)
     finally:
         shutil.rmtree(tmp_dir)
 
 
 def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, 
-                     java_options=None, verbose=False, setInvNumNA=False, predict_contributions=False, 
+                     java_options=None, verbose=False, setInvNumNA=False, 
+                     predict_contributions=False, predict_calibrated=False,
                      extra_cmd_args=None):
     """
     MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
@@ -450,6 +489,7 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
     :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
         (only for tree-based models).
+    :param predict_calibrated: if true, then return calibrated probabilities in addition to the predicted probabilities.
     :param extra_cmd_args: Optional, a list of additional arguments to append to genmodel.jar's command line. 
     :return: List of computed predictions
     """
@@ -515,6 +555,9 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     if predict_contributions:
         cmd.append('--predictContributions')
 
+    if predict_calibrated:
+        cmd.append('--predictCalibrated')
+
     if extra_cmd_args:
         cmd += extra_cmd_args
 
@@ -558,3 +601,12 @@ class InMemoryZipArch(object):
         if self._file_name is None:
             return
         self.write_to_file(self._file_name)
+
+
+@contextlib.contextmanager
+def as_resource(o):
+    if isinstance(o, AbstractContextManager):
+        with o as res:
+            yield res
+    else:
+        yield o

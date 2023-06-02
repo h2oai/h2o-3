@@ -216,8 +216,8 @@ public class ModelingStepsExecutorTest {
         StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_1_cancelled_substep"), parentJob);
         assertEquals(ResultStatus.success, state.status());
         assertEquals(3, state.subStates().size());
-        assertEquals(ResultStatus.success, state.subState(NAME+" sub_step_1").status());
-        assertEquals(ResultStatus.cancelled, state.subState(NAME+" sub_step_2").status());
+        assertEquals(ResultStatus.success, state.subState(NAME+":sub_step_1").status());
+        assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_2").status());
         executor.stop();
         assertEquals(1, aml.leaderboard().getModelCount());
     }
@@ -231,9 +231,9 @@ public class ModelingStepsExecutorTest {
         StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_1_failed_substep"), parentJob);
         assertEquals(ResultStatus.success, state.status());
         assertEquals(4, state.subStates().size());
-        assertEquals(ResultStatus.success, state.subState(NAME+" sub_step_1").status());
-        assertEquals(ResultStatus.failed, state.subState(NAME+" sub_step_2").status());
-        assertEquals(ResultStatus.cancelled, state.subState(NAME+" sub_step_3").status());
+        assertEquals(ResultStatus.success, state.subState(NAME+":sub_step_1").status());
+        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_2").status());
+        assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
         executor.stop();
         assertEquals(1, aml.leaderboard().getModelCount());
     }
@@ -247,10 +247,10 @@ public class ModelingStepsExecutorTest {
         StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_all_failed_substeps"), parentJob);
         assertEquals(ResultStatus.cancelled, state.status());
         assertEquals(5, state.subStates().size());
-        assertEquals(ResultStatus.failed, state.subState(NAME+" sub_step_1").status());
-        assertEquals(ResultStatus.skipped, state.subState(NAME+" sub_step_2").status());
-        assertEquals(ResultStatus.cancelled, state.subState(NAME+" sub_step_3").status());
-        assertEquals(ResultStatus.failed, state.subState(NAME+" sub_step_4").status());
+        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_1").status());
+        assertEquals(ResultStatus.skipped, state.subState(NAME+":sub_step_2").status());
+        assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
+        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_4").status());
         executor.stop();
         assertEquals(0, aml.leaderboard().getModelCount());
     }
@@ -264,10 +264,10 @@ public class ModelingStepsExecutorTest {
         StepResultState state = executor.submit(aml.session().getModelingStep(NAME, "job_with_all_failed_substeps"), parentJob);
         assertEquals(ResultStatus.failed, state.status());
         assertEquals(5, state.subStates().size());
-        assertEquals(ResultStatus.failed, state.subState(NAME+" sub_step_1").status());
-        assertEquals(ResultStatus.skipped, state.subState(NAME+" sub_step_2").status());
-        assertEquals(ResultStatus.cancelled, state.subState(NAME+" sub_step_3").status());
-        assertEquals(ResultStatus.failed, state.subState(NAME+" sub_step_4").status());
+        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_1").status());
+        assertEquals(ResultStatus.skipped, state.subState(NAME+":sub_step_2").status());
+        assertEquals(ResultStatus.cancelled, state.subState(NAME+":sub_step_3").status());
+        assertEquals(ResultStatus.failed, state.subState(NAME+":sub_step_4").status());
         executor.stop();
         assertEquals(0, aml.leaderboard().getModelCount());
     }

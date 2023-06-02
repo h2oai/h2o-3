@@ -5,7 +5,7 @@ def call(final pipelineContext, final stageConfig) {
     def buildEnv = pipelineContext.getBuildConfig().getBuildEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}", "JAVA_VERSION=${stageConfig.javaVersion}"]
 
     echo "###### Changes for ${stageConfig.component} detected, starting ${stageConfig.stageName} ######"
-    insideDocker(buildEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), stageConfig.timeoutValue, 'MINUTES', stageConfig.customDockerArgs.join(' '), stageConfig.addToDockerGroup) {
+    insideDocker(buildEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), stageConfig.timeoutValue, 'MINUTES', stageConfig.customDockerArgs.join(' '), stageConfig.addToDockerGroup, stageConfig.awsCredsPrefix) {
         def h2oFolder = stageConfig.stageDir + '/h2o-3'
 
         pipelineContext.getUtils().unpackTestPackage(this, pipelineContext.getBuildConfig(), stageConfig.component, stageConfig.stageDir)
@@ -23,6 +23,13 @@ def call(final pipelineContext, final stageConfig) {
                 }
                 installXGBWheel(h2oFolder)
             }
+        }
+
+        if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY) {
+            writeFile(
+                    file: "${h2oFolder}/tests/pyunitChangedTestList", 
+                    text: pipelineContext.getBuildConfig().getChangedPythonTests().join("\n")
+            )
         }
 
         if (stageConfig.installRPackage && (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_R || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_R))) {
@@ -53,7 +60,7 @@ def installPythonPackage(String h2o3dir) {
     sh """
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-        pip install ${h2o3dir}/h2o-py/build/dist/*.whl
+        pip install --no-dependencies ${h2o3dir}/h2o-py/build/dist/*.whl
     """
 }
 
@@ -67,8 +74,10 @@ def installXGBWheel(final String h2o3dir) {
     sh """
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-
-        pip install ${h2o3dir}/xgb-whls/xgboost_ompv4-*-cp${env.PYTHON_VERSION.replaceAll('\\.','')}-*-linux_x86_64.whl
+        if [ "${env.PYTHON_VERSION}" != "3.9" ]
+        then
+            pip install ${h2o3dir}/xgb-whls/xgboost_ompv4-*-cp${env.PYTHON_VERSION.replaceAll('\\.','')}-*-linux_x86_64.whl
+        fi
     """
 }
 

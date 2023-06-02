@@ -44,6 +44,18 @@ import java.util.concurrent.atomic.AtomicLong;
 final public class H2O {
   public static final String DEFAULT_JKS_PASS = "h2oh2o";
   public static final int H2O_DEFAULT_PORT = 54321;
+  public static final Map<Integer, Integer> GITHUB_DISCUSSIONS = createMap();
+  
+  static Map<Integer, Integer> createMap() {
+    Integer[] GHDiscussion = new Integer[]{15512, 15513, 15514, 15515, 15516, 15517, 15518, 15519, 15520, 15521, 15522,
+            15523, 15524, 15525};
+    Integer[] techNoteNumber = new Integer[]{1,2,3,4,5,7,9,10,11,12,13,14,15,16};
+    Map<Integer, Integer> mapTNToGH = new HashMap<>();
+    int mapLen = GHDiscussion.length;
+    for (int index=0; index<mapLen; index++)
+      mapTNToGH.put(techNoteNumber[index], GHDiscussion[index]);
+    return mapTNToGH;
+  }
   
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
@@ -272,7 +284,7 @@ final public class H2O {
     /** -allow_insecure_xgboost is a boolean that allows xgboost to run in a secured cluster */
     public boolean allow_insecure_xgboost = false;
 
-    /** -use_external_xgboost; invoke XGBoost on external cluster stared by Steam */
+    /** -use_external_xgboost; invoke XGBoost on external cluster started by Steam */
     public boolean use_external_xgboost = false;
 
     /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
@@ -493,6 +505,15 @@ final public class H2O {
     System.out.println("");
     printHelp();
     H2O.exitQuietly(1); // argument parsing failed -> we might have inconsistent ARGS and not be able to initialize logging 
+  }
+
+  /**
+   * Use when given arguments are incompatible for cluster to run.
+   * Log is flushed into stdout to show important debugging information
+   */
+  public static void clusterInitializationFailed() {
+    Log.flushBufferedMessagesToStdout();
+    H2O.exitQuietly(1);
   }
 
   public static class OptString {
@@ -1404,7 +1425,7 @@ final public class H2O {
   public static String technote(int number, String message) {
     return message + "\n\n" +
         "For more information visit:\n" +
-        "  http://jira.h2o.ai/browse/TN-" + Integer.toString(number);
+        "  https://github.com/h2oai/h2o-3/discussions/" + GITHUB_DISCUSSIONS.get(number);
   }
 
   /**
@@ -1422,7 +1443,7 @@ final public class H2O {
             .append("For more information visit:\n");
 
     for (int number : numbers) {
-      sb.append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number)).append("\n");
+      sb.append("  https://github.com/h2oai/h2o-3/discussions/").append(GITHUB_DISCUSSIONS.get(number)).append("\n");
     }
 
     return sb.toString();
@@ -1844,7 +1865,7 @@ final public class H2O {
     Log.info("Built on: '" + ABV.compiledOn() + "'");
 
     if (ABV.isTooOld()) {
-      Log.warn("\n*** Your H2O version is too old! Please download the latest version from http://h2o.ai/download/ ***");
+      Log.warn("\n*** Your H2O version is over 100 days old. Please download the latest version from: https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html ***");
       Log.warn("");
     }
 
@@ -2004,10 +2025,15 @@ final public class H2O {
 
   // Construct a new H2O Cloud from the member list
   H2O( H2ONode[] h2os, int hash, int idx ) {
-    _memary = h2os;             // Need to clone?
-    java.util.Arrays.sort(_memary);       // ... sorted!
-    _hash = hash;               // And record hash for cloud rollover
-    _idx = (char)(idx&0x0ff);   // Roll-over at 256
+    this(h2os, false, hash, idx);
+  }
+
+  H2O( H2ONode[] h2os, boolean presorted, int hash, int idx ) {
+    _memary = h2os;
+    if (!presorted)
+      java.util.Arrays.sort(_memary); // ... sorted!
+    _hash = hash;                     // And record hash for cloud rollover
+    _idx = (char)(idx&0x0ff);         // Roll-over at 256
   }
 
   // One-shot atomic setting of the next Cloud, with an empty K/V store.
@@ -2037,6 +2063,7 @@ final public class H2O {
   }
 
   public final int size() { return _memary.length; }
+  public boolean isSingleNode() { return size() == 1; }
   public final H2ONode leader() {
     return _memary[0];
   }

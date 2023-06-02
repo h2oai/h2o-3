@@ -6,7 +6,6 @@
 
 All H2O exceptions derive from :class:`H2OError`.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ("H2OStartupError", "H2OConnectionError", "H2OServerError", "H2OResponseError",
            "H2OValueError", "H2OTypeError", "H2OJobCancelled", "H2OError",
@@ -91,7 +90,7 @@ class H2OTypeError(H2OSoftError, TypeError):
 
     @property
     def skip_frames(self):
-        """Number of local frames to skip when printing our the stacktrace."""
+        """Number of local frames to skip when printing out the stacktrace."""
         return self._skip_frames
 
 
@@ -124,8 +123,13 @@ class H2OServerError(H2OError):
     """
     Raised when any kind of server error is encountered.
 
-    This includes: server returning HTTP status 500; or server sending malformed JSON; or server returning an
-    unexpected response (e.g. lacking a "__schema" field); or server indicating that it is in an unhealthy state; etc.
+    This includes:
+
+        - server returning HTTP status 500,
+        - server sending malformed JSON,
+        - server returning an unexpected response (e.g. lacking a "__schema" field),
+        - server indicating that it is in an unhealthy state,
+        - etc.
     """
 
     def __init__(self, message, stacktrace=None):

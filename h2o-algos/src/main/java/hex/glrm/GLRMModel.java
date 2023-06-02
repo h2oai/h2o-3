@@ -10,6 +10,7 @@ import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
+import water.exceptions.H2OFailException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -18,6 +19,7 @@ import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * GLRM (<a href="https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Model</a>).
@@ -218,6 +220,36 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   // Scoring
   //--------------------------------------------------------------------------------------------------------------------
 
+  /***
+   * GLRM performs the action A=X*Y during training.  During prediction, given a new dataset Anew, we will have
+   * Anew = Xnew*Y.  If score/predict is called, Anew will be returned.  However, when transform is called, we will 
+   * return Xnew in this case.
+   */
+  @Override
+  public Frame transform(Frame fr) {
+    if (fr.getKey() == null)
+      throw new H2OFailException("H2O frame must have a valid frame key/id.");
+    if (_output._x_factor_key != null && _output._x_factor_key.toString().contains(fr.getKey().toString())) {
+      return DKV.get(_output._x_factor_key).get();
+    } else if (_output._representation_key.toString().contains(fr.getKey().toString())) {
+      return DKV.get(_output._representation_key).get();
+    } else {  // new frame, need to generate the new X-factor before returning it
+      List<Frame> tmpFrames = new ArrayList<>();
+      Frame adaptFr = adaptFrameForScore(fr, true, tmpFrames);
+      _output._x_factor_key = Key.make("GLRMLoading_"+fr._key);
+      GLRMGenX gs = new GLRMGenX(this, _parms._k);
+      gs.doAll(gs._k, Vec.T_NUM, adaptFr);
+      String[] loadingFrmNames = new String[gs._k];
+      for (int index = 1; index <= gs._k; index++)
+        loadingFrmNames[index - 1] = "Arch" + index;
+      String[][] loadingFrmDomains = new String[gs._k][];
+      Frame xFrame = gs.outputFrame(_output._x_factor_key, loadingFrmNames, loadingFrmDomains);
+      DKV.put(xFrame);
+      for (Frame tmp : tmpFrames) Frame.deleteTempFrameAndItsNonSharedVecs(tmp, fr);
+      return xFrame;
+    }
+  }
+  
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   // Check if the frame is the same as used in training.  If yes, return the XY.  Otherwise, take the archetypes and
   // generate new coefficients for it and then do X*Y

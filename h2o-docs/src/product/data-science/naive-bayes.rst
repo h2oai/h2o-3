@@ -8,70 +8,91 @@ Naïve Bayes is a classification algorithm that relies on strong assumptions of 
 
 Naïve Bayes models are commonly used as an alternative to decision trees for classification problems. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
 
+MOJO Support
+''''''''''''
+
+Naïve Bayes Classifier currently does not support `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
 Defining a Naïve Bayes Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as
-   a reference. By default, H2O automatically generates a destination
-   key.
+Parameters are optional unless specified as *required*.
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the
-   model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
--  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
-   the accuracy of the model.
+-  `compute_metrics <algo-params/compute_metrics.html>`__: Enable this option to compute metrics on training data. This option defaults to ``True`` (enabled).
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data must be categorical and must contain at least two unique categorical levels.
+-  `eps_prob <algo-params/eps_prob.html>`__: Specify the threshold value for probability. If this threshold is not met, then the value for ``min_prob`` is used.
 
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+-  `eps_sdev <algo-params/eps_sdev.html>`__: Specify the threshold for standard deviation. The value must be positive. If this threshold is not met, the value for ``min_sdev`` is used.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation (defaults to 0).
+-  `laplace <algo-params/laplace.html>`__: Specify the Laplace smoothing parameter. The option must be an integer :math:`\geq` 0 and it defaults to ``0``.
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
-   algorithm components dependent on randomization. The seed is
-   consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
+-  `min_prob <algo-params/min_prob.html>`__: Specify the minimum probability to use for observations without enough data. This option defaults to ``0.001``.
 
--  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for ``nfold`` is specified and ``fold_column`` is not specified.) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems). This value defaults to AUTO.
+-  `min_sdev <algo-params/min_sdev.html>`__: Specify the minimum standard deviation to use for observations without enough data. The option must be at least 1e-10 and defaults to ``0.001``.
 
--  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
+Common parameters
+'''''''''''''''''
 
--  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+- `auc_type <algo-params/auc_type.html>`__: Set the default multinomial AUC type. Must be one of:
 
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions (disabled by default).
+    - ``"AUTO"`` (default)
+    - ``"NONE"``
+    - ``"MACRO_OVR"``
+    - ``"WEIGHTED_OVR"``
+    - ``"MACRO_OVO"``
+    - ``"WEIGHTED_OVO"``
 
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment (disabled by default).
+-  `balance_classes <algo-params/balance_classes.html>`__: (Applicable for classification only) Specify whether to oversample the minority classes to balance the class distribution. This option can increase the data frame size. Majority classes can be undersampled to satisfy the ``max_after_balance_size`` parameter. This option is set to ``False`` (disabled) by default.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
-
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
-
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training. This option is disabled by default.
-
--  `balance_classes <algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max_after_balance_size** parameter.
-
--  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
-
--  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance_classes** must be enabled). The value can be less than 1.0 and defaults to 5.0.
-
--  `laplace <algo-params/laplace.html>`__: Specify the Laplace smoothing parameter. The value must be an integer >= 0. This value defaults to 0.
-
--  `min_sdev <algo-params/min_sdev.html>`__: Specify the minimum standard deviation to use for observations without enough data. The value must be at least 1e-10.
-
--  `eps_sdev <algo-params/eps_sdev.html>`__: Specify the threshold for standard deviation. The value must be positive. If this threshold is not met, the ``min_sdev`` value is used.
-
--  `min_prob <algo-params/min_prob.html>`__: Specify the minimum probability to use for observations without enough data.
-
--  `eps_prob <algo-params/eps_prob.html>`__: Cutoff below which probability is replaced with ``min_prob``.
-
--  `compute_metrics <algo-params/compute_metrics.html>`__: Enable this option to compute metrics on training data (enabled by default).
-
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 (default) to disable.
+-  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: (Applicable when ``balance_classes=True`` only) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. 
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
-- `gainslift_bins <algo-params/gainslift_bins>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for ``nfolds`` is specified and ``fold_column`` is not specified) Specify the cross-validation fold assignment scheme. One of:
+
+    - ``AUTO`` (default; uses ``Random``)
+    - ``Random``
+    - ``Modulo`` (`read more about Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__)
+    - ``Stratified`` (which will stratify the folds based on the response variable for classification problems)
+
+-  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
+
+- `gainslift_bins <algo-params/gainslift_bins.html>`__: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
+
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to ``False`` (disabled).
+
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to ``True`` (enabled).
+
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions. This option defaults to ``False`` (disabled).
+
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option defaults to ``True`` (enabled).
+
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+-  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: (Applicable when ``balance_classes=True`` only) Specify the maximum relative size of the training data after balancing class counts. The value can be > 1.0 and defaults to ``5.0``.
+
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use ``0`` (default) to disable.
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This option defaults to ``0`` (disable) or can be :math:`\geq` 2. 
+
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Specify whether to score during each iteration of the model training. This option defaults to ``False`` (disabled).
+
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
+
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
+  
+    **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
+
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data must be categorical and must contain at least two unique categorical levels.
 
 Interpreting a Naïve Bayes Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

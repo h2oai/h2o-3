@@ -14,6 +14,9 @@ public class ModelMetricsBinomialGLMV3 extends ModelMetricsBinomialV3<ModelMetri
   @API(help="AIC",direction = Direction.OUTPUT)
   public double AIC;
 
+  @API(help="log likelihood",direction = Direction.OUTPUT)
+  public double loglikelihood;
+
   @API(help="null DOF", direction= Direction.OUTPUT)
   public long null_degrees_of_freedom;
 
@@ -25,10 +28,11 @@ public class ModelMetricsBinomialGLMV3 extends ModelMetricsBinomialV3<ModelMetri
   public ModelMetricsBinomialGLMV3 fillFromImpl(ModelMetricsBinomialGLM modelMetrics) {
     super.fillFromImpl(modelMetrics);
     this.AIC = modelMetrics._AIC;
+    this.loglikelihood = modelMetrics._loglikelihood;
     this.residual_deviance = modelMetrics._resDev;
     this.null_deviance = modelMetrics._nullDev;
-    this.null_degrees_of_freedom = modelMetrics._nullDegressOfFreedom;
-    this.residual_degrees_of_freedom = modelMetrics._residualDegressOfFreedom;
+    this.null_degrees_of_freedom = modelMetrics._nullDegreesOfFreedom;
+    this.residual_degrees_of_freedom = modelMetrics._residualDegreesOfFreedom;
     return this;
   }
 

@@ -4,8 +4,6 @@ This is a helper script to generate many "Frosted" models and store them on disk
 
 This is not a pyunit test, and is designed to run only when invoked directly.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 import random
 import time

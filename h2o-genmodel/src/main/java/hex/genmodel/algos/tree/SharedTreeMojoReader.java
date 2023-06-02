@@ -60,11 +60,17 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
     // Calibration
     String calibMethod = readkv("calib_method");
     if (calibMethod != null) {
-      if (! "platt".equals(calibMethod))
-        throw new IllegalStateException("Unknown calibration method: " + calibMethod);
-      _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
+        switch (calibMethod) {
+            case "platt":
+                _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
+                break;
+            case "isotonic":
+                _model._isotonic_calibrator = readIsotonicCalibrator();
+                break;
+            default:
+                throw new IllegalStateException("Unknown calibration method: " + calibMethod);
+        }
     }
-
 
     _model.postInit();
   }

@@ -14,13 +14,9 @@ test.GBM.interaction.constraints <- function() {
   print(importance)
   
   # GLEASON and DCAPS column should have importance == 0 
-  dcaps.varimp <- importance[5, c("relative_importance")]
-  expect_equal(importance[5, c("variable")], "DCAPS")
-  expect_equal(dcaps.varimp, 0)       
-  gleason.varimp <- importance[7, c("relative_importance")]
-  expect_equal(importance[7, c("variable")], "GLEASON")
-  expect_equal(gleason.varimp, 0)
-  
+  expect_equal(importance[importance$variable == "DCAPS", "relative_importance"], 0)       
+  expect_equal(importance[importance$variable == "GLEASON", "relative_importance"], 0)       
+
   # Check trees features
   for (i in seq(ntrees)) {
     tree <- h2o.getModelTree(model=prostate.h2o, tree_number=i)

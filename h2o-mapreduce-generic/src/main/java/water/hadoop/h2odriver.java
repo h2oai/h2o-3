@@ -2028,6 +2028,7 @@ public class h2odriver extends Configured implements Tool {
     boolean success = job.isSuccessful();
     int exitStatus;
     exitStatus = success ? 0 : 1;
+    System.out.println("Current time is " + new Date());
     System.out.println((success ? "" : "ERROR: ") + "Job was" + (success ? " " : " not ") + "successful");
     if (success) {
       System.out.println("Exiting with status 0");

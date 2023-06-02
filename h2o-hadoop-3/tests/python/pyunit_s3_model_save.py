@@ -9,6 +9,7 @@ import uuid
 from pandas.util.testing import assert_frame_equal
 import boto3
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+import warnings
 
 
 def test_s3_model_save():
@@ -23,7 +24,6 @@ def test_s3_model_save():
         s3_dir = scheme + "://test.0xdata.com/h2o-hadoop-tests/test-save_model/" + scheme + "/exported." + \
                   timestamp + "." + unique_suffix
         s3_model_path = h2o.save_model(gbm, s3_dir)
-        predicted_original = gbm.predict(prostate)
 
         key = "h2o-hadoop-tests/test-save_model/" + scheme + "/exported." + timestamp + "." + \
                   unique_suffix + "/" + gbm.model_id
@@ -44,7 +44,10 @@ def test_s3_model_save():
         predicted_reloaded = model_reloaded.predict(prostate)
         assert_frame_equal(predicted_original.as_data_frame(), predicted_reloaded.as_data_frame())
 
-        s3.Object(bucket_name='test.0xdata.com', key=key).delete()
+        try:
+            s3.Object(bucket_name='test.0xdata.com', key=key).delete()
+        except:
+            warnings.warn("Object not deleted, perform manual clean-up in h2o-hadoop-tests/test-save_model/")
 
 
 if __name__ == "__main__":

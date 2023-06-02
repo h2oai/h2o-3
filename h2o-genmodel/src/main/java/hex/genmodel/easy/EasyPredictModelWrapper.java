@@ -3,6 +3,7 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.*;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
+import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
@@ -200,6 +201,9 @@ public class EasyPredictModelWrapper implements Serializable {
         throw new IOException("setEnableContributions can be set to true only with DRF, GBM, or XGBoost models.");
       if (val && (ModelCategory.Multinomial.equals(model.getModelCategory()))) {
         throw new IOException("setEnableContributions is not yet supported for multinomial classification models.");
+      }
+      if (val && model instanceof DrfMojoModel && ((DrfMojoModel) model).isBinomialDoubleTrees()) {
+        throw new IOException("setEnableContributions is not yet supported for model with binomial_double_trees parameter set.");
       }
       enableContributions = val;
       return this;
@@ -902,12 +906,16 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
   
-  public CoxPHModelPrediction predictCoxPH(RowData data) throws PredictException {
-    final double[] preds = preamble(ModelCategory.CoxPH, data);
+  public CoxPHModelPrediction predictCoxPH(RowData data, double offset) throws PredictException {
+    final double[] preds = preamble(ModelCategory.CoxPH, data, offset);
     CoxPHModelPrediction p = new CoxPHModelPrediction();
     p.value = preds[0];
     
     return p;
+  }
+
+  public CoxPHModelPrediction predictCoxPH(RowData data) throws PredictException {
+    return predictCoxPH(data, 0);
   }
 
   public float[] predictContributions(RowData data) throws PredictException {

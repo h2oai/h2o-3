@@ -37,6 +37,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
   private final boolean _allLeft, _allRight;
   private boolean[] _stringCols;
   private boolean[] _intCols;
+  final long _mergeId;
 
   // does any left row match to more than 1 right row?  If not, can allocate
   // and loop more efficiently, and mark the resulting key'd frame with a
@@ -83,8 +84,9 @@ class BinaryMerge extends DTask<BinaryMerge> {
   }
 
   // In X[Y], 'left'=i and 'right'=x
-  BinaryMerge(FFSB leftSB, FFSB riteSB, boolean allLeft) {
+  BinaryMerge(FFSB leftSB, FFSB riteSB, boolean allLeft, long mergeId) {
     assert riteSB._msb!=-1 || allLeft;
+    _mergeId = mergeId;
     _leftSB = leftSB;
     _riteSB = riteSB;
     _onlyLeftFrame = (_leftSB._frame.numCols() > 0 && _riteSB._frame.numCols()==0);
@@ -128,21 +130,23 @@ class BinaryMerge extends DTask<BinaryMerge> {
     _timings = MemoryManager.malloc8d(20);
     long t0 = System.nanoTime();
 
-    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true, _leftSB._msb));
+    SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true,
+            _leftSB._msb, _mergeId));
     if (leftSortedOXHeader == null) {
       if( !_allRight ) { tryComplete(); return; }
       throw H2O.unimpl();  // TODO pass through _allRight and implement
     }
-    _leftKO = new KeyOrder(leftSortedOXHeader);
+    _leftKO = new KeyOrder(leftSortedOXHeader, _mergeId);
 
-    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/false, _riteSB._msb));
+    SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/false,
+            _riteSB._msb, _mergeId));
     //if (_riteSB._msb==-1) assert _allLeft && rightSortedOXHeader == null; // i.e. it's known nothing on right can join
     if (rightSortedOXHeader == null) {
       if( !_allLeft ) { tryComplete(); return; }
       // enables general case code to run below without needing new special case code
       rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);
     }
-    _riteKO = new KeyOrder(rightSortedOXHeader);
+    _riteKO = new KeyOrder(rightSortedOXHeader, _mergeId);
 
     // get left batches
     _leftKO.initKeyOrder(_leftSB._msb,/*left=*/true);
@@ -241,18 +245,20 @@ class BinaryMerge extends DTask<BinaryMerge> {
     private final transient byte _key  [/*n2GB*/][/*i mod 2GB * _keySize*/];
     private final transient long _order[/*n2GB*/][/*i mod 2GB * _keySize*/];
     private final transient long _perNodeNumRowsToFetch[];
+    private final transient long _mergeId;
 
-    KeyOrder( SingleThreadRadixOrder.OXHeader sortedOXHeader ) {
+    KeyOrder( SingleThreadRadixOrder.OXHeader sortedOXHeader , long bTime) {
       _batchSize = sortedOXHeader._batchSize;
       final int nBatch = sortedOXHeader._nBatch;
       _key   = new byte[nBatch][];
       _order = new long[nBatch][];
       _perNodeNumRowsToFetch = new long[H2O.CLOUD.size()];
+      _mergeId = bTime;
     }
 
     void initKeyOrder( int msb, boolean isLeft ) {
       for( int b=0; b<_key.length; b++ ) {
-        Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(isLeft, msb, b));
+        Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(isLeft, msb, b, _mergeId));
         SplitByMSBLocal.OXbatch ox = v.get(); //mem version (obtained from remote) of the Values gets turned into POJO version
         v.freeMem(); //only keep the POJO version of the Value
         _key  [b] = ox._x;
@@ -600,7 +606,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
           for (int index = 0; index < frameLikeChunks4String[col][b].length; index++)
             nc.addStr(frameLikeChunks4String[col][b][index]);
           Chunk ck = nc.compress();
-          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b), ck, fs, true);
+          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b, _mergeId), ck, fs, true);
           frameLikeChunks4String[col][b] = null; //free mem as early as possible (it's now in the store)
         }
       } else if( _intCols[col] ) {
@@ -612,13 +618,13 @@ class BinaryMerge extends DTask<BinaryMerge> {
             else                    nc.addNum(l, 0);
           }
           Chunk ck = nc.compress();
-          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b), ck, fs, true);
+          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b, _mergeId), ck, fs, true);
           frameLikeChunksLong[col][b] = null; //free mem as early as possible (it's now in the store)
         }
       } else {
         for (int b = 0; b < nbatch; b++) {
           Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
-          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b), ck, fs, true);
+          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b, _mergeId), ck, fs, true);
           frameLikeChunks[col][b] = null; //free mem as early as possible (it's now in the store)
         }
       }
@@ -1004,7 +1010,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
           for (int index = 0; index < frameLikeChunks4String[col][b].length; index++)
             nc.addStr(frameLikeChunks4String[col][b][index]);
           Chunk ck = nc.compress();
-          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b), ck, fs, true);
+          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b, _mergeId), ck, fs, true);
           frameLikeChunks4String[col][b] = null; //free mem as early as possible (it's now in the store)
       } else if( _intCols[col] ) {
           NewChunk nc = new NewChunk(null,-1);
@@ -1013,11 +1019,11 @@ class BinaryMerge extends DTask<BinaryMerge> {
             else                    nc.addNum(l, 0);
           }
           Chunk ck = nc.compress();
-          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b), ck, fs, true);
+          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b, _mergeId), ck, fs, true);
           frameLikeChunksLong[col][b] = null; //free mem as early as possible (it's now in the store)
       } else {
           Chunk ck = new NewChunk(frameLikeChunks[col][b]).compress();
-          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b), ck, fs, true);
+          DKV.put(getKeyForMSBComboPerCol(_leftSB._msb, _riteSB._msb, col, b, _mergeId), ck, fs, true);
           frameLikeChunks[col][b] = null; //free mem as early as possible (it's now in the store)
       }
     }
@@ -1025,11 +1031,11 @@ class BinaryMerge extends DTask<BinaryMerge> {
   }
 
 
-  static Key getKeyForMSBComboPerCol(/*Frame leftFrame, Frame rightFrame,*/ int leftMSB, int rightMSB, int col /*final table*/, int batch) {
+  static Key getKeyForMSBComboPerCol(/*Frame leftFrame, Frame rightFrame,*/ int leftMSB, int rightMSB, int col /*final table*/, int batch, long mergeId) {
     return Key.make("__binary_merge__Chunk_for_col" + col + "_batch" + batch
         // + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
-        + "_leftSB._msb" + leftMSB + "_riteSB._msb" + rightMSB,
-      (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(rightMSB==-1 ? leftMSB : rightMSB)
+        + "_leftSB._msb" + leftMSB + "_riteSB._msb" + rightMSB + "_" + mergeId,
+      Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(rightMSB==-1 ? leftMSB : rightMSB)
     ); //TODO home locally
   }
 

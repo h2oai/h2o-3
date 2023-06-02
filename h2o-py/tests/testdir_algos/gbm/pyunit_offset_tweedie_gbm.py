@@ -5,12 +5,9 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
+
 def offset_tweedie():
-  # Connect to a pre-existing cluster
-
-
   insurance = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/insurance.csv"))
-
   insurance["offset"] = insurance["Holders"].log()
 
 
@@ -37,7 +34,6 @@ def offset_tweedie():
     format(1.0255, predictions.min())
   assert abs(392.4945 - predictions.max()) < 1e-2, "expected prediction max to be {0}, but got {1}". \
     format(392.4945, predictions.max())
-
 
 
 if __name__ == "__main__":

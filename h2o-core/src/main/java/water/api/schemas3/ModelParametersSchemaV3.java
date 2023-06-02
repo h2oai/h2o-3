@@ -167,7 +167,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
    * Metric to use for convergence checking, only for _stopping_rounds > 0
    */
   @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and " +
-          "anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and " +
+          "anomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and " +
           "DRF with the Python client.",
           valuesProvider = ModelParamsValuesProviders.StoppingMetricValuesProvider.class,
           level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)

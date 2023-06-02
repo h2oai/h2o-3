@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:22.04
 
 # Universal image used to run both H2O or python scripts used for clustering and testing
 ARG DEBIAN_FRONTEND=noninteractive

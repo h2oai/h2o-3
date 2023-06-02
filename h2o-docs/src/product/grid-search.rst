@@ -47,7 +47,9 @@ Grid Search in R and Python
 
     More about ``search_criteria``:  
 
-    This is a named list of control parameters for smarter hyperparameter search.  The list can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
+    This is a named list of control parameters for smarter hyperparameter search.  The list can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.
+    You can also use "Sequential", which goes through the specified parameters in sequence and requires the specified parameter lists to have the same length. "Sequential" strategy exposes ``early_stopping`` parameter (defaults to TRUE) that can be used to disable early stopping while still obeying the ``max_models`` and ``max_runtime_secs``.
+    Some examples below:
 
     .. code-block:: r 
 
@@ -57,6 +59,11 @@ Grid Search in R and Python
         list(strategy = "RandomDiscrete", stopping_tolerance = 0.001, stopping_rounds = 10)
         list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.0005, stopping_rounds = 5)
 
+        list(strategy = "Sequential", max_runtime_secs = 3600)
+        list(strategy = "Sequential", max_models = 42, max_runtime_secs = 28800)
+        list(strategy = "Sequential", stopping_tolerance = 0.001, stopping_rounds = 10)
+        list(strategy = "Sequential", early_stopping = FALSE)
+        list(strategy = "Sequential", early_stopping = FALSE, max_models = 42, max_runtime_secs = 28800)
    .. group-tab:: Python
 
     -  Class is ``H2OGridSearch``
@@ -79,7 +86,9 @@ Grid Search in R and Python
 
     More about ``search_criteria``:  
 
-    This is a dictionary of control parameters for smarter hyperparameter search.  The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
+    This is a dictionary of control parameters for smarter hyperparameter search.  The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.
+    You can also use "Sequential", which goes through the specified parameters in sequence and requires the specified parameter lists to have the same length. "Sequential" strategy exposes ``early_stopping`` parameter (defaults to True) that can be used to disable early stopping while still obeying the ``max_models`` and ``max_runtime_secs``.
+    Some examples below:
 
     .. code-block:: python
 
@@ -88,6 +97,12 @@ Grid Search in R and Python
         {'strategy': "RandomDiscrete", 'max_models': 42, 'max_runtime_secs': 28800}
         {'strategy': "RandomDiscrete", 'stopping_tolerance': 0.001, 'stopping_rounds': 10}
         {'strategy': "RandomDiscrete", 'stopping_metric': "misclassification", 'stopping_tolerance': 0.0005, 'stopping_rounds': 5}
+
+        {'strategy': "Sequential", 'max_runtime_secs': 3600}
+        {'strategy': "Sequential", 'max_models': 42, 'max_runtime_secs': 28800}
+        {'strategy': "Sequential", 'stopping_tolerance': 0.001, 'stopping_rounds': 10}
+        {'strategy': "Sequential", 'early_stopping': False}
+        {'strategy': "Sequential", 'early_stopping': False, 'max_models': 42, 'max_runtime_secs': 28800}
 
 
 Grid Search Examples
@@ -735,273 +750,327 @@ Supported Grid Search Hyperparameters
 
 The following hyperparameters are supported by grid search.
 
-Aggregator Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``k``
--  ``max_iterations``
--  ``pca_method``
--  ``radius_scale``
--  ``transform``
+Supervised Algorithms
+~~~~~~~~~~~~~~~~~~~~~
 
 AutoML Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''
 
-- ``keep_cross_validation_models``
+No available hyperparameters.
 
-Common Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~
+CoxPH Hyperparameters
+'''''''''''''''''''''
 
--  ``fold_assignment``
--  ``fold_column``
--  ``max_runtime_secs``
--  ``offset_column``
--  ``stopping_metric``
--  ``stopping_rounds``
--  ``stopping_tolerance``
--  ``weights_column``
+- ``use_all_factor_levels``
 
 Deep Learning Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''
 
--  ``activation``
--  ``adaptive_rate``
--  ``average_activation``
--  ``balance_classes``
--  ``categorical_encoding``
--  ``classification_stop``
--  ``class_sampling_factors``
--  ``col_major``
--  ``distribution``
--  ``elastic_averaging_moving_rate``
--  ``elastic_averaging_regularization``
--  ``elastic_averaging``
--  ``epochs``
--  ``epsilon``
--  ``fast_mode``
--  ``force_load_balance``
--  ``hidden_dropout_ratios``
--  ``hidden``
--  ``initial_biases``
--  ``initial_weights``
--  ``initial_weight_distribution``
--  ``initial_weight_scale``
--  ``input_dropout_ratio``
--  ``l1``
--  ``l2``
--  ``loss``
--  ``max_after_balance_size``
--  ``max_categorical_features``
--  ``max_w2``
--  ``missing_values_handling``
--  ``momentum_ramp``
--  ``momentum_stable``
--  ``momentum_start``
--  ``nesterov_accelerated_gradient``
--  ``overwrite_with_best_model``
--  ``quantile_alpha``
--  ``quiet_mode``
--  ``rate_annealing``
--  ``rate_decay``
--  ``rate``
--  ``regression_stop``
--  ``replicate_training_data``
--  ``reproducible``
--  ``rho``
--  ``score_duty_cycle``
--  ``score_interval``
--  ``score_training_samples``
--  ``score_validation_samples``
--  ``score_validation_sampling``
--  ``seed``
--  ``shuffle_training_data``
--  ``single_node_mode``
--  ``sparse``
--  ``sparsity_beta``
--  ``standardize``
--  ``target_ratio_comm_to_comp``
--  ``train_samples_per_iteration``
--  ``tweedie_power``
--  ``use_all_factor_levels``
--  ``variable_importances``
+- ``activation`` 
+- ``average_activation`` 
+- ``adaptive_rate`` 
+- ``balance_classes``
+- ``class_sampling_factors``
+- ``classification_stop`` 
+- ``col_major`` 
+- ``elastic_averaging`` 
+- ``elastic_averaging_moving_rate`` 
+- ``elastic_averaging_regularization`` 
+- ``epochs`` 
+- ``epsilon`` 
+- ``fast_mode`` 
+- ``force_load_balance`` 
+- ``hidden`` 
+- ``hidden_dropout_ratios`` 
+- ``initial_biases`` 
+- ``initial_weight_distribution`` 
+- ``initial_weight_scale`` 
+- ``initial_weights`` 
+- ``input_dropout_ratio`` 
+- ``l1`` 
+- ``l2`` 
+- ``loss`` 
+- ``max_categorical_features`` 
+- ``max_w2`` 
+- ``missing_values_handling``
+- ``momentum_ramp`` 
+- ``momentum_stable`` 
+- ``nesterov_accelerated_gradient`` 
+- ``overwrite_with_best_model`` 
+- ``quiet_mode`` 
+- ``rate`` 
+- ``rate_annealing`` 
+- ``rate_decay`` 
+- ``regression_stop`` 
+- ``replicate_training_data`` 
+- ``reproducible`` 
+- ``rho`` 
+- ``seed``
+- ``score_duty_cycle`` 
+- ``score_interval`` 
+- ``score_training_samples`` 
+- ``score_validation_samples`` 
+- ``score_validation_sampling`` 
+- ``shuffle_training_data`` 
+- ``sparse`` 
+- ``sparsity_beta``
+- ``standardize``
+- ``target_ratio_comm_to_comp`` 
+- ``train_samples_per_iteration`` 
+- ``variable_importances``
 
 DRF Hyperparameters
-~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''
 
--  ``categorical_encoding``
--  ``mtries``
-
-GBM Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``categorical_encoding``
--  ``col_sample_rate``
--  ``distribution``
--  ``huber_alpha``
--  ``learn_rate_annealing``
--  ``learn_rate``
--  ``max_abs_leafnode_pred``
--  ``pred_noise_bandwidth``
--  ``quantile_alpha``
--  ``rand_family``
--  ``rand_link``
--  ``startval``
--  ``tweedie_power``
+- ``balance_classes``
+- ``class_sampling_factors``
+- ``max_after_balance_size``
+- ``seed``
 
 GLM Hyperparameters
-~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''
 
--  ``alpha``
--  ``lambda``
--  ``missing_values_handling``
--  ``seed``
--  ``standardize``
--  ``theta``
--  ``tweedie_link_power``
--  ``tweedie_variance_power``
+- ``alpha``
+- ``dispersion_learning_rate``
+- ``init_dispersion_parameter``
+- ``lambda``
+- ``rand_family``
+- ``rand_link``
+- ``startval``
+- ``theta``
+- ``tweedie_variance_power``
+- ``tweedie_link_power``
+
+Isotonic Regression Hyperparameters
+'''''''''''''''''''''''''''''''''''
+
+No available hyperparameters.
+
+ModelSelection Hyperparameters
+''''''''''''''''''''''''''''''
+
+- ``alpha``
+- ``lambda``
+- ``missing_values_handling``
+- ``nparallelism``
+- ``rand_family``
+- ``seed``
+- ``startval``
+- ``tweedie_variance_power``
 
 GAM Hyperparameters
-~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''
 
--  ``alpha``
--  ``bs``
--  ``subspaces``
--  ``gam_x``
--  ``k``
--  ``lambda``
--  ``missing_values_handling``
--  ``scale``
--  ``seed``
--  ``standardize``
--  ``theta``
--  ``tweedie_link_power``
--  ``tweedie_variance_power``
+- ``alpha``
+- ``balance_classes``
+- ``bs``
+- ``gam_columns``
+- ``lambda``
+- ``missing_values_handling``
+- ``num_knots``
+- ``rand_family``
+- ``scale``
+- ``seed``
+- ``splines_non_negative``
+- ``spline_order``
+- ``startval``
+- ``theta``
+- ``tweedie_variance_power``
 
-GLRM Hyperparameters
-~~~~~~~~~~~~~~~~~~~~
+GBM Hyperparameters
+'''''''''''''''''''
 
--  ``gamma_x``
--  ``gamma_y``
--  ``init_step_size``
--  ``init``
--  ``k``
--  ``loss_by_col``
--  ``loss``
--  ``max_iterations``
--  ``max_updates``
--  ``min_step_size``
--  ``multi_loss``
--  ``period``
--  ``regularization_x``
--  ``regularization_y``
--  ``seed``
--  ``svd_method``
--  ``transform``
-
-
-Isolation Forest Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``categorical_encoding``
--  ``max_depth``
--  ``min_rows``
--  ``mtries``
--  ``ntrees``
--  ``sample_rate``
--  ``sample_size``
-
-K-Means Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``categorical_encoding``
--  ``estimate_k``
--  ``init``
--  ``k``
--  ``max_iterations``
--  ``seed``
--  ``standardize``
+- ``balance_classes``
+- ``class_sampling_factors``
+- ``max_after_balance_size``
+- ``seed``
 
 Naïve Bayes Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''
 
--  ``compute_metrics``
--  ``eps_prob``
--  ``eps_sdev``
--  ``laplace``
--  ``min_prob``
--  ``min_sdev``
--  ``seed``
+- ``compute_metrics``
+- ``eps_prob``
+- ``eps_sdev``
+- ``laplace``
+- ``min_prob``
+- ``min_sdev``
+- ``seed``
+
+Rulefit Hyperparameters
+'''''''''''''''''''''''
+
+- ``seed``
+
+Stacked Ensemble Hyperparameters
+''''''''''''''''''''''''''''''''
+
+- ``seed``
+
+SVM Hyperparameters
+'''''''''''''''''''
+
+- ``gamma``
+- ``hyper_param``
+- ``rank_ratio``
+- ``seed``
+
+Uplift DRF Hyperparameters
+''''''''''''''''''''''''''
+
+- ``balance_classes``
+- ``class_sampling_factors``
+- ``max_after_balance_size``
+- ``seed``
+
+XGBoost Hyperparameters
+'''''''''''''''''''''''
+
+- ``backend``
+- ``booster``
+- ``colsample_bylevel``
+- ``colsample_bynode``
+- ``colsample_bytree``
+- ``dmatrix_type``
+- ``eta``
+- ``gamma``
+- ``grow_policy``
+- ``max_bins``
+- ``max_delta_step``
+- ``max_leaves``
+- ``min_child_weight``
+- ``normalize_type``
+- ``one_drop``
+- ``rate_drop``
+- ``reg_alpha``
+- ``reg_lambda``
+- ``sample_type``
+- ``scale_pos_weight``
+- ``seed``
+- ``skip_drop``
+- ``subsample``
+- ``tree_method``
+
+Unsupervised Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Aggregator Hyperparameters
+''''''''''''''''''''''''''
+
+- ``k``
+- ``max_iterations``
+- ``pca_method``
+- ``rel_tol_num_exemplars``
+- ``target_num_exemplars``
+- ``transform``
+- ``use_all_factor_levels``
+
+
+
+GLRM Hyperparameters
+''''''''''''''''''''
+
+- ``estimate_k``
+- ``gamma_x``
+- ``gamma_y``
+- ``init``
+- ``init_step_size``
+- ``k``
+- ``loss``
+- ``loss_by_col``
+- ``loss_by_col_idx``
+- ``max_iterations``
+- ``max_updates``
+- ``min_step_size``
+- ``multi_loss``
+- ``period``
+- ``regularization_x``
+- ``regularization_y``
+- ``seed``
+- ``svd_method``
+- ``transform``
 
 PCA Hyperparameters
-~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''
 
--  ``k``
--  ``max_iterations``
--  ``transform``
+- ``k``
+- ``max_iterations``
+- ``transform``
+
+K-Means Hyperparameters
+'''''''''''''''''''''''
+
+- ``estimate_k``
+- ``init``
+- ``max_iterations``
+- ``seed``
+- ``standardize``
+
+Isolation Forest Hyperparameters
+''''''''''''''''''''''''''''''''
+
+- ``seed``
+
+Extended Isolation Forest Hyperparameters
+'''''''''''''''''''''''''''''''''''''''''
+
+- ``seed``
 
 Shared Tree Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Note**: The Shared Tree hyperparameters apply to DRF and GBM.
+.. |yes| image:: /images/checkmark.png
+   :scale: 3%
+   :align: middle
 
--  ``balance_classes``
--  ``class_sampling_factors``
--  ``col_sample_rate_change_per_level``
--  ``col_sample_rate_per_tree``
--  ``histogram_type``
--  ``max_after_balance_size``
--  ``max_depth``
--  ``min_rows``
--  ``min_split_improvement``
--  ``nbins_cats``
--  ``nbins_top_level``
--  ``nbins``
--  ``ntrees``
--  ``sample_rate_per_class``
--  ``sample_rate``
--  ``seed``
+.. |no| image:: /images/xmark.png
+  :scale: 3%
+  :align: middle
 
-SVM Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
--  ``gamma``
--  ``hyper_param``
--  ``rank_ratio``
--  ``seed``
-
-XGBoost Hyperparameters
-~~~~~~~~~~~~~~~~~~~~~~~
-
--  ``booster``
--  ``categorical_encoding``
--  ``col_sample_by_level``
--  ``col_sample_rate_per tree``
--  ``col_sample_rate``
--  ``colsample_bytree``
--  ``colsample_bynode``
--  ``distribution``
--  ``eta``
--  ``gamma``
--  ``grow_policy``
--  ``learn_rate``
--  ``max_abs_leafnode_pred``
--  ``max_delta_step``
--  ``max_depth``
--  ``min_rows``
--  ``min_split_improvement``
--  ``normalize_type``
--  ``ntrees``
--  ``num_leaves``
--  ``one_drop``
--  ``rate_drop``
--  ``reg_lambda``
--  ``sample_rate``
--  ``sample_type``
--  ``seed``
--  ``skip_drop``
--  ``subsample``
--  ``tree_method``
--  ``tweedie_power``
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| Shared                              | GBM | DRF | XGBoost | Isolation | Extended  | Uplift |
+| Tree                                |     |     |         | Forest    | Isolation | DRF    |
+| Hyperparameters                     |     |     |         |           | Forest    |        |
++=====================================+=====+=====+=========+===========+===========+========+
+| ``col_sample_rate``                 ||yes|| |no|| |yes|   | |no|      | |no|      | |no|   |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``col_sample_rate_change_per_level``||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``col_sample_rate_per_tree``        ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``histogram_type``                  ||yes|||yes|| |yes|   | |yes|     | |no|      | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``learn_rate``                      ||yes|| |no|| |yes|   | |no|      | |no|      | |no|   |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``max_abs_leafnode_pred``           ||yes|| |no|| |yes|   | |no|      | |no|      | |no|   |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``max_depth``                       ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``min_rows``                        ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``min_split_improvement``           ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``mtries``                          | |no|||yes|| |no|    | |yes|     | |no|      | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``nbins``                           ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``nbins_cats``                      ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``nbins_top_level``                 ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``ntrees``                          ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``sample_rate``                     ||yes|||yes|| |yes|   | |yes|     | |no|      | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``sample_rate_per_class``           ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``sample_size``                     | |no|| |no|| |no|    | |yes|     | |yes|     | |no|   |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``seed``                            ||yes|||yes|| |yes|   | |yes|     | |yes|     | |yes|  |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``learn_rate_annealing``            ||yes|| |no|| |no|    | |no|      | |no|      | |no|   |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
+| ``pred_noise_bandwidth``            ||yes|| |no|| |no|    | |no|      | |no|      | |no|   |
++-------------------------------------+-----+-----+---------+-----------+-----------+--------+
 
 Grid Testing
 ------------

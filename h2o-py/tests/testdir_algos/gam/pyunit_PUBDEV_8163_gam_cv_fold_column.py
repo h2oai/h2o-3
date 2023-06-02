@@ -1,5 +1,3 @@
-from __future__ import division
-from __future__ import print_function
 import sys
 
 sys.path.insert(1, "../../../")
@@ -42,6 +40,7 @@ def test_gam_cv_fold_columns():
     h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial',
                                                 gam_columns=["C6", "C7", "C8"],
                                                 scale=[1, 1, 1],
+                                                bs=[0, 1, 3],
                                                 num_knots=numKnots,
                                                 knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key],
                                                 nfolds=5,
@@ -51,7 +50,7 @@ def test_gam_cv_fold_columns():
     h2o_model.train(x=x, y=y, training_frame=train)
 
     # create a fold column for train
-    fold_numbers = train.kfold_column(n_folds=5, seed=1234)
+    fold_numbers = train.modulo_kfold_column(n_folds=5)
     # rename the column "fold_numbers"
     fold_numbers.set_names(["fold_numbers"])
     train = train.cbind(fold_numbers)
@@ -59,7 +58,7 @@ def test_gam_cv_fold_columns():
     # build the GAM model
     h2o_model_fold_column = H2OGeneralizedAdditiveEstimator(family='multinomial',
                                                             gam_columns=["C6", "C7", "C8"],
-                                                            scale=[1, 1, 1],
+                                                            scale=[1, 1, 1], seed=1234, bs=[0, 1, 3],
                                                             num_knots=numKnots,
                                                             knot_ids=[frameKnots1.key, frameKnots2.key,
                                                                       frameKnots3.key])

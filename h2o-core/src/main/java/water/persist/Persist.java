@@ -2,9 +2,7 @@ package water.persist;
 
 import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import water.*;
 import water.fvec.Vec;
@@ -183,7 +181,7 @@ public abstract class Persist {
   // Node Persistent Storage helpers
   // -------------------------------
 
-  public static class PersistEntry {
+  public final static class PersistEntry implements Comparable<PersistEntry> {
 
     public PersistEntry(String name, long size, long timestamp) {
       _name = name;
@@ -193,6 +191,24 @@ public abstract class Persist {
     public final String _name;
     public final long _size;
     public final long _timestamp_millis;
+
+    @Override
+    public int compareTo(PersistEntry persistEntry) {
+      return _name.compareTo(persistEntry._name);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      PersistEntry that = (PersistEntry) o;
+      return _size == that._size && _timestamp_millis == that._timestamp_millis && _name.equals(that._name);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(_name, _size, _timestamp_millis);
+    }
   }
 
   public String getHomeDirectory() {

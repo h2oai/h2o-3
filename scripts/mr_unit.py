@@ -19,12 +19,12 @@ def add_perf_results_to_mr_unit(args):
                                '"{4}", "{5}", "{6}", "{7}", "{8}", "{9}", "{10}", "{11}")'.format(*row))
             mr_unit.commit()
         else:
-            print "perf.csv does not exist in {0}, so mr_unit.py has nothing to do here. Maybe run.py failed before " \
-                  "it created this file".format(perf_csv_name)
+            print("perf.csv does not exist in {0}, so mr_unit.py has nothing to do here. Maybe run.py failed before " +
+                  "it created this file".format(perf_csv_name))
     except:
         traceback.print_exc()
         mr_unit.rollback()
-        print "Failed to add performance results to perf table in mr_unit database!"
+        print("Failed to add performance results to perf table in mr_unit database!")
         raise
 
 if __name__ == '__main__':

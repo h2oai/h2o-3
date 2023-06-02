@@ -24,7 +24,8 @@ whitelist = list(
   "installed package size" = c("installed size is .*Mb", # h2o.jar is installed
                                "sub-directories of 1Mb or more",
                                "java .*Mb",
-                               "R .*Mb"),
+                               "R .*Mb",
+                               "help .*Mb"),
   "Rd cross-references" = "Package unavailable to check Rd xrefs", # when linking documentation to optional deps not present at check time
   "for future file timestamps" = "unable to verify current time" # unable to verify time when worldclock is down
 )

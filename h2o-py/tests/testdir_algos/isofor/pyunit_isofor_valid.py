@@ -1,10 +1,10 @@
-from __future__ import print_function
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.isolation_forest import H2OIsolationForestEstimator
-from h2o.model.metrics_base import H2OAnomalyDetectionModelMetrics, H2OBinomialModelMetrics
+from h2o.model import H2OBinomialModelMetrics
+from h2o.model.metrics.anomaly_detection import H2OAnomalyDetectionModelMetrics
 from pandas.testing import assert_frame_equal
 
 

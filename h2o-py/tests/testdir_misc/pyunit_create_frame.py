@@ -6,7 +6,6 @@ import sys
 sys.path.insert(1, "../../")
 import h2o
 from h2o.exceptions import H2OValueError
-from h2o.utils.compatibility import viewvalues
 from tests import pyunit_utils
 
 def create_frame_test():
@@ -24,7 +23,7 @@ def create_frame_test():
         fint += fbin
         fbin = 0
         type_counts = defaultdict(int)
-        for ft in viewvalues(frame.types):
+        for ft in frame.types.values():
             type_counts[ft] += 1
         print("Created table with column counts: {%s}" % ", ".join("%s: %d" % t for t in type_counts.items()))
         for ct in ["real", "enum", "int", "time", "string"]:

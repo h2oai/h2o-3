@@ -27,6 +27,11 @@ splitting for a given point :math:`x` is as follows:
 .. math::
     (x - p) * n ≤ 0
 
+MOJO Support
+''''''''''''
+
+Extended Isolation Forest supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
+
 Tutorials and Blogs
 ~~~~~~~~~~~~~~~~~~~
 
@@ -39,31 +44,46 @@ The following tutorials are available that describe how to use Extended Isolatio
 Defining an Extended Isolation Forest Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+Parameters are optional unless specified as *required*. 
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+- `extension_level <algo-params/extension_level.html>`__: The number in range :math:`[0, P-1]`; where :math:`P` is the number of features. The minimum value of the hyperparameter is ``0`` (default), which corresponds to Isolation Forest behavior. The maximum is :math:`P-1` and stands for a full extension. As the ``extension_level`` is increased, the bias of standard Isolation Forest is reduced.
 
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option defaults to true (enabled).
+-  `sample_size <algo-params/sample_size.html>`__: The number of randomly sampled observations used to train each Extended Isolation Forest tree. This option defaults to ``256``.
 
--  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees (defaults to 100).
+Shared tree-algorithm parameters
+''''''''''''''''''''''''''''''''
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
+-  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees. This option defaults to ``100``.
 
--  `sample_size <algo-params/sample_size.html>`__: The number of randomly sampled observations used to train each Extended Isolation Forest tree. This value defaults to 256.
+Common parameters
+'''''''''''''''''
 
-- `categorical_encoding <algo-params/categorical_encoding.html>`__: In case of Extended Isolation Forest, only ordinal nature of encoding is used for splitting. Specify one of the following encoding schemes for handling categorical features:
+- `categorical_encoding <algo-params/categorical_encoding.html>`__: In case of Extended Isolation Forest, only the ordinal nature of encoding is used for splitting. Specify one of the following encoding schemes for handling categorical features:
 
-  - ``auto`` or ``AUTO``: Allow the algorithm to decide (default). In Isolation Forest, the algorithm will automatically perform ``enum`` encoding.
-  - ``enum`` or ``Enum``: 1 column per categorical feature
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
-  - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
-  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
-  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
-  - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
+      - ``auto`` or ``AUTO`` (default): Allow the algorithm to decide. In Isolation Forest, the algorithm will automatically perform ``enum`` encoding.
+      - ``enum`` or ``Enum``: 1 column per categorical feature.
+      - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (10) most frequent levels.
+      - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels.
+      - ``binary`` or ``Binary``: No more than 32 columns per categorical feature.
+      - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only.
+      - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.).
 
-- `extension_level <algo-params/extension_level.html>`__: The number in range :math:`[0, P-1]`; where :math:`P` is the number of features. The minimum value of the hyperparameter is 0 (default), which corresponds to Isolation Forest behavior. The maximum is :math:`P-1` and stands for a full extension. As the ``extension_level`` is increased, the bias of standard Isolation Forest is reduced.
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns since no information can be gained from them. This option defaults to ``True`` (enabled).
+
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
+
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
+    
+     **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+
+-  `x <algo-params/x.html>`__: A vector containing the character names of the predictors in the model.
 
 Anomaly Score
 ~~~~~~~~~~~~~
@@ -74,7 +94,7 @@ In short, the anomaly score is the average **mean_length** in a forest normalize
 The **anomaly_score**:
 
 .. math::
-    anomaly\_score(x, sample\_size)=2^{-mean\_length/c(sample\_size)}
+    anomaly\_score(x, sample\_size)=2^{-mean\_length(x)/c(sample\_size)}
 
 where:
 
@@ -90,7 +110,7 @@ is the average path of the unsuccessful search in a BST for the data set of size
 
 :math:`H(.)` is a harmonic number estimated as: :math:`H(.) = ln(.) + 0.5772156649` (`Euler’s constant <https://en.wikipedia.org/wiki/Euler%E2%80%93Mascheroni_constant>`__)
 
-The **mean_length** is the mean path length of a point in the forest:
+The **mean_length(x)** is the mean path length of a point in the forest:
 
 .. math::
     mean\_length(x) = \frac{path\_length(x) + c(Node.num\_rows)}{ntrees}
@@ -171,6 +191,12 @@ Below is a simple example showing how to build an Extended Isolation Forest mode
         # Average path length  of the point in Isolation Trees from root to the leaf
         mean_length = eif_result["mean_length"]
 
+FAQ
+~~~
+
+- **How does the algorithm handle missing values during training?**
+
+    Extended Isolation Forest cannot handle missing values. You have to put 0 in for those values.
 
 References
 ~~~~~~~~~~

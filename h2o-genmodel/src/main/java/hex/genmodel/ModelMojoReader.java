@@ -1,6 +1,7 @@
 package hex.genmodel;
 
 import com.google.gson.JsonObject;
+import hex.genmodel.algos.isotonic.IsotonicCalibrator;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelJsonReader;
 import hex.genmodel.attributes.Table;
@@ -171,6 +172,26 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       array[i++] = line;
     }
     return array;
+  }
+
+  protected IsotonicCalibrator readIsotonicCalibrator() throws IOException {
+    return new IsotonicCalibrator(
+      readkv("calib_min_x", Double.NaN),
+      readkv("calib_max_x", Double.NaN),
+      readblobDoubles("calib/thresholds_x"),
+      readblobDoubles("calib/thresholds_y")
+    );
+  }
+
+  private double[] readblobDoubles(String filename) throws IOException {
+    byte[] bytes = readblob(filename);
+    final ByteBuffer bb = ByteBuffer.wrap(bytes);
+    int size = bb.getInt();
+    double[] doubles = new double[size];
+    for (int i = 0; i < doubles.length; i++) {
+      doubles[i] = bb.getDouble();
+    }
+    return doubles;
   }
 
   /**
@@ -383,5 +404,14 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   protected MojoReaderBackend getMojoReaderBackend() {
     return _reader;
+  }
+
+  public String[] readStringArrays(int aSize, String title) throws IOException {
+    String[] stringArrays = new String[aSize];
+    int counter = 0;
+    for (String line : readtext(title)) {
+      stringArrays[counter++] = line;
+    }
+    return stringArrays;
   }
 }

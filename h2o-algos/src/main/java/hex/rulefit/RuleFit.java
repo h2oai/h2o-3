@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.ArrayUtils.difference;
 import static hex.genmodel.utils.ArrayUtils.signum;
-import static hex.rulefit.RuleFitUtils.sortRules;
-import static hex.rulefit.RuleFitUtils.deduplicateRules;
+import static hex.rulefit.RuleFitUtils.*;
+import static hex.util.DistributionUtils.distributionToFamily;
 
 
 /**
@@ -110,6 +110,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         treeParameters._weights_column = _parms._weights_column;
         treeParameters._distribution = _parms._distribution;
         treeParameters._ntrees = _parms._rule_generation_ntrees;
+        treeParameters._max_categorical_levels = _parms._max_categorical_levels;
+        treeParameters._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
     }
 
     private void initGLMParameters() {
@@ -122,40 +124,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
             }
         } else {
-            switch (_parms._distribution) {
-                case bernoulli:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial);
-                    break;
-                case quasibinomial:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.quasibinomial);
-                    break;
-                case multinomial:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.multinomial);
-                    break;
-                case ordinal:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.ordinal);
-                    break;
-                case gaussian:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
-                    break;
-                case poisson:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.poisson);
-                    break;
-                case gamma:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gamma);
-                    break;
-                case tweedie:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.tweedie);
-                    break;
-                case fractionalbinomial:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.fractionalbinomial);
-                    break;
-                case negativebinomial:
-                    glmParameters = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.negativebinomial);
-                    break;
-                default:
-                    error("_distribution", "Distribution not supported.");
-            }
+            glmParameters = new GLMModel.GLMParameters(distributionToFamily(_parms._distribution));
         }
         if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) && _parms._ignored_columns != null) {
             glmParameters._ignored_columns = _parms._ignored_columns;
@@ -171,6 +140,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         if (_parms._lambda != null) {
             glmParameters._lambda = _parms._lambda;
         }
+        glmParameters._ignore_const_cols = false;
     }
 
 
@@ -287,8 +257,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
-                model._output._rule_importance = convertRulesToTable(sortRules(deduplicateRules(getRules(glmModel.coefficients(), 
-                        ruleEnsemble, model._output.classNames()), _parms._remove_duplicates)), isClassifier() && nclasses() > 2);
+                model._output._rule_importance = convertRulesToTable(sortRules(deduplicateRules(RuleFitUtils.getRules(glmModel.coefficients(),
+                        ruleEnsemble, model._output.classNames(), nclasses()), _parms._remove_duplicates)), isClassifier() && nclasses() > 2, false);
 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
                 
@@ -433,88 +403,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         }
 
 
-        Rule[] getRules(HashMap<String, Double> glmCoefficients, RuleEnsemble ruleEnsemble, String[] classNames) {
-            // extract variable-coefficient map (filter out intercept and zero betas)
-            Map<String, Double> filteredRules = glmCoefficients.entrySet()
-                    .stream()
-                    .filter(e -> !("Intercept".equals(e.getKey()) || e.getKey().contains("Intercept_")) && 0 != e.getValue())
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            
-            List<Rule> rules = new ArrayList<>();
-            Rule rule;
-            for (Map.Entry<String, Double> entry : filteredRules.entrySet()) {
-                if (!entry.getKey().startsWith("linear.")) {
-                    rule = ruleEnsemble.getRuleByVarName(getVarName(entry.getKey(), classNames));
-                } else {
-                    rule = new Rule(null, entry.getValue(), entry.getKey());
-                    // linear rule applies to all the rows
-                    rule.support = 1.0;
-                }
-                rule.setCoefficient(entry.getValue());
-                rules.add(rule);
-            }
-            
-            return rules.toArray(new Rule[] {});
-        }
+
     }
     
-    private String getVarName(String ruleKey, String[] classNames) {
-        if (nclasses() > 2) {
-            ruleKey = removeClassNameSuffix(ruleKey, classNames);
-        }
-        return ruleKey.substring(ruleKey.lastIndexOf(".") + 1);
-    }
-    
-    private String removeClassNameSuffix(String ruleKey, String[] classNames) {
-        for (int i = 0; i < classNames.length; i++) {
-            if (ruleKey.endsWith(classNames[i]))
-                return ruleKey.substring(0, ruleKey.length() - classNames[i].length() - 1);
-        }
-        return ruleKey;
-    }
 
-    private TwoDimTable convertRulesToTable(Rule[] rules, boolean isMultinomial) {
-        List<String> colHeaders = new ArrayList<>();
-        List<String> colTypes = new ArrayList<>();
-        List<String> colFormat = new ArrayList<>();
-
-        colHeaders.add("variable");
-        colTypes.add("string");
-        colFormat.add("%s");
-        if (isMultinomial) {
-            colHeaders.add("class");
-            colTypes.add("string");
-            colFormat.add("%s");
-        }
-        colHeaders.add("coefficient");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-        colHeaders.add("support");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-        colHeaders.add("rule");
-        colTypes.add("string");
-        colFormat.add("%s");
-
-        final int rows = rules.length;
-        TwoDimTable table = new TwoDimTable("Rule Importance", null, new String[rows],
-                colHeaders.toArray(new String[0]), colTypes.toArray(new String[0]), colFormat.toArray(new String[0]), "");
-
-        for (int row = 0; row < rows; row++) {
-            int col = 0;
-            String varname = (rules[row]).varName;
-            table.set(row, col++, varname);
-            if (isMultinomial) {
-                String segments[] = varname.split("_");
-                table.set(row, col++, segments[segments.length - 1]);
-            }
-            table.set(row, col++, (rules[row]).coefficient);
-            table.set(row, col++, (rules[row]).support);
-            table.set(row, col, (rules[row]).languageRule);
-        }
-
-        return table;
-    }
 
     protected int nTreeEnsemblesInParallel(int numDepths) {
         if (_parms._algorithm == RuleFitModel.Algorithm.GBM) {
@@ -582,7 +474,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
     
     @Override
     public boolean haveMojo() { return true; }
-    
+
 }
 
 

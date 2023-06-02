@@ -13,6 +13,7 @@ import water.parser.ZipUtil;
 import water.util.Log;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 
 /**
@@ -106,7 +107,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
                     genericModel = importMojo(modelBytes, dataKey);
                 } else {
                     warn("_path", "Trying to import a POJO model - this is currently an experimental feature.");
-                    genericModel = importPojo(modelBytes, dataKey);
+                    genericModel = importPojo(modelBytes, dataKey, _result.toString());
                 }
                 genericModel.write_lock(_job);
                 genericModel.unlock(_job);
@@ -131,8 +132,8 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             return new GenericModel(_result, _parms, genericModelOutput, mojoModel, dataKey);
         }
 
-        private GenericModel importPojo(ByteVec pojoBytes, Key<Frame> pojoKey) throws IOException {
-            GenModel genmodel = PojoLoader.loadPojoFromSourceCode(pojoBytes, pojoKey);
+        private GenericModel importPojo(ByteVec pojoBytes, Key<Frame> pojoKey, String modelId) throws IOException {
+            GenModel genmodel = PojoLoader.loadPojoFromSourceCode(pojoBytes, pojoKey, modelId);
             ModelDescriptor pojoDescriptor = ModelDescriptorBuilder.makeDescriptor(genmodel);
             final GenericModelOutput genericModelOutput = new GenericModelOutput(pojoDescriptor);
             return new GenericModel(_result, _parms, genericModelOutput, genmodel, pojoKey);
@@ -190,6 +191,10 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         p._path = location;
         p._disable_algo_check = disableAlgoCheck;
         return new Generic(p).trainModel().get();
+    }
+
+    public static GenericModel importMojoModel(URI location) {
+        return importMojoModel(location.toString(), false);
     }
 
 }

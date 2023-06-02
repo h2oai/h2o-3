@@ -47,15 +47,15 @@ def green_print(*args):
         b.disable()
     for msg in args:
         print(b.GREEN + str(msg) + b.ENDC)
-    print
+    print("")
 
 
 def blue_print(*args):
     if getpass.getuser() == 'jenkins':
         b.disable()
     for msg in args:
-        print (b.BLUE + str(msg) + b.ENDC)
-    print
+        print(b.BLUE + str(msg) + b.ENDC)
+    print("")
 
 
 def yellow_print(*args):
@@ -63,7 +63,7 @@ def yellow_print(*args):
         b.disable()
     for msg in args:
         print(b.YELLOW + str(msg) + b.ENDC)
-    print
+    print("")
 
 
 def red_print(*args):
@@ -71,7 +71,7 @@ def red_print(*args):
         b.disable()
     for msg in args:
         print(b.RED + str(msg) + b.ENDC)
-    print
+    print("")
 
 
 def purple_print(*args):
@@ -79,5 +79,5 @@ def purple_print(*args):
         b.disable()
     for msg in args:
         print(b.PURPLE + str(msg) + b.ENDC)
-    print
+    print("")
 

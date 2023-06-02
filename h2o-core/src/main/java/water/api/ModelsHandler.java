@@ -206,6 +206,17 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       throw H2O.unimpl(String.format("%s does not support feature interactions calculation", model._parms.fullName()));
     }
   }
+
+  @SuppressWarnings("unused")
+  public SignificantRulesV3 makeSignificantRulesTable(int version, SignificantRulesV3 s) {
+    Model model = getFromDKV("key", s.model_id.key());
+    if (model instanceof SignificantRulesCollector) {
+      s.significant_rules_table  = new TwoDimTableV3(((SignificantRulesCollector) model).getRuleImportanceTable());
+      return s;
+    } else {
+      throw H2O.unimpl(String.format("%s does not support significant rules collection", model._parms.fullName()));
+    }
+  }
   
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public PartialDependenceV3 fetchPartialDependence(int version, KeyV3.PartialDependenceKeyV3 s) {

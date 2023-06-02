@@ -1,5 +1,3 @@
-from __future__ import division
-from __future__ import print_function
 from past.utils import old_div
 import sys
 sys.path.insert(1, "../../../")
@@ -18,7 +16,7 @@ class test_gam_gridsearch_specific:
     h2o_data = []
     myX = []
     myY = []
-    hyper_parameters = {'alpha': [0.1, 0.9], 'lambda':[0, 0.01],
+    hyper_parameters = {'alpha': [0.1, 0.9], 'lambda':[0.01],
                         'scale': [[1, 1, 1], [2, 2, 2]], 'num_knots': [[5, 5, 5], [5, 6, 7]]}
     manual_gam_models = []
     h2o_model = []
@@ -48,11 +46,11 @@ class test_gam_gridsearch_specific:
                     for num_knots_param in self.hyper_parameters['num_knots']:
                         self.manual_gam_models.append(H2OGeneralizedAdditiveEstimator(family = "gaussian", gam_columns=["C11", "C12", "C13"],
                                                                               keep_gam_cols = True, scale = scale_param, num_knots = num_knots_param,
-                                                                              alpha = alpha_param, lambda_ = lambda_param))
+                                                                              alpha = alpha_param, lambda_ = lambda_param, bs= [0, 3, 0], seed=1234))
 
     def train_models(self):
         self.h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(
-            family = "gaussian", gam_columns = ["C11", "C12", "C13"],
+            family = "gaussian", gam_columns = ["C11", "C12", "C13"], bs = [0, 3, 0], seed=1234,
             keep_gam_cols = True), self.hyper_parameters)
         self.h2o_model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
         for model in self.manual_gam_models:

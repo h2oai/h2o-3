@@ -48,5 +48,17 @@ public class TestFrameCatalog {
             .withDataForCol(1, ard(Double.NaN, Double.NaN))
             .build();
   }
-  
+
+  public static Frame prostateCleaned() {
+    final String response = "CAPSULE";
+    final String testFile = "./smalldata/logreg/prostate.csv";
+    Frame fr = parseAndTrackTestFile(testFile)
+            .toCategoricalCol("RACE")
+            .toCategoricalCol("GLEASON")
+            .toCategoricalCol(response);
+    fr.remove("ID").remove();
+    DKV.put(fr);
+    return fr;
+  }
+
 }

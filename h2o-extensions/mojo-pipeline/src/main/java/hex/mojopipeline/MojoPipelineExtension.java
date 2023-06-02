@@ -40,7 +40,12 @@ public class MojoPipelineExtension extends AbstractH2OExtension {
 
   private boolean hasMojoRuntime() {
     // relying on implementation - need to improve MOJO2 API
-    return ServiceLoader.load(PipelineLoaderFactory.class).iterator().hasNext();
+    try {
+      Class clazz = Class.forName("ai.h2o.mojos.runtime.api.PipelineLoaderFactory");
+      return ServiceLoader.load(clazz).iterator().hasNext();
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
   }
 
 }

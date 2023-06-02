@@ -8,6 +8,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
 import static java.math.BigInteger.ZERO;
 import static java.math.BigInteger.ONE;
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
@@ -16,6 +18,8 @@ public class Merge {
   
   public static int ASCENDING = 1;
   public static int DESCENDING = -1; 
+
+  private static final AtomicLong _mergeSeq = new AtomicLong(0);
 
   public static Frame sort(final Frame fr, int col) {
     return sort(fr, new int[]{col});
@@ -114,8 +118,9 @@ public class Merge {
     // and right in parallel was a little slower (97s) than one by one (89s).
     // empty frame will come back with base = Long.MIN_VALUE (-9223372036854775808).  
     // TODO: retest in future
-    RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps, ascendingL);
-    RadixOrder riteIndex = createIndex(false,rightFrame,riteCols,id_maps, ascendingR);
+    final long mergeId = nextMergeId();
+    RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps, ascendingL, mergeId);
+    RadixOrder riteIndex = createIndex(false,rightFrame,riteCols,id_maps, ascendingR, mergeId);
 
     // TODO: start merging before all indexes had been created. Use callback?
     boolean leftFrameEmpty = (leftFrame.numRows()==0);
@@ -147,7 +152,7 @@ public class Merge {
           BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift,
                   leftIndex._bytesUsed, leftIndex._base), new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1, riteShift,
                   riteIndex._bytesUsed, riteIndex._base),
-                  true);
+                  true, mergeId);
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
         }
@@ -177,7 +182,7 @@ public class Merge {
         for (int leftMSB = (int) leftMSBto + 1; leftMSB <= 255; leftMSB++) {
           BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift, leftIndex._bytesUsed,
                   leftIndex._base), new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1, riteShift, 
-                  riteIndex._bytesUsed, riteIndex._base), true);
+                  riteIndex._bytesUsed, riteIndex._base), true, mergeId);
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
         }
@@ -213,7 +218,7 @@ public class Merge {
       for (int rightMSB = rightMSBfrom; rightMSB <= rightMSBto; rightMSB++) {
         BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift, leftIndex._bytesUsed, leftIndex._base),
                 new BinaryMerge.FFSB(rightFrame, rightMSB, riteShift, riteIndex._bytesUsed, riteIndex._base),
-                allLeft);
+                allLeft, mergeId);
         bmList.add(bm);
         // TODO: choose the bigger side to execute on (where that side of index
         // already is) to minimize transfer.  within BinaryMerge it will
@@ -236,12 +241,12 @@ public class Merge {
     t0 = System.nanoTime();
     for (int msb=0; msb<256; msb++) {
       for (int isLeft=0; isLeft<2; isLeft++) {
-        Key k = getSortedOXHeaderKey(isLeft!=0, msb);
+        Key k = getSortedOXHeaderKey(isLeft!=0, msb, mergeId);
         SingleThreadRadixOrder.OXHeader oxheader = DKV.getGet(k);
         DKV.remove(k);
         if (oxheader != null) {
           for (int b=0; b<oxheader._nBatch; ++b) {
-            k = SplitByMSBLocal.getSortedOXbatchKey(isLeft!=0, msb, b);
+            k = SplitByMSBLocal.getSortedOXbatchKey(isLeft!=0, msb, b, mergeId);
             DKV.remove(k);
           }
         }
@@ -315,22 +320,23 @@ public class Merge {
     Log.info("Finally stitch together by overwriting dummies ...");
     t0 = System.nanoTime();
     Frame fr = new Frame(names, vecs);
-    ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+    ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch, mergeId);
     ff.doAll(fr);
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds");
     
     return fr;
   }
 
-  public static List<SortCombine> gatherSameMSBRows(Frame leftFrame) {
+  public static List<SortCombine> gatherSameMSBRows(Frame leftFrame, long mergeId) {
     long t0 = System.nanoTime();
     List<SortCombine> bmList = new ArrayList<SortCombine>();
     Futures fs = new Futures();
 
     for (int leftMSB=0; leftMSB<=255; leftMSB++) {  // For each MSB, gather sorted rows with same MSB into one spot
-      SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true, leftMSB));
+      SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true, 
+              leftMSB, mergeId));
       if (leftSortedOXHeader != null) {
-        SortCombine bm = new SortCombine(new SortCombine.FFSB(leftFrame, leftMSB), leftSortedOXHeader);
+        SortCombine bm = new SortCombine(new SortCombine.FFSB(leftFrame, leftMSB), leftSortedOXHeader, mergeId);
         bmList.add(bm);
         fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
       }
@@ -346,12 +352,12 @@ public class Merge {
     // now that we have collected sorted columns for each MSB, remove info that are no longer needed
     for (int msb=0; msb<256; msb++) {
       for (int isLeft=0; isLeft<2; isLeft++) {
-        Key k = getSortedOXHeaderKey(isLeft!=0, msb);
+        Key k = getSortedOXHeaderKey(isLeft!=0, msb, mergeId);
         SingleThreadRadixOrder.OXHeader oxheader = DKV.getGet(k);
         DKV.remove(k);
         if (oxheader != null) {
           for (int b=0; b<oxheader._nBatch; ++b) {
-            k = SplitByMSBLocal.getSortedOXbatchKey(isLeft!=0, msb, b);
+            k = SplitByMSBLocal.getSortedOXbatchKey(isLeft!=0, msb, b, mergeId);
             DKV.remove(k);
           }
         }
@@ -427,7 +433,8 @@ public class Merge {
   }
   
   public static Frame allocatePopulateChunk(List<SortCombine> bmList, Frame leftFrame, long ansN, long chunkSizes[], 
-                                            int chunkLeftMSB[], int chunkRightMSB[], int chunkBatch[]) {
+                                            int chunkLeftMSB[], int chunkRightMSB[], int chunkBatch[], 
+                                            long mergeId) {
     // Now we can stitch together the final frame from the raw chunks that were
     // put into the store
     Log.info("Allocating and populated espc ...");
@@ -463,18 +470,19 @@ public class Merge {
     Log.info("Finally stitch together by overwriting dummies ...");
     t0 = System.nanoTime();
     Frame fr = new Frame(names, vecs);
-    ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+    ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch, mergeId);
     ff.doAll(fr);
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
     return fr;
   }
 
   public static Frame sortOnly(final Frame leftFrame, final int leftCols[], int[][] id_maps, int[] ascendingL) {
-    createIndex(true, leftFrame, leftCols, id_maps, ascendingL);  // sort the columns.
+    final long t0 = System.nanoTime();
+    final long mergeId = nextMergeId();
+    createIndex(true, leftFrame, leftCols, id_maps, ascendingL, mergeId);  // sort the columns.
     Log.info("Making BinaryMerge RPC calls ... ");
-    List<SortCombine> bmList = gatherSameMSBRows(leftFrame); // For each MSB, gather sorted rows with same MSB into one spot
+    List<SortCombine> bmList = gatherSameMSBRows(leftFrame, mergeId); // For each MSB, gather sorted rows with same MSB into one spot
     Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");
-    Long t0 = System.nanoTime();
     long ansN = 0;
     int numChunks = 0;
     for (SortCombine thisbm : bmList)
@@ -501,13 +509,15 @@ public class Merge {
     Log.debug("took: " + (System.nanoTime() - t0) / 1e9 + " seconds.");
     long finalRowNumber = allocateChunk(bmList, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     Log.info("Populate chunks and form final sorted frame ...");
-    return allocatePopulateChunk(bmList, leftFrame, finalRowNumber, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+    return allocatePopulateChunk(bmList, leftFrame, finalRowNumber, chunkSizes, chunkLeftMSB, chunkRightMSB, 
+            chunkBatch, mergeId);
   }
   
-  private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps, int[] ascending) {
+  private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps, int[] ascending, 
+                                        long mergeId) {
     Log.info("Creating "+(isLeft ? "left" : "right")+" index ...");
     long t0 = System.nanoTime();
-    RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps, ascending);
+    RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps, ascending, mergeId);
     H2O.submitTask(idxTask);    // each of those launches an MRTask
     idxTask.join(); 
     Log.debug("*** Creating "+(isLeft ? "left" : "right")+" index took: " + (System.nanoTime() - t0) / 1e9 + " seconds ***");
@@ -519,15 +529,18 @@ public class Merge {
     final int  _chunkLeftMSB[];
     final int  _chunkRightMSB[];
     final int  _chunkBatch[];
+    final long _mergeId;
     ChunkStitcher(long[] chunkSizes,
                   int[]  chunkLeftMSB,
                   int[]  chunkRightMSB,
-                  int[]  chunkBatch
+                  int[]  chunkBatch, 
+                  long mergeId
     ) {
       _chunkSizes   = chunkSizes;
       _chunkLeftMSB = chunkLeftMSB;
       _chunkRightMSB= chunkRightMSB;
       _chunkBatch   = chunkBatch;
+      _mergeId = mergeId;
     }
     @Override
     public void map(Chunk[] cs) {
@@ -536,7 +549,8 @@ public class Merge {
       for (int i=0;i<cs.length;++i) {
         Key destKey = cs[i].vec().chunkKey(chkIdx);
         assert(cs[i].len() == _chunkSizes[chkIdx]);
-        Key k = BinaryMerge.getKeyForMSBComboPerCol(_chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
+        Key k = BinaryMerge.getKeyForMSBComboPerCol(_chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i,
+                _chunkBatch[chkIdx], _mergeId);
         Chunk ck = DKV.getGet(k);
         DKV.put(destKey, ck, fs, /*don't cache*/true);
         DKV.remove(k);
@@ -544,5 +558,18 @@ public class Merge {
       fs.blockForPending();
     }
   }
+
+  static long nextMergeId() {
+    return H2O.runOnLeaderNode(new NextSeqRunnable())._seq;
+  }
+
+  private static class NextSeqRunnable extends H2O.RemoteRunnable<NextSeqRunnable> {
+    private long _seq;
+    @Override
+    public void run() {
+      _seq = Merge._mergeSeq.incrementAndGet();
+    }
+  }
+
 }
 

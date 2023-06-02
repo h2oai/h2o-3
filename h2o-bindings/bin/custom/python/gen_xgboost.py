@@ -7,6 +7,8 @@ options = dict(
         'h2o.model.extensions.Trees',
         'h2o.model.extensions.SupervisedTrees',
         'h2o.model.extensions.HStatistic',
+        'h2o.model.extensions.Contributions',
+        'h2o.model.extensions.Fairness',
     ],
 )
 
@@ -541,7 +543,7 @@ examples = dict(
 ...           y=response,
 ...           training_frame=train)
 >>> perf = xgb.model_performance(valid)
->>> print perf.auc()
+>>> print(perf.auc())
 """,
     min_rows="""
 >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")

@@ -171,8 +171,10 @@ class H2OBinaryOp(H2OColOp):
             raise ValueError("left and right cannot both be None")
 
     def _transform_helper(self, X, **params):
-        if self.left is None: return self.fun(X[self.col], X[self.right.col] if self.right_is_col else self.right)
-        return self.fun(X[self.left.col] if self.left_is_col else self.left, X[self.col])
+        if self.left is None: 
+            return self.fun(X[self.col], X[self.right.col] if self.right_is_col else self.right, **self.params)
+        else:
+            return self.fun(X[self.left.col] if self.left_is_col else self.left, X[self.col], **self.params)
 
 
 class H2OCol(object):

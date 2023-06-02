@@ -1,5 +1,3 @@
-from __future__ import division
-from __future__ import print_function
 from past.utils import old_div
 import sys
 sys.path.insert(1, "../../../")
@@ -16,7 +14,7 @@ def test_gam_scale_parameters():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
     h2o_data["C21"] = h2o_data["C21"].asfactor()
-    buildModelScaleParam(h2o_data, myY, ["C11", "C12", "C13"], 'binomial')
+    buildModelScaleParam(h2o_data, myY, ["C11", "C12", "C13"], 'binomial', [0, 1, 3])
 
     print("Checking mse for gaussian with different scale parameters")
     h2o_data = h2o.import_file(
@@ -24,7 +22,7 @@ def test_gam_scale_parameters():
     h2o_data["C1"] = h2o_data["C1"].asfactor()
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
-    buildModelScaleParam(h2o_data, myY, ["C11", "C12", "C13"], 'gaussian')
+    buildModelScaleParam(h2o_data, myY, ["C11", "C12", "C13"], 'gaussian', [1, 2, 3])
 
     print("Checking logloss for multinomial with different scale parameters")
     h2o_data = h2o.import_file(
@@ -33,16 +31,18 @@ def test_gam_scale_parameters():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
-    buildModelScaleParam(h2o_data, myY, ["C6", "C7", "C8"], 'multinomial')
+    buildModelScaleParam(h2o_data, myY, ["C6", "C7", "C8"], 'multinomial', [0, 3, 1])
     print("gam scale parameter test completed successfully")    
 
 
-def buildModelScaleParam(train_data, y, gamX, family):
+def buildModelScaleParam(train_data, y, gamX, family, bs):
     numKnots = [5,6,7]
     x=["C1","C2"]
-    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [0.001, 0.001, 0.001], num_knots=numKnots)
+    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [0.001, 0.001, 0.001],
+                                                num_knots=numKnots, bs=bs)
     h2o_model.train(x=x, y=y, training_frame=train_data)   
-    h2o_model2 = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [10, 10, 10], num_knots=numKnots)
+    h2o_model2 = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [10, 10, 10], 
+                                                 num_knots=numKnots, bs=bs)
     h2o_model2.train(x=x, y=y, training_frame=train_data)
     if family == 'multinomial' or family == 'binomial':
         logloss1 = h2o_model.logloss()

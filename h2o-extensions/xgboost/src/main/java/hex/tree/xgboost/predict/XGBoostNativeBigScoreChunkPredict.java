@@ -87,7 +87,7 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
       );
       // No local chunks for this frame
       if (data.rowNum() == 0) {
-        return null;
+        return new float[0][];
       }
       // Initialize Booster
       booster = BoosterHelper.loadModel(_modelInfo._boosterBytes);

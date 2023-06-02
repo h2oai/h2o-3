@@ -9,7 +9,7 @@ apply from: '../standalone_assembly.gradle'
 dependencies {
     api project(":h2o-app")
     api project(":h2o-logging-impl-log4j2")
-    runtimeOnly project(":${defaultWebserverModule}")
+    runtimeOnly project(":${defaultExtWebserverModule}")
     api project(":h2o-web")
     api project(":h2o-avro-parser")
     api project(":h2o-persist-gcs")
@@ -17,15 +17,21 @@ dependencies {
     api project(":h2o-persist-http")
     api project(":h2o-persist-hdfs")
     api project(":h2o-ext-krbstandalone")
-    api project(":h2o-ext-mojo-pipeline")
     if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
         api project(":h2o-orc-parser")
     }
     api project(":h2o-parquet-parser")
     api project(":h2o-k8s-int")
+
+    constraints {
+        api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
+            because 'Fixes CVE-2022-42003'
+        }
+    }
 }
 
 shadowJar {
+  zip64 true
   mergeServiceFiles()
   classifier = ''
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
@@ -50,22 +56,3 @@ shadowJar {
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer)
 }
-
-//
-// Copying the resulting assembly into parent for convenient scripting
-// project build directory
-//
-
-def assembly = "main.jar"
-def allInOne = "h2o.jar"
-
-task copyJar(type: Copy) {
-    from ("${project.buildDir}/libs"){
-        include assembly
-    }
-    into "${project.parent.parent.buildDir}"
-    rename { it.replace(assembly, allInOne) }
-}
-
-// Execute always copyJar
-shadowJar.finalizedBy copyJar

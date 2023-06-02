@@ -40,6 +40,8 @@
 #' @param remove_duplicates \code{Logical}. Whether to remove rules which are identical to an earlier rule. Defaults to true. Defaults to
 #'        TRUE.
 #' @param lambda Lambda for LASSO regressor.
+#' @param max_categorical_levels For every categorical feature, only use this many most frequent categorical levels for model training. Only
+#'        used for categorical_encoding == EnumLimited. Defaults to 10.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -90,7 +92,8 @@ h2o.rulefit <- function(x,
                         rule_generation_ntrees = 50,
                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         remove_duplicates = TRUE,
-                        lambda = NULL)
+                        lambda = NULL,
+                        max_categorical_levels = 10)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -141,6 +144,8 @@ h2o.rulefit <- function(x,
     parms$remove_duplicates <- remove_duplicates
   if (!missing(lambda))
     parms$lambda <- lambda
+  if (!missing(max_categorical_levels))
+    parms$max_categorical_levels <- max_categorical_levels
 
   # Error check and build model
   model <- .h2o.modelJob('rulefit', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -162,6 +167,7 @@ h2o.rulefit <- function(x,
                                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         remove_duplicates = TRUE,
                                         lambda = NULL,
+                                        max_categorical_levels = 10,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -217,6 +223,8 @@ h2o.rulefit <- function(x,
     parms$remove_duplicates <- remove_duplicates
   if (!missing(lambda))
     parms$lambda <- lambda
+  if (!missing(max_categorical_levels))
+    parms$max_categorical_levels <- max_categorical_levels
 
   # Build segment-models specific parameters
   segment_parms <- list()
@@ -273,4 +281,32 @@ h2o.predict_rules <- function(model, frame, rule_ids) {
         return(NULL)
     }
 }
+
+
+#' This function returns the table with estimated coefficients and language representations (in case it is a rule) 
+#' for each of the significant baselearners.
+#'
+#' @param model of the interest
+#' @export
+h2o.rule_importance <- function(model) {
+  o <- model
+  if (is(o, "H2OModel")) {
+    if (o@algorithm == "rulefit"){
+      parms <- list()
+      parms$model_id <- model@model_id
+
+      json <- .h2o.doSafePOST(urlSuffix = "SignificantRules", parms=parms)
+      source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
+
+      return(source$significant_rules_table)
+    } else {
+      warning(paste0("No calculation available for this model"))
+      return(NULL)
+    }
+  } else {
+    warning(paste0("No calculation available for ", class(o)))
+    return(NULL)
+  }
+}
+
 

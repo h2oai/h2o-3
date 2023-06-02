@@ -546,6 +546,44 @@ public class GLRMTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  @Test
+  public void testTransform() {
+    Scope.enter();
+    try {
+      Frame train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      Frame test = parseTestFile(Key.make("arrestsT.hex"), "smalldata/pca_test/USArrests.csv");
+      Scope.track(train);
+      Scope.track(test);
+      GLRMParameters gparms = new GLRMParameters();  // build GLRM
+      gparms._train = train._key;
+      gparms._k = 3;
+      gparms._seed=12345;
+      
+      GLRMModel gmodel = new GLRM(gparms).trainModel().get();
+      Scope.track_generic(gmodel);
+      
+      Frame predTe = gmodel.score(test);
+      Scope.track(predTe);
+      Frame transformF = gmodel.transform(test);  // call transform after calling scoring
+      Scope.track(transformF);
+
+      GLRMModel gmodel2 = new GLRM(gparms).trainModel().get();
+      Scope.track_generic(gmodel2);
+      Frame transformF2 = gmodel2.transform(test);  // call transform without calling scoring
+      Scope.track(transformF2);
+      TestUtil.assertFrameEquals(transformF, transformF2, 1e-6);
+      
+      // test rapids transform
+      String rapidString = "(transform "+gmodel.getKey()+" "+test.getKey()+")";
+      Val result = Rapids.exec(rapidString);
+      Frame transform3 = result.getFrame();
+      Scope.track(transform3);
+      TestUtil.assertFrameEquals(transformF, transform3, 1e-6);
+    } finally {
+      Scope.exit();
+    }
+  }
 
   // PUBDEV-3501: Variance metrics for GLRM.  I compared the variance metrics calculated by PCA
   // and by GLRM to make sure they agree.

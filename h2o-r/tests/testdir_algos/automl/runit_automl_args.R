@@ -297,7 +297,7 @@ automl.args.test <- function() {
     }
 
     test_stacked_ensembles_trained <- function() {
-        print("Check that two Stacked Ensembles are trained")
+        print("Check that only two Stacked Ensembles are trained in reproducible mode")
         ds <- import_dataset()
         aml <- h2o.automl(x = ds$x, y = ds$y,
                             training_frame = ds$train,
@@ -306,7 +306,7 @@ automl.args.test <- function() {
                             project_name = "aml14",
         )
         # Check that leaderboard contains exactly two SEs: all model ensemble & top model ensemble
-        expect_gt(length(get_partitioned_models(aml)$se), 3)
+        expect_equal(length(get_partitioned_models(aml)$se), 2)
     }
 
     test_stacked_ensembles_trained_with_blending_frame_and_nfolds_eq_0 <- function() {
@@ -321,7 +321,7 @@ automl.args.test <- function() {
                             project_name = "aml_blending",
         )
         se <- get_partitioned_models(aml)$se
-        expect_gt(length(se), 3)
+        expect_equal(length(se), 2)
         for (m in se) {
             model <- h2o.getModel(m)
             expect_equal(model@model$stacking_strategy, "blending")
@@ -424,7 +424,7 @@ automl.args.test <- function() {
         )
         models <- get_partitioned_models(aml)
         expect_equal(length(models$non_se), max_models)
-        expect_gt(length(models$se), 3)
+        expect_equal(length(models$se), 2)
     }
 
     test_frames_can_be_passed_as_keys <- function() {

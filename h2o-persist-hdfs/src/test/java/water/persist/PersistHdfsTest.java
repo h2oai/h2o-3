@@ -1,5 +1,6 @@
 package water.persist;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -89,5 +90,24 @@ public class PersistHdfsTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
+  @Test
+  public void testInjectS3ASecurityCredentialProviders() {
+    Configuration conf = new Configuration(false);
+    conf.set("fs.s3a.security.credential.provider.path", "dummy");
+    PersistHdfs.injectS3ASecurityCredentialProviders(conf);
+    final String actualProviders = conf.get("fs.s3a.security.credential.provider.path");
+    final String expectedProviders = "dummy,hex://water.persist.H2OCredentialProviderFactory";
+    assertEquals(actualProviders, expectedProviders);
+  }
+
+  @Test
+  public void testDefaultConfigurationContainsCustomProviders() {
+    Configuration conf = new Configuration(false);
+    PersistHdfs.injectS3ASecurityCredentialProviders(conf);
+    final String defaultProviders = PersistHdfs.CONF.get("fs.s3a.security.credential.provider.path");
+    final String injectedProviders = conf.get("fs.s3a.security.credential.provider.path");
+    assertTrue(defaultProviders.endsWith(injectedProviders));
+  }
+
 }

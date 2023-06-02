@@ -27,5 +27,12 @@ public interface RequestAuthExtension {
   default boolean isEnabled(){
     return true;
   }
-  
+
+  /**
+   * @return name of extension. By default, returns (simple) class name.
+   */
+  default String getName() {
+    return getClass().getSimpleName();
+  }
+
 }

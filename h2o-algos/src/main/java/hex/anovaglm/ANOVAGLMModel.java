@@ -2,6 +2,7 @@ package hex.anovaglm;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import org.apache.commons.math3.distribution.FDistribution;
@@ -18,6 +19,8 @@ import static hex.anovaglm.ANOVAGLMUtils.generateGLMSS;
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.genCoefficientTable;
 import static hex.glm.GLMModel.GLMParameters.*;
 import static hex.glm.GLMModel.GLMParameters.Family.AUTO;
+import static hex.util.DistributionUtils.distributionToFamily;
+import static hex.util.DistributionUtils.familyToDistribution;
 
 
 public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMParameters, ANOVAGLMModel.ANOVAGLMModelOutput>{
@@ -129,6 +132,17 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
       } else { // mean/mode imputation and skip (even skip needs an imputer right now! PUBDEV-6809)
         return new DataInfo.MeanImputer();
       }
+    }
+
+    @Override
+    public void setDistributionFamily(DistributionFamily distributionFamily) {
+        _family = distributionToFamily(distributionFamily);
+        _link = Link.family_default;
+    }
+
+    @Override
+    public DistributionFamily getDistributionFamily() {
+      return familyToDistribution(_family);
     }
   }
 

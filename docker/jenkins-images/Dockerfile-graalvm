@@ -1,0 +1,13 @@
+# This is not part of the automated system (Will be fixed by https://h2oai.atlassian.net/browse/ITA-1506)
+# The corresponding image harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3-graalvm-17:42 was build manually from this file
+
+
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3:42
+
+RUN \
+    wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.2.0/graalvm-ce-java17-linux-amd64-22.2.0.tar.gz && \
+    tar xfz graalvm-ce-java17-linux-amd64-22.2.0.tar.gz && \
+    rm graalvm-ce-java17-linux-amd64-22.2.0.tar.gz && \
+    mkdir /usr/opt/java-17-22.2.0/ && \
+    mv graalvm-ce-java17-22.2.0 /usr/opt/java-17-22.2.0/ && \
+    ln -s /usr/opt/java-17-22.2.0/graalvm-ce-java17-22.2.0 /usr/lib/jvm/java-17-graalvm

@@ -124,7 +124,7 @@ public class HistogramTest extends TestUtil {
       if (histoType == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
         splitPts = new double[]{1,1.5,2,2.5,3,4,5,6.1,6.2,6.3,6.7,6.8,6.85};
       }
-      DHistogram.HistoQuantiles hq = new DHistogram.HistoQuantiles(Key.make(), splitPts);
+      DHistogram.HistoSplitPoints hq = new DHistogram.HistoSplitPoints(Key.make(), splitPts);
       DKV.put(hq);
       DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,false,false,0,histoType,seed,hq._key,null, false, false, null, null);
       hist.init();
@@ -196,8 +196,8 @@ public class HistogramTest extends TestUtil {
     long seed = 1234;
     SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal;
     double[] splitPts = new double[]{1,1.5,2,2.5,3,4,5,6.1,6.2,6.3,6.7,6.8,6.85};
-    Key<DHistogram.HistoQuantiles> k = Key.make();
-    DKV.put(new DHistogram.HistoQuantiles(k,splitPts));
+    Key<DHistogram.HistoSplitPoints> k = Key.make();
+    DKV.put(new DHistogram.HistoSplitPoints(k,splitPts));
     DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,false,false,0,histoType,seed,k,null, false, false, null, null);
     hist.init();
     assert(hist.binAt(0)==min);

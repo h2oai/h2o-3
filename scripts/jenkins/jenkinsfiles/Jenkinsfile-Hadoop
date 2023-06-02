@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8 && (!micro || micro_21)'
+def DEFAULT_NODE_LABEL = 'h2o-3 && docker && !mr-0xc8 && (!micro || micro_21)'
 final int HEALTH_CHECK_RETRIES = 5
 
 def defineTestStages = null
@@ -30,7 +30,7 @@ try {
               // clear the folder
               deleteDir()
               // checkout H2O-3
-              retryWithTimeout(60, 3) {
+              retryWithTimeout(180, 3) {
                 echo "###### Checkout H2O-3 ######"
                 scmEnv = checkout scm
               }

@@ -2,7 +2,6 @@ package water.persist;
 
 import com.amazonaws.*;
 import com.amazonaws.auth.*;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -34,17 +33,20 @@ public final class PersistS3 extends Persist {
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
 
   private static final Object _lock = new Object();
-  private static volatile AmazonS3 _s3;
+  private static volatile S3ClientFactory _s3Factory;
 
   // for unit testing
-  static void setClient(AmazonS3 s3) {
-    _s3 = s3;
+  static void setClientFactory(S3ClientFactory factory) {
+    _s3Factory = factory;
+  }
+  static S3ClientFactory getS3ClientFactory() {
+    return _s3Factory;
   }
 
-  public static AmazonS3 getClient() {
-    if (_s3 == null) {
+  static AmazonS3 getClient(String bucket, H2O.OptArgs args, Object configuration) {
+    if (_s3Factory == null) {
       String factoryClassName = System.getProperty(S3_CLIENT_FACTORY_CLASS);
-      if (H2O.ARGS.configure_s3_using_s3a) {
+      if (args.configure_s3_using_s3a) {
         if (factoryClassName == null) {
           factoryClassName = S3_CLIENT_FACTORY_CLASS_DEFAULT;
         } else
@@ -52,27 +54,48 @@ public final class PersistS3 extends Persist {
                   factoryClassName + ". The system property will take precedence.");
       }
       synchronized (_lock) {
-        if (_s3 == null) {
+        if (_s3Factory == null) {
           if (StringUtils.isNullOrEmpty(factoryClassName)) {
-            _s3 = makeDefaultClient();
+            _s3Factory = new DefaultS3ClientFactory(args);
           } else {
             try {
-              S3ClientFactory factory = ReflectionUtils.newInstance(factoryClassName, S3ClientFactory.class);
-              _s3 = factory.newClientInstance();
+              _s3Factory = ReflectionUtils.newInstance(factoryClassName, S3ClientFactory.class);
             } catch (Exception e) {
               throw new RuntimeException("Unable to instantiate S3 client factory for class " + factoryClassName + ".", e);
             }
           }
-          assert _s3 != null;
+          assert _s3Factory != null;
         }
       }
     }
-    return _s3;
+    return _s3Factory.getOrMakeClient(bucket, configuration);
   }
 
-  static AmazonS3 makeDefaultClient() {
+  private static AmazonS3 getClient(String bucket) {
+    return getClient(bucket, H2O.ARGS, null);
+  }
+
+  private static AmazonS3 getClient(String[] decodedParts) {
+    return getClient(decodedParts[0]);
+  }
+
+  private static final class DefaultS3ClientFactory implements S3ClientFactory {
+    private final AmazonS3 _s3;
+
+    public DefaultS3ClientFactory(H2O.OptArgs args) {
+      _s3 = makeDefaultClient(args);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public AmazonS3 getOrMakeClient(String bucket, Object configration) {
+      return _s3;
+    }
+  }
+
+  static AmazonS3 makeDefaultClient(H2O.OptArgs args) {
     try {
-      H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
+      H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain(args);
       c.setReuseLastProvider(false);
       ClientConfiguration cc = s3ClientCfg();
       return configureClient(new AmazonS3Client(c, cc));
@@ -87,16 +110,20 @@ public final class PersistS3 extends Persist {
    * credentials provider.
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
+    @SuppressWarnings("unused")
     public H2OAWSCredentialsProviderChain() {
-      super(constructProviderChain());
+      this(H2O.ARGS);
     }
-    static AWSCredentialsProvider[] constructProviderChain() {
-      return constructProviderChain(System.getProperty(S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS));
+    private H2OAWSCredentialsProviderChain(H2O.OptArgs args) {
+      super(constructProviderChain(args));
     }
-    static AWSCredentialsProvider[] constructProviderChain(String customProviderClassName) {
+    static AWSCredentialsProvider[] constructProviderChain(H2O.OptArgs args) {
+      return constructProviderChain(args, System.getProperty(S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS));
+    }
+    static AWSCredentialsProvider[] constructProviderChain(H2O.OptArgs args, String customProviderClassName) {
       AWSCredentialsProvider[] defaultProviders = new AWSCredentialsProvider[]{
               new H2ODynamicCredentialsProvider(),
-              new H2OArgCredentialsProvider(),
+              new H2OArgCredentialsProvider(args),
               new DefaultAWSCredentialsProviderChain() // use constructor instead of getInstance to be compatible with older versions on Hadoop
       };
       if (customProviderClassName == null) {
@@ -125,9 +152,9 @@ public final class PersistS3 extends Persist {
       final IcedS3Credentials s3Credentials = DKV.getGet(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
 
       if (s3Credentials != null && s3Credentials.isAWSCredentialsAuth()) {
-        return new BasicAWSCredentials(s3Credentials._secretKeyId, s3Credentials._secretAccessKey);
+        return new BasicAWSCredentials(s3Credentials._accessKeyId, s3Credentials._secretAccessKey);
       } else if (s3Credentials != null && s3Credentials.isAWSSessionTokenAuth()) {
-        return new BasicSessionCredentials(s3Credentials._secretKeyId, s3Credentials._secretAccessKey,
+        return new BasicSessionCredentials(s3Credentials._accessKeyId, s3Credentials._secretAccessKey,
                 s3Credentials._sessionToken);
       } else {
         throw new AmazonClientException("No Amazon S3 credentials set directly.");
@@ -147,9 +174,19 @@ public final class PersistS3 extends Persist {
 
     // Default location of the AWS credentials file
     public static final String DEFAULT_CREDENTIALS_LOCATION = "AwsCredentials.properties";
-    
+
+    private final String _credentialsPath;
+
+    public H2OArgCredentialsProvider() {
+      this(H2O.ARGS);
+    }
+
+    public H2OArgCredentialsProvider(H2O.OptArgs args) {
+      _credentialsPath = args.aws_credentials != null ? args.aws_credentials : DEFAULT_CREDENTIALS_LOCATION;
+    }
+
     @Override public AWSCredentials getCredentials() {
-      File credentials = new File(H2O.ARGS.aws_credentials != null ? H2O.ARGS.aws_credentials : DEFAULT_CREDENTIALS_LOCATION);
+      File credentials = new File(_credentialsPath);
       try {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {
@@ -179,21 +216,32 @@ public final class PersistS3 extends Persist {
    */
   URL generatePresignedUrl(String path, Date expiration) {
     final String[] bk = decodePath(path);
-    return getClient().generatePresignedUrl(bk[0], bk[1], expiration, HttpMethod.GET);
+    return getClient(bk).generatePresignedUrl(bk[0], bk[1], expiration, HttpMethod.GET);
   }
 
   @Override
   public boolean exists(String path) {
-    String[] bk = decodePath(path);
-    ObjectListing objects = getClient().listObjects(bk[0], bk[1]);
-    return !objects.getObjectSummaries().isEmpty();
+    return list(path).length >= 1;
+  }
+
+  @Override
+  public PersistEntry[] list(String path) {
+    final String[] bk = decodePath(path);
+    ObjectListing objects = getClient(bk).listObjects(bk[0], bk[1]);
+    final String key = bk[1].endsWith("/") ? bk[1].substring(0, bk[1].length() - 1) : bk[1];
+    PersistEntry[] entries = objects.getObjectSummaries().stream()
+            .filter(s -> s.getKey().equals(key) || s.getKey().startsWith(key + "/"))
+            .map(s -> new PersistEntry(s.getKey(), s.getSize(), s.getLastModified().getTime()))
+            .toArray(PersistEntry[]::new);
+    Arrays.sort(entries);
+    return entries;
   }
 
   @Override
   public InputStream open(String path) {
     String[] bk = decodePath(path);
     GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
-    S3Object s3obj = getClient().getObject(r);
+    S3Object s3obj = getClient(bk).getObject(r);
     return s3obj.getObjectContent();
   }
 
@@ -207,7 +255,7 @@ public final class PersistS3 extends Persist {
     } catch (IOException e) {
       throw new RuntimeException("Failed to create temporary file for S3 object upload", e);
     }
-    Runnable callback = new PutObjectCallback(getClient(), tmpFile, true, bk[0], bk[1]);
+    Runnable callback = new PutObjectCallback(getClient(bk), tmpFile, true, bk[0], bk[1]);
     try {
       return new CallbackFileOutputStream(tmpFile, callback);
     } catch (FileNotFoundException e) {
@@ -270,6 +318,11 @@ public final class PersistS3 extends Persist {
     }
   }
 
+  @Override
+  public boolean mkdirs(String path) {
+    return true; // S3 doesn't really have concept of directories - for our use case we can just ignore it
+  }
+
   public static Key loadKey(ObjectListing listing, S3ObjectSummary obj) throws IOException {
     // Note: Some of S3 implementations does not fill bucketName of returned object (for example, Minio).
     // So guess it based on returned ObjectListing
@@ -298,9 +351,9 @@ public final class PersistS3 extends Persist {
   public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     LOG.info("ImportS3 processing (" + path + ")");
     // List of processed files
-    AmazonS3 s3 = getClient();
-    String [] parts = decodePath(path);
-    ObjectListing currentList = s3.listObjects(parts[0], parts[1]);
+    String[] bk = decodePath(path);
+    AmazonS3 s3 = getClient(bk);
+    ObjectListing currentList = s3.listObjects(bk[0], bk[1]);
     processListing(currentList, pattern, files, fails, true);
     while(currentList.isTruncated()){
       currentList = s3.listNextBatchOfObjects(currentList);
@@ -434,14 +487,7 @@ public final class PersistS3 extends Persist {
     String[] bk = decodeKey(k);
     GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
     r.setRange(offset, offset + length - 1); // Range is *inclusive* according to docs???
-    return getClient().getObject(r);
-  }
-
-  // Gets the object metadata associated with given key.
-  private static ObjectMetadata getObjectMetadataForKey(Key k) {
-    String[] bk = decodeKey(k);
-    assert (bk.length == 2);
-    return getClient().getObjectMetadata(bk[0], bk[1]);
+    return getClient(bk).getObject(r);
   }
 
   /** S3 socket timeout property name */
@@ -510,18 +556,17 @@ public final class PersistS3 extends Persist {
 
   @Override
   public Key uriToKey(URI uri) throws IOException {
-    AmazonS3 s3 = getClient();
-    // Decompose URI into bucket, key
-    String [] parts = decodePath(uri.toString());
+    String[] bk = decodePath(uri.toString());
+    AmazonS3 s3 = getClient(bk);
     try {
-      ObjectMetadata om = s3.getObjectMetadata(parts[0], parts[1]);
+      ObjectMetadata om = s3.getObjectMetadata(bk[0], bk[1]);
       // Voila: create S3 specific key pointing to the file
-      return S3FileVec.make(encodePath(parts[0], parts[1]), om.getContentLength());
+      return S3FileVec.make(encodePath(bk[0], bk[1]), om.getContentLength());
     } catch (AmazonServiceException e) {
       if (e.getErrorCode().contains("404")) {
         throw new IOException(e);
       } else {
-        LOG.error("AWS failed for " + Arrays.toString(parts) + ": " + e.getMessage());
+        LOG.error("AWS failed for " + Arrays.toString(bk) + ": " + e.getMessage());
         throw e;
       }
     }
@@ -538,7 +583,7 @@ public final class PersistS3 extends Persist {
     public boolean containsKey(String k) { return Arrays.binarySearch(_cache,k) >= 0;}
     protected String [] update(){
       LOG.debug("Renewing S3 bucket cache.");
-      List<Bucket> l = getClient().listBuckets();
+      List<Bucket> l = getClient((String) null).listBuckets();
       String [] cache = new String[l.size()];
       int i = 0;
       for (Bucket b : l) cache[i++] = b.getName();
@@ -576,7 +621,7 @@ public final class PersistS3 extends Persist {
     @Override
     protected String [] update(){
       LOG.debug("Renewing S3 cache.");
-      AmazonS3 s3 = getClient();
+      AmazonS3 s3 = getClient(_bucket);
       ObjectListing currentList = s3.listObjects(_bucket,"");
       ArrayList<String> res = new ArrayList<>();
       processListing(currentList, null, res, null, false);
@@ -601,7 +646,7 @@ public final class PersistS3 extends Persist {
     String [] parts = decodePath(filter);
     if(parts[1] != null) { // bucket and key prefix
       if(_keyCaches.get(parts[0]) == null) {
-        if(!getClient().doesBucketExist(parts[0]))
+        if(!getClient(parts[0]).doesBucketExist(parts[0]))
           return new ArrayList<>();
         _keyCaches.put(parts[0], new KeyCache(parts[0]));
       }

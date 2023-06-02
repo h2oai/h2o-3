@@ -8,7 +8,8 @@ import water.util.Log;
 import water.util.TwoDimTable;
 
 import static hex.ModelMetrics.calcVarImp;
-import static hex.gam.GAMModel.GAMParameters;
+import static hex.gam.GAMModel.*;
+import static hex.genmodel.algos.gam.GamMojoModel.*;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
@@ -21,7 +22,7 @@ public class GAMModelUtils {
             +gamNoCenterCoeffLength(parms);
     model._output._coefficient_names_no_centering = new String[totCoefNumsNoCenter]; // copy coefficient names from GLM to GAM
     int gamNumStart = copyGLMCoeffNames2GAMCoeffNames(model, glm);
-    copyGLMCoeffs2GAMCoeffs(model, glm, parms._family, gamNumStart, nclass); // obtain beta without centering
+    copyGLMCoeffs2GAMCoeffs(model, glm, parms._family, gamNumStart, nclass, parms._intercept); // obtain beta without centering
     // copy over GLM coefficients
     int glmCoeffLen = glm._output._coefficient_names.length;
     model._output._coefficient_names = new String[glmCoeffLen];
@@ -59,9 +60,10 @@ public class GAMModelUtils {
     int numGam = parms._gam_columns.length;
     int gamifiedColCount = 0;
     for (int index = 0; index < numGam; index++) {
-      if (parms._bs_sorted[index]==0) { // cubic spline
+      if (parms._bs_sorted[index]==CS_SPLINE_TYPE || parms._bs_sorted[index]==IS_SPLINE_TYPE || 
+              parms._bs_sorted[index]==MS_SPLINE_TYPE) { // cubic spline
         gamifiedColCount++;
-      } else {
+      } else if (parms._bs_sorted[index] == TP_SPLINE_TYPE) {
         gamifiedColCount += (1+parms._M[tpCount++]);
       }
     }
@@ -204,7 +206,7 @@ public class GAMModelUtils {
   }
 
   public static void copyGLMCoeffs2GAMCoeffs(GAMModel model, GLMModel glm, GLMParameters.Family family,
-                                             int gamNumStart, int nclass) {
+                                             int gamNumStart, int nclass, boolean hasIntercept) {
     int numCoeffPerClass = model._output._coefficient_names_no_centering.length;
     if (family.equals(GLMParameters.Family.multinomial) || family.equals(GLMParameters.Family.ordinal)) {
       double[][] model_beta_multinomial = glm._output.get_global_beta_multinomial();
@@ -213,39 +215,56 @@ public class GAMModelUtils {
       model._output._standardized_model_beta_multinomial_no_centering = new double[nclass][];
       for (int classInd = 0; classInd < nclass; classInd++) {
         model._output._model_beta_multinomial_no_centering[classInd] = convertCenterBeta2Beta(model._output._zTranspose,
-                gamNumStart, model_beta_multinomial[classInd], numCoeffPerClass);
+                gamNumStart, model_beta_multinomial[classInd], numCoeffPerClass, model._output._gamColNames, hasIntercept);
         model._output._standardized_model_beta_multinomial_no_centering[classInd] = convertCenterBeta2Beta(model._output._zTranspose,
-                gamNumStart, standardized_model_beta_multinomial[classInd], numCoeffPerClass);
+                gamNumStart, standardized_model_beta_multinomial[classInd], numCoeffPerClass, model._output._gamColNames, hasIntercept);
       }
     } else {  // other families
       model._output._model_beta_no_centering = convertCenterBeta2Beta(model._output._zTranspose, gamNumStart,
-              glm.beta(), numCoeffPerClass);
+              glm.beta(), numCoeffPerClass, model._output._gamColNames, hasIntercept);
       model._output._standardized_model_beta_no_centering = convertCenterBeta2Beta(model._output._zTranspose, gamNumStart,
-              glm._output.getNormBeta(), numCoeffPerClass);
+              glm._output.getNormBeta(), numCoeffPerClass, model._output._gamColNames, hasIntercept);
     }
   }
 
   // This method carries out the evaluation of beta = Z betaCenter as explained in documentation 7.2
   public static double[] convertCenterBeta2Beta(double[][][] ztranspose, int gamNumStart, double[] centerBeta,
-                                                int betaSize) {
+                                                int betaSize, String[][] gamColNames, boolean hasIntercept) {
     double[] originalBeta = new double[betaSize];
     if (ztranspose!=null) { // centering is performed
       int numGamCols = ztranspose.length;
       int gamColStart = gamNumStart;
       int origGamColStart = gamNumStart;
       System.arraycopy(centerBeta,0, originalBeta, 0, gamColStart);   // copy everything before gamCols
+      int numGamCoef;
       for (int colInd=0; colInd < numGamCols; colInd++) {
+        numGamCoef = gamColNames[colInd].length;
         double[] tempCbeta = new double[ztranspose[colInd].length];
-        System.arraycopy(centerBeta, gamColStart, tempCbeta, 0, tempCbeta.length);
-        double[] tempBeta = ArrayUtils.multVecArr(tempCbeta, ztranspose[colInd]);
-        System.arraycopy(tempBeta, 0, originalBeta, origGamColStart, tempBeta.length);
-        gamColStart += tempCbeta.length;
-        origGamColStart += tempBeta.length;
+        if (tempCbeta.length > 0) {
+          System.arraycopy(centerBeta, gamColStart, tempCbeta, 0, tempCbeta.length);
+          double[] tempBeta = ArrayUtils.multVecArr(tempCbeta, ztranspose[colInd]);
+          System.arraycopy(tempBeta, 0, originalBeta, origGamColStart, tempBeta.length);
+          gamColStart += tempCbeta.length;
+          origGamColStart += tempBeta.length;
+        } else { // no centering needed for these GAM coefficients
+          System.arraycopy(centerBeta, gamColStart, originalBeta, origGamColStart, numGamCoef);
+          origGamColStart += numGamCoef;
+          gamColStart += numGamCoef;
+        }
       }
-      originalBeta[betaSize-1]=centerBeta[centerBeta.length-1];
-    } else
+      if (hasIntercept)
+        originalBeta[betaSize-1]=centerBeta[centerBeta.length-1];
+    } else {  // no centering for all gam columns
       System.arraycopy(centerBeta, 0, originalBeta, 0, betaSize); // no change needed, just copy over
+    }
 
     return originalBeta;
+  }
+
+  public static void zeroOutIStranspose(int[] bs_sorted, double[][][] zTranspose) {
+    int numGam = bs_sorted.length;
+    for (int index=0; index<numGam; index++)
+      if (bs_sorted[index] == 2)
+        zTranspose[index] = new double[0][0];
   }
 }

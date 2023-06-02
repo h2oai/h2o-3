@@ -123,6 +123,27 @@ public class GLMBasicTestNegativebinomial extends TestUtil {
     }
   }
   
+  @Test
+  public void testNegativeBinomialDispersionEstimationLeakCheck() {
+    Scope.enter();
+    try {
+      Frame trainData = parseTestFile("smalldata/prostate/prostate.csv");
+      Scope.track(trainData);
+      final GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+      parms._train = trainData._key;
+      parms._family = GLMModel.GLMParameters.Family.negativebinomial;
+      parms._response_column = "CAPSULE";
+      parms._compute_p_values = true;
+      parms._remove_collinear_columns = true;
+      parms._dispersion_parameter_method = GLMModel.GLMParameters.DispersionMethod.ml;
+      final GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   void  compareArrays(double[] arr1, double[] arr2, double eps, boolean careAboutLengths) {
     int arrLength = arr1.length;
     if (careAboutLengths)

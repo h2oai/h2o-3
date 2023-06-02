@@ -41,12 +41,47 @@ public class JythonCFuncTest extends TestUtil {
       testPyFunc2Invocation(cFuncRef, new String[0]);
     }
   }
+  
+  class DummyClassLoaderWrapper extends ClassLoader {
+    private final ClassLoader inner;
 
-  private void testPyFunc2Invocation(CFuncRef testFuncDef, String[] resourcesToSkip) throws Exception {
+    public DummyClassLoaderWrapper(ClassLoader inner) {
+      super(null);
+      this.inner = inner;
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+      return this.inner.loadClass(name);
+    }
+  }
+
+  @Test
+  public void testJythonCFuncLoaderDoesNotRequireRelationshipBetweenClassLoaders() throws Exception {
+    // Load test python code
+    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    try(InputStream is = cl.getResourceAsStream("py/test_cfunc2.py")) {
+      byte[] ba = IOUtils.toByteArray(is);
+      CFuncRef cFuncRef = loadRawTestFunc("python", "test3.py", "test3.TestCFunc2", ba, "test3.py");
+
+      // Testing that a classloader that loaded objects of Jython library could be hierarchically independent on a class
+      // loader that reads python artifacts (DKVClassLoader). Here we wrap a default class loader to break class loader chain.
+      ClassLoader parentClassLoader = new DummyClassLoaderWrapper(cl);
+      testPyFunc2Invocation(cFuncRef, parentClassLoader);
+    }
+  }
+
+  private void testPyFunc2Invocation(CFuncRef testFuncDef, String[] resourcesToSkip) {
+    ClassLoader skippingCl = getSkippingClassloader(
+            JythonCFuncTest.class.getClassLoader(),
+            new String[0],
+            resourcesToSkip);
+    testPyFunc2Invocation(testFuncDef, skippingCl);
+  }
+
+  private void testPyFunc2Invocation(CFuncRef testFuncDef, ClassLoader parentClassLoader) {
     try {
-      ClassLoader skippingCl = getSkippingClassloader(JythonCFuncTest.class.getClassLoader(),
-                                                      new String[0], resourcesToSkip);
-      ClassLoader cl = new DkvClassLoader(testFuncDef, skippingCl);
+      ClassLoader cl = new DkvClassLoader(testFuncDef, parentClassLoader);
       JythonCFuncLoader loader = new JythonCFuncLoader();
       CFunc2 testFunc = loader.load(testFuncDef.funcName, CFunc2.class, cl);
 

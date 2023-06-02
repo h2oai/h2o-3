@@ -2,15 +2,25 @@ package hex.coxph;
 
 import hex.ModelMetricsRegressionCoxPH;
 import hex.StringPair;
+import hex.genmodel.MojoModel;
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.attributes.parameters.ModelParameter;
+import hex.genmodel.descriptor.ModelDescriptor;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.prediction.CoxPHModelPrediction;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.PojoUtils;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.parseAndTrackTestFile;
@@ -213,7 +223,39 @@ public class CoxPHTest extends Iced<CoxPHTest> {
   }
 
   @Test
-  public void testCoxPHEfron1Interaction() {
+  public void showMojoIsAvailableWithCategoricalInteractions() {
+    try {
+      Scope.enter();
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv")
+              .toCategoricalCol("transplant")
+              .toCategoricalCol("surgery");
+
+      CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._calc_cumhaz = true;
+      parms._train           = fr._key;
+      parms._start_column    = "start";
+      parms._stop_column     = "stop";
+      parms._response_column = "event";
+      parms._ignored_columns = new String[]{"id"};
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+
+      CoxPHModel.CoxPHParameters parmsNum = (CoxPHModel.CoxPHParameters) parms.clone();
+      CoxPHModel.CoxPHParameters parmsCat = (CoxPHModel.CoxPHParameters) parms.clone();
+
+      // numerical interaction
+      parmsNum._interaction_pairs = new StringPair[]{new StringPair("age", "year")};
+      assertTrue(Scope.track_generic(new CoxPH(parmsNum).trainModel().get()).haveMojo());
+
+      // categorical interaction (num-cat specifically)
+      parmsCat._interaction_pairs = new StringPair[]{new StringPair("age", "surgery")};
+      assertTrue(Scope.track_generic(new CoxPH(parmsCat).trainModel().get()).haveMojo());
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void testCoxPHEfron1Interaction() throws Exception {
     try {
       Scope.enter();
       final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
@@ -252,7 +294,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals("Surv(start, stop, event) ~ age1:age2", parms.toFormula(fr));
 
       CoxPH builder = new CoxPH(parms);
-      CoxPHModel model = (CoxPHModel) Scope.track_generic(builder.trainModel().get());
+      CoxPHModel model = Scope.track_generic(builder.trainModel().get());
 
       // Expect the same result as we used "age"
       assertEquals(model._output._coef[0],        0.0307077486571334,   1e-8);
@@ -265,6 +307,66 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(model._output._n,              172);
       assertEquals(model._output._total_event,    75);
       assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
+
+      Frame scored = model.score(fr);
+      Scope.track(scored);
+
+      assertTrue(model.haveMojo());
+      MojoModel mojo = model.toMojo();
+
+      EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
+              .setModel(mojo);
+      EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(config);
+
+      double age1 = 7;
+      double age2 = 6;
+      double expectedPrediction = model._output._coef[0] * (age1 * age2 - model._output._x_mean_num[0][0]);
+      // Sanity Test on a single row with interaction value provided externally
+      {
+        RowData rowData = new RowData();
+        rowData.put("age1_age2", age1 * age2);
+        CoxPHModelPrediction prediction = wrapper.predictCoxPH(rowData);
+        assertEquals(prediction.value, expectedPrediction, 1e-8);
+      }
+      // Sanity Test on a single row with interaction calculated in MOJO itself
+      {
+        RowData rowData = new RowData();
+        rowData.put("age1", age1);
+        rowData.put("age2", age2);
+        CoxPHModelPrediction prediction = wrapper.predictCoxPH(rowData);
+        assertEquals(prediction.value, expectedPrediction, 1e-8);
+      }
+
+      // Compare whole frame predictions
+      for (int i = 0; i < fr.numRows(); i++) {
+        age1 = fr.vec("age1").at(i);
+        age2 = fr.vec("age2").at(i);
+        expectedPrediction = model._output._coef[0] * (age1 * age2 - model._output._x_mean_num[0][0]);
+
+        // interactions pre-calculated
+        {
+          RowData rowExternal = new RowData();
+          rowExternal.put("age1_age2", age1 * age2);
+          CoxPHModelPrediction pExternal = wrapper.predictCoxPH(rowExternal);
+          assertEquals(
+                  "Predictions for row #" + i + " should match (external interactions)",
+                  pExternal.value,
+                  expectedPrediction,
+                  1e-8);
+        }
+
+        // interactions calculated internally
+        {
+          RowData rowInternal = new RowData();
+          rowInternal.put("age1_age2", age1 * age2);
+          CoxPHModelPrediction pInternal = wrapper.predictCoxPH(rowInternal);
+          assertEquals(
+                  "Predictions for row #" + i + " should match (internal interactions)",
+                  pInternal.value,
+                  model._output._coef[0] * (age1 * age2 - model._output._x_mean_num[0][0]),
+                  1e-8);
+        }
+      }
     } finally {
       Scope.exit();
     }
@@ -391,4 +493,156 @@ public class CoxPHTest extends Iced<CoxPHTest> {
     Scope.track(scored);
     assertTrue(model.testJavaScoring(fr, scored, 1e-5));
   }
+
+  @Test
+  public void testSpecialColumns()  {
+    Assume.assumeTrue(H2O.CLOUD.isSingleNode()); // too slow on multinode and not needed
+    try {
+      Scope.enter();
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv")
+              .toCategoricalCol("surgery");
+
+      final CoxPHModel.CoxPHParameters blueprintParms = new CoxPHModel.CoxPHParameters();
+      blueprintParms._train           = fr._key;
+      blueprintParms._start_column    = "start";
+      blueprintParms._stop_column     = "stop";
+      blueprintParms._response_column = "event";
+      blueprintParms._stratify_by     = new String[]{"surgery"};
+      blueprintParms._offset_column   = "year";
+      blueprintParms._weights_column  = "transplant";
+      blueprintParms._ignored_columns = new String[]{"id"};
+
+      final String[] optionalFields = {"_start_column", "_stratify_by", "_offset_column", "_weights_column"};
+      for (Set<String> fields : powerSet(optionalFields)) {
+        CoxPHModel.CoxPHParameters parms = (CoxPHModel.CoxPHParameters) blueprintParms.clone();
+        fields.forEach(name -> PojoUtils.setField(parms, name, null, PojoUtils.FieldNaming.CONSISTENT));
+
+        final CoxPH builder = new CoxPH(parms);
+        final CoxPHModel model = builder.trainModel().get();
+        Scope.track_generic(model);
+        ModelDescriptor md = model.modelDescriptor();
+        
+        if (parms._weights_column != null) {
+          assertEquals("transplant", model._output.weightsName());
+          assertEquals("transplant", md.weightsColumn());
+        }
+        if (parms._offset_column != null) {
+          assertEquals("year", md.offsetColumn());
+          assertEquals("year", model._output.offsetName());
+        }
+
+        Frame test = new Frame(fr);
+        if (parms._weights_column != null) { // we want to test all rows
+          test.remove(parms._weights_column);
+        }
+        Frame scored = model.score(test);
+        Scope.track(scored);
+
+        assertTrue(model.testJavaScoring(fr, scored, 1e-8));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  Set<Set<String>> powerSet(String[] vals) {
+    Set<Set<String>> ps = new HashSet<>();
+    ps.add(Collections.emptySet());
+    while (true) {
+      Set<Set<String>> newSets = new HashSet<>();
+      for (Set<String> set : ps) {
+        for (String val : vals) {
+          if (set.contains(val))
+            continue;
+          Set<String> extended = new HashSet<>(set);
+          extended.add(val);
+          newSets.add(extended);
+        }
+      }
+      if (!ps.addAll(newSets))
+        break;
+    }
+    return ps;
+  }
+
+  @Test
+  public void testMojoParsesInteractionPairs() throws Exception {
+    try {
+      Scope.enter();
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv");
+
+      final CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._train             = fr._key;
+      parms._start_column      = "start";
+      parms._stop_column       = "stop";
+      parms._response_column   = "event";
+      parms._interaction_pairs = new StringPair[]{new StringPair("surgery", "age")};
+      parms._ignored_columns   = new String[]{"id"};
+      
+      final CoxPH builder = new CoxPH(parms);
+      final CoxPHModel model = builder.trainModel().get();
+      Scope.track_generic(model);
+      
+      MojoModel mojoModel = model.toMojo(true);
+      ModelAttributes modelAttributes = mojoModel._modelAttributes;
+      assertNotNull(modelAttributes);
+
+      List<Object> pairs = Stream.of(modelAttributes.getModelParameters())
+              .filter(p -> "interaction_pairs".equals(p.name))
+              .map(ModelParameter::getActualValue)
+              .collect(Collectors.toList());
+      assertEquals(1, pairs.size());
+      assertEquals(1, ((Object[]) pairs.get(0)).length);
+      assertEquals(
+              new hex.genmodel.attributes.parameters.StringPair("surgery", "age"),
+              ((Object[]) pairs.get(0))[0]
+      );
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testCategoricalColumnsDontBreakStratifiedMOJOs() {
+    try {
+      Scope.enter();
+      final Frame fr = parseAndTrackTestFile("smalldata/coxph_test/heart.csv")
+              .toCategoricalCol("surgery")
+              .toCategoricalCol("start")
+              .toCategoricalCol("transplant");
+
+      final CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._train             = fr._key;
+      parms._stop_column       = "stop";
+      parms._response_column   = "event";
+      parms._stratify_by       = new String[]{"surgery"};
+      parms._ignored_columns   = new String[]{"id"};
+      // Note: there is an issue on Java 11+ that makes efron method to fail
+      // because this test is just supposed to test consistency we use breslow
+      // the original issue needs to be fixed in https://h2oai.atlassian.net/browse/PUBDEV-8756
+      parms._ties              = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
+
+      final CoxPH builder = new CoxPH(parms);
+      final CoxPHModel model = builder.trainModel().get();
+      Scope.track_generic(model);
+
+      assertEquals(
+                      fr.vec("transplant").domain().length - 1 +
+                      fr.vec("start").domain().length - 1 +
+                      1 /*age */ + 
+                      1 /*year*/,
+              model._output._coef_names.length);
+      assertTrue(Arrays.stream(model._output._coef)
+              .filter(x -> x == 0.0d)
+              .count() < 10); // only few can be 0
+
+      Frame scored = model.score(fr);
+      Scope.track(scored);
+
+      assertTrue(model.testJavaScoring(fr, scored, 1e-6));
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

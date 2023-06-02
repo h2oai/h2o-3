@@ -332,7 +332,7 @@ def main(argv):
     global g_daily_failure_csv
 
     if len(argv) < 12:
-        print "Wrong call.  Not enough arguments.\n"
+        print("Wrong call.  Not enough arguments.\n")
         usage()
         sys.exit(1)
     else:   # we may be in business

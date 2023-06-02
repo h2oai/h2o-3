@@ -1,5 +1,4 @@
 # [required dependencies]
-future
 requests
 tabulate
 

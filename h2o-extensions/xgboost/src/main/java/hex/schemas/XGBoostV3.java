@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.tree.CalibrationHelper;
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.api.API;
@@ -59,10 +60,12 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "nthread",
         "save_matrix_directory",
         "build_tree_one_node",
+        "parallelize_cross_validation",
 
-        //platt scaling
+        //model calibration
         "calibrate_model",
         "calibration_frame",
+        "calibration_method",
 
         //lightgbm only
         "max_bins",
@@ -86,7 +89,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "gpu_id",
         "gainslift_bins",
         "auc_type",
-        "scale_pos_weight"
+        "scale_pos_weight",
+        "eval_metric",
+        "score_eval_metric_only"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -151,11 +156,14 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help = "Directory where to save matrices passed to XGBoost library. Useful for debugging.", level = API.Level.expert)
     public String save_matrix_directory;
 
-    @API(help="Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates of class probabilities.", level = API.Level.expert)
+    @API(help="Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class probabilities. Calibration can provide more accurate estimates of class probabilities.", level = API.Level.expert)
     public boolean calibrate_model;
 
-    @API(help="Calibration frame for Platt Scaling", level = API.Level.expert, direction = API.Direction.INOUT)
+    @API(help="Data for model calibration", level = API.Level.expert, direction = API.Direction.INOUT)
     public KeyV3.FrameKeyV3 calibration_frame;
+
+    @API(help="Calibration method to use", values = {"AUTO", "PlattScaling", "IsotonicRegression"}, level = API.Level.expert, direction = API.Direction.INOUT)
+    public CalibrationHelper.CalibrationMethod calibration_method;
 
     @API(help = "For tree_method=hist only: maximum number of bins", level = API.Level.expert, gridable = true)
     public int max_bins;
@@ -210,6 +218,12 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="Controls the effect of observations with positive labels in relation to the observations with negative labels on gradient calculation. Useful for imbalanced problems.", level= API.Level.expert, gridable = true)
     public float scale_pos_weight;
+
+    @API(help="Specification of evaluation metric that will be passed to the native XGBoost backend.", level= API.Level.expert, gridable = true)
+    public String eval_metric;
+
+    @API(help="If enabled, score only the evaluation metric. This can make model training faster if scoring is frequent (eg. each iteration).", level= API.Level.expert, gridable = true)
+    public boolean score_eval_metric_only;
 
   }
 

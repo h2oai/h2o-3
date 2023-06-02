@@ -27,7 +27,7 @@ public class PersistS3HandlerTest extends TestUtil {
 
     @BeforeClass
     public static void setup() {
-        stall_till_cloudsize(5);
+        stall_till_cloudsize(1);
     }
 
 
@@ -37,10 +37,9 @@ public class PersistS3HandlerTest extends TestUtil {
     private static final String IRIS_H2O_AWS = "s3://test.0xdata.com/h2o-unit-tests/iris.csv";
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         persistS3Handler = new PersistS3Handler();
     }
-
 
     @Test
     public void setS3Credentials() {
@@ -50,7 +49,7 @@ public class PersistS3HandlerTest extends TestUtil {
         assumeTrue(accessKeyId != null);
         assumeTrue(secretKey != null);
         
-        final Key credentialsKey= Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
+        final Key<?> credentialsKey= Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
         PersistS3 persistS3 = new PersistS3();
         final ArrayList<String> keys = new ArrayList<>();
         final ArrayList<String> fails = new ArrayList<>();
@@ -61,7 +60,8 @@ public class PersistS3HandlerTest extends TestUtil {
             final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
             persistS3CredentialsV3.secret_key_id = accessKeyId;
             persistS3CredentialsV3.secret_access_key =  secretKey;
-            persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
+            PersistS3CredentialsV3 result = persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
+            assertSame(persistS3CredentialsV3, result);
 
             persistS3.importFiles(IRIS_H2O_AWS, null, files, keys, fails, deletions);
             assertEquals(0, fails.size());
@@ -69,9 +69,9 @@ public class PersistS3HandlerTest extends TestUtil {
             assertEquals(1, files.size());
             assertEquals(1, keys.size());
         } finally {
-            if(credentialsKey != null) DKV.remove(credentialsKey);
+            DKV.remove(credentialsKey);
             for (String key : keys) {
-                final Iced iced = DKV.getGet(key);
+                final Iced<?> iced = DKV.getGet(key);
                 assertTrue(iced instanceof Frame);
                 final Frame frame = (Frame) iced;
                 frame.remove();
@@ -99,7 +99,7 @@ public class PersistS3HandlerTest extends TestUtil {
 
         } finally {
             for (String key : keys) {
-                final Iced iced = DKV.getGet(key);
+                final Iced<?> iced = DKV.getGet(key);
                 assertTrue(iced instanceof Frame);
                 final Frame frame = (Frame) iced;
                 frame.remove();
@@ -145,5 +145,18 @@ public class PersistS3HandlerTest extends TestUtil {
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("The field 'S3_SECRET_ACCESS_KEY' may not be empty.");
         persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
+    }
+
+    @Test
+    public void testRemoveS3Credentials() {
+        final PersistS3CredentialsV3 creds = new PersistS3CredentialsV3();
+        creds.secret_key_id = "key_id";
+        creds.secret_access_key = "secret";
+
+        persistS3Handler.setS3Credentials(3, creds);
+        assertNotNull(DKV.get(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY));
+
+        assertNotNull(persistS3Handler.removeS3Credentials(3, new PersistS3CredentialsV3()));
+        assertNull(DKV.get(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY));
     }
 }

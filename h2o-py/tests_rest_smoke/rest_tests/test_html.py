@@ -16,7 +16,7 @@ def test(a_node, pp):
         '/LATEST/Cloud.html': 'Ready',
        }
     
-    for (suffix, expected_word) in urls.iteritems():
+    for (suffix, expected_word) in urls.items():
         url = url_prefix + suffix
         h2o.H2O.verboseprint('Testing ' + url + '. . .')
         r = requests.get(url)

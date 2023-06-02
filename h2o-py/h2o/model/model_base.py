@@ -1,17 +1,14 @@
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
-import traceback
 
 import h2o
 from h2o.base import Keyed
-from h2o.exceptions import H2OValueError
+from h2o.display import H2ODisplay, display, format_to_html, format_to_multiline, format_user_tips, print2 as print
+from h2o.exceptions import H2OValueError, H2OTypeError
 from h2o.job import H2OJob
 from h2o.model.extensions import has_extension
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, get_matplotlib_cm, get_mplot3d_axes, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import viewitems
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas, can_use_numpy
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
@@ -22,8 +19,10 @@ from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
 )
-class ModelBase(h2o_meta(Keyed)):
-    """Base class for all models."""
+class ModelBase(h2o_meta(Keyed, H2ODisplay)):
+    """
+    Base class for all models.
+    """
 
     _options_ = {}    # dict of options declared in implementation
 
@@ -45,7 +44,6 @@ class ModelBase(h2o_meta(Keyed)):
         self._start_time = None
         self._end_time = None
         self._run_time = None
-
 
     @property
     def key(self):
@@ -106,7 +104,12 @@ class ModelBase(h2o_meta(Keyed)):
 
     @property
     def type(self):
-        """The type of model built: ``"classifier"`` or ``"regressor"`` or ``"unsupervised"``"""
+        """The type of model built. One of:
+
+            - ``"classifier"``
+            - ``"regressor"``
+            - ``"unsupervised"``
+        """
         return self._estimator_type
 
     @property
@@ -131,15 +134,8 @@ class ModelBase(h2o_meta(Keyed)):
 
     @property
     def run_time(self):
-        """Model training time in milliseconds"""
+        """Model training time in milliseconds."""
         return self._run_time
-
-    def __repr__(self):
-        # PUBDEV-2278: using <method>? from IPython caused everything to dump
-        stk = traceback.extract_stack()
-        if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
-            self.show()
-        return ""
 
     def predict_leaf_node_assignment(self, test_data, type="Path"):
         """
@@ -147,7 +143,7 @@ class ModelBase(h2o_meta(Keyed)):
 
         :param H2OFrame test_data: Data on which to make predictions.
         :param Enum type: How to identify the leaf node. Nodes can be either identified by a path from to the root node
-            of the tree to the node or by H2O's internal node id. One of: ``"Path"``, ``"Node_ID"`` (default: ``"Path"``).
+            of the tree to the node or by H2O's internal node id. One of: ``"Path"`` (default), ``"Node_ID"``.
 
         :returns: A new H2OFrame of predictions.
         """
@@ -162,10 +158,10 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Predict class probabilities at each stage of an H2O Model (only GBM models).
 
-        The output structure is analogous to the output of function predict_leaf_node_assignment. For each tree t and
-        class c there will be a column Tt.Cc (eg. T3.C1 for tree 3 and class 1). The value will be the corresponding
-        predicted probability of this class by combining the raw contributions of trees T1.Cc,..,TtCc. Binomial models
-        build the trees just for the first class and values in columns Tx.C1 thus correspond to the the probability p0.
+        The output structure is analogous to the output of function ``predict_leaf_node_assignment``. For each tree `t` and
+        class `c` there will be a column `Tt.Cc` (eg. `T3.C1` for tree `3` and class `1`). The value will be the corresponding
+        predicted probability of this class by combining the raw contributions of trees `T1.Cc,..,TtCc`. Binomial models
+        build the trees just for the first class and values in columns `Tx.C1` thus correspond to the the probability p0.
 
         :param H2OFrame test_data: Data on which to make predictions.
 
@@ -181,25 +177,29 @@ class ModelBase(h2o_meta(Keyed)):
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost, DRF models and equivalent
         imported MOJOs).
         
-        Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
-        feature, the last column is the model bias (same value for each row). The sum of the feature contributions
-        and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum 
+        Returned H2OFrame has shape (#rows, #features + 1). There is a feature contribution column for each input
+        feature, and the last column is the model bias (same value for each row). The sum of the feature contributions
+        and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based models is the sum 
         of the predictions of the individual trees before the inverse link function is applied to get the actual
         prediction. For Gaussian distribution the sum of the contributions is equal to the model prediction. 
 
-        Note: Multinomial classification models are currently not supported.
+        **Note**: Multinomial classification models are currently not supported.
 
         :param H2OFrame test_data: Data on which to calculate contributions.
-        :param Enum output_format: Specify how to output feature contributions in XGBoost - XGBoost by default outputs 
+        :param Enum output_format: Specify how to output feature contributions in XGBoost. XGBoost by default outputs 
             contributions for 1-hot encoded features, specifying a Compact output format will produce a per-feature
-            contribution. One of: ``"Original"``, ``"Compact"`` (default: ``"Original"``).
-        :param top_n: Return only #top_n highest contributions + bias.
-                      If top_n<0 then sort all SHAP values in descending order
-                      If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
-        :param bottom_n: Return only #bottom_n lowest contributions + bias
-                         If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
-                         If bottom_n<0 then sort all SHAP values in ascending order
-                         If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+            contribution. One of: ``"Original"`` (default), ``"Compact"``.
+        :param top_n: Return only #top_n highest contributions + bias:
+        
+            - If ``top_n<0`` then sort all SHAP values in descending order
+            - If ``top_n<0 && bottom_n<0`` then sort all SHAP values in descending order
+            
+        :param bottom_n: Return only #bottom_n lowest contributions + bias:
+        
+            - If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
+            - If ``bottom_n<0`` then sort all SHAP values in ascending order
+            - If ``top_n<0 && bottom_n<0`` then sort all SHAP values in descending order
+            
         :param compare_abs: True to compare absolute values of contributions
         :returns: A new H2OFrame made of feature contributions.
 
@@ -225,26 +225,73 @@ class ModelBase(h2o_meta(Keyed)):
         >>> # Compute SHAP and pick the top two highest and top two lowest
         >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
         """
-        assert_is_type(output_format, None, Enum("Original", "Compact"))
-        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                           data={"predict_contributions": True,
-                                 "predict_contributions_output_format": output_format,
-                                 "top_n": top_n,
-                                 "bottom_n": bottom_n,
-                                 "compare_abs": compare_abs}), "contributions")
-        j.poll()
-        return h2o.get_frame(j.dest_key)
+        if has_extension(self, 'Contributions'):
+            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs)
+        err_msg = "This model doesn't support calculation of feature contributions."
+        if has_extension(self, 'StandardCoef'):
+            err_msg += " When features are independent, you can use the coef() method to get coefficients"
+            err_msg += " for non-standardized data or coef_norm() to get coefficients for standardized data."
+            err_msg += " You can plot standardized coefficient magnitudes by calling std_coef_plot() on the model."
+        raise H2OTypeError(message=err_msg)
+
+    def row_to_tree_assignment(self, original_training_data):
+        """
+        Output row to tree assignment for the model and provided training data.
+
+        Output is frame of size nrow = nrow(original_training_data) and ncol = number_of_trees_in_model+1 in format:
+         row_id    tree_1    tree_2    tree_3
+              0         0         1         1
+              1         1         1         1
+              2         1         0         0
+              3         1         1         0
+              4         0         1         1
+              5         1         1         1
+              6         1         0         0
+              7         0         1         0
+              8         0         1         1
+              9         1         0         0
+
+        :param H2OFrame original_training_data: Data that was used for model training. Currently there is no validation
+            of the input.
+        :returns: A new H2OFrame made of row to tree assignment output.
+
+        **Note**: Multinomial classification generate tree for each category, each tree use the same sample of the data.
+
+        :examples:
+
+        >>> prostate = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv"
+        >>> fr = h2o.import_file(prostate)
+        >>> predictors = list(range(2, fr.ncol))
+        >>> m = H2OGradientBoostingEstimator(ntrees=10, seed=1234, sample_rate=0.6)
+        >>> m.train(x=predictors, y=1, training_frame=fr)
+        >>> # Output row to tree assignment
+        >>> m.row_to_tree_assignment(fr)
+        """
+        if has_extension(self, 'RowToTreeAssignment'):
+            return self._row_to_tree_assignment(original_training_data)
+        err_msg = "This model doesn't support calculation of row to tree assignment."
+        raise H2OTypeError(message=err_msg)
 
     def feature_frequencies(self, test_data):
         """
         Retrieve the number of occurrences of each feature for given observations 
-        on their respective paths in a tree ensemble model.
+        on their respective paths in a tree ensemble model. 
         Available for GBM, Random Forest and Isolation Forest models.
 
         :param H2OFrame test_data: Data on which to calculate feature frequencies.
 
         :returns: A new H2OFrame made of feature contributions.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OIsolationForestEstimator
+        >>> h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+        >>> train,test = h2o_df.split_frame(ratios=[0.75])
+        >>> model = H2OIsolationForestEstimator(sample_rate = 0.1,
+        ...                                     max_depth = 20,
+        ...                                     ntrees = 50)
+        >>> model.train(training_frame=train)
+        >>> model.feature_frequencies(test_data = test)
         """
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
@@ -257,8 +304,8 @@ class ModelBase(h2o_meta(Keyed)):
 
         :param H2OFrame test_data: Data on which to make predictions.
         :param custom_metric:  custom evaluation function defined as class reference, the class get uploaded
-            into the cluster
-        :param custom_metric_func: custom evaluation function reference, e.g, result of upload_custom_metric
+            into the cluster.
+        :param custom_metric_func: custom evaluation function reference (e.g, result of ``upload_custom_metric``).
 
         :returns: A new H2OFrame of predictions.
         """
@@ -272,6 +319,35 @@ class ModelBase(h2o_meta(Keyed)):
                    self._model_json["algo"] + " prediction")
         j.poll()
         return h2o.get_frame(j.dest_key)
+
+    def calibrate(self, calibration_model):
+        """
+        Calibrate a trained model with a supplied calibration model.
+
+        Only tree-based models can be calibrated.
+
+        :param calibration_model: a GLM model (for Platt Scaling) or Isotonic Regression model trained with the purpose
+            of calibrating output of this model.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> from h2o.estimators.isotonicregression import H2OIsotonicRegressionEstimator
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
+        >>> df["Angaus"] = df["Angaus"].asfactor()
+        >>> train, calib = df.split_frame(ratios=[.8], destination_frames=["eco_train", "eco_calib"], seed=42)
+        >>> model = H2OGradientBoostingEstimator()
+        >>> model.train(x=list(range(2, train.ncol)), y="Angaus", training_frame=train)
+        >>> isotonic_train = calib[["Angaus"]]
+        >>> isotonic_train = isotonic_train.cbind(model.predict(calib)["p1"])
+        >>> h2o_iso_reg = H2OIsotonicRegressionEstimator(out_of_bounds="clip")
+        >>> h2o_iso_reg.train(training_frame=isotonic_train, x="p1", y="Angaus")
+        >>> model.calibrate(h2o_iso_reg)
+        >>> model.predict(train)
+        """
+        if has_extension(self, 'SupervisedTrees'):
+            return self._calibrate(calibration_model)
+        print("Only supervised tree-based models support model calibration")
 
     def is_cross_validated(self):
         """Return True if the model was cross-validated."""
@@ -307,8 +383,8 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Return hidden layer details.
 
-        :param test_data: Data to create a feature space on
-        :param layer: 0 index hidden layer
+        :param test_data: Data to create a feature space on.
+        :param layer: 0 index hidden layer.
         """
         if test_data is None: 
             raise ValueError("Must specify test data")
@@ -327,7 +403,7 @@ class ModelBase(h2o_meta(Keyed)):
 
         :param matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
 
-        :returns: an H2OFrame which represents the weight matrix identified by matrix_id
+        :returns: an H2OFrame which represents the weight matrix identified by ``matrix_id``.
         """
         num_weight_matrices = len(self._model_json["output"]["weights"])
         if matrix_id not in list(range(num_weight_matrices)):
@@ -340,9 +416,9 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Return the frame for the respective bias vector.
 
-        :param: vector_id: an integer, ranging from 0 to number of layers, that specifies the bias vector to return.
+        :param vector_id: an integer, ranging from 0 to number of layers, that specifies the bias vector to return.
 
-        :returns: an H2OFrame which represents the bias vector identified by vector_id
+        :returns: an H2OFrame which represents the bias vector identified by ``vector_id``.
         """
         num_bias_vectors = len(self._model_json["output"]["biases"])
         if vector_id not in list(range(num_bias_vectors)):
@@ -380,20 +456,35 @@ class ModelBase(h2o_meta(Keyed)):
     def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type=None, 
                           auuc_type=None, auuc_nbins=-1):
         """
-        Generate model metrics for this model on test_data.
+        Generate model metrics for this model on ``test_data``.
 
         :param H2OFrame test_data: Data set for which model metrics shall be computed against. All three of train,
-            valid and xval arguments are ignored if test_data is not None.
+            valid and xval arguments are ignored if ``test_data`` is not ``None``.
         :param bool train: Report the training metrics for the model.
         :param bool valid: Report the validation metrics for the model.
-        :param bool xval: Report the cross-validation metrics for the model. If train and valid are True, then it
+        :param bool xval: Report the cross-validation metrics for the model. If train and valid are ``True``, then it
             defaults to True.
-        :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation when test_data is not None. One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"`` (default: ``"none"``). If type is "auto" or "none" AUC and AUCPR is not calculated.
+        :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation when ``test_data`` is not ``None``. One of:
+
+            - ``"auto"``
+            - ``"none"`` (default)
+            - ``"macro_ovr"``
+            - ``"weighted_ovr"``
+            - ``"macro_ovo"``
+            - ``"weighted_ovo"``
+
+            If type is ``"auto"`` or ``"none"``, AUC and AUCPR are not calculated.
         :param String auuc_type: Change default AUUC type for uplift binomial classification AUUC calculation 
-            when test_data is not None. One of: ``"AUTO"``, ``"qini"``, ``"lift"``, ``"gain"``, (default: ``"AUTO"``). 
-            If type is "auto" qini AUUC is calculated. 
-        :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to -1, which means 1000.
-        :returns: An object of class H2OModelMetrics.
+            when ``test_data`` is not None. One of:
+
+                - ``"AUTO"`` (default)
+                - ``"qini"``
+                - ``"lift"``
+                - ``"gain"``
+                
+            If type is ``"auto"`` ("qini"), AUUC is calculated. 
+        :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to ``-1``, which means 1000.
+        :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
         """
         
         if test_data is None:
@@ -445,10 +536,50 @@ class ModelBase(h2o_meta(Keyed)):
         if "scoring_history" in model and model["scoring_history"] is not None:
             return model["scoring_history"].as_data_frame()
         print("No score history for this model")
+        
+    def negative_log_likelihood(self):
+        """
+        Retrieve model negative likelihood function value from scoring history if exists for GLM model
+        
+        :return: the negative likelihood function value
+        """
+        return self._extract_scoring_history("negative_log_likelihood")
+
+    def average_objective(self):
+        """
+        Retrieve model average objective function value from scoring history if exists for GLM model.  If there is no 
+        regularization, the avearge objective value*obj_reg should equal the neg_log_likelihood value.
+        
+        :return: the average objective function value
+        """
+        return self._extract_scoring_history("objective")
+
+        
+    def _extract_scoring_history(self, value):
+        model = self._model_json["output"]
+        if 'glm' == self.algo:
+            if self.actual_params['generate_scoring_history'] is True:
+                if "scoring_history" in model and model["scoring_history"] is not None:
+                    sc_history = model["scoring_history"]
+                    col_header = sc_history._col_header
+                    if value in col_header:
+                        index_val = col_header.index(value)
+                        scLen = len(sc_history._cell_values)
+                        return sc_history._cell_values[scLen-1][index_val]
+                    else:
+                        print("{0} not available.".format(value))
+                else:
+                    raise H2OValueError("GLM scoring_history is missing.  Cannot extract {0}.".value)
+            else:
+                raise H2OValueError("For now, need to set generate_scoring_history to True to get {0}".format(value))
+        else:
+            raise H2OValueError("{0} is only for GLM models.".format(value))
+
+
 
     def ntrees_actual(self):
         """
-        Returns actual number of trees in a tree model. If early stopping enabled, GBM can reset the ntrees value.
+        Returns actual number of trees in a tree model. If early stopping is enabled, GBM can reset the ntrees value.
         In this case, the actual ntrees value is less than the original ntrees value a user set before
         building the model.
     
@@ -466,20 +597,20 @@ class ModelBase(h2o_meta(Keyed)):
         Available for XGBoost and GBM.
 
         Metrics:
-        Gain - Total gain of each feature or feature interaction.
-        FScore - Amount of possible splits taken on a feature or feature interaction.
-        wFScore - Amount of possible splits taken on a feature or feature interaction weighed by 
-        the probability of the splits to take place.
-        Average wFScore - wFScore divided by FScore.
-        Average Gain - Gain divided by FScore.
-        Expected Gain - Total gain of each feature or feature interaction weighed by the probability to gather the gain.
-        Average Tree Index
-        Average Tree Depth
 
-        :param max_interaction_depth: Upper bound for extracted feature interactions depth. Defaults to 100.
-        :param max_tree_depth: Upper bound for tree depth. Defaults to 100.
+        - Gain - Total gain of each feature or feature interaction.
+        - FScore - Amount of possible splits taken on a feature or feature interaction.
+        - wFScore - Amount of possible splits taken on a feature or feature interaction weighed by the probability of the splits to take place.
+        - Average wFScore - wFScore divided by FScore.
+        - Average Gain - Gain divided by FScore.
+        - Expected Gain - Total gain of each feature or feature interaction weighed by the probability to gather the gain.
+        - Average Tree Index
+        - Average Tree Depth
+
+        :param max_interaction_depth: Upper bound for extracted feature interactions depth. Defaults to ``100``.
+        :param max_tree_depth: Upper bound for tree depth. Defaults to ``100``.
         :param max_deepening: Upper bound for interaction start deepening (zero deepening => interactions 
-            starting at root only). Defaults to -1.
+            starting at root only). Defaults to ``-1.``
         :param path: (Optional) Path where to save the output in .xlsx format (e.g. ``/mypath/file.xlsx``).
             Please note that Pandas and XlsxWriter need to be installed for using this option. Defaults to None.
 
@@ -506,17 +637,17 @@ class ModelBase(h2o_meta(Keyed)):
 
     def h(self, frame, variables):
         """
-        Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables in h2o gbm and xgb models.
-        H varies from 0 to 1. It will have a value of 0 if the model exhibits no interaction between specified variables and a correspondingly larger value for a 
-        stronger interaction effect between them. NaN is returned if a computation is spoiled by weak main effects and rounding errors.
+        Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables in H2O GBM and XGB models.
+        H varies from ``0`` to ``1``. It will have a value of ``0`` if the model exhibits no interaction between specified variables and a correspondingly larger value for a 
+        stronger interaction effect between them. ``NaN`` is returned if a computation is spoiled by weak main effects and rounding errors.
         
         See Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.*
         **2**:916-954, http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046, s. 8.1.
 
         
-        :param frame: the frame that current model has been fitted to
-        :param variables: variables of the interest
-        :return: H statistic of the variables 
+        :param frame: the frame that current model has been fitted to.
+        :param variables: variables of the interest.
+        :return: H statistic of the variables.
         
         :examples:
         
@@ -535,12 +666,12 @@ class ModelBase(h2o_meta(Keyed)):
 
     def update_tree_weights(self, frame, weights_column):
         """
-        Re-calculates tree-node weights based on provided dataset. Modifying node weights will affect how
+        Re-calculates tree-node weights based on the provided dataset. Modifying node weights will affect how
         contribution predictions (Shapley values) are calculated. This can be used to explain the model
         on a curated sub-population of the training dataset.
 
-        :param frame: frame that will be used to re-populate trees with new observations and to collect per-node weights 
-        :param weights_column: name of the weight column (can be different from training weights) 
+        :param frame: frame that will be used to re-populate trees with new observations and to collect per-node weights. 
+        :param weights_column: name of the weight column (can be different from training weights).
         """
         if has_extension(self, 'SupervisedTrees'):
             return self._update_tree_weights(frame, weights_column)
@@ -556,60 +687,12 @@ class ModelBase(h2o_meta(Keyed)):
         if "cross_validation_metrics_summary" in model and model["cross_validation_metrics_summary"] is not None:
             return model["cross_validation_metrics_summary"]
         print("No cross-validation metrics summary for this model")
-
-    def summary(self):
-        """Print a detailed summary of the model."""
-        model = self._model_json["output"]
-        if "model_summary" in model and model["model_summary"] is not None:
-            return model["model_summary"]
-        print("No model summary for this model")
-
-    def show_summary(self):
-        summary = self.summary()
-        if summary is not None:
-            print(summary)
-
-    def show(self):
-        """Print innards of model, without regards to type."""
-        if self._future:
-            self._job.poll_once()
-            return
-        if self._model_json is None:
-            print("No model trained yet")
-            return
-        if self.model_id is None:
-            print("This H2OEstimator has been removed.")
-            return
-        model = self._model_json["output"]
-        print("Model Details")
-        print("=============")
-
-        print(self.__class__.__name__, ": ", self._model_json["algo_full_name"])
-        print("Model Key: ", self._id)
-        print()
-
-        self.show_summary()
-
-        # training metrics
-        tm = model["training_metrics"]
-        if tm is not None: tm.show()
-        vm = model["validation_metrics"]
-        if vm is not None: vm.show()
-        xm = model["cross_validation_metrics"]
-        if xm is not None: xm.show()
-        xms = model["cross_validation_metrics_summary"]
-        if xms is not None: xms.show()
-
-        if "scoring_history" in model and model["scoring_history"]:
-            model["scoring_history"].show()
-        if "variable_importances" in model and model["variable_importances"]:
-            model["variable_importances"].show()
-
+        
     def varimp(self, use_pandas=False):
         """
         Pretty print the variable importances, or return them in a list.
 
-        :param bool use_pandas: If True, then the variable importances will be returned as a pandas data frame.
+        :param bool use_pandas: If ``True``, then the variable importances will be returned as a pandas data frame.
 
         :returns: A list or Pandas DataFrame.
         """
@@ -630,9 +713,9 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Retreive the residual deviance if this model has the attribute, or None otherwise.
 
-        :param bool train: Get the residual deviance for the training set. If both train and valid are False, then
+        :param bool train: Get the residual deviance for the training set. If both train and valid are ``False``, then
             train is selected by default.
-        :param bool valid: Get the residual deviance for the validation set. If both train and valid are True, then
+        :param bool valid: Get the residual deviance for the validation set. If both train and valid are ``True``, then
             train is selected by default.
 
         :returns: Return the residual deviance, or None if it is not present.
@@ -646,11 +729,11 @@ class ModelBase(h2o_meta(Keyed)):
 
     def residual_degrees_of_freedom(self, train=False, valid=False, xval=False):
         """
-        Retreive the residual degress of freedom if this model has the attribute, or None otherwise.
+        Retreive the residual degress of freedom (dof) if this model has the attribute, or None otherwise.
 
-        :param bool train: Get the residual dof for the training set. If both train and valid are False, then train
+        :param bool train: Get the residual dof for the training set. If both train and valid are ``False``, then train
             is selected by default.
-        :param bool valid: Get the residual dof for the validation set. If both train and valid are True, then train
+        :param bool valid: Get the residual dof for the validation set. If both train and valid are ``True``, then train
             is selected by default.
 
         :returns: Return the residual dof, or None if it is not present.
@@ -666,9 +749,9 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Retreive the null deviance if this model has the attribute, or None otherwise.
 
-        :param bool train: Get the null deviance for the training set. If both train and valid are False, then train
+        :param bool train: Get the null deviance for the training set. If both train and valid are ``False``, then train
             is selected by default.
-        :param bool valid: Get the null deviance for the validation set. If both train and valid are True, then train
+        :param bool valid: Get the null deviance for the validation set. If both train and valid are ``True``, then train
             is selected by default.
 
         :returns: Return the null deviance, or None if it is not present.
@@ -682,11 +765,11 @@ class ModelBase(h2o_meta(Keyed)):
 
     def null_degrees_of_freedom(self, train=False, valid=False, xval=False):
         """
-        Retreive the null degress of freedom if this model has the attribute, or None otherwise.
+        Retreive the null degress of freedom (dof) if this model has the attribute, or None otherwise.
 
-        :param bool train: Get the null dof for the training set. If both train and valid are False, then train is
+        :param bool train: Get the null dof for the training set. If both train and valid are ``False``, then train is
             selected by default.
-        :param bool valid: Get the null dof for the validation set. If both train and valid are True, then train is
+        :param bool valid: Get the null dof for the validation set. If both train and valid are ``True``, then train is
             selected by default.
 
         :returns: Return the null dof, or None if it is not present.
@@ -702,11 +785,24 @@ class ModelBase(h2o_meta(Keyed)):
         """Pretty print the coefficents table (includes normalized coefficients)."""
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
+    def get_variable_inflation_factors(self):
+        if self.algo == 'glm':
+            if self.parms['generate_variable_inflation_factors']:
+                tbl = self._model_json["output"]["coefficients_table"]
+                if tbl is None:
+                    return None
+                return {name: vif for name, vif in zip(tbl["names"], tbl["variable_inflation_factor"])}
+            else:
+                raise ValueError("variable inflation factors are generated only when "
+                                 "generate_variable_inflation_factors is enabled.")
+        else:
+            raise ValueError("variable inflation factors are only found in GLM models for numerical predictors.")
+        
     def coef(self):
         """
         Return the coefficients which can be applied to the non-standardized data.
 
-        Note: standardize = True by default, if set to False then coef() return the coefficients which are fit directly.
+        **Note**: ``standardize=True`` by default; when ``standardize=False``, then ``coef()`` will return the coefficients which are fit directly.
         """
         if (self._model_json["output"]['model_category']=="Multinomial") or \
             (self._model_json["output"]['model_category']=="Ordinal"):
@@ -719,7 +815,7 @@ class ModelBase(h2o_meta(Keyed)):
 
     def coef_norm(self):
         """
-        Return coefficients fitted on the standardized data (requires standardize = True, which is on by default).
+        Return coefficients fitted on the standardized data (requires ``standardize=True``, which is on by default).
 
         These coefficients can be used to evaluate variable importance.
         """
@@ -731,6 +827,16 @@ class ModelBase(h2o_meta(Keyed)):
                 return None
             return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
 
+    def coef_with_p_values(self):
+        if self.algo == 'glm':
+            if self.parms["compute_p_values"]["actual_value"]:
+                return self._model_json["output"]["coefficients_table"]
+            else:
+                raise ValueError("p-values, z-values and std_error are not found in model.  Make sure to set "
+                                 "compute_p_values=True.")
+        else:
+            raise ValueError("p-values, z-values and std_error are only found in GLM.")
+        
     def _fillMultinomialDict(self, standardize=False):
         if self.algo == 'gam':
             tbl = self._model_json["output"]["coefficients_table"]
@@ -756,23 +862,23 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Return the R squared for this regression model.
 
-        Will return R^2 for GLM Models and will return NaN otherwise.
+        Will return :math:`R^2` for GLM Models. 
 
-        The R^2 value is defined to be 1 - MSE/var, where var is computed as sigma*sigma.
+        The :math:`R^2` value is defined to be :math:`1 - MSE / var`, where var is computed as :math:`\sigma * \sigma`.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the R^2 value for the training data.
-        :param bool valid: If valid is True, then return the R^2 value for the validation data.
-        :param bool xval:  If xval is True, then return the R^2 value for the cross validation data.
+        :param bool train: If ``train=True``, then return the R^2 value for the training data.
+        :param bool valid: If ``valid=True``, then return the R^2 value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the R^2 value for the cross validation data.
 
         :returns: The R squared for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.r2()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -780,19 +886,19 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Get the Mean Square Error.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the MSE value for the training data.
-        :param bool valid: If valid is True, then return the MSE value for the validation data.
-        :param bool xval:  If xval is True, then return the MSE value for the cross validation data.
+        :param bool train: If ``train=True``, then return the MSE value for the training data.
+        :param bool valid: If ``valid=True``, then return the MSE value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the MSE value for the cross validation data.
 
         :returns: The MSE for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.mse()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -800,19 +906,19 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Get the Root Mean Square Error.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the RMSE value for the training data.
-        :param bool valid: If valid is True, then return the RMSE value for the validation data.
-        :param bool xval:  If xval is True, then return the RMSE value for the cross validation data.
+        :param bool train: If ``train=True``, then return the RMSE value for the training data.
+        :param bool valid: If ``valid=True``, then return the RMSE value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the RMSE value for the cross validation data.
 
         :returns: The RMSE for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.rmse()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -820,19 +926,19 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Get the Mean Absolute Error.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the MAE value for the training data.
-        :param bool valid: If valid is True, then return the MAE value for the validation data.
-        :param bool xval:  If xval is True, then return the MAE value for the cross validation data.
+        :param bool train: If ``train=True``, then return the MAE value for the training data.
+        :param bool valid: If ``valid=True``, then return the MAE value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the MAE value for the cross validation data.
 
         :returns: The MAE for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.mae()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -840,200 +946,155 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Get the Root Mean Squared Logarithmic Error.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the RMSLE value for the training data.
-        :param bool valid: If valid is True, then return the RMSLE value for the validation data.
-        :param bool xval:  If xval is True, then return the RMSLE value for the cross validation data.
+        :param bool train: If ``train=True``, then return the RMSLE value for the training data.
+        :param bool valid: If ``valid=True``, then return the RMSLE value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the RMSLE value for the cross validation data.
 
         :returns: The RMSLE for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.rmsle()
+        for k, v in tm.items(): m[k] = None if v is None else v.rmsle()
         return list(m.values())[0] if len(m) == 1 else m
 
     def logloss(self, train=False, valid=False, xval=False):
         """
         Get the Log Loss.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the log loss value for the training data.
-        :param bool valid: If valid is True, then return the log loss value for the validation data.
-        :param bool xval:  If xval is True, then return the log loss value for the cross validation data.
+        :param bool train: If ``train=True``, then return the log loss value for the training data.
+        :param bool valid: If ``valid=True``, then return the log loss value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the log loss value for the cross validation data.
 
         :returns: The log loss for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.logloss()
+        for k, v in tm.items(): m[k] = None if v is None else v.logloss()
         return list(m.values())[0] if len(m) == 1 else m
 
     def mean_residual_deviance(self, train=False, valid=False, xval=False):
         """
         Get the Mean Residual Deviances.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the Mean Residual Deviance value for the training data.
-        :param bool valid: If valid is True, then return the Mean Residual Deviance value for the validation data.
-        :param bool xval:  If xval is True, then return the Mean Residual Deviance value for the cross validation data.
+        :param bool train: If ``train=True``, then return the Mean Residual Deviance value for the training data.
+        :param bool valid: If ``valid=True``, then return the Mean Residual Deviance value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the Mean Residual Deviance value for the cross validation data.
 
         :returns: The Mean Residual Deviance for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.mean_residual_deviance()
+        for k, v in tm.items(): m[k] = None if v is None else v.mean_residual_deviance()
         return list(m.values())[0] if len(m) == 1 else m
 
     def auc(self, train=False, valid=False, xval=False):
         """
         Get the AUC (Area Under Curve).
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the AUC value for the training data.
-        :param bool valid: If valid is True, then return the AUC value for the validation data.
-        :param bool xval:  If xval is True, then return the AUC value for the validation data.
+        :param bool train: If ``train=True``, then return the AUC value for the training data.
+        :param bool valid: If ``valid=True``, then return the AUC value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the AUC value for the validation data.
 
         :returns: The AUC.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
-            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)) and not(is_type(v, h2o.model.metrics_base.H2OMultinomialModelMetrics)):
-                raise H2OValueError("auc() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average AUC value, default is Weighted One-to-Rest AUC.")
+        for k, v in tm.items():
             m[k] = None if v is None else v.auc()
-        return list(m.values())[0] if len(m) == 1 else m
-
-    def auuc(self, train=False, valid=False):
-        """
-        Get the AUUC (Area Under Uplift Curve).
-
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
-        "valid".
-
-        :param bool train: If train is True, then return the AUUC value for the training data.
-        :param bool valid: If valid is True, then return the AUUC value for the validation data.
-
-        :returns: The AUUC.
-        """
-        tm = ModelBase._get_metrics(self, train, valid, False)
-        m = {}
-        for k, v in viewitems(tm):
-            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
-                raise H2OValueError("auuc() is only available for Uplift Binomial classifiers.")
-            m[k] = None if v is None else v.auuc()
-        return list(m.values())[0] if len(m) == 1 else m
-
-    def auuc_table(self, train=False, valid=False):
-        """
-        Get the AUUC table (Area Under Uplift Curve values of oll types).
-
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
-        "valid".
-
-        :param bool train: If train is True, then return the AUUC table value for the training data.
-        :param bool valid: If valid is True, then return the AUUC table value for the validation data.
-
-        :returns: The AUUC table.
-        """
-        tm = ModelBase._get_metrics(self, train, valid, False)
-        m = {}
-        for k, v in viewitems(tm):
-            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
-                raise H2OValueError("auuc_table() is only available for Uplift Binomial classifiers.")
-            m[k] = None if v is None else v.auuc_table()
-        return list(m.values())[0] if len(m) == 1 else m
-
-    def qini(self, train=False, valid=False):
-        """
-        Get the Qini value (Area Under Uplift Curve - Area Under Random Curve for Qini uplift).
-
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
-        "valid".
-
-        :param bool train: If train is True, then return the Qini value for the training data.
-        :param bool valid: If valid is True, then return the Qini value for the validation data.
-
-        :returns: The Qini value.
-        """
-        tm = ModelBase._get_metrics(self, train, valid, False)
-        m = {}
-        for k, v in viewitems(tm):
-            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
-                raise H2OValueError("auuc() is only available for Uplift Binomial classifiers.")
-            m[k] = None if v is None else v.qini()
         return list(m.values())[0] if len(m) == 1 else m
 
     def aic(self, train=False, valid=False, xval=False):
         """
         Get the AIC (Akaike Information Criterium).
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the AIC value for the training data.
-        :param bool valid: If valid is True, then return the AIC value for the validation data.
-        :param bool xval:  If xval is True, then return the AIC value for the validation data.
+        :param bool train: If ``train=True``, then return the AIC value for the training data.
+        :param bool valid: If ``valid=True``, then return the AIC value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the AIC value for the validation data.
 
         :returns: The AIC.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.aic()
+        for k, v in tm.items(): m[k] = None if v is None else v.aic()
+        return list(m.values())[0] if len(m) == 1 else m
+
+    def loglikelihood(self, train=False, valid=False, xval=False):
+        """
+        Get the log likelihood.
+
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If ``train=True``, then return the log likelihood value for the training data.
+        :param bool valid: If ``valid=True``, then return the log likelihood value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the log likelihood value for the validation data.
+
+        :returns: The log likelihood.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in tm.items(): m[k] = None if v is None else v.loglikelihood()
         return list(m.values())[0] if len(m) == 1 else m
 
     def gini(self, train=False, valid=False, xval=False):
         """
         Get the Gini coefficient.
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval"
 
-        :param bool train: If train is True, then return the Gini Coefficient value for the training data.
-        :param bool valid: If valid is True, then return the Gini Coefficient value for the validation data.
-        :param bool xval:  If xval is True, then return the Gini Coefficient value for the cross validation data.
+        :param bool train: If ``train=True``, then return the Gini Coefficient value for the training data.
+        :param bool valid: If ``valid=True``, then return the Gini Coefficient value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the Gini Coefficient value for the cross validation data.
 
         :returns: The Gini Coefficient for this binomial model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
+        for k, v in tm.items(): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
     
     def aucpr(self, train=False, valid=False, xval=False):
         """
         Get the aucPR (Area Under PRECISION RECALL Curve).
 
-        If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the aucpr value for the training data.
-        :param bool valid: If valid is True, then return the aucpr value for the validation data.
-        :param bool xval:  If xval is True, then return the aucpr value for the validation data.
+        :param bool train: If ``train=True``, then return the aucpr value for the training data.
+        :param bool valid: If ``valid=True``, then return the aucpr value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the aucpr value for the validation data.
 
         :returns: The aucpr.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): 
-            if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics) and not is_type(v, h2o.model.metrics_base.H2OMultinomialModelMetrics):
+        for k, v in tm.items(): 
+            if v is not None and not is_type(v, h2o.model.metrics.binomial.H2OBinomialModelMetrics) and not is_type(v,
+                                                                                                                    h2o.model.metrics.multinomial.H2OMultinomialModelMetrics):
                 raise H2OValueError("aucpr() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average PR AUC value, default is Weighted One-to-Rest PR AUC.")
             m[k] = None if v is None else v.aucpr()
         return list(m.values())[0] if len(m) == 1 else m
@@ -1047,9 +1108,9 @@ class ModelBase(h2o_meta(Keyed)):
         Download an H2O Model object to disk.
     
         :param path: a path to the directory where the model should be saved.
-        :param filename: a filename for the saved model
+        :param filename: a filename for the saved model.
     
-        :returns: the path of the downloaded model
+        :returns: the path of the downloaded model.
         """
         assert_is_type(path, str)
         return h2o.download_model(self, path, filename=filename)
@@ -1098,9 +1159,9 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Save an H2O Model as MOJO (Model Object, Optimized) to disk.
 
-        :param path: a path to save the model at (hdfs, s3, local)
-        :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
-        :param filename: a filename for the saved model (file type is always .zip)
+        :param path: a path to save the model at (e.g. hdfs, s3, local).
+        :param force: if ``True``, overwrite destination directory in case it exists, or throw exception if set to ``False``.
+        :param filename: a filename for the saved model (file type is always .zip).
 
         :returns str: the path of the saved model
         """
@@ -1119,9 +1180,9 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Save Model Details of an H2O Model in JSON Format to disk.
 
-        :param path: a path to save the model details at (hdfs, s3, local)
-        :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
-        :param filename: a filename for the saved model (file type is always .json)
+        :param path: a path to save the model details at (e.g. hdfs, s3, local).
+        :param force: if ``True``, overwrite destination directory in case it exists, or throw exception if set to ``False``.
+        :param filename: a filename for the saved model (file type is always .json).
 
         :returns str: the path of the saved model details
         """
@@ -1159,21 +1220,21 @@ class ModelBase(h2o_meta(Keyed)):
 
         :param H2OFrame data: An H2OFrame object used for scoring and constructing the plot.
         :param cols: Feature(s) for which partial dependence will be calculated.
-        :param destination_key: An key reference to the created partial dependence tables in H2O.
-        :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable add_missing_NA, the returned length will be nbin+1.
+        :param destination_key: A key reference to the created partial dependence tables in H2O.
+        :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable ``add_missing_NA``, the returned length will be nbin+1.
         :param weight_column: A string denoting which column of data should be used as the weight column.
         :param plot: A boolean specifying whether to plot partial dependence table.
         :param plot_stddev: A boolean specifying whether to add std err to partial dependence plot.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
         :param server: Specify whether to activate matplotlib "server" mode. In this case, the plots are saved to a file instead of being rendered.
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
-        :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
-        :param col_pairs_2dpdp: list containing pairs of column names for 2D pdp
-        :param save_plot_path: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
+        :param user_splits: A dictionary containing column names as key and user defined split values as value in a list.
+        :param col_pairs_2dpdp: List containing pairs of column names for 2D pdp
+        :param save_plot_path: Fully qualified name to an image file the resulting plot should be saved to (e.g. ``'/home/user/pdpplot.png'``). The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if ``plot=True``.
         :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :param targets: Target classes for multiclass model.
 
-        :returns: Plot and list of calculated mean response tables for each feature requested + the resulting plot (can be accessed using result.figure()).
+        :returns: Plot and list of calculated mean response tables for each feature requested + the resulting plot (can be accessed using ``result.figure()``).
         """
         if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
         num_1dpdp = 0
@@ -1276,7 +1337,7 @@ class ModelBase(h2o_meta(Keyed)):
                         raise H2OValueError("Column names/indices used in user_splits are not valid.  They "
                                                 "should be chosen from the columns of your data set.")
 
-                    if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0]: # replace enum string with actual value
+                    if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0] or data.type(colKey) == "time": # replace enum string with actual value
                         nVal = len(val)
                         if data[colKey].isfactor()[0]:
                             domains = data[colKey].levels()[0]
@@ -1311,14 +1372,14 @@ class ModelBase(h2o_meta(Keyed)):
         to_fig = num_1dpdp + num_2dpdp
         if plot and to_fig > 0:     # plot 1d pdp for now
             plt = get_matplotlib_pyplot(server)
-            cm = _get_matplotlib_cm("Partial dependency plots")
+            cm = get_matplotlib_cm("Partial dependency plots")
             if not plt: 
                 return decorate_plot_result(res=pps, figure=RAISE_ON_FIGURE_ACCESS)
             import matplotlib.gridspec as gridspec
             fig = plt.figure(figsize=figsize)
             gxs = gridspec.GridSpec(to_fig, 1)
             if num_2dpdp > 0: # 2d pdp requested
-                axes_3d = _get_mplot3d_pyplot("2D partial plots")
+                axes_3d = get_mplot3d_axes("2D partial plots")
             fig_plotted = False  # indicated number of figures plotted
             data_index = 0
             target = None
@@ -1549,11 +1610,11 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Plot the variable importance for a trained model.
 
-        :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
-        :param server: if true set server settings to matplotlib and do not show the graph
-        :param save_plot_path: a path to save the plot via using matplotlib function savefig
+        :param num_of_features: the number of features shown in the plot (default is ``10`` or all if less than 10).
+        :param server: if ``True``, set server settings to matplotlib and do not show the graph.
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig.
 
-        :returns: object that contains the resulting figure (can be accessed using result.figure())
+        :returns: object that contains the resulting figure (can be accessed using ``result.figure()``).
         """
         # For now, redirect to h2o.model.extensions.varimp for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
@@ -1566,10 +1627,10 @@ class ModelBase(h2o_meta(Keyed)):
         Plot a model's standardized coefficient magnitudes.
 
         :param num_of_features: the number of features shown in the plot.
-        :param server: if true set server settings to matplotlib and show the graph
-        :param save_plot_path: a path to save the plot via using matplotlib function savefig
+        :param server: if ``True``, set server settings to matplotlib and show the graph.
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig.
 
-        :returns: object that contains the resulting figure (can be accessed using result.figure())
+        :returns: object that contains the resulting figure (can be accessed using ``result.figure()``).
         """
         # For now, redirect to h2o.model.extensions.std_coef for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
@@ -1621,7 +1682,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Obtain the (out-of-sample) holdout predictions of all cross-validation models on the training data.
 
-        This is equivalent to summing up all H2OFrames returned by cross_validation_predictions.
+        This is equivalent to summing up all H2OFrames returned by ``cross_validation_predictions``.
 
         :returns: H2OFrame
         """
@@ -1643,7 +1704,7 @@ class ModelBase(h2o_meta(Keyed)):
 
     def rotation(self):
         """
-        Obtain the rotations (eigenvectors) for a PCA model
+        Obtain the rotations (eigenvectors) for a PCA model.
 
         :return: H2OFrame
         """
@@ -1659,22 +1720,32 @@ class ModelBase(h2o_meta(Keyed)):
         """
         Get Permutation Variable Importance.
 
-        When n_repeats == 1, the result is similar to the one from varimp() method, i.e., it contains
-        the following columns "Relative Importance", "Scaled Importance", and "Percentage".
+        When ``n_repeats == 1``, the result is similar to the one from ``varimp()`` method (i.e. it contains
+        the following columns: "Relative Importance", "Scaled Importance", and "Percentage").
 
-        When n_repeats > 1, the individual columns correspond to the permutation variable
+        When ``n_repeats > 1``, the individual columns correspond to the permutation variable
         importance values from individual runs which corresponds to the "Relative Importance" and also
         to the distance between the original prediction error and prediction error using a frame with
         a given feature permuted.
 
-        :param frame: training frame
-        :param metric: metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
-                       "PR_AUC".  Defaults to "AUTO".
-        :param n_samples: number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
-        :param n_repeats: number of repeated evaluations. Defaults to 1.
-        :param features: features to include in the permutation importance. Use None to include all.
-        :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
-        :param use_pandas: set true to return pandas data frame.
+        :param frame: training frame.
+        :param metric: metric to be used. One of:
+
+            - "AUTO"
+            - "AUC"
+            - "MAE"
+            - "MSE"
+            - "RMSE"
+            - "logloss"
+            - "mean_per_class_error"
+            - "PR_AUC"
+
+            Defaults to "AUTO".
+        :param n_samples: number of samples to be evaluated. Use ``-1`` to use the whole dataset. Defaults to ``10 000``.
+        :param n_repeats: number of repeated evaluations. Defaults to ``1``.
+        :param features: features to include in the permutation importance. Use ``None`` to include all.
+        :param seed: seed for the random generator. Use ``-1`` (default) to pick a random seed. 
+        :param use_pandas: set to ``True`` to return pandas data frame.
         
         :return: H2OTwoDimTable or Pandas data frame
         """
@@ -1741,21 +1812,31 @@ class ModelBase(h2o_meta(Keyed)):
     def permutation_importance_plot(self, frame, metric="AUTO", n_samples=10000, n_repeats=1, features=None, seed=-1,
                                     num_of_features=10, server=False, save_plot_path=None):
         """
-        Plot Permutation Variable Importance. This method plots either a bar plot or if n_repeats > 1 a box plot and
+        Plot Permutation Variable Importance. This method plots either a bar plot or, if ``n_repeats > 1``, a box plot and
         returns the variable importance table.
 
-        :param frame: training frame
-        :param metric: metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
-                       "PR_AUC".  Defaults to "AUTO".
-        :param n_samples: number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
-        :param n_repeats: number of repeated evaluations. Defaults to 1.
-        :param features: features to include in the permutation importance. Use None to include all.
-        :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
-        :param num_of_features: number of features to plot. Defaults to 10.
-        :param server: if true set server settings to matplotlib and do not show the plot
-        :param save_plot_path: a path to save the plot via using matplotlib function savefig
+        :param frame: training frame.
+        :param metric: metric to be used. One of:
+
+            - "AUTO"
+            - "AUC"
+            - "MAE"
+            - "MSE"
+            - "RMSE"
+            - "logloss"
+            - "mean_per_class_error",
+            - "PR_AUC"
+
+            Defaults to "AUTO".
+        :param n_samples: number of samples to be evaluated. Use ``-1`` to use the whole dataset. Defaults to ``10 000``.
+        :param n_repeats: number of repeated evaluations. Defaults to ``1``.
+        :param features: features to include in the permutation importance. Use ``None`` to include all.
+        :param seed: seed for the random generator. Use ``-1`` (default) to pick a random seed. 
+        :param num_of_features: number of features to plot. Defaults to ``10``.
+        :param server: if ``True``, set server settings to matplotlib and do not show the plot.
+        :param save_plot_path: a path to save the plot via using matplotlib function savefig.
         
-        :return: object that contains H2OTwoDimTable with variable importance and the resulting figure (can be accessed using result.figure())
+        :return: object that contains H2OTwoDimTable with variable importance and the resulting figure (can be accessed using ``result.figure()``)
         """
         plt = get_matplotlib_pyplot(server)
         if not plt:
@@ -1793,22 +1874,165 @@ class ModelBase(h2o_meta(Keyed)):
             fig.savefig(fname=save_plot_path)    
         return decorate_plot_result(res=importance, figure=fig)
 
+    def predicted_vs_actual_by_variable(self, frame, predicted, variable, use_pandas=False):
+        """
+        Calculates per-level mean of predicted value vs actual value for a given variable.
 
-def _get_mplot3d_pyplot(function_name):
-    try:
-        # noinspection PyUnresolvedReferences
-        from mpl_toolkits.mplot3d import Axes3D
-        return Axes3D
-    except ImportError:
-        print("`mpl_toolkits.mplot3d` library is required for function {0}!".format(function_name))
-        return None
+        In the basic setting, this function is equivalent to doing group-by on variable and calculating
+        mean on predicted and actual. It also handles NAs in response and weights
+        automatically.
 
+        :param frame: input frame (can be ``training/test/...`` frame).
+        :param predicted: frame of predictions for the given input frame.
+        :param variable: variable to inspect.
+        :param use_pandas: set true to return pandas data frame.
 
-def _get_matplotlib_cm(function_name):
-    try:
-        from matplotlib import cm
-        return cm
-    except ImportError:
-        print('matplotlib library is required for 3D plots for function {0}'.format(function_name))
-        return None
+        :return: H2OTwoDimTable or Pandas data frame
+        """
+        from h2o.two_dim_table import H2OTwoDimTable
+        from h2o.frame import H2OFrame
+        from h2o.expr import ExprNode
+        from h2o.exceptions import H2OValueError
+        from h2o.utils.shared_utils import can_use_pandas
+
+        if type(frame) is not H2OFrame:
+            raise H2OValueError("Frame is not H2OFrame")
+
+        if type(predicted) is not H2OFrame:
+            raise H2OValueError("Frame is not H2OFrame")
+
+        assert_is_type(variable, str)
+
+        m_frame = H2OFrame._expr(ExprNode(
+            "predicted.vs.actual.by.var",
+            self,
+            frame,
+            variable,
+            predicted
+        ))
+        if use_pandas and can_use_pandas():
+            import pandas
+            pd = h2o.as_list(m_frame)
+            return pandas.DataFrame(pd, columns=pd.columns).set_index(variable)
+        else:
+            def _replace_empty_str(row):
+                return [
+                    float("nan") if "" == elem else elem
+                    for elem in row
+                ]
+
+            varimp = H2OTwoDimTable(
+                table_header="Predicted vs Actual by Variable '%s'" % variable,
+                col_header=m_frame.columns,
+                col_types=["string"] + ["double"] * (len(m_frame.columns) - 1),
+                raw_cell_values=list(
+                    map(_replace_empty_str, zip(*m_frame.as_data_frame(use_pandas=False, header=False))))  # transpose
+            )
+            return varimp
+
+    # --------------------------------
+    # ModelBase representation methods
+    # --------------------------------
+    
+    def _str_items(self, verbosity=None):
+        verbosity = verbosity or 'full'  # default verbosity when printing model
+        # edge cases
+        if self._future:
+            self._job.poll_once()
+            return
+        if self._model_json is None:
+            return "No model available"
+        if self.key is None:
+            return "This model (key={}) has been removed".format(self.key)
+
+        items = []
+        if verbosity in ['full']:
+            items.extend([
+                "Model Details",
+                "============="
+            ])
+        items.extend([
+            "%s : %s" % (self.__class__.__name__, self._model_json["algo_full_name"]),
+            "Model Key: %s" % self.key,
+        ])
+        if verbosity in ['medium', 'full']:
+            summary = self.get_summary()
+            if summary is not None:
+                items.extend(["", summary])
+            
+        if verbosity in ['full']:
+            model = self._model_json["output"]
+            tm = model["training_metrics"]
+            if tm is not None: items.append(tm)
+            vm = model["validation_metrics"]
+            if vm is not None: items.append(vm)
+            xm = model["cross_validation_metrics"]
+            if xm is not None: items.append(xm)
+            xms = model["cross_validation_metrics_summary"]
+            if xms is not None: items.append(xms)
+
+            if "scoring_history" in model and model["scoring_history"]:
+                items.append(model["scoring_history"])
+            if "variable_importances" in model and model["variable_importances"]:
+                items.append(model["variable_importances"])
+            
+        return items
+    
+    def _str_usage(self, verbosity=None, fmt=None):
+        verbosity = verbosity or 'full'  # default verbosity when printing model
+        if not self._model_json or verbosity == 'short':
+            return ""
+        lines = []
+        if verbosity != 'full':
+            lines.append("Use `model.show()` for more details.")
+        lines.append("Use `model.explain()` to inspect the model.")
+        lines.extend(self._str_usage_custom())
+        return format_user_tips(format_to_multiline(lines), fmt=fmt) if lines else ""
+    
+    def _str_usage_custom(self):
+        """
+        Specific models can override this function to add model-specific user tips
+        :return: a list of strings, each describing a user tip for this model.
+        """
+        return []
+
+    def _str_(self, verbosity=None):
+        items = self._str_items(verbosity)
+        if isinstance(items, list):
+            return format_to_multiline(items)
+        return items
+
+    def _str_pretty_(self, verbosity=None):
+        return self._str_(verbosity)+self._str_usage(verbosity, 'pretty')
+    
+    def _str_html_(self, verbosity=None):
+        items = self._str_items(verbosity)
+        html = format_to_html(items) if isinstance(items, list) else items
+        usage = self._str_usage(verbosity, 'html')
+        return html+usage
+
+    def _summary(self):
+        model = self._model_json["output"]
+        if "model_summary" in model and model["model_summary"] is not None:
+            return model["model_summary"]
+
+    def summary(self):
+        """Deprecated. Please use ``get_summary`` instead"""
+        return self.get_summary()
+    
+    def get_summary(self):
+        """Return a detailed summary of the model."""
+        return self._summary() or "No summary for this model"
+    
+    def show_summary(self):
+        """Print a detailed summary of the model."""
+        summary = self.get_summary()
+        if summary is not None:
+            display(summary)
+            
+    def show(self, verbosity=None, fmt=None):
+        verbosity = verbosity or 'full'  # default verbosity for showing model
+        return display(self, fmt=fmt, verbosity=verbosity)
+
+    # FIXME: find a way to get rid of this awful habit that consists in doing [if data is present return data else print("no data")]
     

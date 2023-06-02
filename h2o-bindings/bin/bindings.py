@@ -10,11 +10,6 @@ Usage:
         name = schema["name"]
         b.write_to_file("schemas/%s.cs" % name, gen_file_from_schema(schema))
 """
-from __future__ import print_function
-from __future__ import division
-from __future__ import unicode_literals
-from __future__ import absolute_import
-
 import argparse
 import atexit
 import codecs

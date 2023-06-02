@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """Pyunit for h2o.pivot"""
-from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 from builtins import range

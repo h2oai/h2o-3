@@ -5,7 +5,6 @@ Multinomial model.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 from h2o import expr

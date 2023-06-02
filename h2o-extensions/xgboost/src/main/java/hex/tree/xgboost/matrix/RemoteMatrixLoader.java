@@ -90,15 +90,33 @@ public class RemoteMatrixLoader extends MatrixLoader {
         REGISTRY.remove(key);
     }
 
-    private final Key modelKey;
+    private final Key<?> modelKey;
     
-    public RemoteMatrixLoader(Key modelKey) {
+    public RemoteMatrixLoader(Key<?> modelKey) {
         this.modelKey = modelKey;
     }
 
     @Override
-    public DMatrixProvider makeLocalMatrix() {
-        return REGISTRY.remove(modelKey.toString()).make();
+    public DMatrixProvider makeLocalTrainMatrix() {
+        return REGISTRY.remove(trainMatrixKey(modelKey)).make();
+    }
+
+    public static String trainMatrixKey(Key<?> modelKey) {
+        return modelKey.toString() + "_train";
+    }
+
+    @Override
+    public boolean hasValidationFrame() {
+        return REGISTRY.containsKey(validMatrixKey(modelKey));
+    }
+
+    @Override
+    public DMatrixProvider makeLocalValidMatrix() {
+        return REGISTRY.remove(validMatrixKey(modelKey)).make();
+    }
+
+    public static String validMatrixKey(Key<?> modelKey) {
+        return modelKey.toString() + "_valid";
     }
 
 }

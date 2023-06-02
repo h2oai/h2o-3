@@ -6,8 +6,9 @@ import ai.h2o.automl.ModelSelectionStrategies.KeepBestNFromSubgroup;
 import ai.h2o.automl.ModelSelectionStrategies.LeaderboardHolder;
 import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
+import hex.leaderboard.Leaderboard;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,17 +32,17 @@ import static water.TestUtil.*;
 @RunWith(H2ORunner.class)
 public class ModelSelectionStrategiesTest {
 
-    private List<Keyed> toDelete = new ArrayList<>();
+    private final List<Keyed> toDelete = new ArrayList<>();
     private Frame fr;
     private double[] perfectPreds;
     private Model[] oldModels;
     private Model[] newModels;
     private Supplier<LeaderboardHolder> leaderboardSupplier;
-
+    private static final Key<AutoML> dummy = Key.make();
     static class DummyScoreModel extends DummyModel {
 
-        private double[] _perfectPreds;
-        private int _goodPredsCount;
+        private final double[] _perfectPreds;
+        private final int _goodPredsCount;
 
         public DummyScoreModel(String key, double[] perfectPreds, int goodPredsCount) {
             super(key);
@@ -75,7 +76,7 @@ public class ModelSelectionStrategiesTest {
         leaderboardSupplier = () -> {
             String name = "selection_lb";
             EventLog el = EventLog.getOrMake(Key.make(name)); //toDelete.add(el);
-            Leaderboard lb = Leaderboard.getOrMake(name, el, fr, "logloss"); //toDelete.add(lb);
+            Leaderboard lb = Leaderboard.getOrMake(name, el.asLogger(EventLogEntry.Stage.ModelTraining),  fr, "logloss"); //toDelete.add(lb);
             return new LeaderboardHolder() {
                 @Override
                 public Leaderboard get() {
@@ -126,6 +127,7 @@ public class ModelSelectionStrategiesTest {
             assertArrayEquals(ar("dummy_1.0", "dummy_2.0", "dummy_3.0"), Arrays.stream(selection._remove).map(Object::toString).toArray(String[]::new));
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
 
@@ -146,6 +148,7 @@ public class ModelSelectionStrategiesTest {
             assertArrayEquals(ar("dummy_1.1", "dummy_2.2"), Arrays.stream(selection._remove).map(Object::toString).toArray(String[]::new));
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
 
@@ -166,6 +169,7 @@ public class ModelSelectionStrategiesTest {
             assertEquals(0, selection._remove.length);
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
 
@@ -186,6 +190,7 @@ public class ModelSelectionStrategiesTest {
             assertArrayEquals(ar("dummy_1.0"), Arrays.stream(selection._remove).map(Object::toString).toArray(String[]::new));
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
 
@@ -213,8 +218,7 @@ public class ModelSelectionStrategiesTest {
             assertArrayEquals(ar("dummy_1.0", "dummy_3.0"), Arrays.stream(selection._remove).map(Object::toString).toArray(String[]::new));
         } finally {
             Scope.exit();
+            EventLog.getOrMake(dummy).remove(true);
         }
     }
-
-
 }

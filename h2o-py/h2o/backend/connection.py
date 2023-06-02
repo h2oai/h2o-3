@@ -12,10 +12,10 @@ Class for communication with an H2O server.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 import atexit
+from collections import defaultdict
 import os
 import re
 import sys
@@ -29,15 +29,14 @@ import requests
 from requests.auth import AuthBase
 
 from h2o.backend import H2OCluster, H2OLocalServer
+from h2o.display import print2
 from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
+from h2o.model.metrics import make_metrics
 from h2o.schemas import H2OMetadataV3, H2OErrorV3, H2OModelBuilderErrorV3, define_classes_from_schema
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.metaclass import CallableString, backwards_compatibility, h2o_meta
-from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
+from h2o.utils.shared_utils import stringify_list, stringify_dict, as_resource
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
-from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
-                                    H2OMultinomialModelMetrics, H2OOrdinalModelMetrics, H2OAutoEncoderModelMetrics, 
-                                    H2OBinomialUpliftModelMetrics)
 
 __all__ = ("H2OConnection", "H2OConnectionConf", )
 
@@ -45,6 +44,26 @@ if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
     print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
+
+
+_session_hooks_ = defaultdict(list)
+
+
+def apply_session_hooks(event='open'):
+    handler = 'on_{}'.format(event)
+    if handler not in _session_hooks_:
+        return
+    for h in _session_hooks_[handler]:
+        try:
+            h()
+        except Exception:
+            pass
+        
+
+def register_session_hook(event='open', hook=None):
+    assert hook is not None
+    handler = 'on_{}'.format(event)
+    _session_hooks_[handler].append(hook)
 
 
 class H2OConnectionConf(object):
@@ -231,19 +250,19 @@ class H2OConnection(h2o_meta()):
     """
     Connection handle to an H2O cluster.
 
-    In a typical scenario you don't need to access this class directly. Instead use :func:`h2o.connect` to
-    establish a connection, and :func:`h2o.api` to make requests to the backend H2O server. However if your
+    Typically, you don't need to access this class directly. Instead, use :func:`h2o.connect` to
+    establish a connection, and :func:`h2o.api` to make requests to the backend H2O server. However, if your
     use-case is not typical, then read on.
 
-    Instances of this class may only be created through a static method :meth:`open`::
+    Instances of this class may only be created through the static method :meth:`open`::
 
         hc = H2OConnection.open(...)
 
     Once opened, the connection remains active until the script exits (or until you explicitly :meth:`close` it).
-    If the script exits with an exception, then the connection will fail to close, and the backend server will
+    If the script exits with an exception, then the connection will fail to close, and the backend server will.
     keep all the temporary frames and the open session.
 
-    Alternatively you can use this class as a context manager, which will ensure that the connection gets closed
+    Alternatively, you can use this class as a context manager, which will ensure that the connection gets closed
     at the end of the ``with ...`` block even if an exception occurs::
 
         with H2OConnection.open() as hc:
@@ -264,9 +283,9 @@ class H2OConnection(h2o_meta()):
         r"""
         Establish connection to an existing H2O server.
 
-        The connection is not kept alive, so what this method actually does is it attempts to connect to the
-        specified server, and checks that the server is healthy and responds to REST API requests. If the H2O server
-        cannot be reached, an :class:`H2OConnectionError` will be raised. On success this method returns a new
+        The connection is not kept alive, so what this method actually does is attempt to connect to the
+        specified server, and check that the server is healthy and responds to REST API requests. If the H2O server
+        cannot be reached, an :class:`H2OConnectionError` will be raised. On a success, this method returns a new
         :class:`H2OConnection` object, and it is the only "official" way to create instances of this class.
 
         There are 3 ways to specify the target to connect to (these settings are mutually exclusive):
@@ -296,7 +315,7 @@ class H2OConnection(h2o_meta()):
             will attempt to use a proxy specified in the environment (in HTTP_PROXY / HTTPS_PROXY variables). We
             check for the presence of these variables and issue a warning if they are found. In order to suppress
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
-        :param cookies: Cookie (or list of) to add to requests
+        :param cookies: Cookie (or list of) to add to requests.
         :param verbose: if True, then connection progress info will be printed to the stdout.
         :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
         :param msgs: custom messages to display during connection. This is a tuple (initial message, success message,
@@ -391,7 +410,8 @@ class H2OConnection(h2o_meta()):
             # create a weakref to prevent the atexit callback from keeping hard ref
             # to the connection even after manual close.
             conn_ref = ref(conn)
-
+            apply_session_hooks('open')
+                
             def exit_close():
                 con = conn_ref()
                 if con and con.connected:
@@ -422,9 +442,9 @@ class H2OConnection(h2o_meta()):
 
         :returns: an H2OResponse object representing the server's response (unless ``save_to`` parameter is
             provided, in which case the output file's name will be returned).
-        :raises H2OConnectionError: if the H2O server cannot be reached (or connection is not initialized)
-        :raises H2OServerError: if there was a server error (http 500), or server returned malformed JSON
-        :raises H2OResponseError: if the server returned an H2OErrorV3 response (e.g. if the parameters were invalid)
+        :raises H2OConnectionError: if the H2O server cannot be reached (or connection is not initialized).
+        :raises H2OServerError: if there was a server error (http 500), or server returned malformed JSON.
+        :raises H2OResponseError: if the server returned an H2OErrorV3 response (e.g. if the parameters were invalid).
         """
         if self._stage == 0: raise H2OConnectionError("Connection not initialized; run .connect() first.")
         if self._stage == -1: raise H2OConnectionError("Connection was closed, and can no longer be used.")
@@ -449,12 +469,12 @@ class H2OConnection(h2o_meta()):
         elif json is not None:
             assert_is_type(json, dict)
 
-        data = self._prepare_data_payload(data)
-        files = self._prepare_file_payload(filename)
+        request_data = self._prepare_data_payload(data) if filename is None else self._prepare_file_payload(filename)
+
         params = None
         if (method == "GET" or method == "DELETE") and data:
-            params = data
-            data = None
+            params = request_data
+            request_data = None
 
         stream = False
         if save_to is not None:
@@ -465,34 +485,35 @@ class H2OConnection(h2o_meta()):
             self._cookies = ";".join(self._cookies)
 
         # Make the request
-        start_time = time.time()
-        try:
-            self._log_start_transaction(endpoint, data, json, files, params)            
-            args = self._request_args()
-            resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
-                                    stream=stream, **args)
-            if isinstance(save_to, types.FunctionType):
-                save_to = save_to(resp)
-            self._log_end_transaction(start_time, resp)
-            return self._process_response(resp, save_to)
+        with as_resource(request_data) as rd:
+            start_time = time.time()
+            try:
+                self._log_start_transaction(endpoint, rd, json, filename, params)
+                args = self._request_args()
+                resp = requests.request(method=method, url=url, data=rd, json=json, params=params,
+                                        stream=stream, **args)
+                if isinstance(save_to, types.FunctionType):
+                    save_to = save_to(resp)
+                self._log_end_transaction(start_time, resp)
+                return self._process_response(resp, save_to)
 
-        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-            if self._local_server and not self._local_server.is_running():
-                self._log_end_exception("Local server has died.")
-                raise H2OConnectionError("Local server has died unexpectedly. RIP.")
-            else:
+            except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+                if self._local_server and not self._local_server.is_running():
+                    self._log_end_exception("Local server has died.")
+                    raise H2OConnectionError("Local server has died unexpectedly. RIP.")
+                else:
+                    self._log_end_exception(e)
+                    raise H2OConnectionError("Unexpected HTTP error: %s" % e)
+            except requests.exceptions.Timeout as e:
                 self._log_end_exception(e)
-                raise H2OConnectionError("Unexpected HTTP error: %s" % e)
-        except requests.exceptions.Timeout as e:
-            self._log_end_exception(e)
-            elapsed_time = time.time() - start_time
-            raise H2OConnectionError("Timeout after %.3fs" % elapsed_time)
-        except H2OResponseError as e:
-            err = e.args[0]
-            if isinstance(err, H2OErrorV3):
-                err.endpoint = endpoint
-                err.payload = (data, json, files, params)
-            raise
+                elapsed_time = time.time() - start_time
+                raise H2OConnectionError("Timeout after %.3fs" % elapsed_time)
+            except H2OResponseError as e:
+                err = e.args[0]
+                if isinstance(err, H2OErrorV3):
+                    err.endpoint = endpoint
+                    err.payload = (rd, json, filename, params)
+                raise
 
     def _request_args(self):
         headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
@@ -516,8 +537,8 @@ class H2OConnection(h2o_meta()):
         """
         Close an existing connection; once closed it cannot be used again.
 
-        Strictly speaking it is not necessary to close all connection that you opened -- we have several mechanisms
-        in place that will do so automatically (__del__(), __exit__() and atexit() handlers), however there is also
+        Strictly speaking, it is not necessary to close all connections that you opened -- we have several mechanisms
+        in place that will do so automatically (``__del__()``, ``__exit__()``, and ``atexit()`` handlers), however there is also
         no good reason to make this method private.
         """
         if self._session_id:
@@ -531,6 +552,7 @@ class H2OConnection(h2o_meta()):
                 self._log_end_exception(e)
             self._session_id = None
         self._stage = -1
+        apply_session_hooks('close')
 
     @property
     def connected(self):
@@ -700,7 +722,7 @@ class H2OConnection(h2o_meta()):
         """
         if not data: return None
         res = {}
-        for key, value in viewitems(data):
+        for key, value in data.items():
             if value is None: continue  # don't send args set to None so backend defaults take precedence
             if isinstance(value, list):
                 value = stringify_list(value)
@@ -726,9 +748,9 @@ class H2OConnection(h2o_meta()):
         absfilename = os.path.abspath(filename)
         if not os.path.exists(absfilename):
             raise H2OValueError("File %s does not exist" % filename, skip_frames=1)
-        return {os.path.basename(absfilename): open(absfilename, "rb")}
+        return open(absfilename, "rb")
 
-    def _log_start_transaction(self, endpoint, data, json, files, params):
+    def _log_start_transaction(self, endpoint, data, json, filename, params):
         """Log the beginning of an API request."""
         # TODO: add information about the caller, i.e. which module + line of code called the .request() method
         #       This can be done by fetching current traceback and then traversing it until we find the request function
@@ -736,12 +758,14 @@ class H2OConnection(h2o_meta()):
         if not self._is_logging: return
         msg = "\n---- %d --------------------------------------------------------\n" % self._requests_counter
         msg += "[%s] %s\n" % (time.strftime("%H:%M:%S"), endpoint)
-        if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
-        if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
+        if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in params.items())
         if json is not None:
             import json as j
             msg += "     json: %s\n" % j.dumps(json)
-        if files is not None:  msg += "     file: %s\n" % ", ".join(f.name for f in viewvalues(files))
+        if filename is not None: 
+            msg += "     file: %s\n" % filename
+        elif data is not None:
+            msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in data.items())
         self._log_message(msg + "\n")
 
     def _log_end_transaction(self, start_time, response):
@@ -883,13 +907,10 @@ class H2OResponse(dict):
         if schema == "H2OErrorV3": return H2OErrorV3.make(keyvals)
         if schema == "H2OModelBuilderErrorV3": return H2OModelBuilderErrorV3.make(keyvals)
         if schema == "TwoDimTableV3": return H2OTwoDimTable.make(keyvals)
-        if schema == "ModelMetricsRegressionV3": return H2ORegressionModelMetrics.make(keyvals)
-        if schema == "ModelMetricsClusteringV3": return H2OClusteringModelMetrics.make(keyvals)
-        if schema == "ModelMetricsBinomialV3": return H2OBinomialModelMetrics.make(keyvals)
-        if schema == "ModelMetricsBinomialUpliftV3": return H2OBinomialUpliftModelMetrics.make(keyvals)
-        if schema == "ModelMetricsMultinomialV3": return H2OMultinomialModelMetrics.make(keyvals)
-        if schema == "ModelMetricsOrdinalV3": return H2OOrdinalModelMetrics.make(keyvals)
-        if schema == "ModelMetricsAutoEncoderV3": return H2OAutoEncoderModelMetrics.make(keyvals)
+        if schema and schema.startswith("ModelMetrics"):
+            metrics = make_metrics(schema, keyvals)
+            if metrics is not None:
+                return metrics
         return super(H2OResponse, cls).__new__(cls, keyvals)
 
     # def __getattr__(self, key):
@@ -946,7 +967,7 @@ def _deprecated_post(self, url_suffix, **kwargs):
     endpoint = "POST /%d/%s" % (restver, url_suffix)
     filename = None
     if "file_upload_info" in kwargs:
-        filename = next(iter(viewvalues(kwargs.pop("file_upload_info"))))
+        filename = next(iter(kwargs.pop("file_upload_info").values()))
     return self.request(endpoint, data=kwargs, filename=filename)
 
 def _deprecated_delete(self, url_suffix, **kwargs):

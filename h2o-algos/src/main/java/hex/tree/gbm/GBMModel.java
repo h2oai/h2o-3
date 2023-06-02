@@ -6,19 +6,18 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
-import water.DKV;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
 import java.util.*;
 
 public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> 
-        implements Model.StagedPredictions, FeatureInteractionsCollector, FriedmanPopescusHCollector {
+        implements Model.StagedPredictions, FeatureInteractionsCollector, FriedmanPopescusHCollector, Model.RowToTreeAssignment {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
@@ -137,6 +136,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     EffectiveParametersUtils.initFoldAssignment(_parms);
     EffectiveParametersUtils.initHistogramType(_parms);
     EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
+    EffectiveParametersUtils.initCalibrationMethod(_parms);
   }
   
   public void initActualParamValuesAfterOutputSetup(int nclasses, boolean isClassifier) {
@@ -306,6 +306,16 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
 
   @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    Frame adaptFrm = removeSpecialColumns(frame);
+
+    for(int colId = 0; colId < adaptFrm.numCols(); colId++) {
+      Vec col = adaptFrm.vec(colId);
+      if (col.isBad()) {
+        throw new UnsupportedOperationException(
+                "Calculating of H statistics error: row " + adaptFrm.name(colId) + " is missing.");
+      }
+    }
+
     int nclasses = this._output._nclasses > 2 ? this._output._nclasses : 1;
     SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
     for (int i = 0; i < this._parms._ntrees; i++) {
@@ -314,7 +324,53 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       }
     }
     
-    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
+    return FriedmanPopescusH.h(adaptFrm, vars, this._parms._learn_rate, sharedTreeSubgraphs);
+  }
+
+  @Override
+  public Frame rowToTreeAssignment(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
+    Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] treeKeys = _output._treeKeys;
+
+    Sample[] ss = new Sample[treeKeys.length];
+    int[] cons = new int[treeKeys.length];
+    Vec[] vs = frame.vec(_parms._response_column).makeVolatileInts(cons);
+    for (int treeId = 0; treeId < treeKeys.length; treeId++) {
+      Key<CompressedTree> compressedTreeKey = treeKeys[treeId][0]; // Always pick the zero one, multinomial trees use the same subsample
+      if (compressedTreeKey == null)
+        continue;
+      CompressedTree ct = DKV.getGet(compressedTreeKey);
+      long seed = ct.getSeed();
+      ss[treeId] = new Sample(seed, _parms._sample_rate, _parms._sample_rate_per_class, 1, 0).dfork(vs[treeId], frame.vec(_parms._response_column));
+    }
+    for (int treeId = 0; treeId < treeKeys.length; treeId++) {
+      ss[treeId].getResult();
+    }
+
+    int outputSize = treeKeys.length + 1;
+    String[] names = new String[outputSize];
+    byte[] types = new byte[outputSize];
+    String[][] domains = new String[outputSize][2];
+
+    names[0] = "row_id";
+    types[0] = Vec.T_NUM;
+    domains[0] = null;
+
+    for (int i = 1; i < outputSize; i++) {
+      types[i] = Vec.T_CAT;
+      domains[i] = new String[]{"0", "1"};
+      names[i] = "tree_" + i;
+    }
+
+     return new MRTask(){
+       public void map(Chunk[] chk, NewChunk[] nchk) {
+         for (int row = 0; row < chk[0]._len; row++) {
+           nchk[0].addNum(row + chk[0].start());
+           for (int col = 0; col < chk.length; col++) {
+             nchk[col+1].addNum(chk[col].atd(row));
+           }
+         }
+       }
+     }.withPostMapAction(JobUpdatePostMap.forJob(j)).doAll(types, vs).outputFrame(destination_key, names, domains);
   }
 
 }

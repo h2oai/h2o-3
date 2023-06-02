@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import h2o
 from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
@@ -233,8 +231,80 @@ class H2OAutoMLBaseMixin:
         picked_model = [model for model in models_in_default_order if model in selected_models][0]
 
         return h2o.get_model(picked_model)
-    
-    
+
+    def pareto_front(self,
+                     test_frame=None,  # type: Optional[H2OFrame]
+                     x_metric=None,  # type: Optional[str]
+                     y_metric=None,  # type: Optional[str]
+                     **kwargs
+                     ):
+        """
+        Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
+        Pareto front there isn't a model that would be better in both criteria. For example, this can be useful in picking
+        models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
+        the task is assumed to be minimization for both metrics.
+
+        :param test_frame: a frame used to generate the metrics
+        :param x_metric: metric present in the leaderboard
+        :param y_metric: metric present in the leaderboard
+        :param kwargs: key, value mappings
+                       Other keyword arguments are passed through to
+                       :meth:`h2o.explanation.pareto_front`.
+        :return: object that contains the resulting figure (can be accessed using ``result.figure()``)
+
+        :examples:
+        >>> import h2o
+        >>> from h2o.automl import H2OAutoML
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> from h2o.grid import H2OGridSearch
+        >>>
+        >>> h2o.connect()
+        >>>
+        >>> # Import the wine dataset into H2O:
+        >>> df = h2o.import_file("h2o://prostate.csv")
+        >>>
+        >>> # Set the response
+        >>> response = "CAPSULE"
+        >>> df[response] = df[response].asfactor()
+        >>>
+        >>> # Split the dataset into a train and test set:
+        >>> train, test = df.split_frame([0.8])
+        >>>
+        >>> # Train an H2OAutoML
+        >>> aml = H2OAutoML(max_models=10)
+        >>> aml.train(y=response, training_frame=train)
+        >>>
+        >>> # Create the Pareto front
+        >>> pf = aml.pareto_front()
+        >>> pf.figure() # get the Pareto front plot
+        >>> pf # H2OFrame containing the Pareto front subset of the leaderboard
+        """
+        if test_frame is None:
+            leaderboard = self.get_leaderboard("ALL")
+        else:
+            leaderboard = h2o.make_leaderboard(self, test_frame, extra_columns="ALL")
+
+        if x_metric is None:
+            x_metric = "predict_time_per_row_ms"
+        if y_metric is None:
+            y_metric = leaderboard.columns[1]
+
+        higher_is_better = ("auc", "aucpr")
+        optimum = "{} {}".format(
+            "top"  if y_metric.lower() in higher_is_better else "bottom",
+            "right" if x_metric.lower() in higher_is_better else "left"
+        )
+
+        if kwargs.get("title") is None:
+            kwargs["title"] = "Pareto Front for {}".format(self.project_name)
+
+        return h2o.explanation.pareto_front(frame=leaderboard,
+                                            x_metric=x_metric,
+                                            y_metric=y_metric,
+                                            optimum=optimum,
+                                            **kwargs)
+
+
 def _fetch_leaderboard(aml_id, extensions=None):
     assert_is_type(extensions, None, str, [str])
     extensions = ([] if extensions is None

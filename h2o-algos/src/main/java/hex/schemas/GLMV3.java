@@ -52,6 +52,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "missing_values_handling",
             "plug_values",
             "compute_p_values",
+            "dispersion_parameter_method",
+            "init_dispersion_parameter",
             "remove_collinear_columns",
             "intercept",
             "non_negative",
@@ -62,7 +64,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "link",
             "rand_link", // link function for random components, array
             "startval",  // initial starting values for fixed and randomized coefficients, double array
-            "calc_like", // HGLM, true will return likelhood function value
+            "calc_like", // true will return likelihood function value
             "HGLM",  // boolean: true - enabled HGLM, false - normal GLM
             "prior",
             "cold_start", // if true, will start GLM model from initial values and conditions
@@ -83,7 +85,16 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_runtime_secs",
             "custom_metric_func",
             "generate_scoring_history",
-            "auc_type"
+            "auc_type",
+            "dispersion_epsilon",
+            "tweedie_epsilon",
+            "max_iterations_dispersion",
+            "build_null_model",
+            "fix_dispersion_parameter",
+            "generate_variable_inflation_factors",
+            "fix_tweedie_variance_power",
+            "dispersion_learning_rate",
+            "influence"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -102,6 +113,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "Tweedie variance power", level = Level.critical, gridable = true)
     public double tweedie_variance_power;
+
+    @API(help = "Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. " +
+            "It must be > 0.  This controls how much the dispersion parameter estimate is to be changed when the" +
+            " calculated loglikelihood actually decreases with the new dispersion.  In this case, instead of setting" +
+            " new dispersion = dispersion + change, we set new dispersion = dispersion + dispersion_learning_rate * change. " +
+            "Defaults to 0.5.", level = Level.expert, gridable = true)
+    public double dispersion_learning_rate;
 
     @API(help = "Tweedie link power", level = Level.critical, gridable = true)
     public double tweedie_link_power;
@@ -133,7 +151,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Perform scoring for every score_iteration_interval iterations", level = Level.secondary)
     public int score_iteration_interval;
 
-    @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
+    @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical, gridable = true)
     public boolean standardize;
 
     @API(help = "Only applicable to multiple alpha/lambda values.  If false, build the next model for next set of " +
@@ -143,6 +161,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "Handling of missing values. Either MeanImputation, Skip or PlugValues.", values = { "MeanImputation", "Skip", "PlugValues" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public GLMParameters.MissingValuesHandling missing_values_handling;
+    
+    @API(help = "If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in " +
+            "the dataset.", values = { "dfbetas" }, level = API.Level.expert, gridable = false)
+    public GLMParameters.Influence influence;
 
     @API(help = "Plug Values (a single row frame containing values that will be used to impute missing values of the training/validation frame, use with conjunction missing_values_handling = PlugValues)", direction = API.Direction.INPUT)
     public FrameKeyV3 plug_values;
@@ -156,24 +178,29 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver ", level = Level.expert)
     public double beta_epsilon;
 
-    @API(help = "Converge if  objective value changes less than this."+ " Default indicates: If lambda_search"+
-    " is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set to False and" +
-    " lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other value of lambda the" +
-    " default value of objective_epsilon is set to .0001.", level = Level.expert)
+    @API(help = "Converge if  objective value changes less than this."+ " Default (of -1.0) indicates: If lambda_search"+
+            " is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set to False" +
+            " and lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other value" +
+            " of lambda the default value of objective_epsilon is set to .0001.", level = API.Level.expert)
     public double objective_epsilon;
 
-    @API(help = "Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver."+
-    " Default indicates: If lambda_search is set to False and lambda is equal to zero, the default value" +
-    " of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True," +
-    " the conditional values above are 1E-8 and 1E-6 respectively.", level = Level.expert)
+    @API(help = "Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS" +
+            " solver. Default (of -1.0) indicates: If lambda_search is set to False and lambda is equal to zero, the" +
+            " default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If " +
+            "lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.",
+            level = API.Level.expert)
     public double gradient_epsilon;
 
-    @API(help="Likelihood divider in objective value computation, default is 1/nobs")
+    @API(help="Likelihood divider in objective value computation, default (of -1.0) will set it to 1/nobs")
     public double obj_reg;
 
     @API(help = "Link function.", level = Level.secondary, values = {"family_default", "identity", "logit", "log",
             "inverse", "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
     public GLMParameters.Link link;
+    
+    @API(help="Method used to estimate the dispersion parameter for Tweedie, Gamma and Negative Binomial only.",
+            level = Level.secondary, values={"deviance", "pearson", "ml"})
+    public GLMParameters.DispersionMethod dispersion_parameter_method;
     
     @API(help = "Link function array for random component in HGLM.", values = {"[identity]", "[family_default]"},level = Level.secondary, gridable=true)   
     public GLMParameters.Link[] rand_link; // link function for random components
@@ -184,11 +211,28 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "random columns indices for HGLM.")
     public int[] random_columns;
 
-    @API(help = "if true, will return likelihood function value for HGLM.") // not gridable
+    @API(help = "if true, will return likelihood function value.") // not gridable
     public boolean calc_like;
+    
+    @API(help="if true, will generate variable inflation factors for numerical predictors.  Default to false.", 
+            level = Level.expert)
+    public boolean generate_variable_inflation_factors;
 
     @API(help="Include constant term in the model", level = Level.expert)
     public boolean intercept;
+
+    @API(help="If set, will build a model with only the intercept.  Default to false.", level = Level.expert)
+    public boolean build_null_model;
+
+    @API(help="Only used for Tweedie, Gamma and Negative Binomial GLM.  If set, will use the dispsersion parameter" +
+            " in init_dispersion_parameter as the standard error and use it to calculate the p-values. Default to" +
+            " false.", level=Level.expert)
+    public boolean fix_dispersion_parameter;
+    
+    @API(help="Only used for Tweedie, Gamma and Negative Binomial GLM.  Store the initial value of dispersion " +
+            "parameter.  If fix_dispersion_parameter is set, this value will be used in the calculation of p-values." +
+            "Default to 1.0.", level=Level.expert, gridable=true)
+    public double init_dispersion_parameter;
 
     @API(help="If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned", level = Level.critical)
     public boolean HGLM;
@@ -248,8 +292,25 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Request p-values computation, p-values work only with IRLSM solver and no regularization", level = Level.secondary, direction = Direction.INPUT)
     public boolean compute_p_values; // _remove_collinear_columns
 
+    @API(help="If true, will fix tweedie variance power value to the value set in tweedie_variance_power.",
+            level=Level.secondary, direction=Direction.INPUT)
+    public boolean fix_tweedie_variance_power;
+
     @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
+
+    @API(help = "If changes in dispersion parameter estimation or loglikelihood value is smaller than " +
+            "dispersion_epsilon, will break out of the dispersion parameter estimation loop using maximum " +
+            "likelihood.", level = API.Level.secondary, direction = API.Direction.INOUT)
+    public double dispersion_epsilon;
+
+    @API(help = "In estimating tweedie dispersion parameter using maximum likelihood, this is used to choose the lower" +
+            " and upper indices in the approximating of the infinite series summation.", 
+            level = API.Level.secondary, direction = API.Direction.INOUT)
+    public double tweedie_epsilon;
+    
+    @API(help = "Control the maximum number of iterations in the dispersion parameter estimation loop using maximum likelihood.", level = API.Level.secondary, direction = API.Direction.INOUT)
+    public int max_iterations_dispersion;
 
     @API(help="If set to true, will generate scoring history for GLM.  This may significantly slow down the algo.", 
             level = Level.secondary, direction = Direction.INPUT)

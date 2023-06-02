@@ -1,5 +1,3 @@
-from __future__ import division
-from __future__ import print_function
 from builtins import range
 from past.utils import old_div
 import sys
@@ -36,7 +34,7 @@ def stratified_kfold():
 
   # now show that folds are consistent with the original distribution of classes
   for i in range(len(dist)):
-    print("Stratification variance for class #%s: %s" %(i, old_div((df.ix[i].sub(dist[i]).pow(2).sum()), (df.shape[0] - 1))))
+    print("Stratification variance for class #%s: %s" %(i, old_div((df.loc[i].sub(dist[i]).pow(2).sum()), (df.shape[0] - 1))))
 
 
 

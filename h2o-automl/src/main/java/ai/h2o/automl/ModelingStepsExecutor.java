@@ -2,20 +2,22 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.AutoML.Constraint;
 import ai.h2o.automl.StepResultState.ResultStatus;
-import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
-import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import hex.Model;
 import hex.ModelContainer;
+import hex.leaderboard.Leaderboard;
 import water.Iced;
 import water.Job;
 import water.Key;
 import water.util.Countdown;
 import water.util.Log;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -89,7 +91,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
     @SuppressWarnings("unchecked")
     StepResultState submit(ModelingStep step, Job parentJob) {
-        StepResultState resultState = new StepResultState(step._description);
+        StepResultState resultState = new StepResultState(step.getGlobalId());
         for (Iterator<ModelingStep> it = step.iterateSubSteps(); it.hasNext(); ) {
             resultState.addState(submit(it.next(), parentJob));
         }
@@ -103,12 +105,12 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                     resultState.addState(monitor(job, step, parentJob));
                 }
             } catch (Exception e) {
-                resultState.addState(new StepResultState(step._description, e));
+                resultState.addState(new StepResultState(step.getGlobalId(), e));
             } finally {
                 step.onDone(job);
             }
         } else {
-            resultState.addState(new StepResultState(step._description, ResultStatus.skipped));
+            resultState.addState(new StepResultState(step.getGlobalId(), ResultStatus.skipped));
             if (step.getAllocatedWork() != null) {
                 step.getAllocatedWork().consume();
             }
@@ -124,7 +126,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             parentJob.update(work.consume(), "SKIPPED: "+desc);
             Log.info("AutoML; skipping "+desc);
         }
-        return new StepResultState(step._description, ResultStatus.skipped);
+        return new StepResultState(step.getGlobalId(), ResultStatus.skipped);
     }
 
     StepResultState monitor(Job job, ModelingStep step, Job parentJob) {
@@ -172,10 +174,10 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
             if (job.isCrashed()) {
                 eventLog.error(Stage.ModelTraining, jobDescription+" failed: "+job.ex());
-                return new StepResultState(step._description, job.ex());
+                return new StepResultState(step.getGlobalId(), job.ex());
             } else if (job.get() == null) {
                 eventLog.info(Stage.ModelTraining, jobDescription+" cancelled");
-                return new StepResultState(step._description, ResultStatus.cancelled);
+                return new StepResultState(step.getGlobalId(), ResultStatus.cancelled);
             } else {
                 // pick up any stragglers:
                 if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
@@ -190,7 +192,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                     eventLog.debug(Stage.ModelTraining, jobDescription+" complete");
                     this.addModel((Model) job.get(), step);
                 }
-                return new StepResultState(step._description, ResultStatus.success);
+                return new StepResultState(step.getGlobalId(), ResultStatus.success);
             }
         } finally {
             // add remaining work
@@ -226,7 +228,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     }
 
     private Leaderboard leaderboard() {
-        return _leaderboardKey.get();
+        return Leaderboard.getInstance(_leaderboardKey, eventLog().asLogger(Stage.ModelTraining));
     }
 
 }

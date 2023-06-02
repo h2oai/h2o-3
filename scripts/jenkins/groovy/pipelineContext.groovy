@@ -25,7 +25,7 @@ def call(final String h2o3Root, final String mode, final scmEnv, boolean ignoreC
     def final pipelineUtils = pipelineUtilsFactory()
     def changes = null
     if (!ignoreChanges) {
-        changes = getChanges(h2o3Root)
+        changes = getChanges(h2o3Root, scmEnv['GIT_TARGET'])
         if (changes == null) {
             ignoreChanges = true
         }
@@ -43,15 +43,21 @@ def call(final String h2o3Root, final String mode, final scmEnv, boolean ignoreC
     )
 }
 
-private List<String> getChanges(final String h2o3Root) {
+private List<String> getChanges(final String h2o3Root, final String targetBranch) {
     sh """
         cd ${h2o3Root}
-        git fetch --no-tags --progress https://github.com/h2oai/h2o-3 +refs/heads/master:refs/remotes/origin/master
+        git fetch --no-tags --progress https://github.com/h2oai/h2o-3 +refs/heads/${targetBranch}:refs/remotes/origin/${targetBranch}
     """
     def result
     try {
-        final String mergeBaseSHA = sh(script: "cd ${h2o3Root} && git merge-base HEAD origin/master", returnStdout: true).trim()
-        result = sh(script: "cd ${h2o3Root} && git diff --name-only ${mergeBaseSHA}", returnStdout: true).trim().tokenize('\n')
+        final String mergeBaseSHA = sh(script: "cd ${h2o3Root} && git merge-base HEAD origin/${targetBranch}", returnStdout: true).trim()
+        output = sh(script: "cd ${h2o3Root} && git diff --name-status ${mergeBaseSHA}", returnStdout: true)
+        result = output
+                .trim()
+                .tokenize('\n')
+                .collectEntries {
+                    it.tokenize('\t').reverse()
+                }
     } catch (Exception ignore) {
         result = null
     }

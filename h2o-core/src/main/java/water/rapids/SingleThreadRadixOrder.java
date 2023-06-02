@@ -38,18 +38,22 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   private transient long counts[][];
   private transient byte keytmp[];
   //public long _groupSizes[][];
+  
+  final long _mergeId;
 
 
   // outputs ...
   // o and x are changed in-place always
   // iff _groupsToo==true then the following are allocated and returned
 
-  SingleThreadRadixOrder(Frame fr, boolean isLeft, int batchSize, int keySize, /*long nGroup[],*/ int MSBvalue) {
+  SingleThreadRadixOrder(Frame fr, boolean isLeft, int batchSize, int keySize, /*long nGroup[],*/ int MSBvalue, 
+                         long mergeId) {
     _fr = fr;
     _isLeft = isLeft;
     _batchSize = batchSize;
     _keySize = keySize;
     _MSBvalue = MSBvalue;
+    _mergeId = mergeId;
   }
 
   @Override
@@ -63,7 +67,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     for (int n=0; n<H2O.CLOUD.size(); n++) {
       // Log.info("Getting MSB " + MSBvalue + " Node Header from node " + n + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
       // Log.info("Getting");
-      k = SplitByMSBLocal.getMSBNodeHeaderKey(_isLeft, _MSBvalue, n);
+      k = SplitByMSBLocal.getMSBNodeHeaderKey(_isLeft, _MSBvalue, n, _mergeId);
       MSBnodeHeader[n] = DKV.getGet(k);
       if (MSBnodeHeader[n]==null) continue;
       DKV.remove(k);
@@ -93,7 +97,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     SplitByMSBLocal.OXbatch ox[/*node*/] = new SplitByMSBLocal.OXbatch[H2O.CLOUD.size()];
     int oxBatchNum[/*node*/] = new int[H2O.CLOUD.size()];  // which batch of OX are we on from that node?  Initialized to 0.
     for (int node=0; node<H2O.CLOUD.size(); node++) {  //TO DO: why is this serial?  Relying on
-      k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0);
+      k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0, _mergeId);
       // assert k.home();   // TODO: PUBDEV-3074
       ox[node] = DKV.getGet(k);   // get the first batch for each node for this MSB
       DKV.remove(k);
@@ -134,7 +138,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
         targetOffset += thisCopy; targetBatchRemaining -= thisCopy;
         if (sourceBatchRemaining == 0) {
           // fetch the next batch :
-          k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode]);
+          k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, fromNode, ++oxBatchNum[fromNode], _mergeId);
           assert k.home();
           ox[fromNode] = DKV.getGet(k);
           DKV.remove(k);
@@ -186,11 +190,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     // tell the world how many batches and rows for this MSB
     OXHeader msbh = new OXHeader(_o.length, numRows, _batchSize);
     Futures fs = new Futures();
-    DKV.put(getSortedOXHeaderKey(_isLeft, _MSBvalue), msbh, fs, true);
+    DKV.put(getSortedOXHeaderKey(_isLeft, _MSBvalue, _mergeId), msbh, fs, true);
     assert _o.length == _x.length;
     for (b=0; b<_o.length; b++) {
       SplitByMSBLocal.OXbatch tmp = new SplitByMSBLocal.OXbatch(_o[b], _x[b]);
-      Value v = new Value(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b), tmp);
+      Value v = new Value(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b, _mergeId), tmp);
       DKV.put(v._key, v, fs, true);  // the OXbatchKey's on this node will be reused for the new keys
       v.freeMem();
     }
@@ -199,10 +203,10 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     tryComplete();
   }
 
-  static Key getSortedOXHeaderKey(boolean isLeft, int MSBvalue) {
+  static Key getSortedOXHeaderKey(boolean isLeft, int MSBvalue, long mergeId) {
     // This guy has merges together data from all nodes and its data is not "from" 
     // any particular node.  Therefore node number should not be in the key.
-    return Key.make("__radix_order__SortedOXHeader_MSB" + MSBvalue + (isLeft ? "_LEFT" : "_RIGHT"));  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
+    return Key.make("__radix_order__SortedOXHeader_MSB" + MSBvalue + "_" + mergeId + (isLeft ? "_LEFT" : "_RIGHT"));  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
   }
 
   static class OXHeader extends Iced<OXHeader> {

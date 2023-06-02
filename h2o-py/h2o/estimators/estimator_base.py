@@ -3,7 +3,6 @@
 #
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 from datetime import datetime
@@ -16,26 +15,11 @@ from h2o.exceptions import H2OValueError, H2OResponseError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.mixin import assign, load_ext, mixin
-from h2o.utils.shared_utils import quoted
+from h2o.utils.shared_utils import quoted, LookupSeq
 from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
-from ..model.autoencoder import H2OAutoEncoderModel
-from ..model.binomial import H2OBinomialModel
-from ..model.binomial_uplift import H2OBinomialUpliftModel
-from ..model.clustering import H2OClusteringModel
-from ..model.dim_reduction import H2ODimReductionModel, H2OTargetEncoderMetrics
-from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
-                                  H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
-                                  H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
-                                  H2OModelMetricsRegressionCoxPH, H2OBinomialUpliftModelMetrics)
-from ..model.model_base import ModelBase
-from ..model.multinomial import H2OMultinomialModel
-from ..model.ordinal import H2OOrdinalModel
-from ..model.regression import H2ORegressionModel
-from ..model.word_embedding import H2OWordEmbeddingModel
-from ..model.anomaly_detection import H2OAnomalyDetectionModel
-from ..model.coxph import H2OCoxPHModel
-from ..model.coxph import H2OCoxPHMojoModel
-from ..model.segment_models import H2OSegmentModels
+from h2o.model import ModelBase, H2OSegmentModels
+from h2o.model.models import *
+from h2o.model.metrics import *
 
 
 class EstimatorAttributeError(AttributeError):
@@ -242,7 +226,7 @@ class H2OEstimator(ModelBase):
         if verbose and not self._options_.get('verbose', False):
             raise H2OValueError("Verbose mode is not available for %s" % self.__class__.__name__)
         parms = self._parms.copy()
-        names = training_frame.names if training_frame is not None else []
+        names = LookupSeq(training_frame.names if training_frame is not None else [])
         ncols = training_frame.ncols if training_frame is not None else 0
         types = training_frame.types if training_frame is not None else {}
     
@@ -281,7 +265,7 @@ class H2OEstimator(ModelBase):
                             raise H2OValueError("Column %s not in the training frame" % ic)
                         ignored_columns_set.add(ic)
             if x is None:
-                xset = set(names) - {y} - ignored_columns_set
+                xset = names.set() - {y} - ignored_columns_set
             elif isinstance(x, ModelBase) and hasattr(x, '_extract_x_from_model'):
                 xset = x._extract_x_from_model()
             else:
@@ -324,8 +308,8 @@ class H2OEstimator(ModelBase):
         if len(x) > 0 and is_type(x[0], int):
             x = [names[i] for i in x]
         if override_default_training_frame:
-            ignored_columns = list(set(names) - set(x + [y, offset, folds, weights]))
-            parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
+            ignored_columns = list(names.set() - set(x + [y, offset, folds, weights]))
+            parms["ignored_columns"] = None if len(ignored_columns) == 0 else [quoted(col) for col in ignored_columns]
         parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None
                                  else [quoted(col) for col in parms["interactions"]])
         parms["interaction_pairs"] = (None if "interaction_pairs" not in parms or parms["interaction_pairs"] is None
@@ -388,16 +372,14 @@ class H2OEstimator(ModelBase):
         if model_id is not None and model_json is not None and metrics_class is not None:
             # build Metric objects out of each metrics
             for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
-                if metric in model_json["output"]:
-                    if model_json["output"][metric] is not None:
-                        if metric == "cross_validation_metrics":
-                            m._is_xvalidated = True
-                        # for Isolation Forest, validation metrics might have a different metric class
-                        mc = metrics_class_valid if metric == "validation_metrics" else metrics_class  
-                        model_json["output"][metric] = \
-                            mc(model_json["output"][metric], metric, model_json["algo"])
-
-            #if m._is_xvalidated:
+                metrics = model_json["output"].get(metric, None)
+                if metrics is not None:
+                    if metric == "cross_validation_metrics":
+                        m._is_xvalidated = True
+                    mc = metrics_class_valid if metric == "validation_metrics" else metrics_class  
+                    # fixme: never ever ever modify the original payload!!! put the metric object somewhere else
+                    model_json["output"][metric] = mc(metrics, metric, model_json["algo"])
+            # if m._is_xvalidated:
             if m._is_xvalidated and model_json["output"]["cross_validation_models"] is not None:
                 m._xval_keys = [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
@@ -409,7 +391,7 @@ class H2OEstimator(ModelBase):
         mixin(self._model, model_class, *extensions)
         assign(self._model, m)
 
-    #------ Scikit-learn Interface Methods -------
+    # ----- Scikit-learn Interface Methods -------
 
     def fit(self, X, y=None, **params):
         """
@@ -495,23 +477,23 @@ class H2OEstimator(ModelBase):
             metrics_class = H2OOrdinalModelMetrics
             model_class = H2OOrdinalModel
         elif model_type == "AutoEncoder":
-            metrics_class = H2OAutoEncoderModelMetrics
+            metrics_class = H2ODefaultModelMetrics
             model_class = H2OAutoEncoderModel
         elif model_type == "DimReduction":
             metrics_class = H2ODimReductionModelMetrics
             model_class = H2ODimReductionModel
         elif model_type == "WordEmbedding":
-            metrics_class = H2OWordEmbeddingModelMetrics
+            metrics_class = H2ODefaultModelMetrics
             model_class = H2OWordEmbeddingModel
         elif model_type == "AnomalyDetection":
             metrics_class = H2OAnomalyDetectionModelMetrics
             valid_metrics_class = H2OBinomialModelMetrics
             model_class = H2OAnomalyDetectionModel
         elif model_type == "CoxPH":
-            metrics_class = H2OModelMetricsRegressionCoxPH
+            metrics_class = H2ORegressionCoxPHModelMetrics
             model_class = H2OCoxPHModel if model_json["algo"] != "generic" else H2OCoxPHMojoModel
         elif model_type == "TargetEncoder":
-            metrics_class = H2OTargetEncoderMetrics
+            metrics_class = H2ODefaultModelMetrics 
             model_class = None
         elif model_type == "Unknown":
             metrics_class = None

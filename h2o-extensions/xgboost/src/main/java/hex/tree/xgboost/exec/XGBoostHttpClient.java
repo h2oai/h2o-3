@@ -130,10 +130,23 @@ public class XGBoostHttpClient {
             throw new RuntimeException("Failed to build request URI.", e);
         }
     }
+
+    private HttpPost makeUploadMatrixRequest(Key key, RemoteXGBoostUploadServlet.RequestType requestType, 
+                                             RemoteXGBoostUploadServlet.MatrixRequestType matrixRequestType) {
+        try {
+            URIBuilder uri = new URIBuilder(baseUri + "upload");
+            uri.setParameter("model_key", key.toString())
+                    .setParameter("request_type", requestType.toString())
+                    .setParameter("data_type", matrixRequestType.toString());
+            return new HttpPost(uri.build());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Failed to build request URI.", e);
+        }
+    }
     
-    public void uploadBytes(Key key, RemoteXGBoostUploadServlet.RequestType dataType, byte[] data) {
-        LOG.info("Request upload " + key + " " + dataType + " " + data.length + " bytes");
-        HttpPost httpReq = makeUploadRequest(key, dataType);
+    public void uploadCheckpointBytes(Key<?> key, byte[] data) {
+        LOG.info("Request upload checkpoint of model " + key + ", checkpoint size = " + data.length + " bytes");
+        HttpPost httpReq = makeUploadRequest(key, RemoteXGBoostUploadServlet.RequestType.checkpoint);
         httpReq.setEntity(new InputStreamEntity(new ByteArrayInputStream(data)));
         addAuthentication(httpReq);
         XGBoostExecRespV3 resp = executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);
@@ -178,9 +191,13 @@ public class XGBoostHttpClient {
         }
     }
 
-    public void uploadObject(Key key, RemoteXGBoostUploadServlet.RequestType dataType, BootstrapFreezable<?> data) {
-        LOG.info("Request upload " + key + " " + dataType + " " + data.getClass().getSimpleName());
-        HttpPost httpReq = makeUploadRequest(key, dataType);
+    public void uploadMatrixData(Key<?> key,
+                                 RemoteXGBoostUploadServlet.MatrixRequestType matrixRequestType, boolean isTrain,
+                                 BootstrapFreezable<?> data) {
+        LOG.info("Request upload " + key + " " + matrixRequestType + " " + data.getClass().getSimpleName());
+        RemoteXGBoostUploadServlet.RequestType requestType = isTrain ? 
+                RemoteXGBoostUploadServlet.RequestType.matrixTrain : RemoteXGBoostUploadServlet.RequestType.matrixValid;
+        HttpPost httpReq = makeUploadMatrixRequest(key, requestType, matrixRequestType);
         httpReq.setEntity(new ObjectEntity(data));
         addAuthentication(httpReq);
         XGBoostExecRespV3 resp = executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);

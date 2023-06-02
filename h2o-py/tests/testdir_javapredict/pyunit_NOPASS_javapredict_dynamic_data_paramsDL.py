@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """Marking this test NOPASS because it fails ~50% of the times."""
-from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o

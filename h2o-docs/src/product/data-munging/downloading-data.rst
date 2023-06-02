@@ -15,36 +15,44 @@ H2O has functions like ``as_data_frame`` and ``get_frame_data`` in Python and ``
 	
 		library(h2o)
 		h2o.init()
-		iris.hex <- h2o.importFile("iris/iris_wheader.csv")
+		iris.hex <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 		iris.df <- as.data.frame(iris.hex)
 	  
    .. code-tab:: python
    
 		import h2o
 		h2o.init()
-		iris_hex = h2o.import_file("iris/iris_wheader.csv")
+		iris_hex = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 		iris_csv_string = iris_hex.get_frame_data()
 		iris_pd = iris_hex.as_data_frame(use_pandas=True)
 
 Save to a file system
 ~~~~~~~~~~~~~~~~~~~~~
 
-The export file function can be used to save the data to an arbitrary location. The location has to be one that the server has access to, so either the server filesystem or a distributed filesystem like HDFS or S3. This function will save the data in CSV format.
+The export file function can be used to save the data to an arbitrary location. The location has to be one that the server has access to, so either the server filesystem or a distributed filesystem like HDFS or S3. This function can save the data in either CSV format (default) or Parquet format. 
 
 .. tabs::
    .. code-tab:: r R
 
 		library(h2o)
 		h2o.init()
-		iris.hex <- h2o.importFile("iris/iris_wheader.csv")
+		iris.hex <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 		h2o.exportFile(iris.hex, path = "hdfs://path/in/hdfs/iris.csv")
+
+		# To save as a parquet:
+		path <- "file:///tmp/prostate.parquet"
+		h2o.exportFile(iris.hex, path, format="parquet")
 	  
    .. code-tab:: python
    
 		import h2o
 		h2o.init()
-		iris_hex = h2o.import_file("iris/iris_wheader.csv")
+		iris_hex = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 		h2o.export_file(iris_hex, path = "/tmp/pred.csv", force = True)
+
+		# To save as a parquet:
+		path = "file:///tmp/iris.parquet"
+		h2o.export_file(iris_hex, path, format="parquet")
 
 Save as a Hive table
 ~~~~~~~~~~~~~~~~~~~~
@@ -56,14 +64,14 @@ When running on Hadoop, H2O can also export data into Hive tables. In order to d
 
 		library(h2o)
 		h2o.init()
-		iris.hex <- h2o.importFile("iris/iris_wheader.csv")
+		iris.hex <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 		h2o.save_to_hive(iris.hex, jdbc_url = "jdbc:hive2://hive-server:10000/default", table_name = "airlines")	
 
    .. code-tab:: python
    
 		import h2o
 		h2o.init()
-		iris_hex = h2o.import_file("iris/iris_wheader.csv")
+		iris_hex = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 		iris_hex.save_to_hive(
 			jdbc_url = "jdbc:hive2://hive-server:10000/default", 
 			table_name = "airlines",

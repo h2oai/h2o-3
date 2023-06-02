@@ -2,27 +2,25 @@ package hex.modelselection;
 
 import hex.SplitFrame;
 import hex.glm.GLMModel;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.Log;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.modelselection.ModelSelection.forwardStep;
 import static hex.modelselection.ModelSelection.replacement;
-import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.allsubsets;
-import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.maxr;
+import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.*;
 import static hex.modelselection.ModelSelectionUtils.generateMaxRTrainingFrames;
 import static hex.modelselection.ModelSelectionUtils.removeTrainingFrames;
 import static org.junit.Assert.assertArrayEquals;
@@ -273,6 +271,56 @@ public class ModelSelectionMaxRTests extends TestUtil {
     }
 
     /**
+     * Test and make sure the added and removed predictors are captured in both the result frame and the model summary.
+     * In particular, I want to make sure that they agree.  The correctness of the added/removed predictors are tested
+     * in Python unit test and won't be repeated here.
+     */
+    @Test
+    public void testAddedRemovedCols() {
+        Scope.enter();
+        try {
+            Frame train = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"),
+                    gaussian));
+            DKV.put(train);
+            ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
+            parms._response_column = "C21";
+            parms._family = gaussian;
+            parms._max_predictor_number = 3;
+            parms._seed=12345;
+            parms._train = train._key;
+            parms._mode = maxr;
+            ModelSelectionModel modelMaxr = new hex.modelselection.ModelSelection(parms).trainModel().get();
+            Scope.track_generic(modelMaxr); //  model with validation dataset
+        //    compareResultFModelSummary(modelMaxr);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    /***
+     * make sure model summary and result frame contains the same contents for removed or added predictors
+     * @param model
+     */
+    public static void compareResultFModelSummary(ModelSelectionModel model) {
+        Frame resultF = model.result();
+        Scope.track(resultF);
+        int numRows = (int) resultF.numRows();
+        String[] frameNames = new String[]{"predictors_removed", "predictors_added"};
+        IcedWrapper[][] cellValues = model._output._model_summary.getCellValues();
+        List<String> colHeaders = Stream.of(model._output._model_summary.getColHeaders()).collect(Collectors.toList());
+        int removedInd = colHeaders.indexOf("predictors_removed");
+        int addedInd = !backward.equals(model._parms._mode) ? colHeaders.indexOf("predictors_added") : 0;
+        for (int rInd = 0; rInd < numRows; rInd++) {
+            // removed predictor
+            Assert.assertTrue(cellValues[rInd][removedInd].toString().equals(resultF.vec(frameNames[0]).stringAt(rInd)));
+            // added predictor
+            if (!backward.equals(model._parms._mode))
+                Assert.assertTrue(cellValues[rInd][addedInd].toString().equals(resultF.vec(frameNames[1]).stringAt(rInd)));
+        }
+    }
+    
+
+    /**
      * check cv runs correctly with maxr by comparing R2 with those from allsubsets
      */
     @Test
@@ -303,17 +351,20 @@ public class ModelSelectionMaxRTests extends TestUtil {
             Scope.exit();
         }
     }
-    
+
     public void assertCorrectReplacement(List<Integer> currSubset, List<String> coefNames, double bestR2,
                                          String[] bestR2Subset, boolean okToBeNull,
                                          ModelSelectionModel.ModelSelectionParameters parms) {
-        List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList()); 
+        List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
         validSubset.removeAll(currSubset);
+        Log.info("**** inside assertCorrectReplacement");
         GLMModel bestR2Model = replacement(currSubset, coefNames, bestR2, parms, 0,
-                null, validSubset,null);
-        if (bestR2Model == null && okToBeNull) {
+                null, validSubset, null, new HashSet<BitSet>());
+
+        if (bestR2Model == null && okToBeNull)
             return;
-        }
+        
+        Scope.track_generic(bestR2Model);
         String[] modelCoeff = sortStringArray(bestR2Model._output._coefficient_names);
         assertArrayEquals(bestR2Subset, modelCoeff);
     }

@@ -86,7 +86,7 @@ h2o.extendedIsolationForest <- function(training_frame,
   model <- .h2o.modelJob('extendedisolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-.h2o.train_segments_extendedIsolationForest <- function(training_frame,
+.h2o.train_segments_extendedisolationforest <- function(training_frame,
                                                         x,
                                                         ignore_const_cols = TRUE,
                                                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
