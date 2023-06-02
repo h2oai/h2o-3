@@ -23,6 +23,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-new/1/index.ht
 
 #### Docs
 - [[issue-15474]](https://github.com/h2oai/h2o-3/issues/15474) - Added link to AutoML Wave app from AutoML user guide.
+- [[PUBDEV-9090]](https://h2oai.atlassian.net/browse/PUBDEV-9090) - Added AIC metric support for all GLM families to GLM user guide page and GLM booklet.
 - [[PUBDEV-9088]](https://h2oai.atlassian.net/browse/PUBDEV-9088) - Updated authors and editors for GLM booklet.
 - [[PUBDEV-8894]](https://h2oai.atlassian.net/browse/PUBDEV-8894) -  Added documentation on Tweedie variance power maximum likelihood estimation to GLM booklet and user guide.
 - [[PUBDEV-8461]](https://h2oai.atlassian.net/browse/PUBDEV-8461) - Improved user guide documentation for Generalized Additive Models algorithm.
