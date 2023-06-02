@@ -237,7 +237,7 @@ public class DTTest extends TestUtil {
     
 
     @Test
-    @Ignore
+    @Ignore("Uses local dataset")
     public void testBigDataSynthetic() {
         Scope.enter();
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/Dataset1_train.csv"));
@@ -255,7 +255,7 @@ public class DTTest extends TestUtil {
     }
 
     @Test
-    @Ignore
+    @Ignore("Uses local dataset")
     public void testBigDataCreditCard() {
         Scope.enter();
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/creditcard_train.csv"));
@@ -273,7 +273,7 @@ public class DTTest extends TestUtil {
     }
 
     @Test
-    @Ignore
+    @Ignore("Uses local dataset")
     public void testHIGGSDataset() {
         Scope.enter();
         Frame train = Scope.track(parseTestFile("smalldata/yuliia/HIGGS_train_limited1.csv"));
