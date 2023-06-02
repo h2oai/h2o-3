@@ -304,24 +304,24 @@ class H2OAssembly(object):
 
     def download_mojo(self, file_name="", path="."):
         """
-        Convert the munging operations performed on H2OFrame into a MOJO 2 artifact. This method requires an additinal
-        mojo2-runtime library on JAVA classpath. The library can be found on the maven url
+        Convert the munging operations performed on H2OFrame into a MOJO 2 artifact. This method requires an additional
+        mojo2-runtime library on the Java classpath. The library can be found at this maven URL:
         https://repo1.maven.org/maven2/ai/h2o/mojo2-runtime/2.7.11.1/mojo2-runtime-2.7.11.1.jar.
         
-        The library can be addedd to the classpath via java command when starting an H2O node from command line::
+        The library can be added to the classpath via Java command when starting an H2O node from the command line::
         
-          java -cp <path_to_h2o_jar>:<path_to_mojo2-runtime_library> water.H2OApp
+            java -cp <path_to_h2o_jar>:<path_to_mojo2-runtime_library> water.H2OApp
           
-        The library can be alos added to the Java classpath from python while starting H2O cluster via h2o.init()::
+        The library can also be added to the Java classpath from Python while starting an H2O cluster via ``h2o.init()``::
       
         >>> import h2o
         >>> h2o.init(extra_classpath = ["<path_to_mojo2-runtime_library>"]) 
         
-        The mojo2 artifact create by this method can be utilized according to the tutorials on the page
+        The MOJO 2 artifact created by this method can be utilized according to the tutorials on this page:
         https://docs.h2o.ai/driverless-ai/1-10-lts/docs/userguide/scoring-mojo-scoring-pipeline.html.
         
-        :param file_name:  (str) Name of Mojo 2 artifact.
-        :param path:  (str) Local Path on a user side  serving as target for  Mojo 2 artifact.
+        :param file_name:  (str) Name of MOJO 2 artifact.
+        :param path:  (str) Local Path on a user side  serving as target for  MOJO 2 artifact.
         :return: Streamed file.
         
         :examples:
@@ -342,8 +342,9 @@ class H2OAssembly(object):
         >>> result = assembly.fit(iris)
         >>> assembly.download_mojo(file_name="iris_mojo", path='')
         
-        Note:: The output column names of created mojo 2 pipeline are prefixed with "assembly_"  since
-               MOJO2 library requires unique names across all columns present in pipeline.
+        .. note::
+            The output column names of the created MOJO 2 pipeline are prefixed with "assembly\_"  since the
+            MOJO2 library requires unique names across all columns present in pipeline.
         
         """
         assert_is_type(file_name, str)
