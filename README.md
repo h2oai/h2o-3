@@ -790,6 +790,7 @@ Jan Jendrusak
 Sebastien Poirier
 Tomáš Frýda
 Ard Kelmendi
+Yuliia Syzon
 ```
 
 <a name="Advisors"></a>
