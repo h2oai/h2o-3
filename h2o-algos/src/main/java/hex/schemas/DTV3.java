@@ -19,9 +19,6 @@ public class DTV3 extends ModelBuilderSchema<
                 "categorical_encoding",
                 "response_column",
                 "seed",
-                "offset_column",
-                "weights_column",
-                "fold_column",
                 // SDT specific
                 "max_depth",
                 "min_rows"
