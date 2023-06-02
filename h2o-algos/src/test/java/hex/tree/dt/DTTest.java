@@ -184,10 +184,8 @@ public class DTTest extends TestUtil {
     public void testProstateSmallData() {
 
         Scope.enter();
-        Frame train = Scope.track(parseTestFile("smalldata/testng/prostate_train.csv"));
-        Frame test = Scope.track(parseTestFile("smalldata/testng/prostate_test.csv"));
-        train.replace(0, train.vec(0).toCategoricalVec()).remove();
-        test.replace(0, test.vec(0).toCategoricalVec()).remove();
+        Frame train = Scope.track(parseTestFile("smalldata/testng/prostate_train.csv")).toCategoricalCol(0);
+        Frame test = Scope.track(parseTestFile("smalldata/testng/prostate_test.csv")).toCategoricalCol(0);
         DKV.put(train);
         DKV.put(test);
 
@@ -214,12 +212,11 @@ public class DTTest extends TestUtil {
     @Test
     public void testAirlinesSmallData() {
         Scope.enter();
-        Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
-        Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test_preprocessed.csv"));
-        train.replace(0, train.vec(0).toCategoricalVec()).remove();
-        test.replace(0, test.vec(0).toCategoricalVec()).remove();
-        DKV.put(train);
-        DKV.put(test);
+        Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"))
+                .toCategoricalCol(0);
+        Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test_preprocessed.csv"))
+                .toCategoricalCol(0);
+        
 
         DTModel.DTParameters p =
                 new DTModel.DTParameters();
