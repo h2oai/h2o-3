@@ -203,7 +203,6 @@ At this point, determine whether you want to complete this quick start in either
       # Prepend these commands with `sudo` only if necessary:
       # h2o-3 user$ [sudo] pip install -U requests
       # h2o-3 user$ [sudo] pip install -U tabulate
-      # h2o-3 user$ [sudo] pip install -U future
 
       # Start python:
       # h2o-3 user$ python
