@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.0-devel-centos7
+FROM nvidia/cuda:11.0.3-devel-centos7
 MAINTAINER h2oai "h2o.ai"
 
 ARG JENKINS_UID='2117'
@@ -9,7 +9,7 @@ ARG PYTHON_VERSIONS='3.6'
 RUN \
     curl -s https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo | sed 's/\$releasever/7/g' > /etc/yum.repos.d/epel-apache-maven.repo && \
     yum install -y centos-release-scl && \
-    yum install -y devtoolset-7-toolchain python3 zip java-1.8.0-openjdk-devel apache-maven wget git unzip make
+    yum install -y devtoolset-8-toolchain python3 zip java-1.8.0-openjdk-devel apache-maven wget git unzip make
 
 # Install Python versions above
 COPY xgb_build/scripts/install_python_version_centos /usr/sbin/
@@ -37,8 +37,8 @@ ENV CMAKE_VERSION '3.18'
 ENV CMAKE_PATCH '2'
 RUN \
     # Check that gcc is of correct version
-    source scl_source enable devtoolset-7 && \
-    if [ "$(gcc --version | head -1)" != 'gcc (GCC) 7.3.1 20180303 (Red Hat 7.3.1-5)' ]; then exit 1; fi && \
+    source scl_source enable devtoolset-8 && \
+    # if [ "$(gcc --version | head -1)" != 'gcc (GCC) 7.3.1 20180303 (Red Hat 7.3.1-5)' ]; then exit 1; fi && \
     # Install CMake
     cd /usr/src && \
     wget http://www.cmake.org/files/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.${CMAKE_PATCH}.tar.gz && \
