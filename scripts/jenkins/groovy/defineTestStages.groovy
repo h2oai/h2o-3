@@ -44,7 +44,11 @@ def call(final pipelineContext) {
     [
       stageName: 'Py3.9 Smoke', target: 'test-py-smoke', pythonVersion: '3.9',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],      
+    ],
+    [
+      stageName: 'Py3.10 Smoke', target: 'test-py-smoke', pythonVersion: '3.10', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
     [
       stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
