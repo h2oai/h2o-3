@@ -305,20 +305,23 @@ class H2OAssembly(object):
     def download_mojo(self, file_name="", path="."):
         """
         Convert the munging operations performed on H2OFrame into a MOJO 2 artifact. This method requires an additional
-        mojo2-runtime library on the Java classpath. The library can be found at this maven URL:
+        mojo2-runtime library on the Java classpath. The library can be found at this maven URL::
         https://repo1.maven.org/maven2/ai/h2o/mojo2-runtime/2.7.11.1/mojo2-runtime-2.7.11.1.jar.
         
         The library can be added to the classpath via Java command when starting an H2O node from the command line::
         
             java -cp <path_to_h2o_jar>:<path_to_mojo2-runtime_library> water.H2OApp
           
-        The library can also be added to the Java classpath from Python while starting an H2O cluster via ``h2o.init()``::
+        The library can also be added to the Java classpath from Python while starting an H2O cluster
+        via ``h2o.init()``::
       
         >>> import h2o
         >>> h2o.init(extra_classpath = ["<path_to_mojo2-runtime_library>"]) 
         
-        The MOJO 2 artifact created by this method can be utilized according to the tutorials on this page:
-        https://docs.h2o.ai/driverless-ai/1-10-lts/docs/userguide/scoring-mojo-scoring-pipeline.html.
+        The MOJO 2 artifact created by this method can be utilized according to the tutorials on the page
+        https://docs.h2o.ai/driverless-ai/1-10-lts/docs/userguide/scoring-mojo-scoring-pipeline.html with one additional
+        requirement. The artifact produced by this method requires 
+        `h2o-genmodel.jar <https://mvnrepository.com/artifact/ai.h2o/h2o-genmodel>`_ to be present on Java classpath.  
         
         :param file_name:  (str) Name of MOJO 2 artifact.
         :param path:  (str) Local Path on a user side  serving as target for  MOJO 2 artifact.
