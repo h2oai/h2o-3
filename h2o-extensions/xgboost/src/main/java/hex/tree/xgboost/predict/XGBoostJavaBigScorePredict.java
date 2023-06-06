@@ -26,13 +26,14 @@ public class XGBoostJavaBigScorePredict implements XGBoostBigScorePredict {
       XGBoostModelInfo model_info,
       XGBoostOutput output,
       DataInfo di,
-      XGBoostModel.XGBoostParameters parms, double threshold
+      XGBoostModel.XGBoostParameters parms, double threshold,
+      int skippedTrees
   ) {
     _di = di;
     _output = output;
     _parms = parms;
     _threshold = threshold;
-    _predictor = PredictorFactory.makePredictor(model_info._boosterBytes);
+    _predictor = PredictorFactory.makePredictor(model_info._boosterBytes, null, true, skippedTrees);
     _usedColumns = findUsedColumns(_predictor.getBooster(), di, _output.nfeatures());
   }
 

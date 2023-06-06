@@ -42,11 +42,11 @@ public class PredictorTest extends TestUtil {
 
             byte[] boosterBytes = model.model_info()._boosterBytes;
 
-            Predictor fullPredictor = PredictorFactory.makePredictor(boosterBytes, null, false);
+            Predictor fullPredictor = PredictorFactory.makePredictor(boosterBytes, null, false, 0);
             assertTrue(fullPredictor.getBooster() instanceof GBTree);
             GBTree fullBooster = (GBTree) fullPredictor.getBooster();
 
-            Predictor scoringPredictor = PredictorFactory.makePredictor(boosterBytes, null, true);
+            Predictor scoringPredictor = PredictorFactory.makePredictor(boosterBytes, null, true, 0);
             assertTrue(scoringPredictor.getBooster() instanceof GBTree);
             GBTree scoringBooster = (GBTree) scoringPredictor.getBooster();
 

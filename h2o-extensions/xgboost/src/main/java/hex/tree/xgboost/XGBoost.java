@@ -469,32 +469,34 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     private void scoreAndBuildTrees(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp) {
       long scoringTime = 0;
-      for (int tid = 0; tid < _ntrees; tid++) {
-        if (_job.stop_requested() && tid > 0) break;
-        // During first iteration model contains 0 trees, then 1-tree, ...
-        long scoringStart = System.currentTimeMillis();
-        boolean scored = doScoring(model, exec, varImp, false, _parms._score_eval_metric_only);
-        scoringTime += System.currentTimeMillis() - scoringStart;
-        if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          LOG.info("Early stopping triggered - stopping XGBoost training");
-          LOG.info("Setting actual ntrees to the " + model._output._ntrees);
-          _parms._ntrees = model._output._ntrees;
-          break;
-        }
+      try (XGBoostModel.ScoringContext scoringContext = model.makeScoringContext(_parms, _train, _valid)) {
+        for (int tid = 0; tid < _ntrees; tid++) {
+          if (_job.stop_requested() && tid > 0) break;
+          // During first iteration model contains 0 trees, then 1-tree, ...
+          long scoringStart = System.currentTimeMillis();
+          boolean scored = doScoring(tid, scoringContext, model, exec, varImp, false, _parms._score_eval_metric_only);
+          scoringTime += System.currentTimeMillis() - scoringStart;
+          if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+            LOG.info("Early stopping triggered - stopping XGBoost training");
+            LOG.info("Setting actual ntrees to the " + model._output._ntrees);
+            _parms._ntrees = model._output._ntrees;
+            break;
+          }
 
-        Timer kb_timer = new Timer();
-        exec.update(tid);
-        LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
-        _job.update(1);
+          Timer kb_timer = new Timer();
+          exec.update(tid);
+          LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
+          _job.update(1);
 
-        model._output._ntrees++;
-        model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees+1, new ScoreKeeper());
-        model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees+1, new ScoreKeeper()) : null;
-        model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
-        if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
-        if (timeout()) {
-          LOG.info("Stopping XGBoost training because of timeout");
-          break;
+          model._output._ntrees++;
+          model._output._scored_train = ArrayUtils.copyAndFillOf(model._output._scored_train, model._output._ntrees + 1, new ScoreKeeper());
+          model._output._scored_valid = model._output._scored_valid != null ? ArrayUtils.copyAndFillOf(model._output._scored_valid, model._output._ntrees + 1, new ScoreKeeper()) : null;
+          model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees + 1, System.currentTimeMillis());
+          if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
+          if (timeout()) {
+            LOG.info("Stopping XGBoost training because of timeout");
+            break;
+          }
         }
       }
 
@@ -518,10 +520,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       _job.update(0, "Scoring the final model");
       // Final scoring
       long scoringStart = System.currentTimeMillis();
-      doScoring(model, exec, varImp, true, _parms._score_eval_metric_only);
+      doScoring(model._output._ntrees, new XGBoostModel.ScoringContext(),
+              model, exec, varImp, true, _parms._score_eval_metric_only);
       scoringTime += System.currentTimeMillis() - scoringStart;
       // Finish remaining work (if stopped early)
       _job.update(_parms._ntrees-model._output._ntrees);
+      model._output._total_scoring_time_ms = scoringTime;
       Log.info("In-training scoring took " + scoringTime + "ms.");
     }
 
@@ -686,7 +690,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
 
-    private boolean doScoring(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp,
+    private boolean doScoring(final int scoringIteration, final XGBoostModel.ScoringContext scoringContext,
+                              final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp,
                               boolean finalScoring, boolean scoreEvalMetricOnly) {
       boolean scored = false;
       long now = System.currentTimeMillis();
@@ -720,7 +725,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         } else {
           model.model_info().updateBoosterBytes(exec.updateBooster());
           boosterUpdated = true;
-          model.doScoring(_train, _parms.train(), customMetricTrain, _valid, _parms.valid(), customMetricValid);
+          model.doScoring(_train, _parms.train(), customMetricTrain, _valid, _parms.valid(),
+                  customMetricValid, scoringIteration, scoringContext);
         }
         _timeLastScoreEnd = System.currentTimeMillis();
         out._model_summary = createModelSummaryTable(out._ntrees, null);

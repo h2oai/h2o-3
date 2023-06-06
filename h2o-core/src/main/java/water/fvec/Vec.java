@@ -706,6 +706,33 @@ public class Vec extends Keyed<Vec> {
   }
 
   /**
+   * Make a temporary work vec of float[].
+   * Volatile vecs can only be used locally (chunks do not serialize) and are assumed to change frequently
+   * (MRTask call preWriting() by default).
+   * Chunks stores as C4FVolatileChunk - expose data directly as float[].
+   *
+   * @param n number of columns
+   * @return
+   */
+  public Vec[] makeVolatileFloats(int n){
+    Vec [] vecs = makeZeros(n);
+    for(Vec v:vecs) {
+      v._volatile = true;
+      DKV.put(v);
+    }
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for (Chunk c : cs) {
+          c.setVolatile(MemoryManager.malloc4f(len));
+        }
+      }
+    }.doAll(vecs);
+
+    return vecs;
+  }
+
+  /**
    * Make a temporary work vec of int [] .
    * Volatile vecs can only be used locally (chunks do not serialize) and are assumed to change frequently(MRTask call preWiting() by default).
    * Chunks stores as C4VolatileChunk - expose data directly as int [].
