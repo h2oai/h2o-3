@@ -1,2 +1,1 @@
 FROM alpine:latest
-COPY ./h2o-assemblies/steam/build/libs/*.nothing /tmp/
