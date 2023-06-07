@@ -40,7 +40,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
-  private static final String PROP_VERBOSITY = H2O.OptArgs.SYSTEM_PROP_PREFIX + ".xgboost.verbosity";
+  private static final String PROP_VERBOSITY = H2O.OptArgs.SYSTEM_PROP_PREFIX + "xgboost.verbosity";
   private static final String PROP_NTHREAD = SYSTEM_PROP_PREFIX + "xgboost.nthreadMax";
 
   private XGBoostModelInfo model_info;
@@ -395,7 +395,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       } else {
         LOG.info("Using gpu_hist tree method.");
         params.put("max_bin", p._max_bins);
-        params.put("updater", "grow_gpu_hist");
+        params.put("tree_method", "gpu_hist");
       }
     } else if (p._booster == XGBoostParameters.Booster.gblinear) {
       LOG.info("Using coord_descent updater.");

@@ -17,11 +17,11 @@ for python_version in "${array[@]}"; do
   apt-get -y install python${python_version} python${python_version}-dev
 
   echo "###### Creating Virtualenv for Python ${python_version} ######"
-  virtualenv -p python${python_version} /envs/xgb-env-py${python_version}
-  chmod a+w -R /envs/xgb-env-py${python_version}
+  virtualenv -p python${python_version} /envs/h2o_env_python${python_version}
+  chmod a+w -R /envs/h2o_env_python${python_version}
 
   echo "###### Installing dependencies for Python ${python_version} ######"
-  source /envs/xgb-env-py${python_version}/bin/activate
+  source /envs/h2o_env_python${python_version}/bin/activate
   pip install pip wheel --upgrade
   deactivate
 done
