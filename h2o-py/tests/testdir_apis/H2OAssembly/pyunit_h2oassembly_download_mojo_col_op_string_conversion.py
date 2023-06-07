@@ -45,6 +45,6 @@ def test_string_conversion_function(function):
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oassembly_download_mojo_string_conversion_function, init_options={"extra_classpath": ["/tmp/mojo/mojo2-runtime-2.7.13.jar"]})
+    pyunit_utils.standalone_test(h2oassembly_download_mojo_string_conversion_function, init_options={"extra_classpath": ["path_mojo_lib"]})
 else:
     h2oassembly_download_mojo_string_conversion_function()
