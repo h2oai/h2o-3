@@ -3,6 +3,10 @@
 #'
 # -------------------------- Decision Tree Model in H2O -------------------------- #
 #'
+#' Build a Decision Tree model
+#' 
+#' Builds a Decision Tree model on an H2OFrame.
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
 #' @param y The name or column index of the response variable in the data. 
@@ -26,6 +30,25 @@
 #' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @param max_depth Max depth of tree. Defaults to 20.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 10.
+#' @return Creates a \linkS4class{H2OModel} object of the right type.
+#' @seealso \code{\link{predict.H2OModel}} for prediction
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' # Import the airlines dataset
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train_preprocessed.csv"
+#' data <- h2o.importFile(f)
+#' 
+#' # Set predictors and response; set response as a factor
+#' data["IsDepDelayed"] <- as.factor(cars["IsDepDelayed"])
+#' predictors <- c("fYear","fMonth","fDayOfMonth","fDayOfWeek","UniqueCarrier","Origin","Dest","Distance")
+#' response <- "IsDepDelayed"
+#' 
+#' # Train the DT model
+#' airlines_dt <- h2o.decisiontree(x = predictors, y = response, training_frame = data, seed = 1234)
+#' }
 #' @export
 h2o.decision_tree <- function(x,
                               y,
@@ -71,8 +94,6 @@ h2o.decision_tree <- function(x,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(seed))
     parms$seed <- seed
-  if (!missing(offset_column))
-    parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(fold_column))
@@ -134,8 +155,6 @@ h2o.decision_tree <- function(x,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(seed))
     parms$seed <- seed
-  if (!missing(offset_column))
-    parms$offset_column <- offset_column
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(fold_column))

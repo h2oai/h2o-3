@@ -15,6 +15,7 @@ class H2ODecisionTreeEstimator(H2OEstimator):
     """
     Decision Tree
 
+    Builds a Decision Tree (DT) on a preprocessed dataset.
     """
 
     algo = "dt"
