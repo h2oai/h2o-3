@@ -76,6 +76,10 @@ dependencies {
         api('org.jetbrains.kotlin:kotlin-stdlib:1.4.32') {
             because 'Fixes CVE-2020-29582'
         }
+        api('com.google.guava:guava:31.1-jre') {
+            because 'Fixes CVE-2020-8908'
+            because 'Fixes CVE-2018-10237'
+        }
     }
 }
 
