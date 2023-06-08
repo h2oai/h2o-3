@@ -38,12 +38,14 @@
 #' h2o.init()
 #' 
 #' # Import the airlines dataset
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train_preprocessed.csv"
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/
+#'         airlines_train_preprocessed.csv"
 #' data <- h2o.importFile(f)
 #' 
 #' # Set predictors and response; set response as a factor
 #' data["IsDepDelayed"] <- as.factor(cars["IsDepDelayed"])
-#' predictors <- c("fYear","fMonth","fDayOfMonth","fDayOfWeek","UniqueCarrier","Origin","Dest","Distance")
+#' predictors <- c("fYear","fMonth","fDayOfMonth","fDayOfWeek",
+#'                 "UniqueCarrier","Origin","Dest","Distance")
 #' response <- "IsDepDelayed"
 #' 
 #' # Train the DT model
