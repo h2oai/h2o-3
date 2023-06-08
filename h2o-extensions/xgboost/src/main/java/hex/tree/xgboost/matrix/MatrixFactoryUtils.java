@@ -17,7 +17,9 @@ public class MatrixFactoryUtils {
         if (offsetIdx >= 0) {
             offsets[j] = (float) chunks[offsetIdx].atd(i);
         }
-        resp[j++] = (float) chunks[respIdx].atd(i);
+        if (respIdx != -1) {
+            resp[j++] = (float) chunks[respIdx].atd(i);
+        }
         return j;
     }
 

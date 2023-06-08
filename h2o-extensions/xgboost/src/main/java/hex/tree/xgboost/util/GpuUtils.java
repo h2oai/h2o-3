@@ -146,7 +146,7 @@ public class GpuUtils {
         }
 
         HashMap<String, Object> params = new HashMap<>();
-        params.put("updater", "grow_gpu_hist");
+        params.put("tree_method", "gpu_hist");
         params.put("silent", 1);
         params.put("fail_on_invalid_gpu_id", true);
 

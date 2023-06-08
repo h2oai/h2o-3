@@ -25,10 +25,13 @@ ENV JAVA_VERSION '8'
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 ENV PATH ${JAVA_HOME}/bin:${PATH}
 
+# Install Python 3.7
+COPY xgb_build/scripts/Setup.dist.patched /usr/src/
+COPY xgb_build/scripts/install_python_source_centos /usr/sbin/
 RUN \
-    chmod +x /usr/sbin/install_python && \
+    chmod a+x /usr/sbin/install_python_source_centos && \
     sync && \
-    /usr/sbin/install_python
+    /usr/sbin/install_python_source_centos 3.7.0 /usr/src/Setup.dist.patched
 
 RUN \
     chmod +x /usr/sbin/create_jenkins_user && \
