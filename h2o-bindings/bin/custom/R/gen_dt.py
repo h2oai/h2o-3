@@ -31,6 +31,6 @@ predictors <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
 response <- "CAPSULE"
 
 # Train the DT model
-h2o_dt <- h2o.h2o.decision_tree(x = predictors, y = response, training_frame = data, seed = 1234)
+h2o_dt <- h2o.decision_tree(x = predictors, y = response, training_frame = data, seed = 1234)
 """
 )
