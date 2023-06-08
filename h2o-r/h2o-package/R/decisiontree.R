@@ -38,18 +38,16 @@
 #' h2o.init()
 #' 
 #' # Import the airlines dataset
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/
-#'         airlines_train_preprocessed.csv"
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv"
 #' data <- h2o.importFile(f)
 #' 
 #' # Set predictors and response; set response as a factor
-#' data["IsDepDelayed"] <- as.factor(cars["IsDepDelayed"])
-#' predictors <- c("fYear","fMonth","fDayOfMonth","fDayOfWeek",
-#'                 "UniqueCarrier","Origin","Dest","Distance")
-#' response <- "IsDepDelayed"
+#' data["CAPSULE"] <- as.factor(data["CAPSULE"])
+#' predictors <- c("AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+#' response <- "CAPSULE"
 #' 
 #' # Train the DT model
-#' airlines_dt <- h2o.decisiontree(x = predictors, y = response, training_frame = data, seed = 1234)
+#' h2o_dt <- h2o.decisiontree(x = predictors, y = response, training_frame = data, seed = 1234)
 #' }
 #' @export
 h2o.decision_tree <- function(x,
