@@ -140,6 +140,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Object obj = null;
     criterion = criterion.toLowerCase();
     
+    if ("custom".equals(criterion) && mm._custom_metric != null){
+      return mm._custom_metric.value;
+    }
+    
     // Constructing confusion matrix based on criterion
     ConfusionMatrix cm;
     if(mm instanceof ModelMetricsBinomial) {

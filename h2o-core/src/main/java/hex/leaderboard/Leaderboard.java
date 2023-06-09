@@ -476,7 +476,15 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
 
     if (_metrics == null) {
       // lazily set to default for this model category
-      setDefaultMetrics(modelKeys[0].get());
+      Model model = null;
+      String[] metricsFirst = defaultMetricsForModel(modelKeys[0].get());
+      for (Key<Model> k : modelKeys) {
+        final String[] metrics = defaultMetricsForModel(model = k.get());
+        if (metrics.length != metricsFirst.length || !Arrays.equals(metricsFirst, metrics))
+          throw new H2OIllegalArgumentException("Models don't have the same metrics (e.g. model \"" + 
+                  modelKeys[0].toString()+"\" and model \""+k+"\").");
+      }
+      setDefaultMetrics(model);
     }
 
     for (Key<Model> key : badKeys) {
@@ -670,14 +678,17 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   }
 
   private static String[] defaultMetricsForModel(Model m) {
+    ArrayList<String> result = new ArrayList<>();
     if (m._output.isBinomialClassifier()) { //binomial
-      return new String[] {"auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"};
+      Collections.addAll(result, "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse");
     } else if (m._output.isMultinomialClassifier()) { // multinomial
-      return new String[] {"mean_per_class_error", "logloss", "rmse", "mse"};
+      Collections.addAll(result, "mean_per_class_error", "logloss", "rmse", "mse");
     } else if (m._output.isSupervised()) { // regression
-      return new String[] {"rmse", "mse", "mae", "rmsle", "mean_residual_deviance"};
+      Collections.addAll(result, "rmse", "mse", "mae", "rmsle", "mean_residual_deviance");
     }
-    return new String[0];
+    if (m._parms._custom_metric_func != null)
+      result.add("custom");
+    return result.toArray(new String[0]);
   }
 
   private double[] getModelMetricValues(int rank) {

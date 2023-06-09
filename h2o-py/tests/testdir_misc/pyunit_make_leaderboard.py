@@ -4,7 +4,7 @@ import sys
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
 import h2o.exceptions
-from tests import pyunit_utils
+from tests import pyunit_utils, dataset_prostate, CustomMaeFunc
 from h2o.automl import H2OAutoML
 from h2o.estimators import *
 from h2o.grid import H2OGridSearch
@@ -154,10 +154,54 @@ def test_make_leaderboard_uplift():
         pass
 
 
+def test_make_leaderboard_custom_metric():
+    custom_mae =  h2o.upload_custom_metric(CustomMaeFunc, func_name="mae", func_file="mm_mae.py")
+
+    ftrain, fvalid, _ = dataset_prostate()
+
+    model_expected = H2OGradientBoostingEstimator(model_id="prostate", ntrees=1000, max_depth=5,
+                                                  score_each_iteration=True,
+                                                  stopping_metric="mae",
+                                                  stopping_tolerance=0.1,
+                                                  stopping_rounds=3,
+                                                  seed=123)
+    model_expected.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
+
+    model_actual = H2OGradientBoostingEstimator(model_id="prostate2", ntrees=1000, max_depth=5,
+                                                score_each_iteration=True,
+                                                custom_metric_func=custom_mae,
+                                                stopping_metric="custom",
+                                                stopping_tolerance=0.1,
+                                                stopping_rounds=3,
+                                                seed=123)
+    model_actual.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
+
+    model_actual2 = H2OGradientBoostingEstimator(model_id="prostate3", ntrees=1000, max_depth=5,
+                                                 score_each_iteration=True,
+                                                 custom_metric_func=custom_mae,
+                                                 stopping_metric="custom",
+                                                 stopping_tolerance=0.1,
+                                                 stopping_rounds=3,
+                                                 seed=123)
+    model_actual2.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
+
+    assert "custom" in h2o.make_leaderboard([model_actual, model_actual2], fvalid).columns
+    ldb = h2o.make_leaderboard([model_actual, model_actual2], fvalid).as_data_frame()
+    print(ldb)
+    assert (ldb["mae"] == ldb["custom"]).all()
+    
+    try:
+        print(h2o.make_leaderboard([model_actual, model_expected], fvalid))
+        assert False, "Should fail - different metrics present."
+    except Exception:
+        pass
+
+
 pyunit_utils.run_tests([
     test_leaderboard_with_automl_uses_eventlog,
     test_make_leaderboard_without_leaderboard_frame,
     test_make_leaderboard_with_leaderboard_frame,
     test_make_leaderboard_unsupervised,
     test_make_leaderboard_uplift,
+    test_make_leaderboard_custom_metric,
 ])
