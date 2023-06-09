@@ -303,7 +303,7 @@ class BuildSummary {
         String getContent(final context) {
             AbstractTestResultAction testResultAction = context.currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
             if (testResultAction != null && testResultAction.getFailCount() > 0) {
-                return testResultAction.getFailedTests().each{ failedTest -> failedTest.toPrettyString() }.join("<br/>")
+                return testResultAction.getFailedTests().each{ failedTest -> failedTest.getDisplayName() }.join("<br/>")
             } else {
                 return 'There are no failed tests.'
             }
