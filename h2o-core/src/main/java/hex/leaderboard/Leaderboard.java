@@ -477,11 +477,15 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     if (_metrics == null) {
       // lazily set to default for this model category
       Model model = null;
+      String cm = modelKeys[0].get()._parms._custom_metric_func;
       String[] metricsFirst = defaultMetricsForModel(modelKeys[0].get());
       for (Key<Model> k : modelKeys) {
         final String[] metrics = defaultMetricsForModel(model = k.get());
         if (metrics.length != metricsFirst.length || !Arrays.equals(metricsFirst, metrics))
           throw new H2OIllegalArgumentException("Models don't have the same metrics (e.g. model \"" + 
+                  modelKeys[0].toString()+"\" and model \""+k+"\").");
+        if (!Objects.equals(cm, k.get()._parms._custom_metric_func))
+          throw new H2OIllegalArgumentException("Models don't have the same custom metrics (e.g. model \"" +
                   modelKeys[0].toString()+"\" and model \""+k+"\").");
       }
       setDefaultMetrics(model);
