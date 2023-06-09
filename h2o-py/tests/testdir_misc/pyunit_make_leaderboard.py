@@ -155,7 +155,7 @@ def test_make_leaderboard_uplift():
 
 
 def test_make_leaderboard_custom_metric():
-    custom_mae =  h2o.upload_custom_metric(CustomMaeFunc, func_name="mae", func_file="mm_mae.py")
+    custom_mae = h2o.upload_custom_metric(CustomMaeFunc, func_name="mae", func_file="mm_mae.py")
 
     ftrain, fvalid, _ = dataset_prostate()
 
@@ -176,7 +176,7 @@ def test_make_leaderboard_custom_metric():
                                                 seed=123)
     model_actual.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
-    model_actual2 = H2OGradientBoostingEstimator(model_id="prostate3", ntrees=1000, max_depth=5,
+    model_actual2 = H2OGradientBoostingEstimator(model_id="prostate3", ntrees=1000, max_depth=2,
                                                  score_each_iteration=True,
                                                  custom_metric_func=custom_mae,
                                                  stopping_metric="custom",
@@ -185,10 +185,25 @@ def test_make_leaderboard_custom_metric():
                                                  seed=123)
     model_actual2.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
-    assert "custom" in h2o.make_leaderboard([model_actual, model_actual2], fvalid).columns
-    ldb = h2o.make_leaderboard([model_actual, model_actual2], fvalid).as_data_frame()
+    model_actual3 = H2OGradientBoostingEstimator(model_id="prostate4", ntrees=2, max_depth=2,
+                                             score_each_iteration=True,
+                                             custom_metric_func=custom_mae,
+                                             stopping_metric="custom",
+                                             stopping_tolerance=0.1,
+                                             stopping_rounds=3,
+                                             seed=123)
+    model_actual3.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
+
+
+    assert "custom" in h2o.make_leaderboard([model_actual, model_actual2, model_actual3], fvalid).columns
+    ldb = h2o.make_leaderboard([model_actual, model_actual2, model_actual3], fvalid).as_data_frame()
     print(ldb)
     assert (ldb["mae"] == ldb["custom"]).all()
+    
+    ldb_custom = h2o.make_leaderboard([model_actual, model_actual2, model_actual3], fvalid, sort_metric="custom").as_data_frame()
+    ldb_mae = h2o.make_leaderboard([model_actual, model_actual2, model_actual3], fvalid, sort_metric="mae").as_data_frame()
+    assert not (ldb["model_id"] == ldb_custom["model_id"]).all()
+    assert (ldb_mae["model_id"] == ldb_custom["model_id"]).all()
     
     try:
         print(h2o.make_leaderboard([model_actual, model_expected], fvalid))
