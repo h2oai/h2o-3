@@ -1,7 +1,12 @@
 extensions = dict(
     skip_default_set_params_for=['training_frame', 'ignored_columns', 'response_column', 
                                  'max_confusion_matrix_size', 'distribution', 'offset_column'],
-
+    set_required_params="""
+parms$training_frame <- training_frame
+args <- .verify_dataxy(training_frame, x, y)
+parms$ignored_columns <- args$x_ignore
+parms$response_column <- args$y
+""",
 )
 
 
