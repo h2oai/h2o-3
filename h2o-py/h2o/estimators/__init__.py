@@ -14,6 +14,7 @@ from .deeplearning import H2OAutoEncoderEstimator
 from .deeplearning import H2ODeepLearningEstimator
 from .estimator_base import H2OEstimator
 from .extended_isolation_forest import H2OExtendedIsolationForestEstimator
+from .fair_cut_forest import H2OFairCutForestEstimator
 from .gam import H2OGeneralizedAdditiveEstimator
 from .gbm import H2OGradientBoostingEstimator
 from .generic import H2OGenericEstimator
@@ -60,7 +61,7 @@ def create_estimator(algo, **params):
 __all__ = (
     "create_estimator",
     "H2OAggregatorEstimator", "H2OANOVAGLMEstimator", "H2OCoxProportionalHazardsEstimator", "H2OAutoEncoderEstimator",
-    "H2ODeepLearningEstimator", "H2OEstimator", "H2OExtendedIsolationForestEstimator",
+    "H2ODeepLearningEstimator", "H2OEstimator", "H2OExtendedIsolationForestEstimator", "H2OFairCutForestEstimator",
     "H2OGeneralizedAdditiveEstimator", "H2OGradientBoostingEstimator", "H2OGenericEstimator",
     "H2OGeneralizedLinearEstimator", "H2OGeneralizedLowRankEstimator", "H2OInfogram", "H2OIsolationForestEstimator",
     "H2OIsotonicRegressionEstimator", "H2OKMeansEstimator", "H2OModelSelectionEstimator", "H2ONaiveBayesEstimator",

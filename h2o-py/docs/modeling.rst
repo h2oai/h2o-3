@@ -132,6 +132,12 @@ Unsupervised
     :show-inheritance:
     :members:
 
+:mod:`H2OFairCutForestEstimator`
+--------------------------------
+.. autoclass:: h2o.estimators.fair_cut_forest.H2OFairCutForestEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OGenericEstimator`
 --------------------------
 .. autoclass:: h2o.estimators.generic.H2OGenericEstimator

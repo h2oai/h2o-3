@@ -2,9 +2,9 @@ package hex.api;
 
 import hex.ModelBuilder;
 import hex.anovaglm.ANOVAGLM;
-import hex.modelselection.ModelSelection;
 import hex.psvm.PSVM;
 import hex.tree.TreeHandler;
+import hex.tree.isoforfaircut.FairCutForest;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
 import water.api.SchemaServer;
@@ -26,6 +26,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.tree.gbm    .GBM         (true),
             new hex.tree.isofor .IsolationForest(true),
             new hex.tree.isoforextended.ExtendedIsolationForest(true),
+            new FairCutForest(true),
             new hex.aggregator  .Aggregator  (true),
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),

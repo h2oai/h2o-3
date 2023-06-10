@@ -316,6 +316,12 @@ public class ArrayUtils {
     for(long n: nums) sum+=n;
     return sum/nums.length;
   }
+  public static double std(double[] nums) {
+    double avg = avg(nums);
+    double std = 0;
+    for (double n : nums) std += Math.pow(n - avg, 2);
+    return Math.sqrt(std/(nums.length));
+  }
   public static long[] add(long[] nums, long a) {
     for (int i=0;i<nums.length;i++) nums[i] += a;
     return nums;
