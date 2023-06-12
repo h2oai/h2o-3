@@ -15,11 +15,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-new/1/index.ht
 - [[PUBDEV-9085]](https://h2oai.atlassian.net/browse/PUBDEV-9085) - Changed `warning` tag to `info` tag when weights are not provided during validation/test dataset scoring when weights are present in training. 
 - [[PUBDEV-9081]](https://h2oai.atlassian.net/browse/PUBDEV-9081) - Removed support for Python 2.7 and 3.5.
 - [[PUBDEV-8985]](https://h2oai.atlassian.net/browse/PUBDEV-8985) - Upgraded the default parquet library to 1.12.3 for standalone jar.
+- [[PUBDEV-8018]](https://h2oai.atlassian.net/browse/PUBDEV-8018) - Upgraded XGBoost to version 1.6.1.
 
 #### New Feature
 - [[PUBDEV-8947]](https://h2oai.atlassian.net/browse/PUBDEV-8947) - Implemented AIC metric for all GLM model families.
 - [[PUBDEV-8899]](https://h2oai.atlassian.net/browse/PUBDEV-8899) - Implemented Tweedie variance power maximum likelihood estimation for GLM.
 - [[PUBDEV-8793]](https://h2oai.atlassian.net/browse/PUBDEV-8793) - Added ability to convert H2OAssembly to a MOJO2 artifact.
+- [[PUBDEV-8691]](https://h2oai.atlassian.net/browse/PUBDEV-8691) - Implemented new Decision Tree algorithm.
 
 #### Docs
 - [[issue-15474]](https://github.com/h2oai/h2o-3/issues/15474) - Added link to AutoML Wave app from AutoML user guide.
