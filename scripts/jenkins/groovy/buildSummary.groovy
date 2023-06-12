@@ -301,17 +301,12 @@ class BuildSummary {
 
         @NonCPS
         String getContent(final context) {
-            List<String> result = []
             AbstractTestResultAction testResultAction = context.currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
-            if (testResultAction != null) {
-                testResultAction.getFailedTests().each{failedTest ->
-                    result += failedTest.getDisplayName()
-                }
-            }
-            if (result.isEmpty()) {
+            if (testResultAction != null && testResultAction.getFailCount() > 0) {
+                return testResultAction.getFailedTests().each{ failedTest -> failedTest.getDisplayName() }.join("<br/>")
+            } else {
                 return 'There are no failed tests.'
             }
-            return result.join("<br/>")
         }
     }
 
