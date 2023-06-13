@@ -68,6 +68,13 @@ def call(final pipelineContext) {
                                 activatePythonEnv = true
                             }
                             makeTarget(pipelineContext) {
+                                target = 'test-package-main'
+                                hasJUnit = false
+                                archiveFiles = false
+                                makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                                activatePythonEnv = true
+                            }
+                            makeTarget(pipelineContext) {
                                 target = 'test-package-minimal'
                                 hasJUnit = false
                                 archiveFiles = false

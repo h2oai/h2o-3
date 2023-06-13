@@ -1,19 +1,13 @@
-# Py2 compat
-from __future__ import print_function
-from future import standard_library
-
-standard_library.install_aliases()
-from past.builtins import basestring
+from h2o import H2OFrame
+from h2o.expr import ExprNode
 
 # standard lib
 from contextlib import contextmanager
 import copy
 import datetime
 from decimal import *
-import fnmatch
 from functools import reduce
 import imp
-import importlib
 import io
 import json
 import math
@@ -30,14 +24,16 @@ import time # needed to randomly generate time
 import threading
 import urllib.request, urllib.error, urllib.parse
 import uuid # call uuid.uuid4() to generate unique uuid numbers
+import numbers
 
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without string support, only unicode)
-except:
-    from io import StringIO  # py3
+from io import StringIO
     
 # 3rd parties
-import matplotlib
+try:
+    import matplotlib
+except:
+    # okay for local testing - most tests don't need matplotlib
+    print("matplotlib not imported")
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
@@ -47,12 +43,7 @@ import scipy.special
 sys.path.insert(1, "../../")
 
 import h2o
-from h2o.utils.compatibility import PY2
-from h2o.model.binomial import H2OBinomialModel
-from h2o.model.clustering import H2OClusteringModel
-from h2o.model.multinomial import H2OMultinomialModel
-from h2o.model.ordinal import H2OOrdinalModel
-from h2o.model.regression import H2ORegressionModel
+from h2o.model import H2OBinomialModel, H2OClusteringModel, H2OMultinomialModel, H2OOrdinalModel, H2ORegressionModel, H2OAnomalyDetectionModel
 from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
     H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
     H2ORandomForestEstimator, H2OPrincipalComponentAnalysisEstimator
@@ -136,8 +127,6 @@ class _XStringIO(io.StringIO):
         self._alt = alt
         
     def write(self, s):
-        if PY2:
-            s = unicode(s)
         if self._alt is not None:
             self._alt.write(s)
         return super(_XStringIO, self).write(s)
@@ -286,6 +275,20 @@ def check_models(model1, model2, use_cross_validation=False, op='e'):
         elif op == 'ge': assert totss1 >= totss2, "The first model has an TOTSS of {0} and the second model has an " \
                                                   "TOTSS of {1}. Expected the first to be >= than the second." \
                                                   "".format(totss1, totss2)
+    elif isinstance(model1,H2OAnomalyDetectionModel):  # Anomaly Detection
+        # anomaly score
+        anscore1 = model1._model_json["output"]["training_metrics"]._metric_json["mean_normalized_score"]
+        anscore2 = model2._model_json["output"]["training_metrics"]._metric_json["mean_normalized_score"]
+        if op == 'e': assert anscore1 == anscore2, "The first model has an Anomaly Score of {0} and the second model has an " \
+                                               "Anomaly Score of {1}. Expected the first to be == to the second.".format(anscore1,
+                                                                                                                 anscore2)
+        elif op == 'g': assert anscore1 > anscore2, "The first model has an Anomaly Score of {0} and the second model has an " \
+                                                "Anomaly Score of {1}. Expected the first to be > than the second.".format(anscore1,
+                                                                                                                   anscore2)
+        elif op == 'ge': assert anscore1 >= anscore2, "The first model has an Anomaly Score of {0} and the second model has an " \
+                                                  "Anomaly Score of {1}. Expected the first to be >= than the second." \
+                                                  "".format(anscore1, anscore2)
+
 
 def check_dims_values(python_obj, h2o_frame, rows, cols, dim_only=False):
     """
@@ -348,7 +351,6 @@ def np_comparison_check(h2o_data, np_data, num_elements):
 
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
-
 def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False, glrmIterNumber=-1, zipFilePath=None):
     
     """
@@ -460,7 +462,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
     print("java code saved in {0}".format(java_file))
 
     print("Compiling Java Pojo")
-    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx12g", "-J-XX:MaxPermSize=256m", java_file]
+    javac_cmd = ["javac", "-cp", h2o_genmodel_jar, "-J-Xmx16g", "-J-XX:MaxPermSize=256m", java_file]
     subprocess.check_call(javac_cmd)
 
     if not compile_only:
@@ -772,8 +774,8 @@ def expect_model_param(models, attribute_name, expected_values):
     if type(expected_values) != list:
         expected_values = [expected_values]
     # limit precision. Rounding happens in some models like RF
-    actual_values = [x if isinstance(x,basestring) else round(float(x),5) for x in actual_values]
-    expected_values = [x if isinstance(x,basestring) else round(float(x),5) for x in expected_values]
+    actual_values = [x if isinstance(x, str) else round(float(x),5) for x in actual_values]
+    expected_values = [x if isinstance(x, str) else round(float(x),5) for x in expected_values]
     print("actual values: {0}".format(actual_values))
     print("expected values: {0}".format(expected_values))
     actual_values_len = len(actual_values)
@@ -1124,7 +1126,7 @@ def generate_one_cluster(cluster_center, cluster_number, cluster_size):
 
     pt_dists = np.random.uniform(0, cluster_size, [cluster_number, 1])
     coord_pts = len(cluster_center)     # dimension of each cluster point
-    one_cluster_data = np.zeros((cluster_number, coord_pts), dtype=np.float)
+    one_cluster_data = np.zeros((cluster_number, coord_pts), dtype=float)
 
     for p_ind in range(cluster_number):
         coord_indices = list(range(coord_pts))
@@ -1205,7 +1207,7 @@ def generate_training_set_mixed_glm(csv_filename, csv_filename_true_one_hot, row
     :return: None
     """
     # generate the random training data sets
-    enum_dataset = np.zeros((row_count, enum_col), dtype=np.int)   # generate the categorical predictors
+    enum_dataset = np.zeros((row_count, enum_col), dtype=np.int32)   # generate the categorical predictors
 
     # generate categorical data columns
     for indc in range(enum_col):
@@ -1430,7 +1432,7 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
 
             response_y = x_mat * weight + noise_std * np.random.standard_normal([num_row, 1])
 
-        discrete_y = np.zeros((num_sample, 1), dtype=np.int)
+        discrete_y = np.zeros((num_sample, 1), dtype=np.int32)
         for indR in range(num_sample):
             discrete_y[indR, 0] = lastClass
             for indC in range(lastClass):
@@ -1609,7 +1611,7 @@ def duplicate_scale_cols(col_indices, col_scale, old_filename, new_filename):
 
     np_frame = np.asmatrix(np.genfromtxt(old_filename, delimiter=',', dtype=None))
     (num_row, num_col) = np_frame.shape
-    np_frame_new = np.asmatrix(np.zeros((num_row, len(col_indices)), dtype=np.float))
+    np_frame_new = np.asmatrix(np.zeros((num_row, len(col_indices)), dtype=float))
 
     for ind in range(len(col_indices)):
         np_frame_new[:, ind] = np_frame[:, col_indices[ind]]*col_scale[ind]
@@ -2051,7 +2053,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
             num_feature = len(coeff_pvalues)
             num_class = (len(coeff_pvalues[0])-1)/2
 
-            coeffs = np.zeros((num_class,num_feature), dtype=np.float)
+            coeffs = np.zeros((num_class,num_feature), dtype=float)
 
             end_index = int(num_class+1)
             for col_index in range(len(coeff_pvalues)):
@@ -3528,8 +3530,8 @@ def check_data_rows(f1, f2, index_list=[], num_rows=10):
     :param num_rows:
     :return:
     '''
-    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
-    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    temp1 = f1.as_data_frame(use_pandas=True).values
+    temp2 = f2.as_data_frame(use_pandas=True).values
     if len(index_list)==0:
         index_list = random.sample(range(f1.nrow), num_rows)
 
@@ -3563,8 +3565,8 @@ def compare_data_rows(f1, f2, index_list=[], num_rows=10, tol=1e-3):
     :param num_rows:
     :return:
     '''
-    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
-    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    temp1 = f1.as_data_frame(use_pandas=True).values
+    temp2 = f2.as_data_frame(use_pandas=True).values
     if len(index_list)==0:
         index_list = random.sample(range(f1.nrow), num_rows)
 
@@ -3607,45 +3609,42 @@ def compute_frame_diff(f1, f2):
 
 def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     '''
-    Compare two h2o frames and make sure they are equal.  However, we do not compare uuid column at this point
-    :param f1:
-    :param f2:
-    :param prob:
-    :param tol:
-    :param returnResult:
-    :return:
+    Compare two h2o frames and make sure they are equal.  However, we do not compare uuid column at this point.  Note
+    that the column names may not be the same but the contents of the two frame should be the same for the first
+    columns, second columns, third columns, ...
+
     '''
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "Frame 1 row {0}, col {1}.  Frame 2 row {2}, col {3}.  They are " \
-                                                      "different.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
+                                                      "of different sizes.".format(f1.nrow, f1.ncol, f2.nrow, f2.ncol)
     typeDict = f1.types
     frameNames = f1.names
 
-    for colInd in range(f1.ncol):
+    for colInd, colName in enumerate(frameNames):
         if (typeDict[frameNames[colInd]]==u'enum'):
             if returnResult:
-                result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
+                result = compare_frames_local_onecolumn_NA_enum(f1[colName], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
                 if not(result) and returnResult:
                     return False
             else:
-                result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
+                result = compare_frames_local_onecolumn_NA_enum(f1[colName], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
                 if not(result) and returnResult:
                     return False
         elif (typeDict[frameNames[colInd]]==u'string'):
             if returnResult:
-                result =  compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
+                result =  compare_frames_local_onecolumn_NA_string(f1[colName], f2[colInd], prob=prob, returnResult=returnResult)
                 if not(result) and returnResult:
                     return False
             else:
-                compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
+                compare_frames_local_onecolumn_NA_string(f1[colName], f2[colInd], prob=prob, returnResult=returnResult)
         elif (typeDict[frameNames[colInd]]==u'uuid'):
             continue    # do nothing here
         else:
             if returnResult:
-                result = compare_frames_local_onecolumn_NA(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
+                result = compare_frames_local_onecolumn_NA(f1[colName], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
                 if not(result) and returnResult:
                     return False
             else:
-                compare_frames_local_onecolumn_NA(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
+                compare_frames_local_onecolumn_NA(f1[colName], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
 
     if returnResult:
         return True
@@ -3941,7 +3940,7 @@ def convertH2OFrameToDMatrixSparse(h2oFrame, yresp, enumCols=[]):
 
     pandas = __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols);
 
-    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1])
+    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1], feature_names=pandas[2])
 
 
 def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
@@ -3978,10 +3977,10 @@ def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
     pandaF = pd.concat([c0, pandaFtrain], axis=1)
     pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
     newX = list(pandaFtrain.columns.values)
-    data = pandaF.as_matrix(newX)
-    label = pandaF.as_matrix([yresp])
+    data = pandaF[newX].to_numpy()
+    label = pandaF[[yresp]].to_numpy()
 
-    return (data,label)
+    return (data,label,newX)
 
 def generatePandaEnumCols(pandaFtrain, cname, nrows):
     """
@@ -3993,7 +3992,7 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     :return:
     """
     cmissingNames=[cname+".missing(NA)"]
-    tempnp = np.zeros((nrows,1), dtype=np.int)
+    tempnp = np.zeros((nrows,1), dtype=np.int32)
     # check for nan and assign it correct value
     colVals = pandaFtrain[cname]
     for ind in range(nrows):
@@ -4419,7 +4418,7 @@ def assertEqualRegPaths(keys, pathList, index, onePath, tol=1e-6):
 
 def assertEqualCoeffDicts(coef1Dict, coef2Dict, tol = 1e-6):
     assert len(coef1Dict) == len(coef2Dict), "Length of first coefficient dict: {0}, length of second coefficient " \
-                                             "dict: {1} and they are different.".format(len(coef1Dict, len(coef2Dict)))
+                                             "dict: {1} and they are different.".format(len(coef1Dict), len(coef2Dict))
     for key in coef1Dict:
         val1 = coef1Dict[key]
         val2 = coef2Dict[key]
@@ -4536,11 +4535,21 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
         val2 = coeff[key]
         assert type(val1)==type(val2), "type of coeff1: {0}, type of coeff2: {1}".format(type(val1), type(val2))
         diff = abs(val1-val2)
+        if diff >= tol:
+            print("coefName: {0}, value: {1}, value2: {2} are very different.".format(key, val1, val2))
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
 
 
-def assert_equals(expected, actual, message=""):
-    assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+def assert_equals(expected, actual, message="", delta=0):
+    if isinstance(expected, numbers.Number) and isinstance(actual, numbers.Number) and delta != 0:
+        if np.isfinite(expected) and np.isfinite(actual):
+            assert abs(expected - actual) <= delta, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+        elif np.isnan(expected) and np.isfinite(actual) or np.isfinite(expected) and np.isnan(actual):
+            assert False, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+        elif np.isinf(expected) and np.isfinite(actual) or np.isfinite(expected) and np.isinf(actual):
+            assert False, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+    else:
+        assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
 
 
 def assert_not_equal(expected, actual, message=""):
@@ -4563,3 +4572,90 @@ def set_forbidden_paths(paths):
 
 def clear_forbidden_paths():
     set_forbidden_paths([])
+
+
+def download_mojo(model, mojo_zip_path=None, genmodel_path=None):
+    if not mojo_zip_path:
+        mojo_zip_path = os.path.join(locate("results"), model._id)
+
+    mojo_zip_path = os.path.abspath(mojo_zip_path)
+    parent_dir = os.path.dirname(mojo_zip_path)
+
+    print("\nDownloading MOJO @... " + parent_dir)
+    time0 = time.time()
+    if genmodel_path is None:
+        genmodel_path = os.path.join(parent_dir, "h2o-genmodel.jar")
+    mojo_file = model.download_mojo(path=mojo_zip_path, get_genmodel_jar=True, genmodel_name=genmodel_path)
+
+    print("    => %s  (%d bytes)" % (mojo_file, os.stat(mojo_file).st_size))
+    assert os.path.exists(mojo_file)
+    print("    Time taken = %.3fs" % (time.time() - time0))
+    assert os.path.exists(mojo_zip_path)
+    print("    => %s  (%d bytes)" % (mojo_zip_path, os.stat(mojo_zip_path).st_size))
+    assert os.path.exists(genmodel_path)
+    print("    => %s  (%d bytes)" % (genmodel_path, os.stat(genmodel_path).st_size))
+
+    return {
+        "mojo_zip_path": mojo_zip_path,
+        "genmodel_jar_path": genmodel_path
+    }
+
+
+def test_java_scoring(model, frame, predictions, epsilon):
+    fr = H2OFrame._expr(ExprNode("model.testJavaScoring", model, frame, predictions, epsilon))
+    return fr.flatten() == 1
+
+def checkLogWeightWarning(weightColName, wantWarnMessage=False):
+    """
+    This method will scrub the logs and check to make sure that no warning message regarding the weight column is or
+     is not found in the h2o logs depending on the setting of wantWarnMessage.  
+    :param weightColName: name of weight columns that the warning message is going to check against
+    :param wantWarnMessage: boolean, if true will make sure warning message about weight column is found.  Otherwise,
+        it will make sure the warning message about weight column is not found.
+    :return: None.  Will throw an error when warning message about the weightColName is supposed to be found but is not
+        or when the warning message is not supposed to be found but is found.  This depends on the setting of parameter
+        wantWarnMessage.
+    """
+    warningStatement = "WARN water.default: Test/Validation dataset is missing weights column '"+weightColName+"'"
+    checkLogWarning(warningStatement, wantWarnMessage)
+
+
+def checkLogWarning(warning_phrase, wantWarnMessage=False):
+    """
+    This method will scrup the logs and check to make sure that no warning message found in warning_phrase is found
+    in the h2o logs.
+    :param warning_phrase: warning message to consider
+    :param wantWarnMessage: boolean, if true will make sure warning message is found.  Else, it will make sure that the 
+        warning message is not found in the logs.
+    :return: None.  Will throw an error when warning message is or is not found according to the setting of wantWarnMessage.
+    """
+    import zipfile
+    import codecs
+    import tempfile
+
+    TMPDIR = tempfile.TemporaryDirectory()
+    logFileName = "h2oLogs.zip"
+    h2o.download_all_logs(dirname=TMPDIR.name, filename=logFileName)
+    numWarning = 0
+    logFile = os.path.join(TMPDIR.name, logFileName)
+    with zipfile.ZipFile(logFile, 'r') as zip:
+        zip.extractall(TMPDIR.name)
+        for oneName in zip.namelist():
+            if ".zip" in oneName:
+                fileName = os.path.join(TMPDIR.name, oneName)
+                with zipfile.ZipFile(fileName) as zip2:
+                    zip2.extractall(TMPDIR.name)
+                    filenames = zip2.namelist()
+                    for oneFile in filenames:
+                        with zip2.open(oneFile) as f:
+                            for line in f:
+                                strline = codecs.decode(line)
+                                if warning_phrase in strline:
+                                    numWarning = numWarning + 1
+                                    print(line)
+    print("total number of warning messages found: {0}".format(numWarning))
+    if wantWarnMessage:
+        assert numWarning > 0, "there should be warning messages {0}} " \
+                               "received but are not found.".format(warning_phrase)
+    else:
+        assert numWarning == 0, "there should be no warning messages ({0}) found but are found.".format(warning_phrase)

@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import unicode_literals
 from collections import OrderedDict as odict
 from copy import deepcopy
 from functools import partial
-import sys
 
 import bindings as bi
 from custom import get_customizations_for, reformat_block
 
-PY3 = sys.version_info[0] == 3
-str_type = str if PY3 else (str, unicode)
+str_type = str
 get_customizations_for = partial(get_customizations_for, 'R')
 
 
@@ -161,8 +158,8 @@ def gen_module(schema, algo, module):
         #
         # Segment model building
         #
-        bulk_param_indent = len(".h2o.train_segments_%s <- function(" % module)
-        yield reformat_block(".h2o.train_segments_%s <- function(%s)" % (module, ',\n'.join(sig_bulk_params)), indent=bulk_param_indent, indent_first=False)
+        bulk_param_indent = len(".h2o.train_segments_%s <- function(" % module.lower())
+        yield reformat_block(".h2o.train_segments_%s <- function(%s)" % (module.lower(), ',\n'.join(sig_bulk_params)), indent=bulk_param_indent, indent_first=False)
     
         # start train_segments-function body
         yield "{"
@@ -259,6 +256,7 @@ def algo_to_modelname(algo):
     if algo == "deeplearning": return "Deep Learning - Neural Network"
     if algo == "xgboost": return "XGBoost"
     if algo == "drf": return "Random Forest Model in H2O"
+    if algo == "dt": return "Decision Tree Model in H2O"
     if algo == "upliftdrf": return "Uplift Random Forest Model in H2O"
     if algo == "gbm": return "Gradient Boosting Machine"
     if algo == "glm": return "H2O Generalized Linear Models"
@@ -337,6 +335,9 @@ def main():
         if name == "drf":
             module = "randomForest"
             file_name = "randomforest"
+        if name == "dt":
+            module = "decision_tree"
+            file_name = "decisiontree"
         if name == "upliftdrf":
             module = "upliftRandomForest"
             file_name = "upliftrandomforest"

@@ -3,7 +3,6 @@ package hex.tree.gbm;
 import hex.*;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
@@ -17,6 +16,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -618,7 +618,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
           ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
-          DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), cs, false, _ics);
+          DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalSplitPointsKeys(), cs, false, _ics);
           new UndecidedNode(ktrees[k], DTree.NO_PARENT, hist, cs, bics); // The "root" node
         }
       }
@@ -917,6 +917,20 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return new GBMModel(modelKey, parms, new GBMModel.GBMOutput(GBM.this));
     }
 
+    @Override
+    protected void doInTrainingCheckpoint() {
+      try {
+        String modelFile = _parms._in_training_checkpoints_dir + "/" + _model._key.toString() + ".ntrees_" + _model._output._ntrees;
+        GBMModel modelClone = _model.clone();
+        modelClone.setInputParms(_parms);
+        modelClone._key = Key.make(_model._key + "." +  _model._output._ntrees);
+        modelClone._output = (GBMModel.GBMOutput) _model._output.clone();
+        modelClone._output.changeModelMetricsKey(modelClone._key);
+        modelClone.exportBinaryModel(modelFile, true);
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to write GBM checkpoint" + _model._key.toString(), e);
+      }
+    }
   }
 
 
@@ -1508,4 +1522,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             LinkFunctionFactory.getLinkFunction(gbmMojoModel._link_function));
   }
 
+  @Override
+  protected void raiseReproducibilityWarning(String datasetName, int chunks) {
+    warn("auto_rebalance", "Rebalancing " + datasetName  + " dataset into " + chunks + " chunks. This model won't be reproducible on the different hardware configuration.");
+  }
 }

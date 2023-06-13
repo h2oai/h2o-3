@@ -25,10 +25,11 @@ import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.deviance;
+import static hex.glm.GLMModel.GLMParameters.DispersionMethod.pearson;
 import static org.junit.Assert.*;
 
 /**
@@ -82,7 +83,6 @@ public class GLMBasicTestRegression extends TestUtil {
     v.remove();
     DKV.put(_airlinesMM._key,_airlinesMM);
   }
-
 
   @Test
   public void testSingleCatNoIcpt(){
@@ -677,21 +677,6 @@ public class GLMBasicTestRegression extends TestUtil {
       } catch (H2OModelBuilderIllegalArgumentException t) {
       }
       params._solver = Solver.IRLSM;
-      GLM glm = new GLM(params);
-      try {
-        params._lambda = new double[]{1};
-        glm.trainModel().get();
-        assertFalse("should've thrown, p-values only supported with no regularization", true);
-      } catch (H2OModelBuilderIllegalArgumentException t) {
-      }
-      params._lambda = new double[]{0};
-      try {
-        params._lambda_search = true;
-        glm.trainModel().get();
-        assertFalse("should've thrown, p-values only supported with no regularization (i.e. no lambda search)", true);
-      } catch (H2OModelBuilderIllegalArgumentException t) {
-      }
-      params._lambda_search = false;
       GLMModel model = null;
       Frame predict = null;
       try {

@@ -72,6 +72,7 @@ model <- infogram_model
 #' plot(ig)
 #' 
 #' }
+#' @method plot H2OInfogram
 #' @export
 plot.H2OInfogram <- function(x, ...) {
   .check_for_ggplot2() # from explain.R

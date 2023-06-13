@@ -366,9 +366,9 @@ public class TestCase {
     }
     if (mm instanceof ModelMetricsBinomialGLM) {
       mmMap.put("ResidualDeviance", ((ModelMetricsBinomialGLM) mm)._resDev);
-      mmMap.put("ResidualDegreesOfFreedom", (double) ((ModelMetricsBinomialGLM) mm)._residualDegressOfFreedom);
+      mmMap.put("ResidualDegreesOfFreedom", (double) ((ModelMetricsBinomialGLM) mm)._residualDegreesOfFreedom);
       mmMap.put("NullDeviance", ((ModelMetricsBinomialGLM) mm)._nullDev);
-      mmMap.put("NullDegreesOfFreedom", (double) ((ModelMetricsBinomialGLM) mm)._nullDegressOfFreedom);
+      mmMap.put("NullDegreesOfFreedom", (double) ((ModelMetricsBinomialGLM) mm)._nullDegreesOfFreedom);
       mmMap.put("AIC", ((ModelMetricsBinomialGLM) mm)._AIC);
     }
     return mmMap;

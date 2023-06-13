@@ -13,7 +13,7 @@ test.isax <- function(){
     answer = "0^10_0^10_0^10_0^10_5^10_7^10_8^10_9^10_9^10_8^10"
     print(answer)
     print(res[1,1])
-    expect_equal(res[1,1],answer)
+    expect_equal(res[1,1], answer, check.attributes = FALSE)
 }
 
 doTest("Test isax", test.isax)

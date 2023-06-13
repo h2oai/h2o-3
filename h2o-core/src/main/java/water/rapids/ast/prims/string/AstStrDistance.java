@@ -1,6 +1,6 @@
 package water.rapids.ast.prims.string;
 
-import no.priv.garshol.duke.comparators.*;
+import no.priv.garshol.duke.Comparator;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -10,11 +10,8 @@ import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.prims.string.algorithms.H2OJaroWinklerComparator;
-import water.rapids.ast.prims.string.algorithms.LevenshteinDistanceComparator;
 import water.rapids.vals.ValFrame;
-
-import no.priv.garshol.duke.Comparator;
+import water.util.comparison.string.StringComparatorFactory;
 
 /**
  * Calculates string distances between elements of two frames
@@ -23,7 +20,7 @@ public class AstStrDistance extends AstPrimitive {
 
   @Override
   public String[] args() {
-    return new String[]{"ary_x", "ary_y", "measure"};
+    return new String[]{"ary_x", "ary_y", "measure", "compare_empty"};
   }
 
   @Override
@@ -48,7 +45,7 @@ public class AstStrDistance extends AstPrimitive {
       if (! (isCharacterType(frX.vec(i)) && isCharacterType(frY.vec(i))))
         throw new IllegalArgumentException("Types of columns of both frames need to be String/Factor");
     // make sure that name of the comparator comparator method is correct and it can be constructed
-    makeComparator(measure);
+    StringComparatorFactory.makeComparator(measure);
 
     byte[] outputTypes = new byte[frX.numCols()];
     Vec[] vecs = new Vec[frX.numCols() * 2];
@@ -76,7 +73,7 @@ public class AstStrDistance extends AstPrimitive {
     @Override
     public void map(Chunk[] cs, NewChunk[] nc) {
       BufferedString tmpStr = new BufferedString();
-      Comparator cmp = makeComparator(_measure);
+      Comparator cmp = StringComparatorFactory.makeComparator(_measure);
       int N = nc.length;
       assert N * 2 == cs.length;
       for (int i = 0; i < N; i++) {
@@ -107,32 +104,5 @@ public class AstStrDistance extends AstPrimitive {
         return chk.atStr(tmpStr, row).toString();
     }
   }
-
-  private static Comparator makeComparator(String measure) {
-    switch (measure) {
-      case "jaccard":
-      case "JaccardIndex":
-        return new JaccardIndexComparator();
-      case "jw":
-      case "JaroWinkler":
-        // JaroWinkler Comparator contains bug which will be fixed in Duke 1.3 release.
-        // Before that happens, we duplicate the JaroWinkler comparator class with the bug fixed
-        return new H2OJaroWinklerComparator();
-      case "lv":
-      case "Levenshtein":
-        return new LevenshteinDistanceComparator();
-      case "lcs":
-      case "LongestCommonSubstring":
-        return new LongestCommonSubstring();
-      case "qgram":
-      case "QGram":
-        return new QGramComparator();
-      case "soundex":
-      case "Soundex":
-        return new SoundexComparator();
-      default:
-        throw new IllegalArgumentException("Unknown comparator: " + measure);
-    }
-  }
-
+  
 }

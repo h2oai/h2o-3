@@ -1,0 +1,14 @@
+description = "H2O GenModel support MOJO2 pipeline extensions"
+
+// MOJO has to stay Java 1.7 compatible! 
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+dependencies {
+    api project(":h2o-genmodel")
+    api "org.apache.commons:commons-math3:3.6.1"
+    api "commons-lang:commons-lang:2.6"
+    api "commons-io:commons-io:2.11.0"
+    api "joda-time:joda-time:2.10.13"
+    compileOnly "ai.h2o:mojo2-runtime-api:${mojo2version}"
+}

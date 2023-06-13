@@ -19,6 +19,7 @@ import java.util.stream.IntStream;
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.genmodel.utils.MathUtils.combinatorial;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
+import static hex.modelselection.ModelSelectionMaxRTests.compareResultFModelSummary;
 import static hex.modelselection.ModelSelectionModel.ModelSelectionParameters.Mode.allsubsets;
 import static hex.modelselection.ModelSelectionUtils.updatePredIndices;
 import static org.junit.Assert.assertArrayEquals;
@@ -169,7 +170,7 @@ public class ModelSelectionAllSubsetsTests extends TestUtil {
             Scope.track(resultFrame);
 
             double[] bestR2 = model._output._best_r2_values;
-            String[][] bestPredictorSubsets = model._output._best_model_predictors;
+            String[][] bestPredictorSubsets = model._output._coefficient_names;
             int numModels = bestR2.length;
             for (int index = 0; index < numModels; index++) {
                 // check with model summary r2 values
@@ -181,9 +182,7 @@ public class ModelSelectionAllSubsetsTests extends TestUtil {
                 assertTrue(scoreFrame.numRows() == trainF.numRows());
                 Scope.track(scoreFrame);
                 String[] coeff = oneModel._output._coefficient_names;   // contains the name intercept as well
-                String[] coeffWOIntercept = new String[coeff.length - 1];
-                System.arraycopy(coeff, 0, coeffWOIntercept, 0, coeffWOIntercept.length);
-                assertArrayEquals("best predictor subset containing different predictors", coeffWOIntercept,
+                assertArrayEquals("best predictor subset containing different predictors", coeff, 
                         bestPredictorSubsets[index]);
             }
         } finally {
@@ -225,6 +224,33 @@ public class ModelSelectionAllSubsetsTests extends TestUtil {
                     assertTrue(Math.abs(betaNorm[index][index2]-coefOneModelNorm.get(coeffNames[index][index2])) < tol);
                 }
             }
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Test and make sure the added and removed predictors are captured in both the result frame and the model summary.
+     * In particular, I want to make sure that they agree.  The correctness of the added/removed predictors are tested
+     * in Python unit test and won't be repeated here.
+     */
+    @Test
+    public void testAddedRemovedCols() {
+        Scope.enter();
+        try {
+            Frame train = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"),
+                    gaussian));
+            DKV.put(train);
+            ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
+            parms._response_column = "C21";
+            parms._family = gaussian;
+            parms._max_predictor_number = 3;
+            parms._seed=12345;
+            parms._train = train._key;
+            parms._mode = allsubsets;
+            ModelSelectionModel modelAllSubsets = new hex.modelselection.ModelSelection(parms).trainModel().get();
+            Scope.track_generic(modelAllSubsets); //  model with validation dataset
+            compareResultFModelSummary(modelAllSubsets);
         } finally {
             Scope.exit();
         }

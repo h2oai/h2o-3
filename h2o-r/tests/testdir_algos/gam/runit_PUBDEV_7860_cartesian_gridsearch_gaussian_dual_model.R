@@ -23,7 +23,7 @@ test.model.gam.random.gridsearch.dual.modes <- function() {
     subspace1 <- list()
     subspace1$scale <- list(c(0.001, 0.001, 0.001), c(0.002, 0.002, 0.002))
     subspace1$num_knots <- list(c(5, 10, 12), c(6, 11, 13))
-    subspace1$bs <- list(c(1, 1, 1), c(0, 1, 1))
+    subspace1$bs <- list(c(3, 1, 1), c(0, 1, 1))
     subspace1$gam_columns <- list(list("c_0", c("c_1", "c_2"), c("c_3", "c_4", "c_5")), 
                                   list("c_1", c("c_2", "c_3"), c("c_4", "c_5", "c_6")))
     hyper_parameters$subspaces <- list(subspace1)
@@ -36,15 +36,15 @@ test.model.gam.random.gridsearch.dual.modes <- function() {
     subspace2 <- list()
     subspace2$scale <- list(c(0.001, 0.001, 0.001), c(0.002, 0.002, 0.002))
     subspace2$num_knots <- list(c(5, 10, 12), c(6, 11, 13))
-    subspace2$bs <- list(c(1, 1, 1), c(0, 1, 1))
+    subspace2$bs <- list(c(3, 1, 1), c(0, 1, 1))
     subspace2$gam_columns <- list(list(c("c_0"), c("c_1", "c_2"), c("c_3", "c_4", "c_5")), 
                                   list(c("c_1"), c("c_2", "c_3"), c("c_4", "c_5", "c_6")))
     hyper_parameters2$subspaces <- list(subspace2)
     
     gam_grid1 = h2o.grid("gam", grid_id="GAMModel1", x=xL, y=yR, training_frame=trainGaussian, family='gaussian',
-                         hyper_params=hyper_parameters, search_criteria=search_criteria)
+                         hyper_params=hyper_parameters, search_criteria=search_criteria, seed = 1234)
     gam_grid2 = h2o.grid("gam", grid_id="GAMModel2", x=xL, y=yR, training_frame=trainGaussian, family='gaussian',
-                         hyper_params=hyper_parameters2, search_criteria=search_criteria)
+                         hyper_params=hyper_parameters2, search_criteria=search_criteria, seed = 1234)
     
     numModel <- length(gam_grid1@model_ids)
     for (index in c(1:numModel)) {

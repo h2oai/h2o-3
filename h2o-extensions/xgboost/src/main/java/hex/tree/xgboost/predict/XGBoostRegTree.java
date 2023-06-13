@@ -1,13 +1,13 @@
 package hex.tree.xgboost.predict;
 
-import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeNode;
-import biz.k11i.xgboost.tree.RegTreeNodeStat;
+import biz.k11i.xgboost.tree.*;
 import biz.k11i.xgboost.util.FVec;
 import biz.k11i.xgboost.util.ModelReader;
 import water.util.UnsafeUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Regression tree.
@@ -28,7 +28,7 @@ public class XGBoostRegTree implements RegTree {
   XGBoostRegTree(ModelReader reader) throws IOException {
     final int numNodes = readNumNodes(reader);
     _nodes = reader.readByteArray(numNodes * NODE_SIZE);
-    reader.skip(numNodes * STATS_SIZE);
+    reader.skip((long) numNodes * STATS_SIZE);
   }
 
   @Override
@@ -73,12 +73,21 @@ public class XGBoostRegTree implements RegTree {
 
   @Override
   public RegTreeNode[] getNodes() {
-    throw new UnsupportedOperationException();
+    try (InputStream nodesStream = new ByteArrayInputStream(_nodes)) {
+      ModelReader reader = new ModelReader(nodesStream);
+      RegTreeNode[] nodes = new RegTreeNode[_nodes.length / NODE_SIZE];
+      for (int i = 0; i < nodes.length; i++) {
+        nodes[i] = NodeHelper.read(reader);
+      }
+      return nodes;
+    } catch (IOException e) {
+      throw new RuntimeException("Cannot extract nodes from tree", e);
+    }
   }
 
   @Override
   public RegTreeNodeStat[] getStats() {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("Scoring-optimized trees don't contain node stats");
   }
 
   private static int readNumNodes(ModelReader reader) throws IOException {

@@ -32,9 +32,9 @@
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "anomaly_score". Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "anomaly_score". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.01.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
@@ -149,7 +149,7 @@ h2o.isolationForest <- function(training_frame,
   model <- .h2o.modelJob('isolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-.h2o.train_segments_isolationForest <- function(training_frame,
+.h2o.train_segments_isolationforest <- function(training_frame,
                                                 x,
                                                 score_each_iteration = FALSE,
                                                 score_tree_interval = 0,

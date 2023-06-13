@@ -68,4 +68,23 @@ public class RebalanceDatasetTest extends TestUtil {
      }
   }
 
+  @Test
+  public void testToSingleChunk() {
+    Scope.enter();
+    try {
+      final Frame f = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+              .withChunkLayout(2, 2, 2, 1)
+              .build();
+      final Frame rebalanced = RebalanceDataSet.toSingleChunk(f);
+      Scope.track(rebalanced);
+      assertEquals(1, rebalanced.anyVec().nChunks());
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

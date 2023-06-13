@@ -62,14 +62,18 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "categorical_encoding",
       "calibrate_model",
       "calibration_frame",
+      "calibration_method",
       "custom_metric_func",
       "custom_distribution_func",      
       "export_checkpoints_dir",
+      "in_training_checkpoints_dir",
+      "in_training_checkpoints_tree_interval",
       "monotone_constraints",
       "check_constant_response",
       "gainslift_bins", 
       "auc_type", 
-      "interaction_constraints"
+      "interaction_constraints",
+      "auto_rebalance"
     };
 
     // Input fields
@@ -97,6 +101,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
     @API(help="A set of allowed column interactions.", level= API.Level.expert)
     public String[][] interaction_constraints;
 
+    @API(help="Allow automatic rebalancing of training and validation datasets", level = API.Level.expert)
+    public boolean auto_rebalance = true;
 
 //    // TODO debug only, remove!
 //    @API(help="Internal flag, use new version of histo tsk if set", level = API.Level.expert, gridable = false)

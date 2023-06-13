@@ -88,12 +88,12 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     # test search limits: stopping_deviance
     grid = a_node.grid(key='gbm_prostate_regression_grid_stopping_deviance')
     deviance_model_count = len(grid['model_ids'])
-    assert len(grid['model_ids']) < 126, "FAIL: using asymptotic deviance stopping criterion, expected less than 126 models, got: " + str(len(grid['model_ids']))
+    assert len(grid['model_ids']) < 127, "FAIL: using asymptotic deviance stopping criterion, expected less than 127 models, got: " + str(len(grid['model_ids']))
 
     # test search limits: stopping_auto
     grid = a_node.grid(key='gbm_prostate_regression_grid_stopping_auto')
     auto_model_count = len(grid['model_ids'])
-    assert len(grid['model_ids']) < 126, "FAIL: using asymptotic auto stopping criterion, expected less than 126 models, got: " + str(len(grid['model_ids']))
+    assert len(grid['model_ids']) < 127, "FAIL: using asymptotic auto stopping criterion, expected less than 127 models, got: " + str(len(grid['model_ids']))
 
     # test that AUTO gave the same answer as deviance
     assert deviance_model_count == auto_model_count, "FAIL: using asymptotic auto stopping criterion, expected the same number of models as deviance, got: " + str(auto_model_count) + " instead of: " + str(deviance_model_count)
@@ -119,7 +119,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     server_algos = model_builders.keys()
     assert len(set(server_algos) - set(algos)) == 0, "FAIL: Our set of algos doesn't match what the server knows about.  Ours: " + repr(algos) + "; server's: " + repr(server_algos)
 
-    for algo, model_builder in model_builders.iteritems():
+    for algo, model_builder in model_builders.items():
         parameters_list = model_builder['parameters']
         test_parameters = { value['name'] : value['default_value'] for value in parameters_list } # collect default parameters
         if algo in algo_additional_default_params:

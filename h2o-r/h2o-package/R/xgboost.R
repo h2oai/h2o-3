@@ -35,11 +35,11 @@
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR",
+#'        "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing". Defaults to
+#'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -80,9 +80,11 @@
 #' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 #'        Defaults to FALSE.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
-#'        accurate estimates of class probabilities. Defaults to FALSE.
-#' @param calibration_frame Calibration frame for Platt Scaling
+#' @param parallelize_cross_validation \code{Logical}. Allow parallel training of cross-validation models Defaults to TRUE.
+#' @param calibrate_model \code{Logical}. Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
+#'        probabilities. Calibration can provide more accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Data for model calibration
+#' @param calibration_method Calibration method to use Must be one of: "AUTO", "PlattScaling", "IsotonicRegression". Defaults to AUTO.
 #' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
 #' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
 #' @param sample_type For booster=dart only: sample_type Must be one of: "uniform", "weighted". Defaults to uniform.
@@ -106,6 +108,9 @@
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param scale_pos_weight Controls the effect of observations with positive labels in relation to the observations with negative labels
 #'        on gradient calculation. Useful for imbalanced problems. Defaults to 1.0.
+#' @param eval_metric Specification of evaluation metric that will be passed to the native XGBoost backend.
+#' @param score_eval_metric_only \code{Logical}. If enabled, score only the evaluation metric. This can make model training faster if scoring
+#'        is frequent (eg. each iteration). Defaults to FALSE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -182,8 +187,10 @@ h2o.xgboost <- function(x,
                         nthread = -1,
                         save_matrix_directory = NULL,
                         build_tree_one_node = FALSE,
+                        parallelize_cross_validation = TRUE,
                         calibrate_model = FALSE,
                         calibration_frame = NULL,
+                        calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                         max_bins = 256,
                         max_leaves = 0,
                         sample_type = c("uniform", "weighted"),
@@ -202,6 +209,8 @@ h2o.xgboost <- function(x,
                         gainslift_bins = -1,
                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         scale_pos_weight = 1.0,
+                        eval_metric = NULL,
+                        score_eval_metric_only = FALSE,
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -320,10 +329,14 @@ h2o.xgboost <- function(x,
     parms$save_matrix_directory <- save_matrix_directory
   if (!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
+  if (!missing(parallelize_cross_validation))
+    parms$parallelize_cross_validation <- parallelize_cross_validation
   if (!missing(calibrate_model))
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(max_bins))
     parms$max_bins <- max_bins
   if (!missing(max_leaves))
@@ -360,6 +373,10 @@ h2o.xgboost <- function(x,
     parms$auc_type <- auc_type
   if (!missing(scale_pos_weight))
     parms$scale_pos_weight <- scale_pos_weight
+  if (!missing(eval_metric))
+    parms$eval_metric <- eval_metric
+  if (!missing(score_eval_metric_only))
+    parms$score_eval_metric_only <- score_eval_metric_only
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -413,8 +430,10 @@ h2o.xgboost <- function(x,
                                         nthread = -1,
                                         save_matrix_directory = NULL,
                                         build_tree_one_node = FALSE,
+                                        parallelize_cross_validation = TRUE,
                                         calibrate_model = FALSE,
                                         calibration_frame = NULL,
+                                        calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                                         max_bins = 256,
                                         max_leaves = 0,
                                         sample_type = c("uniform", "weighted"),
@@ -433,6 +452,8 @@ h2o.xgboost <- function(x,
                                         gainslift_bins = -1,
                                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         scale_pos_weight = 1.0,
+                                        eval_metric = NULL,
+                                        score_eval_metric_only = FALSE,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -555,10 +576,14 @@ h2o.xgboost <- function(x,
     parms$save_matrix_directory <- save_matrix_directory
   if (!missing(build_tree_one_node))
     parms$build_tree_one_node <- build_tree_one_node
+  if (!missing(parallelize_cross_validation))
+    parms$parallelize_cross_validation <- parallelize_cross_validation
   if (!missing(calibrate_model))
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(max_bins))
     parms$max_bins <- max_bins
   if (!missing(max_leaves))
@@ -595,6 +620,10 @@ h2o.xgboost <- function(x,
     parms$auc_type <- auc_type
   if (!missing(scale_pos_weight))
     parms$scale_pos_weight <- scale_pos_weight
+  if (!missing(eval_metric))
+    parms$eval_metric <- eval_metric
+  if (!missing(score_eval_metric_only))
+    parms$score_eval_metric_only <- score_eval_metric_only
 
   # Build segment-models specific parameters
   segment_parms <- list()

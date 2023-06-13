@@ -31,7 +31,7 @@ public abstract class SharedTree<
     P extends SharedTreeModel.SharedTreeParameters, 
     O extends SharedTreeModel.SharedTreeOutput> 
     extends ModelBuilder<M,P,O> 
-    implements PlattScalingHelper.ModelBuilderWithCalibration<M, P, O> {
+    implements CalibrationHelper.ModelBuilderWithCalibration<M, P, O> {
 
   private static final Logger LOG = Logger.getLogger(SharedTree.class);
 
@@ -159,11 +159,12 @@ public abstract class SharedTree<
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (_parms._r2_stopping!=Double.MAX_VALUE) warn("_r2_stopping", "_r2_stopping is no longer supported - please use stopping_rounds, stopping_metric and stopping_tolerance instead.");
     if (_parms._score_tree_interval < 0) error ("_score_tree_interval", "_score_tree_interval must be >= 0.");
+    if (_parms._in_training_checkpoints_tree_interval <= 0) error ("_in_training_checkpoints_tree_interval", "_in_training_checkpoints_tree_interval must be > 0.");
     validateRowSampleRate();
     if (_parms._min_split_improvement < 0)
       error("_min_split_improvement", "min_split_improvement must be >= 0, but is " + _parms._min_split_improvement + ".");
     if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
-      error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval ]0,1] but it is " + _parms._col_sample_rate_per_tree + ".");
+      error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval [0,1] but it is " + _parms._col_sample_rate_per_tree + ".");
     if( !(0. < _parms._col_sample_rate_change_per_level && _parms._col_sample_rate_change_per_level <= 2) )
       error("_col_sample_rate_change_per_level", "col_sample_rate_change_per_level must be > 0" +
               " and <= 2");
@@ -176,7 +177,7 @@ public abstract class SharedTree<
     if( _train != null )
       _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
 
-    PlattScalingHelper.initCalibration(this, _parms, expensive);
+    CalibrationHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
     _parms._use_best_cv_iteration = isSupervised() && H2O.getSysBoolProperty(
@@ -195,6 +196,11 @@ public abstract class SharedTree<
     }
     if (_parms._build_tree_one_node) {
       warn("_build_tree_one_node", "Single-node tree building is not supported in this version of H2O.");
+    }
+    if (!StringUtils.isNullOrEmpty(_parms._in_training_checkpoints_dir)) {
+      if (!H2O.getPM().isWritableDirectory(_parms._in_training_checkpoints_dir)) {
+        error("_in_training_checkpoints_dir", "In training checkpoints directory path must point to a writable path.");
+      }
     }
   }
 
@@ -322,15 +328,31 @@ public abstract class SharedTree<
         if (_parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal
                 || _parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
           _job.update(1, "Computing top-level histogram split-points.");
-          final double[][] splitPoints = GlobalQuantilesCalc.splitPoints(_train, _parms._weights_column, _parms._nbins, _parms._nbins_top_level);
+
+          final Timer exactT = new Timer();
+          final double[][] exactSplitPoints = ExactSplitPoints.splitPoints(_train, _parms._nbins);
+          LOG.info("Calculating exact (low cardinality) histogram split-points took " + exactT);
+
+          final Timer quantileT = new Timer();
+          final double[][] quantileSplitPoints = GlobalQuantilesCalc.splitPoints(_train, _parms._weights_column, 
+                  exactSplitPoints, _parms._nbins, _parms._nbins_top_level);
           Futures fs = new Futures();
-          for (int i = 0; i < splitPoints.length; i++) {
-            Key<DHistogram.HistoQuantiles> key = getGlobalQuantilesKey(i);
-            if (splitPoints[i] != null && key != null) {
-              DKV.put(new DHistogram.HistoQuantiles(key, splitPoints[i]), fs);
+          int qCnt = 0, eCnt = 0;
+          for (int i = 0; i < quantileSplitPoints.length; i++) {
+            assert exactSplitPoints[i] == null || quantileSplitPoints[i] == null;
+            Key<DHistogram.HistoSplitPoints> key = getGlobalSplitPointsKey(i);
+            if (key == null)
+              continue;
+            boolean useQuantiles = exactSplitPoints[i] == null;
+            double[] sp = useQuantiles ? quantileSplitPoints[i] : exactSplitPoints[i];
+            if (sp != null) {
+              if (useQuantiles) { qCnt++; } else { eCnt++; }
+              DKV.put(new DHistogram.HistoSplitPoints(key, sp, useQuantiles), fs);
             }
           }
           fs.blockForPending();
+          LOG.info("Split-points are defined using " + eCnt + " exact sets of points and " + qCnt + " sets of quantile values.");
+          LOG.info("Calculating top-level histogram split-points took " + quantileT);
         }
 
         // Also add to the basic working Frame these sets:
@@ -387,7 +409,7 @@ public abstract class SharedTree<
           _eventPublisher.onAllIterationsComplete();
         }
         if( _model!=null ) _model.unlock(_job);
-        for (Key<?> k : getGlobalQuantilesKeys()) Keyed.remove(k);
+        for (Key<?> k : getGlobalSplitPointsKeys()) Keyed.remove(k);
         if (_validWorkspace != null) {
           _validWorkspace.remove();
           _validWorkspace = null;
@@ -414,21 +436,25 @@ public abstract class SharedTree<
     abstract protected boolean buildNextKTrees();
     abstract protected void initializeModelSpecifics();
 
+    protected void doInTrainingCheckpoint() {
+      throw new UnsupportedOperationException("In training checkpoints are not supported for this algorithm");
+    }
+
     // Common methods for all tree builders
 
     protected Frame makeValidWorkspace() { return null; }
 
-    // Helpers to store quantiles in DKV - keep a cache on each node (instead of sending around over and over)
-    protected Key<DHistogram.HistoQuantiles> getGlobalQuantilesKey(int i) {
+    // Helpers to store split-points in DKV - keep a cache on each node (instead of sending around over and over)
+    protected Key<DHistogram.HistoSplitPoints> getGlobalSplitPointsKey(int i) {
       if (_model==null || _model._key == null || _parms._histogram_type!= SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal
               && _parms._histogram_type!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) return null;
-      return Key.makeSystem(_model._key+"_quantiles_col_"+i);
+      return Key.makeSystem(_model._key+"_splits_col_"+i);
     }
-    protected Key<DHistogram.HistoQuantiles>[] getGlobalQuantilesKeys() {
+    protected Key<DHistogram.HistoSplitPoints>[] getGlobalSplitPointsKeys() {
       @SuppressWarnings("unchecked")
-      Key<DHistogram.HistoQuantiles>[] keys = new Key[_ncols];
+      Key<DHistogram.HistoSplitPoints>[] keys = new Key[_ncols];
       for (int i=0;i<keys.length;++i)
-        keys[i] = getGlobalQuantilesKey(i);
+        keys[i] = getGlobalSplitPointsKey(i);
       return keys;
     }
 
@@ -474,12 +500,21 @@ public abstract class SharedTree<
                 _model._output.trimTo(bestNTrees);
                 _model.update(_job);
               }
+            } else if (!_parms._is_cv_model) {
+              LOG.info("Stopping early and setting actual ntrees to the " + _model._output._ntrees);
+              _parms._ntrees = _model._output._ntrees;
             }
             _job.update(_ntrees-_model._output._ntrees); // finish the progress bar
             LOG.info(_model.toString()); // we don't know if doScoringAndSaveModel printed the model or not
             return;
           }
         }
+
+        boolean manualCheckpointsInterval = tid > 0 && tid % _parms._in_training_checkpoints_tree_interval == 0;
+        if (!StringUtils.isNullOrEmpty(_parms._in_training_checkpoints_dir) && manualCheckpointsInterval) {
+            doInTrainingCheckpoint();
+        }
+
         Timer kb_timer = new Timer();
         boolean converged = buildNextKTrees();
         LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
@@ -507,7 +542,9 @@ public abstract class SharedTree<
   private void postProcessModel() {
     // Model Calibration (only for the final model, not CV models)
     if (_parms.calibrateModel() && (!_parms._is_cv_model)) {
-      _model._output._calib_model = PlattScalingHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model);
+      _model._output.setCalibrationModel(
+              CalibrationHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model)
+      );
       _model.update(_job);
     }
   }
@@ -940,7 +977,7 @@ public abstract class SharedTree<
 
     int rows = 0;
     for( int i = 0; i<_scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
+      if (i != 0 && _scored_train[i].isEmpty() && (_scored_valid == null || _scored_valid[i].isEmpty())) continue;
       rows++;
     }
     TwoDimTable table = new TwoDimTable(
@@ -952,7 +989,7 @@ public abstract class SharedTree<
             "");
     int row = 0;
     for( int i = 0; i<_scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
+      if (i != 0 && _scored_train[i].isEmpty() && (_scored_valid == null || _scored_valid[i].isEmpty())) continue;
       int col = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(_training_time_ms[i]));
@@ -1167,7 +1204,8 @@ public abstract class SharedTree<
 
     warn("_ntrees", "Setting optimal _ntrees to " + _parms._ntrees + " for cross-validation main model based on early stopping of cross-validation models.");
     warn("_stopping_rounds", "Disabling convergence-based early stopping for cross-validation main model.");
-    warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
+    if (_parms._main_model_time_budget_factor == 0)
+      warn("_max_runtime_secs", "Disabling maximum allowed runtime for cross-validation main model.");
   }
 
   private int computeOptimalNTrees(ModelBuilder<M, P, O>[] cvModelBuilders) {
@@ -1193,7 +1231,7 @@ public abstract class SharedTree<
       return false;
 
     _parms._stopping_rounds = 0;
-    _parms._max_runtime_secs = 0;
+    setMaxRuntimeSecsForMainModel();
 
     _ntrees = 1;
     _parms._ntrees = _ntrees;

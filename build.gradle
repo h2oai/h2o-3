@@ -85,6 +85,7 @@ ext {
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
+      project(':h2o-jetty-9-ext'),
       project(':h2o-jetty-9-minimal'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
@@ -97,6 +98,7 @@ ext {
       project(':h2o-k8s'),
       project(':h2o-k8s-int'),
       project(':h2o-genmodel-ext-deepwater'),
+      project(':h2o-genmodel-ext-mojo-pipeline'),
       project(':h2o-clustering')
     ]
 
@@ -131,6 +133,7 @@ ext {
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
+      project(':h2o-jetty-9-ext'),
       project(':h2o-jetty-9-minimal'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
@@ -144,6 +147,7 @@ ext {
       project(':h2o-k8s-int'),
       project(':h2o-k8s-comp'),
       project(':h2o-genmodel-ext-deepwater'),
+      project(':h2o-genmodel-ext-mojo-pipeline'),
       project(':h2o-clustering')
     ]
 
@@ -152,7 +156,8 @@ ext {
     ]
 
     pythonProjects = [
-      project(':h2o-py')
+      project(':h2o-py'),
+      project(':h2o-py-cloud-extensions')
     ]
 
     // The project which need to be run under CI only
@@ -161,7 +166,7 @@ ext {
       // Because of restrictions of Amazon they cannot be stored in repository.
       project(':h2o-persist-s3'),
       // MOJO2 tests need DAI license
-      project(':h2o-ext-mojo-pipeline'),
+      //project(':h2o-ext-mojo-pipeline'),
     ]
 
     // Projects with micro-benchmarks
@@ -175,8 +180,7 @@ ext {
     // Versions of libraries shared cross all projects
     //
     junitVersion  = '4.12'
-    jets3tVersion = '0.7.1'
-    awsJavaSdkVersion = '1.12.127'
+    awsJavaSdkVersion = '1.12.268'
 
     //
     // Optional H2O modules which can be included h2o.jar assembly
@@ -188,6 +192,7 @@ ext {
             [name: "xgboost", version: "$version", enabled: true, genmodel: true ],
             [name: "jython-cfunc", version: "$version", enabled: true, genmodel: false],
             [name: "jgrapht", version: "$version", enabled: true, genmodel: true],
+            [name: "mojo-pipeline", version: "$version", enabled: true, genmodel: true],
     ]
 
     //
@@ -237,6 +242,9 @@ subprojects {
             maven {
                 allowInsecureProtocol = true
                 url "${localNexusLocation}/public"
+            }
+            maven {
+                url "https://oss.sonatype.org/content/groups/staging/"
             }
         } else {
             mavenCentral()

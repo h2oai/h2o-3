@@ -146,17 +146,17 @@ Refer to the following example:
     #to categorical. You have 3 options.
 
     #Option 1. Use a dictionary of column names to types. 
-    fr = h2o.import_file("smalldata/logreg/prostate.csv", col_types = {"CAPSULE":"enum"})
+    fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv", col_types = {"CAPSULE":"enum"})
     fr.describe()
 
     #Option 2. Use a list of column types.
     c_types = [None]*9
     c_types[1] = "enum"
-    fr = h2o.import_file("smalldata/logreg/prostate.csv", col_types = c_types)
+    fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv", col_types = c_types)
     fr.describe()
 
     #Option 3. Use parse_setup().
-    fraw = h2o.import_file("smalldata/logreg/prostate.csv", parse = False)
+    fraw = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv", parse = False)
     fsetup = h2o.parse_setup(fraw) 
     fsetup["column_types"][1] = '"enum"'
     fr = h2o.parse_raw(fsetup) 
@@ -216,7 +216,7 @@ Here is an example of grid search in PySparkling:
     from h2o.grid.grid_search import H2OGridSearch
     from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
-    iris = h2o.import_file("/Users/nidhimehta/h2o-dev/smalldata/iris/iris.csv")
+    iris = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris.csv")
 
     ntrees_opt = [5, 10, 15]
     max_depth_opt = [2, 3, 4]

@@ -59,6 +59,10 @@ def checkPull(changeId) {
         println "PR check will be skipped due to user request"
         return []    
     }
+    if (title.contains("[Snyk]")) {
+        println "PR check will be skipped for Snyk security upgrades"
+        return []
+    }
     def hexdevMatcher = title =~ /.*HEXDEV-[0-9]{4,5}.*/
     def itaMatcher = title =~ /.*ITA-[0-9]{3,5}.*/
     if (hexdevMatcher.matches() || itaMatcher.matches()) {

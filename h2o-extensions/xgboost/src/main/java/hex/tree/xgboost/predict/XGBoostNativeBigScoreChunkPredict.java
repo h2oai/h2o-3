@@ -48,7 +48,11 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
     _threshold = threshold;
     _output = output;
     
-    _responseIndex = fr.find(_parms._response_column);
+    if (fr.vec(_parms._response_column).isBad()) {
+      _responseIndex = -1;
+    } else {
+      _responseIndex = fr.find(_parms._response_column);
+    }
     _offsetIndex = fr.find(_parms._offset_column);
     _preds = scoreChunk(chks, XGBoostPredict.OutputType.PREDICT);
   }
@@ -87,16 +91,12 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
       );
       // No local chunks for this frame
       if (data.rowNum() == 0) {
-        return null;
+        return new float[0][];
       }
       // Initialize Booster
       booster = BoosterHelper.loadModel(_modelInfo._boosterBytes);
       booster.setParams(_boosterParms.get());
       int treeLimit = 0;
-      if (_parms._booster == XGBoostModel.XGBoostParameters.Booster.dart) {
-        // DART with treeLimit=0 returns non-deterministic random predictions
-        treeLimit = _parms._ntrees;
-      }
 
       // Predict
       float[][] preds;

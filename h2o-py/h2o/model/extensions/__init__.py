@@ -1,8 +1,11 @@
 """
 A collection of mixins optionally added to the model if the feature is supported for the given model.
+.. note::
+    Classes in this module are used at runtime as mixins: their methods can (and should) be accessed directly from a trained model.
 """
 import sys
 
+from .fairness import Fairness
 from .feature_interaction import FeatureInteraction
 from .h_statistic import HStatistic
 from .scoring_history import ScoringHistory, ScoringHistoryDL, ScoringHistoryGLM, ScoringHistoryTrees
@@ -10,6 +13,8 @@ from .std_coef import StandardCoef
 from .trees import Trees
 from .supervised_trees import SupervisedTrees
 from .varimp import VariableImportance
+from .contributions import Contributions
+from .row_to_tree_assignment import RowToTreeAssignment
 
 module = sys.modules[__name__]
 
@@ -47,5 +52,8 @@ __all__ = [  # mainly useful here for the generated documentation
     'StandardCoef', 
     'Trees',
     'SupervisedTrees', 
-    'VariableImportance'
+    'VariableImportance',
+    'Contributions',
+    'Fairness',
+    'RowToTreeAssignment'
 ]

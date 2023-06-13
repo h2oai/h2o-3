@@ -457,7 +457,7 @@ def extract_test_results():
 
         console_file.close()
     else:
-        print "Error: console output file "+g_temp_filename + " does not exist."
+        print("Error: console output file "+g_temp_filename + " does not exist.")
         sys.exit(1)
 
 
@@ -504,7 +504,7 @@ def extract_job_build_url(url_string):
     tempString = url_string.strip('/').split('/')
 
     if len(tempString) < 6:
-        print "Illegal URL resource address.\n"
+        print("Illegal URL resource address.\n")
         sys.exit(1)
         
     g_failed_test_info_dict["1.jobName"] = tempString[6]
@@ -952,7 +952,7 @@ def main(argv):
     global g_summary_text_filename
 
     if len(argv) < 3:
-        print "Must resource url like http://mr-0xa1:8080/view/wendy_jenkins/job/h2o_regression_pyunit_medium_large/lastBuild/consoleFull, filename of summary text, filename (optional ending in .pickle) to retrieve Java error messages to exclude.\n"
+        print("Must resource url like http://mr-0xa1:8080/view/wendy_jenkins/job/h2o_regression_pyunit_medium_large/lastBuild/consoleFull, filename of summary text, filename (optional ending in .pickle) to retrieve Java error messages to exclude.\n")
         sys.exit(1)
     else:   # we may be in business
         g_script_name = os.path.basename(argv[0])   # get name of script being run.
@@ -987,9 +987,9 @@ def main(argv):
             update_summary_file()   # join together all log files into one giant summary text.
 
             # output this info to console to form the list of failed jenkins jobs.
-            print g_failed_test_info_dict["1.jobName"]+' build '+g_failed_test_info_dict["2.build_id"]+','
+            print(g_failed_test_info_dict["1.jobName"]+' build '+g_failed_test_info_dict["2.build_id"]+',')
         else:
-            print ""
+            print("")
 
 
 if __name__ == "__main__":

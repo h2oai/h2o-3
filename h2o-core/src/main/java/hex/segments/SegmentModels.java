@@ -75,15 +75,22 @@ public class SegmentModels extends Keyed<SegmentModels> {
 
     @SuppressWarnings("unchecked")
     SegmentModelResult(Key<SegmentModelResult> selfKey, ModelBuilder mb, Exception e) {
-      this(selfKey, mb.dest(), mb._job.getStatus(), getErrors(mb, e), mb._job.warns());
+      this(selfKey, mb.dest(), getConsolidatedStatus(mb), getErrors(mb, e), mb._job.warns());
     }
 
-    SegmentModelResult(Key<SegmentModelResult> key, Key<Model> model, Job.JobStatus status, String[] errors, String[] warns) {
+    private SegmentModelResult(Key<SegmentModelResult> key, Key<Model> model, Job.JobStatus status, String[] errors, String[] warns) {
       super(key);
       _model = model;
       _status = status;
       _errors = errors;
       _warns = warns;
+    }
+
+    private static Job.JobStatus getConsolidatedStatus(ModelBuilder mb) {
+      if (mb.error_count() > 0)
+        return Job.JobStatus.FAILED; // do not get status from the job because was not even started (PENDING state)
+      else 
+        return mb._job.getStatus();
     }
 
     private static String[] getErrors(ModelBuilder mb, Exception e) {

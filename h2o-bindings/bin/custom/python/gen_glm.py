@@ -3,6 +3,7 @@ options = dict(
         'h2o.model.extensions.ScoringHistoryGLM',
         'h2o.model.extensions.StandardCoef',
         'h2o.model.extensions.VariableImportance',
+        'h2o.model.extensions.Fairness',
     ],
 )
 deprecated_params = dict(Lambda='lambda_')
@@ -16,6 +17,31 @@ def update_param(name, param):
 
 
 def class_extensions():
+    def get_regression_influence_diagnostics(self):
+        """
+        For GLM model, if influence is set to dfbetas, a frame containing the original predictors, response
+        and DFBETA_ for each predictors that are used in building the model is returned.
+                
+        :return: H2OFrame containing predictors used in building the model, response and DFBETA_ for each predictor.
+        
+        :examples:
+        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family = 'binomial', 
+        ...                                   lambda_=0.0, 
+        ...                                   standardize=False, 
+        ...                                   influence="dfbetas")
+        >>> m.train(training_frame = d,
+        ...         x = [2,3,4,5,6,7,8],
+        ...         y = 1)
+        >>> ridFrame = m.get_regression_influence_diagnostics()
+        >>> print("column names of regression influence diagnostics frame is {0}".format(ridFrame.names))
+        """
+
+        if self.actual_params["influence"]=="dfbetas":
+            return h2o.get_frame(self._model_json["output"]["regression_influence_diagnostics"]['name'])
+        else:
+            raise H2OValueError("get_regression_influence_diagnostics can only be called if influence='dfbetas'.")
+    
     @staticmethod
     def getAlphaBest(model):
         """
@@ -142,6 +168,10 @@ def class_extensions():
             "explained_deviance_train": x["explained_deviance_train"],
             "explained_deviance_valid": x["explained_deviance_valid"],
             "coefficients": [dict(zip(ns, y)) for y in x["coefficients"]],
+            "z_values": None if (x["z_values"] is None) else [dict(zip(ns, z)) for z in x["z_values"]],
+            "p_values": None if (x["p_values"] is None) else [dict(zip(ns, p)) for p in x["p_values"]],
+            "std_errs": None if (x["std_errs"] is None) else [dict(zip(ns, s)) for s in x["std_errs"]],
+            "names": ns
         }
         if "coefficients_std" in x and not(x["coefficients_std"] == None):
             res["coefficients_std"] = [dict(zip(ns, y)) for y in x["coefficients_std"]]
@@ -950,5 +980,18 @@ examples = dict(
 ...                  training_frame=train,
 ...                  validation_frame=valid)
 >>> boston_glm.mse()
-""" 
+""",
+    generate_variable_inflation_factors="""
+>>> training_data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/gamma_dispersion_factor_9_10kRows.csv")
+>>> predictors = ['abs.C1.','abs.C2.','abs.C3.','abs.C4.','abs.C5.']
+>>> response = 'resp'
+>>> vif_glm = H2OGeneralizedLinearEstimator(family="gamma",
+...                                         lambda_=0,
+...                                         generate_variable_inflation_factors=True,
+...                                         fold_assignment="modulo",
+...                                         nfolds=3,
+...                                         keep_cross_validation_models=True)
+>>> vif_glm.train(x=predictors, y=response, training_frame=training_data)
+>>> vif_glm.get_variable_inflation_factors()
+"""
 )

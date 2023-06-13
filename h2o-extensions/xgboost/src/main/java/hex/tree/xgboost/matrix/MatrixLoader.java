@@ -65,6 +65,10 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
         }
     }
     
-    public abstract DMatrixProvider makeLocalMatrix();
-    
+    public abstract DMatrixProvider makeLocalTrainMatrix();
+
+    public abstract DMatrixProvider makeLocalValidMatrix();
+
+    public abstract boolean hasValidationFrame();
+
 }

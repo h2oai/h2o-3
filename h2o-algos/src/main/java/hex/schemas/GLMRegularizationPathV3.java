@@ -24,4 +24,10 @@ public class GLMRegularizationPathV3  extends SchemaV3<GLMModel.RegularizationPa
   public double [][] coefficients_std;
   @API(help="coefficient names")
   public String [] coefficient_names;
+  @API(help="z-values")
+  public double [][] z_values;
+  @API(help="p-values")
+  public double [][] p_values;
+  @API(help="standard error")
+  public double [][] std_errs;
 }

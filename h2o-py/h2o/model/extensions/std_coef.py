@@ -81,25 +81,21 @@ class StandardCoef:
         # if positive create positive legend
         if "#1F77B4" in signage[0:num_of_features] and "#FF7F0E" not in signage[0:num_of_features]:
             color_ids = ("Positive",)
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in signage[0:num_of_features]]
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
+            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="", markersize=10)
+                       for color in set(signage[0:num_of_features])]
+            plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
         # if neg create neg legend
         elif "#FF7F0E" in signage[0:num_of_features] and "#1F77B4" not in signage[0:num_of_features]:
             color_ids = ("Negative",)
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
+            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="", markersize=10)
                        for color in set(signage[0:num_of_features])]
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
+            plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
         # if both provide both colors in legend
         else:
             color_ids = ("Positive", "Negative")
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
+            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="", markersize=10)
                        for color in ['#1F77B4', '#FF7F0E']] # blue should always be positive, orange negative
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
-            lgnd.legendHandles[1]._legmarker.set_markersize(10)
+            plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
 
         # Hide the right and top spines, color others grey
         ax.spines["right"].set_visible(False)

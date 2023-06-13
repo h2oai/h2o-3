@@ -112,6 +112,23 @@ public class TestFrameBuilderTest extends TestUtil {
     fr.remove();
   }
 
+  /**
+   *  This test throws exception because it gets more data than the chunks can contain (Total size of chunks is less 
+   *  than the size of provided data) and it would result with frame with missing data in last rows
+   */
+  @Test(expected = IllegalArgumentException.class)
+  public void testSetChunksFewerThanProvidedData(){
+    Frame fr = new TestFrameBuilder()
+            .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+            .withColNames("A", "B")
+            .withDataForCol(0, ar("A", "B", "B", null, "F", "I"))
+            .withDataForCol(1, ard(Double.NaN, 1, 2, 3, 4, 5.6))
+            .withChunkLayout(1, 1, 2, 1) // we are requesting chunk capacity for 5 rows but provide 6 rows
+            .build();
+
+    fr.remove();
+  }
+
   @Test
   public void testSetChunks(){
     final Frame fr = new TestFrameBuilder()

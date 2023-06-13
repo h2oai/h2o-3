@@ -1,104 +1,95 @@
 ModelSelection
 --------------
 
-We implemented the ModelSelection toolbox based on GLM at H2O to help users select the best predictor subsets from their dataset for model building. We have currently implemented three modes to select the predictor subsets:
+Introduction
+~~~~~~~~~~~~
+
+We implemented the ModelSelection toolbox based on GLM at H2O to help users select the best predictor subsets from their dataset for model building. We have currently implemented four modes to select the predictor subsets:
 
 1. ``mode = "allsubsets"`` where all possible combinations of predictor subsets are generated for a given subset size. A model is built for each subset and the one with the highest :math:`R^2` is returned. The best subsets are also returned for subset size :math:`1, 2, ..., n`. This mode guarantees to return the predictor subset with the highest :math:`R^2` value at the cost of computation complexity.
 2. ``mode = "maxr"`` where a sequential replacement method is used to find the best subsets for subset size of :math:`1, 2, ..., n`. However, the predictor subsets are not guaranteed to have the highest :math:`R^2`` value.
 3. ``mode = "backward"`` where a model is built starting with all predictors. The predictor with the smallest absolute z-value (or z-score) is dropped after each model is built. This process repeats until only one predictor remains or until the number of predictors equal to ``min_predictor_number`` is reached. The model build can also be stopped using ``p_values_threshold``. 
+4. ``mode = "maxrsweep"`` where the model runs similar to ``mode = "maxr"`` except that instead of calling our GLM toolbox to build models, we use the sweep operator [:ref:`3<ref4>`] plus our own incremental sweep operation using sweep vectors. This change speeds up the execution of finding the best predictor subset for each subset size and is essential in dropping the build time of the model. 
+
+The fastest mode for ModelSelection is ``mode = "maxrsweep"`` with ``build_glm_model = False``. This skips the GLM model process while still generating the predictor subsets, the coefficients, and the coefficient values.
 
 This model only supports GLM regression families. 
+
+MOJO Support
+''''''''''''
+
+ModelSelection currently does not support `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
 Defining a ModelSelection Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+Parameters are optional unless specified as *required*. ModelSelection shares many `GLM parameters <glm.html#shared-glm-family-parameters>`__.
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable.
+Algorithm-specific parameters
+'''''''''''''''''''''''''''''
 
-   -  For a regression model only, this column must be numeric (**Real** or **Int**).
+- **build_glm_model**: (Applicable for ``mode = "maxrsweep"`` only) If enabled, this option will return full GLM models with the desired predictor subsets. If disabled, only the predictor subsets and predictor coefficients are returned. Disabling this parameter speeds up the model selection process. You can also choose to build the GLM models themselves by using the returned predictor subsets. This option defaults to ``True`` (enabled).
 
-- **mode**: (Required) Specify the model selection algorithm to use. This can be set to either **maxr** (default), **allsubsets**, or **backward**.
+- **max_predictor_number**: Maximum number of predictors to be considered when building GLM models. This option defaults to ``1``.
 
--  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+- **min_predictor_number**: (Applicable for ``mode = "backward"`` only) Minimum number of predictors to be considered when building GLM models starting with all predictors to be included. This option defaults to ``1``.
 
--  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
+- **mode**: *Required* Specify the model selection algorithm to use. One of:
+   
+   - ``"maxr"`` (default)
+   - ``"allsubsets"``
+   - ``"backward"``
+   - ``"maxrsweep"``
 
--  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+- **nparallelism**: Number of models to be built in parallel. This option defaults to ``0.0`` (which is adaptive to the system's capabilities).
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This value defaults to 0.
+- **p_values_threshold**: (Applicable for ``mode = "backward"`` only) If specified, this option will stop the model building process when all coefficient p-values drop to or below this threshold. This option defaults to ``0.0``.
 
--  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems). This option defaults to AUTO.
+- **score_iteration_interval**: Perform scoring for every ``score_iteration_interval`` iteration. This option defaults to ``-1``.
+
+Common parameters
+'''''''''''''''''
+
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
+
+-  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set. This option is set to ``True`` (enabled) by default.
+
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for ``nfolds`` is specified and ``fold_column`` is not specified) Specify the cross-validation fold assignment scheme. One of:
+
+    - ``AUTO`` (default; uses ``Random``)
+    - ``Random``
+    - ``Modulo`` (`read more about Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__)
+    - ``Stratified`` (which will stratify the folds based on the response variable for classification problems)
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns since no information can be gained from them. This option defaults to ``True`` (enabled).
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. This option defaults to ``-1``.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option is disabled by default.
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to ``0`` (unlimited).
 
-- **score_iteration_interval**: Perform scoring for every ``score_iteration_interval`` iteration. Defaults to ``-1``.
+-  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (one of: ``Skip``, ``MeanImputation`` (default), or ``PlugValues``). 
 
--  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``.
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. The value can be set to ``0`` (default) to disable or to :math:`\geq` ``2``. 
+
+-  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset; the value cannot be the same as the value for the ``weights_column``. This wll be added to the combination of columns before applying the link function.
    
-     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
--  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
-   
-    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Enable this option to score during each iteration of the model training. This option defaults to ``False`` (disabled).
 
--  `family <algo-params/family.html>`__: Specify the model type. For ``maxr`` and ``allsubsets``, only **gaussian** is supported. For ``backward``, all but **ordinal** and **multinomial** are supported.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to ``-1`` (time-based random number).
 
-   -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). 
-   -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
-   -  If the family is **fractionalbinomial**, the response must be a numeric between 0 and 1.
-   -  If the family is **quasibinomial**, the response must be numeric.
-   -  If the family is **poisson**, the response must be numeric and non-negative (**Int**).
-   -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
-   -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
-   -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
-   - If the family is **AUTO** (default),
-
-      - and the response is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
-      - and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
-
--  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
-   specified for **Family**) Specify the Tweedie variance power (defaults to 0).
-
--  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if *Tweedie* is specified
-   for **Family**) Specify the Tweedie link power (defaults to 0).
-
--  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 0.  
-
--  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family. AUTO (default) will set the solver based on the given data and other parameters.
-
--  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2. The default value of alpha is 0 when SOLVER = 'L-BFGS'; otherwise it is 0.5.
-
--  `lambda <algo-params/lambda.html>`__: Specify the regularization strength.
-
--  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max (the smallest :math:`\lambda` that drives all coefficients to zero). If you also specify a value for ``lambda_min_ratio``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda_min_ratio``, then GLM will calculate the minimum lambda. This option is disabled by default.
-
--  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda_search** is enabled) Specify the number of lambdas to use in the search. When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, then the default value for ``nlambdas`` is 100. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When ``alpha=0``, the default value for ``nlamdas`` is set to 30 because fewer lambdas are needed for ridge regression. This value defaults to -1.
-
--  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda_max**, which is the smallest :math:`\lambda` for which the solution is all zeros). This value defaults to -1.
-
--  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set. This option is enabled by default.
-
-- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for **stopping_metric** doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
-
-    **Note:** If cross-validation is enabled:
-  
-    - All cross-validation models stop training when the validation metric doesn't improve.
-    - The main model runs for the mean number of epochs.
-    - N+1 models may be off by the number specified for **stopping_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+-  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option defaults to ``True`` (enabled).
 
 - `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. The available options are:
 
-  - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that ``custom`` and ``custom_increasing`` can only be used in GBM and DRF with the Python Client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
-  - ``anomaly_score`` (Isolation Forest only)
+  - ``AUTO`` (default): (This defaults to ``logloss`` for classification and ``deviance`` for regression)
   - ``deviance``
   - ``logloss``
   - ``MSE``
@@ -110,64 +101,34 @@ Defining a ModelSelection Model
   - ``lift_top_group``
   - ``misclassification``
   - ``mean_per_class_error``
-  - ``custom`` (GBM/DRF Python client only)
-  - ``custom_increasing`` (GBM/DRF Python client only)
 
-- `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. Defaults to ``0.001``.
+- `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for ``stopping_metric`` doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0`` (default). 
 
--  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
+    **Note:** If cross-validation is enabled:
+  
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for ``stopping_rounds`` from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip, MeanImputation, or PlugValues). This value defaults to MeanImputation.
+- `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This option defaults to ``0.001``.
 
--  `plug_values <algo-params/plug_values.html>`__: When ``missing_values_handling="PlugValues"``, specify a single row frame containing values that will be used to impute missing values of the training/validation frame.
-
--  `compute_p_values <algo-params/compute_p_values.html>`__: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove_collinear_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove_collinear_columns flag is not enabled. Note that this option is not available for ``family="multinomial"`` or ``family="ordinal"``. This option is disabled by default.
-
--  `remove_collinear_columns <algo-params/remove_collinear_columns.html>`__: Specify whether to automatically remove collinear columns during model-building. When enabled, collinear columns will be dropped from the model and will have 0 coefficient in the returned model. This can only be set if there is no regularization (lambda=0). This option is disabled by default.
-
--  `intercept <algo-params/intercept.html>`__: Specify whether to include a constant term in the model. This option is enabled by default. 
-
--  `non_negative <algo-params/non_negative.html>`__: Specify whether to force coefficients to have non-negative values (defaults to false). 
-
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations (defaults to -1).
-
--  `objective_epsilon <algo-params/objective_epsilon.html>`__: If the objective value is less than this threshold, then the model is converged. If ``lambda_search=True``, then this value defaults to .0001. If ``lambda_search=False`` and lambda is equal to zero, then this value defaults to .000001. For any other value of lambda, the default value of objective_epsilon is set to .0001. The default value is -1.
-
--  `beta_epsilon <algo-params/beta_epsilon.html>`__: Converge if beta changes less than this value (using L-infinity norm). This only applies to IRLSM solver, and the value defaults to 0.0001.
-
--  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. If ``lambda_search=True``, then this value defaults to .0001. If ``lambda_search=False`` and lambda is equal to zero, then this value defaults to .000001. For any other value of lambda, this value defaults to .0001. This value defaults to -1.
-
--  **startval**: The initial starting values for fixed and randomized coefficients in HGLM specified as a double array. 
-
--  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
    
-     **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
+    **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
-- **cold_start**: Specify whether the model should be built from scratch. This parameter is only applicable when building a GLM model with multiple alpha/lambda values. If false and for a fixed alpha value, the next model with the next lambda value out of the lambda array will be built using the coefficients and the GLM state values of the current model. If true, the next GLM model will be built from scratch. The default value is false.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
-  **Note:** If an alpha array is specified and for a brand new alpha, the model will be built from scratch regardless of the value of ``cold_start``.
+-  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
+    
+    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
+   
+    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  `beta_constraints <algo-params/beta_constraints.html>`__: Specify a dataset to use beta constraints. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names.
+-  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
--  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active
-   predictors during computation. This value is used as a stopping
-   criterium to prevent expensive model building with many predictors. This value defaults to -1.
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable.
 
--  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
-
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
-   training.  This defaults to 0 (unlimited).
-
--  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
-
-- **nparallelism**: Number of models to be built in parallel. Defaults to 0.0 (which is adaptive to the system's capabilities).
-
-- **max_predictor_number**: Maximum number of predictors to be considered when building GLM models. Defaults to 1.
-
-- **min_predictor_number**: For ``mode = "backward"`` only.  Minimum number of predictors to be considered when building GLM models starting with all predictors to be included. Defaults to ``1``.
-
-- **p_values_threshold**: For ``mode = "backward"`` only. If specified, will stop the model building process when all coefficient p-values drop to or below this threshold. Defaults to ``0.0``.
-
+    -  For a regression model only, this column must be numeric (**Real** or **Int**).
 
 Understanding ModelSelection ``mode = allsubsets``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -186,7 +147,7 @@ The main disadvantage of this mode is the long computation time.
 Understanding ModelSelection ``mode = maxr``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The H2O ModelSelection ``mode = maxr`` is implemented using the sequential replacement method [:ref:`1<ref1>`]. This consists of a forward step and a replacement step. The sequential replacement method goes like this (where the predictors are denoted by *A, B, C, ..., Z*):
+The H2O ModelSelection ``mode = maxr`` is implemented using the sequential replacement method [:ref:`1<ref4>`]. This consists of a forward step and a replacement step. The sequential replacement method goes like this (where the predictors are denoted by *A, B, C, ..., Z*):
 
 1. Start with the current *subset = {}* (empty)
 2. Forward step for 1 predictor subset:
@@ -377,6 +338,52 @@ Examples
       Intercept   CAPSULE     DCAPS       PSA
       6.3842105 0.3719895 0.1490516 0.2577879
 
+      # Check the variables that were added during this process:
+      h2o.get_predictors_added_per_step(allsubsetsModel)
+           [,1]     
+      [1,] "CAPSULE"
+      [2,] "PSA"    
+      [3,] "DCAPS"  
+      [4,] "DPROS"  
+      [5,] "AGE"    
+      [6,] "RACE"   
+      [7,] "VOL"
+
+      # To find out which variables get removed, build a new model with ``mode = "backward``
+      # using the above training information:
+      bwModel = h2o.modelSelection(x = predictors, 
+                                   y = response, 
+                                   training_frame = prostate, 
+                                   seed = 12345, 
+                                   max_predictor_number = 7, 
+                                   mode = "backward")
+      h2o.get_predictors_removed_per_step(bwModel)
+           [,1]
+      [1,] "CAPSULE"  
+      [2,] "PSA"  
+      [3,] "DCAPS"  
+      [4,] "DPROS"  
+      [5,] "AGE"  
+      [6,] "RACE"  
+      [7,] "VOL" 
+
+      # To build the fastest model with ModelSelection, use ``mode = "maxrsweep"``:
+      sweepModel <- h2o.modelSelection(x = predictors, 
+                                       y = response, 
+                                       training_frame = prostate, 
+                                       mode = "maxrsweep", 
+                                       build_glm_model = FALSE, 
+                                       max_predictor_number = 3, 
+                                       seed = 12345)
+      |======================================================================| 100%
+
+      # Retrieve the results to view the best predictor subsets:
+      h2o.result(sweepModel)
+        model_name                  best_r2_value          coefficient_names     predictor_names predictors_removed predictors_added
+      1 best 1 predictors model     0.2058873             CAPSULE, Intercept             CAPSULE                             CAPSULE
+      2 best 2 predictors model     0.2695684        CAPSULE, PSA, Intercept        CAPSULE, PSA                                 PSA
+      3 best 3 predictors model     0.2862536 CAPSULE, PSA, DCAPS, Intercept CAPSULE, PSA, DCAPS                               DCAPS
+
    .. code-tab:: python
 
       import h2o
@@ -445,7 +452,11 @@ Examples
       print(coeff_norm3)
       # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.37198951914000183, ‘DCAPS’: 0.1490515817762952, ‘PSA’: 0.25778793491797924}
 
-      # Using the above training information, build a model using mode = "backward":
+      # Check the variables that were added during this process:
+      maxrModel.get_predictors_added_per_step()
+      [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
+
+      # Using the above training information, build a model using ``mode = "backward"``:
       bwModel = H2OModelSelectionEstimator(max_predictor_number=3, 
                                            seed=12345, 
                                            mode="backward")
@@ -457,14 +468,34 @@ Examples
       with 2 predictors CAPSULE, PSA, Intercept         7.825700947986458, 5.733056921838707, 86.91622746127426                      5.144662722557474E-14, 2.023486352710146E-8, 1.7241718600984578E-251
       with 3 predictors CAPSULE, DCAPS, PSA, Intercept  7.275417885570092, 2.964750742738588, 4.992785143892783, 30.274880599946904  2.0273323955515335E-12, 0.0032224082063575395, 9.124834372427609E-7, 7.417923313036E-103
 
+      # Check the variables that were removed during this process:
+      bwModel.get_predictors_removed_per_step()
+      [['CAPSULE'], ['PSA'], ['DCAPS'], ['DPROS'], ['AGE'], ['RACE'], ['VOL']]
 
+      # To build the fastest model with ModelSelection, use ``mode="maxrsweep"``:
+      sweepModel = H2OModelSelectionEstimator(mode="maxrsweep", 
+                                              build_glm_model=False, 
+                                              max_predictor_number=3, 
+                                              seed=12345)
+      sweepModel.train(x=predictors, y=response, training_frame=prostate)
+      modelselection Model Build progress: ======================================= (done)| 100%
+
+      # Retrieve the results to view the best predictor subsets:
+      print(sweepModel.results())
+      model_name                 best_r2_value  coefficient_names               predictor_names      predictors_removed    predictors_added
+      best 1 predictors model         0.205887  CAPSULE, Intercept              CAPSULE                                    CAPSULE
+      best 2 predictors model         0.269568  CAPSULE, PSA, Intercept         CAPSULE, PSA                               PSA
+      best 3 predictors model         0.286254  CAPSULE, PSA, DCAPS, Intercept  CAPSULE, PSA, DCAPS                        DCAPS
+      [3 rows x 6 columns]
 
 
 References
 ~~~~~~~~~~
 
-.. _ref1:
+.. _ref4:
 
 1. Alan Miller, Subset Selection in Regression, section 3.5, Second Edition, 2002 Chapman & Hall/CRC.
 
 2. Trevor Hastie, Robert Tibshirani, Jerome Friedman, The Elements of Statistical Learning, Section 3.3.2, Second Edition, Springer, 2008.
+
+3. M. Schatzoff, R. Tsao, S. Fierberg, “Efficient Calculation of All Possible Regressions”, TECHNOMETRICS, Vol. 10, No. 4, NOVEMBER 1968.

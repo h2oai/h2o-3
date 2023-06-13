@@ -12,7 +12,6 @@ from weakref import ref
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin, ClassifierMixin, RegressorMixin
 
 from .. import h2o, H2OFrame
-from ..utils.compatibility import PY2
 from ..utils.metaclass import decoration_info
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
 from ..utils.mixin import Mixin, register_class
@@ -27,18 +26,6 @@ except ImportError:
 
 if can_use_numpy():
     import numpy as np
-
-
-def _unwrap(fn):
-    """
-    Hack to be sure we get the function with the correct signature in Py2.
-    Can be removed when we stop supporting Py2.
-    """
-    decoration = decoration_info(fn)
-    if PY2 and decoration is not None:
-        return _unwrap(decoration['wrapped'])
-    return fn
-
 
 def wrap_estimator(cls,
                    bases,
@@ -68,7 +55,7 @@ def wrap_estimator(cls,
     assert isinstance(bases, tuple) and len(bases) > 0
     if default_params is None:
         # obtain the default params from signature of the estimator class constructor
-        sig = signature(_unwrap(cls.__init__))
+        sig = signature(cls.__init__)
         ignored_names = ['self']
         ignored_kind = [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL]
         default_params = OrderedDict((p.name, p.default if p.default is not p.empty else None)
@@ -247,7 +234,6 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
         :param fn: the function to be decorated
         :return: a new function that will convert X, and y parameters before passing them to the original function.
         """
-        fn = _unwrap(fn)
         sig = signature(fn)
         has_self = 'self' in sig.parameters
         assert any(arg in sig.parameters for arg in frame_params), \
@@ -263,6 +249,11 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
             :return:
             """
             _args = sig.bind(*args, **kwargs).arguments
+            for name, param in sig.parameters.items():
+                if param.kind == param.VAR_KEYWORD and name in _args:
+                    kw_arg = _args.pop(name)
+                    _args.update(**kw_arg)
+
             classifier = False
             self = {}
             frame_info = None

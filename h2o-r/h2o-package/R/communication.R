@@ -511,8 +511,21 @@
                    parms = parms, method = method, fileUploadInfo = fileUploadInfo, parms_as_payload=parms_as_payload, ...)
 
   if (rv$curlError) {
-
-    stop(sprintf("Unexpected CURL error: %s", rv$curlErrorMessage))
+    errorMessage <- rv$curlErrorMessage
+    if (!use.package("curl", version = "4.3.0", use = !getOption("prefer_RCurl", FALSE))){
+      curlVersion <- as.numeric(strsplit(RCurl::curlVersion()$version, ".", fixed = TRUE)[[1]])
+      # curl 7.68.0 introduces socketpair, RCurl does not always release the sockets which leads to errors
+      if (curlVersion[[1]] >= 7 && curlVersion[[2]] >= 68) {
+        errorMessage <- paste(
+          errorMessage,
+          "\nThis can be caused by issues with some versions of curl library together with RCurl package.",
+          "Installing R package `curl` version 4.3.0 and above could help.",
+          "Otherwise, using curl system library versions below 7.68.0 or compiled with --disable-socketpair could help,",
+          "in case you cannot use curl R package."
+        )
+      }
+    }
+    stop(sprintf("Unexpected CURL error: %s", errorMessage))
   } else if (rv$httpStatusCode != 200) {
     cat("\n")
     cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
@@ -935,7 +948,7 @@ h2o.clusterInfo <- function() {
   cat("    H2O cluster timezone:      ", res$cloud_internal_timezone, "\n")
   cat("    H2O data parsing timezone: ", res$datafile_parser_timezone, "\n")
   cat("    H2O cluster version:       ", res$version, "\n")
-  cat("    H2O cluster version age:   ", res$build_age, if (res$build_too_old) "!!!" else "", "\n")
+  cat("    H2O cluster version age:   ", res$build_age, "\n")
   cat("    H2O cluster name:          ", res$cloud_name, "\n")
   cat("    H2O cluster total nodes:   ", res$cloud_size, "\n")
   cat("    H2O cluster total memory:  ", sprintf("%.2f GB", freeMem), "\n")
@@ -953,7 +966,7 @@ h2o.clusterInfo <- function() {
     warning("Number of CPU cores allowed is limited to 1 on some nodes.\n",
             "To remove this limit, set environment variable 'OPENBLAS_MAIN_FREE=1' before starting R.")
   if (res$build_too_old) {
-    warning(sprintf("\nYour H2O cluster version is too old (%s)!\nPlease download and install the latest version from http://h2o.ai/download/", res$build_age))
+    warning(sprintf("\nYour H2O cluster version is (%s) old. There may be a newer version available.\nPlease download and install the latest version from: https://h2o-release.s3.amazonaws.com/h2o/latest_stable.html", res$build_age))
   }
 }
 
@@ -993,7 +1006,7 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
   i <- 0
   while (i < 30) {
     rawResponse <- try(.h2o.doSafeGET(urlSuffix = myJobUrlSuffix, doValidation=!jobPollSuccess))
-    if(class(rawResponse) == "try-error" && jobPollSuccess){
+    if (inherits(rawResponse, "try-error") && jobPollSuccess){
       error_type <- attr(rawResponse,"condition")
       if (jobIsRecoverable) {
         print(sprintf("Job request failed %s, waiting for cluster to restart.", error_type$message))
@@ -1014,7 +1027,7 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
   }
 
   # If request is still errored, stop with last error
-  if(class(rawResponse) == "try-error") {
+  if(inherits(rawResponse, "try-error")) {
     stop(rawResponse)
   }
 
@@ -1076,7 +1089,11 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 
 #'
 #' Disable Progress Bar
-#' 
+#'
+#' @param expr When specified, disable progress bar only for the evaluation of the expr and after the evaluation return to the previous setting (default is to show the progress bar), otherwise disable it globally.
+#' @returns Value of expr if specified, otherwise NULL.
+#'
+#' @seealso \link{h2o.show_progress}
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -1098,11 +1115,28 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 #'                       standardize = FALSE, seed = 1234)
 #' }
 #' @export
-h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
+h2o.no_progress <- function(expr) {
+  if (missing(expr)) {
+    assign("PROGRESS_BAR", FALSE, .pkg.env)
+    invisible(NULL)
+  } else {
+    show_progress <- .h2o.is_progress()
+    if (length(show_progress) == 0L || show_progress) {
+      on.exit(h2o.show_progress())
+    } else {
+      on.exit(h2o.no_progress())
+    }
+    h2o.no_progress()
+    force(expr)
+  }
+}
 
 #'
 #' Enable Progress Bar
+#' @param expr When specified enable progress only for the evaluation of the expr and after the evaluation return to the previous setting (default is to show the progress bar), otherwise enable it globally.
+#' @returns Value of expr if specified, otherwise NULL.
 #'
+#' @seealso \link{h2o.no_progress}
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -1125,7 +1159,21 @@ h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
 #'                       standardize = FALSE, seed = 1234)
 #' }
 #' @export
-h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
+h2o.show_progress <- function(expr) {
+  if (missing(expr)) {
+    assign("PROGRESS_BAR", TRUE, .pkg.env)
+    invisible(NULL)
+  } else {
+    show_progress <- .h2o.is_progress()
+    if (length(show_progress) == 0L || show_progress) {
+      on.exit(h2o.show_progress())
+    } else {
+      on.exit(h2o.no_progress())
+    }
+    h2o.show_progress()
+    force(expr)
+  }
+}
 
 #'
 #' Check if Progress Bar is Enabled

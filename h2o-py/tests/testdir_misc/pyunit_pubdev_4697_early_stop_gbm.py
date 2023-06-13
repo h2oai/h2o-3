@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o
@@ -64,7 +63,7 @@ def train_it(frames, x):
 
     num_trees_trained = (int(estimator.summary()
                              .as_data_frame()['number_of_trees']
-                             .get_values()[0]))
+                             .to_numpy()[0]))
     print('num trees trained = {0}'.format(num_trees_trained))
     assert num_trees_trained < NUM_TREES, "Early stopping is not work."
 

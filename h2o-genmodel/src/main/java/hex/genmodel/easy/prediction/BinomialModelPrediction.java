@@ -33,7 +33,7 @@ public class BinomialModelPrediction extends AbstractPrediction {
   public double[] classProbabilities;
 
   /**
-   * Class probabilities calibrated by Platt Scaling. Optional, only calculated if the model supports it.
+   * Class probabilities calibrated by Platt Scaling or Isotonic Regression. Optional, only calculated if the model supports it.
    */
   public double[] calibratedClassProbabilities;
   public String[] leafNodeAssignments;  // only valid for tree-based models, null for all other mojo models

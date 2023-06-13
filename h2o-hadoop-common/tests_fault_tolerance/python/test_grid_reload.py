@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 import os
 import time
@@ -16,7 +15,7 @@ class GridReloadTest(unittest.TestCase):
     def test_grid_reload(self):
         name_node = utils.hadoop_namenode()
         work_dir = utils.get_workdir()
-        dataset = "/datasets/iris_wheader.csv"
+        dataset = "/datasets/smalldata/iris/iris_wheader.csv"
 
         ntrees_opts = [100, 120, 130, 140]
         learn_rate_opts = [0.01, 0.02, 0.03, 0.04]

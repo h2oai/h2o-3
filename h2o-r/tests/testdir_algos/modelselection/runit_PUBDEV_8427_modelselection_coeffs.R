@@ -17,6 +17,16 @@ testModelSelectionCoeffs <- function() {
     mode="maxr")
   coeffsMaxr <- h2o.coef(maxrModel)
   coeffsNormMaxr <- h2o.coef_norm(maxrModel)
+  maxrsweepModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel, 
+      mode="maxrsweep", build_glm_model=TRUE)
+  coeffsMaxrsweep <- h2o.coef(maxrsweepModel)
+  coeffsNormMaxrsweep <- h2o.coef_norm(maxrsweepModel)
+  maxrsweepGLMModel <- h2o.modelSelection(y=Y, x=X, seed=12345, training_frame = bhexFV, max_predictor_number=numModel, 
+        mode="maxrsweep")
+
+  coeffsMaxrsweepGLM <- h2o.coef(maxrsweepGLMModel)
+  coeffsNormMaxrsweepGLM <- h2o.coef_norm(maxrsweepGLMModel)
+
   # check coefficients obtained in different ways are the same.
   for (ind in c(1:numModel)) {
     coeffsModelAllsubsets <- coeffsAllsubsets[[ind]]
@@ -33,7 +43,20 @@ testModelSelectionCoeffs <- function() {
     expect_equal(coeffsModelMaxr, coeffsTempMaxr, tolerance=1e-6)
     expect_equal(coeffsNormModelMaxr, coeffsNormTempMaxr, tolerance=1e-6)
     expect_equal(coeffsNormModelAllsubsets[order(coeffsNormModelAllsubsets)], coeffsNormTempMaxr[order(coeffsNormTempMaxr)], tolerance=1e-6)
+    
+    coeffsModelMaxrsweep <- coeffsMaxrsweep[[ind]]
+    coeffsNormModelMaxrsweep <- coeffsNormMaxrsweep[[ind]]
+    coeffsTempMaxrsweep <- h2o.coef(h2o.getModel(maxrsweepModel@model$best_model_ids[[ind]]$name))
+    coeffsNormTempMaxrsweep <- h2o.coef_norm(h2o.getModel(maxrsweepModel@model$best_model_ids[[ind]]$name))
+    expect_equal(coeffsModelMaxrsweep, coeffsTempMaxrsweep, tolerance=1e-6)
+    expect_equal(coeffsNormModelMaxrsweep, coeffsNormTempMaxrsweep, tolerance=1e-6)
+    expect_equal(coeffsNormModelAllsubsets[order(coeffsNormModelAllsubsets)], coeffsNormTempMaxrsweep[order(coeffsNormTempMaxrsweep)], tolerance=1e-6)
+    
+    coeffsModelMaxrsweepGLM <- coeffsMaxrsweepGLM[[ind]]
+    coeffsNormModelMaxrsweepGLM <- coeffsNormMaxrsweepGLM[[ind]]
+    expect_equal(sort(coeffsModelMaxrsweepGLM), sort(coeffsTempMaxrsweep), tolerance=1e-6)
+    expect_equal(sort(coeffsNormModelMaxrsweepGLM), sort(coeffsNormTempMaxrsweep), tolerance=1e-6)
   }
 }
 
-doTest("ModelSelection with allsubsets, maxr: test h2o.coef() and h2o.coef_norm()", testModelSelectionCoeffs)
+doTest("ModelSelection with allsubsets, maxr, maxrsweep: test h2o.coef() and h2o.coef_norm()", testModelSelectionCoeffs)

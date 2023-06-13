@@ -190,7 +190,7 @@ if (!smokeTest) {
     response = 1,
     predictors = 2:15,
     flag = "G",
-    test_file_path ="/hdfs://mr-0xd6.0xdata.loc/datasets/citibike-nyc/2014-08.csv")
+    test_file_path ="hdfs://mr-0xd6.0xdata.loc/datasets/citibike-nyc/2014-08.csv")
 
   #-----------------------------------------
 

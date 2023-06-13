@@ -1,4 +1,3 @@
-from __future__ import print_function
 import re
 import h2o
 from tests import pyunit_utils
@@ -14,14 +13,14 @@ def test_show_time():
          "D": ["12MAR2015:11:00:00", "13MAR2015:12:00:00", "14MAR2015:13:00:00"]},
         column_types={"A": "numeric", "B": "enum", "C": "string", "D": "time"}
     )
-    out = df.__unicode__()
+    out = str(df)
     print(out)
     assert "2015-03-12 11:00:00" in out
     assert "2015-03-13 12:00:00" in out
     assert "2015-03-14 13:00:00" in out
 
     df2 = h2o.create_frame(cols=6, rows=10, time_fraction=1, missing_fraction=0.1)
-    out2 = df2.__unicode__()
+    out2 = str(df2)
     print(out2)
     assert "e+" not in out2
     assert "E+" not in out2
@@ -40,8 +39,6 @@ def test_show_time():
             assert 1970 <= year <= 2020
             assert 1 <= month <= 12
             assert 1 <= day <= 31
-
-
 
 
 if __name__ == "__main__":

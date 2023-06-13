@@ -2,7 +2,7 @@ source("fault_tolerance_utils.R")
 
 name_node <- Sys.getenv("NAME_NODE")
 work_dir <- sprintf("hdfs://%s%s", name_node, get_workdir())
-dataset <- "/datasets/mnist/train.csv.gz"
+dataset <- "/datasets/bigdata/laptop/mnist/train.csv.gz"
 
 test_that("Can reload a Frame from hdfs", {
     print("Import and save...")

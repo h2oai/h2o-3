@@ -1,0 +1,22 @@
+description = "H2O Persist Drive"
+
+repositories {
+    mavenCentral()
+}
+
+apply plugin: 'java-library'
+
+sourceCompatibility = 17
+targetCompatibility = 17
+
+compileJava {
+  options.encoding = "UTF-8"
+}
+
+dependencies {
+  api fileTree(dir: "$rootDir/../h2o-core/build/libs", include: '*.jar')
+  api fileTree(dir: "$rootDir/../h2o-logger/build/libs", include: '*.jar')
+  compileOnly "org.graalvm.sdk:graal-sdk:22.2.0"
+
+  testImplementation group: 'junit', name: 'junit', version: '4.12'
+}

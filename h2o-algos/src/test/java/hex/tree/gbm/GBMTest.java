@@ -3731,7 +3731,7 @@ public class GBMTest extends TestUtil {
           model = new hex.tree.gbm.GBM(parms).trainModel().get();
           fail("Custom stopping " + " shouldn't work without a custom metric");
         } catch (H2OModelBuilderIllegalArgumentException e) {
-          if (e.getMessage() == null || !e.getMessage().contains("ERRR on field: _stopping_metric: " +
+          if (e.getMessage() == null || !e.getMessage().contains("ERRR on field: _custom_metric_func: " +
                   "Custom metric function needs to be defined in order to use it for early stopping.")) {
             throw e;
           }

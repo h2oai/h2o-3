@@ -199,7 +199,7 @@ def main(argv):
     global g_summary_csv_filename
 
     if len(argv) < 5:
-        print "Wrong call.  Not enough arguments.\n"
+        print("Wrong call.  Not enough arguments.\n")
         usage()
         sys.exit(1)
     else:   # we may be in business

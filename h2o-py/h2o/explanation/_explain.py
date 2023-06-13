@@ -5,12 +5,7 @@ import warnings
 from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
 
-from h2o.utils.typechecks import assert_is_type, Enum
-
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
-except:
-    from io import StringIO  # py3
+from io import StringIO
 
 import h2o
 import numpy as np
@@ -37,7 +32,7 @@ def _display(object):
     if isinstance(object, matplotlib.figure.Figure):
         plt.close(object)
         print("\n")
-    if (is_decorated_plot_result(object) and (object.figure() is not None)):
+    if is_decorated_plot_result(object) and (object.figure() is not None):
         plt.close(object.figure())
         print("\n")
     return object
@@ -99,6 +94,8 @@ class Description:
                           "for heteroscedasticity, autocorrelation, etc. Note that if you see \"striped\" lines of "
                           "residuals, that is an artifact of having an integer valued (vs a real valued) "
                           "response variable.",
+        learning_curve="Learning curve plot shows the loss function/metric dependent on number of iterations or trees "
+                       "for tree-based algorithms. This plot can be useful for determining whether the model overfits.",
         variable_importance="The variable importance plot shows the relative importance of the most "
                             "important variables in the model.",
         varimp_heatmap="Variable importance heatmap shows variable importance across multiple models. "
@@ -134,6 +131,32 @@ class Description:
                          "the model, i.e., prediction before applying inverse link function. H2O implements "
                          "TreeSHAP which when the features are correlated, can increase contribution of a feature "
                          "that had no influence on the prediction.",
+        fairness_metrics="The following table shows fairness metrics for intersections determined using "
+                         "the protected_columns. Apart from the fairness metrics, there is a p-value "
+                         "from Fisher's exact test or G-test (depends on the size of the intersections) "
+                         "for hypothesis that being selected (positive response) is independent to "
+                         "being in the reference group or a particular protected group.\n\n"
+                         "After the table there are two kinds of plot. The first kind starts with AIR prefix "
+                         "which stands for Adverse Impact Ratio. These plots show values relative to the "
+                         "reference group and also show two dashed lines corresponding to 0.8 and 1.25 "
+                         "(the four-fifths rule). \n The second kind is showing the absolute value of given "
+                         "metrics. The reference group is shown by using a different colored bar.",
+        fairness_roc="The following plot shows a Receiver Operating Characteristic (ROC) for each "
+                     "intersection. This plot could be used for selecting different threshold of the "
+                     "classifier to make it more fair in some sense this is described in, e.g., "
+                     "HARDT, Moritz, PRICE, Eric and SREBRO, Nathan, 2016. Equality of Opportunity in "
+                     "Supervised Learning. arXiv:1610.02413.",
+        fairness_prc="The following plot shows a Precision-Recall Curve for each intersection.",
+        fairness_varimp="Permutation variable importance is obtained by measuring the distance between "
+                        "prediction errors before and after a feature is permuted; only one feature at "
+                        "a time is permuted.",
+        fairness_pdp="The following plots show partial dependence for each intersection separately. "
+                     "This plot can be used to see how the membership to a particular intersection "
+                     "influences the dependence on a given feature.",
+        fairness_shap="The following plots show SHAP contributions for individual intersections and "
+                      "one feature at a time. "
+                      "This plot can be used to see how the membership to a particular intersection "
+                      "influences the dependence on a given feature.",
     )
 
     def __init__(self, for_what):
@@ -160,7 +183,7 @@ class H2OExplanation(OrderedDict):
 
 
 @contextmanager
-def no_progress():
+def no_progress_block():
     """
     A context manager that temporarily blocks showing the H2O's progress bar.
     Used when a multiple models are evaluated.
@@ -199,11 +222,11 @@ class NumpyFrame:
                     levels = set(row[col] for row in df)
                     self._factors[self._columns[col]] = list(levels)
 
-            self._data = np.empty((len(df), len(self._columns)))
+            self._data = np.empty((len(df), len(self._columns)), dtype=np.float64)
             df = [self._columns] + df
         elif isinstance(h2o_frame, h2o.H2OFrame):
-            _is_factor = np.array(h2o_frame.isfactor(), dtype=np.bool) | np.array(
-                h2o_frame.ischaracter(), dtype=np.bool)
+            _is_factor = np.array(h2o_frame.isfactor(), dtype=bool) | np.array(
+                h2o_frame.ischaracter(), dtype=bool)
             _is_numeric = h2o_frame.isnumeric()
             self._columns = h2o_frame.columns
             self._factors = {col: h2o_frame[col].asfactor().levels()[0] for col in
@@ -220,17 +243,22 @@ class NumpyFrame:
                 self._data[:, idx] = np.array(
                     [float(convertor.get(
                         row[idx] if not (len(row) == 0 or row[idx] == "") else "nan", "nan"))
-                        for row in df[1:]], dtype=np.float32)
+                        for row in df[1:]], dtype=np.float64)
             elif _is_numeric[idx]:
                 self._data[:, idx] = np.array(
                     [float(row[idx] if not (len(row) == 0 or row[idx] == "") else "nan") for row in
                      df[1:]],
-                    dtype=np.float32)
+                    dtype=np.float64)
             else:
                 try:
-                    self._data[:, idx] = np.array([row[idx] if not (len(row) == 0 or row[idx] == "")
-                                                   else "nan" for row in df[1:]],
-                                                  dtype=np.datetime64)
+                    self._data[:, idx] = np.array([row[idx]
+                                                   if not (
+                            len(row) == 0 or
+                            row[idx] == "" or
+                            row[idx].lower() == "nan"
+                    ) else "nan" for row in df[1:]], dtype=np.float64)
+                    if h2o_frame.type(self._columns[idx]) == "time":
+                        self._data[:, idx] = _timestamp_to_mpl_datetime(self._data[:, idx])
                 except Exception:
                     raise RuntimeError("Unexpected type of column {}!".format(col))
 
@@ -321,6 +349,20 @@ class NumpyFrame:
                 return np.asarray(self._data[row, self.columns.index(column)] == factor,
                                   dtype=np.float32)
         return self._data[row, self.columns.index(column)]
+
+    def __setitem__(self, key, value):
+        # type: ("NumpyFrame", str, np.ndarray) -> None
+        """
+        Rudimentary implementation of setitem. Setting a factor column is not supported.
+        Use with caution.
+        :param key: column name
+        :param value: ndarray representing one whole column
+        """
+        if key not in self.columns:
+            raise KeyError("Column {} is not present amongst {}".format(key, self.columns))
+        if self.isfactor(key):
+            raise NotImplementedError("Setting a factor column is not supported!")
+        self._data[:, self.columns.index(key)] = value
 
     def get(self, column, as_factor=True):
         # type: ("NumpyFrame", str, bool) -> np.ndarray
@@ -437,6 +479,28 @@ class NumpyFrame:
             yield col, self.get(col, with_categorical_names)
 
 
+def _mpl_datetime_to_str(mpl_datetime):
+    # type: (float) -> str
+    """
+    Convert matplotlib-compatible date time which in which the unit is a day to a human-readable string.
+
+    :params mpl_datetime: number of days since the beginning of the unix epoch
+    :returns: string containing date time
+    """
+    from datetime import datetime
+    # convert to seconds and then to datetime
+    return datetime.utcfromtimestamp(mpl_datetime * 3600 * 24).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _timestamp_to_mpl_datetime(timestamp):
+    """
+   Convert timestamp to matplotlib compatible timestamp.
+   :params timestamp: number of ms since the beginning of the unix epoch
+   :returns: number of days since the beginning of the unix epoch
+    """
+    return timestamp / (1000 * 3600 * 24)
+
+
 def _get_domain_mapping(model):
     """
     Get a mapping between columns and their domains.
@@ -506,6 +570,8 @@ def _density(xs, bins=100):
     :param bins: number of bins
     :returns: density values
     """
+    if len(xs) < 10:
+        return np.zeros(len(xs))
     hist = list(np.histogram(xs, bins=bins))
     # gaussian blur
     hist[0] = np.convolve(hist[0],
@@ -556,27 +622,27 @@ def shap_summary_plot(
         save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
-    SHAP summary plot
+    SHAP summary plot.
 
-    SHAP summary plot shows contribution of features for each instance. The sum
+    The SHAP summary plot shows the contribution of features for each instance. The sum
     of the feature contributions and the bias term is equal to the raw prediction
-    of the model, i.e., prediction before applying inverse link function.
+    of the model (i.e. prediction before applying inverse link function).
 
-    :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
-    :param frame: H2OFrame
+    :param model: h2o tree model (e.g. DRF, XRT, GBM, XGBoost).
+    :param frame: H2OFrame.
     :param columns: either a list of columns or column indices to show. If specified
-                    parameter top_n_features will be ignored.
+                    parameter ``top_n_features`` will be ignored.
     :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param samples: maximum number of observations to use; if lower than number of rows in the
-                    frame, take a random sample
-    :param colorize_factors: if True, use colors from the colormap to colorize the factors;
-                             otherwise all levels will have same color
-    :param alpha: transparency of the points
-    :param colormap: colormap to use instead of the default blue to red colormap
-    :param figsize: figure size; passed directly to matplotlib
-    :param jitter: amount of jitter used to show the point density
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+                    frame, take a random sample.
+    :param colorize_factors: if ``True``, use colors from the colormap to colorize the factors;
+                             otherwise all levels will have same color.
+    :param alpha: transparency of the points.
+    :param colormap: colormap to use instead of the default blue to red colormap.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param jitter: amount of jitter used to show the point density.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -626,7 +692,7 @@ def shap_summary_plot(
         permutation = list(range(frame.nrow))
         random.shuffle(permutation)
 
-    with no_progress():
+    with no_progress_block():
         contributions = NumpyFrame(model.predict_contributions(frame))
     frame = NumpyFrame(frame)
     contribution_names = contributions.columns
@@ -693,27 +759,32 @@ def shap_explain_row_plot(
         save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
-    SHAP local explanation
+    SHAP local explanation.
 
-    SHAP explanation shows contribution of features for a given instance. The sum
+    SHAP explanation shows the contribution of features for a given instance. The sum
     of the feature contributions and the bias term is equal to the raw prediction
-    of the model, i.e., prediction before applying inverse link function. H2O implements
-    TreeSHAP which when the features are correlated, can increase contribution of a feature
+    of the model (i.e. the prediction before applying inverse link function). H2O implements
+    TreeSHAP which, when the features are correlated, can increase the contribution of a feature
     that had no influence on the prediction.
 
-    :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost
-    :param frame: H2OFrame
-    :param row_index: row index of the instance to inspect
+    :param model: h2o tree model, such as DRF, XRT, GBM, XGBoost.
+    :param frame: H2OFrame.
+    :param row_index: row index of the instance to inspect.
     :param columns: either a list of columns or column indices to show. If specified
-                    parameter top_n_features will be ignored.
+                    parameter ``top_n_features`` will be ignored.
     :param top_n_features: a number of columns to pick using variable importance (where applicable).
-                  When plot_type="barplot", then top_n_features will be chosen for each contribution_type.
-    :param figsize: figure size; passed directly to matplotlib
-    :param plot_type: either "barplot" or "breakdown"
-    :param contribution_type: One of "positive", "negative", or "both".
-                              Used only for plot_type="barplot".
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+                  When ``plot_type="barplot"``, then ``top_n_features`` will be chosen for each ``contribution_type``.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param plot_type: either "barplot" or "breakdown".
+    :param contribution_type: One of:
+
+        - "positive"
+        - "negative"
+        - "both"
+        
+        Used only for ``plot_type="barplot"``.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -745,7 +816,7 @@ def shap_explain_row_plot(
         top_n_features = float("inf")
 
     row = frame[row_index, :]
-    with no_progress():
+    with no_progress_block():
         contributions = NumpyFrame(model.predict_contributions(row))
     contribution_names = contributions.columns
     prediction = float(contributions.sum(axis=1))
@@ -754,7 +825,7 @@ def shap_explain_row_plot(
                            key=lambda pair: -abs(pair[1]))
 
     if plot_type == "barplot":
-        with no_progress():
+        with no_progress_block():
             prediction = model.predict(row)[0, "predict"]
         row = NumpyFrame(row)
 
@@ -794,7 +865,11 @@ def shap_explain_row_plot(
             contribution_subset_note = ""
         contributions = dict(
             feature=np.array(
-                ["{}={}".format(pair[0], str(row.get(pair[0])[0])) for pair in picked_features]),
+                ["{}={}".format(pair[0],
+                                (_mpl_datetime_to_str(row.get(pair[0])[0])
+                                 if pair[0] in frame.columns and frame.type(pair[0]) == "time"
+                                 else str(row.get(pair[0])[0])))
+                 for pair in picked_features]),
             value=np.array([pair[1][0] for pair in picked_features])
         )
         plt.figure(figsize=figsize)
@@ -904,7 +979,7 @@ def _factor_mapper(mapping):
     return _
 
 
-def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order=None):
+def _add_histogram(frame, column, add_rug, add_histogram=True, levels_order=None):
     # type: (H2OFrame, str, bool, bool) -> None
     """
     Helper function to add rug and/or histogram to a plot
@@ -947,37 +1022,144 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
                 bottom=ylims[0],
                 align="center" if nf.isfactor(column) else "edge",
                 width=width, color="gray", alpha=0.2)
+
     if nf.isfactor(column):
         plt.xticks(mapping(range(nf.nlevels(column))), nf.levels(column))
+    elif frame.type(column) == "time":
+        import matplotlib.dates as mdates
+        xmin = np.nanmin(nf[column])
+        xmax = np.nanmax(nf[column])
+        offset = (xmax - xmin) / 50
+        # hardcoding the limits to prevent calculating negative date
+        # happens sometimes when the matplotlib decides to show the origin in the plot
+        # and gives hard to decode errors
+        plt.xlim(max(0, xmin - offset), xmax + offset)
+        locator = mdates.AutoDateLocator()
+        formatter = mdates.AutoDateFormatter(locator)
+        plt.gca().xaxis.set_major_locator(locator)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        plt.gcf().autofmt_xdate()
     plt.ylim(ylims)
 
-def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp, **kwargs):
+
+def _append_graphing_data(graphing_data, data_to_append, original_observation_value, frame_id, centered, show_logoods,
+                          row_id, **kwargs):
+    """
+    Returns a table (H2OTwoDimTable) in output form required when output_graphing_data = True. Contains provided graphing_data
+    table content expanded by data extracted from data_to_append table and formed to fit into graphing_data form
+    (columns, types). Input tables output_graphing_data and graphing_data stay unchanged, returned expanded table is a
+    new H2OTwoDimTable instance.
+
+    If graphing_data is None, only data_to_append table content is extracted and together with other input information
+    is formed into new output table of required form.
+
+    If data_to_append is None, there is notheng to extract and append so original graphing_data is returned.
+
+    :param graphing_data: H2OTwoDimTable, table to be returned when output_graphing_data = True
+    :param data_to_append: H2OTwoDimTable, table that contains new data to be extracted and appended to graphing_data in
+     the new resulting table
+    :param original_observation_value: original observation value of current ICE line
+    :param frame_id: string, identificator of sample on which current ICE line is being calculated
+    :param centered: boolean, whether centering is turned on/off for current ICE line calculation
+    :param show_logoods: boolean, whether logoods calculation is turned on/off for current ICE line
+    :param row_id: int, identification of the row of sample on which current ICE line is being calculated
+
+    :returns: H2OTwoDimTable table
+    """
+    grouping_variable_value = kwargs.get("grouping_variable_value")
+    response_type = data_to_append.col_types[data_to_append.col_header.index("mean_response")]
+    grouping_variable_type = "string" if type(grouping_variable_value) is str else "double" # todo test this
+    bin_type = data_to_append.col_types[0]
+
+    col_header = ["sample_id", "row_id", "column", "mean_response", "simulated_x_value", "is_original_observation"]
+    col_types = ["string", "int", "string", response_type, bin_type, "bool"]
+    table_header = "ICE plot graphing output" + kwargs.get("group_label", "")
+
+    if grouping_variable_value is not None:
+        col_header.append("grouping_variable_value")
+        col_types.append(grouping_variable_type)
+    centering_value = None
+    if centered:
+        col_header.append("centered_response")
+        col_types.append(response_type)
+        centering_value = data_to_append['mean_response'][0]
+    if show_logoods:
+        col_header.append("log(odds)")
+        col_types.append(response_type)
+
+    if graphing_data is None:
+        return h2o.two_dim_table.H2OTwoDimTable(col_header=col_header, col_types=col_types, table_header=table_header,
+                                                cell_values=_extract_graphing_data_values(data_to_append, frame_id,
+                                                                                          grouping_variable_value,
+                                                                                          original_observation_value,
+                                                                                          centering_value, show_logoods,
+                                                                                          row_id))
+    if data_to_append is None:
+        return graphing_data
+
+    new_values = graphing_data._cell_values + _extract_graphing_data_values(data_to_append, frame_id,
+                                                                            grouping_variable_value,
+                                                                            original_observation_value, centering_value,
+                                                                            show_logoods, row_id)
+    return h2o.two_dim_table.H2OTwoDimTable(col_header=graphing_data.col_header, col_types=graphing_data.col_types,
+                                            cell_values=new_values, table_header=table_header)
+
+
+def _extract_graphing_data_values(data, frame_id, grouping_variable_value, original_observation, centering_value,
+                                  show_logodds, row_id):
+    res_data = []
+    column = data.col_header[0]
+    for row in data.cell_values:
+        new_row = [frame_id, row_id, column, row[1], row[0], original_observation == row[0]]
+        if grouping_variable_value is not None:
+            new_row.append(grouping_variable_value)
+        if centering_value is not None:
+            new_row.append(row[1] - centering_value)
+        if show_logodds:
+            new_row.append(np.log(row[1] / (1 - row[1])))
+        res_data.append(new_row)
+    return res_data
+
+
+def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map, show_pdp,
+                output_graphing_data, nbins, show_rug, **kwargs):
     frame = frame.sort(model.actual_params["response_column"])
     deciles = [int(round((frame.nrow - 1) * dec / 10)) for dec in range(11)]
     colors = plt.get_cmap(colormap, 11)(list(range(11)))
+    data = None
     for i, index in enumerate(deciles):
         percentile_string = "{}th Percentile".format(i * 10)
-        tmp = NumpyFrame(
-            model.partial_plot(
-                frame,
-                cols=[column],
-                plot=False,
-                row_index=index,
-                targets=target,
-                nbins=20 if not is_factor else 1 + frame[column].nlevels()[0],
-                include_na=True
-            )[0]
-        )
-        encoded_col = tmp.columns[0]
+        pd_data = model.partial_plot(
+            frame,
+            cols=[column],
+            plot=False,
+            row_index=index,
+            targets=target,
+            nbins=nbins if not is_factor else (1 + frame[column].nlevels()[0]),
+            include_na=True
+        )[0]
+        tmp = NumpyFrame(pd_data)
         y_label = "Response"
         if not is_factor and centered:
-            _center(tmp["mean_response"])
             y_label = "Response difference"
+            _center(tmp["mean_response"])
         if show_logodds:
             y_label = "log(odds)"
+
+        encoded_col = tmp.columns[0]
         orig_value = frame.as_data_frame(use_pandas=False, header=False)[index][frame.col_names.index(column)]
-        orig_row = _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model,
-                                       frame, index, column, colors[i], percentile_string, factor_map, orig_value)
+        orig_vals = _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model,
+                                        frame, index, column, colors[i], percentile_string, factor_map, orig_value)
+        orig_row = NumpyFrame(orig_vals)
+        if frame.type(column) == "time":
+            tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
+            orig_row[encoded_col] = _timestamp_to_mpl_datetime(orig_row[encoded_col])
+        if output_graphing_data:
+            data = _append_graphing_data(data, pd_data, frame[index, column], frame.frame_id,
+                                         not is_factor and centered, show_logodds, index, **kwargs)
+            if (not is_factor or not frame[index, column] in data["simulated_x_value"]) and not _isnan(frame[index, column]): #nan is already there
+                data = _append_graphing_data(data, orig_vals, frame[index, column], frame.frame_id,
+                                             not is_factor and centered, show_logodds, index, **kwargs)
         if not _isnan(orig_value) or orig_value != '':
             tmp._data = np.append(tmp._data, orig_row._data, axis=0)
         if is_factor:
@@ -1001,10 +1183,12 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
                 cols=[column],
                 plot=False,
                 targets=target,
-                nbins=100 if not is_factor else 1 + frame[column].nlevels()[0]
+                nbins=nbins if not is_factor else (1 + frame[column].nlevels()[0])
             )[0]
         )
         encoded_col = tmp.columns[0]
+        if frame.type(column) == "time":
+            tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
         response = _get_response(tmp["mean_response"], show_logodds)
         if not is_factor and centered:
             _center(tmp["mean_response"])
@@ -1015,7 +1199,7 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
             plt.plot(tmp[encoded_col], response, color="k", linestyle="dashed",
                      label="Partial Dependence")
 
-    _add_histogram(frame, column)
+    _add_histogram(frame, column, add_rug=show_rug)
     plt.title("Individual Conditional Expectation for \"{}\"\non column \"{}\"{}{}".format(
         model.model_id,
         column,
@@ -1040,15 +1224,19 @@ def _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
     plt.tight_layout(rect=[0, 0, 0.85, 1])
     fig = plt.gcf()
-    return fig
+    return fig, data
 
-def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, **kwargs):
+
+def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, row_value,
+                output_graphing_data, nbins, show_rug, **kwargs):
     color = plt.get_cmap(colormap)(0)
-    tmp = NumpyFrame(
-        model.partial_plot(frame, cols=[column], plot=False,
-                           row_index=row_index, targets=target,
-                           nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
+    data = model.partial_plot(frame, cols=[column], plot=False,
+                              row_index=row_index, targets=target,
+                              nbins=nbins if not is_factor else (1 + frame[column].nlevels()[0]))[0]
+    tmp = NumpyFrame(data)
     encoded_col = tmp.columns[0]
+    if frame.type(column) == "time":
+        tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
     response = _get_response(tmp["mean_response"], show_logodds)
     stddev_response = _get_stddev_response(tmp["stddev_response"], tmp["mean_response"], show_logodds)
 
@@ -1061,7 +1249,7 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.fill_between(tmp[encoded_col], response - stddev_response,
                          response + stddev_response, color=color, alpha=0.2)
 
-    _add_histogram(frame, column)
+    _add_histogram(frame, column, add_rug=show_rug)
 
     if row_index is None:
         plt.title("Partial Dependence plot for \"{}\"{}{}".format(
@@ -1072,11 +1260,13 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.ylabel("log(odds)" if show_logodds else "Mean Response")
     else:
         if is_factor:
-            plt.axvline(factor_map([frame[row_index, column]]), c="k", linestyle="dotted",
+            plt.axvline(factor_map([row_value]), c="k", linestyle="dotted",
                         label="Instance value")
         else:
-            plt.axvline(frame[row_index, column], c="k", linestyle="dotted",
-                        label="Instance value")
+            row_val = row_value
+            if frame.type(column) == "time":
+                row_val = _timestamp_to_mpl_datetime(row_val)
+            plt.axvline(row_val, c="k", linestyle="dotted", label="Instance value")
         plt.title("Individual Conditional Expectation for column \"{}\" and row {}{}{}".format(
             column,
             row_index,
@@ -1093,7 +1283,7 @@ def _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_log
         plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    return fig, data if output_graphing_data else None
 
 def pd_ice_common(
         model,  # type: h2o.model.model_base.ModelBase
@@ -1110,6 +1300,9 @@ def pd_ice_common(
         centered=False, # type: bool
         is_ice=False, # type: bool
         grouping_column=None,  # type: Optional[str]
+        output_graphing_data=False, # type: bool
+        nbins=100, # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):
     """
@@ -1128,13 +1321,20 @@ def pd_ice_common(
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
     :param show_pdp: option to turn on/off PDP line. Defaults to True.
     :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
-    :param centered: a bool whether to center curves around 0 at the first valid x value or not
-    :param is_ice: a bool whether the caller of this method is ice_plot or pd_plot
+    :param centered: a bool that determines whether to center curves around 0 at the first valid x value or not
+    :param is_ice: a bool that determines whether the caller of this method is ice_plot or pd_plot
     :param grouping_column A feature column name to group the data and provide separate sets of plots
                            by grouping feature values
+    :param output_graphing_data: a bool that determines whether to output final graphing data to a frame
+    :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     """
+    for kwarg in kwargs:
+        if kwarg not in ['grouping_variable_value', 'group_label']:
+            raise TypeError('Unknown keyword argument:', kwarg)
+
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
 
     if frame.type(column) == "string":
@@ -1150,9 +1350,12 @@ def pd_ice_common(
         target = [target]
 
     if grouping_column is not None:
-        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered)
+        return _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize,
+                                colormap, is_ice, row_index, show_pdp, binary_response_scale, centered,
+                                output_graphing_data, nbins)
 
     factor_map = None
+    row_value = frame[row_index, column] if row_index is not None else None # get the value before we filter out irrelevant categories
     if is_factor:
         if centered:
             warnings.warn("Centering is not supported for factor columns!")
@@ -1174,17 +1377,19 @@ def pd_ice_common(
 
     show_logodds = is_binomial and binary_response_scale == "logodds"
 
-    with no_progress():
+    with no_progress_block():
         plt.figure(figsize=figsize)
         if is_ice:
-            fig = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered, factor_map,
-                       show_pdp, **kwargs)
+            res = _handle_ice(model, frame, colormap, plt, target, is_factor, column, show_logodds, centered,
+                              factor_map,
+                              show_pdp, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
         else:
-            fig = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map, row_index, **kwargs)
+            res = _handle_pdp(model, frame, colormap, plt, target, is_factor, column, show_logodds, factor_map,
+                              row_index, row_value, output_graphing_data, nbins, show_rug=show_rug, **kwargs)
 
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(figure=fig)
+        return decorate_plot_result(figure=res[0], res=res[1])
 
 def pd_plot(
         model,  # type: h2o.model.model_base.ModelBase
@@ -1198,31 +1403,37 @@ def pd_plot(
         save_plot_path=None, # type: Optional[str]
         binary_response_scale="response", # type: Literal["response", "logodds"]
         grouping_column=None,  # type: Optional[str]
+        output_graphing_data=False,  # type: bool
+        nbins=100,  # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):
     """
     Plot partial dependence plot.
 
-    Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
-    on the response. The effect of a variable is measured in change in the mean response.
-    PDP assumes independence between the feature for which is the PDP computed and the rest.
+    The partial dependence plot (PDP) provides a graph of the marginal effect of a variable
+    on the response. The effect of a variable is measured by the change in the mean response.
+    The PDP assumes independence between the feature for which is the PDP computed and the rest.
 
-    :param model: H2O Model object
-    :param frame: H2OFrame
-    :param column: string containing column name
-    :param row_index: if None, do partial dependence, if integer, do individual
-                      conditional expectation for the row specified by this integer
-    :param target: (only for multinomial classification) for what target should the plot be done
-    :param max_levels: maximum number of factor levels to show
-    :param figsize: figure size; passed directly to matplotlib
+    :param model: H2O Model object.
+    :param frame: H2OFrame.
+    :param column: string containing column name.
+    :param row_index: if None, do partial dependence; if integer, do individual
+                      conditional expectation for the row specified by this integer.
+    :param target: (only for multinomial classification) for what target should the plot be done.
+    :param max_levels: maximum number of factor levels to show.
+    :param figsize: figure size; passed directly to matplotlib.
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
-                     pd_multi_plot
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
-    score. Can be one of: "response", "logodds". Defaults to "response".
-    :param grouping_column A feature column name to group the data and provide separate sets of plots
-                           by grouping feature values
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+                     ``pd_multi_plot``.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual score.
+        Can be one of: "response" (default), "logodds".
+    :param grouping_column: A feature column name to group the data and provide separate sets of plots
+                           by grouping feature values.
+    :param output_graphing_data: a bool that determines whether to output final graphing data to a frame.
+    :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -1249,7 +1460,8 @@ def pd_plot(
     >>> gbm.pd_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, row_index, target, max_levels, figsize, colormap, save_plot_path,
-                         True, binary_response_scale, None, False, grouping_column, **kwargs)
+                         True, binary_response_scale, None, False, grouping_column, output_graphing_data, nbins,
+                         show_rug=show_rug, **kwargs)
 
 
 
@@ -1264,14 +1476,15 @@ def pd_multi_plot(
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
         markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."],  # type: List[str]
-        save_plot_path=None # type: Optional[str]
+        save_plot_path=None,  # type: Optional[str]
+        show_rug=True  # type: bool
 ):  # type: (...) -> plt.Figure
     """
     Plot partial dependencies of a variable across multiple models.
 
-    Partial dependence plot (PDP) gives a graphical depiction of the marginal effect of a variable
-    on the response. The effect of a variable is measured in change in the mean response.
-    PDP assumes independence between the feature for which is the PDP computed and the rest.
+    The partial dependence plot (PDP) provides a graph of the marginal effect of a variable
+    on the response. The effect of a variable is measured by the change in the mean response.
+    The PDP assumes independence between the feature for which is the PDP computed and the rest.
 
     :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
@@ -1286,7 +1499,8 @@ def pd_multi_plot(
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+    :param show_rug: Show rug to visualize the density of the column
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -1345,7 +1559,7 @@ def pd_multi_plot(
     models = [m if isinstance(m, h2o.model.ModelBase) else h2o.get_model(m) for m in models]
 
     colors = plt.get_cmap(colormap, len(models))(list(range(len(models))))
-    with no_progress():
+    with no_progress_block():
         plt.figure(figsize=figsize)
         is_factor = frame[column].isfactor()[0]
         if is_factor:
@@ -1358,6 +1572,8 @@ def pd_multi_plot(
                                    row_index=row_index, targets=target,
                                    nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
             encoded_col = tmp.columns[0]
+            if frame.type(column) == "time":
+                tmp[encoded_col] = _timestamp_to_mpl_datetime(tmp[encoded_col])
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
                             color=[colors[i]], label=model_ids[i],
@@ -1366,7 +1582,7 @@ def pd_multi_plot(
                 plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i],
                          label=model_ids[i])
 
-        _add_histogram(frame, column)
+        _add_histogram(frame, column, add_rug=show_rug)
 
         if row_index is None:
             plt.title("Partial Dependence plot for \"{}\"{}".format(
@@ -1423,7 +1639,7 @@ def _prepare_grouping_frames(frame, grouping_column):
     return frames
 
 
-def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered):
+def _handle_grouping(frame, grouping_column, save_plot_path, model, column, target, max_levels, figsize, colormap, is_ice, row_index, show_pdp, binary_response_scale, centered, output_graphing_data, nbins):
     frames = _prepare_grouping_frames(frame, grouping_column)
     result = list()
     for i, curr_frame in enumerate(frames):
@@ -1447,7 +1663,10 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
                 binary_response_scale,
                 centered,
                 grouping_column=None,
-                **{'group_label':group_label}
+                output_graphing_data=output_graphing_data,
+                nbins=nbins,
+                group_label=group_label,
+                grouping_variable_value=curr_category
             )
         else:
             plot = pd_plot(
@@ -1461,16 +1680,21 @@ def _handle_grouping(frame, grouping_column, save_plot_path, model, column, targ
                 colormap,
                 curr_save_plot_path,
                 binary_response_scale,
-                **{'group_label':group_label}
+                grouping_column=None,
+                output_graphing_data=output_graphing_data,
+                nbins=nbins,
+                group_label=group_label,
+                grouping_variable_value=curr_category
             )
         result.append(plot)
         h2o.remove(curr_frame.key, False)
     return result
 
 
-def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
+def _handle_orig_values(is_factor, pd_data, encoded_col, plt, target, model, frame,
                         index, column, color, percentile_string, factor_map, orig_value):
     PDP_RESULT_FACTOR_NAN_MARKER = '.missing(NA)'
+    tmp = NumpyFrame(pd_data)
     user_splits = dict()
     if _isnan(orig_value) or orig_value == "":
         if is_factor:
@@ -1480,27 +1704,31 @@ def _handle_orig_values(is_factor, tmp, encoded_col, plt, target, model, frame,
         # orig_null_value = tmp.from_num_to_factor(encoded_col)[tmp[encoded_col][idx]] if is_factor else tmp[encoded_col][idx]
         orig_null_value = PDP_RESULT_FACTOR_NAN_MARKER if is_factor else np.nan
         percentile_string = "for " + percentile_string if percentile_string is not None else ""
-        msg = "Original observation of \"{}\" {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col, percentile_string, orig_null_value, tmp["mean_response"][idx])
+        msg = "Original observation of \"{}\" {} is [{}, {}]. Plotting of NAs is not yet supported.".format(encoded_col,
+                                                                                                            percentile_string,
+                                                                                                            orig_null_value,
+                                                                                                            tmp["mean_response"][idx])
         warnings.warn(msg)
-        return tmp
+        res_data = h2o.two_dim_table.H2OTwoDimTable(cell_values=[list(pd_data.cell_values[idx])],
+                                                    col_header=pd_data.col_header, col_types=pd_data.col_types)
+        return res_data
     else:
         user_splits[column] = [str(orig_value)] if is_factor else [orig_value]
-        orig_tmp = NumpyFrame(
-            model.partial_plot(
-                frame,
-                cols=[column],
-                plot=False,
-                row_index=index,
-                targets=target,
-                user_splits=user_splits,
-            )[0]
-        )
+        pp_table = model.partial_plot(
+            frame,
+            cols=[column],
+            plot=False,
+            row_index=index,
+            targets=target,
+            user_splits=user_splits,
+        )[0]
+        orig_tmp = NumpyFrame(pp_table)
         if is_factor:
             # preserve the same factor-to-num mapping
             orig_tmp._data[0,0] = factor_map([orig_value])[0]
         plt.scatter(orig_tmp[encoded_col], orig_tmp["mean_response"],
                     color=[color], marker='o', s=150, alpha=0.5)
-        return orig_tmp
+        return pp_table
 
 
 def ice_plot(
@@ -1516,35 +1744,41 @@ def ice_plot(
         binary_response_scale="response",  # type: Literal["response", "logodds"]
         centered=False,  # type: bool
         grouping_column=None,  # type: Optional[str]
+        output_graphing_data=False, #type: bool
+        nbins=100,  # type: int
+        show_rug=True,  # type: bool
         **kwargs
 ):  # type: (...) -> plt.Figure
     """
-    Plot Individual Conditional Expectations (ICE) for each decile
+    Plot Individual Conditional Expectations (ICE) for each decile.
 
-    Individual conditional expectations (ICE) plot gives a graphical depiction of the marginal
-    effect of a variable on the response. ICE plot is similar to partial dependence plot (PDP),
-    PDP shows the average effect of a feature while ICE plot shows the effect for a single
-    instance. The following plot shows the effect for each decile. In contrast to partial
-    dependence plot, ICE plot can provide more insight especially when there is stronger feature interaction.
-    Also, the plot shows the original observation values marked by semi-transparent circle on each ICE line. Please note, that
-    the score of the original observation value may differ from score value of underlying ICE line at original
-    observation point as ICE line is drawn as an interpolation of several points.
+    The individual conditional expectations (ICE) plot gives a graphical depiction of the marginal
+    effect of a variable on the response. The ICE plot is similar to a partial dependence plot (PDP) because
+    a PDP shows the average effect of a feature while ICE plot shows the effect for a single
+    instance. The following plot shows the effect for each decile. In contrast to a partial
+    dependence plot, the ICE plot can provide more insight especially when there is stronger feature interaction.
+    Also, the plot shows the original observation values marked by a semi-transparent circle on each ICE line. Note that
+    the score of the original observation value may differ from score value of the underlying ICE line at the original
+    observation point as the ICE line is drawn as an interpolation of several points.
 
-    :param model: H2OModel
-    :param frame: H2OFrame
-    :param column: string containing column name
-    :param target: (only for multinomial classification) for what target should the plot be done
-    :param max_levels: maximum number of factor levels to show
-    :param figsize: figure size; passed directly to matplotlib
-    :param colormap: colormap name
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :param show_pdp: option to turn on/off PDP line. Defaults to True.
+    :param model: H2OModel.
+    :param frame: H2OFrame.
+    :param column: string containing column name.
+    :param target: (only for multinomial classification) for what target should the plot be done.
+    :param max_levels: maximum number of factor levels to show.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param colormap: colormap name.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :param show_pdp: option to turn on/off PDP line. Defaults to ``True``.
     :param binary_response_scale: option for binary model to display (on the y-axis) the logodds instead of the actual
-    score. Can be one of: "response", "logodds". Defaults to "response".
-    :param centered: a bool whether to center curves around 0 at the first valid x value or not
+        score. Can be one of: "response" (default) or "logodds".
+    :param centered: a bool that determines whether to center curves around 0 at the first valid x value or not.
     :param grouping_column: a feature column name to group the data and provide separate sets of plots by
-    grouping feature values
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+        grouping feature values.
+    :param output_graphing_data: a bool that determmines whether to output final graphing data to a frame.
+    :param nbins: Number of bins used.
+    :param show_rug: Show rug to visualize the density of the column
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -1557,21 +1791,22 @@ def ice_plot(
     >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
     >>> df = h2o.import_file(f)
     >>>
-    >>> # Set the response
+    >>> # Set the response:
     >>> response = "quality"
     >>>
     >>> # Split the dataset into a train and test set:
     >>> train, test = df.split_frame([0.8])
     >>>
-    >>> # Train a GBM
+    >>> # Train a GBM:
     >>> gbm = H2OGradientBoostingEstimator()
     >>> gbm.train(y=response, training_frame=train)
     >>>
-    >>> # Create the individual conditional expectations plot
+    >>> # Create the individual conditional expectations plot:
     >>> gbm.ice_plot(test, column="alcohol")
     """
     return pd_ice_common(model, frame, column, None, target, max_levels, figsize, colormap,
-                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, **kwargs)
+                         save_plot_path, show_pdp, binary_response_scale, centered, True, grouping_column, output_graphing_data, nbins,
+                         show_rug=show_rug, **kwargs)
 
 
 def _is_binomial(model):
@@ -1673,7 +1908,7 @@ def _get_xy(model):
                 (model.actual_params.get("fold_column") or {}).get("column_name"),
                 (model.actual_params.get("weights_column") or {}).get("column_name"),
                 (model.actual_params.get("offset_column") or {}).get("column_name"),
-             ] + (model.actual_params.get("ignored_columns") or [])
+            ] + (model.actual_params.get("ignored_columns") or [])
     x = [feature for feature in names if feature not in not_x]
     return x, y
 
@@ -1832,6 +2067,7 @@ def _calculate_clustering_indices(matrix):
 def varimp_heatmap(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
         top_n=None,  # type: Option[int]
+        num_of_features=20,  # type: Optional[int]
         figsize=(16, 9),  # type: Tuple[float]
         cluster=True,  # type: bool
         colormap="RdYlBu_r",  # type: str
@@ -1851,11 +2087,13 @@ def varimp_heatmap(
 
     :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param top_n: DEPRECATED. use just top n models (applies only when used with H2OAutoML)
+    :param num_of_features: limit the number of features to plot based on the maximum variable
+                            importance across the models. Use None for unlimited.
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting figure (can be accessed using result.figure())
+    :returns: object that contains the resulting figure (can be accessed using ``result.figure()``)
 
     :examples:
     
@@ -1884,7 +2122,7 @@ def varimp_heatmap(
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
         models = _check_deprecated_top_n_argument(models, top_n)
-    varimps, model_ids,  x = varimp(models=models, cluster=cluster, use_pandas=False)
+    varimps, model_ids,  x = varimp(models=models, cluster=cluster, num_of_features=num_of_features, use_pandas=False)
 
     plt.figure(figsize=figsize)
     plt.imshow(varimps, cmap=plt.get_cmap(colormap))
@@ -1904,6 +2142,7 @@ def varimp_heatmap(
 
 def varimp(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
+        num_of_features=20,  # type: Optional[int]
         cluster=True,  # type: bool
         use_pandas=True  # type: bool
 ):
@@ -1926,6 +2165,13 @@ def varimp(
     varimps = [_consolidate_varimps(model) for model in models]
     x, y = _get_xy(models[0])
     varimps = np.array([[varimp[col] for col in x] for varimp in varimps])
+
+    if num_of_features is not None:
+        feature_ranks = np.amax(varimps, axis=0).argsort()
+        feature_mask = (feature_ranks.max() - feature_ranks) < num_of_features
+        varimps = varimps[:, feature_mask]
+        x = [col for i, col in enumerate(x) if feature_mask[i]]
+
     if cluster and len(models) > 2:
         order = _calculate_clustering_indices(varimps)
         x = [x[i] for i in order]
@@ -1971,7 +2217,7 @@ def model_correlation_heatmap(
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
     :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting figure (can be accessed using result.figure())
+    :returns: object that contains the resulting figure (can be accessed using ``result.figure()``)
 
     :examples:
     
@@ -2058,7 +2304,7 @@ def model_correlation(
         models = list(_get_models_from_automl_or_leaderboard(models))
     is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
     predictions = []
-    with no_progress():
+    with no_progress_block():
         for idx, model in enumerate(models):
             predictions.append(model.predict(frame)["predict"])
 
@@ -2095,20 +2341,20 @@ def residual_analysis_plot(
 ):
     # type: (...) -> plt.Figure
     """
-    Residual Analysis
+    Residual Analysis.
 
     Do Residual Analysis and plot the fitted values vs residuals on a test dataset.
     Ideally, residuals should be randomly distributed. Patterns in this plot can indicate
-    potential problems with the model selection, e.g., using simpler model than necessary,
-    not accounting for heteroscedasticity, autocorrelation, etc.  If you notice "striped"
-    lines of residuals, that is just an indication that your response variable was integer
-    valued instead of real valued.
+    potential problems with the model selection (e.g. using simpler model than necessary,
+    not accounting for heteroscedasticity, autocorrelation, etc.).  If you notice "striped"
+    lines of residuals, that is just an indication that your response variable was integer-valued
+    instead of real-valued.
 
-    :param model: H2OModel
-    :param frame: H2OFrame
-    :param figsize: figure size; passed directly to matplotlib
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
+    :param model: H2OModel.
+    :param frame: H2OFrame.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -2137,11 +2383,11 @@ def residual_analysis_plot(
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     _, y = _get_xy(model)
 
-    with no_progress():
+    with no_progress_block():
         predicted = NumpyFrame(model.predict(frame)["predict"])
     actual = NumpyFrame(frame[y])
 
-    residuals = predicted["predict"] - actual[y]
+    residuals = actual[y] - predicted["predict"]
 
     plt.figure(figsize=figsize)
     plt.axhline(y=0, c="k")
@@ -2186,22 +2432,22 @@ def learning_curve_plot(
 ):
     # type: (...) -> plt.Figure
     """
-    Learning curve
+    Learning curve plot.
 
-    Create learning curve plot for an H2O Model. Learning curves show error metric dependence on
-    learning progress, e.g., RMSE vs number of trees trained so far in GBM. There can be up to 4 curves
+    Create the learning curve plot for an H2O Model. Learning curves show the error metric dependence on
+    learning progress (e.g. RMSE vs number of trees trained so far in GBM). There can be up to 4 curves
     showing Training, Validation, Training on CV Models, and Cross-validation error.
 
-    :param model: an H2O model
-    :param metric: a stopping metric
-    :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean,
-                      if None, it will attempt to automatically determine if this is suitable visualisation
-    :param cv_lines: if True, plot scoring history for individual CV models, if None, it will attempt to
-                     automatically determine if this is suitable visualisation
-    :param figsize: figure size; passed directly to matplotlib
-    :param colormap: colormap to use
-    :param save_plot_path: a path to save the plot via using matplotlib function savefig
-    :return: object that contains the resulting figure (can be accessed using result.figure())
+    :param model: an H2O model.
+    :param metric: a stopping metric.
+    :param cv_ribbon: if ``True``, plot the CV mean and CV standard deviation as a ribbon around the mean;
+                      if None, it will attempt to automatically determine if this is suitable visualization.
+    :param cv_lines: if ``True``, plot scoring history for individual CV models; if None, it will attempt to
+                     automatically determine if this is suitable visualization.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param colormap: colormap to use.
+    :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :return: object that contains the resulting figure (can be accessed using ``result.figure()``).
 
     :examples:
     
@@ -2275,8 +2521,8 @@ def learning_curve_plot(
                            "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae"]
         allowed_metrics = [m for m in allowed_metrics
                            if m in scoring_history.col_header or
-                              "training_{}".format(m) in scoring_history.col_header or
-                              "{}_train".format(m) in scoring_history.col_header]
+                           "training_{}".format(m) in scoring_history.col_header or
+                           "{}_train".format(m) in scoring_history.col_header]
     elif model.algo == "glrm":
         allowed_metrics = ["objective"]
         allowed_timesteps = ["iterations"]
@@ -2315,7 +2561,10 @@ def learning_curve_plot(
 
     timestep = allowed_timesteps[0]
 
-    if "deviance" == metric and model.algo in ["glm", "gam"] and not model.actual_params.get("HGLM", False):
+    if ("deviance" == metric
+            and model.algo in ["glm", "gam"]
+            and not model.actual_params.get("HGLM", False)
+            and "deviance_train" in scoring_history.col_header):
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
     elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
@@ -2438,11 +2687,155 @@ def learning_curve_plot(
         if lbl in labels_and_handles:
             labels_and_handles_ordered[lbl] = labels_and_handles[lbl]
     plt.legend(list(labels_and_handles_ordered.values()), list(labels_and_handles_ordered.keys()))
-    
+
     if save_plot_path is not None:
         plt.savefig(fname=save_plot_path)
 
     return decorate_plot_result(figure=plt.gcf())
+
+
+def _calculate_pareto_front(x, y, top=True, left=True):
+    # Make sure we are not given something unexpected like pandas which has separate indexes and causes unintuitive results
+    assert isinstance(x, np.ndarray)
+    assert isinstance(y, np.ndarray)
+
+    cumagg = np.maximum.accumulate if top else np.minimum.accumulate
+    if not left:
+        x = -x
+
+    order = np.argsort(-y if top else y)
+    order = order[np.argsort(x[order], kind="stable")]
+
+    return order[np.unique(cumagg(y[order]), return_index=True)[1]]
+
+
+def _pretty_metric_name(metric):
+    return dict(
+        auc="Area Under ROC Curve",
+        aucpr="Area Under Precision/Recall Curve",
+        logloss="Logloss",
+        mae="Mean Absolute Error",
+        mean_per_class_error="Mean Per Class Error",
+        mean_residual_deviance="Mean Residual Deviance",
+        mse="Mean Square Error",
+        predict_time_per_row_ms="Per-Row Prediction Time [ms]",
+        rmse="Root Mean Square Error",
+        rmsle="Root Mean Square Log Error",
+        training_time_ms="Training Time [ms]"
+    ).get(metric, metric)
+
+
+def pareto_front(frame,  # type: H2OFrame
+                 x_metric=None,  # type: Optional[str]
+                 y_metric=None,  # type: Optional[str]
+                 optimum="top left",  # type: Literal["top left", "top right", "bottom left", "bottom right"]
+                 title=None,  # type: Optional[str]
+                 color_col="algo",  # type: str
+                 figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
+                 colormap="Dark2"  # type: str
+                 ):
+    """
+    Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
+    Pareto front there isn't a model that would be better in both criteria. For example, this can be useful in picking
+    models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
+    the task is assumed to be minimization for both metrics.
+
+    :param frame: an H2OFrame
+    :param x_metric: metric present in the leaderboard
+    :param y_metric: metric present in the leaderboard
+    :param optimum: location of the optimum in XY plane
+    :param title: title used for the plot
+    :param color_col: categorical column in the leaderboard that should be used for coloring the points
+    :param figsize: figure size; passed directly to matplotlib
+    :param colormap: colormap to use
+    :return: object that contains the resulting figure (can be accessed using ``result.figure()``)
+
+    :examples:
+    
+    >>> import h2o
+    >>> from h2o.automl import H2OAutoML
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> from h2o.grid import H2OGridSearch
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
+    >>>
+    >>> # Set the response
+    >>> response = "quality"
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = df.split_frame([0.8])
+    >>>
+    >>> # Train an H2OAutoML
+    >>> aml = H2OAutoML(max_models=10)
+    >>> aml.train(y=response, training_frame=train)
+    >>>
+    >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+    >>>                'max_depth': [3, 5, 9]}
+    >>> grid = H2OGridSearch(model=H2OGradientBoostingEstimator,
+    >>>                      hyper_params=gbm_params1)
+    >>> grid.train(y=response, training_frame=train)
+    >>>
+    >>> combined_leaderboard = h2o.make_leaderboard([aml, grid], test, extra_columns="ALL")
+    >>>
+    >>> # Create the Pareto front
+    >>> pf = h2o.explanation.pareto_front(combined_leaderboard, "predict_time_per_row_ms", "rmse", optimum="bottom left")
+    >>> pf.figure() # get the Pareto front plot
+    >>> pf # H2OFrame containing the Pareto front subset of the leaderboard
+    """
+    plt = get_matplotlib_pyplot(False, True)
+    from matplotlib.lines import Line2D
+    if isinstance(frame, h2o.H2OFrame):
+        leaderboard = frame
+    else:
+        try:  # Maybe it's pandas or other datastructure coercible to H2OFrame
+            leaderboard = h2o.H2OFrame(frame)
+        except Exception:
+            raise ValueError("`frame` parameter has to be either H2OAutoML, H2OGrid, list of models or coercible to H2OFrame!")
+
+    if x_metric not in leaderboard.names:
+        raise ValueError("x_metric {} is not in the leaderboard!".format(x_metric))
+    if y_metric not in leaderboard.names:
+        raise ValueError("y_metric {} is not in the leaderboard!".format(y_metric))
+
+    assert optimum.lower() in ("top left", "top right", "bottom left", "bottom right"), "Optimum has to be one of \"top left\", \"top right\", \"bottom left\", \"bottom right\"."
+    top = "top" in optimum.lower()
+    left = "left" in optimum.lower()
+
+    nf = NumpyFrame(leaderboard[[x_metric, y_metric]])
+
+    x = nf[x_metric]
+    y = nf[y_metric]
+
+    pf = _calculate_pareto_front(x, y, top=top, left=left)
+
+    cols = None
+    fig = plt.figure(figsize=figsize)
+    if color_col in leaderboard.columns:
+        color_col_vals = np.array(leaderboard[color_col].as_data_frame(use_pandas=False, header=False)).reshape(-1)
+        colors = plt.get_cmap(colormap, len(set(color_col_vals)))(list(range(len(set(color_col_vals)))))
+        color_col_to_color = dict(zip(set(color_col_vals), colors))
+        cols = np.array([color_col_to_color[a] for a in color_col_vals])
+        plt.legend(handles=[Line2D([0], [0], marker='o', color="w", label=a, markerfacecolor=color_col_to_color[a], markersize=10)
+                            for a in color_col_to_color.keys()])
+    plt.scatter(x, y, c=cols, alpha=0.5)
+    plt.plot(x[pf], y[pf], c="k")
+    plt.scatter(x[pf], y[pf], c=cols[pf] if cols is not None else None, s=100, zorder=100)
+    plt.xlabel(_pretty_metric_name(x_metric))
+    plt.ylabel(_pretty_metric_name(y_metric))
+    plt.grid(True)
+
+    if title is not None:
+        plt.title(title)
+    else:
+        plt.title("Pareto Front")
+
+    leaderboard_pareto_subset = leaderboard[sorted(list(pf)), :]
+
+    return decorate_plot_result(res=leaderboard_pareto_subset, figure=fig)
 
 
 def _preprocess_scoring_history(model, scoring_history, training_metric=None):
@@ -2525,9 +2918,9 @@ def _get_tree_models(
 
 def _get_leaderboard(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
-        frame,  # type: h2o.H2OFrame
+        frame,  # type: Optional[h2o.H2OFrame]
         row_index=None,  # type: Optional[int]
-        top_n=20  # type: int
+        top_n=20  # type: Union[float, int]
 ):
     # type: (...) -> h2o.H2OFrame
     """
@@ -2539,61 +2932,19 @@ def _get_leaderboard(
     :param top_n: show just top n models in the leaderboard
     :returns: H2OFrame
     """
-    if _is_automl_or_leaderboard(models):
-        leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.automl.get_leaderboard(models, extra_columns="ALL")
-        leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
-        if row_index is not None:
-            model_ids = [m[0] for m in
-                         leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
-            with no_progress():
-                preds = h2o.get_model(model_ids[0]).predict(frame[row_index, :])
-                for model_id in model_ids[1:]:
-                    preds = preds.rbind(h2o.get_model(model_id).predict(frame[row_index, :]))
+    leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.make_leaderboard(models, frame,
+                                                                                       extra_columns="ALL" if frame is not None else None)
+    leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
+    if row_index is not None:
+        model_ids = [m[0] for m in
+                     leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
+        with no_progress_block():
+            preds = h2o.get_model(model_ids[0]).predict(frame[row_index, :])
+            for model_id in model_ids[1:]:
+                preds = preds.rbind(h2o.get_model(model_id).predict(frame[row_index, :]))
 
-                leaderboard = leaderboard.cbind(preds)
-        return leaderboard
-    else:
-        METRICS = [
-            "AUC",
-            "mean_residual_deviance",
-            "mean_per_class_error",
-            "logloss",
-            "pr_auc",
-            "RMSE",
-            "MSE",
-            "mae",
-            "rmsle",
-        ]
-        import math
-        from collections import defaultdict
-        task = None
-        result = defaultdict(list)
-        predictions = []
-        with no_progress():
-            for model in models:
-                result["model_id"].append(model.model_id)
-                perf = model.model_performance(frame)
-                task = perf._metric_json.get("model_category")
-                for metric in METRICS:
-                    result[metric.lower()].append(perf._metric_json.get(metric))
-                if row_index is not None:
-                    predictions.append(model.predict(frame[row_index, :]))
-            for metric in METRICS:
-                if not any(result[metric.lower()]) or not all([not math.isnan(float(m)) for m in result[metric.lower()]]):
-                    del result[metric.lower()]
-            leaderboard = h2o.H2OFrame(result)[["model_id"] + [m.lower()
-                                                               for m in METRICS
-                                                               if m.lower() in result]]
-            if row_index is not None:
-                preds = predictions[0]
-                for pr in predictions[1:]:
-                    preds = preds.rbind(pr)
-                leaderboard = leaderboard.cbind(preds)
-            sort_metric = "mse" if task is None else \
-                "auc" if task.lower() == "binomial" else \
-                "logloss" if task.lower() == "multinomial" else \
-                "mean_residual_deviance"
-            return leaderboard.sort(sort_metric).head(rows=min(top_n, leaderboard.nrow))
+            leaderboard = leaderboard.cbind(preds)
+    return leaderboard
 
 
 def _process_explanation_lists(
@@ -2718,18 +3069,18 @@ def explain(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
-    :param frame: H2OFrame
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
+    :param frame: H2OFrame.
     :param columns: either a list of columns or column indices to show. If specified
-                    parameter top_n_features will be ignored.
+                    parameter ``top_n_features`` will be ignored.
     :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param include_explanations: if specified, return only the specified model explanations
-                                 (Mutually exclusive with exclude_explanations)
-    :param exclude_explanations: exclude specified model explanations
-    :param plot_overrides: overrides for individual model explanations
-    :param figsize: figure size; passed directly to matplotlib
-    :param render: if True, render the model explanations; otherwise model explanations are just returned
-    :returns: H2OExplanation containing the model explanations including headers and descriptions
+                                 (mutually exclusive with ``exclude_explanations``).
+    :param exclude_explanations: exclude specified model explanations.
+    :param plot_overrides: overrides for individual model explanations.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
+    :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
     
@@ -2774,6 +3125,7 @@ def explain(
         "leaderboard",
         "confusion_matrix",
         "residual_analysis",
+        "learning_curve",
         "varimp",
         "varimp_heatmap",
         "model_correlation_heatmap",
@@ -2812,9 +3164,9 @@ def explain(
                     Header(model.model_id, 2))
                 result["confusion_matrix"]["subexplanations"][model.model_id]["plots"] = H2OExplanation()
                 result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
-                        model.model_performance(
-                            **_custom_args(plot_overrides.get("confusion_matrix"), test_data=frame)
-                        ).confusion_matrix()
+                    model.model_performance(
+                        **_custom_args(plot_overrides.get("confusion_matrix"), test_data=frame)
+                    ).confusion_matrix()
                 )
     else:
         if "residual_analysis" in explanations:
@@ -2830,7 +3182,15 @@ def explain(
                                                plot_overrides.get(
                                                    "residual_analysis"),
                                                figsize=figsize)))
-
+    if "learning_curve" in explanations:
+        result["learning_curve"] = H2OExplanation()
+        result["learning_curve"]["header"] = display(Header("Learning Curve Plot"))
+        result["learning_curve"]["description"] = display(Description("learning_curve"))
+        result["learning_curve"]["plots"] = H2OExplanation()
+        for model in models_to_show:
+            result["learning_curve"]["plots"][model.model_id] = display(
+                model.learning_curve_plot(**_custom_args(plot_overrides.get("learning_curve"), figsize=figsize))
+            )
     if len(models_with_varimp) > 0 and "varimp" in explanations:
         result["varimp"] = H2OExplanation()
         result["varimp"]["header"] = display(Header("Variable Importance"))
@@ -2923,10 +3283,10 @@ def explain(
                 result["pdp"]["plots"][column] = H2OExplanation()
                 for target in targets:
                     fig = pd_plot(models_to_show[0], column=column, target=target,
-                        **_custom_args(plot_overrides.get("pdp"),
-                                       frame=frame,
-                                       figsize=figsize,
-                                       colormap=qualitative_colormap))
+                                  **_custom_args(plot_overrides.get("pdp"),
+                                                 frame=frame,
+                                                 figsize=figsize,
+                                                 colormap=qualitative_colormap))
                     if target is None:
                         result["pdp"]["plots"][column] = display(fig)
                     else:
@@ -2983,24 +3343,24 @@ def explain_row(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: H2OAutoML object, supervised H2O model, or list of supervised H2O models
-    :param frame: H2OFrame
-    :param row_index: row index of the instance to inspect
-    :param columns: either a list of columns or column indices to show. If specified
-                    parameter top_n_features will be ignored.
+    :param models: H2OAutoML object, supervised H2O model, or list of supervised H2O models.
+    :param frame: H2OFrame.
+    :param row_index: row index of the instance to inspect.
+    :param columns: either a list of columns or column indices to show. If specified,
+                    parameter ``top_n_features`` will be ignored.
     :param top_n_features: a number of columns to pick using variable importance (where applicable).
     :param include_explanations: if specified, return only the specified model explanations
-                                 (Mutually exclusive with exclude_explanations)
-    :param exclude_explanations: exclude specified model explanations
-    :param plot_overrides: overrides for individual model explanations
-    :param qualitative_colormap: a colormap name
-    :param figsize: figure size; passed directly to matplotlib
-    :param render: if True, render the model explanations; otherwise model explanations are just returned
+                                 (mutually exclusive with ``exclude_explanations``).
+    :param exclude_explanations: exclude specified model explanations.
+    :param plot_overrides: overrides for individual model explanations.
+    :param qualitative_colormap: a colormap name.
+    :param figsize: figure size; passed directly to matplotlib.
+    :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
 
-    :returns: H2OExplanation containing the model explanations including headers and descriptions
+    :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
-    
+
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -3068,9 +3428,9 @@ def explain_row(
         result["leaderboard"]["header"] = display(Header("Leaderboard"))
         result["leaderboard"]["description"] = display(Description("leaderboard_row"))
         result["leaderboard"]["data"] = display(_get_leaderboard(models, row_index=row_index,
-                                                         **_custom_args(
-                                                             plot_overrides.get("leaderboard"),
-                                                             frame=frame)))
+                                                                 **_custom_args(
+                                                                     plot_overrides.get("leaderboard"),
+                                                                     frame=frame)))
 
     if len(tree_models_to_show) > 0 and not multinomial_classification and \
             "shap_explain_row" in explanations:
@@ -3107,3 +3467,102 @@ def explain_row(
                     result["ice"]["plots"][column][target[0]] = ice
 
     return result
+
+
+# FAIRNESS
+def _corrected_variance(accuracy, total):
+    # From De-biasing bias measurement https://arxiv.org/pdf/2205.05770.pdf
+    import numpy as np
+    accuracy = np.array(accuracy)
+    total = np.array(total)
+    return max(0, np.var(accuracy - np.mean(accuracy * (1 - accuracy) / total)))
+
+
+def disparate_analysis(models, frame, protected_columns, reference, favorable_class, air_metric="selectedRatio", alpha=0.05):
+    """
+     Create a frame containing aggregations of intersectional fairness across the models.
+
+    :param models: List of H2O Models
+    :param frame: H2OFrame
+    :param protected_columns: List of categorical columns that contain sensitive information
+                              such as race, gender, age etc.
+    :param reference: List of values corresponding to a reference for each protected columns.
+                      If set to ``None``, it will use the biggest group as the reference.
+    :param favorable_class: Positive/favorable outcome class of the response.
+    :param air_metric: Metric used for Adverse Impact Ratio calculation. Defaults to ``selectedRatio``.
+    :param alpha: The alpha level is the probability of rejecting the null hypothesis that the protected group
+                  and the reference came from the same population when the null hypothesis is true.
+
+    :return: H2OFrame
+
+    :examples:
+    >>> from h2o.estimators import H2OGradientBoostingEstimator, H2OInfogram
+    >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/admissibleml_test/taiwan_credit_card_uci.csv")
+    >>> x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',
+    >>>      'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6']
+    >>> y = "default payment next month"
+    >>> protected_columns = ['SEX', 'EDUCATION']
+    >>>
+    >>> for c in [y] + protected_columns:
+    >>>     data[c] = data[c].asfactor()
+    >>>
+    >>> train, test = data.split_frame([0.8])
+    >>>
+    >>> reference = ["1", "2"]  # university educated single man
+    >>> favorable_class = "0"  # no default next month
+    >>>
+    >>> gbm1 = H2OGradientBoostingEstimator()
+    >>> gbm1.train(x, y, train)
+    >>>
+    >>> gbm2 = H2OGradientBoostingEstimator(ntrees=5)
+    >>> gbm2.train(x, y, train)
+    >>>
+    >>> h2o.explanation.disparate_analysis([gbm1, gbm2], test, protected_columns, reference, favorable_class)
+    """
+    import numpy as np
+    from collections import defaultdict
+    leaderboard = h2o.make_leaderboard(models, frame, extra_columns="ALL")
+    additional_columns = defaultdict(list)
+    models_dict = {m.model_id: m for m in models} if isinstance(models, list) else dict()
+    for model_id in leaderboard[:, "model_id"].as_data_frame(False, False):
+        model = models_dict.get(model_id[0], h2o.get_model(model_id[0]))
+        additional_columns["num_of_features"].append(len(_get_xy(model)[0]))
+        fm = model.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference, favorable_class=favorable_class)
+        overview = NumpyFrame(fm["overview"])
+        additional_columns["var"].append(np.var(overview["accuracy"]))
+        additional_columns["corrected_var"].append(_corrected_variance(overview["accuracy"], overview["total"]))
+
+        selected_air_metric = "AIR_{}".format(air_metric)
+        if selected_air_metric not in overview.columns:
+            raise ValueError(
+                "Metric {} is not present in the result of model.fairness_metrics. Please specify one of {}.".format(
+                    air_metric,
+                    ", ".join([m for m in overview.columns if m.startswith("AIR")])
+                ))
+
+        air = overview[selected_air_metric]
+        additional_columns["air_min"].append(np.min(air))
+        additional_columns["air_mean"].append(np.mean(air))
+        additional_columns["air_median"].append(np.median(air))
+        additional_columns["air_max"].append(np.max(air))
+        additional_columns["cair"].append(np.sum([w * x for w, x in
+                                                  zip(overview["relativeSize"], air)]))
+        pvalue = overview["p.value"]
+
+        def NaN_if_empty(agg, arr):
+            if len(arr) == 0:
+                return float("nan")
+            return agg(arr)
+
+        additional_columns["significant_air_min"].append(NaN_if_empty(np.min, air[pvalue < alpha]))
+        additional_columns["significant_air_mean"].append(NaN_if_empty(np.mean, air[pvalue < alpha]))
+        additional_columns["significant_air_median"].append(NaN_if_empty(np.median, air[pvalue < alpha]))
+        additional_columns["significant_air_max"].append(NaN_if_empty(np.max, air[pvalue < alpha]))
+
+        additional_columns["p.value_min"].append(np.min(pvalue))
+        additional_columns["p.value_mean"].append(np.mean(pvalue))
+        additional_columns["p.value_median"].append(np.median(pvalue))
+        additional_columns["p.value_max"].append(np.max(pvalue))
+    return leaderboard.cbind(h2o.H2OFrame(additional_columns))
+
+

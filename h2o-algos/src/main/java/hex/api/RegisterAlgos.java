@@ -25,7 +25,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.tree.drf    .DRF         (true),
             new hex.tree.gbm    .GBM         (true),
             new hex.tree.isofor .IsolationForest(true),
-            new hex.tree.isoforextended .ExtendedIsolationForest(true),
+            new hex.tree.isoforextended.ExtendedIsolationForest(true),
             new hex.aggregator  .Aggregator  (true),
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),
@@ -36,8 +36,9 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new PSVM(true),
             new hex.rulefit     .RuleFit     (true),
             new hex.tree.uplift.UpliftDRF    (true),
-            new hex.modelselection .ModelSelection (true),
-            new hex.tree.sdt    .SDT         (true)
+            new hex.modelselection.ModelSelection (true),
+            new hex.isotonic    .IsotonicRegression(true),
+            new hex.tree.dt      .DT         (true)
     };
 
     // "Word2Vec", "Example", "Grep"

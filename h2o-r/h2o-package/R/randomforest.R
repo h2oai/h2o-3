@@ -54,11 +54,11 @@
 #'        exceeds this Defaults to 1.797693135e+308.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR",
+#'        "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing". Defaults to
+#'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -80,9 +80,10 @@
 #'        "Random", "QuantilesGlobal", "RoundRobin", "UniformRobust". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
-#'        accurate estimates of class probabilities. Defaults to FALSE.
-#' @param calibration_frame Calibration frame for Platt Scaling
+#' @param calibrate_model \code{Logical}. Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
+#'        probabilities. Calibration can provide more accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Data for model calibration
+#' @param calibration_method Calibration method to use Must be one of: "AUTO", "PlattScaling", "IsotonicRegression". Defaults to AUTO.
 #' @param distribution Distribution. This argument is deprecated and has no use for Random Forest.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
@@ -159,6 +160,7 @@ h2o.randomForest <- function(x,
                              categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                              calibrate_model = FALSE,
                              calibration_frame = NULL,
+                             calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                              distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                              custom_metric_func = NULL,
                              export_checkpoints_dir = NULL,
@@ -271,6 +273,8 @@ h2o.randomForest <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(export_checkpoints_dir))
@@ -295,7 +299,7 @@ h2o.randomForest <- function(x,
   model <- .h2o.modelJob('drf', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
 }
-.h2o.train_segments_randomForest <- function(x,
+.h2o.train_segments_randomforest <- function(x,
                                              y,
                                              training_frame,
                                              validation_frame = NULL,
@@ -338,6 +342,7 @@ h2o.randomForest <- function(x,
                                              categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                              calibrate_model = FALSE,
                                              calibration_frame = NULL,
+                                             calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                                              distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                              custom_metric_func = NULL,
                                              export_checkpoints_dir = NULL,
@@ -454,6 +459,8 @@ h2o.randomForest <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(export_checkpoints_dir))

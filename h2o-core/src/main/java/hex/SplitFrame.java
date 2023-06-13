@@ -20,12 +20,16 @@ public class SplitFrame extends Transformer<SplitFrame.Frames> {
   /** Output destination keys. */
   public Key<Frame>[] _destination_frames;
 
+  public SplitFrame(Frame dataset, double... ratios) {
+    this(dataset, ratios, null);
+  }
   public SplitFrame(Frame dataset, double[] ratios, Key<Frame>[] destination_frames) {
     this();
     _dataset = dataset;
     _ratios = ratios;
     _destination_frames = destination_frames;
   }
+
   public SplitFrame() { super(null, "hex.SplitFrame$Frames", "SplitFrame"); }
 
   @Override public Job<Frames> execImpl() {
@@ -60,5 +64,16 @@ public class SplitFrame extends Transformer<SplitFrame.Frames> {
     return _job.start(fs, computedRatios.length + 1);
   }
   public static class Frames extends Keyed { public Key<Frame>[] _keys; }
+
+  public static Frame[] splitFrame(Frame fr, double... ratios) {
+    SplitFrame sf = new SplitFrame(fr, ratios);
+    sf.exec().get();
+    Frame[] frames = new Frame[sf._destination_frames.length];
+    for (int i = 0; i < sf._destination_frames.length; i++) {
+      frames[i] = sf._destination_frames[i].get();
+    }
+    return frames;
+  }
+
 }
 

@@ -26,6 +26,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -202,6 +203,17 @@ public class TestUtil extends Iced {
       checkArrays(expected[ind], actual[ind], threshold);
     }
   }
+  
+  public static void checkIntArrays(int[][] expected, int[][] actual) {
+    int len1 = expected.length;
+    assertEquals(len1, actual.length);
+
+    for (int ind = 0; ind < len1; ind++) {
+      assertEquals(expected[ind].length, actual[ind].length);
+      Arrays.equals(expected[ind], actual[ind]);
+    }
+  }
+  
 
   /**
    * @deprecated use {@link #generateEnumOnly(int, int, int, double)} instead
@@ -237,7 +249,7 @@ public class TestUtil extends Iced {
     return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
   }
 
-  protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
+  public static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows = numRows;
     cf.cols = numCols;
@@ -279,6 +291,10 @@ public class TestUtil extends Iced {
   }
 
   protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac, long seed) {
+     return generateRealWithRangeOnly(numCols, numRows, missingfrac, seed, 100);
+  }
+
+  protected static Frame generateRealWithRangeOnly(int numCols, int numRows, double missingfrac, long seed, long range) {
     CreateFrame cf = new CreateFrame();
     cf.rows = numRows;
     cf.cols = numCols;
@@ -289,8 +305,10 @@ public class TestUtil extends Iced {
     cf.string_fraction = 0;
     cf.has_response = false;
     cf.missing_fraction = missingfrac;
+    cf.real_range = range;
     cf.seed = seed;
-    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed);
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed + 
+            " range: "+range);
     return cf.execImpl().get();
   }
 
@@ -356,7 +374,7 @@ public class TestUtil extends Iced {
     return sortDir;
   }
 
-  private static class DKVCleaner extends MRTask<DKVCleaner> {
+  public static class DKVCleaner extends MRTask<DKVCleaner> {
     @Override
     public void setupLocal() {
       H2O.raw_clear();
@@ -610,13 +628,27 @@ public class TestUtil extends Iced {
     return frame;
   }
 
+  public static void assertExists(String fname) {
+    NFSFileVec v = makeNfsFileVec(fname);
+    assertNotNull("File '" + fname + "' was not found", v);
+    v.remove();
+  }
+  
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
-      if (runWithoutLocalFiles()) {
-        downloadTestFileFromS3(fname);
+      File file = FileUtils.locateFile(fname);
+      if ((file == null) && (isCI() || runWithoutLocalFiles())) {
+        long lastModified = downloadTestFileFromS3(fname);
+        if (lastModified != 0 && isCI()) { // in CI fail if the file is missing for more than 30 days
+          if (System.currentTimeMillis() - lastModified > 30 * 24 * 60 * 60 * 1000L) {
+            throw new IllegalStateException(
+                    "File '" + fname + "' is still not locally synchronized (more than 30 days). Talk to #devops-requests");
+          }
+        }
       }
       return NFSFileVec.make(fname);
     } catch (IOException ioe) {
+      Log.err(ioe);
       fail(ioe.getMessage());
       return null;
     }
@@ -626,10 +658,15 @@ public class TestUtil extends Iced {
     return Boolean.parseBoolean(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
 
-  protected static void downloadTestFileFromS3(String fname) throws IOException {
+  private static File getLocalSmalldataFile(final String fname) {
+    String projectDir = System.getenv("H2O_PROJECT_DIR");
+    return projectDir != null ? new File(projectDir, fname) : new File(fname);
+  }
+  
+  protected static long downloadTestFileFromS3(String fname) throws IOException {
     if (fname.startsWith("./"))
       fname = fname.substring(2);
-    File f = new File(fname);
+    final File f = getLocalSmalldataFile(fname);
     if (!f.exists()) {
       if (f.getParentFile() != null) {
         boolean dirsCreated = f.getParentFile().mkdirs();
@@ -638,13 +675,21 @@ public class TestUtil extends Iced {
         }
       }
       File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
-      org.apache.commons.io.FileUtils.copyURLToFile(
-              new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
-              tmpFile, 1000, 2000);
-      if (!tmpFile.renameTo(f)) {
+      final URL source = new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname);
+      final URLConnection connection = source.openConnection();
+      connection.setConnectTimeout(1000);
+      connection.setReadTimeout(2000);
+      final long lastModified = connection.getLastModified();
+      try (final InputStream stream = connection.getInputStream()) {
+        org.apache.commons.io.FileUtils.copyInputStreamToFile(stream, tmpFile);
+      }
+      if (tmpFile.renameTo(f)) {
+        return lastModified;
+      } else {
         Log.warn("Couldn't download " + fname + " from S3.");
       }
     }
+    return 0;
   }
 
   /**
@@ -1380,7 +1425,8 @@ public class TestUtil extends Iced {
   public static boolean equalTwoArrays(double[] array1, double[] array2, double tol) {
     assert array1.length == array2.length : "Arrays have different lengths";
     for (int index = 0; index < array1.length; index++) {
-      if (Math.abs(array1[index] - array2[index]) > tol)
+      double diff = Math.abs(array1[index] - array2[index])/Math.max(Math.abs(array1[index]), Math.abs(array2[index]));
+      if (diff > tol)
         return false;
     }
     return true;

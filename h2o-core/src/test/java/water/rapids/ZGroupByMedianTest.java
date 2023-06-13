@@ -1,17 +1,18 @@
 package water.rapids;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.rapids.vals.ValFrame;
+import water.runner.H2ORunner;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
+@RunWith(H2ORunner.class)
 public class ZGroupByMedianTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   // Note that if this median test runs before the testSplitCats and/or testGroupbyTableSpeed,
   // we will encounter the leaked key errors. This has been captured in JIRA PUBDEV-PUBDEV-5090.
@@ -22,10 +23,10 @@ public class ZGroupByMedianTest extends TestUtil {
     double[] correct_median = {0.49851096435701053, 0.50183187047352851, 0.50187234362560651, 0.50528965387515079,
             0.49887302541203787};  // order may not be correct
     try {
-      //  fr = chkTree(tree, "smalldata/jira/pubdev_4727_median.csv");
       fr = chkTree(tree, "smalldata/jira/pubdev_4727_junit_data.csv");
+      System.out.println(fr.toTwoDimTable());
       for (int index=0; index < fr.numRows(); index++) {  // compare with correct medians
-        assertTrue(Math.abs(correct_median[(int)fr.vec(0).at(index)]-fr.vec(1).at(index))<1e-12);
+        assertEquals(correct_median[(int)fr.vec(0).at(index)], fr.vec(1).at(index), 1e-12);
       }
     } finally {
       if( fr != null ) fr.delete();

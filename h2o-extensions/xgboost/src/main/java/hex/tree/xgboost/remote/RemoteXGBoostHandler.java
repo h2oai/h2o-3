@@ -3,6 +3,7 @@ package hex.tree.xgboost.remote;
 import hex.genmodel.utils.IOUtils;
 import hex.schemas.XGBoostExecReqV3;
 import hex.schemas.XGBoostExecRespV3;
+import hex.tree.xgboost.EvalMetric;
 import hex.tree.xgboost.exec.LocalXGBoostExecutor;
 import hex.tree.xgboost.exec.XGBoostExecReq;
 import org.apache.log4j.Logger;
@@ -66,6 +67,13 @@ public class RemoteXGBoostHandler extends Handler {
         return makeResponse(exec);
     }
 
+    @SuppressWarnings("unused")
+    public XGBoostExecRespV3 getEvalMetric(int ignored, XGBoostExecReqV3 req) {
+        LocalXGBoostExecutor exec = getExecutor(req);
+        EvalMetric evalMetric = exec.getEvalMetric();
+        return new XGBoostExecRespV3(exec.modelKey, evalMetric);
+    }
+    
     @SuppressWarnings("unused")
     public StreamingSchema getBooster(int ignored, XGBoostExecReqV3 req) {
         LocalXGBoostExecutor exec = getExecutor(req);

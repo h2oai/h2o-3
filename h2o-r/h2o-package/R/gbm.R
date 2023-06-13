@@ -57,11 +57,11 @@
 #'        exceeds this Defaults to 1.797693135e+308.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anomaly_score
+#'        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+#'        client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR",
+#'        "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing". Defaults to
+#'        AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
@@ -90,12 +90,17 @@
 #' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
-#'        accurate estimates of class probabilities. Defaults to FALSE.
-#' @param calibration_frame Calibration frame for Platt Scaling
+#' @param calibrate_model \code{Logical}. Use Platt Scaling (default) or Isotonic Regression to calculate calibrated class
+#'        probabilities. Calibration can provide more accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Data for model calibration
+#' @param calibration_method Calibration method to use Must be one of: "AUTO", "PlattScaling", "IsotonicRegression". Defaults to AUTO.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param custom_distribution_func Reference to custom distribution, format: `language:keyName=funcName`
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param in_training_checkpoints_dir Create checkpoints into defined directory while training process is still running. In case of cluster
+#'        shutdown, this checkpoint can be used to restart training.
+#' @param in_training_checkpoints_tree_interval Checkpoint the model after every so many trees. Parameter is used only when in_training_checkpoints_dir is
+#'        defined Defaults to 1.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
 #'        decreasing constraint.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
@@ -105,6 +110,7 @@
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param interaction_constraints A set of allowed column interactions.
+#' @param auto_rebalance \code{Logical}. Allow automatic rebalancing of training and validation datasets Defaults to TRUE.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -173,14 +179,18 @@ h2o.gbm <- function(x,
                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                     calibrate_model = FALSE,
                     calibration_frame = NULL,
+                    calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                     custom_metric_func = NULL,
                     custom_distribution_func = NULL,
                     export_checkpoints_dir = NULL,
+                    in_training_checkpoints_dir = NULL,
+                    in_training_checkpoints_tree_interval = 1,
                     monotone_constraints = NULL,
                     check_constant_response = TRUE,
                     gainslift_bins = -1,
                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                     interaction_constraints = NULL,
+                    auto_rebalance = TRUE,
                     verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -308,12 +318,18 @@ h2o.gbm <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(custom_distribution_func))
     parms$custom_distribution_func <- custom_distribution_func
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(in_training_checkpoints_dir))
+    parms$in_training_checkpoints_dir <- in_training_checkpoints_dir
+  if (!missing(in_training_checkpoints_tree_interval))
+    parms$in_training_checkpoints_tree_interval <- in_training_checkpoints_tree_interval
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))
@@ -324,6 +340,8 @@ h2o.gbm <- function(x,
     parms$auc_type <- auc_type
   if (!missing(interaction_constraints))
     parms$interaction_constraints <- interaction_constraints
+  if (!missing(auto_rebalance))
+    parms$auto_rebalance <- auto_rebalance
 
   # Error check and build model
   model <- .h2o.modelJob('gbm', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -379,14 +397,18 @@ h2o.gbm <- function(x,
                                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                     calibrate_model = FALSE,
                                     calibration_frame = NULL,
+                                    calibration_method = c("AUTO", "PlattScaling", "IsotonicRegression"),
                                     custom_metric_func = NULL,
                                     custom_distribution_func = NULL,
                                     export_checkpoints_dir = NULL,
+                                    in_training_checkpoints_dir = NULL,
+                                    in_training_checkpoints_tree_interval = 1,
                                     monotone_constraints = NULL,
                                     check_constant_response = TRUE,
                                     gainslift_bins = -1,
                                     auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     interaction_constraints = NULL,
+                                    auto_rebalance = TRUE,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -518,12 +540,18 @@ h2o.gbm <- function(x,
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
     parms$calibration_frame <- calibration_frame
+  if (!missing(calibration_method))
+    parms$calibration_method <- calibration_method
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(custom_distribution_func))
     parms$custom_distribution_func <- custom_distribution_func
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(in_training_checkpoints_dir))
+    parms$in_training_checkpoints_dir <- in_training_checkpoints_dir
+  if (!missing(in_training_checkpoints_tree_interval))
+    parms$in_training_checkpoints_tree_interval <- in_training_checkpoints_tree_interval
   if (!missing(monotone_constraints))
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))
@@ -534,6 +562,8 @@ h2o.gbm <- function(x,
     parms$auc_type <- auc_type
   if (!missing(interaction_constraints))
     parms$interaction_constraints <- interaction_constraints
+  if (!missing(auto_rebalance))
+    parms$auto_rebalance <- auto_rebalance
 
   # Build segment-models specific parameters
   segment_parms <- list()

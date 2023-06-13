@@ -4,18 +4,19 @@ import sys
 sys.path.insert(1,"../../")
 
 import h2o
+from h2o.display import H2OTableDisplay, capture_output
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import Capturing, compare_output, compare_params
+from tests.testdir_generic_model import compare_output, compare_params
 
 
 def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     gbm = H2OGradientBoostingEstimator(ntrees=1, nfolds=3)
     gbm.train(x=x, y=y, training_frame=airlines, validation_frame=airlines)
-    print(gbm)
-    with Capturing() as original_output:
+    with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (original_output, _):
         gbm.show()
+    print(original_output.getvalue())
     
     original_model_filename = tempfile.mkdtemp()
     original_model_filename = gbm.download_mojo(original_model_filename)
@@ -24,12 +25,12 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     fr = h2o.get_frame(key[0])
     generic_mojo_model = H2OGenericEstimator(model_key=fr)
     generic_mojo_model.train()
-    compare_params(gbm, generic_mojo_model)
-    print(generic_mojo_model)
-    with Capturing() as generic_output:
+    with H2OTableDisplay.pandas_rendering_enabled(False), capture_output() as (generic_output, _):
         generic_mojo_model.show()
+    print(generic_output.getvalue())
+    compare_params(gbm, generic_mojo_model)
 
-    output_test(str(original_output), str(generic_output), strip_part, algo_name, generic_algo_name)
+    output_test(original_output.getvalue(), generic_output.getvalue(), strip_part, algo_name, generic_algo_name)
     
     predictions = generic_mojo_model.predict(airlines)
     assert predictions is not None
@@ -54,24 +55,24 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     generic_mojo_filename = generic_mojo_model_from_file.download_mojo(path=generic_mojo_filename)
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
     
+    
 def mojo_model_test_regression():
-    test(["Origin", "Dest"], "Distance", compare_output, "'Model Summary: '", 'ModelMetricsRegression: gbm',
+    test(["Origin", "Dest"], "Distance", compare_output, "Model Summary: ", 'ModelMetricsRegression: gbm',
          'ModelMetricsRegressionGeneric: generic')
 
+
 def mojo_model_test_binomial():
-    test(["Origin", "Dest"], "IsDepDelayed", compare_output, "'Model Summary: '", 'ModelMetricsBinomial: gbm',
+    test(["Origin", "Dest"], "IsDepDelayed", compare_output, "Model Summary: ", 'ModelMetricsBinomial: gbm',
          'ModelMetricsBinomialGeneric: generic')
     
+    
 def mojo_model_test_multinomial():
-    test(["Origin", "Distance"], "Dest", compare_output, "'Model Summary: '", 'ModelMetricsMultinomial: gbm',
+    test(["Origin", "Distance"], "Dest", compare_output, "Model Summary: ", 'ModelMetricsMultinomial: gbm',
          'ModelMetricsMultinomialGeneric: generic')
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(mojo_model_test_binomial)
-    pyunit_utils.standalone_test(mojo_model_test_multinomial)
-    pyunit_utils.standalone_test(mojo_model_test_regression)
 
-else:
-    mojo_model_test_multinomial()
-    mojo_model_test_binomial()
-    mojo_model_test_regression()
+pyunit_utils.run_tests([
+    mojo_model_test_binomial,
+    mojo_model_test_multinomial,
+    mojo_model_test_regression
+])

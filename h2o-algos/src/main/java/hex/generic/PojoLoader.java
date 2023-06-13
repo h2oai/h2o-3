@@ -10,32 +10,52 @@ import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.UUID;
 
 class PojoLoader {
 
     private static final String POJO_EXT = ".java";
 
-    static GenModel loadPojoFromSourceCode(ByteVec sourceVec, Key<Frame> pojoKey) throws IOException {
-        String pojoCode = IOUtils.toString(sourceVec.openStream());
+    static GenModel loadPojoFromSourceCode(ByteVec sourceVec, Key<Frame> pojoKey, String modelId) throws IOException {
+        final String pojoCode;
+        try (InputStream is = sourceVec.openStream()) {
+            pojoCode = IOUtils.toString(is, Charset.defaultCharset());
+        }
+        String className = null;
         try {
-            String path = URI.create(pojoKey.toString()).getPath();
-            String fileName = new File(path).getName();
-            if (fileName.endsWith(POJO_EXT)) {
-                fileName = fileName.substring(0, fileName.length() - POJO_EXT.length());
-            }
-            return compileAndInstantiate(fileName, pojoCode);
+            className = inferClassName(pojoKey);
+        } catch (Exception e) {
+            Log.warn("Exception while trying to automatically infer POJO class name", e);
+        }
+        if (className == null) {
+            Log.warn("Unable automatically infer POJO class name, model_id = `" + modelId + "` will be used instead. " + 
+                    "If you encounter further errors make sure you set model_id to the correct class name in import/upload call.");
+            className = modelId;
+        }
+        try {
+            return compileAndInstantiate(className, pojoCode);
         } catch (Exception e) {
             boolean canCompile = JCodeGen.canCompile();
             boolean selfCheck = compilationSelfCheck();
             throw new IllegalArgumentException(String.format(
                     "POJO compilation failed: " +
-                            "Please make sure key '%s' contains a valid POJO source code and you are running a Java JDK " +
+                            "Please make sure key '%s' contains a valid POJO source code for class '%s' and you are running a Java JDK " +
                             "(compiler present: '%s', self-check passed: '%s').",
-                    pojoKey, canCompile, selfCheck), e);
+                    pojoKey, className, canCompile, selfCheck), e);
         }
+    }
+
+    static String inferClassName(Key<Frame> pojoKey) {
+        String path = URI.create(pojoKey.toString()).getPath();
+        String fileName = new File(path).getName();
+        if (fileName.endsWith(POJO_EXT)) {
+            return fileName.substring(0, fileName.length() - POJO_EXT.length());
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")

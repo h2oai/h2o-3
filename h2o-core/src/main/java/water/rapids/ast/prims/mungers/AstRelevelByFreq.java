@@ -12,17 +12,19 @@ import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
 import water.util.VecUtils;
 
+import java.util.Arrays;
+
 public class AstRelevelByFreq extends AstPrimitive<AstRelevelByFreq> {
 
     @Override
     public String[] args() {
-        return new String[]{"frame", "weights"};
+        return new String[]{"frame", "weights", "topn"};
     }
 
     @Override
     public int nargs() {
-        return 1 + 2;
-    } // (relevel.by.freq frame weights)
+        return 1 + 3;
+    } // (relevel.by.freq frame weights topn)
 
     @Override
     public String str() {
@@ -37,6 +39,10 @@ public class AstRelevelByFreq extends AstPrimitive<AstRelevelByFreq> {
         if (weightsColumn != null && weights == null) {
             throw new IllegalArgumentException("Frame doesn't contain weights column '" + weightsColumn + "'.");
         }
+        final double topN = asts[3].exec(env).getNum();
+        if ((topN != -1 && topN <= 0) || (int) topN != topN) {
+            throw new IllegalArgumentException("TopN argument needs to be a positive integer number, got: " + topN);
+        }
         Frame result = new Frame(f);
         for (int i = 0; i < result.numCols(); i++) {
             Vec v = result.vec(i);
@@ -45,15 +51,18 @@ public class AstRelevelByFreq extends AstPrimitive<AstRelevelByFreq> {
             }
             v = v.makeCopy();
             result.replace(i, v);
-            relevelByFreq(v, weights);
+            relevelByFreq(v, weights, (int) topN);
         }
         return new ValFrame(result);
     }
 
-    static void relevelByFreq(Vec v, Vec weights) {
+    static void relevelByFreq(Vec v, Vec weights, int topN) {
         double[] levelWeights = VecUtils.collectDomainWeights(v, weights);
         int[] newDomainOrder = ArrayUtils.seq(0, levelWeights.length); 
         ArrayUtils.sort(newDomainOrder, levelWeights);
+        if ((topN != -1) && (topN < newDomainOrder.length - 1)) {
+            newDomainOrder = takeTopN(newDomainOrder, topN, v.domain().length);
+        }
         String[] domain = v.domain();
         String[] newDomain = v.domain().clone();
         for (int i = 0; i < newDomainOrder.length; i++) {
@@ -62,6 +71,25 @@ public class AstRelevelByFreq extends AstPrimitive<AstRelevelByFreq> {
         new RemapDomain(newDomainOrder).doAll(v);
         v.setDomain(newDomain);
         DKV.put(v);
+    }
+
+    static int[] takeTopN(int[] domainOrder, final int topN, final int domainSize) {
+        int[] newDomainOrder = new int[domainSize];
+        int[] topNidxs = new int[topN];
+        for (int i = 0; i < topN; i++) {
+            int topIdx = domainOrder[domainOrder.length - i - 1]; 
+            topNidxs[i] = topIdx;
+            newDomainOrder[domainSize - i - 1] = topIdx;
+        }
+        Arrays.sort(topNidxs);
+        int pos = domainSize - topN - 1;
+        for (int i = 0; i < domainSize; i++) {
+            if (Arrays.binarySearch(topNidxs, i) >= 0)
+                continue;
+            newDomainOrder[pos--] = i;
+        }
+        assert pos == -1;
+        return newDomainOrder;
     }
 
     static class RemapDomain extends MRTask<RemapDomain> {

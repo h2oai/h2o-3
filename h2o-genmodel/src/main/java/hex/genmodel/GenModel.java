@@ -162,11 +162,19 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       case Ordinal:
         outputDomains[0] = getDomainValues(getResponseIdx());
         break;
-
       case Regression:
-        outputDomains[0] = null;
+      case HGLMRegression:
+      case Clustering:
+      case AutoEncoder:
+      case TargetEncoder:
+      case DimReduction:
+      case WordEmbedding:
+      case CoxPH:
+      case AnomalyDetection:
+      case KLime:
+      case BinomialUplift:
+        // all numeric, nothing to set here
         break;
-
       default:
         throw new UnsupportedOperationException("Getting output domains for model category '" +
                 category + "' is not yet supported.");

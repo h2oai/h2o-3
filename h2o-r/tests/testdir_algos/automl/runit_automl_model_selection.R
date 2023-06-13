@@ -49,7 +49,7 @@ automl.model_selection.suite <- function() {
     )
     models <- get_partitioned_models(aml)
     expect_false(any(grepl("DRF", models$all)) || any(grepl("GLM", models$all)))
-    expect_gt(length(models$se), 3)
+    expect_equal(length(models$se), 2)
   }
 
   test_include_algos <- function() {

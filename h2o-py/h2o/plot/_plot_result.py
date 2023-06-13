@@ -2,13 +2,17 @@
 # mutable versions of py immutable types
 from h2o.exceptions import H2OError
 
+__no_export = set(dir())  # all variables defined above this are not exported
+
 class _MObject(object): pass
 class _MTuple(tuple): pass
 class _MList(list): pass
 class _MDict(dict): pass
 class _MStr(str): pass
 
+
 RAISE_ON_FIGURE_ACCESS = object()
+
 
 def decorate_plot_result(res=None, figure=None):
     def get_figure():
@@ -37,3 +41,6 @@ def decorate_plot_result(res=None, figure=None):
 
 def is_decorated_plot_result(obj):
     return hasattr(obj, "_is_decorated_plot_result")
+
+
+__all__ = [s for s in dir() if not s.startswith('_') and s not in __no_export]

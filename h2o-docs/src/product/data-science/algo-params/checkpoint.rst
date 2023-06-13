@@ -122,7 +122,7 @@ Example
         # more trees, so set ntrees = 50
 
         # to see how many trees the original model built you can look at the `ntrees` attribute
-        print(paste("Number of trees built for cars_gbm model:", cars_gbm@allparameters$ntrees))
+        print(paste("Number of trees built for cars_gbm model:", cars_gbm@params$actual$ntrees))
         [1] "Number of trees built for cars_gbm model: 1"
 
         # build and train model with 49 additional trees for a total of 50 trees:

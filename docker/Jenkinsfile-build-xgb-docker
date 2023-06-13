@@ -2,6 +2,7 @@
 
 final String NODE_LABEL = 'docker && !mr-0xc8 && (!micro || micro_21)'
 final String DOCKER_STASH = 'h2o-3-xgb-docker-stash'
+final String BUILD_TAG = '1'
 
 def pipelineContext = null
 
@@ -46,7 +47,7 @@ node (NODE_LABEL) {
                     }
                 }
             }
-            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb/**,docker/scripts/*,docker/jdk1.8.0_171.zip')
+            pipelineContext.getUtils().stashFiles(this, DOCKER_STASH, 'docker/xgb/**,docker/xgb_build/**,docker/scripts/*,docker/jdk1.8.0_171.zip')
             
             pipelineContext.getBuildSummary().markStageSuccessful(this, stageName)
         } catch (Exception e) {
@@ -75,7 +76,7 @@ parallel(pipelineContext.getBuildConfig().getSupportedXGBEnvironments().collectE
                                 sh """
                                 docker build \
                                     ${noCache} \
-                                    -t ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} \
+                                    -t ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv, BUILD_TAG)} \
                                     -f ${xgbEnv.dockerfile} \
                                     --build-arg FROM_IMAGE=${xgbEnv.fromImage} \
                                     --build-arg H2O_BRANCH=${params.gitBranch} \
@@ -99,9 +100,9 @@ parallel(pipelineContext.getBuildConfig().getSupportedXGBEnvironments().collectE
                             withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
                                 sh """
                                     docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                    docker push ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)}
+                                    docker push ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv, BUILD_TAG)}
                                 """
-                                echo "###### Docker image ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv)} built and pushed. ######"
+                                echo "###### Docker image ${pipelineContext.getBuildConfig().getXGBImageForEnvironment(osName, xgbEnv, BUILD_TAG)} built and pushed. ######"
                             }
 
                             pipelineContext.getBuildSummary().markStageSuccessful(this, publishStageName)

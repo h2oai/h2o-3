@@ -93,4 +93,58 @@ If the column type is ``enum`` and you want to convert it to ``numeric``, you sh
 
 		# Using the data from the above example, convert the 'name' column  to numeric:
 		cars_df['name'] = cars_df['name'].ascharacter().asnumeric()
+
+Converting Dates Columns
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+H2O represents dates as (unix) timestamps. These are then raw input to the algorithm, however, this is not very useful in most cases. You are expected to do your own feature engineering and break the data into day, month, and year using the functions H2O provides.
+
+.. tabs::
+	.. code-tab:: r R
+
+		library(h2o)
+		h2o.init()
+
+		# convert the frame (containing strings / categoricals) into the date format:
+		hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+		h2o.as_date(hdf["ds5"], c("%d.%m.%y %H:%M"))
+
+		# You can also access the date/time information from the raw data.
+		# Access the day of week:
+		h2o.dayOfWeek(hdf["ds3"])
+
+		# Access the year, month, week, and day:
+		h2o.year(hdf["ds3"])
+		h2o.month(hdf["ds3"])
+		h2o.week(hdf["ds3"])
+		h2o.day(hdf["ds3"])
+
+		# Access the hour:
+		h2o.hour(hdf["ds3"])
+ 
+
+	.. code-tab:: python
+
+		import h2o
+		h2o.init()
+
+		# convert the frame (containing strings / categoricals) into the date format:
+		hdf = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+		hdf["ds5"].as_date("%d.%m.%y %H:%M")
+
+		# You can also access the date/time information from the raw data.
+		# Access the day of week:
+		hdf["ds3"].dayOfWeek()
+
+		# Access the year, month, week, and day:
+		hdf["ds3"].year()
+		hdf["ds3"].month()
+		hdf["ds3"].week()
+		hdf["ds3"].day()
+
+		# Access the hour, minute, and second:
+		hdf["ds3"].hour()
+		hdf["ds3"].minute()
+		hdf["ds3"].second()
+
 		

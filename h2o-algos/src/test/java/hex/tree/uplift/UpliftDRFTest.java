@@ -1,6 +1,7 @@
 package hex.tree.uplift;
 
 import hex.ScoreKeeper;
+import hex.genmodel.utils.ArrayUtils;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,6 +13,8 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -317,6 +320,38 @@ public class UpliftDRFTest extends TestUtil {
             UpliftDRFModel model = udrf.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testPredictCorrectOutput() {
+        try {
+            Scope.enter();
+            Frame train = new TestFrameBuilder()
+                    .withColNames("C0", "C1", "treatment", "conversion")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(2, ar("T", "C", "T", "T", "T", "C", "C", "C", "C", "C"))
+                    .withDataForCol(3, ar("Yes", "No", "Yes", "No", "Yes", "No", "Yes", "No", "Yes", "Yes"))
+                    .build();
+            train.toCategoricalCol("treatment");
+            train.toCategoricalCol("conversion");
+            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
+            p._train = train._key;
+            p._response_column = "conversion";
+            p._treatment_column = "treatment";
+            p._ntrees = 2;
+
+            UpliftDRF udrf = new UpliftDRF(p);
+            UpliftDRFModel model = udrf.trainModel().get();
+            Scope.track_generic(model);
+            Frame preds = model.score(train);
+            Scope.track_generic(preds);
+            assertArrayEquals("Prediction frame column names are incorrect.",
+                    preds.names(), new String[]{"uplift_predict", "p_y1_ct1", "p_y1_ct0"});
         } finally {
             Scope.exit();
         }

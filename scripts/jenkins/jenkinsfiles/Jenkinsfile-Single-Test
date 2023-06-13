@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8 && (!micro || micro_21)'
+def DEFAULT_NODE_LABEL = 'h2o-3 && docker && !mr-0xc8 && (!micro || micro_21)'
 final int HEALTH_CHECK_RETRIES = 5
 
 def defineTestStages = null
@@ -30,7 +30,7 @@ try {
               // clear the folder
               deleteDir()
               // checkout H2O-3
-              retryWithTimeout(60, 3) {
+              retryWithTimeout(180, 3) {
                 echo "###### Checkout H2O-3 ######"
                 scmEnv = checkout scm
               }
@@ -41,7 +41,7 @@ try {
               pipelineContext = initPipelineContext(scmEnv, 'MODE_SINGLE_TEST', true)
               pipelineContext.getBuildConfig().setJobProperties(this, parameters([
                       choice(choices: ['Python', 'R'].join("\n"), description: 'Component which will be tested.', name: 'testComponent'),
-                      choice(choices: ['2.7', '3.5', '3.6'].join("\n"), description: 'Component which will be tested.', name: 'singleTestPyVersion'),
+                      choice(choices: ['3.6', '3.7', '3.8', '3.9'].join("\n"), description: 'Component which will be tested.', name: 'singleTestPyVersion'),
                       choice(choices: ['3.3.3', '3.4.1'].join("\n"), description: 'Component which will be tested.', name: 'singleTestRVersion'),
                       string(defaultValue: null, description: 'Path to test which will be executed. For example <code>testdir_algos/gbm/pyunit_bernoulli_gbm.py</code> - <strong>no h2o-py/test/</strong> in the beginning.', name: 'testPath'),
                       string(defaultValue: '10g', description: 'Maximum size, of the memory allocation pool.', name: 'singleTestXmx'),

@@ -9,6 +9,25 @@ expect_ggplot <- function(gg) {
   tryCatch({ggplot2::ggsave(file, plot = p)}, finally = unlink(file))
 }
 
+varimp_test <- function () {
+  train <- h2o.uploadFile(locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
+  y <- "quality"
+
+  col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
+  col_types <- col_types[names(col_types) != y]
+  cols_to_test <- names(col_types[!duplicated(col_types)])
+
+  aml <- h2o.automl(y = y,
+                    max_models = 5,
+                    training_frame = train,
+                    seed = 1234)
+  expect_equal(dim(h2o.varimp(aml)), c(5, 12))
+  expect_equal(dim(h2o.varimp(aml, top_n = 3, num_of_features = 4)), c(3, 4))
+
+  expect_ggplot(h2o.varimp_heatmap(aml))
+  expect_ggplot(h2o.varimp_heatmap(aml, top_n = 3, num_of_features = 4))
+}
+
 explanation_test_single_model_regression <- function() {
   train <- h2o.uploadFile(locate("smalldata/titanic/titanic_expanded.csv"))
   y <- "fare"
@@ -81,10 +100,10 @@ explanation_test_automl_regression <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -136,10 +155,10 @@ explanation_test_list_of_models_regression <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
@@ -237,10 +256,10 @@ explanation_test_automl_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -266,10 +285,10 @@ explanation_test_automl_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml@leaderboard[-1,]))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml@leaderboard[-1,], train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml@leaderboard[-1,], train), "Calculation of feature contributions requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml@leaderboard[-1,], train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml@leaderboard[-1,], train, 1), "Calculation of feature contributions requires a tree-based model.")
 
   # test partial dependences
   expect_ggplot(h2o.pd_multi_plot(aml@leaderboard[-1,], train, cols_to_test[[1]]))
@@ -308,10 +327,10 @@ explanation_test_list_of_models_binomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
@@ -400,10 +419,10 @@ explanation_test_automl_multinomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(aml))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml, train), "Calculation of feature contributions requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml, train, 1), "Calculation of feature contributions requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(aml, train), "Residual analysis works only on a single model!")
@@ -454,10 +473,10 @@ explanation_test_list_of_models_multinomial_classification <- function() {
   expect_ggplot(h2o.varimp_heatmap(models))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(models, train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(models, train), "Calculation of feature contributions requires a tree-based model.")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(models, train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(models, train, 1), "Calculation of feature contributions requires a tree-based model.")
 
   # test residual analysis
   expect_error(h2o.residual_analysis_plot(models, train), "Residual analysis works only on a single model!")
@@ -578,15 +597,180 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
   expect_ggplot(h2o.learning_curve_plot(if_model))
 }
 
+explanation_test_timeseries <- function() {
+  train <- h2o.uploadFile(locate("smalldata/timeSeries/CreditCard-ts_train.csv"))
+  x <- c("MONTH", "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_STATUS", "PAY_AMT", "BILL_AMT")
+  y <- "DEFAULT_PAYMENT_NEXT_MONTH"
+
+  train[c(5, 7, 11, 13, 17), "MONTH"] <- NA
+
+  col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
+  col_types <- col_types[names(col_types) %in% x]
+  cols_to_test <- names(col_types[!duplicated(col_types)])
+
+  gbm <- h2o.gbm(y = y,
+                 training_frame = train,
+                 seed = 1234)
+
+  # test shap summary
+  expect_ggplot(h2o.shap_summary_plot(gbm, train))
+
+  # test shap explain row
+  expect_ggplot(h2o.shap_explain_row_plot(gbm, train, 1))
+
+  # test residual analysis
+  expect_ggplot(h2o.residual_analysis_plot(gbm, train))
+
+  # test partial dependences
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.pd_plot(gbm, train, col))
+  }
+
+  # test ice plot
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.ice_plot(gbm, train, col))
+  }
+
+  # test explanation
+  expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
+
+  # test explanation
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
+}
+
+explanation_test_automl_pareto_front <- function() {
+  train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  y <- "CAPSULE"
+  train[, y] <- as.factor(train[, y])
+
+
+  aml <- h2o.automl(y = y,
+                    max_models = 5,
+                    training_frame = train,
+                    seed = 1234)
+
+  expect_true(is.data.frame(h2o.pareto_front(aml)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(aml)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(aml, x_metric = "training_time_ms", y_metric = "rmse")))
+}
+
+explanation_test_grid_pareto_front <- function() {
+  train <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+  y <- "CAPSULE"
+  train[, y] <- as.factor(train[, y])
+
+  grid <- h2o.grid("gbm", y = y, training_frame = train,
+                   hyper_params = list(ntrees = 1:6),
+                   seed = 1234)
+
+  expect_true(is.data.frame(h2o.pareto_front(grid, train)@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(grid, train)))
+  # Non-default criteria
+  expect_ggplot(plot(h2o.pareto_front(grid, x_metric = "auc", y_metric = "rmse")))
+}
+
+explanation_test_some_dataframe_pareto_front <- function() {
+  expect_true(is.data.frame(h2o.pareto_front(iris, x_metric = "Petal.Length", y_metric = "Sepal.Width")@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(iris, x_metric = "Petal.Length", y_metric = "Sepal.Width")))
+
+  iris_h2o <- as.h2o(iris)
+  expect_true(is.data.frame(h2o.pareto_front(iris_h2o, x_metric = "Petal.Length", y_metric = "Sepal.Width")@pareto_front))
+  expect_ggplot(plot(h2o.pareto_front(iris_h2o, x_metric = "Petal.Length", y_metric = "Sepal.Width")))
+}
+
+pareto_front_corner_cases_test <- function() {
+  df <- data.frame(
+    name = c("top left", "left", "left", "bottom left", "bottom", "bottom", "bottom right", "right", "right", "top right", "top", "top", "inner"),
+    x    = c(         0,      0,      0,             0,      0.3,      0.6,              1,       1,       1,           1,   0.7,   0.4,    0.5),
+    y    = c(         1,    0.8,    0.2,             0,        0,        0,              0,    0.35,    0.65,           1,     1,     1,    0.5)
+  )
+
+  tl <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "top left")
+  tr <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "top right")
+  bl <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "bottom left")
+  br <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "bottom right")
+
+  expect_true(nrow(tl) == 1)
+  expect_true(nrow(tr) == 1)
+  expect_true(nrow(bl) == 1)
+  expect_true(nrow(br) == 1)
+
+  expect_true(all(tl$name == "top left"))
+  expect_true(all(tr$name == "top right"))
+  expect_true(all(bl$name == "bottom left"))
+  expect_true(all(br$name == "bottom right"))
+
+  df <- data.frame(
+    name = c("top left", "top left", "bottom left", "bottom left", "bottom left", "bottom right", "bottom right", "bottom right", "top right", "top right", "top right", "top left", "inner"),
+    x    = c(       0.1,          0,             0,           0.1,           0.3,      0.6,                  0.9,              1,           1,         0.9,         0.7,        0.4,    0.5),
+    y    = c(       0.9,        0.8,           0.2,           0.1,             0,        0,                  0.1,           0.35,        0.65,         0.9,           1,          1,    0.5)
+  )
+
+  tl <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "top left")
+  tr <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "top right")
+  bl <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "bottom left")
+  br <- .calculate_pareto_front(df, x = "x", y = "y", optimum = "bottom right")
+
+  expect_true(nrow(tl) == 3)
+  expect_true(nrow(tr) == 3)
+  expect_true(nrow(bl) == 3)
+  expect_true(nrow(br) == 3)
+
+  expect_true(all(tl$name == "top left"))
+  expect_true(all(tr$name == "top right"))
+  expect_true(all(bl$name == "bottom left"))
+  expect_true(all(br$name == "bottom right"))
+}
+
+
+fairness_plots_test <- function() {
+  data <- h2o.uploadFile(locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+
+  x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3')
+  y <- "default payment next month"
+  protected_columns <- c('SEX', 'EDUCATION', 'MARRIAGE')
+
+  for (col in c(y, protected_columns))
+    data[[col]] <- h2o.asfactor(data[[col]])
+
+  splits <- h2o.splitFrame(data, 0.98)
+  train <- splits[[1]]
+  test <- splits[[2]]
+  reference <- c("1", "2", "2")  # university educated single man
+  favorable_class <- "0"  # no default next month
+
+  aml <- h2o.automl(x, y, train, max_models=12)
+
+  models <- lapply(aml@leaderboard$model_id, h2o.getModel)
+  da <- h2o.disparate_analysis(models, test, protected_columns, reference, favorable_class)
+
+  expect_ggplot(plot(h2o.pareto_front(da, "auc", "air_min", optimum="top right")))
+
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "deeplearning"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "drf"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "gbm"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "glm"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+  expect_true("H2OExplanation" %in% class(h2o.inspect_model_fairness(h2o.get_best_model(aml, "xgboost"),  test, protected_columns, reference, favorable_class, c("auc", "f1", "p.value", "selectedRatio", "total"))))
+}
+
+
 doSuite("Explanation Tests", makeSuite(
-  explanation_test_single_model_regression
-  , explanation_test_automl_regression
-  , explanation_test_list_of_models_regression
-  , explanation_test_single_model_binomial_classification
-  , explanation_test_automl_binomial_classification
-  , explanation_test_list_of_models_binomial_classification
-  , explanation_test_single_model_multinomial_classification
-  , explanation_test_automl_multinomial_classification
-  , explanation_test_list_of_models_multinomial_classification
-  , learning_curve_plot_test_of_models_not_included_in_automl
+   varimp_test
+   , explanation_test_single_model_regression
+   , explanation_test_automl_regression
+   , explanation_test_list_of_models_regression
+   , explanation_test_single_model_binomial_classification
+   , explanation_test_automl_binomial_classification
+   , explanation_test_list_of_models_binomial_classification
+   , explanation_test_single_model_multinomial_classification
+   , explanation_test_automl_multinomial_classification
+   , explanation_test_list_of_models_multinomial_classification
+   , learning_curve_plot_test_of_models_not_included_in_automl
+   , explanation_test_timeseries
+   , explanation_test_automl_pareto_front
+   , explanation_test_grid_pareto_front
+   , explanation_test_some_dataframe_pareto_front
+   , pareto_front_corner_cases_test
+   , fairness_plots_test
 ))

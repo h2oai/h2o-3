@@ -40,6 +40,11 @@ public class RegisterRestApi extends AlgoAbstractRegister {
         "Remote XGBoost execution - update"
     );
     context.registerEndpoint(
+            "remote_xgb_metric", "POST /3/XGBoostExecutor.getEvalMetric",
+            RemoteXGBoostHandler.class, "getEvalMetric",
+            "Remote XGBoost execution - getEvalMetric"
+    );
+    context.registerEndpoint(
         "remote_xgb_booster", "POST /3/XGBoostExecutor.getBooster",
         RemoteXGBoostHandler.class, "getBooster",
         "Remote XGBoost execution - get booster"

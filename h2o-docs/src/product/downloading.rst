@@ -1,7 +1,7 @@
 Downloading & Installing H2O
 ============================
 
-This section describes how to download and install the latest stable version of H2O. These instructions are also available on the `H2O Download page <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__. 
+This section describes how to download and install the latest stable version of H2O. These instructions are also available on the `H2O Download page <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__.  Please first make sure you meet the requirements listed `here <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#requirements>`__.  Java is a prerequisite for H2O, even if using it from the R or Python packages.
 
 **Note**: To download the nightly bleeding edge release, go to `h2o-release.s3.amazonaws.com/h2o/master/latest.html <https://h2o-release.s3.amazonaws.com/h2o/master/latest.html>`__. Choose the type of installation you want to perform (for example, "Install in Python") by clicking on the tab. 
 
@@ -79,8 +79,11 @@ Run the following commands in a Terminal window to install H2O for Python.
 	pip install requests
 	pip install tabulate
 	pip install future
+	
+	# Required for plotting:
+	pip install matplotlib
 
- **Note**: These are the dependencies required to run H2O. A complete list of dependencies is maintained in the following file: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml>`__.
+ **Note**: These are the dependencies required to run H2O. ``matplotlib`` is optional and only required to plot in H2O. A complete list of dependencies is maintained in the following file: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o-main/meta.yaml <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o-main/meta.yaml>`__.
 
 2. Run the following command to remove any existing H2O module for Python.
 

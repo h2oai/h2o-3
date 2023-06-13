@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from __future__ import division, print_function, absolute_import, unicode_literals
-
 import warnings
 
 from h2o.utils.compatibility import *  # NOQA
@@ -9,12 +7,12 @@ import itertools
 
 import h2o
 from h2o.base import Keyed
+from h2o.display import H2ODisplay, display
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.exceptions import H2OValueError, H2OJobCancelled
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
-from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.mixin import assign, mixin
@@ -27,7 +25,7 @@ from h2o.utils.typechecks import assert_is_type, is_type
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
 )
-class H2OGridSearch(h2o_meta(Keyed)):
+class H2OGridSearch(h2o_meta(Keyed, H2ODisplay)):
     """
     Grid Search of a Hyper-Parameter Space for a Model
     
@@ -54,32 +52,36 @@ class H2OGridSearch(h2o_meta(Keyed)):
             automatically be generated.
         :param search_criteria:  The optional dictionary of directives which control the search of the hyperparameter space.
             The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, 
-            ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default strategy, "Cartesian", covers the entire space of 
-            hyperparameter combinations. If you want to use cartesian grid search, you can leave the search_criteria 
-            argument unspecified. Specify the "RandomDiscrete" strategy to get random search of all the combinations of 
-            your hyperparameters with three ways of specifying when to stop the search: max number of models, max time, and 
-            metric-based early stopping (e.g., stop if MSE hasn’t improved by 0.0001 over the 5 best models). 
-            Examples below::
-
-                >>> criteria = {"strategy": "RandomDiscrete", "max_runtime_secs": 600,
-                ...             "max_models": 100, "stopping_metric": "AUTO",
-                ...             "stopping_tolerance": 0.00001, "stopping_rounds": 5,
-                ...             "seed": 123456}
-                >>> criteria = {"strategy": "RandomDiscrete", "max_models": 42,
-                ...             "max_runtime_secs": 28800, "seed": 1234}
-                >>> criteria = {"strategy": "RandomDiscrete", "stopping_metric": "AUTO",
-                ...             "stopping_tolerance": 0.001, "stopping_rounds": 10}
-                >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
-                ...             "stopping_metric": "misclassification",
-                ...             "stopping_tolerance": 0.00001}
+            ``stopping_tolerance``, ``stopping_rounds`` and ``seed``.
+            The default strategy, "Cartesian", covers the entire space of hyperparameter combinations. 
+            If you want to use cartesian grid search, you can leave the search_criteria argument unspecified.
+            Specify the "RandomDiscrete" strategy to get random search of all the combinations of 
+            your hyperparameters with three ways of specifying when to stop the search: 
+            max number of models, max time, and metric-based early stopping 
+            (e.g., stop if MSE hasn’t improved by 0.0001 over the 5 best models). 
         :param export_checkpoints_dir: Directory to automatically export the grid and its models to.
         :param recovery_dir: When specified, the grid and all necessary data (frames, models) will be saved to this
-            directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
-            can be reloaded from this directory via ``h2o.load_grid``, and training can be resumed.
-        :param parallelism: Level of parallelism during grid model building. 1 = sequential building (default). 
-             Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
-             built in parallel.
+            directory (use HDFS or other distributed file-system).
+            Should the cluster crash during training, the grid can be reloaded from this directory 
+            via ``h2o.load_grid``, and training can be resumed.
+        :param parallelism: Level of parallelism during grid model building. 
+            1 = sequential building (default). 
+            Use the value of 0 for adaptive parallelism - decided by H2O.
+            Any number > 1 sets the exact number of models built in parallel.
         :returns: a new H2OGridSearch instance
+        
+        :examples:
+        >>> criteria = {"strategy": "RandomDiscrete", "max_runtime_secs": 600,
+        ...             "max_models": 100, "stopping_metric": "AUTO",
+        ...             "stopping_tolerance": 0.00001, "stopping_rounds": 5,
+        ...             "seed": 123456}
+        >>> criteria = {"strategy": "RandomDiscrete", "max_models": 42,
+        ...             "max_runtime_secs": 28800, "seed": 1234}
+        >>> criteria = {"strategy": "RandomDiscrete", "stopping_metric": "AUTO",
+        ...             "stopping_tolerance": 0.001, "stopping_rounds": 10}
+        >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
+        ...             "stopping_metric": "misclassification",
+        ...             "stopping_tolerance": 0.00001}
         """
         assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
@@ -96,7 +98,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         self.recovery_dir = recovery_dir
         self._parallelism = parallelism  # Degree of parallelism during model building
         self._grid_json = None
-        self.models = None  # list of H2O Estimator instances
+        self.models = []  # list of H2O Estimator instances
         self._parms = {}  # internal, for object recycle #
         self.parms = {}  # external#
         self._future = False  # used by __repr__/show to query job state#
@@ -478,10 +480,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
     def __len__(self):
         return len(self.models)
 
-    def __repr__(self):
-        self.show()
-        return ""
-
     def predict(self, test_data):
         """
         Predict on a dataset.
@@ -750,7 +748,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         :param train: Report the training metrics for the model.
         :param valid: Report the validation metrics for the model.
         :param xval: Report the validation metrics for the model.
-        :return: An object of class H2OModelMetrics.
+        :return: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
 
         :examples:
 
@@ -808,47 +806,27 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.scoring_history()
         """
         return {model.model_id: model.scoring_history() for model in self.models}
-
-    def summary(self, header=True):
-        """Print a detailed summary of the explored models.
-
-        :examples:
-
-        >>> from h2o.estimators import H2ODeepLearningEstimator
-        >>> from h2o.grid.grid_search import H2OGridSearch
-        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
-        >>> insurance["offset"] = insurance["Holders"].log()
-        >>> insurance["Group"] = insurance["Group"].asfactor()
-        >>> insurance["Age"] = insurance["Age"].asfactor()
-        >>> insurance["District"] = insurance["District"].asfactor()
-        >>> hyper_params = {'huber_alpha': [0.2,0.5],
-        ...                 'quantile_alpha': [0.2,0.6]}
-        >>> from h2o.estimators import H2ODeepLearningEstimator
-        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
-        ...                    hyper_params)
-        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
-        >>> gs.summary()
+    
+    def _as_table(self):
+        hyper_combos = itertools.product(*list(self.hyper_params.values()))
+        if not self.models:
+            # what the hell is this?
+            # if we don't have models yet, then we display all possible combinations?
+            # there can be literally trillions of them when using a random search!!
+            c_values = [[idx + 1, list(val)] for idx, val in enumerate(hyper_combos)]
+            return H2OTwoDimTable(
+                table_header="Grid Search of Model {}".format(self.model.__class__.__name__),
+                col_header=["Model", "Hyperparameters: [{}]".format(', '.join(list(self.hyper_params.keys())))],
+                cell_values=c_values)
+        else:
+            return self.sorted_metric_table(use_pandas=False)
+    
+    def _str_(self, verbosity=None):
+        return self._as_table().to_str(verbosity=verbosity)
+    
+    def show(self, verbosity=None, fmt=None):
         """
-        table = []
-        for model in self.models:
-            model_summary = model._model_json["output"]["model_summary"]
-            r_values = list(model_summary.cell_values[0])
-            r_values[0] = model.model_id
-            table.append(r_values)
-
-        # if h2o.can_use_pandas():
-        #  import pandas
-        #  pandas.options.display.max_rows = 20
-        #  print pandas.DataFrame(table,columns=self.col_header)
-        #  return
-        print()
-        if header:
-            print('Grid Summary:')
-        print()
-        H2ODisplay(table, header=['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
-
-    def show(self):
-        """Print models sorted by metric.
+        Renders all models in the grid, sorted by performance metric.
 
         :examples:
 
@@ -867,18 +845,49 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
         >>> gs.show()
         """
-        hyper_combos = itertools.product(*list(self.hyper_params.values()))
-        if not self.models:
-            c_values = [[idx + 1, list(val)] for idx, val in enumerate(hyper_combos)]
-            print(H2OTwoDimTable(
-                col_header=['Model', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']'],
-                table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values))
-        else:
-            print(self.sorted_metric_table())
+        self._as_table().show(rows=-1, verbosity=verbosity, fmt=fmt)
+
+    def get_summary(self):
+        table = []
+        for model in self.models:
+            model_summary = model._model_json["output"]["model_summary"]
+            r_values = list(model_summary.cell_values[0])
+            r_values[0] = model.model_id
+            table.append(r_values)
+        return H2OTwoDimTable(table_header="Grid Summary",
+                              col_header=['Model Id'] + model_summary.col_header[1:],
+                              cell_values=table)        
+    
+    def show_summary(self):
+        """
+        Renders a detailed summary of the explored models.
+
+        :examples:
+
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> insurance = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> insurance["offset"] = insurance["Holders"].log()
+        >>> insurance["Group"] = insurance["Group"].asfactor()
+        >>> insurance["Age"] = insurance["Age"].asfactor()
+        >>> insurance["District"] = insurance["District"].asfactor()
+        >>> hyper_params = {'huber_alpha': [0.2,0.5],
+        ...                 'quantile_alpha': [0.2,0.6]}
+        >>> from h2o.estimators import H2ODeepLearningEstimator
+        >>> gs = H2OGridSearch(H2ODeepLearningEstimator(epochs=5),
+        ...                    hyper_params)
+        >>> gs.train(x=list(range(3)),y="Claims", training_frame=insurance)
+        >>> gs.show_summary()
+        """
+        self.get_summary().show(rows=-1)  # always display all models in the grid
+    
+    def summary(self):
+        """Deprecated. Please use `show_summary()` instead"""
+        self.show_summary() 
 
     def varimp(self, use_pandas=False):
         """
-        Pretty print the variable importances, or return them in a list/pandas DataFrame.
+        Return the variable importances as a list/pandas DataFrame.
 
         :param bool use_pandas: If True, then the variable importances will be returned as a pandas data frame.
 
@@ -1378,7 +1387,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
         res = [model.params[h]['actual'][0] if isinstance(model.params[h]['actual'], list)
                else model.params[h]['actual']
                for h in self.hyper_params]
-        if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
+        if display: 
+            print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return res
 
     def get_hyperparams_dict(self, id, display=True):
@@ -1420,14 +1430,16 @@ class H2OGridSearch(h2o_meta(Keyed)):
             else:    
                 model_params[param_name] = model.params[param_name]['actual']
 
-        if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
+        if display: 
+            print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return model_params
 
-    def sorted_metric_table(self):
+    def sorted_metric_table(self, use_pandas=True):
         """
         Retrieve summary table of an H2O Grid Search.
 
-        :returns: The summary table as an H2OTwoDimTable or a Pandas DataFrame.
+        :param use_pandas: if True and if pandas is available, return the table as a Pandas DataFrame
+        :returns: The summary table as an H2OTwoDimTable (or a Pandas DataFrame if use_pandas is True).
 
         :examples:
 
@@ -1447,8 +1459,9 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.sorted_metric_table()
         """
         summary = self._grid_json["summary_table"]
-        if summary is not None: return summary.as_data_frame()
-        print("No sorted metric table for this grid search")
+        if summary is None:
+            print("No sorted metric table for this grid search")
+        return summary.as_data_frame() if use_pandas else summary
 
     @staticmethod
     def _metrics_class(model_json):
@@ -1535,3 +1548,77 @@ class H2OGridSearch(h2o_meta(Keyed)):
             col_header=['Model Id', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']', metric],
             table_header='Grid Search Results for ' + self.model.__class__.__name__,
             cell_values=[list(x) for x in zip(*c_values)])
+
+    def pareto_front(self,
+                     test_frame,  # type: H2OFrame
+                     x_metric=None,  # type: Optional[str]
+                     y_metric=None,  # type: Optional[str]
+                     **kwargs
+                     ):
+        """
+        Create Pareto front and plot it. Pareto front contains models that are optimal in a sense that for each model in the
+        Pareto front there isn't a model that would be better in both criteria. For example, this can be useful in picking
+        models that are fast to predict and at the same time have high accuracy. For generic data.frames/H2OFrames input
+        the task is assumed to be minimization for both metrics.
+
+        :param test_frame: a frame used to generate the metrics
+        :param x_metric: metric present in the leaderboard
+        :param y_metric: metric present in the leaderboard
+        :param kwargs: key, value mappings
+                       Other keyword arguments are passed through to
+                       :meth:`h2o.explanation.pareto_front`.
+        :return: object that contains the resulting figure (can be accessed using ``result.figure()``)
+
+        :examples:
+        
+        >>> import h2o
+        >>> from h2o.automl import H2OAutoML
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> from h2o.grid import H2OGridSearch
+        >>>
+        >>> h2o.connect()
+        >>>
+        >>> # Import the wine dataset into H2O:
+        >>> df = h2o.import_file("h2o://prostate.csv")
+        >>>
+        >>> # Set the response
+        >>> response = "CAPSULE"
+        >>> df[response] = df[response].asfactor()
+        >>>
+        >>>
+        >>> # Split the dataset into a train and test set:
+        >>> train, test = df.split_frame([0.8])
+        >>>
+        >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+        >>>                'max_depth': [3, 5, 9]}
+        >>> grid = H2OGridSearch(model=H2OGradientBoostingEstimator,
+        >>>                      hyper_params=gbm_params1)
+        >>> grid.train(y=response, training_frame=train)
+        >>>
+        >>> # Create the Pareto front
+        >>> pf = grid.pareto_front(test)
+        >>> pf.figure() # get the Pareto front plot
+        >>> pf # H2OFrame containing the Pareto front subset of the leaderboard
+        """
+        leaderboard = h2o.make_leaderboard(self, test_frame, extra_columns="ALL")
+
+        if x_metric is None:
+            x_metric = "predict_time_per_row_ms"
+        if y_metric is None:
+            y_metric = leaderboard.columns[1]
+
+        higher_is_better = ("auc", "aucpr")
+        optimum = "{} {}".format(
+            "top"  if y_metric.lower() in higher_is_better else "bottom",
+            "right" if x_metric.lower() in higher_is_better else "left"
+        )
+
+        if kwargs.get("title") is None:
+            kwargs["title"] = "Pareto Front for {}".format(self.grid_id)
+
+        return h2o.explanation.pareto_front(frame=leaderboard,
+                                            x_metric=x_metric,
+                                            y_metric=y_metric,
+                                            optimum=optimum,
+                                            **kwargs)
+

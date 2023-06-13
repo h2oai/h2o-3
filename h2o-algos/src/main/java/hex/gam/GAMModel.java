@@ -3,7 +3,10 @@ package hex.gam;
 import hex.*;
 import hex.deeplearning.DeepLearningModel;
 import hex.gam.MatrixFrameUtils.AddCSGamColumns;
+import hex.gam.MatrixFrameUtils.AddISGamColumns;
+import hex.gam.MatrixFrameUtils.AddMSGamColumns;
 import hex.gam.MatrixFrameUtils.AddTPKnotsGamColumns;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -23,16 +26,25 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
+import static hex.genmodel.algos.gam.GamMojoModel.*;
 import static hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
+import static hex.util.DistributionUtils.distributionToFamily;
+import static hex.util.DistributionUtils.familyToDistribution;
 
 public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
   private static final String[] BINOMIAL_CLASS_NAMES = new String[]{"0", "1"};
+  private static final int CS_NUM_INDEX = 0;
+  private static final int IS_NUM_INDEX = 1;
+  private static final int MS_NUM_INDEX = 2;
+  private static final int NUM_SINGLE_SPLINE_TYPES = 3;
   public String[][] _gamColNamesNoCentering; // store column names only for GAM columns
   public String[][] _gamColNames; // store column names only for GAM columns after decentering
   public int[] _gamPredSize;  // store size of predictors for gam smoother
   public int[] _m;  // parameter related to gamPredSize;
   public int[] _M;  // size of polynomial basis for thin plate regression smoothers
   public int _cubicSplineNum;
+  public int _iSplineNum;
+  public int _mSplineNum;
   public int _thinPlateSmoothersWithKnotsNum;
   public Key<Frame>[] _gamFrameKeysCenter;
   public double[] _gamColMeans;
@@ -59,7 +71,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         domain = _output._responseDomains;
     }
     GLMModel.GLMWeightsFun glmf = new GLMModel.GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
-            _parms._tweedie_link_power, _parms._theta);
+            _parms._tweedie_link_power, _parms._theta, 1, false);
     return new MetricBuilderGAM(domain, _ymu, glmf, _rank, true, _parms._intercept, _nclass, _parms._auc_type);
   }
 
@@ -201,10 +213,11 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1; // not used in GAM, copied over to GLM params
     public boolean _generate_scoring_history = false; // if true, will generate GLM scoring history but will slow algo down
-
-
+    
     // the following parameters are for GAM
     public int[] _num_knots; // array storing number of knots per smoother
+    public int[] _spline_orders;  // storing I-spline orders for each predictor
+    public int[] _spline_orders_sorted;
     public int[] _num_knots_sorted;
     public int[] _num_knots_tp; // store num_knots for thin plate regression
     public String[] _knot_ids;  // store frame keys that contain knots location for each smoother in gam_X;
@@ -213,8 +226,10 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public int[] _gamPredSize;  // store size of predictors for gam smoother
     public int[] _m;  // parameter related to gamPredSize;
     public int[] _M;  // size of polynomial basis for thin plate regression smoothers
-    public int[] _bs; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 2 = thin plate regression with SVD
-    public int[] _bs_sorted; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 2 = thin plate regression with SVD
+    public int[] _bs; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 
+                      // 2 = monotone I-spline, 3 = NBSplineTypeI M-splines
+    public int[] _bs_sorted; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 
+                             // 2 = monotone I-spline, 3 = NBSplineTypeI M-splines
     public double[] _scale;  // array storing scaling values to control wriggliness of fit
     public double[] _scale_sorted;
     public boolean _saveZMatrix = false;  // if asserted will save Z matrix
@@ -232,13 +247,21 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public boolean _early_stopping = true;  // internal GLM early stopping.
     public Key<Frame> _beta_constraints = null;
     public double _lambda_min_ratio = -1;
+    public boolean _betaConstraintsOff = false; // used for cross-validations
+    // internal parameters added to support client mode
+    int _glmNFolds = 0;
+    Model.Parameters.FoldAssignmentScheme _glmFoldAssignment = null;
+    String _glmFoldColumn = null;
+    boolean _glmCvOn = false;
+    public boolean[] _splines_non_negative;
+    public boolean[] _splines_non_negative_sorted;
+    public boolean _store_knot_locations = false;
 
     @Override
     public long progressUnits() {
       return 1;
     }
 
-    public long _seed = -1;
 
     public InteractionSpec interactionSpec() {
       return InteractionSpec.create(_interactions, _interaction_pairs);
@@ -290,6 +313,17 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         default:
           throw new RuntimeException("unexpected link function  " + _link.toString());
       }
+    }
+
+    @Override
+    public void setDistributionFamily(DistributionFamily distributionFamily) {
+        _family = distributionToFamily(distributionFamily);
+        _link = Link.family_default;
+    }
+
+    @Override
+    public DistributionFamily getDistributionFamily() {
+      return familyToDistribution(_family);
     }
   }
 
@@ -362,6 +396,35 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public String[] _responseDomains;
     public String _gam_transformed_center_key;
     final Family _family;
+    public String[] _gam_knot_column_names;
+    public double[][] _knot_locations;
+
+    /***
+     * The function will copy over the knot locations into _knot_locations and the gam column names corresponding to
+     * the knot locations into _gam_knot_column_names.
+     */
+    public void copyKnots(double[][][] knots, String[][] gam_columns_sorted) {
+      int numGam = gam_columns_sorted.length;
+      int trueGamNum = 0;
+      for (int index=0; index<numGam; index++) {
+        trueGamNum += gam_columns_sorted[index].length;
+      }
+      _gam_knot_column_names = new String[trueGamNum];
+      _knot_locations = new double[trueGamNum][];
+      int knotIndex=0;
+      for (int index=0; index<numGam; index++) {
+        if (knots[index].length==1) {
+          _gam_knot_column_names[knotIndex] = gam_columns_sorted[index][0];
+          _knot_locations[knotIndex++] = knots[index][0].clone();
+        } else {
+          int dupKnots = knots[index].length;
+          for (int index2=0; index2<dupKnots; index2++) {
+            _gam_knot_column_names[knotIndex] = gam_columns_sorted[index][index2];
+            _knot_locations[knotIndex++] = knots[index][index2].clone();
+          }
+        }
+      }
+    }
     
     @Override
     public int nclasses() {
@@ -448,18 +511,20 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
 
   public Frame cleanUpInputFrame(Frame test) {
     Frame adptedF = new Frame(Key.make(), test.names(), test.vecs().clone()); // clone test dataset
+    int[] singleSplineNum = new int[]{_cubicSplineNum, _iSplineNum, _mSplineNum};
     return cleanUpInputFrame(adptedF, _parms, _gamColNames, _output._binvD, _output._zTranspose, 
             _output._knots, _output._zTransposeCS, _output._allPolyBasisList, _output._gamColMeansRaw, 
-            _output._oneOGamColStd);
+            _output._oneOGamColStd, singleSplineNum);
   }
 
   public static Frame cleanUpInputFrame(Frame adptedF, GAMParameters parms, String[][] gamColNames, double[][][] binvD,
                                         double[][][] zTranspose, double[][][] knots,
                                         double[][][] zTransposeCS, int[][][] polyBasisList, double[][] gamColMeansRaw, 
-                                        double[][] oneOGamColStd) {
+                                        double[][] oneOGamColStd, int[] singleSplineNum) {
     String[] testNames = adptedF.names(); // adptedF contains predictors, gam_columns and extras
     // add gam columns for CS smoothers
-    Frame csAugmentedColumns = addCSGamColumns(adptedF, parms, gamColNames, binvD, zTranspose, knots);
+    Frame csAugmentedColumns = addSingleVariableGamColumns(adptedF, parms, gamColNames, binvD, zTranspose, knots,
+            singleSplineNum);
     // add gam columns for TP smoothers
     Frame tpAugmentedColumns = addTPGamColumns(adptedF, parms, zTransposeCS, zTranspose, polyBasisList, 
             knots, gamColMeansRaw, oneOGamColStd);
@@ -479,8 +544,11 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
 
     Vec respV = null;
     Vec weightV = null;
-    if (parms._weights_column != null)  // move weight column to be last column before response column
+    Vec offsetV = null;
+    if (parms._weights_column != null && ArrayUtils.contains(testNames, parms._weights_column))  // move weight column to be last column before response column
       weightV = adptedF.remove(parms._weights_column);
+    if (parms._offset_column != null && ArrayUtils.contains(testNames, parms._offset_column))
+      offsetV = adptedF.remove(parms._offset_column);
     if (ArrayUtils.contains(testNames, parms._response_column))
       respV = adptedF.remove(parms._response_column);
     adptedF.add(csAugmentedColumns.names(), csAugmentedColumns.removeAll());
@@ -488,6 +556,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     
     if (weightV != null)
       adptedF.add(parms._weights_column, weightV);
+    if (offsetV != null)
+      adptedF.add(parms._offset_column, offsetV);
     if (respV != null)
       adptedF.add(parms._response_column, respV);
     return adptedF;
@@ -496,29 +566,35 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   public static Frame adaptValidFrame(Frame adptedF, Frame valid, GAMParameters parms, String[][] gamColNames, double[][][] binvD,
                                         double[][][] zTranspose, double[][][] knots,
                                         double[][][] zTransposeCS, int[][][] polyBasisList, double[][] gamColMeansRaw,
-                                        double[][] oneOGamColStd) {
-    // add gam columns for CS smoothers
-    Frame csAugmentedColumns = addCSGamColumns(adptedF, parms, gamColNames, binvD, zTranspose, knots);
+                                        double[][] oneOGamColStd, int[] singleGAMArrays) {
+    // add gam columns for single predictor splines
+    Frame singleVariableGamColumns = addSingleVariableGamColumns(adptedF, parms, gamColNames, binvD, zTranspose, knots, 
+            singleGAMArrays);
     // add gam columns for TP smoothers
     Frame tpAugmentedColumns = addTPGamColumns(adptedF, parms, zTransposeCS, zTranspose, polyBasisList,
             knots, gamColMeansRaw, oneOGamColStd);
 
-    if (csAugmentedColumns == null)
-      csAugmentedColumns = tpAugmentedColumns;
+    if (singleVariableGamColumns == null)
+      singleVariableGamColumns = tpAugmentedColumns;
     else if (tpAugmentedColumns != null)
-      csAugmentedColumns.add(tpAugmentedColumns.names(), tpAugmentedColumns.removeAll());
+      singleVariableGamColumns.add(tpAugmentedColumns.names(), tpAugmentedColumns.removeAll());
     
     Vec respV = null;
     Vec weightV = null;
-    if (parms._weights_column != null)  // move weight column to be last column before response column
+    Vec offsetV = null;
+    if (parms._weights_column != null && ArrayUtils.contains(valid.names(), parms._weights_column))  // move weight column to be last column before response column
       weightV = valid.remove(parms._weights_column);
+    if (parms._offset_column != null && ArrayUtils.contains(valid.names(), parms._offset_column))
+      offsetV = valid.remove(parms._offset_column);
     if (ArrayUtils.contains(valid.names(), parms._response_column))
       respV = valid.remove(parms._response_column);
-    valid.add(csAugmentedColumns.names(), csAugmentedColumns.removeAll());
-    Scope.track(csAugmentedColumns);
+    valid.add(singleVariableGamColumns.names(), singleVariableGamColumns.removeAll());
+    Scope.track(singleVariableGamColumns);
 
     if (weightV != null)
       valid.add(parms._weights_column, weightV);
+    if (offsetV != null)
+      valid.add(parms._offset_column, offsetV);
     if (respV != null)
       valid.add(parms._response_column, respV);
     return valid;
@@ -536,32 +612,110 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     return concateGamVecs(addTPCols._gamFrameKeysCenter);
   }
   
-  public static Frame addCSGamColumns(Frame adptedF, GAMParameters parms, String[][] gamColNames,
-                                      double[][][] binvD, double[][][] zTranspose, double[][][] knots) {
-    int numGamCols = parms._gam_columns.length;
-    int numCSGamCols = numGamCols - (parms._M==null?0:parms._M.length);
-    if (numCSGamCols == 0)
+  public static Frame addSingleVariableGamColumns(Frame adptedF, GAMParameters parms, String[][] gamColNames,
+                                                  double[][][] binvD, double[][][] zTranspose, double[][][] knots, 
+                                                  int[] singleGAMColArrays) {
+    int numCSGamCol = singleGAMColArrays[CS_NUM_INDEX];
+    int numISGamCol = singleGAMColArrays[IS_NUM_INDEX];
+    int numMSGamCol = singleGAMColArrays[MS_NUM_INDEX];
+    int numSingleVariableGamCols = ArrayUtils.sum(singleGAMColArrays);
+    if (numSingleVariableGamCols == 0)  // no single variable GAM columns
       return null;
-    
-    Vec[] gamColCSs = new Vec[numCSGamCols];
-    String[] gamColCSNames = new String[numCSGamCols];
-    for (int vind=0; vind<numCSGamCols; vind++) {
+    Vec[] gamColCSSplines = new Vec[numCSGamCol];
+    Vec[] gamColISplines = new Vec[numISGamCol];
+    Vec[] gamColMSplines = new Vec[numMSGamCol];
+    String[] gamColCSNames = new String[numCSGamCol];
+    String[] gamColISNames = new String[numISGamCol];
+    String[] gamColMSNames = new String[numMSGamCol];
+    int countCS = 0;
+    int countIS = 0;
+    int countMS = 0;
+    for (int vind=0; vind<numSingleVariableGamCols; vind++) { // separate predictors to the different splines
       if (adptedF.vec(parms._gam_columns_sorted[vind][0]) == null) 
         throw new H2OColumnNotFoundArgumentException("gam_columns", adptedF, parms._gam_columns_sorted[vind][0]);
+      if (parms._bs_sorted[vind] == CS_SPLINE_TYPE) {
+        gamColCSSplines[countCS] = adptedF.vec(parms._gam_columns_sorted[vind][0]).clone();
+        gamColCSNames[countCS++] = parms._gam_columns_sorted[vind][0];
+      } else if (parms._bs_sorted[vind] == IS_SPLINE_TYPE) {
+        gamColISplines[countIS] = adptedF.vec(parms._gam_columns_sorted[vind][0]).clone();
+        gamColISNames[countIS++] = parms._gam_columns_sorted[vind][0];
+      } else if (parms._bs_sorted[vind] == MS_SPLINE_TYPE) {
+        gamColMSplines[countMS] = adptedF.vec(parms._gam_columns_sorted[vind][0]).clone();
+        gamColMSNames[countMS++] = parms._gam_columns_sorted[vind][0];
+      }
+    }
+    Frame gamifiedCSCols = null;
+    Frame gamifiedISCols = null;
+    Frame gamifiedMSCols = null;
+    if (numCSGamCol > 0)
+      gamifiedCSCols = gamifiedSinglePredictors(gamColCSNames, gamColCSSplines, binvD, CS_SPLINE_TYPE, zTranspose, knots, 
+              parms, gamColNames);
+    if (numISGamCol > 0)
+      gamifiedISCols = gamifiedSinglePredictors(gamColISNames, gamColISplines, null, IS_SPLINE_TYPE, null, 
+              knots, parms, gamColNames);
+    if (numMSGamCol > 0)
+      gamifiedMSCols = gamifiedSinglePredictors(gamColMSNames, gamColMSplines, null, MS_SPLINE_TYPE, zTranspose, knots,
+              parms, gamColNames);
+    return mergedGamifiedCols(new Frame[]{gamifiedCSCols, gamifiedISCols, gamifiedMSCols});
+  }
+  
+  private static Frame mergedGamifiedCols(Frame[] allGamifiedCols) {
+    Frame mergedFrame = null;
+    int numGams = allGamifiedCols.length;
+    for (int index = 0; index < numGams; index++) {
+      if (allGamifiedCols[index] != null) {
+        if (mergedFrame == null) {
+          mergedFrame = allGamifiedCols[index];
+        } else {
+          mergedFrame.add(allGamifiedCols[index].names(), allGamifiedCols[index].removeAll());
+          Scope.track(allGamifiedCols[index]);
+        }
+      } 
+    }
+    Scope.track(mergedFrame);
+    return mergedFrame;
+  }
 
-      gamColCSs[vind] = adptedF.vec(parms._gam_columns_sorted[vind][0]).clone();
-      gamColCSNames[vind] = parms._gam_columns_sorted[vind][0];
+  private static Frame gamifiedSinglePredictors(String[] gamifiedColNames, Vec[] gamColCSSplines, double[][][] binvD, int bsType,
+                                                double[][][] zTranspose, double[][][] knots, GAMParameters parms, String[][] gamColNames) {
+    Frame onlyGamifiedPredictors = new Frame(gamifiedColNames, gamColCSSplines);
+    int numGamCentered = 0;
+    AddCSGamColumns genCSGamCols = null;
+    AddISGamColumns genISGamCols = null;
+    AddMSGamColumns genMSGamCols = null;
+    if (bsType == CS_SPLINE_TYPE) {
+      genCSGamCols = new AddCSGamColumns(binvD, zTranspose, knots, parms._num_knots_sorted, onlyGamifiedPredictors,
+              parms._bs_sorted);
+      genCSGamCols.doAll(genCSGamCols._gamCols2Add, Vec.T_NUM, onlyGamifiedPredictors);
+      numGamCentered = genCSGamCols._gamCols2Add;
+    } else if (bsType == IS_SPLINE_TYPE) {
+      genISGamCols = new AddISGamColumns(knots, parms._num_knots_sorted, parms._bs_sorted, parms._spline_orders_sorted,
+              onlyGamifiedPredictors);
+      genISGamCols.doAll(genISGamCols._totGamifiedColCentered, Vec.T_NUM, onlyGamifiedPredictors);
+      numGamCentered = genISGamCols._totGamifiedColCentered;
+    } else if (bsType == MS_SPLINE_TYPE) {
+      genMSGamCols = new AddMSGamColumns(knots, zTranspose, parms._num_knots_sorted, parms._bs_sorted,
+              parms._spline_orders_sorted, onlyGamifiedPredictors);
+      genMSGamCols.doAll(genMSGamCols._totGamifiedColCentered, Vec.T_NUM, onlyGamifiedPredictors);
+      numGamCentered = genMSGamCols._totGamifiedColCentered;
     }
-    Frame onlyGamCols = new Frame(gamColCSNames, gamColCSs);
-    AddCSGamColumns genGamCols = new AddCSGamColumns(binvD, zTranspose, knots, parms._num_knots_sorted, onlyGamCols);
-    genGamCols.doAll(genGamCols._gamCols2Add, Vec.T_NUM, onlyGamCols);
-    String[] gamColsNames = new String[genGamCols._gamCols2Add];
+    String[] gamColsNamesCentered = new String[numGamCentered];
     int offset = 0;
-    for (int ind=0; ind<genGamCols._numGAMcols; ind++) {
-      System.arraycopy(gamColNames[ind], 0, gamColsNames, offset, gamColNames[ind].length);
-      offset+= gamColNames[ind].length;
+    int numGamCols = parms._gam_columns.length;
+    for (int ind = 0; ind < numGamCols; ind++) {
+      if (bsType == parms._bs_sorted[ind]) {
+        System.arraycopy(gamColNames[ind], 0, gamColsNamesCentered, offset, gamColNames[ind].length);
+        offset += gamColNames[ind].length;
+      }
     }
-    return genGamCols.outputFrame(Key.make(), gamColsNames, null);
+    if (bsType == CS_SPLINE_TYPE)
+      return genCSGamCols.outputFrame(Key.make(), gamColsNamesCentered, null);
+    else if (bsType == IS_SPLINE_TYPE)
+      return genISGamCols.outputFrame(Key.make(), gamColsNamesCentered, null);
+    else if (bsType == MS_SPLINE_TYPE)
+      return genMSGamCols.outputFrame(Key.make(), gamColsNamesCentered, null);
+    else
+      return null;
   }
 
   @Override

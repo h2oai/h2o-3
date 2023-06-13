@@ -491,7 +491,7 @@ public final class GridSearch<MP extends Model.Parameters> {
       params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs);
       Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
     } else { // params._max_runtime_secs == 0
-      params._max_runtime_secs = time_remaining_secs;
+      params._max_runtime_secs = time_remaining_secs == Double.MAX_VALUE ? 0 : time_remaining_secs; //use standard 0 for no time limit.
       Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
     }
   }

@@ -1,4 +1,3 @@
-from __future__ import print_function
 import h2o
 import sys
 sys.path.insert(1,"../../../")  # allow us to run this standalone

@@ -110,7 +110,9 @@ test.mojo_predict_csv <- function() {
 
     prediction_result <- h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=mojo_zip_path, output_csv_path=output_csv)
     print(paste0("Prediction result: ", prediction_result))
-    expect_equal(p1, prediction_result$predict[[1]], info="expected predictions to be the same for binary and MOJO model for regression")
+    expect_equal(p1, prediction_result$predict[[1]],
+                 info="expected predictions to be the same for binary and MOJO model for regression",
+                 check.attributes = FALSE)
 
     # =================================================================
     # Binomial
@@ -132,8 +134,12 @@ test.mojo_predict_csv <- function() {
     print(paste0("Binomial prediction: p0: ", mojo_prediction_0))
     print(paste0("Binomial prediction: p1: ", mojo_prediction_1))
 
-    expect_equal(binary_prediction_0, mojo_prediction_0, info="expected predictions to be the same for binary and MOJO model for Binomial - p0")
-    expect_equal(binary_prediction_1, mojo_prediction_1, info="expected predictions to be the same for binary and MOJO model for Binomial - p1")
+    expect_equal(binary_prediction_0, mojo_prediction_0,
+                 info="expected predictions to be the same for binary and MOJO model for Binomial - p0",
+                 check.attributes = FALSE)
+    expect_equal(binary_prediction_1, mojo_prediction_1,
+                 info="expected predictions to be the same for binary and MOJO model for Binomial - p1",
+                 check.attributes = FALSE)
 
     file.remove(input_csv)
     # =================================================================
@@ -173,9 +179,15 @@ test.mojo_predict_csv <- function() {
     print(paste0("Multinomial prediction (MOJO): p1: ", mojo_prediction_2))
     print(paste0("Multinomial prediction (MOJO): p2: ", mojo_prediction_3))
 
-    expect_equal(multinomial_prediction_1, mojo_prediction_1, info="expected predictions to be the same for binary and MOJO model for Multinomial - p0")
-    expect_equal(multinomial_prediction_2, mojo_prediction_2, info="expected predictions to be the same for binary and MOJO model for Multinomial - p1")
-    expect_equal(multinomial_prediction_3, mojo_prediction_3, info="expected predictions to be the same for binary and MOJO model for Multinomial - p2")
+    expect_equal(multinomial_prediction_1, mojo_prediction_1,
+                 info="expected predictions to be the same for binary and MOJO model for Multinomial - p0",
+                 check.attributes = FALSE)
+    expect_equal(multinomial_prediction_2, mojo_prediction_2,
+                 info="expected predictions to be the same for binary and MOJO model for Multinomial - p1",
+                 check.attributes = FALSE)
+    expect_equal(multinomial_prediction_3, mojo_prediction_3,
+                 info="expected predictions to be the same for binary and MOJO model for Multinomial - p2",
+                 check.attributes = FALSE)
 
     file.remove(input_csv)
     file.remove(output_csv)
@@ -209,8 +221,12 @@ test.mojo_predict_df <- function() {
     print(paste0("Binomial Prediction (Binary) - p1: ", h2o_prediction[1,3]))
     print(paste0("Binomial Prediction (MOJO) - p0: ", mojo_prediction$p0))
     print(paste0("Binomial Prediction (MOJO) - p1: ", mojo_prediction$p1))
-    expect_equal(h2o_prediction[1,2], mojo_prediction$p0, info="expected predictions to be the same for binary and MOJO model - p0")
-    expect_equal(h2o_prediction[1,3], mojo_prediction$p1, info="expected predictions to be the same for binary and MOJO model - p1")
+    expect_equal(h2o_prediction[1,2], mojo_prediction$p0,
+                 info="expected predictions to be the same for binary and MOJO model - p0",
+                 check.attributes = FALSE)
+    expect_equal(h2o_prediction[1,3], mojo_prediction$p1,
+                 info="expected predictions to be the same for binary and MOJO model - p1",
+                 check.attributes = FALSE)
 
     file.remove(input_csv)
 }

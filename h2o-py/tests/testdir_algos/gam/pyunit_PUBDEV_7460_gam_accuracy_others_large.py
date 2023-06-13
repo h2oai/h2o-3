@@ -1,5 +1,3 @@
-from __future__ import division
-from __future__ import print_function
 import sys
 sys.path.insert(1, "../../../")
 import h2o
@@ -35,7 +33,7 @@ def test_gam_model_predict():
                                            lambda_search=True,
                                            gam_columns=['annual_inc','loan_amnt'],
                                            num_knots=[5,5],
-                                           bs=[0,0],
+                                           bs=[0,3],
                                            scale=[0.1,0.1])
     # train 
     loan_gam.train(X, y, training_frame=train)

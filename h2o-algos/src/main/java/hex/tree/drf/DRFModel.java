@@ -1,8 +1,11 @@
 package hex.tree.drf;
 
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
+import water.Job;
 import water.Key;
+import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.MathUtils;
 
@@ -13,7 +16,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     public String fullName() { return "Distributed Random Forest"; }
     public String javaName() { return DRFModel.class.getName(); }
     public boolean _binomial_double_trees = false;
-    public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
+    public int _mtries = -1; //number of columns to use per split. default depends on the algorithm and problem (classification/regression)
 
     public DRFParameters() {
       super();
@@ -37,10 +40,29 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     EffectiveParametersUtils.initFoldAssignment(_parms);
     EffectiveParametersUtils.initHistogramType(_parms);
     EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
+    EffectiveParametersUtils.initCalibrationMethod(_parms);
   }
 
   public void initActualParamValuesAfterOutputSetup(boolean isClassifier) {
     EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
+    if (_parms._binomial_double_trees) {
+      throw new UnsupportedOperationException(
+              "Calculating contributions is currently not supported for model with binomial_double_trees parameter set.");
+    }
+    return super.scoreContributions(frame, destination_key, j);
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
+    if (_parms._binomial_double_trees) {
+      throw new UnsupportedOperationException(
+              "Calculating contributions is currently not supported for model with binomial_double_trees parameter set.");
+    }
+    return super.scoreContributions(frame, destination_key, j, options);
   }
 
   @Override
@@ -98,8 +120,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
             if (_output.nclasses() == 1) { //Regression
                 nc[i].addNum(contribs[i] /_output._ntrees);
             } else { //Binomial
-                float featurePlusBiasRatio = (float)1 / (_output.nfeatures() + 1); // + 1 for bias term
-                nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _output._ntrees));
+              float featurePlusBiasRatio = (float)1 / (_output._varimp.numberOfUsedVariables() + 1); // + 1 for bias term
+              nc[i].addNum(contribs[i] != 0 ? (featurePlusBiasRatio - (contribs[i] / _output._ntrees)) : 0);
             }
         }
     }

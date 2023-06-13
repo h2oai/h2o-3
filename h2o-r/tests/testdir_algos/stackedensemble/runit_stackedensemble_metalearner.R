@@ -69,7 +69,7 @@ stackedensemble.metalearner.test <- function() {
   # Check that the metalearner is default GBM
   meta1 <- h2o.getModel(stack1@model$metalearner$name)
   expect_equal(meta1@algorithm, "gbm")
-  expect_equal(length(meta1@parameters), 7)  #no hyperparms are set (only the 5 basic: model_id, seed, distribution, x, y + 2 specified from AUTO: categorical_encoding, histogram_type)
+  expect_equal(length(meta1@parameters), 8)  #no hyperparms are set (only the 5 basic: model_id, seed, distribution, x, y + 3 specified from AUTO: categorical_encoding, histogram_type, calibration_method)
 
 
   # Train a stacked ensemble & metalearner_algorithm "drf"; check that metalearner_algorithm works with CV

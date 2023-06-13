@@ -31,7 +31,6 @@ import water.webserver.iface.LoginType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
 import java.util.Collections;
 
 class Jetty9Helper {
@@ -52,7 +51,7 @@ class Jetty9Helper {
             QueuedThreadPool pool = new QueuedThreadPool();
             pool.setDaemon(true);
             jettyServer = new Server(pool);
-            // Ensure the threads started by jetty are daemon threads so they don't prevent stopping of H2O
+            // Ensure the threads started by jetty are daemon threads, so they don't prevent stopping of H2O
             Scheduler s = jettyServer.getBean(Scheduler.class);
             jettyServer.updateBean(s, new ScheduledExecutorScheduler(null, true));
         } else 
@@ -73,6 +72,7 @@ class Jetty9Helper {
         } else {
             connector = new ServerConnector(jettyServer, httpConnectionFactory);
         }
+        connector.setIdleTimeout(httpConfiguration.getIdleTimeout()); // for websockets,...
         if (ip != null) {
             connector.setHost(ip);
         }

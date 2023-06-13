@@ -12,6 +12,10 @@ test.likelihood.infinity <- function() {
   cars.hex <- h2o.uploadFile(locate("smalldata/junit/cars.csv"))
   cars.hex[,3] <- as.factor(cars.hex[,3])
   c.sid <- h2o.runif(cars.hex)
+  r_frame <- as.data.frame(c.sid)
+  for(sid_index in 1:nrow(r_frame)){
+    print(r_frame[sid_index, 1])
+  }
   cars.train <- h2o.assign(cars.hex[c.sid > .2, ], "cars.train")
   cars.test <- h2o.assign(cars.hex[c.sid <= .2, ], "cars.test")
 

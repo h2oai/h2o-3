@@ -1,8 +1,6 @@
-from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import logging
-from future.utils import PY2
 from tests import pyunit_utils as pu
 
 
@@ -30,15 +28,7 @@ class LoggingContext:
  
  
 def _has_handlers(logger):
-    if PY2:
-        l = logger
-        while l:
-            if l.handlers:
-                return True
-            l = l.parent if l.propagate else None
-        return False
-    else:
-        return logger.hasHandlers()
+    return logger.hasHandlers()
 
 
 def test_h2o_logger_has_no_handler_by_default():

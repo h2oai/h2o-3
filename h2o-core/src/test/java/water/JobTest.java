@@ -132,6 +132,12 @@ public class JobTest extends TestUtil {
   }
 
   @Test
+  public void testDefaultJobKey() {
+    Key<Job> jobKey = new Job<>(Key.make(), Frame.class.getName(), "test")._key;
+    assertEquals(H2O.SELF, jobKey.home_node());
+  }
+  
+  @Test
   public void testBlockingWaitForDone() {
     final Job<Frame> j = new Job<>(Key.make(), Frame.class.getName(), "Test Job");
     final long sleepMs = 1_000;

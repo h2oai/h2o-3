@@ -7,6 +7,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 import numpy as np
 
 
+
 def calibration_test():
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
     df["Angaus"] = df["Angaus"].asfactor()
@@ -29,7 +30,7 @@ def calibration_test():
     # Check that calibrated probabilities were appended to the output frame
     assert preds.col_names == ["predict", "p0", "p1", "cal_p0", "cal_p1"]
 
-    # Manually scale the probabilities using GLM in R
+    # Manually scale the probabilities using GLM
     preds_calib = model.predict(calib)
     manual_calib_input = preds_calib["p1"].cbind(calib[["Angaus", "Weights"]])
     manual_calib_input.col_names = ["p1", "response", "weights"]

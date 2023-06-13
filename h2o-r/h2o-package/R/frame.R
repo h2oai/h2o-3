@@ -1430,7 +1430,7 @@ h2o.year <- function(x) .newExpr("year", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.month(hdf["ds9"])
 #' }
@@ -1472,7 +1472,7 @@ h2o.week <- function(x) .newExpr("week", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.day(hdf["ds9"])
 #' }
@@ -1493,7 +1493,7 @@ h2o.day <- function(x) .newExpr("day", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.dayOfWeek(hdf["ds9"])
 #' }
@@ -1513,7 +1513,7 @@ h2o.dayOfWeek <- function(x) .newExpr("dayOfWeek", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.hour(hdf["ds9"])
 #' }
@@ -1599,7 +1599,7 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
 #' hdf <- h2o.importFile(f)
 #' h2o.as_date(hdf["ds5"], "%d.%m.%y %H:%M")
 #' }
@@ -1693,7 +1693,7 @@ NULL
 #' @export
 `[.H2OFrame` <- function(data,row,col,drop=TRUE) {
   chk.H2OFrame(data)
-
+  types <- attr(data, "types")
   # This function is called with a huge variety of argument styles
   # Here's the breakdown:
   #   Style          Type  #args  Description
@@ -1776,8 +1776,10 @@ NULL
     data <- .newExpr("rows",data,row) # Row selector
   }
 
-  if( is1by1 ) .fetch.data(data,1L)[[1]]
-  else data
+  data <- if( is1by1 ) .fetch.data(data,1L)[[1]]
+            else data
+  attr(data, "types") <- types[col]
+  return(data)
 }
 
 #' @rdname H2OFrame-Extract
@@ -2259,7 +2261,7 @@ tail.H2OFrame <- h2o.tail
 #'
 #' @rdname is.factor
 #' @param x An H2OFrame object
-#' @example 
+#' @examples
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
@@ -4158,7 +4160,7 @@ as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
 #' @details 
 #' Method \code{as.h2o.data.frame} will use \code{\link[data.table]{fwrite}} if data.table package is installed in required version.
 #' @seealso \code{\link{use.package}}
-#' @references \url{https://www.h2o.ai/blog/fast-csv-writing-for-r/}
+#' @references \url{https://h2o.ai/blog/fast-csv-writing-for-r/}
 #' @export
 as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) {
   if( destination_frame=="" ) {
@@ -4951,7 +4953,8 @@ h2o.relevel <- function(x,y) {
 #'
 #' @param x H2O frame with some factor columns
 #' @param weights_column optional name of weights column
-#' @return new reordered frame
+#' @param top_n optional number of most frequent levels to move to the top (eg.: for top_n=1 move only the most frequent level)
+ #' @return new reordered frame
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -4969,8 +4972,8 @@ h2o.relevel <- function(x,y) {
 #' # "virginica"  "versicolor" "setosa"
 #' }
 #' @export
-h2o.relevel_by_frequency <- function(x, weights_column=NULL) {
-  .newExpr("relevel.by.freq", x, ifelse(is.null(weights_column), NA, .quote(weights_column)))
+h2o.relevel_by_frequency <- function(x, weights_column=NULL, top_n=-1) {
+  .newExpr("relevel.by.freq", x, ifelse(is.null(weights_column), NA, .quote(weights_column)), top_n)
 }
 
 #' Group and Apply by Column

@@ -182,7 +182,7 @@ class H2O(object):
         # NOTE: we currently don't need to do this for GET, so that's not implemented.
         if postData is not None:
             munged_postData = {}
-            for k, v in postData.iteritems():
+            for k, v in postData.items():
                 if type(v) is list:
                     if len(v) == 0:
                         munged_postData[k] = '[]'
@@ -194,7 +194,7 @@ class H2O(object):
 
                             if val is None:
                                 array_str += 'null'
-                            elif isinstance(val, basestring):
+                            elif isinstance(val, str):
                                 array_str += "\"" + str(val) + "\""
                             else:
                                 array_str += str(val)
@@ -207,12 +207,12 @@ class H2O(object):
                     else:
                         first = True
                         map_str = '{'
-                        for key, val in v.iteritems():
+                        for key, val in v.items():
                             if not first: map_str += ', '
 
                             if val is None:
                                 map_str += "\"" + key + "\"" + ': null'
-                            elif isinstance(val, basestring):
+                            elif isinstance(val, str):
                                 map_str += "\"" + str(key) + "\"" + ":" + "\"" + str(val) + "\""
                             else:
                                 map_str += "\"" + key + "\"" + ':' + str(val)
@@ -681,7 +681,7 @@ class H2O(object):
         assert column is not None, 'FAIL: "column" parameter is null'
 
         # quote column names; leave integer column indexes alone
-        if isinstance(column, basestring):
+        if isinstance(column, str):
             column = '"' + column + '"'
 
         params_dict = {

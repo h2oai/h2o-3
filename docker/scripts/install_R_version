@@ -155,6 +155,6 @@ R_REMOTES_UPGRADE=never
 checkRInstallLog R.install.7.log
 rm R.install.*.log
 # install LiblineaR from S3
-wget -q -O /LiblineaR_1.94-2.tar.gz https://s3.amazonaws.com/h2o-r/linux/LiblineaR_1.94-2.tar.gz
+wget -q -O /LiblineaR_1.94-2.tar.gz https://cran.r-project.org/src/contrib/Archive/LiblineaR/LiblineaR_1.94-2.tar.gz
 /usr/local/R/current/bin/R CMD INSTALL /LiblineaR_1.94-2.tar.gz
 rm /LiblineaR_1.94-2.tar.gz

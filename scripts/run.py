@@ -20,11 +20,7 @@ import socket
 import multiprocessing
 import platform
 
-if sys.version_info[0] < 3:
-    # noinspection PyPep8Naming
-    import ConfigParser as configparser
-else:
-    import configparser
+import configparser
 
 
 
@@ -273,9 +269,9 @@ class H2OCloudNode(object):
     terminated: Only from a signal.  Not normal shutdown.
     """
 
-    def __init__(self, is_client, allow_clients,
+    def __init__(self, is_client, allow_clients, is_external_xgboost, external_xgboost_leader,
                  cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
-                 xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts, flatfile, strict_port=True):
+                 xmx, cp, output_dir, test_ssl, login_config, jvm_opts, flatfile, strict_port=True):
         """
         Create a node in a cloud.
 
@@ -290,7 +286,7 @@ class H2OCloudNode(object):
         :param xmx: Java memory parameter.
         :param cp: Java classpath parameter.
         :param output_dir: The directory where we can create an output file for this process.
-        :param ldap_config_path: path to LDAP config, if none, no LDAP will be used.
+        :param login_config: tuple (login type, path to login config), if None, no login will be used.
         :param jvm_opts: str with additional JVM options.
         :param flatfile: path to flatfile (optional) 
         :param strict_port: interpret port as exact specification, otherwise as a base port (optional, default is strict)
@@ -298,6 +294,8 @@ class H2OCloudNode(object):
         """
         self.is_client = is_client
         self.allow_clients = allow_clients
+        self.is_external_xgboost = is_external_xgboost
+        self.external_xgboost_leader = external_xgboost_leader
         self.cloud_num = cloud_num
         self.nodes_per_cloud = nodes_per_cloud
         self.node_num = node_num
@@ -309,7 +307,7 @@ class H2OCloudNode(object):
         self.xmx = xmx
         self.cp = cp
         self.output_dir = output_dir
-        self.ldap_config_path = ldap_config_path
+        self.login_config = login_config
         self.jvm_opts = jvm_opts
         self.flatfile = flatfile
 
@@ -360,6 +358,8 @@ class H2OCloudNode(object):
                "-ea"]
         if self.jvm_opts is not None:
             cmd += self.jvm_opts if isinstance(self.jvm_opts, list) else [self.jvm_opts]
+        if not self.is_external_xgboost and self.external_xgboost_leader:
+            cmd += ["-Dsys.ai.h2o.xgboost.external.address=" + self.external_xgboost_leader.get_ip() + ":" + str(self.external_xgboost_leader.get_port())]
         port_spec = "-port" if self.strict_port else "-baseport"
         cmd += ["-cp", classpath,
                main_class,
@@ -372,10 +372,11 @@ class H2OCloudNode(object):
         if self.allow_clients:
             cmd += ["-allow_clients"]
 
-        if self.ldap_config_path is not None:
+        if self.login_config is not None:
+            login_type, login_config_path = self.login_config
             cmd.append('-login_conf')
-            cmd.append(self.ldap_config_path)
-            cmd.append('-ldap_login')
+            cmd.append(login_config_path)
+            cmd.append('-' + login_type + '_login')
 
         # If the jacoco flag was included, then modify cmd to generate coverage
         # data using the jacoco agent
@@ -436,7 +437,7 @@ class H2OCloudNode(object):
                 raise "Failed to spawn %s in %s" % (cmd, self.output_dir)
 
 
-    def scrape_port_from_stdout(self):
+    def scrape_port_from_stdout(self, node_type=None):
         """
         Look at the stdout log and figure out which port the JVM chose.
 
@@ -446,14 +447,15 @@ class H2OCloudNode(object):
         """
         regex = re.compile(r"Open H2O Flow in your web browser: https?://([^:]+):(\d+)")
         retries_left = 30
+        type_desc = " [" + node_type + "]" if node_type else ""
         while retries_left and not self.terminated:
             with open(self.output_file_name, "r") as f:
                 for line in f:
                     mm = re.search(regex, line)
                     if mm is not None:
                         self.port = mm.group(2)
-                        print("H2O cloud %d node %d listening on port %s\n    with output file %s" %
-                              (self.cloud_num, self.node_num, self.port, self.output_file_name))
+                        print("H2O cloud %d node %d listening on port %s%s\n    with output file %s" %
+                              (self.cloud_num, self.node_num, self.port, type_desc, self.output_file_name))
                         return
             if self.terminated: break
             retries_left -= 1
@@ -552,8 +554,9 @@ class H2OCloud(object):
     A class representing one of the H2O clusters.
     """
 
-    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl,
-                 ldap_config_path, jvm_opts=None, strict_port=True):
+    def __init__(self, cloud_num, use_client, use_external_xgboost,
+                 nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl,
+                 login_config, jvm_opts=None, strict_port=True):
         """
         Create a cluster.
         See node definition above for argument descriptions.
@@ -569,7 +572,7 @@ class H2OCloud(object):
         self.cp = cp
         self.output_dir = output_dir
         self.test_ssl = test_ssl
-        self.ldap_config_path = ldap_config_path
+        self.login_config = login_config
         self.jvm_opts = jvm_opts
         self.strict_port = strict_port
 
@@ -581,6 +584,7 @@ class H2OCloud(object):
         self.cloud_name = "H2O_runit_{}_{}".format(user, n)
         self.nodes = []
         self.client_nodes = []
+        self.external_xgboost_nodes = []
         self.jobs_run = 0
 
         if use_client:
@@ -591,8 +595,10 @@ class H2OCloud(object):
             actual_nodes_per_cloud = self.nodes_per_cloud
             self.flatfile = None
 
-        for node_num in range(actual_nodes_per_cloud):
+        leader = None
+        for node_num in range(actual_nodes_per_cloud * (use_external_xgboost + 1)):
             is_client = False
+            is_external_xgboost = use_external_xgboost and (node_num < actual_nodes_per_cloud)
             if use_client:
                 if node_num == (actual_nodes_per_cloud - 1):
                     is_client = True
@@ -600,16 +606,28 @@ class H2OCloud(object):
                 with open(self.flatfile, "a") as ff:
                     for node in self.nodes:
                         ff.write("%s:%s\n" % (node.ip, node.port))
+
+            cloud_name_suffix = ''
+            base_port_offset = 0
+            if is_external_xgboost:
+                cloud_name_suffix = "_ext_xgb"
+                base_port_offset = actual_nodes_per_cloud * 4
+
             node = H2OCloudNode(is_client, use_client,
+                                is_external_xgboost, leader if use_external_xgboost and not is_external_xgboost else None,
                                 self.cloud_num, actual_nodes_per_cloud, node_num,
-                                self.cloud_name,
+                                self.cloud_name + cloud_name_suffix,
                                 self.h2o_jar,
-                                "127.0.0.1", self.base_port,
+                                "127.0.0.1", self.base_port + base_port_offset,
                                 self.xmx, self.cp, self.output_dir,
-                                self.test_ssl, self.ldap_config_path, self.jvm_opts,
+                                self.test_ssl, self.login_config, self.jvm_opts,
                                 self.flatfile, strict_port=self.strict_port)
+            if not leader:
+                leader = node
             if is_client:
                 self.client_nodes.append(node)
+            elif is_external_xgboost:
+                self.external_xgboost_nodes.append(node)
             else:
                 self.nodes.append(node)
 
@@ -624,6 +642,9 @@ class H2OCloud(object):
             node.start()
 
         for node in self.client_nodes:
+            node.start()
+
+        for node in self.external_xgboost_nodes:
             node.start()
 
     def wait_for_cloud_to_be_up(self):
@@ -647,6 +668,9 @@ class H2OCloud(object):
         for node in self.client_nodes:
             node.stop()
 
+        for node in self.external_xgboost_nodes:
+            node.stop()
+
     def terminate(self):
         """
         Terminate a running cluster.  (Due to a signal.)
@@ -655,6 +679,9 @@ class H2OCloud(object):
         """
         for node in self.client_nodes:
             node.terminate()
+
+        for node in self.external_xgboost_nodes:
+            node.stop()
 
         for node in self.nodes:
             node.terminate()
@@ -676,12 +703,16 @@ class H2OCloud(object):
         return node.get_port()
 
     def _scrape_port_from_stdout(self):
+        for node in self.external_xgboost_nodes:
+            node.scrape_port_from_stdout("external-xgboost")
         for node in self.nodes:
             node.scrape_port_from_stdout()
         for node in self.client_nodes:
-            node.scrape_port_from_stdout()
+            node.scrape_port_from_stdout("client")
 
     def _scrape_cloudsize_from_stdout(self):
+        for node in self.external_xgboost_nodes:
+            node.scrape_cloudsize_from_stdout(self.nodes_per_cloud)
         for node in self.nodes:
             node.scrape_cloudsize_from_stdout(self.nodes_per_cloud)
         for node in self.client_nodes:
@@ -695,6 +726,8 @@ class H2OCloud(object):
         for node in self.nodes:
             s += str(node)
         for node in self.client_nodes:
+            s += str(node)
+        for node in self.external_xgboost_nodes:
             s += str(node)
         return s
 
@@ -947,10 +980,10 @@ class Test(object):
             cmd += ['--https']
         if g_rest_log:
             cmd += ['--restLog']
-        if g_ldap_username:
-            cmd += ['--username', g_ldap_username]
-        if g_ldap_password:
-            cmd += ['--password', g_ldap_password]
+        if g_username:
+            cmd += ['--username', g_username]
+        if g_password:
+            cmd += ['--password', g_password]
         if g_kerb_principal:
             cmd += ['--kerbPrincipal', g_kerb_principal]
 
@@ -972,14 +1005,14 @@ class Test(object):
     @staticmethod
     def _pytest_cmd(test_name, ip, port, on_hadoop, hadoop_namenode):
         if g_pycoverage:
-            pyver = "coverage-3.5" if g_py3 else "coverage"
+            pyver = "coverage-3.6" if g_py3 else "coverage"
             cmd = [pyver, "run", "-a", g_py_test_setup, "--usecloud", g_use_proto + ip + ":" + str(port), "--resultsDir",
                    g_output_dir,
                    "--testName", test_name]
             print("Running Python test with coverage:")
             print(cmd)
         else:
-            pyver = "python3.5" if g_py3 else "python"
+            pyver = "python3.6" if g_py3 else "python"
             cmd = [pyver, g_py_test_setup, "--usecloud", g_use_proto + ip + ":" + str(port), "--resultsDir", g_output_dir,
                    "--testName", test_name]
         if is_pyunit(test_name):
@@ -995,10 +1028,10 @@ class Test(object):
         if g_jacoco_include:
             # When using JaCoCo we don't want the test to return an error if a cluster reports as unhealthy
             cmd += ["--forceConnect"]
-        if g_ldap_username:
-            cmd += ['--ldapUsername', g_ldap_username]
-        if g_ldap_password:
-            cmd += ['--ldapPassword', g_ldap_password]
+        if g_username:
+            cmd += ['--ldapUsername', g_username]
+        if g_password:
+            cmd += ['--ldapPassword', g_password]
         if g_kerb_principal:
             cmd += ['--kerbPrincipal', g_kerb_principal]
         return cmd
@@ -1044,10 +1077,10 @@ class TestRunner(object):
 
     def __init__(self,
                  test_root_dir,
-                 use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
+                 use_cloud, use_cloud2, use_client, use_external_xgboost, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
-                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl, ldap_config_path, jvm_opts):
+                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl, login_config, jvm_opts):
         """
         Create a runner.
 
@@ -1073,7 +1106,7 @@ class TestRunner(object):
         :param hadoop_namenode
         :param on_hadoop
         :param perf
-        :param ldap_config_path: path to LDAP config which should be used, or null if no LDAP is required
+        :param login_config: tuple (login type, path to login config), or None if no login is required
         :param jvm_opts: str with additional JVM options
         :return The runner object.
         """
@@ -1082,6 +1115,7 @@ class TestRunner(object):
         self.use_cloud = use_cloud
         self.use_cloud2 = use_cloud2
         self.use_client = use_client
+        self.use_external_xgboost = use_external_xgboost
 
         # Valid if use_cloud is True
         self.use_ip = use_ip
@@ -1125,7 +1159,7 @@ class TestRunner(object):
         self.perf_file = None
         self.exclude_list = []
 
-        self.ldap_config_path = ldap_config_path
+        self.login_config = login_config
         self.jvm_opts = jvm_opts
 
         if use_cloud:
@@ -1141,8 +1175,9 @@ class TestRunner(object):
                 node_num += 1
         else:
             for i in range(self.num_clouds):
-                cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx, cp,
-                                 self.output_dir, self.test_ssl, self.ldap_config_path, self.jvm_opts)
+                cloud = H2OCloud(i, self.use_client, self.use_external_xgboost,
+                                 self.nodes_per_cloud, h2o_jar, self.base_port, xmx, cp,
+                                 self.output_dir, self.test_ssl, self.login_config, self.jvm_opts)
                 self.clouds.append(cloud)
 
     @staticmethod
@@ -1944,8 +1979,8 @@ class TestRunner(object):
         proto = g_use_proto if g_use_proto else "http://"
         try:
             auth = None
-            if g_ldap_password is not None and g_ldap_username is not None:
-                auth = (g_ldap_username, g_ldap_password)
+            if g_password is not None and g_username is not None:
+                auth = (g_username, g_password)
             elif g_kerb_principal is not None:
                 from h2o.auth import SpnegoAuth
                 auth = SpnegoAuth(service_principal=g_kerb_principal)
@@ -2011,6 +2046,7 @@ g_run_xlarge = True
 g_use_cloud = False
 g_use_cloud2 = False
 g_use_client = False
+g_use_external_xgboost = False
 g_config = None
 g_use_proto = ""
 g_use_ip = None
@@ -2040,9 +2076,9 @@ g_job_name = None
 g_py3 = False
 g_pycoverage = False
 g_test_ssl = False
-g_ldap_config = None
-g_ldap_username = None
-g_ldap_password = None
+g_login_config = None
+g_username = None
+g_password = None
 g_kerb_principal = None
 g_rest_log = False
 g_jvm_opts = None
@@ -2180,15 +2216,19 @@ def usage():
     print("")
     print("    --test.ssl       Runs all the nodes with SSL enabled.")
     print("")
-    print("    --ldap.username  Username for LDAP.")
+    print("    --username       Username for LDAP/Hash Login.")
     print("")
-    print("    --ldap.password  Password for LDAP.")
+    print("    --password       Password for LDAP/Hash Login.")
     print("")
     print("    --ldap.config    Path to LDAP config. If set, all nodes will be started with LDAP support.")
+    print("")
+    print("    --hash.config    Path to Hash File config. If set, all nodes will be started with Hash Login support.")
     print("")
     print("    --kerb.principal  Kerberos service principal.")
     print("")
     print("    --jvm.opts       Additional JVM options.")
+    print("")
+    print("    --jvm.opt        Additional JVM option - can be added more than once.")
     print("")
     print("    --restLog        If set, enable REST API logging. Logs will be available at <resultsDir>/rest.log.")
     print("                     Please note, that enablig REST API logging will increase the execution time and that")
@@ -2276,6 +2316,7 @@ def parse_args(argv):
     global g_use_cloud
     global g_use_cloud2
     global g_use_client
+    global g_use_external_xgboost
     global g_config
     global g_use_proto
     global g_use_ip
@@ -2312,10 +2353,10 @@ def parse_args(argv):
     global g_pycoverage
     global g_use_xml2
     global g_test_ssl
-    global g_ldap_username
-    global g_ldap_password
+    global g_username
+    global g_password
     global g_kerb_principal
-    global g_ldap_config
+    global g_login_config
     global g_rest_log
     global g_jvm_opts
 
@@ -2411,6 +2452,8 @@ def parse_args(argv):
             g_config = s
         elif s == "--client":
             g_use_client = True
+        elif s == "--extxgboost":
+            g_use_external_xgboost = True
         elif s == "--nopass":
             g_nopass = True
         elif s == "--nointernal":
@@ -2495,17 +2538,22 @@ def parse_args(argv):
             i += 1
             if i >= len(argv):
                 usage()
-            g_ldap_config = argv[i]
-        elif s == '--ldap.username':
+            g_login_config = ("ldap", argv[i])
+        elif s == '--ldap.username' or s == "--username":
             i += 1
             if i >= len(argv):
                 usage()
-            g_ldap_username = argv[i]
-        elif s == '--ldap.password':
+            g_username = argv[i]
+        elif s == '--ldap.password' or s == "--password":
             i += 1
             if i >= len(argv):
                 usage()
-            g_ldap_password = argv[i]
+            g_password = argv[i]
+        elif s == '--hash.config':
+            i += 1
+            if i >= len(argv):
+                usage()
+            g_login_config = ("hash", argv[i])
         elif s == '--kerb.principal':
             i += 1
             if i >= len(argv):
@@ -2516,6 +2564,16 @@ def parse_args(argv):
             if i >= len(argv):
                 usage()
             g_jvm_opts = argv[i]
+        elif s == '--jvm.opt':
+            i += 1
+            if i >= len(argv):
+                usage()
+            if g_jvm_opts is None:
+                g_jvm_opts = argv[i]
+            elif isinstance(g_jvm_opts, list):
+                g_jvm_opts += argv[i]
+            else:
+                g_jvm_opts = [g_jvm_opts, argv[i]]
         elif s == '--restLog':
             g_rest_log = True
         else:
@@ -2688,11 +2746,11 @@ def main(argv):
         g_num_clouds = 1
 
     g_runner = TestRunner(test_root_dir,
-                          g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
+                          g_use_cloud, g_use_cloud2, g_use_client, g_use_external_xgboost, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx, g_jvm_cp,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
                           testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf, g_test_ssl,
-                          g_ldap_config, g_jvm_opts)
+                          g_login_config, g_jvm_opts)
 
     # Build test list.
     if g_exclude_list_file is not None:

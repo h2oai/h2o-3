@@ -113,21 +113,26 @@ Supported MOJOs
   :align: middle
 
 +---------------+------------+------------+
-| Algorithm     | Importable | Exportable |
+| Algorithm     | Exportable | Importable |
 +===============+============+============+
 | AutoML**      | |yes|      | |yes|      |
 +---------------+------------+------------+
-| GAM           | |yes|      | |no|       |
+| GAM           | |yes|      | |yes|      |
 +---------------+------------+------------+
 | GBM           | |yes|      | |yes|      |
 +---------------+------------+------------+
 | GLM           | |yes|      | |yes|      |
 +---------------+------------+------------+
-| MAXR          | |no|       | |no|       |
+| Isotonic      | |yes|      | |no|       |
+| Regression    |            |            |
++---------------+------------+------------+
+| ModelSelection| |no|       | |no|       |
 +---------------+------------+------------+
 | XGBoost       | |yes|      | |yes|      |
 +---------------+------------+------------+
 | DRF           | |yes|      | |yes|      |
++---------------+------------+------------+
+| Uplift DRF    | |no|       | |no|       |
 +---------------+------------+------------+
 | Deep Learning | |yes|      | |yes|      |
 +---------------+------------+------------+
@@ -138,7 +143,7 @@ Supported MOJOs
 +---------------+------------+------------+
 | RuleFit       | |yes|      | |yes|      |
 +---------------+------------+------------+
-| Naive Bayes   | |no|       | |no|       |
+| Naïve Bayes   | |no|       | |no|       |
 | Classifier    |            |            |
 +---------------+------------+------------+
 | SVM           | |no|       | |no|       |
@@ -148,7 +153,7 @@ Supported MOJOs
 | Isolation     | |yes|      | |yes|      |
 | Forest        |            |            |
 +---------------+------------+------------+
-| Extended      | |no|       | |no|       |
+| Extended      | |yes|      | |yes|      |
 | Isolation     |            |            |
 | Forest        |            |            |
 +---------------+------------+------------+
@@ -166,6 +171,8 @@ Saving and Importing MOJOs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Importing a MOJO can be done from Python, R, and Flow. H2O imports the model and embraces it for the purpose of scoring. Information output about the model may be limited.
+
+**Note**: Your model will not produce MOJOs if you build it using `interactions <data-science/algo-params/interactions.html>`__. 
 
 Saving and Importing in R or Python
 '''''''''''''''''''''''''''''''''''

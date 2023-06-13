@@ -14,6 +14,10 @@ hex.schemas.IsolationForestModelV3
 hex.schemas.IsolationForestModelV3$IsolationForestModelOutputV3
 hex.schemas.IsolationForestV3
 hex.schemas.IsolationForestV3$IsolationForestParametersV3
+hex.schemas.IsotonicRegressionModelV3
+hex.schemas.IsotonicRegressionModelV3$IsotonicRegressionModelOutputV3
+hex.schemas.IsotonicRegressionV3
+hex.schemas.IsotonicRegressionV3$IsotonicRegressionParametersV3
 hex.schemas.DataInfoFrameV3
 hex.schemas.DeepLearningModelV3
 hex.schemas.DeepLearningModelV3$DeepLearningModelOutputV3
@@ -86,10 +90,10 @@ hex.schemas.ExtendedIsolationForestModelV3
 hex.schemas.ExtendedIsolationForestModelV3$ExtendedIsolationForestModelOutputV3
 hex.schemas.ExtendedIsolationForestV3
 hex.schemas.ExtendedIsolationForestV3$ExtendedIsolationForestParametersV3
-hex.schemas.SDTModelV3
-hex.schemas.SDTModelV3$SDTModelOutputV3
-hex.schemas.SDTV3
-hex.schemas.SDTV3$SDTParametersV3
+hex.schemas.DTModelV3
+hex.schemas.DTModelV3$DTModelOutputV3
+hex.schemas.DTV3
+hex.schemas.DTV3$DTParametersV3
 water.api.ModelMetricsAnomalyV3
 water.api.ModelMetricsGLRMV99
 water.api.ModelMetricsPCAV3

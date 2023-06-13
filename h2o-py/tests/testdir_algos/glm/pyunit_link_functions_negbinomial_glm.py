@@ -1,5 +1,3 @@
-from __future__ import division
-from __future__ import print_function
 from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
@@ -16,7 +14,7 @@ def link_functions_negbinomial():
   h2o_data = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip"))
 
   sm_data = pd.read_csv(zipfile.ZipFile(pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip")).
-                        open("prostate_complete.csv")).as_matrix()
+                        open("prostate_complete.csv")).values
   sm_data_response = sm_data[:,9]
   sm_data_features = sm_data[:,1:9]
 
@@ -29,7 +27,7 @@ def link_functions_negbinomial():
   for thetaO in thetas:
       print("Create statsmodel model with canonical link: LOG")
       sm_model_log = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                            family=sm.families.NegativeBinomial(sm.families.links.identity, thetaO)).fit()
+                            family=sm.families.NegativeBinomial(sm.families.links.identity(), thetaO)).fit()
       print("Create h2o model with canonical link: LOG")
       h2o_model_log = H2OGeneralizedLinearEstimator(family="negativebinomial", link="log",alpha=0.5, Lambda=0,
                                                     theta=thetaO)
@@ -39,7 +37,7 @@ def link_functions_negbinomial():
     
       print("Create statsmodel model with canonical link: identity")
       sm_model_identity = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                          family=sm.families.NegativeBinomial(sm.families.links.log, thetaO)).fit()
+                          family=sm.families.NegativeBinomial(sm.families.links.log(), thetaO)).fit()
       print("Create h2o model with canonical link: identity")
       h2o_model_identity = H2OGeneralizedLinearEstimator(family="negativebinomial", link="identity",alpha=0.5, Lambda=0,
                                                   theta=thetaO)

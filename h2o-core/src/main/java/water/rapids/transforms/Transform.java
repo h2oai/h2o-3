@@ -19,6 +19,18 @@ public abstract class Transform<T> extends Iced {
   protected String[] _outTypes;
   protected String[] _outNames;
 
+  public String[] getInputNames() { return _inNames; }
+  public String[] getInputTypes() { return _inTypes; }
+  public String[] getOutputNames() { return _outNames; }
+  public String[] getOutputTypes(){ return _outTypes; }
+  public String[] getNewNames() { return new String[0]; }
+  public String[] getNewTypes() { return new String[0]; }
+  public AstExec getAst() { return _ast; }
+  
+  public boolean isInPlace() { return _inplace; }
+  
+  public IcedHashMap<String,AstParameter> getParams() { return _params; }
+
   Transform(String name, String ast, boolean inplace, String[] newNames) {
     _name=name;
     _ast = (AstExec) Rapids.parse(ast);
@@ -27,7 +39,7 @@ public abstract class Transform<T> extends Iced {
     _params = new IcedHashMap<>();
   }
   public String name() { return _name; }
-  protected abstract Transform<T> fit(Frame f);
+  public abstract Transform<T> fit(Frame f);
   public Frame transform(Frame f) {
     _inNames = f.names();
     _inTypes = f.typesStr();

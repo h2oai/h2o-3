@@ -4,6 +4,8 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.PredictContributions;
 import hex.genmodel.algos.tree.*;
+import hex.genmodel.attributes.VariableImportances;
+import hex.genmodel.attributes.parameters.VariableImportancesHolder;
 
 
 /**
@@ -70,11 +72,16 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
         
         private ContributionsPredictorDRF(DrfMojoModel model, TreeSHAPPredictor<double[]> treeSHAPPredictor) {
             super(model, treeSHAPPredictor);
+            if (model._binomial_double_trees) {
+                throw new UnsupportedOperationException(
+                        "Calculating contributions is currently not supported for model with binomial_double_trees parameter set.");
+            }
+            int numberOfUsedVariables = ((VariableImportancesHolder) model._modelAttributes).getVariableImportances().numberOfUsedVariables();
             if (ModelCategory.Regression.equals(model._category)) {
                 _featurePlusBiasRatio = 0;
                 _normalizer = model._ntree_groups;
             } else if (ModelCategory.Binomial.equals(model._category)) {
-                _featurePlusBiasRatio = 1f / (model._nfeatures + 1);
+                _featurePlusBiasRatio = 1f / (numberOfUsedVariables + 1);
                 _normalizer = -model._ntree_groups;
             } else 
                 throw new UnsupportedOperationException(
@@ -84,10 +91,14 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
         @Override
         public float[] getContribs(float[] contribs) {
             for (int i = 0; i < contribs.length; i++) {
-                contribs[i] = _featurePlusBiasRatio + (contribs[i] / _normalizer);
+                if (contribs[i] != 0)
+                    contribs[i] = _featurePlusBiasRatio + (contribs[i] / _normalizer);
             }
             return contribs;    
         }
     }
 
+    public boolean isBinomialDoubleTrees() {
+        return _binomial_double_trees;
+    }
 }

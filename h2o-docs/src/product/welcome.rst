@@ -23,24 +23,34 @@ At a minimum, we recommend the following for compatibility with H2O:
    -  Ubuntu 12.04
    -  RHEL/CentOS 6 or later
 
--  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
+-  **Languages**: R and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
 
-   -  Scala 2.10 or later
    -  R version 3 or later
-   -  Python 2.7.x, 3.5.x, 3.6.x 
+   -  Python 3.6.x, 3.7.x, 3.8.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
 
 Java Requirements
 ~~~~~~~~~~~~~~~~~
 
-H2O can run on Java. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
+H2O runs on Java. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
 
 H2O supports the following versions of Java: 
 
 - Java SE 17, 16, 15, 14, 13, 12, 11, 10, 9, 8
 
 Click `here <https://jdk.java.net/archive/>`__ to download the latest supported version.
+
+Using Unsupported Java Versions
+'''''''''''''''''''''''''''''''
+
+We recommend that only power users force an unsupported Java version. Unsupported Java versions can only be used for experiments. For production versions, we only guarantee the Java versions from the supported list.
+
+To force an unsupported Java version:
+
+::
+   
+   java -jar -Dsys.ai.h2o.debug.allowJavaVersions=19 h2o.jar
 
 Running H2O on Hadoop
 '''''''''''''''''''''
@@ -61,7 +71,7 @@ Additional Requirements
 
 -  **Conda 2.7, 3.5, or 3.6 repo**: Conda is not required to run H2O unless you want to run H2O on the Anaconda Cloud. Refer to the :ref:`anaconda` section for more information.
 
--  **Spark**: Version 2.1, 2.2, or 2.3. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
+-  **Spark**: Version 3.3, 3.2, 3.1, 3.0, 2.4, or 2.3. Spark is only required if you want to run `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
 New Users
@@ -89,6 +99,20 @@ learn more:
 -  :ref:`Data_Science`: This section describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
 
 -  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git.
+
+Use Cases
+~~~~~~~~~
+
+H2O can handle a wide range of practical use cases due to its robust catalogue of supported algorithms, wrappers, and machine learning tools. Several example problems H2O can handle are: 
+
+- determining outliers in housing price based on number of bedrooms, number of bathrooms, access to waterfront, etc. through `anomaly detection <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/anomaly-detection>`__
+- revealing natural customer `segments <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/segmentation>`__ in retail data to determine which groups are purchasing which products
+- linking multiple records to the same person with `probabilistic matching <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/probabilistic-matching-engine>`__
+- upsampling the minority class for credit card fraud data to handle `imbalanced data <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/imbalanced-data>`__
+- `detecting drift <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices/drift-detection>`__ on avocado sales pre-2018 and 2018+ to determine if a model is still relevant for new data
+
+To further explore the capabilities of H2O, check out some of our best practice `tutorials <https://github.com/h2oai/h2o-tutorials/tree/master/best-practices>`__.
+
 
 New User Quick Start
 ~~~~~~~~~~~~~~~~~~~~
@@ -179,7 +203,6 @@ At this point, determine whether you want to complete this quick start in either
       # Prepend these commands with `sudo` only if necessary:
       # h2o-3 user$ [sudo] pip install -U requests
       # h2o-3 user$ [sudo] pip install -U tabulate
-      # h2o-3 user$ [sudo] pip install -U future
 
       # Start python:
       # h2o-3 user$ python
@@ -257,21 +280,21 @@ Getting Started with Sparkling Water
 
 -  `Download Sparkling Water <http://www.h2o.ai/download/>`_: Go here to download Sparkling Water.
 
--  Sparkling Water Documentation for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/index.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/index.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html>`__: Read this document first to get started with Sparkling Water.
+-  Sparkling Water Documentation for: `3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/index.html>`__, `3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/index.html>`__, `3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/index.html>`__, `3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/index.html>`__, `2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/index.html>`__, or `2.3 <https://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/index.html>`__. Read this documentation first to get started with Sparkling Water.
 
--  Launch on Hadoop and Import from HDFS (`2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/devel/integ_tests.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/integ_tests.html>`__): Go here to learn how to start Sparkling Water on Hadoop.
+-  Launch on Hadoop and Import from HDFS (`3.3 <http://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/devel/integ_tests.html>`__, `3.2 <http://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/devel/integ_tests.html>`__, `3.1 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/devel/integ_tests.html>`__, `3.0 <http://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/devel/integ_tests.html>`__, `2.4 <http://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/devel/integ_tests.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/devel/integ_tests.html>`__): Go here to learn how to start Sparkling Water on Hadoop.
 
 -  `Sparkling Water Tutorials <https://github.com/h2oai/sparkling-water/tree/master/examples>`_: Go here for demos and examples.
 
-   -  `Sparkling Water K-means Tutorial <https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/ProstateDemo.scala>`_: Go here to view a demo that uses Scala to create a K-means model.
+   -  `Sparkling Water K-means Tutorial <https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/ai/h2o/sparkling/examples/ProstateDemo.scala>`_: Go here to view a demo that uses Scala to create a K-means model.
 
-   -  `Sparkling Water GBM Tutorial <https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/CitiBikeSharingDemo.scala>`_: Go here to view a demo that uses Scala to create a GBM model.
+   -  `Sparkling Water GBM Tutorial <https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/ai/h2o/sparkling/examples/CityBikeSharingDemo.scala>`_: Go here to view a demo that uses Scala to create a GBM model.
 
    - `Sparkling Water on YARN <https://www.h2o.ai/blog/sparkling-water-on-yarn-example/>`_: Follow these instructions to run Sparkling Water on a YARN cluster.
 
 -  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
--  Sparkling Water FAQ for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/FAQ.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/FAQ.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/FAQ.html>`__: This FAQ provides answers to many common questions about Sparkling Water.
+-  Sparkling Water FAQ for `3.3 <https://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/FAQ.html>`__, `3.2 <https://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/FAQ.html>`__, `3.1 <https://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/FAQ.html>`__, `3.0 <https://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/FAQ.html>`__, `2.4 <https://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/FAQ.html>`__, or `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/FAQ.html>`__. This FAQ provides answers to many common questions about Sparkling Water.
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
@@ -293,15 +316,12 @@ Sparkling Water Meetup Slide Decks
 
 -  `Sparkling Water Hands-On <http://www.slideshare.net/0xdata/2014-09-30sparklingwaterhandson>`_
 
--  `Additional Sparkling Water Meetup meeting notes <https://github.com/h2oai/sparkling-water/tree/master/examples/meetups>`_
-
-
 PySparkling
 ~~~~~~~~~~~~
 
-PySparkling documentation is available for `2.1 <http://docs.h2o.ai/sparkling-water/2.1/latest-stable/doc/pysparkling.html>`__, `2.2 <http://docs.h2o.ai/sparkling-water/2.2/latest-stable/doc/pysparkling.html>`__, and `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/pysparkling.html>`__.
+PySparkling documentation is available for `3.3 <http://docs.h2o.ai/sparkling-water/3.3/latest-stable/doc/pysparkling.html>`__, `3.2 <http://docs.h2o.ai/sparkling-water/3.2/latest-stable/doc/pysparkling.html>`__, `3.1 <http://docs.h2o.ai/sparkling-water/3.1/latest-stable/doc/pysparkling.html>`__, `3.0 <http://docs.h2o.ai/sparkling-water/3.0/latest-stable/doc/pysparkling.html>`__, `2.4 <http://docs.h2o.ai/sparkling-water/2.4/latest-stable/doc/pysparkling.html>`__, and `2.3 <http://docs.h2o.ai/sparkling-water/2.3/latest-stable/doc/pysparkling.html>`__.
 
-**Note**: PySparkling requires Sparkling Water 2.1 or later. We recommended Sparkling Water 2.3. 
+**Note**: PySparkling requires Sparkling Water 2.3 or later. We recommended Sparkling Water 3.3. 
 
 PySparkling can be installed by downloading and running the PySparkling shell or using ``pip``. PySparkling can also be installed from the PyPi repository. Follow the instructions on the `Download page <http://h2o.ai/download>`__ for Sparkling Water.
 
@@ -314,7 +334,7 @@ This package implements basic functionality (creating an H2OContext, showing the
 
 The rsparkling package uses sparklyr for Spark job deployment and initialization of Sparkling Water. After that, users can use the regular H2O R package for modeling. 
 
-Refer to the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for more information.
+Refer to the `Sparkling Water User Guide <https://docs.h2o.ai/sw/index.html>`__ for more information.
 
 Python Users
 --------------
@@ -346,7 +366,7 @@ To check which version of H2O is installed in R, use ``versions::installed.versi
 
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
--  `RStudio Cheat Sheet <https://github.com/rstudio/cheatsheets/raw/master/h2o.pdf>`__: Download this PDF to keep as a quick reference when using H2O in R.  
+-  `RStudio Cheat Sheet <https://github.com/rstudio/cheatsheets/blob/main/h2o.pdf>`__: Download this PDF to keep as a quick reference when using H2O in R.  
 
 **Note**: If you are running R on Linux, then you must install ``libcurl``, which allows H2O to communicate with R. We also recommend disabling SElinux and any firewalls, at least initially until you have confirmed H2O can initialize.
 
@@ -404,7 +424,7 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 
 -  `Maven install <https://github.com/h2oai/h2o-3/blob/master/build.gradle>`_: This page provides information on how to build a version of H2O that generates the correct IDE files.
 
--  `apps.h2o.ai <http://apps.h2o.ai/>`_: Apps.h2o.ai is designed to support application developers via events, networking opportunities, and a new, dedicated website comprising developer kits and technical specs, news, and product spotlights.
+- `H2O Community <https://h2o.ai/community/>`__: Join our community support and outreach by accessing self-paced courses, scoping out meetups, and interacting with other users and our team.
 
 -  `H2O Droplet Project Templates <https://github.com/h2oai/h2o-droplets>`_: This page provides template info for projects created in Java, Scala, or Sparkling Water.
 
@@ -565,6 +585,13 @@ Hadoop Launch Parameters
  -  ``-verbose:gc``: Include heap and garbage collection information in the logs. Deprecated in Java 9, removed in Java 10.
  -  ``-XX:+PrintGCDetails``: Include a short message after each garbage collection. Deprecated in Java 9, removed in Java 10.
  -  ``-Xlog:gc=info``: Prints garbage collection information into the logs. Introduced in Java 9. Usage enforced since Java 10. A replacement for ``-verbose:gc`` and ``-XX:+PrintGCDetails`` tags which are deprecated in Java 9 and removed in Java 10.
+
+Configuring HDFS
+~~~~~~~~~~~~~~~~
+
+When running H2O-3 on Hadoop, you do not need to worry about configuring HDFS. The ``-hdfs_config`` flag is used to configure access to HDFS from a standalone cluster. However, it is also used for anything that requries Hadoop (such as Hive).
+
+If you are accessing HDFS/Hive without Kerberos, then you will need to pass ``-hdfs_config`` and path to the ``core-site.xml`` that you got from your Hadoop edge node. If you are accessing Kerberized Hadoop, you will also need to pass ``hdfs-site.xml``.
 
 Accessing S3 Data from Hadoop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -949,6 +976,7 @@ First, a headless service must be created on Kubernetes:
   kind: Service
   metadata:
     name: h2o-service
+    namespace: default
   spec:
     type: ClusterIP
     clusterIP: None
@@ -980,7 +1008,7 @@ We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/doc
   kind: StatefulSet
   metadata:
     name: h2o-stateful-set
-    namespace: h2o-statefulset
+    namespace: default
   spec:
     serviceName: h2o-service
     podManagementPolicy: "Parallel"
@@ -1005,7 +1033,7 @@ We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/doc
                 protocol: TCP
             env:
             - name: H2O_KUBERNETES_SERVICE_DNS
-              value: h2o-service.h2o-statefulset.svc.cluster.local
+              value: h2o-service.default.svc.cluster.local
             - name: H2O_NODE_LOOKUP_TIMEOUT
               value: '180'
             - name: H2O_NODE_EXPECTED_COUNT
@@ -1013,7 +1041,7 @@ We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/doc
 
 The environment variables used are described below:
 
-- ``H2O_KUBERNETES_SERVICE_DNS`` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the ``<service-name>.<project-name>.svc.cluster.local`` pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address. It must match the specifics of your Kubernetes implementation.
+- ``H2O_KUBERNETES_SERVICE_DNS`` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the ``<service-name>.<project-namespace>.svc.cluster.local`` pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address. It must match the specifics of your Kubernetes implementation.
 - ``H2O_NODE_LOOKUP_TIMEOUT`` - **[OPTIONAL]** Node lookup constraint. Specify the time before the node lookup times out.
 - ``H2O_NODE_EXPECTED_COUNT`` - **[OPTIONAL]** Node lookup constraint. This is the expected number of H2O pods to be discovered.
 - ``H2O_KUBERNETES_API_PORT`` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.

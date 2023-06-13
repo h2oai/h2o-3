@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import unicode_literals
 from collections import OrderedDict
 import bindings as bi
 

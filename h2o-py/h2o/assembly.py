@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 import os
@@ -14,11 +13,11 @@ from h2o.utils.typechecks import assert_is_type
 
 class H2OAssembly(object):
     """
-    H2OAssembly class can be used to specify multiple frame operations in one place.
+    The H2OAssembly class can be used to specify multiple frame operations in one place.
 
-    :returns: a new H2OFrame
+    :returns: a new H2OFrame.
 
-    Sample usage:
+    :example:
 
     >>> iris = h2o.load_dataset("iris")
     >>> from h2o.assembly import *
@@ -48,25 +47,25 @@ class H2OAssembly(object):
     [150 rows x 4 columns]
 
 
-    In this example, we first load the iris frame.  Next, the following data munging operations are performed on the
-    iris frame
+    In this example, we first load the iris frame. Next, the following data munging operations are performed on the
+    iris frame:
 
-        1. only select three columns out of the five columns;
-        2. take the cosine of the column Sepal.Length and replace the original column with the cosine of the column;
-        3. want to count the number of rows with the letter s in the class column.  Since inplace is set to
-           False, a new column is generated to hold the result.
+        1. select only three out of the five columns;
+        2. take the cosine of the column "Sepal.Length" and replace the original column with the cosine of the column;
+        3. count the number of rows with the letter "s" in the class column. Since ``inplace=False``,
+           a new column is generated to hold the result.
 
     Extension class of Pipeline implementing additional methods:
 
-       - to_pojo: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
+       - ``to_pojo``: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
 
-    In addition, H2OAssembly provides a few static methods that perform element to element operations between
-    two frames. They all are called as
+    Additionally, H2OAssembly provides a few static methods that perform element to element operations between
+    two frames. They all are called as:
 
     >>> H2OAssembly.op(frame1, frame2)
 
-    while frame1, frame2 are H2OFrame of the same size and same column types.  It will return a H2OFrame
-    containing the element-wise result of operation op.  The following operations are currently supported
+    where ``frame1, frame2`` are H2OFrames of the same size and same column types. It will return an H2OFrame
+    containing the element-wise result of operation op. The following operations are currently supported:
 
         - divide
         - plus
@@ -303,14 +302,69 @@ class H2OAssembly(object):
         return list(zip(*self.steps))[0][:-1]
 
 
+    def download_mojo(self, file_name="", path="."):
+        """
+        Convert the munging operations performed on H2OFrame into a MOJO 2 artifact. This method requires an additional
+        mojo2-runtime library on the Java classpath. The library can be found at this maven URL::
+        https://repo1.maven.org/maven2/ai/h2o/mojo2-runtime/2.7.11.1/mojo2-runtime-2.7.11.1.jar.
+        
+        The library can be added to the classpath via Java command when starting an H2O node from the command line::
+        
+            java -cp <path_to_h2o_jar>:<path_to_mojo2-runtime_library> water.H2OApp
+          
+        The library can also be added to the Java classpath from Python while starting an H2O cluster
+        via ``h2o.init()``::
+      
+        >>> import h2o
+        >>> h2o.init(extra_classpath = ["<path_to_mojo2-runtime_library>"]) 
+        
+        The MOJO 2 artifact created by this method can be utilized according to the tutorials on the page
+        https://docs.h2o.ai/driverless-ai/1-10-lts/docs/userguide/scoring-mojo-scoring-pipeline.html with one additional
+        requirement. The artifact produced by this method requires 
+        `h2o-genmodel.jar <https://mvnrepository.com/artifact/ai.h2o/h2o-genmodel>`_ to be present on Java classpath.  
+        
+        :param file_name:  (str) Name of MOJO 2 artifact.
+        :param path:  (str) Local Path on a user side  serving as target for  MOJO 2 artifact.
+        :return: Streamed file.
+        
+        :examples:
+
+        >>> from h2o.assembly import *
+        >>> from h2o.transforms.preprocessing import *
+        >>> iris = h2o.load_dataset("iris")
+        >>> assembly = H2OAssembly(steps=[("col_select",
+        ...                                H2OColSelect(["Sepal.Length",
+        ...                                "Petal.Length", "Species"])),
+        ...                               ("cos_Sepal.Length",
+        ...                                H2OColOp(op=H2OFrame.cos,
+        ...                                col="Sepal.Length", inplace=True)),
+        ...                               ("str_cnt_Species",
+        ...                                H2OColOp(op=H2OFrame.countmatches,
+        ...                                col="Species", inplace=False,
+        ...                                pattern="s"))])
+        >>> result = assembly.fit(iris)
+        >>> assembly.download_mojo(file_name="iris_mojo", path='')
+        
+        .. note::
+            The output column names of the created MOJO 2 pipeline are prefixed with "assembly\_"  since the
+            MOJO2 library requires unique names across all columns present in pipeline.
+        
+        """
+        assert_is_type(file_name, str)
+        assert_is_type(path, str)
+        if file_name == "":
+            file_name = "AssemblyMOJO_" + str(uuid.uuid4())
+        return h2o.api("GET /99/Assembly.fetch_mojo_pipeline/%s/%s" % (self.id, file_name), save_to=path)
+
+
     def to_pojo(self, pojo_name="", path="", get_jar=True):
         """
         Convert the munging operations performed on H2OFrame into a POJO.
 
-        :param pojo_name:  (str) Name of POJO
+        :param pojo_name:  (str) Name of POJO.
         :param path:  (str) path of POJO.
-        :param get_jar: (bool) Whether to also download the h2o-genmodel.jar file needed to compile the POJO
-        :return: None
+        :param get_jar: (bool) Whether to also download the h2o-genmodel.jar file needed to compile the POJO.
+        :return: None.
 
         :examples:
 
@@ -359,7 +413,7 @@ class H2OAssembly(object):
 
     def fit(self, fr):
         """
-        To perform the munging operations on a frame specified in steps on the frame fr.
+        To perform the munging operations on a frame specified in steps on the frame ``fr``.
 
         :param fr: H2OFrame where munging operations are to be performed on.
         :return: H2OFrame after munging operations are completed.

@@ -16,11 +16,15 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
   private final Predictor _predictor;
   private final MutableOneHotEncoderFVec _row;
   private final int _offsetIndex;
+  private final boolean[] _usedColumns;
 
   public XGBoostJavaBigScoreChunkPredict(
-      DataInfo di, XGBoostOutput output,
+      DataInfo di,
+      XGBoostOutput output,
       XGBoostModel.XGBoostParameters parms,
-      double threshold, Predictor predictor,
+      double threshold,
+      Predictor predictor,
+      boolean[] usedColumns,
       Frame data
   ) {
     _output = output;
@@ -29,13 +33,16 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
     _row = new MutableOneHotEncoderFVec(di, _output._sparse);
 
     _offsetIndex = data.find(parms._offset_column);
+    _usedColumns = usedColumns;
   }
 
   @Override
   public double[] score0(Chunk[] chks, double offset, int row_in_chunk, double[] tmp, double[] preds) {
     assert _output.nfeatures() == tmp.length;
     for (int i = 0; i < tmp.length; i++) {
-      tmp[i] = chks[i].atd(row_in_chunk);
+      if (_usedColumns == null || _usedColumns[i]) {
+        tmp[i] = chks[i].atd(row_in_chunk);
+      }
     }
 
     _row.setInput(tmp);
@@ -57,7 +64,9 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
     final double[] tmp = new double[_output.nfeatures()];
     for (int row = 0; row < cs[0]._len; row++) {
       for (int col = 0; col < tmp.length; col++) {
-        tmp[col] = cs[col].atd(row);
+        if (_usedColumns == null || _usedColumns[col]) {
+          tmp[col] = cs[col].atd(row);
+        }
       }
       _row.setInput(tmp);
       if (_offsetIndex >= 0) {

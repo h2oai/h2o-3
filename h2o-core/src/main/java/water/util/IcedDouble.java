@@ -4,6 +4,9 @@ import water.Iced;
 
 public class IcedDouble extends Iced<IcedDouble> {
   public double _val;
+  public IcedDouble() {
+    this(Double.NaN);
+  }
   public IcedDouble(double v){_val = v;}
   @Override public boolean equals( Object o ) {
     return o instanceof IcedDouble && ((IcedDouble) o)._val == _val;

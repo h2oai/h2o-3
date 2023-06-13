@@ -3,7 +3,7 @@ Launching iPython Examples
 
 ## Prerequisites:
 
-- Python 2.7
+- Python 3.7
 
 ---
 

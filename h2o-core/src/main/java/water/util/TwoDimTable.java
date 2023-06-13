@@ -3,6 +3,9 @@ package water.util;
 import water.AutoBuffer;
 import water.Iced;
 import water.IcedWrapper;
+import water.Key;
+import water.fvec.Frame;
+import water.fvec.Vec;
 
 import java.util.Arrays;
 
@@ -14,13 +17,13 @@ import java.util.Arrays;
  */
 public class TwoDimTable extends Iced {
     private String     tableHeader;
-    private String     tableDescription;
-    private String[]   rowHeaders;
-    private String[]   colHeaders;
-    private String[]   colTypes;
-    private String[]   colFormats;
-    private IcedWrapper[][] cellValues;
-    private String     colHeaderForRowHeaders;
+    private final String     tableDescription;
+    private final String[]   rowHeaders;
+    private final String[]   colHeaders;
+    private final String[]   colTypes;
+    private final String[]   colFormats;
+    private final IcedWrapper[][] cellValues;
+    private final String     colHeaderForRowHeaders;
 
   //public static final double emptyDouble = Double.longBitsToDouble(0x7ff8000000000100L); //also a NaN, but not Double.NaN (0x7ff8000000000000)
   public static final double emptyDouble = Double.MIN_VALUE*2; //Some unlikely value
@@ -270,13 +273,12 @@ public class TwoDimTable extends Iced {
     return toString(pad, true);
   }
 
-  private static int PRINTOUT_ROW_LIMIT = 20;
+  private static final int PRINTOUT_ROW_LIMIT = 20;
   private boolean skip(int row) {
     assert(PRINTOUT_ROW_LIMIT % 2 == 0);
     if (getRowDim() <= PRINTOUT_ROW_LIMIT) return false;
     if (row <= PRINTOUT_ROW_LIMIT/2) return false;
-    if (row >= getRowDim()-PRINTOUT_ROW_LIMIT/2) return false;
-    return true;
+    return row < getRowDim() - PRINTOUT_ROW_LIMIT / 2;
   }
   /**
    * Print table to String, using user-given padding
@@ -323,10 +325,10 @@ public class TwoDimTable extends Iced {
           continue;
         }
         try {
-          if (o instanceof Double) cellStrings[row + 1][c + 1] = String.format(formatString, (Double) o);
-          else if (o instanceof Float) cellStrings[row + 1][c + 1] = String.format(formatString, (Float) o);
-          else if (o instanceof Integer) cellStrings[row + 1][c + 1] = String.format(formatString, (Integer) o);
-          else if (o instanceof Long) cellStrings[row + 1][c + 1] = String.format(formatString, (Long) o);
+          if (o instanceof Double) cellStrings[row + 1][c + 1] = String.format(formatString, o);
+          else if (o instanceof Float) cellStrings[row + 1][c + 1] = String.format(formatString, o);
+          else if (o instanceof Integer) cellStrings[row + 1][c + 1] = String.format(formatString, o);
+          else if (o instanceof Long) cellStrings[row + 1][c + 1] = String.format(formatString, o);
           else if (o instanceof String) cellStrings[row + 1][c + 1] = (String)o;
           else cellStrings[row + 1][c + 1] = String.format(formatString, cellValues[r][c]);
         } catch(Throwable t) {
@@ -370,5 +372,41 @@ public class TwoDimTable extends Iced {
 
    return sb.toString();
   }
+  public Frame asFrame(Key frameKey) {
+    String[] colNames = new String[getColDim()];
+    System.arraycopy(getColHeaders(), 0, colNames, 0, getColDim());
 
+    Vec[] vecs = new Vec[colNames.length];
+    vecs[0] = Vec.makeVec(getRowHeaders(), Vec.newKey());
+
+    for (int j = 0; j < this.getColDim(); j++) {
+      switch (getColTypes()[j]){
+        case "string":
+          String[] strRow = new String[getRowDim()];
+          for (int i = 0; i < getRowDim(); i++) {
+            strRow[i] = (String) get(i, j);
+          }
+          vecs[j] = Vec.makeVec(strRow, Vec.newKey());
+          break;
+        case "int":
+        case "long":
+          double[] longRow = new double[getRowDim()];
+          for (int i = 0; i < getRowDim(); i++) {
+            longRow[i] = ((Number) get(i, j)).longValue();
+          }
+          vecs[j] = Vec.makeVec(longRow, Vec.newKey());
+          break;
+        case "float":
+        case "double":
+          double[] dblRow = new double[getRowDim()];
+          for (int i = 0; i < getRowDim(); i++) {
+            dblRow[i] = (double) get(i, j);
+          }
+          vecs[j] = Vec.makeVec(dblRow, Vec.newKey());
+          break;
+      }
+    }
+    Frame fr = new Frame(frameKey, colNames, vecs);
+    return fr;
+  }
 }

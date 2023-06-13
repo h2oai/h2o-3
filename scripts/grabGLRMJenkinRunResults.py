@@ -209,7 +209,7 @@ def main(argv):
     global g_milsongs_python
 
     if len(argv) < 2:
-        print "python grabGLRMrunLogs logsBaseDirectory\n"
+        print("python grabGLRMrunLogs logsBaseDirectory\n")
         sys.exit(1)
     else:   # we may be in business
         g_log_base_dir = argv[1]

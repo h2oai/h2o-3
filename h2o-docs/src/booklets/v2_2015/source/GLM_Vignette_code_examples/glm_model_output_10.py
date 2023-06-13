@@ -8,4 +8,4 @@ train = h2o_df[r <= 0.8]
 valid = h2o_df[r > 0.8]
 binomial_fit = H2OGeneralizedLinearEstimator(family = "binomial")
 binomial_fit.train(y = "CAPSULE", x = ["AGE", "RACE", "PSA", "GLEASON"], training_frame = train, validation_frame=valid)
-print binomial_fit
+print(binomial_fit)

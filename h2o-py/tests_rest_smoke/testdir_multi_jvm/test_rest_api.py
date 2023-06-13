@@ -20,9 +20,10 @@ sys.path.insert(1, '../rest_tests')
 
 clean_up_after = False
 
-algos = ['coxph', 'kmeans', 'deeplearning', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'glrm', 'svd', 'psvm', 'aggregator',
-         'word2vec', 'stackedensemble', 'xgboost', 'isolationforest', 'gam', 'generic', 'targetencoder', 'rulefit', 
-         'extendedisolationforest', 'anovaglm', 'modelselection', 'upliftdrf', 'infogram']
+algos = ['coxph', 'kmeans', 'deeplearning', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'glrm', 'svd', 'isotonicregression',
+         'psvm', 'aggregator', 'word2vec', 'stackedensemble', 'xgboost', 'isolationforest', 'gam',
+         'generic', 'targetencoder', 'rulefit', 'extendedisolationforest', 'anovaglm', 'modelselection',
+         'upliftdrf', 'infogram', 'dt']
 
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 },

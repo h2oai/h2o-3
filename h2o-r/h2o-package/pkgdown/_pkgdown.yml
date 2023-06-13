@@ -55,6 +55,7 @@ reference:
       - h2o.auc
       - h2o.automl
       - h2o.auuc
+      - h2o.average_objective
       - h2o.betweenss
       - h2o.biases
       - h2o.bottomN
@@ -70,6 +71,7 @@ reference:
       - h2o.clusterStatus
       - h2o.coef
       - h2o.coef_norm
+      - h2o.coef_with_p_values
       - h2o.colnames
       - h2o.columns_by_type
       - h2o.computeGram
@@ -93,6 +95,7 @@ reference:
       - h2o.dayOfWeek
       - h2o.dct
       - h2o.ddply
+      - h2o.decision_tree
       - h2o.decryptionSetup
       - h2o.deepfeatures
       - h2o.deeplearning
@@ -122,10 +125,13 @@ reference:
       - h2o.floor
       - h2o.flow
       - h2o.gainsLift
+      - h2o.gains_lift
+      - h2o.gains_lift_plot
       - h2o.gbm
       - h2o.generic
       - h2o.genericModel
       - h2o.get_automl
+      - h2o.get_knot_locations
       - h2o.get_leaderboard
       - h2o.get_ntrees_actual
       - h2o.get_segment_models
@@ -145,6 +151,12 @@ reference:
       - h2o.anovaglm
       - h2o.get_best_r2_values
       - h2o.get_best_model_predictors
+      - h2o.get_knot_locations
+      - h2o.get_gam_knot_column_names
+      - h2o.get_predictor_added_per_step
+      - h2o.get_predictor_removed_per_step
+      - h2o.get_regression_influence_diagnostics
+      - h2o.get_variable_inflation_factors
       - h2o.glm
       - h2o.glrm
       - h2o.grep
@@ -197,6 +209,7 @@ reference:
       - h2o.log2
       - h2o.log10
       - h2o.logAndEcho
+      - h2o.loglikelihood
       - h2o.logloss
       - h2o.ls
       - h2o.lstrip
@@ -226,6 +239,7 @@ reference:
       - h2o.names
       - h2o.nchar
       - h2o.ncol
+      - h2o.negative_log_likelihood
       - h2o.networkTest
       - h2o.nlevels
       - h2o.no_progress
@@ -235,6 +249,7 @@ reference:
       - h2o.num_iterations
       - h2o.num_valid_substrings
       - h2o.openLog
+      - h2o.pareto_front
       - h2o.parseRaw
       - h2o.parseSetup
       - h2o.partialPlot
@@ -331,6 +346,7 @@ reference:
       - h2o.toupper
       - h2o.train_segments
       - h2o.transform
+      - h2o.transform_frame
       - h2o.transform_word2vec
       - h2o.transform,H2OTargetEncoderModel-method
       - h2o.transform,H2OWordEmbeddingModel-method
@@ -349,7 +365,7 @@ reference:
       - h2o.weights
       - h2o.which_max
       - h2o.which_min
-      - h2o.which 
+      - h2o.which
       - h2o.withinss
       - h2o.word2vec
       - h2o.xgboost.available
@@ -390,6 +406,7 @@ reference:
       - predict.H2OAutoML 
       - predict.H2OModel
       - predict_contributions.H2OModel 
+      - row_to_tree_assignment.H2OModel 
       - predict_leaf_node_assignment.H2OModel
       - print.H2OFrame 
       - print.H2OTable 

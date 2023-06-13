@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import static hex.genmodel.GenModel.createAuxKey;
 import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
+import static hex.tree.SharedTree.createModelSummaryTable;
 
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
@@ -43,7 +44,7 @@ public abstract class SharedTreeModel<
 
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
-  public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees, PlattScalingHelper.ParamsWithCalibration {
+  public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees, CalibrationHelper.ParamsWithCalibration {
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
@@ -86,8 +87,10 @@ public abstract class SharedTreeModel<
       return _sample_rate < 1 || _sample_rate_per_class != null;
     }
 
-    public boolean _calibrate_model = false; // Use Platt Scaling
+    // Platt scaling (by default)
+    public boolean _calibrate_model;
     public Key<Frame> _calibration_frame;
+    public CalibrationHelper.CalibrationMethod _calibration_method = CalibrationHelper.CalibrationMethod.AUTO;
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
@@ -105,6 +108,10 @@ public abstract class SharedTreeModel<
     public boolean _parallel_main_model_building = false;
 
     public boolean _use_best_cv_iteration = true; // when early stopping is enabled, cv models will pick the iteration that produced the best score instead of the stopping iteration
+
+    public String _in_training_checkpoints_dir;
+
+    public int _in_training_checkpoints_tree_interval = 1;  // save model checkpoint every so many trees (no matter what)
 
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
@@ -124,6 +131,16 @@ public abstract class SharedTreeModel<
     @Override
     public boolean calibrateModel() {
       return _calibrate_model;
+    }
+
+    @Override
+    public CalibrationHelper.CalibrationMethod getCalibrationMethod() {
+      return _calibration_method;
+    }
+
+    @Override
+    public void setCalibrationMethod(CalibrationHelper.CalibrationMethod calibrationMethod) {
+      _calibration_method = calibrationMethod;
     }
 
     @Override
@@ -153,7 +170,7 @@ public abstract class SharedTreeModel<
     }
   }
 
-  public abstract static class SharedTreeOutput extends Model.Output implements Model.GetNTrees, PlattScalingHelper.OutputWithCalibration {
+  public abstract static class SharedTreeOutput extends Model.Output implements Model.GetNTrees, CalibrationHelper.OutputWithCalibration {
     /** InitF value (for zero trees)
      *  f0 = mean(yi) for gaussian
      *  f0 = log(yi/1-yi) for bernoulli
@@ -199,7 +216,7 @@ public abstract class SharedTreeModel<
       return _variable_importances;
     }
 
-    public GLMModel _calib_model;
+    public Model<?, ?, ?> _calib_model;
 
     public SharedTreeOutput( SharedTree b) {
       super(b);
@@ -272,6 +289,7 @@ public abstract class SharedTreeModel<
       _scored_train = Arrays.copyOf(_scored_train, _ntrees + 1);
       _scored_valid = _scored_valid != null ? Arrays.copyOf(_scored_valid, _ntrees + 1) : null;
       _training_time_ms = Arrays.copyOf(_training_time_ms, _ntrees + 1);
+      _model_summary = createModelSummaryTable(_ntrees, _treeStats);
       fs.blockForPending();
     }
 
@@ -281,11 +299,16 @@ public abstract class SharedTreeModel<
     }
 
     @Override
-    public GLMModel calibrationModel() {
+    public Model<?, ?, ?> calibrationModel() {
       return _calib_model;
     }
 
-    public CompressedTree ctree( int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
+    @Override
+    public void setCalibrationModel(Model<?, ?, ?> model) {
+      _calib_model = model;
+    }
+
+    public CompressedTree ctree(int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
     public String toStringTree ( int tnum, int knum ) { return ctree(tnum,knum).toString(this); }
   }
 
@@ -723,7 +746,7 @@ public abstract class SharedTreeModel<
 
   @Override
   protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
-    return PlattScalingHelper.postProcessPredictions(predictFr, j, _output);
+    return CalibrationHelper.postProcessPredictions(predictFr, j, _output);
   }
 
   protected double[] score0Incremental(Score.ScoreIncInfo sii, Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds) {

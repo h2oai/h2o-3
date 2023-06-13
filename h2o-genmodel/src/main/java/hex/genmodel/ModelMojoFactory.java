@@ -8,6 +8,7 @@ import hex.genmodel.algos.gam.GamMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoReader;
+import hex.genmodel.algos.isotonic.IsotonicRegressionMojoReader;
 import hex.genmodel.algos.pca.PCAMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.isofor.IsolationForestMojoReader;
@@ -112,6 +113,9 @@ public class ModelMojoFactory {
 
       case "RuleFit":
         return new RuleFitMojoReader(); 
+
+      case "Isotonic Regression":
+        return new IsotonicRegressionMojoReader();
         
       default:
         // Try to load MOJO reader via service
