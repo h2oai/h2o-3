@@ -71,6 +71,7 @@ private GString downloadConfigsScript(Map config) {
         echo "\$KRB_PASSWORD" | kinit \$KRB_USERNAME
     """
     return """
+        cat /etc/hosts
         echo "Downloading hadoop configuration from ${apiBase}"
         cd \$HADOOP_CONF_DIR
         curl -u \$ADMIN_USERNAME:\$ADMIN_PASSWORD ${apiBase}/HDFS/components/HDFS_CLIENT?format=client_config_tar > hdfs_config.tar
