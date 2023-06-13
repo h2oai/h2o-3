@@ -1,4 +1,4 @@
-def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, customArgs='',addToDockerGroup = false, awsCredsPrefix = '', block) {
+def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, customArgs='',addToDockerGroup = false, awsCredsPrefix = '', overrideHosts = false,  block) {
 
   if (customArgs == null) {
     customArgs = ''
@@ -31,10 +31,15 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
                 dockerGroupIdAdd = "--group-add ${dockerGroupId}"
               }
             }
-            docker.image(image).inside("--init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -v ${HADOOP_HOSTS}:/etc/hosts -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
+            hostsOverrideString = ""
+            if (overrideHosts) {
+              hostsOverrideString = " -v ${HADOOP_HOSTS}:/etc/hosts"
+            }
+            docker.image(image).inside("--init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} ${hostsOverrideString} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
               sh """
               id
               printenv | sort
+              cat /etc/hosts
             """
               block()
             }

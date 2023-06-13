@@ -56,7 +56,7 @@ def call(final pipelineContext, final stageConfig) {
         
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
         try {
-            defaultStage(pipelineContext, stageConfig)
+            defaultStage(pipelineContext, stageConfig, true)
         } finally {
             sh "find ${stageConfig.stageDir} -name 'h2odriver*.jar' -type f -delete -print"
         }
@@ -71,7 +71,6 @@ private GString downloadConfigsScript(Map config) {
         echo "\$KRB_PASSWORD" | kinit \$KRB_USERNAME
     """
     return """
-        cat /etc/hosts
         echo "Downloading hadoop configuration from ${apiBase}"
         cd \$HADOOP_CONF_DIR
         curl -u \$ADMIN_USERNAME:\$ADMIN_PASSWORD ${apiBase}/HDFS/components/HDFS_CLIENT?format=client_config_tar > hdfs_config.tar
