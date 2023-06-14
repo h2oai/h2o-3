@@ -56,7 +56,7 @@ def call(final pipelineContext, final stageConfig) {
         
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
         try {
-            defaultStage(pipelineContext, stageConfig, true)
+            defaultStage(pipelineContext, stageConfig)
         } finally {
             sh "find ${stageConfig.stageDir} -name 'h2odriver*.jar' -type f -delete -print"
         }
