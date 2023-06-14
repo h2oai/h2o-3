@@ -727,6 +727,12 @@ def call(final pipelineContext) {
           nodes: 4, xmx: "10G", extramem: "100",
           cloudingDir: "/user/jenkins/hadoop_multinode_tests"
   ]
+  final extraHostConfig = [
+          "--add-host=mr-0xg5.0xdata.loc:172.17.2.205",
+          "--add-host=mr-0xg6.0xdata.loc:172.17.2.206",
+          "--add-host=mr-0xg7.0xdata.loc:172.17.2.207",
+          "--add-host=mr-0xg8.0xdata.loc:172.17.2.208"
+  ]
   def hadoopClusterStage = [
           stageName: "TEST Hadoop Multinode on ${HADOOP_CLUSTER_CONFIG.nameNode}",
           target: "test-hadoop-multinode", timeoutValue: 60,
@@ -739,7 +745,8 @@ def call(final pipelineContext) {
           executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopMultinodeStage.groovy',
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
                   HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
-          )
+          ),
+          customDockerArgs: extraHostConfig
     ]
   def HADOOP_MULTINODE_STAGES = [ hadoopClusterStage ]
   HADOOP_MULTINODE_STAGES += [
@@ -754,7 +761,8 @@ def call(final pipelineContext) {
           executionScript: 'h2o-3/scripts/jenkins/groovy/externalXGBoostStage.groovy',
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
                   HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
-          )
+          ),
+          customDockerArgs: extraHostConfig
       ],
       [
           stageName: "TEST Fault Tolerance on ${HADOOP_CLUSTER_CONFIG.nameNode}",
@@ -768,7 +776,8 @@ def call(final pipelineContext) {
           executionScript: 'h2o-3/scripts/jenkins/groovy/faultToleranceStage.groovy',
           image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(
                   HADOOP_CLUSTER_CONFIG.distribution, HADOOP_CLUSTER_CONFIG.version
-          )
+          ),
+          customDockerArgs: extraHostConfig
       ]
   ]
 
