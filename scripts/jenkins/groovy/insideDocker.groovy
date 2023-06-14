@@ -35,7 +35,6 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
               sh """
               id
               printenv | sort
-              cat /etc/hosts
             """
               block()
             }
