@@ -1,4 +1,4 @@
-def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, customArgs='',addToDockerGroup = false, awsCredsPrefix = '', overrideHosts = false,  block) {
+def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, customArgs='',addToDockerGroup = false, awsCredsPrefix = '', block) {
 
   if (customArgs == null) {
     customArgs = ''
@@ -30,10 +30,6 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
               } else {
                 dockerGroupIdAdd = "--group-add ${dockerGroupId}"
               }
-            }
-            hostsOverrideString = ""
-            if (overrideHosts) {
-              hostsOverrideString = "--add-host=mr-0xg5.0xdata.loc:172.17.2.205 --add-host=mr-0xg6.0xdata.loc:172.17.2.206 --add-host=mr-0xg7.0xdata.loc:172.17.2.207 --add-host=mr-0xg8.0xdata.loc:172.17.2.208"
             }
             docker.image(image).inside("--init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} ${hostsOverrideString} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
               sh """
