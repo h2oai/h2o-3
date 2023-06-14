@@ -20,7 +20,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
     timeout(time: timeoutValue, unit: timeoutUnit) {
       docker.withRegistry("https://${registry}") {
         withCredentials([file(credentialsId: 'c096a055-bb45-4dac-ba5e-10e6e470f37e', variable: 'JUNIT_CORE_SITE_PATH'), [$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: "${awsCredsPrefix}AWS_ACCESS_KEY_ID", credentialsId: 'AWS S3 Credentials', secretKeyVariable: "${awsCredsPrefix}AWS_SECRET_ACCESS_KEY"]]) {
-          withCredentials([string(credentialsId: 'DRIVERLESS_AI_LICENSE_KEY', variable: 'DRIVERLESS_AI_LICENSE_KEY'), file(credentialsId: 'h2o-3-multinode-hadoop-hosts', variable: 'HADOOP_HOSTS')]) {
+          withCredentials([string(credentialsId: 'DRIVERLESS_AI_LICENSE_KEY', variable: 'DRIVERLESS_AI_LICENSE_KEY')]) {
             dockerGroupIdAdd = ""
             if (addToDockerGroup) {
               dockerGroupName = "docker"
@@ -33,15 +33,14 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
             }
             hostsOverrideString = ""
             if (overrideHosts) {
-              hostsOverrideString = " -v ${HADOOP_HOSTS}:/tmp/hadoop-hosts"
+              hostsOverrideString = "--add-host=mr-0xg5.0xdata.loc:172.17.2.205 --add-host=mr-0xg6.0xdata.loc:172.17.2.206 --add-host=mr-0xg7.0xdata.loc:172.17.2.207 --add-host=mr-0xg8.0xdata.loc:172.17.2.208"
             }
             docker.image(image).inside("--init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} ${hostsOverrideString} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
               sh """
               id
               printenv | sort
+              cat /etc/hosts
             """
-              sh "sudo cat /tmp/hadoop-hosts >> /etc/hosts"
-              sh "cat /etc/hosts"
               block()
             }
           }
