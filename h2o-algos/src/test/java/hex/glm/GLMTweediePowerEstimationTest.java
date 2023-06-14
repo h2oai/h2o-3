@@ -2003,11 +2003,11 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                 -264.904735165081, -41.9320737200906, -12.5092249292647
         };
 
-        TweedieVariancePowerMLEstimator tvp = null, tvpDp = null;
+        TweedieEstimator tvp = null, tvpDp = null;
         for (double p : ps) {
             for (double phi : phis) {
-                tvp = new TweedieVariancePowerMLEstimator(p, phi, false, false, false, false);
-                tvpDp = new TweedieVariancePowerMLEstimator(p, phi, false, true, true, false); // should have higher precision
+                tvp = new TweedieEstimator(p, phi, false, false, false, false);
+                tvpDp = new TweedieEstimator(p, phi, false, true, true, false); // should have higher precision
                 for (double y : ys) {
                     for (double mu : mus) {
                         final double actual = tvp.logLikelihood(y, mu);
@@ -3173,12 +3173,12 @@ public class GLMTweediePowerEstimationTest extends TestUtil {
                 Double.NEGATIVE_INFINITY, -20.1078694130054, -20.0714568560393, -20.0662737156024,
                 -20.0662637814756};
 
-        TweedieVariancePowerMLEstimator tvp = null, tvpDp = null;
+        TweedieEstimator tvp = null, tvpDp = null;
         for (double p : ps) {
             for (double phi : phis) {
                 boolean forceInversion = p > 1.95 && p < 2.1;
-                tvp = new TweedieVariancePowerMLEstimator(p, phi, false, false, false, forceInversion);
-                tvpDp = new TweedieVariancePowerMLEstimator(p, phi, false, true, true, false); // should have higher precision
+                tvp = new TweedieEstimator(p, phi, false, false, false, forceInversion);
+                tvpDp = new TweedieEstimator(p, phi, false, true, true, false); // should have higher precision
                 for (double y : ys) {
                     for (double mu : mus) {
                         final double actual = tvp.logLikelihood(y, mu);

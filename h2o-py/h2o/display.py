@@ -5,16 +5,11 @@ h2o -- module for using H2O services.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 from contextlib import contextmanager
 import os
 import sys
 
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
-except:
-    from io import StringIO  # py3
+from io import StringIO
 
 import tabulate
 
@@ -90,7 +85,7 @@ def in_py_repl():
     """
     import inspect
     interpreter_frame = inspect.stack()[-1]
-    is_py = interpreter_frame[1] == '<stdin>'  # use index `[1]` instead of `.filename` attribute to also work in Py2.7
+    is_py = interpreter_frame[1] == '<stdin>'
     return is_py
 
 
@@ -367,8 +362,6 @@ class DisplayMixin(object):
             s = self._str_pretty_(verbosity=repr_verb)
         else:
             s = self._str_(verbosity=repr_verb)
-        if PY2:  # in Py2, this must return a byte array, otherwise print() fails
-            return bytes(s)
         return s
     
     def __unicode__(self):
@@ -778,13 +771,7 @@ def print2(*msgs, **kwargs):
         file = local_env('stdout', sys.stdout)
         kwargs['file'] = file
     bi_print = get_builtin('print')
-    if PY2:
-        flush = kwargs.pop('flush', False)
-        bi_print(*msgs, **kwargs)
-        if flush:
-            file.flush()
-    else:
-        bi_print(*msgs, **kwargs)
+    bi_print(*msgs, **kwargs)
         
         
 def _is_number(s):

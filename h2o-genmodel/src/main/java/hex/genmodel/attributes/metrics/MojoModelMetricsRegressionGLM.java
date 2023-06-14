@@ -12,4 +12,5 @@ public class MojoModelMetricsRegressionGLM extends MojoModelMetricsRegression {
   @SerializedName("null_deviance")
   public double _nullDev;
   public double _AIC;
+  public double _loglikelihood;
 }

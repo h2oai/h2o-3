@@ -130,7 +130,9 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       }
     }
     // normalize CMI and relevane again
-    double maxCMI = ArrayUtils.maxValue(_cmiRawCV);
+    double maxCMI = _parms._top_n_features == nPreds
+            ? ArrayUtils.maxValue(_cmiRawCV)
+            : Arrays.stream(_cmiRawCV).sorted().toArray()[Math.min(_parms._top_n_features, nPreds)-1];
     double oneOverMaxCMI = maxCMI == 0 ? 0 : 1.0/maxCMI;
     for (int pIndex = 0; pIndex < nPreds; pIndex++) {
       _cmiCV[pIndex] = _cmiRawCV[pIndex]*oneOverMaxCMI;
@@ -546,7 +548,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       int finalFrameInd = startInd + numFrames;
       int frameCount = 0;
       int keyIndex = findstart(_generatedFrameKeys);
-      int keyLength = _generatedFrameKeys.length;
+      //int keyLength = _generatedFrameKeys.length;
       for (int frameInd = startInd; frameInd < finalFrameInd; frameInd++) {
         trainingFrames[frameCount] = new Frame(_baseOrSensitiveFrame);
         if (_buildCore) {
@@ -585,7 +587,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       if (oneModel._parms._weights_column != null && Arrays.asList(trainingFrames[index].names()).contains(oneModel._parms._weights_column))
         prediction.add(oneModel._parms._weights_column, trainingFrames[index].vec(oneModel._parms._weights_column));
       _generatedFrameKeys[keyIndex++] = prediction._key;
-      _cmiRaw[index+startIndex] = new hex.Infogram.EstimateCMI(prediction, nclasses).doAll(prediction)._meanCMI; // calculate raw CMI
+      _cmiRaw[index+startIndex] = new hex.Infogram.EstimateCMI(prediction, nclasses, oneModel._parms._response_column).doAll(prediction)._meanCMI; // calculate raw CMI
       if (_parms.valid() != null) { // generate prediction, cmi on validation frame
         Frame validFrame = _parms.valid();
         Frame predictionValid = oneModel.score(validFrame);  // already contains the response
@@ -594,10 +596,12 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
           if (Arrays.asList(validFrame.names()).contains("__internal_cv_weights__"))
             predictionValid.add(oneModel._parms._weights_column, validFrame.vec("__internal_cv_weights__"));
           else
-            predictionValid.add(oneModel._parms._weights_column, validFrame.vec(oneModel._parms._weights_column));
+            predictionValid.add(oneModel._parms._weights_column, Arrays.asList(validFrame.names()).contains(oneModel._parms._weights_column)?
+                    validFrame.vec(oneModel._parms._weights_column):
+                    validFrame.anyVec().makeCon(1));
         }
         _generatedFrameKeys[keyIndex++] = predictionValid._key;
-        EstimateCMI calCMI = new hex.Infogram.EstimateCMI(predictionValid, nclasses).doAll(predictionValid);
+        EstimateCMI calCMI = new hex.Infogram.EstimateCMI(predictionValid, nclasses, oneModel._parms._response_column).doAll(predictionValid);
         _cmiRawValid[index + startIndex] = calCMI._meanCMI;
         nonZeroRows = Math.min(nonZeroRows, calCMI._nonZeroRows);
       }

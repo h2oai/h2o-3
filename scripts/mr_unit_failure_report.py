@@ -28,31 +28,31 @@ def failure_report(args):
   except:
     cursor.close()
     traceback.print_exc()
-    print "Failed to retrieve failures from the perf table in mr_unit database for the period from {0} to {1}"\
+    print("Failed to retrieve failures from the perf table in mr_unit database for the period from {0} to {1}"\
       .format(time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(start_time)),
-              time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(end_time)))
+              time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(end_time))))
     raise
   cursor.close()
 
-  print "***********************************************************************"
-  print "Failures for the period from {0} to {1}".format(time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(start_time)),
-                                                         time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(end_time)))
-  print "***********************************************************************\n"
+  print("***********************************************************************")
+  print("Failures for the period from {0} to {1}".format(time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(start_time)),
+                                                         time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(end_time))))
+  print("***********************************************************************\n")
 
   for idx, failure in enumerate(failures):
-    print '\nFAILURE {0}'.format(idx+1)
-    print '------------------------------------------------------------------------------'
-    print 'git branch:                   {0}'.format(failure[3])
-    print 'git hash:                     {0}'.format(failure[2])
-    print 'job name:                     {0}'.format(failure[11])
-    print 'build id:                     {0}'.format(failure[1])
-    print 'test name:                    {0}'.format(failure[5])
-    print 'duration (seconds):           {0}'.format(failure[7] - failure[6])
-    print 'machine ip:                   {0}'.format(failure[4])
-    print 'operating system:             {0}'.format(failure[10])
-    print 'number of cpus:               {0}'.format(failure[9])
-    print 'datetime (%Y-%m-%d:%H:%M:%S): {0}'.format(time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(failure[6])))
-    print '------------------------------------------------------------------------------\n'
+    print('\nFAILURE {0}'.format(idx+1))
+    print('------------------------------------------------------------------------------')
+    print('git branch:                   {0}'.format(failure[3]))
+    print('git hash:                     {0}'.format(failure[2]))
+    print('job name:                     {0}'.format(failure[11]))
+    print('build id:                     {0}'.format(failure[1]))
+    print('test name:                    {0}'.format(failure[5]))
+    print('duration (seconds):           {0}'.format(failure[7] - failure[6]))
+    print('machine ip:                   {0}'.format(failure[4]))
+    print('operating system:             {0}'.format(failure[10]))
+    print('number of cpus:               {0}'.format(failure[9]))
+    print('datetime (%Y-%m-%d:%H:%M:%S): {0}'.format(time.strftime('%Y-%m-%d:%H:%M:%S', time.localtime(failure[6]))))
+    print('------------------------------------------------------------------------------\n')
 
 if __name__ == '__main__':
   failure_report(sys.argv)

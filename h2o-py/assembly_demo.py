@@ -13,7 +13,7 @@ assembly = H2OAssembly(steps=[("col_select",      H2OColSelect(["sepal_len", "pe
 
 result = assembly.fit(fr)  # fit the assembly
 result.show()              # show the result of the fit
-# print assembly.to_pojo(pojo_name="GeneratedH2OMungingPojo_001")   # export to pojo
+# print(assembly.to_pojo(pojo_name="GeneratedH2OMungingPojo_001"))   # export to pojo
 #
 #
 

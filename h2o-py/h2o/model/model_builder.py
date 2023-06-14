@@ -7,8 +7,6 @@ Model builder.
 """
 
 # DELETE ME I'm useless !!!
-
-from __future__ import absolute_import, division, print_function, unicode_literals
 # noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 

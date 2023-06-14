@@ -16,7 +16,6 @@ We may extend the set of these flags in the future.
 
 
 """
-from __future__ import print_function
 import os
 import subprocess
 

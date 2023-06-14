@@ -5,9 +5,6 @@ H2O data frame.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-from h2o.utils.compatibility import *  # NOQA
-
 import csv
 import datetime
 import functools
@@ -86,7 +83,7 @@ class H2OFrame(Keyed, H2ODisplay):
 
     # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
     __LOCAL_EXPANSION_ON_SINGLE_IMPORT__ = True
-    __fdopen_kwargs = {} if PY2 else {'encoding': 'utf-8'}
+    __fdopen_kwargs = {'encoding': 'utf-8'}
 
     # ------------------------------------------------------------------------------------------------------------------
     # Construction
@@ -487,7 +484,7 @@ class H2OFrame(Keyed, H2ODisplay):
         if setup["column_names"]: p["column_names"] = None
         if setup["na_strings"]: p["na_strings"] = None
 
-        p.update({k: v for k, v in viewitems(setup) if k in p})
+        p.update({k: v for k, v in setup.items() if k in p})
 
         # Extract only 'name' from each src in the array of srcs
         p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
@@ -2253,7 +2250,7 @@ class H2OFrame(Keyed, H2ODisplay):
             self._ex._cache.names = self.names + [colname]
             self._ex._cache._ncols += 1
             if self._ex._cache.types_valid() and isinstance(value, H2OFrame) and value._ex._cache.types_valid():
-                self._ex._cache._types[colname] = list(viewvalues(value._ex._cache.types))[0]
+                self._ex._cache._types[colname] = list(value._ex._cache.types.values())[0]
             else:
                 self._ex._cache.types = None
         if value_is_own_subframe:
@@ -3269,15 +3266,16 @@ class H2OFrame(Keyed, H2ODisplay):
         >>> df[['cylinders','economy_20mpg']] = df[['cylinders','economy_20mpg']].asfactor()
         >>> df[['cylinders','economy_20mpg']].describe()
         """
-        for colname in self.names:
-            t = self.types[colname]
-            if t not in {"bool", "int", "string", "enum"}:
-                raise H2OValueError("Only 'int' or 'string' are allowed for "
-                                    "asfactor(), got %s:%s " % (colname, t))
+        if self._is_frame:
+            for colname in self.names:
+                t = self.types[colname]
+                if t not in {"bool", "int", "string", "enum"}:
+                    raise H2OValueError("Only 'int' or 'string' are allowed for "
+                                        "asfactor(), got %s:%s " % (colname, t))
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {name: "enum" for name in self.types}
-        else:
+        elif self._is_frame:
             raise H2OTypeError("Types are not available in result")
         
         return fr

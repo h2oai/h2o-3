@@ -5,7 +5,6 @@ Python 2 / 3 compatibility module.
 This module gathers common declarations needed to ensure Python 2 / Python 3 compatibility.
 It has to be imported from all other files, so that the common header looks like this:
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -60,13 +59,10 @@ from h2o.utils.compatibility import *  # NOQA
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-from future.utils import PY2, PY3, with_metaclass
 
-__all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",
-           "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
+__all__ = ("bytes_iterator",
            "apply", "cmp", "coerce", "execfile", "file", "long", "raw_input", "reduce", "reload", "unicode", "xrange",
-           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer", 
+           "StandardError", "csv_dict_writer", 
            "str_type", "repr2", 'str2', "bytes2", "PList", 'get_builtin', 'set_builtin')
 
 
@@ -74,15 +70,10 @@ __all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",
 # Iterators
 #-----------------------------------------------------------------------------------------------------------------------
 if True:
-    from future.builtins.iterators import (range, filter, map, zip)
-    from future.utils import (viewitems, viewkeys, viewvalues)
 
     def next_method(gen):
         """Return the 'next' method of the given generator."""
-        if PY2:
-            return gen.next
-        else:
-            return gen.__next__
+        return gen.__next__
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -97,10 +88,6 @@ def _disabled_function(name):
         raise NameError("Function %s is not available in Python 3, and was disabled in Python 2 as well." % name)
     return disabled
 
-
-if PY2:
-    _native_unicode = unicode
-    _native_long = long
 
 # noinspection PyShadowingBuiltins
 apply = _disabled_function("apply")
@@ -131,9 +118,6 @@ StandardError = _disabled_function("StandardError")
 # ----------------------------------------------------------------------------------------------------------------------
 # Miscellaneous
 # ----------------------------------------------------------------------------------------------------------------------
-if True:
-    from future.builtins.misc import (chr, input, open, next, round, super)
-
 
 def csv_dict_writer(f, fieldnames, **kwargs):
     """Equivalent of csv.DictWriter, but allows `delimiter` to be a unicode string on Py2."""
@@ -146,10 +130,10 @@ def csv_dict_writer(f, fieldnames, **kwargs):
 def bytes_iterator(s):
     """Given a string, return an iterator over this string's bytes (as ints)."""
     if s is None: return
-    if PY2 or PY3 and isinstance(s, str):
+    if isinstance(s, str):
         for ch in s:
             yield ord(ch)
-    elif PY3 and isinstance(s, bytes):
+    elif isinstance(s, bytes):
         for ch in s:
             yield ch
     else:
@@ -164,63 +148,18 @@ def repr2(x):
     return s
 
 
-if PY2:
-    str_type = (str, _native_unicode)
-    
-    class str2(_native_unicode):
-        """
-        same goal as str in Py3, but handles both Py2 types 
-        and converts str (byte arrays) to proper unicode string even when the str contains non-ascii chars.
-        """
-        def __new__(cls, o, *args, **kwargs):
-            if isinstance(o, str):
-                try:
-                    return super(str2, cls).__new__(cls, o, *args, **kwargs)
-                except UnicodeDecodeError:
-                    return super(str2, cls).__new__(cls, o.decode('utf8'), *args, **kwargs)
-            else:
-                return super(str2, cls).__new__(cls, o, *args, **kwargs)
-            
-    class bytes2(bytes):
-        """
-        same goal as bytes in Py3, but handles both Py2 types 
-        and converts unicode string to proper bytes if the string contains non-ascii chars.
-        """
-        def __new__(cls, s, *args, **kwargs):
-            if isinstance(s, _native_unicode):
-                try:
-                    return super(bytes2, cls).__new__(cls, s, *args, **kwargs)
-                except UnicodeEncodeError:
-                    return super(bytes2, cls).__new__(cls, s.encode('utf8'), *args, **kwargs)
-            else:
-                return super(bytes2, cls).__new__(cls, s, *args, **kwargs)
-            
-else:
-    str_type = str2 = str
-    bytes2 = bytes
-
-
-def _is_py2_unicode(s):
-    return PY2 and isinstance(s, _native_unicode)
+str_type = str2 = str
+bytes2 = bytes
     
 
 def get_builtin(fn_name):
-    if PY2:
-        import future.builtins
-        import __builtin__
-        return getattr(future.builtins, fn_name, getattr(__builtin__, fn_name, None))
-    else:
-        import builtins
-        return getattr(builtins, fn_name, None)
+    import builtins
+    return getattr(builtins, fn_name, None)
     
 
 def set_builtin(name, value):
-    if PY2:
-        import __builtin__
-        setattr(__builtin__, name, value)
-    else:
-        import builtins
-        setattr(builtins, name, value)
+    import builtins
+    setattr(builtins, name, value)
     
 
 class PList(list):
@@ -234,9 +173,9 @@ class PList(list):
         super(PList, self).__init__(arr)
         
     def __str__(self):
-        return str([str(it) if _is_py2_unicode(it) else it for it in self])
+        return str([it for it in self])
     
     def __repr__(self):
-        return repr([str(it) if _is_py2_unicode(it) else it for it in self])
+        return repr([it for it in self])
     
 

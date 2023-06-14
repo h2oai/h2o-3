@@ -1,4 +1,3 @@
-from __future__ import print_function
 from collections import defaultdict
 from functools import partial
 import gc, inspect, os, sys
@@ -198,7 +197,8 @@ failing = [
     'H2OStackedEnsembleEstimator',  # needs a separate test (requires models as parameters)
     "H2OTargetEncoderEstimator",  # needs dataset with categoricals to work + API polishing (use x, y with defaults)
     'H2OWord2vecEstimator',  # needs a separate test (requires pre_trained model as parameter)
-    'H2OUpliftRandomForestEstimator'  # generic part is not implemented yet
+    'H2OUpliftRandomForestEstimator',  # generic part is not implemented yet
+    'H2ODecisionTreeEstimator',  # generic part is not implemented yet
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Estimator') and name not in ['H2OAutoMLEstimator'] + failing]

@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 import os
@@ -301,6 +300,61 @@ class H2OAssembly(object):
         [u'Sepal.Length', u'Petal.Length', u'Species', u'Species0']
         """
         return list(zip(*self.steps))[0][:-1]
+
+
+    def download_mojo(self, file_name="", path="."):
+        """
+        Convert the munging operations performed on H2OFrame into a MOJO 2 artifact. This method requires an additional
+        mojo2-runtime library on the Java classpath. The library can be found at this maven URL::
+        https://repo1.maven.org/maven2/ai/h2o/mojo2-runtime/2.7.11.1/mojo2-runtime-2.7.11.1.jar.
+        
+        The library can be added to the classpath via Java command when starting an H2O node from the command line::
+        
+            java -cp <path_to_h2o_jar>:<path_to_mojo2-runtime_library> water.H2OApp
+          
+        The library can also be added to the Java classpath from Python while starting an H2O cluster
+        via ``h2o.init()``::
+      
+        >>> import h2o
+        >>> h2o.init(extra_classpath = ["<path_to_mojo2-runtime_library>"]) 
+        
+        The MOJO 2 artifact created by this method can be utilized according to the tutorials on the page
+        https://docs.h2o.ai/driverless-ai/1-10-lts/docs/userguide/scoring-mojo-scoring-pipeline.html with one additional
+        requirement. The artifact produced by this method requires 
+        `h2o-genmodel.jar <https://mvnrepository.com/artifact/ai.h2o/h2o-genmodel>`_ to be present on Java classpath.  
+        
+        :param file_name:  (str) Name of MOJO 2 artifact.
+        :param path:  (str) Local Path on a user side  serving as target for  MOJO 2 artifact.
+        :return: Streamed file.
+        
+        :examples:
+
+        >>> from h2o.assembly import *
+        >>> from h2o.transforms.preprocessing import *
+        >>> iris = h2o.load_dataset("iris")
+        >>> assembly = H2OAssembly(steps=[("col_select",
+        ...                                H2OColSelect(["Sepal.Length",
+        ...                                "Petal.Length", "Species"])),
+        ...                               ("cos_Sepal.Length",
+        ...                                H2OColOp(op=H2OFrame.cos,
+        ...                                col="Sepal.Length", inplace=True)),
+        ...                               ("str_cnt_Species",
+        ...                                H2OColOp(op=H2OFrame.countmatches,
+        ...                                col="Species", inplace=False,
+        ...                                pattern="s"))])
+        >>> result = assembly.fit(iris)
+        >>> assembly.download_mojo(file_name="iris_mojo", path='')
+        
+        .. note::
+            The output column names of the created MOJO 2 pipeline are prefixed with "assembly\_"  since the
+            MOJO2 library requires unique names across all columns present in pipeline.
+        
+        """
+        assert_is_type(file_name, str)
+        assert_is_type(path, str)
+        if file_name == "":
+            file_name = "AssemblyMOJO_" + str(uuid.uuid4())
+        return h2o.api("GET /99/Assembly.fetch_mojo_pipeline/%s/%s" % (self.id, file_name), save_to=path)
 
 
     def to_pojo(self, pojo_name="", path="", get_jar=True):

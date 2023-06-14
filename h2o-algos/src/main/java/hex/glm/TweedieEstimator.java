@@ -7,22 +7,22 @@ import water.fvec.Vec;
 import water.util.fp.Function2;
 import water.util.fp.Function3;
 
-import static hex.glm.TweedieVariancePowerMLEstimator.LikelihoodEstimator.gamma;
-import static hex.glm.TweedieVariancePowerMLEstimator.LikelihoodEstimator.*;
+import static hex.glm.TweedieEstimator.LikelihoodEstimator.gamma;
+import static hex.glm.TweedieEstimator.LikelihoodEstimator.*;
 import static java.lang.Math.*;
 import static org.apache.commons.math3.special.Gamma.*;
 
 @SuppressWarnings({"SuspiciousNameCombination", "SameParameterValue"})
-public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePowerMLEstimator> {
+public class TweedieEstimator extends MRTask<TweedieEstimator> {
 
     private final long _max_iter_cnt;
     double _loglikelihood;
     double _llhDp;
     double _llhDpDp;
-    double _p;
+    final double _p;
+    final double _phi;
     private final double _pp;
     private final double _ppp;
-    private final double _phi;
     private final double _p1;
     private final double _p2;
     private final double _p1sq;
@@ -62,17 +62,17 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
     public LikelihoodEstimator _method;
 
-    TweedieVariancePowerMLEstimator(double variancePower, double dispersion) {
+    TweedieEstimator(double variancePower, double dispersion) {
         this(variancePower, dispersion, false, false, false, false);
     }
 
-    TweedieVariancePowerMLEstimator(double variancePower, double dispersion, boolean forceInversion) {
+    TweedieEstimator(double variancePower, double dispersion, boolean forceInversion) {
         this(variancePower, dispersion, false, false, false, forceInversion);
     }
 
-    TweedieVariancePowerMLEstimator(double variancePower, double dispersion,
-                                    boolean useSaddlepointApprox, boolean needDp, boolean needDpDp, boolean forceInversion) {
-        assert variancePower >= 1;
+    TweedieEstimator(double variancePower, double dispersion,
+                     boolean useSaddlepointApprox, boolean needDp, boolean needDpDp, boolean forceInversion) {
+        assert variancePower >= 1 : "Tweedie variance power has to be greater than 1!";
         assert (forceInversion || useSaddlepointApprox) && !(needDp || needDpDp) || !forceInversion || !useSaddlepointApprox;
         _p = variancePower;
         _phi = dispersion;
@@ -114,7 +114,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
     }
 
     public static double logLikelihood(double y, double mu, double p, double phi) {
-        TweedieVariancePowerMLEstimator tweedieVariancePowerMLEstimator = new TweedieVariancePowerMLEstimator(p, phi);
+        TweedieEstimator tweedieVariancePowerMLEstimator = new TweedieEstimator(p, phi);
         return tweedieVariancePowerMLEstimator.logLikelihood(y, mu);
     }
 
@@ -277,7 +277,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         }
     }
 
-    public TweedieVariancePowerMLEstimator compute(Vec mu, Vec y, Vec weights) {
+    public TweedieEstimator compute(Vec mu, Vec y, Vec weights) {
         if (_p >= 2 && y.min() <= 0) {
             _loglikelihood = Double.NEGATIVE_INFINITY;
             _llhDp = 0;
@@ -303,11 +303,18 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             w = cs[2].atd(i);
             llh = logLikelihood(y, mu, w, true);
             if (llh == 0 || !Double.isFinite(llh)) _skippedRows++;
+            if (!Double.isFinite(llh)) {
+                if ((!_needDp || !Double.isFinite(_llhDp)) && (!_needDpDp || !Double.isFinite(_llhDpDp))) {
+                    _skippedRows += cs[0]._len - i;
+                    return;
+                }
+            }
+            // early stop if bestllh > current llh
         }
     }
 
     @Override
-    public void reduce(TweedieVariancePowerMLEstimator mrt) {
+    public void reduce(TweedieEstimator mrt) {
         _loglikelihood += mrt._loglikelihood;
         _llhDp += mrt._llhDp;
         _llhDpDp += mrt._llhDpDp;
@@ -1085,7 +1092,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
         t = min(t, t3);
         f2 = zeroFunction.apply(y, t);
         tStep = 0.2 * t;
-        while ((f1 * f2) > 0) {
+        while ((f1 * f2) > 0 && f1 != f2) {
             tOld = t;
             t = tOld + tStep;
             f1 = f2;
@@ -1376,7 +1383,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             fLo = zeroFunction.apply(y, lower);
             fHi = zeroFunction.apply(y, upper);
 
-            while (fLo * fHi > 0) {
+            while (fLo * fHi > 0 && lower != upper) {
                 lower = upper;
                 upper = upper + 0.5 * tStep;
 
@@ -1408,7 +1415,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
             fLo = zeroFunction.apply(y, lower);
             fHi = zeroFunction.apply(y, upper);
 
-            while (fLo * fHi > 0) {
+            while (fLo * fHi > 0 && lower != upper) {
                 lower = upper;
                 upper = upper + 0.5 * tStep;
 
@@ -1475,7 +1482,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
             allOk = true;
 
-            while (allOk && (fHi * fLo) > 0) {
+            while (allOk && (fHi * fLo) > 0 && zHi != zLo) {
                 zLo = zHi;
                 zHi = zHi * 1.5;
 
@@ -1515,7 +1522,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     fHi = intIm.apply(y, zHi, m);
                 }
 
-                while (allOk && (fHi * fLo) > 0) {
+                while (allOk && (fHi * fLo) > 0 && zHi != zLo) {
                     zLo = zHi;
                     zHi = zHi * 1.5;
 
@@ -1576,7 +1583,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                     fLo = intIm.apply(y, zLo, m);
                     fHi = intIm.apply(y, zHi, m);
                 }
-                while (allOk && (fHi * fLo) > 0) {
+                while (allOk && (fHi * fLo) > 0 && zHi != zLo) {
                     zLo = zHi;
                     zHi = zHi * 1.5;
 
@@ -1617,7 +1624,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                         fHi = intIm.apply(y, zHi, m);
                     }
 
-                    while (allOk && (fHi * fLo) > 0) {
+                    while (allOk && (fHi * fLo) > 0 && zHi != zLo) {
                         zLo = zHi;
                         zHi = zHi * 1.5;
                         fLo = intIm.apply(y, zLo, m);
@@ -1673,7 +1680,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
 
                 double diff = zHi - zLo;
 
-                while (allOk && (fHi * fLo) > 0) {
+                while (allOk && (fHi * fLo) > 0 && zHi != zLo) {
                     zLo = zHi;
                     zHi = zHi + 0.1 * diff;
 
@@ -1731,7 +1738,7 @@ public class TweedieVariancePowerMLEstimator extends MRTask<TweedieVariancePower
                         fHi = intIm.apply(y, zHi, m);
                     }
 
-                    while (allOk && (fHi * fLo) > 0) {
+                    while (allOk && (fHi * fLo) > 0 && zHi != zLo) {
                         zLo = zHi;
                         zHi = zHi * 1.5;
 

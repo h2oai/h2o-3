@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from __future__ import division, print_function, absolute_import, unicode_literals
-
 import warnings
 
 from h2o.utils.compatibility import *  # NOQA

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """Pyunit for h2o.fillna"""
-from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
 import h2o

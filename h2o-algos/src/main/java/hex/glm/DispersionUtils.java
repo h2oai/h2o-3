@@ -110,6 +110,14 @@ public class DispersionUtils {
                     return dispersionList.get(loglikelihoodList.indexOf(Collections.max(loglikelihoodList)));
                 }
             }
+            if (loglikelihoodList.size() > 10) {
+                if (loglikelihoodList.stream().skip(loglikelihoodList.size() - 3).noneMatch((x) -> x != null && Double.isFinite(x))) {
+                    Log.warn("tweedie dispersion parameter estimation got stuck in numerically unstable region.");
+                    tDispersion.cleanUp();
+                    // If there's NaN Collections.max picks it
+                    return Double.NaN;
+                }
+            }
             // get new update to dispersion
             update = computeTask._dLogLL / computeTask._d2LogLL;
             if (Math.abs(update) < 1e-3) { // line search for speedup and increase magnitude of change
@@ -264,15 +272,13 @@ public class DispersionUtils {
         }
     };
 
-    public static double estimateNegBinomialDispersionMomentMethod(GLMModel model, double[] beta, DataInfo dinfo, Vec weights, Vec response) {
-        DispersionTask.GenPrediction gPred = new DispersionTask.GenPrediction(beta, model, dinfo).doAll(
-                1, Vec.T_NUM, dinfo._adaptedFrame);
-        Vec mu = gPred.outputFrame(Key.make(), new String[]{"prediction"}, null).vec(0);
+    public static double estimateNegBinomialDispersionMomentMethod(GLMModel model, double[] beta, DataInfo dinfo, Vec weights, Vec response, Vec mu) {
         class MomentMethodThetaEstimation extends MRTask<MomentMethodThetaEstimation> {
             double _muSqSum;
             double _sSqSum;
             double _muSum;
             double _wSum;
+
             @Override
             public void map(Chunk[] cs) {
                 // mu, y, w
@@ -292,10 +298,11 @@ public class DispersionUtils {
                 _muSum += mrt._muSum;
                 _wSum += mrt._wSum;
             }
-        };
+        }
+        ;
         MomentMethodThetaEstimation mm = new MomentMethodThetaEstimation().doAll(mu, response, weights);
 
-        return mm._muSqSum/(mm._sSqSum - mm._muSum/mm._wSum);
+        return mm._muSqSum / (mm._sSqSum - mm._muSum / mm._wSum);
     }
 
 

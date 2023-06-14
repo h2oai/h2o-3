@@ -17,7 +17,12 @@ def call(final pipelineContext, final stageConfig) {
 
         if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)) {
             installPythonPackage(h2oFolder)
-            if (stageConfig.pythonVersion.startsWith("3.")) {
+            // Install xgboost wheels only on python 3.7 and 3.8
+            // FIXME - legacy code, the xgboost wheels should not be used -> no need to install them
+            String[] pythonVersionFull = stageConfig.pythonVersion.split("\\.")
+            int pythonMajor = pythonVersionFull[0] as Integer
+            int pythonMinor = pythonVersionFull[1] as Integer
+            if (pythonMajor == 3 && (pythonMinor == 7 || pythonMinor == 8)) { // For some reason python 3.9 is not supported, probably is not the wheele is not build for 3.9
                 dir(stageConfig.stageDir) {
                     pipelineContext.getUtils().pullXGBWheels(this)
                 }
@@ -74,10 +79,7 @@ def installXGBWheel(final String h2o3dir) {
     sh """
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
-        if [ "${env.PYTHON_VERSION}" != "3.9" ]
-        then
             pip install ${h2o3dir}/xgb-whls/xgboost_ompv4-*-cp${env.PYTHON_VERSION.replaceAll('\\.','')}-*-linux_x86_64.whl
-        fi
     """
 }
 

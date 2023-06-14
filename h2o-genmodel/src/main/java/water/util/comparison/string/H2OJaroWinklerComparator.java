@@ -6,13 +6,12 @@
  * fixed class in, we can remove this class.
  *
  */
-package water.rapids.ast.prims.string.algorithms;
+package water.util.comparison.string;
 
 import no.priv.garshol.duke.Comparator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.lang.*;
 
 /**
  * An implementation of the Jaro-Winkler string similarity measure.

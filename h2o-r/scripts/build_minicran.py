@@ -10,13 +10,13 @@ import re
 
 
 def download_file(url, download_path):
-    print "URL: " + url
+    print("URL: " + url)
 
     u = urllib2.urlopen(url)
     f = open(download_path, 'wb')
     meta = u.info()
     file_size = int(meta.getheaders("Content-Length")[0])
-    print "Downloading: %s (%s bytes)" % (download_path, file_size)
+    print("Downloading: %s (%s bytes)" % (download_path, file_size))
 
     file_size_dl = 0
     block_sz = 8192
@@ -32,7 +32,7 @@ def download_file(url, download_path):
 #        print status,
 
     f.close()
-    print "Download complete."
+    print("Download complete.")
 
 
 class CranPackage:

@@ -13,6 +13,9 @@ public class ModelMetricsMultinomialGLMGenericV3 extends ModelMetricsMultinomial
 
   @API(help="AIC",direction = Direction.OUTPUT)
   public double AIC;
+  
+  @API(help="log likelihood",direction = Direction.OUTPUT)
+  public double loglikelihood;
 
   @API(help="null DOF", direction= Direction.OUTPUT)
   public long null_degrees_of_freedom;
@@ -27,6 +30,7 @@ public class ModelMetricsMultinomialGLMGenericV3 extends ModelMetricsMultinomial
   public ModelMetricsMultinomialGLMGenericV3 fillFromImpl(ModelMetricsMultinomialGLMGeneric mms) {
     super.fillFromImpl(mms);
     this.AIC = mms._AIC;
+    this.loglikelihood = mms._loglikelihood;
     this.residual_deviance = mms._resDev;
     this.null_deviance = mms._nullDev;
     this.null_degrees_of_freedom = mms._nullDegreesOfFreedom;

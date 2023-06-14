@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 
 import h2o
@@ -11,7 +9,6 @@ from h2o.job import H2OJob
 from h2o.model.extensions import has_extension
 from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, get_matplotlib_cm, get_mplot3d_axes, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import viewitems
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas, can_use_numpy
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
@@ -881,7 +878,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.r2()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -901,7 +898,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.mse()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -921,7 +918,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.rmse()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -941,7 +938,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.mae()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -961,7 +958,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.rmsle()
+        for k, v in tm.items(): m[k] = None if v is None else v.rmsle()
         return list(m.values())[0] if len(m) == 1 else m
 
     def logloss(self, train=False, valid=False, xval=False):
@@ -980,7 +977,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.logloss()
+        for k, v in tm.items(): m[k] = None if v is None else v.logloss()
         return list(m.values())[0] if len(m) == 1 else m
 
     def mean_residual_deviance(self, train=False, valid=False, xval=False):
@@ -999,7 +996,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.mean_residual_deviance()
+        for k, v in tm.items(): m[k] = None if v is None else v.mean_residual_deviance()
         return list(m.values())[0] if len(m) == 1 else m
 
     def auc(self, train=False, valid=False, xval=False):
@@ -1018,7 +1015,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm):
+        for k, v in tm.items():
             m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
@@ -1038,7 +1035,26 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.aic()
+        for k, v in tm.items(): m[k] = None if v is None else v.aic()
+        return list(m.values())[0] if len(m) == 1 else m
+
+    def loglikelihood(self, train=False, valid=False, xval=False):
+        """
+        Get the log likelihood.
+
+        If all are ``False`` (default), then return the training metric value.
+        If more than one option is set to ``True``, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If ``train=True``, then return the log likelihood value for the training data.
+        :param bool valid: If ``valid=True``, then return the log likelihood value for the validation data.
+        :param bool xval:  If ``xval=True``, then return the log likelihood value for the validation data.
+
+        :returns: The log likelihood.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in tm.items(): m[k] = None if v is None else v.loglikelihood()
         return list(m.values())[0] if len(m) == 1 else m
 
     def gini(self, train=False, valid=False, xval=False):
@@ -1057,7 +1073,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
+        for k, v in tm.items(): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
     
     def aucpr(self, train=False, valid=False, xval=False):
@@ -1076,7 +1092,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): 
+        for k, v in tm.items(): 
             if v is not None and not is_type(v, h2o.model.metrics.binomial.H2OBinomialModelMetrics) and not is_type(v,
                                                                                                                     h2o.model.metrics.multinomial.H2OMultinomialModelMetrics):
                 raise H2OValueError("aucpr() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average PR AUC value, default is Weighted One-to-Rest PR AUC.")
