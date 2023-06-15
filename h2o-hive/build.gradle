@@ -28,5 +28,6 @@ dependencies {
   testImplementation "junit:junit:${junitVersion}"
   testImplementation project(':h2o-test-support')
   testRuntimeOnly project(":h2o-parquet-parser")
+  testRuntimeOnly("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}") // Required by :h2o-parquet-parser
   testRuntimeOnly project(":${defaultWebserverModule}")
 }

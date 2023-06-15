@@ -20,9 +20,7 @@ dependencies {
         transitive = false // we just need hadoop-auth which is provided by the hadoop-client dependency
     }
     api("org.apache.parquet:parquet-avro:${parquetVersion}") // required by h2o-hive
-    api("org.apache.parquet:parquet-hadoop:${parquetVersion}") { // required by h2o-parquet-parser
-        force = true
-    }
+    api("org.apache.parquet:parquet-hadoop:${parquetVersion}") // required by h2o-parquet-parser
 
     // For standalone mode to work with MapR, this extra library needs to be
     // included, and it's not pulled in by the dependency stuff;  this must

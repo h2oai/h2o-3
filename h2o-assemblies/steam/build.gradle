@@ -31,6 +31,7 @@ dependencies {
     api(project(":h2o-parquet-parser")) {
         exclude group: "org.apache.hadoop"
     }
+    api("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}") // Required by :h2o-parquet-parser
     // Force latest version Hadoop with unused components excluded - we need Hadoop for Parquet and S3A export 
     api "org.apache.hadoop:hadoop-hdfs-client:3.3.5"
     api("org.apache.hadoop:hadoop-common:3.3.5") {
