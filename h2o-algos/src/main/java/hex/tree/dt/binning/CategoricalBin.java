@@ -1,4 +1,4 @@
-package hex.tree.sdt.binning;
+package hex.tree.dt.binning;
 
 /**
  * For categorical features values are already binned to categories - each bin corresponds to one value (category)

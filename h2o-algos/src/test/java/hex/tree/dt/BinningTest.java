@@ -1,8 +1,8 @@
 package hex.tree.dt;
 
-import hex.tree.dt.binning.Bin;
 import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
+import hex.tree.dt.binning.NumericBin;
 import hex.tree.dt.mrtasks.CountBinsSamplesCountsMRTask;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
@@ -31,7 +31,7 @@ public class BinningTest extends TestUtil {
     private void testBinningValidity(Histogram histogram, int numRows) {
         // min and max values
         for (int i = 0; i < histogram.featuresCount(); i++) {
-            List<Bin> featureBins = histogram.getFeatureBins(i);
+            List<NumericBin> featureBins = histogram.getFeatureBins(i);
             assertFalse(featureBins.isEmpty());
             // at least first and last bins are not empty
             assertNotEquals(0, featureBins.get(0)._count);
@@ -167,9 +167,9 @@ public class BinningTest extends TestUtil {
             // min and max values of features
             for (int i = 0; i < wholeDataLimits.featuresCount(); i++) {
                 // check that lower limit is lower than the minimum value
-                assertTrue(prostateData.vec(i).min() > wholeDataLimits.getFeatureLimits(i)._min);
+                assertTrue(prostateData.vec(i).min() > ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._min);
                 assertEquals(prostateData.vec(i).max(),
-                        wholeDataLimits.getFeatureLimits(i)._max,
+                        ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._max,
                         Precision.EPSILON);
             }
 
@@ -207,8 +207,8 @@ public class BinningTest extends TestUtil {
             // min and max values of features
             for (int i = 0; i < wholeDataLimits.featuresCount(); i++) {
                 // check that lower limit is lower than the minimum value
-                assertTrue(data.vec(i).min() > wholeDataLimits.getFeatureLimits(i)._min);
-                assertEquals(data.vec(i).max(), wholeDataLimits.getFeatureLimits(i)._max, Precision.EPSILON);
+                assertTrue(data.vec(i).min() > ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._min);
+                assertEquals(data.vec(i).max(), ((NumericFeatureLimits) wholeDataLimits.getFeatureLimits(i))._max, Precision.EPSILON);
             }
 
             Histogram histogram = new Histogram(data, wholeDataLimits, BinningStrategy.EQUAL_WIDTH);

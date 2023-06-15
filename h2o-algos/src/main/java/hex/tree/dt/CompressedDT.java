@@ -22,6 +22,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
      * For a leaf: (1, decision value, probability), for an internal node: (0, feature index, threshold)
      */
     private final double[][] _nodes;
+    private final AbstractCompressedNode[] _nodesObj;
 
     private final ArrayList<String> _listOfRules;
 
@@ -29,6 +30,15 @@ public class CompressedDT extends Keyed<CompressedDT> {
     public CompressedDT(double[][] nodes) {
         _key = Key.make("CompressedDT" + Key.rand());
         _nodes = nodes;
+        _nodesObj = null;
+        _listOfRules = new ArrayList<>();
+        extractRulesStartingWithNode(0, "");
+    }
+
+    public CompressedDT(AbstractCompressedNode[] nodes) {
+        _key = Key.make("CompressedDT" + Key.rand());
+        _nodes = null;
+        _nodesObj = nodes;
         _listOfRules = new ArrayList<>();
         extractRulesStartingWithNode(0, "");
     }
@@ -41,25 +51,25 @@ public class CompressedDT extends Keyed<CompressedDT> {
      * @return class label
      */
     public DTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex, String ruleExplanation) {
-        int isALeaf = (int) _nodes[actualNodeIndex][0];
-        double featureIndexOrValue = _nodes[actualNodeIndex][1];
-        double thresholdOrProbability = _nodes[actualNodeIndex][2];
+        boolean isALeaf = _nodesObj[actualNodeIndex] instanceof CompressedLeaf;
         // first value 1 means that the node is list, return prediction for the list
-        if (isALeaf == 1) {
-            return new DTPrediction((int) featureIndexOrValue, thresholdOrProbability,
-                    ruleExplanation + " -> (" + featureIndexOrValue
-                            + ", probabilities: " + thresholdOrProbability + ", " + (1 - thresholdOrProbability) + ")");
+        if (isALeaf) {
+            double decisionValue = ((CompressedLeaf) _nodesObj[actualNodeIndex]).getDecisionValue();
+            double probability = ((CompressedLeaf) _nodesObj[actualNodeIndex]).getProbabilities();
+            return new DTPrediction((int) decisionValue, probability, ruleExplanation + " -> (" 
+                    + decisionValue + ", probabilities: " + probability + ", " + (1 - probability) + ")");
         }
         if (!ruleExplanation.isEmpty()) {
             ruleExplanation += " and ";
         }
-        if (rowValues[(int) featureIndexOrValue] < thresholdOrProbability
-                || Precision.equals(rowValues[(int) featureIndexOrValue], thresholdOrProbability, Precision.EPSILON)) {
-            return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1,
-                    ruleExplanation + "(x" + featureIndexOrValue + " <= " + thresholdOrProbability + ")");
+        AbstractSplittingRule splittingRule = ((CompressedNode) _nodesObj[actualNodeIndex]).getSplittingRule();
+        // splitting rule is true - left, false - right
+        if(splittingRule.routeSample(rowValues)) {
+            return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1, 
+                    ruleExplanation + splittingRule.toString());
         } else {
-            return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 2,
-                    ruleExplanation + "(x" + featureIndexOrValue + " > " + thresholdOrProbability + ")");
+            return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 2, 
+                    ruleExplanation + "not " + splittingRule.toString());
         }
     }
 
@@ -69,19 +79,38 @@ public class CompressedDT extends Keyed<CompressedDT> {
     }
 
     public void extractRulesStartingWithNode(int nodeIndex, String actualRule) {
-        if (_nodes[nodeIndex][0] == 1) {
-            // if node is a list, add the rule to the list and return
-            _listOfRules.add(actualRule + " -> (" + _nodes[nodeIndex][1] + ", " + _nodes[nodeIndex][2] + ")");
-            return;
-        }
+        if(_nodes != null) {
+            if (_nodes[nodeIndex][0] == 1) {
+                // if node is a list, add the rule to the list and return
+                _listOfRules.add(actualRule + " -> (" + _nodes[nodeIndex][1] + ", " + _nodes[nodeIndex][2] + ")");
+                return;
+            }
 
-        actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
-        // proceed to the left branch
-        extractRulesStartingWithNode(2 * nodeIndex + 1, actualRule +
-                "(x" + _nodes[nodeIndex][1] + " <= " + _nodes[nodeIndex][2] + ")");
-        // proceed to the right branch
-        extractRulesStartingWithNode(2 * nodeIndex + 2, actualRule +
-                "(x" + _nodes[nodeIndex][1] + " > " + _nodes[nodeIndex][2] + ")");
+            actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
+            // proceed to the left branch
+            extractRulesStartingWithNode(2 * nodeIndex + 1, actualRule +
+                    "(x" + _nodes[nodeIndex][1] + " <= " + _nodes[nodeIndex][2] + ")");
+            // proceed to the right branch
+            extractRulesStartingWithNode(2 * nodeIndex + 2, actualRule +
+                    "(x" + _nodes[nodeIndex][1] + " > " + _nodes[nodeIndex][2] + ")");
+        } else {
+            if (_nodesObj[nodeIndex] instanceof CompressedLeaf) {
+                // if node is a list, add the rule to the list and return
+                _listOfRules.add(actualRule + " -> (" + ((CompressedLeaf) _nodesObj[nodeIndex]).getDecisionValue()
+                        + ", " + ((CompressedLeaf) _nodesObj[nodeIndex]).getProbabilities() + ")");
+                return;
+            }
+
+            actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
+            // proceed to the left branch
+            extractRulesStartingWithNode(2 * nodeIndex + 1, actualRule +
+                    "(x" +  ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getField()
+                    + " <= " + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getThreshold() + ")");
+            // proceed to the right branch
+            extractRulesStartingWithNode(2 * nodeIndex + 2, actualRule +
+                    "(x" + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getField()
+                    + " > " + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getThreshold() + ")");
+        }
     }
 
     public List<String> getListOfRules() {

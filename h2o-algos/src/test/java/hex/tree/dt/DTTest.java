@@ -56,7 +56,7 @@ public class DTTest extends TestUtil {
             assertEquals(train.numRows(), out.numRows());
 
 
-            System.out.println(DKV.getGet(model._output._treeKey));
+//            System.out.println(DKV.getGet(model._output._treeKey));
 
             Frame test = new TestFrameBuilder()
                     .withVecTypes(Vec.T_NUM, Vec.T_NUM)
@@ -124,7 +124,7 @@ public class DTTest extends TestUtil {
             Frame train = new TestFrameBuilder()
                     .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ard(Double.NaN, Double.POSITIVE_INFINITY, 
+                    .withDataForCol(1, ard(Double.NaN, Double.POSITIVE_INFINITY,
                             0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
                     .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
                     .withColNames("First", "Second", "Prediction")
@@ -205,10 +205,10 @@ public class DTTest extends TestUtil {
 
         p._max_depth = 15;
         testDataset(test, p);
-        
+
         Scope.exit();
     }
-
+    
     @Test
     public void testAirlinesSmallData() {
         Scope.enter();
@@ -223,17 +223,11 @@ public class DTTest extends TestUtil {
         p._train = train._key;
         p._valid = train._key;
         p._seed = 0xDECAF;
-        p._max_depth = 2;
-        p._min_rows = 10;
+        p._max_depth = 5;
         p._response_column = "IsDepDelayed";
 
         testDataset(test, p);
-
-        p._max_depth = 5;
-        testDataset(test, p);
-        
-        Scope.exit();
-    }
+}
     
 
     @Test

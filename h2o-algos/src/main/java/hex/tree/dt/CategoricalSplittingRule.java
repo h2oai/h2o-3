@@ -1,12 +1,15 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
+
+import java.util.Arrays;
 
 public class CategoricalSplittingRule extends AbstractSplittingRule {
 
-  public CategoricalSplittingRule(int featureIndex, boolean[] mask) {
+  public CategoricalSplittingRule(int featureIndex, boolean[] mask, double criterionValue) {
     this._featureIndex = featureIndex;
     // categories for the left split - bitmask
     this._mask = mask;
+    this._criterionValue = criterionValue;
   }
 
   private final int _featureIndex;
@@ -21,10 +24,10 @@ public class CategoricalSplittingRule extends AbstractSplittingRule {
   }
 
 
-//  @Override
-//  public String toString() {
-//    return _featureIndex + " " + _threshold + " " + Arrays.toString(_categories);
-//  }
+  @Override
+  public String toString() {
+    return "(x" + _featureIndex + " in [" + Arrays.toString(_mask) + "])";
+  }
 
   // true for left, false for right
   public boolean routeSample(double[] sample) {

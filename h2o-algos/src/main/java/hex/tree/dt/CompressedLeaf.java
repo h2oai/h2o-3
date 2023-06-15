@@ -1,4 +1,4 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 
 public class CompressedLeaf extends AbstractCompressedNode {

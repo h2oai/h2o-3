@@ -1,12 +1,13 @@
-package hex.tree.sdt;
+package hex.tree.dt;
 
 import org.apache.commons.math3.util.Precision;
 
 public class NumericSplittingRule extends AbstractSplittingRule {
 
-  public NumericSplittingRule(int featureIndex, double threshold) {
+  public NumericSplittingRule(int featureIndex, double threshold, double criterionValue) {
     this._featureIndex = featureIndex;
     this._threshold = threshold;
+    this._criterionValue = criterionValue;
   }
 
   private final int _featureIndex;
@@ -21,10 +22,10 @@ public class NumericSplittingRule extends AbstractSplittingRule {
   }
 
 
-//  @Override
-//  public String toString() {
-//    return _featureIndex + " " + _threshold + " " + Arrays.toString(_categories);
-//  }
+  @Override
+  public String toString() {
+    return "(x" + _featureIndex + " <= " + _threshold + ")";
+  }
 
   // true for left, false for right
   public boolean routeSample(double[] sample) {

@@ -1,4 +1,4 @@
-package hex.tree.sdt.binning;
+package hex.tree.dt.binning;
 
 
 /**
