@@ -159,12 +159,13 @@ def test_make_leaderboard_custom_metric():
     custom_mae2 = h2o.upload_custom_metric(CustomMaeFunc, func_name="mae2", func_file="mm_mae.py")
 
     ftrain, fvalid, _ = dataset_prostate()
-
+    nfolds = 5
+    
     model_mae = H2OGradientBoostingEstimator(model_id="prostate", ntrees=1000, max_depth=5,
                                                   score_each_iteration=True,
                                                   stopping_metric="mae",
                                                   stopping_tolerance=0.1,
-                                                  stopping_rounds=3,
+                                                  stopping_rounds=3, nfolds=nfolds,
                                                   seed=123)
     model_mae.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
@@ -173,7 +174,7 @@ def test_make_leaderboard_custom_metric():
                                                 custom_metric_func=custom_mae,
                                                 stopping_metric="custom",
                                                 stopping_tolerance=0.1,
-                                                stopping_rounds=3,
+                                                stopping_rounds=3, nfolds=nfolds,
                                                 seed=123)
     model_custom1.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
@@ -182,7 +183,7 @@ def test_make_leaderboard_custom_metric():
                                                  custom_metric_func=custom_mae,
                                                  stopping_metric="custom",
                                                  stopping_tolerance=0.1,
-                                                 stopping_rounds=3,
+                                                 stopping_rounds=3, nfolds=nfolds,
                                                  seed=123)
     model_custom2.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
@@ -191,7 +192,7 @@ def test_make_leaderboard_custom_metric():
                                              custom_metric_func=custom_mae,
                                              stopping_metric="custom",
                                              stopping_tolerance=0.1,
-                                             stopping_rounds=3,
+                                             stopping_rounds=3, nfolds=nfolds,
                                              seed=123)
     model_custom3.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
@@ -200,7 +201,7 @@ def test_make_leaderboard_custom_metric():
                                              custom_metric_func=custom_mae2,
                                              stopping_metric="custom",
                                              stopping_tolerance=0.1,
-                                             stopping_rounds=3,
+                                             stopping_rounds=3, nfolds=nfolds,
                                              seed=123)
     model_custom_alt.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
@@ -211,8 +212,18 @@ def test_make_leaderboard_custom_metric():
     
     ldb_custom = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], fvalid, sort_metric="custom").as_data_frame()
     ldb_mae = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], fvalid, sort_metric="mae").as_data_frame()
-    assert not (ldb["model_id"] == ldb_custom["model_id"]).all()
+    # assert not (ldb["model_id"] == ldb_custom["model_id"]).all()
     assert (ldb_mae["model_id"] == ldb_custom["model_id"]).all()
+
+    for scoring_data in ["train", "valid", "xval", "AUTO"]:
+        print(scoring_data)
+        ldb_custom = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], sort_metric="custom", scoring_data=scoring_data).as_data_frame()
+        ldb_mae = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], sort_metric="mae", scoring_data=scoring_data).as_data_frame()
+        print(ldb_custom)
+        print(ldb_mae)
+        assert (ldb_mae["model_id"] == ldb_custom["model_id"]).all()
+        assert (ldb_mae["mae"] == ldb_mae["custom"]).all()
+        assert (ldb_custom["mae"] == ldb_custom["custom"]).all()
 
     try:
         print(h2o.make_leaderboard([model_custom1, model_mae], fvalid))

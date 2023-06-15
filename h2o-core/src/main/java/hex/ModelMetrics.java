@@ -421,6 +421,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     // Custom metric holder
     public CustomMetric _customMetric = null;
+    public CMetricScoringTask _CMetricScoringTask = null;
 
     public  double weightedSigma() {
 //      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
@@ -446,6 +447,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     }
     
     public void reduceForCV(T mb){
+      if (null != _CMetricScoringTask) {
+        _CMetricScoringTask.reduceCustomMetric(mb._CMetricScoringTask);
+        _customMetric = _CMetricScoringTask.computeCustomMetric();
+      }
       this.reduce(mb);
     }
 
