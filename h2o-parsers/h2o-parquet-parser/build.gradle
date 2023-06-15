@@ -23,7 +23,7 @@ dependencies {
   }
 
   // Parquet support
-  compileOnly("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}")
+  api("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}")
 
 
   api("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {

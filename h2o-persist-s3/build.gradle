@@ -18,7 +18,6 @@ dependencies {
   testImplementation "com.adobe.testing:s3mock-junit4:2.1.28"
   testRuntimeOnly project(":${defaultWebserverModule}")
   testRuntimeOnly project(":h2o-parquet-parser")
-  testRuntimeOnly("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}") // required by h2o-parquet-parser
   testImplementation project(":h2o-persist-hdfs")
 }
 

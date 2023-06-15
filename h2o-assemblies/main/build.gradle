@@ -21,7 +21,6 @@ dependencies {
         api project(":h2o-orc-parser")
     }
     api project(":h2o-parquet-parser")
-    api("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}") // Required by :h2o-parquet-parser
     api project(":h2o-k8s-int")
 
     constraints {
