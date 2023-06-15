@@ -3,9 +3,10 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
-from tests.pyunit_utils import CustomMaeFunc, CustomRmseFunc,\
+from tests.pyunit_utils import CustomMaeFunc, CustomRmseFunc, \
     assert_correct_custom_metric, regression_model, multinomial_model, binomial_model
-from h2o.estimators.random_forest import H2ORandomForestEstimator
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+from h2o.exceptions import H2OResponseError
 
 
 # Custom model metrics fixture
@@ -20,31 +21,37 @@ def custom_rmse_mm():
 # Test that the custom model metric is computed
 # and compare them with implicit custom metric
 def test_custom_metric_computation_regression():
-    parms = {"ntrees": 3, "max_depth": 5}
-    (model, f_test) = regression_model(H2ORandomForestEstimator, custom_mae_mm(), parms)
+    (model, f_test) = regression_model(H2ODeepLearningEstimator, custom_mae_mm())
     print(model)
     assert_correct_custom_metric(model, f_test, "mae", "Regression on prostate")
 
 
 def test_custom_metric_computation_binomial():
-    parms = {"ntrees": 3, "max_depth": 5}
-    (model, f_test) = binomial_model(H2ORandomForestEstimator, custom_rmse_mm(), parms)
+    (model, f_test) = binomial_model(H2ODeepLearningEstimator, custom_rmse_mm())
     print(model)
     assert_correct_custom_metric(model, f_test, "rmse", "Binomial on prostate")
-    
+
 
 def test_custom_metric_computation_multinomial():
-    parms = {"ntrees": 3, "max_depth": 5}
-    (model, f_test) = multinomial_model(H2ORandomForestEstimator, custom_rmse_mm(), parms)
+    (model, f_test) = multinomial_model(H2ODeepLearningEstimator, custom_rmse_mm())
     print(model)
     assert_correct_custom_metric(model, f_test, "rmse", "Multinomial on iris")
 
+
+def test_custom_metric_computation_multinomial_autoencoder():
+    params = {"autoencoder": True}
+    try:
+        multinomial_model(H2ODeepLearningEstimator, custom_rmse_mm(), params)
+    except H2OResponseError as e:
+        assert "Custom metric is not supported for Autoencoder." in str(e)
+        
 
 # Tests to invoke in this suite
 __TESTS__ = [
     test_custom_metric_computation_binomial,
     test_custom_metric_computation_regression,
-    test_custom_metric_computation_multinomial
+    test_custom_metric_computation_multinomial,
+    test_custom_metric_computation_multinomial_autoencoder
 ]
 
 if __name__ == "__main__":
