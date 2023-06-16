@@ -179,7 +179,10 @@ class H2OExplanation(OrderedDict):
     def _ipython_display_(self):
         from IPython.display import display
         for v in self.values():
-            display(v)
+            if is_decorated_plot_result(v):
+                display(v.figure())
+            else:
+                display(v)
 
 
 @contextmanager

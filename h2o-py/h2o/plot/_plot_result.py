@@ -4,10 +4,19 @@ from h2o.exceptions import H2OError
 
 __no_export = set(dir())  # all variables defined above this are not exported
 
+
 class _MObject(object): pass
+
+
 class _MTuple(tuple): pass
+
+
 class _MList(list): pass
+
+
 class _MDict(dict): pass
+
+
 class _MStr(str): pass
 
 
@@ -31,7 +40,7 @@ def decorate_plot_result(res=None, figure=None):
         dec = _MDict(res)
     elif isinstance(res, str):
         dec = _MStr(res)
-    else: # should be an H2O instance, should be mutable
+    else:  # should be an H2O instance, should be mutable
         dec = res
     dec.figure = get_figure
     dec._is_decorated_plot_result = True
