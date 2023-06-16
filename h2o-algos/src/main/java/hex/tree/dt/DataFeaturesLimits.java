@@ -90,7 +90,13 @@ public class DataFeaturesLimits {
         if (other == null || other.featuresCount() != featuresCount()) {
             return false;
         }
-        return Arrays.deepEquals(other.toDoubles(), toDoubles());
+
+        for (int i = 0; i < _featuresLimits.size(); i++) {
+            if (!_featuresLimits.get(i).equals(other._featuresLimits.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
 

@@ -7,6 +7,8 @@ public abstract class AbstractCompressedNode extends Iced<AbstractCompressedNode
 
     public AbstractCompressedNode() {
     }
+    
+    public abstract String toString();
 
 //    /**
 //     * Serialize Node to the byte buffer

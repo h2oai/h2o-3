@@ -24,4 +24,8 @@ public class CategoricalFeatureLimits extends AbstractFeatureLimits {
         return Arrays.stream(_setOfCategories).mapToDouble(c -> (double) c).toArray();
     }
 
+    @Override
+    public boolean equals(AbstractFeatureLimits other) {
+        return Arrays.equals(_setOfCategories, ((CategoricalFeatureLimits) other)._setOfCategories);
+    }
 }

@@ -13,4 +13,9 @@ public class CompressedNode extends AbstractCompressedNode {
         return _splittingRule;
     }
 
+    @Override
+    public String toString() {
+        return "[node: " + _splittingRule.toString() + "]";
+    }
+
 }

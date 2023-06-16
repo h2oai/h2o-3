@@ -24,7 +24,7 @@ public class NumericSplittingRule extends AbstractSplittingRule {
 
   @Override
   public String toString() {
-    return "(x" + _featureIndex + " <= " + _threshold + ")";
+    return "x" + _featureIndex + " <= " + _threshold + "";
   }
 
   // true for left, false for right

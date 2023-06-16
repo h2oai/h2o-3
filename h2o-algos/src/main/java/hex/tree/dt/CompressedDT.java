@@ -75,7 +75,10 @@ public class CompressedDT extends Keyed<CompressedDT> {
 
     @Override
     public String toString() {
-        return Arrays.stream(_nodes).map(n -> "(" + n[0] + "," + n[1] + "," + n[2] + ")").collect(Collectors.joining(";"));
+        if(_nodes != null) {
+            return Arrays.stream(_nodes).map(n -> "(" + n[0] + "," + n[1] + "," + n[2] + ")").collect(Collectors.joining(";"));
+        } 
+        return Arrays.stream(_nodesObj).map(AbstractCompressedNode::toString).collect(Collectors.joining(";"));
     }
 
     public void extractRulesStartingWithNode(int nodeIndex, String actualRule) {

@@ -26,7 +26,7 @@ public class CategoricalSplittingRule extends AbstractSplittingRule {
 
   @Override
   public String toString() {
-    return "(x" + _featureIndex + " in [" + Arrays.toString(_mask) + "])";
+    return "x" + _featureIndex + " in [" + Arrays.toString(_mask) + "]";
   }
 
   // true for left, false for right

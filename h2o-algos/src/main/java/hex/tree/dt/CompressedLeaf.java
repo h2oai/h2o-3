@@ -20,4 +20,8 @@ public class CompressedLeaf extends AbstractCompressedNode {
         return _probability;
     }
 
+    @Override
+    public String toString() {
+        return "(leaf: " + _decisionValue + ", " + _probability + ", " + (1- _probability) + ")";
+    }
 }
