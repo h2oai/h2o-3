@@ -6,6 +6,9 @@ description = "H2O Parquet Parser"
 def parquetHadoopVersion = binding.variables.get("hadoopVersion") ?
   binding.variables.get("hadoopVersion") : defaultHadoopVersion
 
+def targetParquetVersion = binding.variables.get("parquetVersion") ?
+        binding.variables.get("parquetVersion") : defaultParquetVersion
+
 configurations{
     // Configuration used to get all transitive dependencies for org.apache.hadoop:hadoop-common
     hadoopCommonExclude
@@ -23,7 +26,7 @@ dependencies {
   }
 
   // Parquet support
-  api("org.apache.parquet:parquet-hadoop:${defaultParquetVersion}")
+  compileOnly("org.apache.parquet:parquet-hadoop:${targetParquetVersion}")
 
 
   api("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {

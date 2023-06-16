@@ -3,6 +3,7 @@ ext {
   hadoopMavenArtifactVersion = '3.0.0.3.0.0.3-2'
   orcSupported = true
   orcHiveExecVersion = "3.0.0.3.0.0.3-2"
+  parquetVersion = "1.10.0.3.0.0.3-2"
 }
 
 apply from: '../assemblyjar.gradle'
