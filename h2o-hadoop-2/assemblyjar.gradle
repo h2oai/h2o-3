@@ -6,10 +6,6 @@ description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-ext {
-  parquetVersion = "1.8.1"
-}
-
 def hasCustomHdfsDep = ext.has("hdfsDependency") && (ext.get("hdfsDependency") != defaultHdfsDependency)
 
 if (hasCustomHdfsDep) {
@@ -56,10 +52,7 @@ dependencies {
   api(project(":h2o-ext-krbstandalone")) {
     transitive = false // we just need hadoop-auth which is provided by the hadoop-client dependency
   }
-  api("org.apache.parquet:parquet-avro:${parquetVersion}") // required by h2o-hive
-  api("org.apache.parquet:parquet-hadoop:${parquetVersion}") { // required by h2o-parquet-parser
-    force = true
-  }
+  api("org.apache.parquet:parquet-avro:${defaultParquetVersion}") // required by h2o-hive
 
   // For standalone mode to work with MapR, this extra library needs to be
   // included, and it's not pulled in by the dependency stuff;  this must
