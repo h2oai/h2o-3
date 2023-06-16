@@ -21,6 +21,9 @@ dependencies {
         api project(":h2o-orc-parser")
     }
     api project(":h2o-parquet-parser")
+    implementation("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
+        transitive = false
+    }
     api project(":h2o-k8s-int")
 
     constraints {

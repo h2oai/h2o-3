@@ -34,9 +34,6 @@ dependencies {
       }
     }
   }
-  implementation("org.apache.hadoop:hadoop-mapreduce-client-core:${parquetHadoopVersion}") {
-    transitive = false
-  }
   
   testImplementation project(":h2o-test-support")
   testImplementation project(":h2o-parquet-parser-tests")
