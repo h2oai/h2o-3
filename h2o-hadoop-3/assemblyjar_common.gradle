@@ -16,11 +16,6 @@ dependencies {
         transitive = false // we just need hadoop-auth which is provided by the hadoop-client dependency
     }
     api("org.apache.parquet:parquet-avro:${defaultParquetVersion}") // required by h2o-hive
-    implementation("org.apache.parquet:parquet-common:${defaultParquetVersion}")
-    implementation("org.apache.parquet:parquet-encoding:${defaultParquetVersion}")
-    implementation("org.apache.parquet:parquet-format-structures:${defaultParquetVersion}")
-    implementation("org.apache.parquet:parquet-column:${defaultParquetVersion}")
-
 
     // For standalone mode to work with MapR, this extra library needs to be
     // included, and it's not pulled in by the dependency stuff;  this must
@@ -87,6 +82,7 @@ shadowJar {
     exclude hadoopShadowJarExcludes
     relocate 'com.google.common', 'ai.h2o.com.google.common'
     relocate 'org.eclipse.jetty', 'ai.h2o.org.eclipse.jetty'
+    relocate 'org.apache.parquet', 'ai.h2o.org.apache.parquet'
     baseName = 'h2odriver'
     classifier = ''
     manifest {
