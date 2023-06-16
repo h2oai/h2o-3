@@ -1,9 +1,9 @@
 ext {
   hadoopVersion = 'hdp3.0'
-  hadoopMavenArtifactVersion = '3.0.0.3.0.0.3-2'
+  hadoopMavenArtifactVersion = '3.0.0.3.0.1.52-1'
   orcSupported = true
-  orcHiveExecVersion = "3.0.0.3.0.0.3-2"
-  parquetVersion = "1.10.0.3.0.0.3-2"
+  orcHiveExecVersion = "3.1.0.3.0.1.52-1"
+  parquetVersion = "1.10.0.3.0.1.52-1"
 }
 
 apply from: '../assemblyjar.gradle'
