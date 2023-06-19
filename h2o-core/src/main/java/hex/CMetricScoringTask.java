@@ -42,6 +42,10 @@ public class CMetricScoringTask<T extends CMetricScoringTask<T>> extends CFuncTa
   @Override
   public void reduce(T t) {
     super.reduce(t);
+    reduceCustomMetric(t);
+  }
+
+  public void reduceCustomMetric(T t) {
     if (func != null) {
       if (customMetricWs == null) {
         customMetricWs = t.customMetricWs;
@@ -56,15 +60,18 @@ public class CMetricScoringTask<T extends CMetricScoringTask<T>> extends CFuncTa
   @Override
   protected void postGlobal() {
     super.postGlobal();
+    result = computeCustomMetric();
+  }
+
+  public CustomMetric computeCustomMetric() {
     if (func != null) {
-      result = CustomMetric.from(cFuncRef.getName(),
+      return CustomMetric.from(cFuncRef.getName(),
                                  customMetricWs != null ? func.metric(customMetricWs)
                                                         : Double.NaN);
-    } else {
-      result = null;
     }
+    return null;
   }
-  
+
   public CustomMetric getComputedCustomMetric() {
     return result;
   }
