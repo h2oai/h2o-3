@@ -404,6 +404,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
         colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
         colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+        colHeaders.add("Training ATE"); colTypes.add("double"); colFormat.add("%d");
+        colHeaders.add("Training ATT"); colTypes.add("double"); colFormat.add("%d");
+        colHeaders.add("Training ATC"); colTypes.add("double"); colFormat.add("%d");
         colHeaders.add("Training AUUC nbins"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Training AUUC"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Training AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
@@ -413,6 +416,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         }
 
         if (_output._validation_metrics != null) {
+            colHeaders.add("Validation ATE"); colTypes.add("double"); colFormat.add("%d");
+            colHeaders.add("Validation ATT"); colTypes.add("double"); colFormat.add("%d");
+            colHeaders.add("Validation ATC"); colTypes.add("double"); colFormat.add("%d");
             colHeaders.add("Validation AUUC nbins"); colTypes.add("int"); colFormat.add("%d");
             colHeaders.add("Validation AUUC"); colTypes.add("double"); colFormat.add("%.5f");
             colHeaders.add("Validation AUUC normalized"); colTypes.add("double"); colFormat.add("%.5f");
@@ -443,6 +449,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             table.set(row, col++, PrettyPrint.msecs(_training_time_ms[i] - job.start_time(), true));
             table.set(row, col++, i);
             ScoreKeeper st = _scored_train[i];
+            table.set(row, col++, st._ate);
+            table.set(row, col++, st._att);
+            table.set(row, col++, st._atc);
             table.set(row, col++, st._auuc_nbins);
             table.set(row, col++, st._AUUC);
             table.set(row, col++, st._auuc_normalized);
@@ -451,6 +460,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
             if (_output._validation_metrics != null) {
                 st = _scored_valid[i];
+                table.set(row, col++, st._ate);
+                table.set(row, col++, st._att);
+                table.set(row, col++, st._atc);
                 table.set(row, col++, st._auuc_nbins);
                 table.set(row, col++, st._AUUC);
                 table.set(row, col++, st._auuc_normalized);

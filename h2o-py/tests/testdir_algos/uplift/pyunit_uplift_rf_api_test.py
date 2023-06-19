@@ -46,6 +46,9 @@ def uplift_random_forest_api_smoke():
     assert_equals(perf.thresholds_and_metric_scores(), uplift_model.thresholds_and_metric_scores())
     assert_equals(perf.auuc_table(), uplift_model.auuc_table())
     assert_equals(perf.qini(), uplift_model.qini())
+    assert_equals(perf.ate(), uplift_model.ate())
+    assert_equals(perf.att(), uplift_model.att())
+    assert_equals(perf.atc(), uplift_model.atc())
 
     try:
         uplift_model.partial_plot(train_h2o, cols=['feature_8'])

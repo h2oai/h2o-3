@@ -227,10 +227,10 @@ By default, the following output displays:
 -  **Scoring history** in tabular format
 -  **Training metrics** (model name, checksum name, frame name, frame
    checksum name, description, model category, duration in ms, scoring
-   time, predictions, AUUC, all AUUC types table, Thresholds and metric scores, table)
+   time, predictions, ATE, ATT, ATC, AUUC, all AUUC types table, Thresholds and metric scores table)
 -  **Validation metrics** (model name, checksum name, frame name, frame
    checksum name, description, model category, duration in ms, scoring
-   time, predictions, AUUC, all AUUC types table, Thresholds and metric scores table)
+   time, predictions, ATE, ATT, ATC, AUUC, all AUUC types table, Thresholds and metric scores table)
 -  **Default AUUC metric** calculated based on ``auuc_type`` parameter
 -  **Default normalized AUUC metric** calculated based on ``auuc_type`` parameter
 -  **AUUC table** which contains all computed AUUC types and normalized AUUC (qini, lift, gain)
@@ -238,6 +238,24 @@ By default, the following output displays:
 -  **AECU table** which contains all computed AECU values types (qini, lift, gain)
 -  **Thresholds and metric scores table** which contains thresholds of predictions, cumulative number of observations for each bin and cumulative uplift values for all metrics (qini, lift, gain).
 -  **Uplift Curve plot** for given metric type (qini, lift, gain)
+
+
+Treatment effect metrics (ATE, ATT, ATC)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Overall treatment effect metrics show how the uplift predictions look across the whole dataset (population). Scored data are used to calculate these metrics (``uplift_predict`` column = individual treatment effect).
+
+- **Average Treatment Effect (ATE)** Average expected uplift prediction (treatment effect) overall records in the dataset.
+- **Average Treatment Effect on the Treated (ATT)** Average expected uplift prediction (treatment effect) of all records in the dataset belonging to the treatment group.
+- **Average Treatment Effect on the Control (ATC)** Average expected uplift prediction (treatment effect) of all records in the dataset belonging to the control group.
+
+The interpretation depends on concrete data meanings. We currently support only Bernoulli data distribution, so whether the treatment impacts the target value y=1 or not. 
+
+For example, we analyze data to determine if some medical help to recover from disease or not. We have patients in the treatment group and the control group. The target variable is if the medicine (treatment) helped recovery (y=1) or not (y=0). In this case:
+- positive ATE means the medicine helps with recovery in general
+- negative ATE means the medicine does not help with recovery in general
+- ATE equal or similar to zero means the medicine does not affect recovery in general
+- similar interpretation applies to ATT and ATC, the positive ATT is usually what scientists look for, but ATC is also an interesting metric (in an ideal case, positive both ATT and ATC say the treatment has an exact effect).
 
 
 Uplift Curve and Area Under Uplift Curve (AUUC) calculation

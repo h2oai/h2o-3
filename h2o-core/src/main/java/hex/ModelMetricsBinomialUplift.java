@@ -10,11 +10,17 @@ import java.util.Arrays;
 
 public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public final AUUC _auuc;
+    public double _ate;
+    public double _att;
+    public double _atc;
 
-    public ModelMetricsBinomialUplift(Model model, Frame frame, long nobs, String[] domain,
-                                      double sigma, AUUC auuc,
+    public ModelMetricsBinomialUplift(Model model, Frame frame, long nobs, String[] domain, 
+                                      double ate, double att, double atc, double sigma, AUUC auuc,
                                       CustomMetric customMetric) {
         super(model, frame,  nobs, 0, domain, sigma, customMetric);
+        _ate = ate;
+        _att = att;
+        _atc = atc;
         _auuc = auuc;
     }
 
@@ -30,6 +36,9 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString());
+        sb.append("ATE:" ).append((float) _ate).append("\n");
+        sb.append("ATT:" ).append((float) _att).append("\n");
+        sb.append("ATC:" ).append((float) _atc).append("\n");
         if(_auuc != null){
             sb.append("Default AUUC: ").append((float) _auuc.auuc()).append("\n");
             sb.append("Qini AUUC: ").append((float) _auuc.auucByType(AUUC.AUUCType.qini)).append("\n");
@@ -50,6 +59,12 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public double auucNormalized(){return _auuc.auucNormalized();}
     
     public int nbins(){return _auuc._nBins;}
+    
+    public double ate() {return _ate;}
+    
+    public double att() {return _att;}
+    
+    public double atc() {return _atc;}
 
     @Override
     protected StringBuilder appendToStringMetrics(StringBuilder sb) {
@@ -143,7 +158,10 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public static class MetricBuilderBinomialUplift extends MetricBuilderSupervised<MetricBuilderBinomialUplift> {
 
         protected AUUC.AUUCBuilder _auuc;
-
+        public double _sumTE;
+        public double _sumTETreatment;
+        public long _treatmentCount;
+        
         public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) { 
             super(2,domain); 
             if(thresholds != null) {
@@ -163,7 +181,6 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         public double[] perRow(double[] ds, float[] yact, double weight, double offset, Model m) {
             assert _auuc == null || yact.length == 2 : "Treatment must be included in `yact` when calculating AUUC";
             if(Float .isNaN(yact[0])) return ds; // No errors if   actual   is missing
-            if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
             if(weight == 0 || Double.isNaN(weight)) return ds;
             int y = (int)yact[0];
             if (y != 0 && y != 1) return ds; // The actual is effectively a NaN
@@ -171,9 +188,13 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             _wYY += weight * y * y;
             _count++;
             _wcount += weight;
+            float treatmentGroup = yact[1]; // treatment = 1, control = 0
+            double treatmentEffect = ds[0];
+            _sumTE += treatmentEffect; // result prediction
+            _sumTETreatment += treatmentGroup * treatmentEffect; 
+            _treatmentCount += treatmentGroup;
             if (_auuc != null) {
-                float treatment = yact[1];
-                _auuc.perRow(ds[0], weight, y, treatment);
+                _auuc.perRow(treatmentEffect, weight, y, treatmentGroup);
             }
             return ds;
         }
@@ -183,6 +204,9 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if(_auuc != null) {
                 _auuc.reduce(mb._auuc);
             }
+            _sumTE += mb._sumTE;
+            _sumTETreatment += mb._sumTETreatment;
+            _treatmentCount += _treatmentCount;
         }
 
         /**
@@ -231,15 +255,21 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
 
         private ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc) {
             double sigma = Double.NaN;
+            double ate = Double.NaN;
+            double atc = Double.NaN;
+            double att = Double.NaN;
             if(_wcount > 0) {
                 if (auuc == null) {
                     sigma = weightedSigma();
                     auuc = new AUUC(_auuc, m._parms._auuc_type);
                 }
+                ate = _sumTE/_wcount;
+                att = _sumTETreatment/_treatmentCount;
+                atc = (_sumTE-_sumTETreatment)/(_wcount-_treatmentCount);
             } else {
                 auuc = new AUUC();
             }
-            ModelMetricsBinomialUplift mm = new ModelMetricsBinomialUplift(m, f, _count, _domain, sigma, auuc, _customMetric);
+            ModelMetricsBinomialUplift mm = new ModelMetricsBinomialUplift(m, f, _count, _domain, ate, att, atc, sigma, auuc, _customMetric);
             if (m!=null) m.addModelMetrics(mm);
             return mm;
         }
