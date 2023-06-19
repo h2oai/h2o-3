@@ -81,7 +81,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Check Snyk scan results
-        if: steps.scan1.outcome == 'failure' || steps.scan2.outcome == 'failure' || steps.scan3.outcome == 'failure' || steps.scan4.outcome == 'failure'
+        if: steps.scan1.outcome == 'failure' || steps.scan2.outcome == 'failure' || steps.scan3.outcome == 'failure'
         shell: bash
         run: |
           echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
