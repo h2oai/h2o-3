@@ -1,31 +1,32 @@
 package hex.tree.dt;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 /**
  * Limits for one feature.
  */
 public class CategoricalFeatureLimits extends AbstractFeatureLimits {
-    public int[] _setOfCategories;
-    public CategoricalFeatureLimits(final int[] setOfCategories) {
-        _setOfCategories = Arrays.copyOf(setOfCategories, setOfCategories.length);
+    public boolean[] _mask;
+    public CategoricalFeatureLimits(final boolean[] mask) {
+        _mask = Arrays.copyOf(mask, mask.length);
     }
 
-    public void setNewSetOfCategories(final int[] newSetOfCategories) {
-        _setOfCategories = Arrays.copyOf(newSetOfCategories, newSetOfCategories.length);
+    public void setNewSetOfCategories(final boolean[] mask) {
+        _mask = Arrays.copyOf(mask, mask.length);
     }
 
     public CategoricalFeatureLimits clone() {
-        return new CategoricalFeatureLimits(Arrays.copyOf(_setOfCategories, _setOfCategories.length));
+        return new CategoricalFeatureLimits(Arrays.copyOf(_mask, _mask.length));
     }
 
     @Override
     public double[] toDoubles() {
-        return Arrays.stream(_setOfCategories).mapToDouble(c -> (double) c).toArray();
+        return IntStream.range(0, _mask.length).mapToDouble(idx -> _mask[idx] ? 1.0 : 0.0).toArray();
     }
 
     @Override
     public boolean equals(AbstractFeatureLimits other) {
-        return Arrays.equals(_setOfCategories, ((CategoricalFeatureLimits) other)._setOfCategories);
+        return Arrays.equals(_mask, ((CategoricalFeatureLimits) other)._mask);
     }
 }
