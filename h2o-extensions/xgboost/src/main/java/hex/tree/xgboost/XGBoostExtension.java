@@ -104,6 +104,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
       return true;
     } catch (IOException e) {
       // Ups no lib loaded or load failed
+      LOG.debug("Cause of the xgboost unsuccessful load", e);
       LOG.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS);
       return false;
     }

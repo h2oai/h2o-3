@@ -10,6 +10,7 @@ import sys
 from .aggregator import H2OAggregatorEstimator
 from .anovaglm import H2OANOVAGLMEstimator
 from .coxph import H2OCoxProportionalHazardsEstimator
+from .decision_tree import H2ODecisionTreeEstimator
 from .deeplearning import H2OAutoEncoderEstimator
 from .deeplearning import H2ODeepLearningEstimator
 from .estimator_base import H2OEstimator
@@ -59,8 +60,8 @@ def create_estimator(algo, **params):
 
 __all__ = (
     "create_estimator",
-    "H2OAggregatorEstimator", "H2OANOVAGLMEstimator", "H2OCoxProportionalHazardsEstimator", "H2OAutoEncoderEstimator",
-    "H2ODeepLearningEstimator", "H2OEstimator", "H2OExtendedIsolationForestEstimator",
+    "H2OAggregatorEstimator", "H2OANOVAGLMEstimator", "H2OCoxProportionalHazardsEstimator", "H2ODecisionTreeEstimator",
+    "H2OAutoEncoderEstimator", "H2ODeepLearningEstimator", "H2OEstimator", "H2OExtendedIsolationForestEstimator",
     "H2OGeneralizedAdditiveEstimator", "H2OGradientBoostingEstimator", "H2OGenericEstimator",
     "H2OGeneralizedLinearEstimator", "H2OGeneralizedLowRankEstimator", "H2OInfogram", "H2OIsolationForestEstimator",
     "H2OIsotonicRegressionEstimator", "H2OKMeansEstimator", "H2OModelSelectionEstimator", "H2ONaiveBayesEstimator",
