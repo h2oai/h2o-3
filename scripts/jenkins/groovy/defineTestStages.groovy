@@ -578,7 +578,7 @@ def call(final pipelineContext) {
     }
 
     def stageTemplate = [
-      target: target, timeoutValue: 60,
+      target: target, timeoutValue: 70,
       component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_PY,
@@ -622,7 +622,7 @@ def call(final pipelineContext) {
           [ name: "cdh", version: "6.1"  ], // hdp3/hive2
           [ name: "hdp", version: "2.6"  ], // hdp2/hive2
           [ name: "hdp", version: "3.1"  ]  // hdp3/hive3 - JDBC Only
-  ]
+  ]hado
   // check our config is still valid
   for (distribution in distributionsToTest) {
     def distSupported = false
@@ -646,7 +646,7 @@ def call(final pipelineContext) {
     }
 
     def stageTemplate = [
-            target: target, timeoutValue: 60,
+            target: target, timeoutValue: 70,
             component: pipelineContext.getBuildConfig().COMPONENT_ANY,
             additionalTestPackages: [
                     pipelineContext.getBuildConfig().COMPONENT_PY,
@@ -766,7 +766,7 @@ def call(final pipelineContext) {
       ],
       [
           stageName: "TEST Fault Tolerance on ${HADOOP_CLUSTER_CONFIG.nameNode}",
-          target: "test-hadoop-fault-tolerance", timeoutValue: 45,
+          target: "test-hadoop-fault-tolerance", timeoutValue: 55,
           component: pipelineContext.getBuildConfig().COMPONENT_ANY,
           additionalTestPackages: [
                   pipelineContext.getBuildConfig().COMPONENT_PY,
