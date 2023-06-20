@@ -33,6 +33,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-new/1/index.ht
 - [[PUBDEV-8461]](https://h2oai.atlassian.net/browse/PUBDEV-8461) - Improved user guide documentation for Generalized Additive Models algorithm.
 
 #### Security
+- [[PUBDEV-9112]](https://h2oai.atlassian.net/browse/PUBDEV-9112) - Addressed CVE-2023-2976 in h2o-steam.jar.
 - [[PUBDEV-9105]](https://h2oai.atlassian.net/browse/PUBDEV-9105) - Addressed CVE-2020-29582 in h2o-steam.jar.
 - [[PUBDEV-9103]](https://h2oai.atlassian.net/browse/PUBDEV-9103) - Addressed CVE-2023-26048 and CVE-2023-26049 by upgrading Jetty for minimal and steam jar.
 - [[PUBDEV-9100]](https://h2oai.atlassian.net/browse/PUBDEV-9100) - Addressed PRISMA-2023-0067 in h2o-steam.jar.
