@@ -2,9 +2,9 @@
 
 ## H2O
 
-### release-name (3.42.0.1) - 6/x/2023
+### 3.42.0.1 - 6/21/2023
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-new/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-new/1/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/1/index.html</a>
 
 #### Bug
 - [[PUBDEV-9097]](https://h2oai.atlassian.net/browse/PUBDEV-9097) - Fixed Infogram cross-validation with weights.
