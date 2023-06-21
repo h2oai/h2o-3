@@ -2290,4 +2290,39 @@ public class DRFTest extends TestUtil {
           Scope.exit();
       }
     }
+
+    @Test
+    public void testDRFMinimalize() {
+        Frame tfr = null, vfr = null;
+        DRFModel drf = null;
+
+        Scope.enter();
+        try {
+            tfr = parseTestFile("smalldata/junit/weights_all_ones.csv");
+            DKV.put(tfr);
+            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+            parms._train = tfr._key;
+            parms._response_column = "response";
+            parms._weights_column = "weight";
+            parms._seed = 234;
+            parms._min_rows = 1;
+            parms._max_depth = 2;
+            parms._ntrees = 3;
+
+            // Build a first model; all remaining models should be equal
+            drf = new DRF(parms).trainModel().get();
+
+            // OOB
+            ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
+            assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
+            assertEquals(_MSE, mm.mse(), 1e-8);
+            assertEquals(_LogLoss, mm.logloss(), 1e-6);
+
+        } finally {
+            if (tfr != null) tfr.remove();
+            if (vfr != null) vfr.remove();
+            if (drf != null) drf.delete();
+            Scope.exit();
+        }
+    }    
 }
