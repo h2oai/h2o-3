@@ -27,6 +27,7 @@ class CustomRmseFunc:
         import java.lang.Math as math
         return math.sqrt(l[0] / l[1])
 
+
 class CustomLoglossFunc:
     def map(self, pred, act, w, o, model):
         import water.util.MathUtils as math
@@ -39,6 +40,30 @@ class CustomLoglossFunc:
 
     def metric(self, l):
         return l[0] / l[1]
+
+
+class CustomAteFunc:
+    def map(self, pred, act, w, o, model):
+        return [pred[0], 1]
+
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
+
+    def metric(self, l):
+        return l[0] / l[1]
+
+
+class CustomAttFunc:
+    def map(self, pred, act, w, o, model):
+        treatment = pred[1]
+        return [pred[0], 1] if treatment == 1 else [0, 0]
+
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
+
+    def metric(self, l):
+        return l[0] / l[1]
+
 
 class CustomNullFunc:
     def map(self, pred, act, w, o, model):
@@ -137,6 +162,14 @@ def dataset_iris():
     return df.split_frame(ratios=[0.6, 0.3], seed=0)
 
 
+def dataset_uplift():
+    treatment_column = "treatment"
+    response_column = "outcome"
+    df = h2o.upload_file(path=locate("smalldata/uplift/upliftml_train.csv"))
+    df[treatment_column] = df[treatment_column].asfactor()
+    df[response_column] = df[response_column].asfactor()
+    return df.split_frame(ratios=[0.6, 0.3], seed=0)
+
 # Regression Model fixture
 def regression_model(ModelType, custom_metric_func, params={}):
     (ftrain, fvalid, ftest) = dataset_prostate()
@@ -147,7 +180,6 @@ def regression_model(ModelType, custom_metric_func, params={}):
     return model, ftest
 
 
-# Binomial model fixture
 def binomial_model(ModelType, custom_metric_func, params={}):
     (ftrain, fvalid, ftest) = dataset_prostate()
     model = ModelType(model_id="binomial",
@@ -163,4 +195,16 @@ def multinomial_model(ModelType, custom_metric_func, params={}):
                       score_each_iteration=True,
                       custom_metric_func=custom_metric_func, **params)
     model.train(y="class", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
+    return model, ftest
+
+
+def uplift_binomial_model(ModelType, custom_metric_func):
+    (ftrain, fvalid, ftest) = dataset_uplift()
+    params = {"treatment_column": "treatment"}
+    response_column = "outcome"
+    model = ModelType(model_id="uplift_binomial", ntrees=3, max_depth=5,
+                      score_each_iteration=True,
+                      custom_metric_func=custom_metric_func,
+                      **params)
+    model.train(y=response_column, x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
     return model, ftest

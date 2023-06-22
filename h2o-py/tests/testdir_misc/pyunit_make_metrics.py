@@ -167,7 +167,7 @@ def pyunit_make_metrics(weights_col=None):
     model.train(x=predictors, y=response, training_frame=fr)
     predicted = h2o.assign(model.predict(fr)[1:], "pred")
     actual = h2o.assign(fr[response].asfactor(), "act")
-    domain = fr[response].levels()[0]
+    domain = fr[response].levels()[0]               
 
     m0 = model.model_performance(train=True)
     m1 = h2o.make_metrics(predicted, actual, domain=domain, weights=weights, auc_type="MACRO_OVR")
