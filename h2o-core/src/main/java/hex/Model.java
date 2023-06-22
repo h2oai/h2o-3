@@ -2257,7 +2257,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               for (int i = 0; i < actual.length; ++i)
                 actual[i] = (float) data(chks, row, i);
             }
-            if (treatmentChunk != null) {
+            if(treatmentChunk != null){
               actual[1] = (float) treatmentChunk.atd(row);
             }
             _mb.perRow(preds, actual, weight, offset, Model.this);
