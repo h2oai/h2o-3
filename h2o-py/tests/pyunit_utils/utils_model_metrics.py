@@ -44,7 +44,7 @@ class CustomLoglossFunc:
 
 class CustomAteFunc:
     def map(self, pred, act, w, o, model):
-        return [pred[0], 1] 
+        return [pred[0], 1]
 
     def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
@@ -55,8 +55,8 @@ class CustomAteFunc:
 
 class CustomAttFunc:
     def map(self, pred, act, w, o, model):
-        treatment = act[1] * w
-        return [pred[0] * treatment, treatment]
+        treatment = pred[1]
+        return [pred[0], 1] if treatment == 1 else [0, 0]
 
     def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
