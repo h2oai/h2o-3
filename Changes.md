@@ -727,7 +727,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/3/index
 
 #### Improvement
 
-- [[PUBDEV-8366]](https://h2oai.atlassian.net/browse/PUBDEV-8366) - Removed support for legacy Cliffs makefile.
 - [[#7314]](https://github.com/h2oai/h2o-3/issues/7314) - Exposed AutoML `get_leaderboard` as a method in Python.
 - [[#7315]](https://github.com/h2oai/h2o-3/issues/7315) - Improved Python client by printing the stacktrace in case of ServerError allowing users to report informative issues for investigation.
 - [[#7350]](https://github.com/h2oai/h2o-3/issues/7350) - Enhanced tests by testing the case through all encodings.
@@ -1622,7 +1621,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/7/in
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/12662'>#12662</a>] - Added `max_runtime_secs` parameter to Stacked Ensemble.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-758'>HEXDEV-758</a>] - Upgraded Jetty 9 and switched default webserver to Jetty 9.
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/28'>private-#28</a>] - Upgraded Jetty 9 and switched default webserver to Jetty 9.
 </li>
 </ul>
 
@@ -2638,7 +2637,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/10/index.h
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-743'>HEXDEV-743</a>] - Fixed an issue that caused H2O to ignore security configurations when running on Hadoop 3.x.
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/41'>private-#41</a>] - Fixed an issue that caused H2O to ignore security configurations when running on Hadoop 3.x.
 </li>
 </ul>
 
@@ -2692,7 +2691,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/10/index.h
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://github.com/h2oai/h2o-3/issues/8786'>#8786</a>] - Created a Technical Note (TN) describing how to use MOJO Import when importing models from a different H2O version. This TN is available here: <a href="https://0xdata.atlassian.net/browse/TN-14">https://0xdata.atlassian.net/browse/TN-14</a>. 
+<li>[<a href='https://github.com/h2oai/h2o-3/issues/8786'>#8786</a>] - Created a Technical Note (TN) describing how to use MOJO Import when importing models from a different H2O version. This TN is available here: <a href="https://github.com/h2oai/h2o-3/discussions/15523">https://github.com/h2oai/h2o-3/discussions/15523</a>. 
 </li>
 </ul>
 
@@ -3698,7 +3697,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-xu/4/index.htm
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-733'>HEXDEV-733</a>] - When using h2o.import_sql_table to read from a Hive table, the username and password no longer appear in the logs.
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/47'>private-#47</a>] - When using h2o.import_sql_table to read from a Hive table, the username and password no longer appear in the logs.
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/9412'>#9412</a>] - Monotone constraints are now exposed in Flow.
 </li>
@@ -5640,7 +5639,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-weierstrass/6/
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/SW-542'>SW-542</a>] - Fixed an issue that prevented Sparkling Water from importing Parquet files.
+<li>[<a href='https://github.com/h2oai/sparkling-water/issues/4170'>sparkling-water-#4170</a>] - Fixed an issue that prevented Sparkling Water from importing Parquet files.
 </li>
 </ul>
 
@@ -6650,7 +6649,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-tverberg/5/ind
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/10927'>#10927</a>] -         Parse fails when trying to parse large number of Parquet files
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-683'>HEXDEV-683</a>] -         POJO doesn&#39;t include Forest classes
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/93'>private-#93</a>] -         POJO doesn&#39;t include Forest classes
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/10935'>#10935</a>] -         moment producing wrong dates
 </li>
@@ -6965,9 +6964,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-turnbull/2/ind
 <h4>        Improvement
 </h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-645'>HEXDEV-645</a>] -         aggregator should calculate domain for enum columns in aggregated output frames &amp; member frames based on current output or member frame
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/128'>private-#128</a>] -         aggregator should calculate domain for enum columns in aggregated output frames &amp; member frames based on current output or member frame
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-658'>HEXDEV-658</a>] -         Naive Bayes (and maybe GLM): Drop limit on classes that can be predicted (currently 1000)
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/115'>private-#115</a>] -         Naive Bayes (and maybe GLM): Drop limit on classes that can be predicted (currently 1000)
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/10530'>#10530</a>] -         Speed up GBM and DRF
 </li>
@@ -7018,7 +7017,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-turing/9/index
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/10492'>#10492</a>] -         Optimize algorithm for automatic estimation of K for K-Means
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-646'>HEXDEV-646</a>] -         include flow, /3/ API accessible Aggregator model in h2o-3
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/127'>private-#127</a>] -         include flow, /3/ API accessible Aggregator model in h2o-3
 </li>
 </ul>
 
@@ -7050,7 +7049,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-turing/8/index
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/10416'>#10416</a>] -         uuid columns with mostly missing values causes parse to fail.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-599'>HEXDEV-599</a>] -         Fold Column not available in h2o.grid
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/171'>private-#171</a>] -         Fold Column not available in h2o.grid
 </li>
 </ul>
 
@@ -7083,9 +7082,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-turing/8/index
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/10410'>#10410</a>] -         Improve the stopping criterion for K-Means Lloyds iterations
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-596'>HEXDEV-596</a>] -         Encryption of H2O communication channels
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/174'>private-#174</a>] -         Encryption of H2O communication channels
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-636'>HEXDEV-636</a>] -         add option to Aggregator model to show ignored columns in output frame
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/137'>private-#137</a>] -         add option to Aggregator model to show ignored columns in output frame
 </li>
 </ul>
 
@@ -7115,7 +7114,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-turing/7/index
 <ul>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/9645'>#9645</a>] -         Diff operation on column in H2O Frame
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-619'>HEXDEV-619</a>] -         calculate residuals  in h2o-3 and in flow and create a new frame with a new column that contains the residuals
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/154'>private-#154</a>] -         calculate residuals  in h2o-3 and in flow and create a new frame with a new column that contains the residuals
 </li>
 </ul>
 
@@ -7148,7 +7147,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-turing/6/index
 <h4>        Bug
 </h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-608'>HEXDEV-608</a>] -         Hashmap in H2OIllegalArgumentException fails to deserialize &amp; throws FATAL
+<li>[<a href='https://github.com/h2oai/private-h2o-3/issues/164'>private-#164</a>] -         Hashmap in H2OIllegalArgumentException fails to deserialize &amp; throws FATAL
 </li>
 <li>[<a href='https://github.com/h2oai/h2o-3/issues/9809'>#9809</a>] -         NPE in MetadataHandler
 </li>
@@ -7872,7 +7871,7 @@ These changes represent features that have been added since the previous release
 
 ##### Algorithms
 
-- [HEXDEV-495](https://0xdata.atlassian.net/browse/HEXDEV-495): Added ability to calculate GLM p-values for non-regularized models
+- [private-#665](https://github.com/h2oai/private-h2o-3/issues/665): Added ability to calculate GLM p-values for non-regularized models
 - [#13841](https://github.com/h2oai/h2o-3/issues/13841): Implemented gain/lift computation to allow using predicted data to evaluate the model performance
 - [#13143](https://github.com/h2oai/h2o-3/issues/13143): Compute the lift metric for binomial classification models
 - [#15123](https://github.com/h2oai/h2o-3/issues/15123): Add absolute loss (Laplace distribution) to GBM and Deep Learning
@@ -7883,7 +7882,7 @@ These changes represent features that have been added since the previous release
 
 ##### Python
 
-- [HEXDEV-399](https://0xdata.atlassian.net/browse/HEXDEV-399): Added support for Python 3.5 and better (in addition to existing support for 2.7 and better)
+- [private-#311](https://github.com/h2oai/private-h2o-3/issues/311): Added support for Python 3.5 and better (in addition to existing support for 2.7 and better)
 
 
 #### Enhancements
@@ -7902,7 +7901,7 @@ The following changes are improvements to existing features (which includes chan
 - [#15241](https://github.com/h2oai/h2o-3/issues/15241): as.numeric for a string column only converts strings to ints rather than reals
 - [#15165](https://github.com/h2oai/h2o-3/issues/15165): Table printout in Python doesn't warn the user about truncation
 - [#15365](https://github.com/h2oai/h2o-3/issues/15365): Version mismatch message directs user to get a matching download
-- [HEXDEV-527](https://0xdata.atlassian.net/browse/HEXDEV-527): Implement secure Python h2o.init
+- [private-#238](https://github.com/h2oai/private-h2o-3/issues/238): Implement secure Python h2o.init
 - [#15409](https://github.com/h2oai/h2o-3/issues/15409): Check and print a warning if a proxy environment variable is found
 
 
@@ -7921,7 +7920,7 @@ The following changes are improvements to existing features (which includes chan
 
 ##### System
 
-- [HEXDEV-436](https://0xdata.atlassian.net/browse/HEXDEV-436): exportFile should be a real job and have a progress bar
+- [private-#644](https://github.com/h2oai/private-h2o-3/issues/644): exportFile should be a real job and have a progress bar
 - [#15364](https://github.com/h2oai/h2o-3/issues/15364): Improve parse chunk size heuristic for better use of cores on small data sets
 - [#9547](https://github.com/h2oai/h2o-3/issues/9547): Print all columns to stdout for Hadoop jobs for easier debugging
 
@@ -8166,7 +8165,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/2/i
 
 ##### System
 
-- [HEXDEV-475](https://0xdata.atlassian.net/browse/HEXDEV-475): Added EasyPOJO comments and improvements
+- [private-#280](https://github.com/h2oai/private-h2o-3/issues/280): Added EasyPOJO comments and improvements
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/ba75b35fbc7498b3d0d3c0b1d362a44dba6f31bb): [#15115] Enabled `Vec#toCategoricalVec` to convert string columns to categorical columns
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/613e121e9ab13f32df4beffce1c2139607b5f64d): `apply` now works in
 
@@ -8372,9 +8371,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-slotnick/1/ind
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/c92390122601d3abb2ff42b2fab85a9d49595025): Changed the merge defaults to match the implementation
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/5291941a8d132b60f3a22e04c0d21b6c4bd7d7d9): Merge no longer uses a `by` argument
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/b318faf497c8989d900fa7f26a0c75a7ffe270cc): Added `trim` and `length` functionality for string columns
-- [GitHub commit](https://github.com/h2oai/h2o-3/commit/26421b79453623c961cc4f73ff48fd1cca95ceaa): HEXDEV-442: Improved POJO handling
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/26421b79453623c961cc4f73ff48fd1cca95ceaa): private-#293: Improved POJO handling
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/146b656c3e94fd025cee0988abd8d0948e7ae94d): Config files are now transferred using a hexstring to avoid issues with Hadoop XML parsing
-- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6c8ddf330ae739117ab4302eb83f682f342e2a5e): HEXDEV-445: Added `isNA` check
+- [GitHub commit](https://github.com/h2oai/h2o-3/commit/6c8ddf330ae739117ab4302eb83f682f342e2a5e): private-#291: Added `isNA` check
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/b340b63b221a765e9d2fb4b82283da92d997e3d7): Means, mults, modes, and size now do bulk rollups
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/823209767da4c162ad99047195d702769e7d37a8): Increased priority of model builder Driver classes to prevent deadlock when bulk-launching parallel unrelated model builds
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/207dee8a52d3fa7936eba9440ec8aed182c34e55): Renamed Currents to Rapids
@@ -8592,15 +8591,15 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-slater/1/index
 
 ##### System
 
-- [HEXDEV-120](https://0xdata.atlassian.net/browse/HEXDEV-120): Switch from NanoHTTPD to Jetty
+- [private-#537](https://github.com/h2oai/private-h2o-3/issues/537): Switch from NanoHTTPD to Jetty
 - [GitHub](https://github.com/h2oai/h2o-3/commit/5987666d56d2a272b7b521cd9eb9cde3de6de0b0): Allow for "most" and "mode" in groupby
 - [GitHub](https://github.com/h2oai/h2o-3/commit/930be126da18e6d4ed9078493dc788e22ea7e4c5): Added NA check to checking for matches in categorical columns
 - [#14441](https://github.com/h2oai/h2o-3/issues/14441): Dropped UDP mode in favor of TCP
 - [#14402](https://github.com/h2oai/h2o-3/issues/14402): /3/DownloadDataset.bin is now a registered handler in JettyHTTPD.java. Allows streaming of large downloads from H2O.[GitHub](https://github.com/h2oai/h2o-3/commit/a65a116875ca17eaf5b3535135f152781b51a40f)
 - [#14824](https://github.com/h2oai/h2o-3/issues/14824): Implemented per-row 1D, 2D and 3D DCT transformations for signal/image/volume processing
 - [#14650](https://github.com/h2oai/h2o-3/issues/14650): LDAP Integration
-- [HEXDEV-381](https://0xdata.atlassian.net/browse/HEXDEV-381): LDAP Integration
-- [HEXDEV-224](https://0xdata.atlassian.net/browse/HEXDEV-224): Added https support
+- [private-#329](https://github.com/h2oai/private-h2o-3/issues/329): LDAP Integration
+- [private-#456](https://github.com/h2oai/private-h2o-3/issues/456): Added https support
 - [GitHub](https://github.com/h2oai/h2o-3/commit/ced34107f71b5fe3c5ff830c827563be3d0c0286): Added mapr5.0 version to builds
 - [GitHub](https://github.com/h2oai/h2o-3/commit/9b92f571cd6c4710b5454a425fce090b99128b35): Add Vec.Reader which replaces lost caching
 
@@ -8780,7 +8779,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-slater/1/index
 - [#14834](https://github.com/h2oai/h2o-3/issues/14834): Grid: the meta info should not be dumped on the R screen, once the grid job is over
 - [GitHub](https://github.com/h2oai/h2o-3/commit/ed586eec9ea847fb10888d6a9caa55766a680678): [#14835] Fix grid update.
 - [#14833](https://github.com/h2oai/h2o-3/issues/14833): Grid search: observe issues with model naming/overwriting and error msg propagation [GitHub](https://github.com/h2oai/h2o-3/commit/92a5eaeac52628d8ced9e48487c8b4d6ed003e23)
-- [HEXDEV-402](https://0xdata.atlassian.net/browse/HEXDEV-402): R: kmeans grid search doesn't work
+- [private-#309](https://github.com/h2oai/private-h2o-3/issues/309): R: kmeans grid search doesn't work
 - [#14862](https://github.com/h2oai/h2o-3/issues/14862): Grid appends new models even though models already exist.
 - [#14833](https://github.com/h2oai/h2o-3/issues/14833): Grid search: observe issues with model naming/overwriting and error msg propagation
 - [#14904](https://github.com/h2oai/h2o-3/issues/14904): Grid: glm grid on alpha fails with error "Expected '[' while reading a double[], but found 1.0"
@@ -8830,7 +8829,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-slater/1/index
 
 ##### System
 
-- [HEXDEV-360](https://0xdata.atlassian.net/browse/HEXDEV-360): getFrame fails on Parsed Data
+- [private-#346](https://github.com/h2oai/private-h2o-3/issues/346): getFrame fails on Parsed Data
 - [#13367](https://github.com/h2oai/h2o-3/issues/13367): Fix parsing for high-cardinality categorical features [GitHub](https://github.com/h2oai/h2o-3/commit/99ae85dbe9305992a8e3f4b9e792c8f73e61d2fa)
 - [#14123](https://github.com/h2oai/h2o-3/issues/14123): Parse: Cancel parse unreliable; does not work at all times
 - [#14831](https://github.com/h2oai/h2o-3/issues/14831): Ability to ignore files during parse [GitHub](https://github.com/h2oai/h2o-3/commit/43e08765d1d6be49a9a6a83daf57ef1aaa511061)
@@ -8876,7 +8875,7 @@ The following changes represent features that have been added since the previous
 
 ##### Web UI
 
-- [HEXDEV-390](https://0xdata.atlassian.net/browse/HEXDEV-390): Print Flow to PDF / Printer
+- [private-#320](https://github.com/h2oai/private-h2o-3/issues/320): Print Flow to PDF / Printer
 
 
 #### Enhancements
@@ -8983,8 +8982,8 @@ The following changes are to resolve incorrect software behavior:
 - [#14600](https://github.com/h2oai/h2o-3/issues/14600): GBM getting intermittent assertion error on iris scoring in `pyunit_weights_api.py`
 - [#14734](https://github.com/h2oai/h2o-3/issues/14734): sigterm caught by python is killing h2o [GitHub](https://github.com/h2oai/h2o-3/commit/f123741c5455fa7e21d6675789fb93ed796f617b)
 - [#14383](https://github.com/h2oai/h2o-3/issues/14383): h2o python h2o.locate() should stop and return "Not found" rather than passing path=None to h2o? causes confusion h2o message
-- [HEXDEV-397](https://0xdata.atlassian.net/browse/HEXDEV-397): Python fold_column option requires fold column to be in the training data
-- [HEXDEV-394](https://0xdata.atlassian.net/browse/HEXDEV-394): Python client occasionally throws attached error
+- [private-#313](https://github.com/h2oai/private-h2o-3/issues/313): Python fold_column option requires fold column to be in the training data
+- [private-#317](https://github.com/h2oai/private-h2o-3/issues/317): Python client occasionally throws attached error
 - [GitHub](https://github.com/h2oai/h2o-3/commit/bce2e56200ba61b34d7ff10986749b94fc836c02): add missing args to kmeans
 - [GitHub](https://github.com/h2oai/h2o-3/commit/99ad8f2d7eabd7aedf2f89c725bfaf09527e3cee): add missing kmeans params in
 - [GitHub](https://github.com/h2oai/h2o-3/commit/ac26cf2db625a7c26645ee6d4f6cc12f6803fded): add missing checkpoint param
@@ -9022,9 +9021,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/4/index
 #### New Features
 
 ##### Algorithms
-- [HEXDEV-220](https://0xdata.atlassian.net/browse/HEXDEV-220): Tweedie distribution for DL
-- [HEXDEV-219](https://0xdata.atlassian.net/browse/HEXDEV-219): Poisson distribution for DL
-- [HEXDEV-221](https://0xdata.atlassian.net/browse/HEXDEV-221): Gamma distribution for DL
+- [private-#460](https://github.com/h2oai/private-h2o-3/issues/460): Tweedie distribution for DL
+- [private-#461](https://github.com/h2oai/private-h2o-3/issues/461): Poisson distribution for DL
+- [private-#459](https://github.com/h2oai/private-h2o-3/issues/459): Gamma distribution for DL
 - [#13675](https://github.com/h2oai/h2o-3/issues/13675): Enable nfolds for all algos (where reasonable) [GitHub](https://github.com/h2oai/h2o-3/commit/68d74cb438dd535acac18ce8233fdaa25882b6c5)
 - [#14755](https://github.com/h2oai/h2o-3/issues/14755): Add toString() for all models (especially model metrics) [GitHub](https://github.com/h2oai/h2o-3/commit/c253f5ff73b1828de026f69f6846e1b85087b056)
 - [GitHub](https://github.com/h2oai/h2o-3/commit/792a0789ef951bf0997251a05cb3dd8d5d92af9e): Enabling model checkpointing for DRF
@@ -9035,7 +9034,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/4/index
 ##### Python
 - [#13385](https://github.com/h2oai/h2o-3/issues/13385): Expose ParseSetup to user in Python
 - [#14217](https://github.com/h2oai/h2o-3/issues/14217): Python: getFrame and getModel missing
-- [HEXDEV-334](https://0xdata.atlassian.net/browse/HEXDEV-334): support rbind in python
+- [private-#368](https://github.com/h2oai/private-h2o-3/issues/368): support rbind in python
 - [#14193](https://github.com/h2oai/h2o-3/issues/14193): python to have exportFile calll
 - [GitHub](https://github.com/h2oai/h2o-3/commit/bf9cbf96641cbc027e257298cdc67ed6f5bfb065): add cross-validation parameter to metric accessors and respective pyunit
 - [#14693](https://github.com/h2oai/h2o-3/issues/14693): Cross-validation metrics should be shown in R and Python for all models
@@ -9074,7 +9073,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/4/index
 
 ##### Python
 
-- [HEXDEV-317](https://0xdata.atlassian.net/browse/HEXDEV-317): Python has to play nicely in a polyglot, long-running environment
+- [private-#383](https://github.com/h2oai/private-h2o-3/issues/383): Python has to play nicely in a polyglot, long-running environment
 - [GitHub](https://github.com/h2oai/h2o-3/commit/16c4b179cd0e35b59c0dd3c2831ab9c1d1f9970b): simplify ast in python frame slicer
 - [GitHub](https://github.com/h2oai/h2o-3/commit/7f18d01b9c9a36f85418e7fa79a1a3b4b40a0a9d): add cross validation metrics and mean residual deviance to model show()
 - [GitHub](https://github.com/h2oai/h2o-3/commit/93a371ad7a33199c3e962b61f3ed447d25d6adf3): any to take a frame, simplify python's `__contains__`
@@ -9143,7 +9142,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/4/index
 
 - [#14384](https://github.com/h2oai/h2o-3/issues/14384): apply causes assert errors mentioning deadlock in runit_small_client_mode ...build never completes after hours ..deadlock?
 - [#14173](https://github.com/h2oai/h2o-3/issues/14173): docker build fails
-- [HEXDEV-362](https://0xdata.atlassian.net/browse/HEXDEV-362): Bug in /parsesetup data preview [GitHub](https://github.com/h2oai/h2o-3/commit/ee0b787ac50cbe747622adaec2344c243834f035)
+- [private-#344](https://github.com/h2oai/private-h2o-3/issues/344): Bug in /parsesetup data preview [GitHub](https://github.com/h2oai/h2o-3/commit/ee0b787ac50cbe747622adaec2344c243834f035)
 - [#14730](https://github.com/h2oai/h2o-3/issues/14730): H2O xval: when delete all models: get Error evaluating future[6] :Error calling DELETE /3/Models/gbm_cv_13
 - [#14731](https://github.com/h2oai/h2o-3/issues/14731): H2O: when list frames after removing most frames, get: roll ups not possible vec deleted error [GitHub](https://github.com/h2oai/h2o-3/commit/7cf1212e19b1f9ab8071718fb31d1565f7942fef)
 
@@ -9191,8 +9190,8 @@ The following changes are to resolve incorrect software behavior:
 ##### Python
 
 - [#14695](https://github.com/h2oai/h2o-3/issues/14695): Python `get_frame()` results in deleting a frame created by Flow
-- [HEXDEV-389](https://0xdata.atlassian.net/browse/HEXDEV-389): Split frame from python
-- [HEXDEV-388](https://0xdata.atlassian.net/browse/HEXDEV-388): python client H2OFrame constructor puts the header into the data (as the first row)
+- [private-#321](https://github.com/h2oai/private-h2o-3/issues/321): Split frame from python
+- [private-#322](https://github.com/h2oai/private-h2o-3/issues/322): python client H2OFrame constructor puts the header into the data (as the first row)
 
 ##### R
 
@@ -9211,8 +9210,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/1/index
 
 ##### Algorithms
 
-- [HEXDEV-213](https://0xdata.atlassian.net/browse/HEXDEV-213): Tweedie distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/a5892087d08bcee9b8c017bd6173601d262d9f79)
-- [HEXDEV-212](https://0xdata.atlassian.net/browse/HEXDEV-212): Poisson distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/861322058519cc3455e924449cbe7dfdecf67514)
+- [private-#467](https://github.com/h2oai/private-h2o-3/issues/467): Tweedie distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/a5892087d08bcee9b8c017bd6173601d262d9f79)
+- [private-#468](https://github.com/h2oai/private-h2o-3/issues/468): Poisson distributions for GBM [GitHub](https://github.com/h2oai/h2o-3/commit/861322058519cc3455e924449cbe7dfdecf67514)
 - [#14095](https://github.com/h2oai/h2o-3/issues/14095): properly test PCA and mark it non-experimental
 
 ##### Python
@@ -9305,7 +9304,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/1/index
 
 ##### Web UI
 
-- [HEXDEV-231](https://0xdata.atlassian.net/browse/HEXDEV-231): Flow: Ability to change column type post-Parse
+- [private-#449](https://github.com/h2oai/private-h2o-3/issues/449): Flow: Ability to change column type post-Parse
 
 #### Enhancements
 
@@ -9327,7 +9326,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/1/index
 ##### API
 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/eb68b384ff43a94f6dd0468b2bc4c67de6c23350): Set Content-Type: application/x-www-form-urlencoded for regular POST requests.
-- [HEXDEV-272](https://0xdata.atlassian.net/browse/HEXDEV-272): Move `response_column` parameter above `ignored_columns` parameter [GitHub](https://github.com/h2oai/h2o-3/commit/522b45f1339eefc21b7b0a76e1d42a6cc77bcc00)
+- [private-#417](https://github.com/h2oai/private-h2o-3/issues/417): Move `response_column` parameter above `ignored_columns` parameter [GitHub](https://github.com/h2oai/h2o-3/commit/522b45f1339eefc21b7b0a76e1d42a6cc77bcc00)
     - All of the fields of a schema are now stored in the leaf child of the class hierarchy. Changed the implementation of fields() to simply return the fields variable of a schema. The function calls `H2O.fail()` if it attempts to access a field from a non-leaf child. `response_column` is now moved above `ignored_columns` for every applicable schema. 'own_fields' is also now renamed to 'fields'
 - [GitHub](https://github.com/h2oai/h2o-3/commit/11ae769255c2502ecb1ae7438752b2449210b580): Don't use features from servlet api 3.0 or later anymore. Instead save the response status in a thread local variable and fish it out when needed.
 
@@ -9359,7 +9358,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/1/index
 ##### Web UI
 
 - [#14490](https://github.com/h2oai/h2o-3/issues/14490): show REST API and overall UI response times for each cell in Flow
-- [HEXDEV-304](https://0xdata.atlassian.net/browse/HEXDEV-304): Flow: Emphasize run time in job-progress output
+- [private-#394](https://github.com/h2oai/private-h2o-3/issues/394): Flow: Emphasize run time in job-progress output
 - [#14491](https://github.com/h2oai/h2o-3/issues/14491): show wall-clock start and run times in the Flow outline
 - [#14671](https://github.com/h2oai/h2o-3/issues/14671): Hook up "Export" button for datasets (frames) in Flow.
 
@@ -9416,7 +9415,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-simons/1/index
 ##### System
 
 - [#14526](https://github.com/h2oai/h2o-3/issues/14526): Parser: Multifile Parse fails with 0-byte files in directory [GitHub](https://github.com/h2oai/h2o-3/commit/e95f0e4d20c2281e61009349c63e73520fcf30a2)
-- [HEXDEV-325](https://0xdata.atlassian.net/browse/HEXDEV-325): Empty reply when parsing dataset with mismatching header and data column length
+- [private-#375](https://github.com/h2oai/private-h2o-3/issues/375): Empty reply when parsing dataset with mismatching header and data column length
 - [#14478](https://github.com/h2oai/h2o-3/issues/14478): Split frame : Big datasets : On 186K rows 3200 Cols split frame took 40 mins => which is too long
 - [#14409](https://github.com/h2oai/h2o-3/issues/14409): Column naming can create duplicate column names
 - [#14085](https://github.com/h2oai/h2o-3/issues/14085): NPE in Rollupstats after failed parse
@@ -9458,7 +9457,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/26/ind
 
 ##### R
 
-- [HEXDEV-375](https://0xdata.atlassian.net/browse/HEXDEV-375): Github home for R demos
+- [private-#334](https://github.com/h2oai/private-h2o-3/issues/334): Github home for R demos
 
 
 ##### Web UI
@@ -9475,7 +9474,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/26/ind
 - [#14492](https://github.com/h2oai/h2o-3/issues/14492): GLM w tweedie: for attached data, R giving much better res dev than h2o
 - [#14370](https://github.com/h2oai/h2o-3/issues/14370): Offsets/Weights: Math correctness for GLM
 - [#14465](https://github.com/h2oai/h2o-3/issues/14465): RF : Weights Math correctness tests in R
-- [HEXDEV-366](https://0xdata.atlassian.net/browse/HEXDEV-366): remove weights option from DRF and GBM in REST API, Python, R
+- [private-#343](https://github.com/h2oai/private-h2o-3/issues/343): remove weights option from DRF and GBM in REST API, Python, R
 - [#14527](https://github.com/h2oai/h2o-3/issues/14527): Threshold in GLM is hardcoded to 0
 - [GitHub](https://github.com/h2oai/h2o-3/commit/dc379b117cc5f26c38ae276aba82b6bb3d0fef2b): Make min_rows a double instead of int: Is now weighted number of observations (min_obs in R).
 - [GitHub](https://github.com/h2oai/h2o-3/commit/7cf9ba765c0fe8f1394439db69bc2aa54e004b75): Don't use sample weighted variance, but full weighted variance.
@@ -9483,8 +9482,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/26/ind
 - [GitHub](https://github.com/h2oai/h2o-3/commit/b9cccbe02017a01167afed5ca1a64198d499fa0b): Skip rows with missing response in weighted mean computation.
 - `_binomial_double_trees` disabled by default for DRF (was enabled).
 - [GitHub](https://github.com/h2oai/h2o-3/commit/25d6735b0b621b0ce67c67d96b5113e03eb045f1): Relax tolerance.
-- [HEXDEV-329](https://0xdata.atlassian.net/browse/HEXDEV-329) : Offset for GBM
-- [HEXDEV-211](https://0xdata.atlassian.net/browse/HEXDEV-211) : Tweedie distributions for GLM
+- [private-#371](https://github.com/h2oai/private-h2o-3/issues/371) : Offset for GBM
+- [private-#469](https://github.com/h2oai/private-h2o-3/issues/469) : Tweedie distributions for GLM
 
 
 ##### API
@@ -9572,7 +9571,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/26/ind
 
 ##### Web UI
 
-- [HEXDEV-54](https://0xdata.atlassian.net/browse/HEXDEV-54): Flow : Import file 100k.svm => Something went wrong while displaying page
+- [private-#597](https://github.com/h2oai/private-h2o-3/issues/597): Flow : Import file 100k.svm => Something went wrong while displaying page
 
 
 ---
@@ -9678,15 +9677,15 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/23/ind
 
 ##### Algorithms
 
-- [HEXDEV-21](https://0xdata.atlassian.net/browse/HEXDEV-21): Offset for GLM
-- [HEXDEV-208](https://0xdata.atlassian.net/browse/HEXDEV-208): Add observation weights to GLM (was HEXDEV-4)
+- [private-#617](https://github.com/h2oai/private-h2o-3/issues/617): Offset for GLM
+- [private-#631](https://github.com/h2oai/private-h2o-3/issues/631): Add observation weights to GLM (was private-#631)
 - [#13669](https://github.com/h2oai/h2o-3/issues/13669): Add observation weights to all metrics
 - [#13667](https://github.com/h2oai/h2o-3/issues/13667): Pass a weight Vec as input to all algos
-- [HEXDEV-6](https://0xdata.atlassian.net/browse/HEXDEV-6): Add observation weights to GBM
-- [HEXDEV-7](https://0xdata.atlassian.net/browse/HEXDEV-7): Add observation weights to DL
-- [HEXDEV-10](https://0xdata.atlassian.net/browse/HEXDEV-10): Add observation weights to DRF
+- [private-#629](https://github.com/h2oai/private-h2o-3/issues/629): Add observation weights to GBM
+- [private-#630](https://github.com/h2oai/private-h2o-3/issues/630): Add observation weights to DL
+- [private-#625](https://github.com/h2oai/private-h2o-3/issues/625): Add observation weights to DRF
 - [#13164](https://github.com/h2oai/h2o-3/issues/13164): Add observation weights to GLM, GBM, DRF, DL (classification)
-- [HEXDEV-332](https://0xdata.atlassian.net/browse/HEXDEV-323): Support Offsets for DL [GitHub](https://github.com/h2oai/h2o-3/commit/c6d6dc953c477aeaa5fed3c40af1b5583f590386)
+- [private-#370](https://github.com/h2oai/private-h2o-3/issues/370): Support Offsets for DL [GitHub](https://github.com/h2oai/h2o-3/commit/c6d6dc953c477aeaa5fed3c40af1b5583f590386)
 - [GitHub](https://github.com/h2oai/h2o-3/commit/e72ba587c0aace574b0f600f0e3c72c2f551df80): Use weights/offsets in GBM.
 
 
@@ -9750,7 +9749,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/23/ind
 
 ##### System
 
-- [HEXDEV-361](https://0xdata.atlassian.net/browse/HEXDEV-361): Wide frame handling for model builders
+- [private-#345](https://github.com/h2oai/private-h2o-3/issues/345): Wide frame handling for model builders
 - [GitHub](https://github.com/h2oai/h2o-3/commit/f408e1a3306c7b7768bbfeae1d3a90edfc583039): Remove application plugin from assembly to speedup build process.
 - [GitHub](https://github.com/h2oai/h2o-3/commit/c3e91c670b69698d94dcf123511dc595b2d61927): add byteSize to ls
 - [GitHub](https://github.com/h2oai/h2o-3/commit/ac10731a5695f699a45a8bfbd807a42432c82aec): option to launch randomForest async
@@ -9835,7 +9834,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/22/ind
 
 ### ## API
 
-- [HEXDEV-352](https://0xdata.atlassian.net/browse/HEXDEV-352): Additional attributes on /Frames and /Frames/foo/summary
+- [private-#353](https://github.com/h2oai/private-h2o-3/issues/353): Additional attributes on /Frames and /Frames/foo/summary
 
 
 ### ##R
@@ -9861,7 +9860,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/22/ind
 
 ### ## Web UI
 
-- [HEXDEV-276](https://0xdata.atlassian.net/browse/HEXDEV-276): Add frame pagination
+- [private-#413](https://github.com/h2oai/private-h2o-3/issues/413): Add frame pagination
 - [#14379](https://github.com/h2oai/h2o-3/issues/14379): Flow : Decision to be made on display of number of columns for wider datasets for Parse and Frame summary
 - [#14378](https://github.com/h2oai/h2o-3/issues/14378): Usability improvements
 - [#13258](https://github.com/h2oai/h2o-3/issues/13258): "View Data" display may need to be modified/shortened.
@@ -9876,8 +9875,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/22/ind
 - [#14368](https://github.com/h2oai/h2o-3/issues/14368): GLM: Some offsets hang
 - [#14246](https://github.com/h2oai/h2o-3/issues/14246): GLM: get java.lang.AssertionError at hex.glm.GLM$GLMSingleLambdaTsk.compute2 for attached data
 - [#14377](https://github.com/h2oai/h2o-3/issues/14377): pca: h2o-3 reporting incorrect proportion of variance and cum prop [GitHub](https://github.com/h2oai/h2o-3/commit/1c874f38b4927b3f9d2a30560dc697a78a2bfe13)
-- [HEXDEV-281](https://0xdata.atlassian.net/browse/HEXDEV-281): GLM - beta constraints with categorical variables fails with AIOOB
-- [HEXDEV-280](https://0xdata.atlassian.net/browse/HEXDEV-280): GLM - gradient not within tolerance when specifying beta_constraints w/ and w/o prior values
+- [private-#408](https://github.com/h2oai/private-h2o-3/issues/408): GLM - beta constraints with categorical variables fails with AIOOB
+- [private-#409](https://github.com/h2oai/private-h2o-3/issues/409): GLM - gradient not within tolerance when specifying beta_constraints w/ and w/o prior values
 
 
 
@@ -9912,7 +9911,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/21/ind
 #### New Features
 
 ##### Python
-- [HEXDEV-29](https://0xdata.atlassian.net/browse/HEXDEV-29): The ability to define features as categorical or continuous in the web UI and in the python API
+- [private-#656](https://github.com/h2oai/private-h2o-3/issues/656): The ability to define features as categorical or continuous in the web UI and in the python API
 
 
 #### Enhancements
@@ -10032,14 +10031,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/17/ind
 
 ##### Algorithms
 
-- [HEXDEV-209](https://0xdata.atlassian.net/browse/HEXDEV-209):Poisson distributions for GLM
+- [private-#471](https://github.com/h2oai/private-h2o-3/issues/471):Poisson distributions for GLM
 
 ##### Python
 
 - [#14248](https://github.com/h2oai/h2o-3/issues/14248): Python Interface needs H2O Cut Function [GitHub](https://github.com/h2oai/h2o-3/commit/f67341a2fa1b59d8365c9cf1600b21c85343ce03)
 - [#14220](https://github.com/h2oai/h2o-3/issues/14220): Need equivalent of as.Date feature in Python [GitHub](https://github.com/h2oai/h2o-3/commit/99430c1fb5921365d9a2242f4c4d02a751e9e024)
 - [#14145](https://github.com/h2oai/h2o-3/issues/14145): H2O Python needs Modulus Operations
-- [HEXDEV-29](https://0xdata.atlassian.net/browse/HEXDEV-29): The ability to define features as categorical or continuous in the web UI and in the python API
+- [private-#656](https://github.com/h2oai/private-h2o-3/issues/656): The ability to define features as categorical or continuous in the web UI and in the python API
 - [#14215](https://github.com/h2oai/h2o-3/issues/14215): environment variable to disable the strict version check in the R and Python bindings
 
 
@@ -10069,7 +10068,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/17/ind
 
 ##### System
 
-- [HEXDEV-344](https://0xdata.atlassian.net/browse/HEXDEV-344): Logs should include JVM launch parameters
+- [private-#360](https://github.com/h2oai/private-h2o-3/issues/360): Logs should include JVM launch parameters
 
 
 ##### Web UI
@@ -10101,7 +10100,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/17/ind
 - [#14212](https://github.com/h2oai/h2o-3/issues/14212): h2o.setTimezone throwing an error [GitHub](https://github.com/h2oai/h2o-3/commit/6dbecb2707b9483218d40a95d717729db72f587b)
 - [#14207](https://github.com/h2oai/h2o-3/issues/14207): R: Most GLM accessors fail [GitHub](https://github.com/h2oai/h2o-3/commit/790c5f4850362712e39b83c4489f315fc5ca89b8)
 - [#14205](https://github.com/h2oai/h2o-3/issues/14205): R: Cannot extract an enum value using data[row,col] [GitHub](https://github.com/h2oai/h2o-3/commit/7704a16e510458c3e4b7cf539fb35bd93163dcde)
-- [HEXDEV-339](https://0xdata.atlassian.net/browse/HEXDEV-339): Feature engineering: log (1+x) fails [GitHub](https://github.com/h2oai/h2o-3/commit/ab13a9229a7fb93eace068efe3f99eb248359fa7)
+- [private-#365](https://github.com/h2oai/private-h2o-3/issues/365): Feature engineering: log (1+x) fails [GitHub](https://github.com/h2oai/h2o-3/commit/ab13a9229a7fb93eace068efe3f99eb248359fa7)
 - [#14229](https://github.com/h2oai/h2o-3/issues/14229): h2o.glm: no way to specify offset or weights from h2o R [GitHub](https://github.com/h2oai/h2o-3/commit/9245e785614f9748344990df5000ebeec3bea398)
 - [#14233](https://github.com/h2oai/h2o-3/issues/14233): create_frame: hangs with following msg in the terminal, java.lang.IllegalArgumentException: n must be positive
 - [#14335](https://github.com/h2oai/h2o-3/issues/14335): runit_hex_1841_asdate_datemanipulation.R fails intermittently [GitHub](https://github.com/h2oai/h2o-3/commit/b95e094c45630eca07d2f99e5a27ac9409603e28)
@@ -10116,7 +10115,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/17/ind
 ##### System
 
 - [#14263](https://github.com/h2oai/h2o-3/issues/14263): Confusion Matrix: class java.lang.ArrayIndexOutOfBoundsException', with msg '2' java.lang.ArrayIndexOutOfBoundsException: 2 at hex.ConfusionMatrix.createConfusionMatrixHeader [Github](https://github.com/h2oai/h2o-3/commit/63efca9d0a1a30074cc78bde90c564f9b8c766ff)
-- [HEXDEV-323](https://0xdata.atlassian.net/browse/HEXDEV-323): SVMLight Parse Bug [GitHub](https://github.com/h2oai/h2o-3/commit/f60e97f4f913769de5a36b34a802057e7bb68db2)
+- [private-#377](https://github.com/h2oai/private-h2o-3/issues/377): SVMLight Parse Bug [GitHub](https://github.com/h2oai/h2o-3/commit/f60e97f4f913769de5a36b34a802057e7bb68db2)
 - [#14185](https://github.com/h2oai/h2o-3/issues/14185): implement JSON field-filtering features: `_exclude_fields`
 - [GitHub](https://github.com/h2oai/h2o-3/commit/c7892ce1a3bcb7f745f80f5f3fd5d7a14bc1f345): Fix a missing field update in Job.
 - [#13081](https://github.com/h2oai/h2o-3/issues/13081): Handling of strings columns in summary is broken
@@ -10145,7 +10144,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/13/ind
 
 ##### Algorithms
 
-- [HEXDEV-260](https://0xdata.atlassian.net/browse/HEXDEV-260): Add Random Forests for regression [GitHub](https://github.com/h2oai/h2o-3/commit/66b1b67ba212445607615f2db65d96d87ac6029c)
+- [private-#655](https://github.com/h2oai/private-h2o-3/issues/655): Add Random Forests for regression [GitHub](https://github.com/h2oai/h2o-3/commit/66b1b67ba212445607615f2db65d96d87ac6029c)
 
 ##### Python
 
@@ -10163,8 +10162,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/13/ind
 ##### Algorithms
 
 - [github](https://github.com/h2oai/h2o-3/commit/09e5d53b6b1b3a1bfb45b6e5a12e1a05d877102f): Updated weights handling, test.
-- [HEXDEV-324](https://0xdata.atlassian.net/browse/HEXDEV-324)poor GBM performance on KDD Cup 2009 competition dataset [(github)](https://github.com/h2oai/h2o-3/commit/36b99ed538218d8f675266f97e2816b877c189bf)
-- [HEXDEV-326](https://0xdata.atlassian.net/browse/HEXDEV-326): varImp() function for DRF and GBM [(github)](https://github.com/h2oai/h2o-3/commit/4bc6f08e8fbc55c2d5795fd30f0bc4d0481e2499)
+- [private-#376](https://github.com/h2oai/private-h2o-3/issues/376)poor GBM performance on KDD Cup 2009 competition dataset [(github)](https://github.com/h2oai/h2o-3/commit/36b99ed538218d8f675266f97e2816b877c189bf)
+- [private-#374](https://github.com/h2oai/private-h2o-3/issues/374): varImp() function for DRF and GBM [(github)](https://github.com/h2oai/h2o-3/commit/4bc6f08e8fbc55c2d5795fd30f0bc4d0481e2499)
 - [github](https://github.com/h2oai/h2o-3/commit/201f8d11c1773cb3119c0294784bf47c08cf42ba): Change some of the defaults
 
 ##### API
@@ -10219,14 +10218,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/11/ind
 ##### System
 
 - [#14132](https://github.com/h2oai/h2o-3/issues/14132): Accept s3a URLs
-- [HEXDEV-316](https://0xdata.atlassian.net/browse/HEXDEV-316): ImportFiles should not download files from HTTP
+- [private-#384](https://github.com/h2oai/private-h2o-3/issues/384): ImportFiles should not download files from HTTP
 
 #### Bug Fixes
 
 ##### Algorithms
 
-- [HEXDEV-253](https://0xdata.atlassian.net/browse/HEXDEV-253): model output consistency
-- [HEXDEV-319](https://0xdata.atlassian.net/browse/HEXDEV-319): DRF in h2o 3.0 is worse than in h2o 2.0 for Airline
+- [private-#429](https://github.com/h2oai/private-h2o-3/issues/429): model output consistency
+- [private-#381](https://github.com/h2oai/private-h2o-3/issues/381): DRF in h2o 3.0 is worse than in h2o 2.0 for Airline
 - [#14158](https://github.com/h2oai/h2o-3/issues/14158): DRF has wrong training metrics when validation is given
 
 
@@ -10238,7 +10237,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/11/ind
 
 - [#14161](https://github.com/h2oai/h2o-3/issues/14161): Python version check should fail hard by default
 - [#14163](https://github.com/h2oai/h2o-3/issues/14163): Python binding version mismatch check should fail hard and be on by default
-- [HEXDEV-138](https://0xdata.atlassian.net/browse/HEXDEV-138): Port Python tests for Deep Learning
+- [private-#521](https://github.com/h2oai/private-h2o-3/issues/521): Port Python tests for Deep Learning
 
 
 ### ##R
@@ -10249,14 +10248,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/11/ind
 - [#14129](https://github.com/h2oai/h2o-3/issues/14129): R CMD check not happy with our use of .OnAttach
 - [#14152](https://github.com/h2oai/h2o-3/issues/14152): R: h2o.hist FD implementation broken
 - [#14147](https://github.com/h2oai/h2o-3/issues/14147): R: h2o.group_by broken
-- [HEXDEV-318](https://0xdata.atlassian.net/browse/HEXDEV-318): the fix to H2O startup for the host unreachable from R causes a security hole
+- [private-#382](https://github.com/h2oai/private-h2o-3/issues/382): the fix to H2O startup for the host unreachable from R causes a security hole
 - [#14165](https://github.com/h2oai/h2o-3/issues/14165): FramesHandler.summary() needs to run summary on all Vecs concurrently.
 
 
 ##### System
 
 - [#13850](https://github.com/h2oai/h2o-3/issues/13850): Building a model without training file -> NPE
-- [HEXDEV-315](https://0xdata.atlassian.net/browse/HEXDEV-315): importFile fails: Error in fromJSON(txt, ...) : unexpected character: A
+- [private-#385](https://github.com/h2oai/private-h2o-3/issues/385): importFile fails: Error in fromJSON(txt, ...) : unexpected character: A
 - [#14117](https://github.com/h2oai/h2o-3/issues/14117): Parse: upload and import gives different chunk compression on the same file
 - [#14034](https://github.com/h2oai/h2o-3/issues/14034): Parse: h2o parses arff file incorrectly
 - [#14159](https://github.com/h2oai/h2o-3/issues/14159): Rapids should queue and block on the back-end to prevent overlapping calls
@@ -10287,7 +10286,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/7/inde
 
 ##### System
 
-- [HEXDEV-316](https://0xdata.atlassian.net/browse/HEXDEV-316): ImportFiles should not download files from HTTP
+- [private-#384](https://github.com/h2oai/private-h2o-3/issues/384): ImportFiles should not download files from HTTP
 
 
 ##### Web UI
@@ -10304,7 +10303,7 @@ The following changes are to resolve incorrect software behavior:
 
 - [#13492](https://github.com/h2oai/h2o-3/issues/13492): H2OPredict: does not complain when you build a model with one dataset and predict on completely different dataset
 - [#14027](https://github.com/h2oai/h2o-3/issues/14027): API : Get frames and Build model => takes long time to get frames
-- [HEXDEV-149](https://0xdata.atlassian.net/browse/HEXDEV-149): Allow JobsV3 to return properly typed jobs, not always instances of JobV3
+- [private-#513](https://github.com/h2oai/private-h2o-3/issues/513): Allow JobsV3 to return properly typed jobs, not always instances of JobV3
 - [#14017](https://github.com/h2oai/h2o-3/issues/14017): rename straggler V2 schemas to V3
 
 ##### R
@@ -10316,7 +10315,7 @@ The following changes are to resolve incorrect software behavior:
 
 - [#14015](https://github.com/h2oai/h2o-3/issues/14015): Windows 7/8/2012 Multicast Error UDP
 - [#13850](https://github.com/h2oai/h2o-3/issues/13850): Building a model without training file -> NPE
-- [HEXDEV-253](https://0xdata.atlassian.net/browse/HEXDEV-253): model output consistency
+- [private-#429](https://github.com/h2oai/private-h2o-3/issues/429): model output consistency
 - [#14115](https://github.com/h2oai/h2o-3/issues/14115): While predicting get:class water.fvec.RollupStats$ComputeRollupsTask; class java.lang.ArrayIndexOutOfBoundsException: 5
 - [#14071](https://github.com/h2oai/h2o-3/issues/14071): POJO: Models with "." in key name (ex. pros.glm) can't access pojo endpoint
 - [#14057](https://github.com/h2oai/h2o-3/issues/14057): Getting an IcedHashMap warning from H2O startup
@@ -10376,14 +10375,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/2/inde
 
 ##### Web UI
 
-- [HEXDEV-181](https://0xdata.atlassian.net/browse/HEXDEV-181) Flow: Handle deep features prediction input and output
+- [private-#492](https://github.com/h2oai/private-h2o-3/issues/492) Flow: Handle deep features prediction input and output
 - [github](https://github.com/h2oai/h2o-dev/commit/7639e27): removed `use_all_factor_levels` from glm flows
 
 #### Bug Fixes
 
 ##### Algorithms
 
-- [HEXDEV-302](https://0xdata.atlassian.net/browse/HEXDEV-302): AIOOBE during Prediction with DL [github](https://github.com/h2oai/h2o-dev/commit/e19d952b6b3cc787b542ba49e72868a2d8ab10de)
+- [private-#395](https://github.com/h2oai/private-h2o-3/issues/395): AIOOBE during Prediction with DL [github](https://github.com/h2oai/h2o-dev/commit/e19d952b6b3cc787b542ba49e72868a2d8ab10de)
 - [github](https://github.com/h2oai/h2o-dev/commit/b1df59e7d2396836ce3574acda0c69f7a49f9d54): glm fix: don't force in null model for lambda search with user given list of lambdas
 - [github](https://github.com/h2oai/h2o-dev/commit/51608cbb392e28c018a56f74c670d5ab88d99947): Fix domain in glm scoring output for binomial
 - [github](https://github.com/h2oai/h2o-dev/commit/5796b1f2ded1f984df0737f750e3e6d65e69cbd7): GLM Fix - fix degrees of freedom when running without intercept (+/-1)
@@ -10402,7 +10401,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/2/inde
 - [#13561](https://github.com/h2oai/h2o-3/issues/13561): H2O-R: str does not work
 - [#14090](https://github.com/h2oai/h2o-3/issues/14090): H2OR: while printing a gbm model object, get invalid format '%d'; use format %f, %e, %g or %a for numeric objects
 - [#13889](https://github.com/h2oai/h2o-3/issues/13889): R: Errors from some rapids calls seem to fail to return an error
-- [HEXDEV-311](https://0xdata.atlassian.net/browse/HEXDEV-311): Performance bug from R with Expect: 100-continue
+- [private-#389](https://github.com/h2oai/private-h2o-3/issues/389): Performance bug from R with Expect: 100-continue
 - [#14011](https://github.com/h2oai/h2o-3/issues/14011): h2o.performance: ignores the user specified threshold
 - [#14051](https://github.com/h2oai/h2o-3/issues/14051): R: regression models don't show in print statement r2 but it exists in the model object
 - [#14052](https://github.com/h2oai/h2o-3/issues/14052): R: missing accessors for glm specific fields
@@ -10503,7 +10502,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shacklefor
 
 ##### Web UI
 
-- Model output improvements [(HEXDEV-150)](https://0xdata.atlassian.net/browse/HEXDEV-150)
+- Model output improvements [(private-#512)](https://github.com/h2oai/private-h2o-3/issues/512)
 
 
 #### Bug Fixes
@@ -10517,7 +10516,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shacklefor
 - GLM: LBFGS objval java lang assertion error [(#14023)](https://github.com/h2oai/h2o-3/issues/14023) [(github)](https://github.com/h2oai/h2o-dev/commit/dc4a20151d9b415fe4708cff1bafc4fe61e802e0)
 - PCA Cholesky NPE [(#13906)](https://github.com/h2oai/h2o-3/issues/13906)
 - GBM: H2o returns just 5525 trees, when ask for a much larger number of trees [(#13848)](https://github.com/h2oai/h2o-3/issues/13848)
-- CM returned by AUC2 doesn't agree with manual-made labels from F1-optimal threshold [(HEXDEV-263)](https://0xdata.atlassian.net/browse/HEXDEV-263)
+- CM returned by AUC2 doesn't agree with manual-made labels from F1-optimal threshold [(private-#426)](https://github.com/h2oai/private-h2o-3/issues/426)
 - AUC: h2o reporting wrong auc on a modified covtype data [(#13877)](https://github.com/h2oai/h2o-3/issues/13877)
 - GLM: Build model => Predict => Residual deviance/Null deviance different from training/validation metrics [(#15421)](https://github.com/h2oai/h2o-3/issues/15421)
 - KMeans metrics incomplete [(#14010)](https://github.com/h2oai/h2o-3/issues/14010)
@@ -10545,7 +10544,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shacklefor
 - R: h2o.varimp returns NULL when model has no variable importance [(#14058)](https://github.com/h2oai/h2o-3/issues/14058)
 - h2oR: h2o.confusionMatrix(my_gbm, validation=F) should not show a null [(#13837)](https://github.com/h2oai/h2o-3/issues/13837)
 - h2o.impute doesn't impute [(#14005)](https://github.com/h2oai/h2o-3/issues/14005)
-- R: as.h2o cutting entries when trying to import data.frame into H2O [(HEXDEV-293)](https://0xdata.atlassian.net/browse/HEXDEV-293)
+- R: as.h2o cutting entries when trying to import data.frame into H2O [(private-#397)](https://github.com/h2oai/private-h2o-3/issues/397)
 - The default names are too long, for an R-datafile parsed to H2O, and needs to be changed [(#13959)](https://github.com/h2oai/h2o-3/issues/13959)
 - H2o.confusionMatrix: when invoked with threshold gives error [(#13991)](https://github.com/h2oai/h2o-3/issues/13991)
 - removing train and adding error messages for valid = TRUE when there's not validation metrics [(github)](https://github.com/h2oai/h2o-dev/commit/cc3cf212300e252f987992e98d22a9fb6e46be3f)
@@ -10573,7 +10572,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shacklefor
 
 ##### API
 
-- Need a /Log REST API to log client-side errors to H2O's log [(HEXDEV-291)](https://0xdata.atlassian.net/browse/HEXDEV-291)
+- Need a /Log REST API to log client-side errors to H2O's log [(private-#399)](https://github.com/h2oai/private-h2o-3/issues/399)
 
 
 ### ##Python
@@ -10601,10 +10600,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shacklefor
 
 ##### Python
 
-- python .show() on model and metric objects should match R/Flow as much as possible [(HEXDEV-289)](https://0xdata.atlassian.net/browse/HEXDEV-289)
-- GLM model output, details from Python [(HEXDEV-95)](https://0xdata.atlassian.net/browse/HEXDEV-95)
-- GBM model output, details from Python [(HEXDEV-102)](https://0xdata.atlassian.net/browse/HEXDEV-102)
-- Run GBM from Python [(HEXDEV-99)](https://0xdata.atlassian.net/browse/HEXDEV-99)
+- python .show() on model and metric objects should match R/Flow as much as possible [(private-#401)](https://github.com/h2oai/private-h2o-3/issues/401)
+- GLM model output, details from Python [(private-#564)](https://github.com/h2oai/private-h2o-3/issues/564)
+- GBM model output, details from Python [(private-#557)](https://github.com/h2oai/private-h2o-3/issues/557)
+- Run GBM from Python [(private-#560)](https://github.com/h2oai/private-h2o-3/issues/560)
 - map domain to result from /Frames if needed [(github)](https://github.com/h2oai/h2o-dev/commit/b1746a52cd4399d58385cd29914fa54870680093)
 - added confusion matrix to metric output [(github)](https://github.com/h2oai/h2o-dev/commit/f913cc1643774e9c2ec5455620acf11cbd613711)
 - update `metrics_base_confusion_matrices()` [(github)](https://github.com/h2oai/h2o-dev/commit/41c0a4b0079426860ac3b65079d6be0e46c6f69c)
@@ -10612,8 +10611,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shacklefor
 
 ##### R
 
-- GBM model output, details from R [(HEXDEV-101)](https://0xdata.atlassian.net/browse/HEXDEV-101)
-- Run GBM from R [(HEXDEV-98)](https://0xdata.atlassian.net/browse/HEXDEV-98)
+- GBM model output, details from R [(private-#558)](https://github.com/h2oai/private-h2o-3/issues/558)
+- Run GBM from R [(private-#561)](https://github.com/h2oai/private-h2o-3/issues/561)
 - check if it's a frame then check NA [(github)](https://github.com/h2oai/h2o-dev/commit/d61de7d0b8a9dac7d5d6c7f841e19c88983308a1)
 
 ##### System
@@ -10624,8 +10623,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shacklefor
 ##### Web UI
 
 - Flow: Confusion matrix: good to have consistency in the column and row name (letter) case [(#13954)](https://github.com/h2oai/h2o-3/issues/13954)
-- Run GBM Multinomial from Flow [(HEXDEV-111)](https://0xdata.atlassian.net/browse/HEXDEV-111)
-- Run GBM Regression from Flow [(HEXDEV-112)](https://0xdata.atlassian.net/browse/HEXDEV-112)
+- Run GBM Multinomial from Flow [(private-#548)](https://github.com/h2oai/private-h2o-3/issues/548)
+- Run GBM Regression from Flow [(private-#547)](https://github.com/h2oai/private-h2o-3/issues/547)
 - Sort model types in alphabetical order in Flow [(#13992)](https://github.com/h2oai/h2o-3/issues/13992)
 
 
@@ -10653,7 +10652,7 @@ The following changes are to resolve incorrect software behavior:
 
 - H2OPy: warns about version mismatch even when installed the latest from master [(#13962)](https://github.com/h2oai/h2o-3/issues/13962)
 - Columns of type enum lose string label in Python H2OFrame.show() [(#13948)](https://github.com/h2oai/h2o-3/issues/13948)
-- Bug in H2OFrame.show() [(HEXDEV-295)](https://0xdata.atlassian.net/browse/HEXDEV-295) [(github)](https://github.com/h2oai/h2o-dev/commit/b319969cff0f0e7a805e49563e863a1dbb0e1aa0)
+- Bug in H2OFrame.show() [(private-#396)](https://github.com/h2oai/private-h2o-3/issues/396) [(github)](https://github.com/h2oai/h2o-dev/commit/b319969cff0f0e7a805e49563e863a1dbb0e1aa0)
 
 
 ##### R
@@ -10745,7 +10744,7 @@ The following changes are to resolve incorrect software behavior:
 - Setup POJO download method for Flow [(#13895)](https://github.com/h2oai/h2o-3/issues/13895)
 - Pretty-print POJO preview in flow [(#13924)](https://github.com/h2oai/h2o-3/issues/13924)
 - Flow: It would be good if 'get predictions' also shows the data [(#13870)](https://github.com/h2oai/h2o-3/issues/13870)
-- GBM model output, details in Flow [(HEXDEV-103)](https://0xdata.atlassian.net/browse/HEXDEV-103)
+- GBM model output, details in Flow [(private-#556)](https://github.com/h2oai/private-h2o-3/issues/556)
 - Display a linked data table for each visualization in Flow [(#13319)](https://github.com/h2oai/h2o-3/issues/13319)
 - Run GBM binomial from Flow (needs proper CM) [(#13927)](https://github.com/h2oai/h2o-3/issues/13927)
 
@@ -10794,8 +10793,8 @@ The following changes are to resolve incorrect software behavior:
 - Mapr 3.1.1 : Memory is not being allocated for what is asked for instead the default is what cluster gets [(#13921)](https://github.com/h2oai/h2o-3/issues/13921)
 - GLM: AIOOBwith msg '-14' at water.RPC$2.compute2(RPC.java:593) [(#13903)](https://github.com/h2oai/h2o-3/issues/13903)
 - h2o.glm: model summary listing same info twice [(#13901)](https://github.com/h2oai/h2o-3/issues/13901)
-- Parse: Detect and reject UTF-16 encoded files [(HEXDEV-285)](https://0xdata.atlassian.net/browse/HEXDEV-285)
-- DataInfo Row categorical encoding AIOOBE [(HEXDEV-283)](https://0xdata.atlassian.net/browse/HEXDEV-283)
+- Parse: Detect and reject UTF-16 encoded files [(private-#404)](https://github.com/h2oai/private-h2o-3/issues/404)
+- DataInfo Row categorical encoding AIOOBE [(private-#406)](https://github.com/h2oai/private-h2o-3/issues/406)
 - Fix POJO Preview exception [(github)](https://github.com/h2oai/h2o-dev/commit/d553710f66ef989dc33a86608c5cf352a7d98168)
 - Fix NPE in ChunkSummary [(github)](https://github.com/h2oai/h2o-dev/commit/cd113515257ee1c493fe84616deb0643400ef32c)
 - fix global name collision [(github)](https://github.com/h2oai/h2o-dev/commit/bde0b6d8fed4009367b2e2ddf999bd71cbda3b3f)
@@ -10819,14 +10818,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 - View POJO in Flow [(#13769)](https://github.com/h2oai/h2o-3/issues/13769)
 - help > about page or add version on main page for easy bug reporting. [(#13792)](https://github.com/h2oai/h2o-3/issues/13792)
 - POJO generation: GLM [(#13703)](https://github.com/h2oai/h2o-3/issues/13703) [(github)](https://github.com/h2oai/h2o-dev/commit/35683e29e39489bc2349461e78524328e4b24e63)
-- GLM model output, details in Flow [(HEXDEV-96)](https://0xdata.atlassian.net/browse/HEXDEV-96)
+- GLM model output, details in Flow [(private-#563)](https://github.com/h2oai/private-h2o-3/issues/563)
 
 
 #### Enhancements
 
 ##### Algorithms
 
-- K means output clean up [(HEXDEV-187)](https://0xdata.atlassian.net/browse/HEXDEV-187)
+- K means output clean up [(private-#486)](https://github.com/h2oai/private-h2o-3/issues/486)
 - Add FNR/TNR/FPR/TPR to threshold tables, remove recall, specificity [(github)](https://github.com/h2oai/h2o-dev/commit/1de4910b8d295b2eaa79b8e96422f45746458d92)
 - Add accessor for variable importances for DL [(github)](https://github.com/h2oai/h2o-dev/commit/e11323bca7cc4e58fb2d899a3c307f42f4a8624e)
 - Relax CM error tolerance for F1-optimal threshold now that AUC2 doesn't necessarily create consistent thresholds with its own CMs. [(github)](https://github.com/h2oai/h2o-dev/commit/3ab3af08e28a64acc9a406ef5ff19bf6b1c7855a)
@@ -10929,8 +10928,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 - DRF Regression Assertion Error [(#13812)](https://github.com/h2oai/h2o-3/issues/13812)
 - h2o.randomForest: if h2o is not returning the mse for the 0th tree then it should not be reported in the model object [(#13799)](https://github.com/h2oai/h2o-3/issues/13799)
 - GBM: Got exception `class java.lang.AssertionError` with msg `null` java.lang.AssertionError at hex.tree.gbm.GBM$GBMDriver$GammaPass.map [(#13685)](https://github.com/h2oai/h2o-3/issues/13685)
-- GBM: Got exception `class java.lang.AssertionError` with msg `null` java.lang.AssertionError at hex.ModelMetricsMultinomial$MetricBuildMultinomial.perRow [(HEXDEV-248)](https://0xdata.atlassian.net/browse/HEXDEV-248)
-- GBM get java.lang.AssertionError: Coldata 2199.0 out of range C17:5086.0-19733.0 step=57.214844 nbins=256 isInt=1 [(HEXDEV-241)](https://0xdata.atlassian.net/browse/HEXDEV-241)
+- GBM: Got exception `class java.lang.AssertionError` with msg `null` java.lang.AssertionError at hex.ModelMetricsMultinomial$MetricBuildMultinomial.perRow [(private-#434)](https://github.com/h2oai/private-h2o-3/issues/434)
+- GBM get java.lang.AssertionError: Coldata 2199.0 out of range C17:5086.0-19733.0 step=57.214844 nbins=256 isInt=1 [(private-#439)](https://github.com/h2oai/private-h2o-3/issues/439)
 - GLM: glmnet objective function better than h2o.glm [(#13739)](https://github.com/h2oai/h2o-3/issues/13739)
 - GLM: get AIOOB:-36 at hex.glm.GLMTask$GLMIterationTask.postGlobal(GLMTask.java:733) [(#13880)](https://github.com/h2oai/h2o-3/issues/13880) [(github)](https://github.com/h2oai/h2o-dev/commit/5bba2df2e208a0a7c7fd19732971575eb9dc2259)
 - Fixed glm behavior in case no rows are left after filtering out NAs [(github)](https://github.com/h2oai/h2o-dev/commit/57dc0f3a168ed835c48aa29f6e0d6322c6a5523a)
@@ -10976,17 +10975,17 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 - Sparkling water - `DataFrame[T_UUID]` to `SchemaRDD[StringType]` [(#13760)](https://github.com/h2oai/h2o-3/issues/13760)
 - Sparkling water - `DataFrame[T_NUM(Long)]` to `SchemaRDD[LongType]` [(#13756)](https://github.com/h2oai/h2o-3/issues/13756)
 - Sparkling water - `DataFrame[T_ENUM]` to `SchemaRDD[StringType]` [(#13755)](https://github.com/h2oai/h2o-3/issues/13755)
-- Inconsistency in row and col slicing [(HEXDEV-265)](https://0xdata.atlassian.net/browse/HEXDEV-265) [(github)](https://github.com/h2oai/h2o-dev/commit/edd8923a438282e3c24d086e1a03b88471d58114)
-- rep_len expects literal length only [(HEXDEV-268)](https://0xdata.atlassian.net/browse/HEXDEV-268) [(github)](https://github.com/h2oai/h2o-dev/commit/1783a889a54d2b23da8bd8ec42774f52efbebc60)
-- cbind and = don't work within a single rapids block [(HEXDEV-237)](https://0xdata.atlassian.net/browse/HEXDEV-237)
-- Rapids response for c(value) does not have frame key [(HEXDEV-252)](https://0xdata.atlassian.net/browse/HEXDEV-252)
+- Inconsistency in row and col slicing [(private-#424)](https://github.com/h2oai/private-h2o-3/issues/424) [(github)](https://github.com/h2oai/h2o-dev/commit/edd8923a438282e3c24d086e1a03b88471d58114)
+- rep_len expects literal length only [(private-#421)](https://github.com/h2oai/private-h2o-3/issues/421) [(github)](https://github.com/h2oai/h2o-dev/commit/1783a889a54d2b23da8bd8ec42774f52efbebc60)
+- cbind and = don't work within a single rapids block [(private-#443)](https://github.com/h2oai/private-h2o-3/issues/443)
+- Rapids response for c(value) does not have frame key [(private-#430)](https://github.com/h2oai/private-h2o-3/issues/430)
 - S3 parse takes forever [(#13864)](https://github.com/h2oai/h2o-3/issues/13864)
 - Parse => Enum unification fails in multi-node parse [(#13709)](https://github.com/h2oai/h2o-3/issues/13709) [(github)](https://github.com/h2oai/h2o-dev/commit/0db8c392070583f32849447b65784da18197c14d)
 - All nodes are not getting updated with latest status of each other nodes info [(#13757)](https://github.com/h2oai/h2o-3/issues/13757)
 - Cluster creation is sometimes rejecting new nodes (post jenkins-master-1128+) [(#13795)](https://github.com/h2oai/h2o-3/issues/13795)
 - Parse => Multiple files 1 zip/ 1 csv gives Array index out of bounds [(#13828)](https://github.com/h2oai/h2o-3/issues/13828)
 - Parse => failed for X5MRows6KCols ==> OOM => Cluster dies [(#13824)](https://github.com/h2oai/h2o-3/issues/13824)
-- /frame/foo pagination weirded out [(HEXDEV-277)](https://0xdata.atlassian.net/browse/HEXDEV-277) [(github)](https://github.com/h2oai/h2o-dev/commit/c40da923d97720466fb372758d66509aa628e97c)
+- /frame/foo pagination weirded out [(private-#412)](https://github.com/h2oai/private-h2o-3/issues/412) [(github)](https://github.com/h2oai/h2o-dev/commit/c40da923d97720466fb372758d66509aa628e97c)
 - Removed code that flipped enums to strings [(github)](https://github.com/h2oai/h2o-dev/commit/7d56bcee73cf3c90b498cadf8601610e5f145dbc)
 
 
@@ -10999,8 +10998,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 - Flows : Not able to load saved flows from hdfs [(#13860)](https://github.com/h2oai/h2o-3/issues/13860)
 - Save Function in Flow crashes [(#13774)](https://github.com/h2oai/h2o-3/issues/13774) [(github)](https://github.com/h2oai/h2o-dev/commit/ad724bf7af86180d7045a99790602bd52908945f)
 - Flow: should throw a proper error msg when user supplied response have more categories than algo can handle [(#13854)](https://github.com/h2oai/h2o-3/issues/13854)
-- Flow display of a summary of a column with all missing values fails. [(HEXDEV-230)](https://0xdata.atlassian.net/browse/HEXDEV-230)
-- Split frame UI improvements [(HEXDEV-275)](https://0xdata.atlassian.net/browse/HEXDEV-275)
+- Flow display of a summary of a column with all missing values fails. [(private-#450)](https://github.com/h2oai/private-h2o-3/issues/450)
+- Split frame UI improvements [(private-#414)](https://github.com/h2oai/private-h2o-3/issues/414)
 - Flow : Decimal point precisions to be consistent to 4 as in h2o1 [(#13832)](https://github.com/h2oai/h2o-3/issues/13832)
 - Flow: Prediction frame is outputing junk info [(#13813)](https://github.com/h2oai/h2o-3/issues/13813)
 - EC2 => Cluster of 16 nodes => Water Meter => shows blank page [(#13819)](https://github.com/h2oai/h2o-3/issues/13819)
@@ -11068,7 +11067,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 
 ##### Python
 
-- Run GLM from Python (including LBFGS) [(HEXDEV-92)](https://0xdata.atlassian.net/browse/HEXDEV-92)
+- Run GLM from Python (including LBFGS) [(private-#567)](https://github.com/h2oai/private-h2o-3/issues/567)
 - added H2OFrame show(), as_list(), and slicing pyunits [(github)](https://github.com/h2oai/h2o-dev/commit/b1febc33faa336924ffdb416d8d4a3cb8bba37fa)
 - changed solver parameter to "L_BFGS" [(github)](https://github.com/h2oai/h2o-dev/commit/93e71509bcfa0e76d344819214a08b944ccbfb89)
 - added multidimensional slicing of H2OFrames and Exprs. [(github)](https://github.com/h2oai/h2o-dev/commit/7d9be09ff0b68f92e46a0c7336dcf8134d026b88)
@@ -11131,12 +11130,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 - GLM : Build Model fails with Array Index Out of Bound exception [(#13446)](https://github.com/h2oai/h2o-3/issues/13446) [(github)](https://github.com/h2oai/h2o-dev/commit/78773be9f40e1403457e42378baf0d1aeaf3e32d)
 - Custom Functions don't work in apply() in R [(#13431)](https://github.com/h2oai/h2o-3/issues/13431)
 - GLM failure: got NaNs and/or Infs in beta on airlines [(#13362)](https://github.com/h2oai/h2o-3/issues/13362)
-- MetricBuilderMultinomial.perRow AssertionError while running GBM [(HEXDEV-240)](https://0xdata.atlassian.net/browse/HEXDEV-240)
-- Problems during Train/Test adaptation between Enum/Numeric [(HEXDEV-229)](https://0xdata.atlassian.net/browse/HEXDEV-229)
-- DRF/GBM balance_classes=True throws unimplemented exception [(HEXDEV-226)](https://0xdata.atlassian.net/browse/HEXDEV-226) [(github)](https://github.com/h2oai/h2o-dev/commit/3a4f7ee3fdb159187b5ae1789d55752192d893e6)
-- AUC reported on training data is 0, but should be 1 [(HEXDEV-223)](https://0xdata.atlassian.net/browse/HEXDEV-223) [(github)](https://github.com/h2oai/h2o-dev/commit/312558524749a0b28bf22ffd8c34ebcd6996b350)
-- glm pyunit intermittent failure [(HEXDEV-199)](https://0xdata.atlassian.net/browse/HEXDEV-199)
-- Inconsistency in GBM results:Gives different results even when run with the same set of params [(HEXDEV-194)](https://0xdata.atlassian.net/browse/HEXDEV-194)
+- MetricBuilderMultinomial.perRow AssertionError while running GBM [(private-#440)](https://github.com/h2oai/private-h2o-3/issues/440)
+- Problems during Train/Test adaptation between Enum/Numeric [(private-#451)](https://github.com/h2oai/private-h2o-3/issues/451)
+- DRF/GBM balance_classes=True throws unimplemented exception [(private-#454)](https://github.com/h2oai/private-h2o-3/issues/454) [(github)](https://github.com/h2oai/h2o-dev/commit/3a4f7ee3fdb159187b5ae1789d55752192d893e6)
+- AUC reported on training data is 0, but should be 1 [(private-#457)](https://github.com/h2oai/private-h2o-3/issues/457) [(github)](https://github.com/h2oai/h2o-dev/commit/312558524749a0b28bf22ffd8c34ebcd6996b350)
+- glm pyunit intermittent failure [(private-#477)](https://github.com/h2oai/private-h2o-3/issues/477)
+- Inconsistency in GBM results:Gives different results even when run with the same set of params [(private-#480)](https://github.com/h2oai/private-h2o-3/issues/480)
 - get rid of nfolds= param since it's not supported in GLM yet [(￼github)](https://github.com/h2oai/h2o-dev/commit/8603ad35d4243ef598acadbfaa084c6852acd7ce)
 - Fixed degrees of freedom (off by 1) in glm, added test. [(github)](https://github.com/h2oai/h2o-dev/commit/09e6d6f5222c40cb73f28c6df4e30d92b98f8361)
 - GLM fix: fix filtering of rows with NAs and fix in sparse handling. [(github)](https://github.com/h2oai/h2o-dev/commit/5bad9b5c7bc2a3a4d4a2496ade7194a0438f17d9)
@@ -11155,15 +11154,15 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 
 - Cannot adapt numeric response to factors made from numbers [(#13612)](https://github.com/h2oai/h2o-3/issues/13612)
 - not specifying response\_column gets NPE (deep learning build_model()) I think other algos might have same thing [(#13148)](https://github.com/h2oai/h2o-3/issues/13148)
-- NPE response has null msg, exception\_msg and dev\_msg [(HEXDEV-225)](https://0xdata.atlassian.net/browse/HEXDEV-225)
-- Flow :=> Save Flow => On Mac and Windows 8.1 => NodePersistentStorage failure while attempting to overwrite (?) a flow [(HEXDEV-202)](https://0xdata.atlassian.net/browse/HEXDEV-202) [(github)](https://github.com/h2oai/h2o-dev/commit/db710a4dc7dda4570f5b87cb9e386be6c76f001e)
+- NPE response has null msg, exception\_msg and dev\_msg [(private-#455)](https://github.com/h2oai/private-h2o-3/issues/455)
+- Flow :=> Save Flow => On Mac and Windows 8.1 => NodePersistentStorage failure while attempting to overwrite (?) a flow [(#13558)](https://github.com/h2oai/h2o-3/issues/13558) [(github)](https://github.com/h2oai/h2o-dev/commit/db710a4dc7dda4570f5b87cb9e386be6c76f001e)
 - the can_build field in ModelBuilderSchema needs values[] to be set [(#13744)](https://github.com/h2oai/h2o-3/issues/13744)
 - value field in the field metadata isn't getting serialized as its native type [(#13745)](https://github.com/h2oai/h2o-3/issues/13745)
 
 
 ##### Python
 
-- python api asfactor() on -1/1 column issue [(HEXDEV-203)](https://0xdata.atlassian.net/browse/HEXDEV-203)
+- python api asfactor() on -1/1 column issue [(private-#474)](https://github.com/h2oai/private-h2o-3/issues/474)
 
 
 ##### R
@@ -11212,14 +11211,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 - Parse : Parsing random crap gives java.lang.ArrayIndexOutOfBoundsException: 13 [(#13420)](https://github.com/h2oai/h2o-3/issues/13420)
 - The quote stripper for column names should report when the stripped chars are not the expected quotes [(￼#13416)](https://github.com/h2oai/h2o-3/issues/13416)
 - import directory with large files,then Frames..really slow and disk grinds. Files are unparsed. Shouldn't be grinding [(#13113)](https://github.com/h2oai/h2o-3/issues/13113)
-- NodePersistentStorage gets wiped out when hadoop cluster is restarted [(HEXDEV-185)](https://0xdata.atlassian.net/browse/HEXDEV-185)
+- NodePersistentStorage gets wiped out when hadoop cluster is restarted [(private-#488)](https://github.com/h2oai/private-h2o-3/issues/488)
 - h2o.exec won't be supported [(github)](https://github.com/h2oai/h2o-dev/commit/81f685e5abb990d7f7669b137cfb07d7b01ea471)
 - fixed import issue [(github)](https://github.com/h2oai/h2o-dev/commit/addf5b85b91b77366bca0a8c900ca2d308f29a09)
 - fixed init param [(github)](https://github.com/h2oai/h2o-dev/commit/d459d1a7fb405f8a1f7b466caae99281feae370c)
 - fix repeat as.factor NPE [(github)](https://github.com/h2oai/h2o-dev/commit/49fb24417ecfe26975fbff14bef084da50a034c7)
 - startH2O set to False in init [(github)](https://github.com/h2oai/h2o-dev/commit/53ca9baf1bd70cd04b2ad03243eb9c7053300c52)
 - hang on glm job removal [(#13717)](https://github.com/h2oai/h2o-3/issues/13717)
-- Flow - changed column types need to be reflected in parsed data [(HEXDEV-189)](https://0xdata.atlassian.net/browse/HEXDEV-189)
+- Flow - changed column types need to be reflected in parsed data [(private-#484)](https://github.com/h2oai/private-h2o-3/issues/484)
 - water.DException$DistributedException while running kmeans in multinode cluster [(#13682)](https://github.com/h2oai/h2o-3/issues/13682)
 - Frame inspection prior to file parsing, corrupts parsing [(#13417)](https://github.com/h2oai/h2o-3/issues/13417)
 
@@ -11232,7 +11231,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-severi/15/
 
 - Flow, DL: Need better fail message if "Autoencoder" and "use_all_factor_levels" are both selected [(#13715)](https://github.com/h2oai/h2o-3/issues/13715)
 - When select AUTO while building a gbm model get ERROR FETCHING INITIAL MODEL BUILDER STATE [(#13588)](https://github.com/h2oai/h2o-3/issues/13588)
-- Flow : Build h2o-dev-0.1.17.1009 : Building GLM model gives java.lang.ArrayIndexOutOfBoundsException: [(￼#13215](https://github.com/h2oai/h2o-3/issues/13215) [(￼github)](https://github.com/h2oai/h2o-dev/commit/fe3cdad806750f6add0fc4c03bee9e66d61c59fa)
+- Flow : Build h2o-dev-0.1.17.1009 : Building GLM model gives java.lang.ArrayIndexOutOfBoundsException: [(#13215)](https://github.com/h2oai/h2o-3/issues/13215) [(github)](https://github.com/h2oai/h2o-dev/commit/fe3cdad806750f6add0fc4c03bee9e66d61c59fa)
 - Flow:Summary on flow broken for a long time [(#13773)](https://github.com/h2oai/h2o-3/issues/13773)
 
 ---
@@ -11250,14 +11249,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/in
 ##### Algorithms
 
 - Naive Bayes in H2O-dev [(#13171)](https://github.com/h2oai/h2o-3/issues/13171)
-- GLM model output, details from R [(HEXDEV-94)](https://0xdata.atlassian.net/browse/HEXDEV-94)
-- Run GLM Regression from Flow (including LBFGS) [(HEXDEV-110)](https://0xdata.atlassian.net/browse/HEXDEV-110)
+- GLM model output, details from R [(private-#565)](https://github.com/h2oai/private-h2o-3/issues/565)
+- Run GLM Regression from Flow (including LBFGS) [(private-#549)](https://github.com/h2oai/private-h2o-3/issues/549)
 - PCA [(#13170)](https://github.com/h2oai/h2o-3/issues/13170)
 - Port Random Forest to h2o-dev [(#13447)](https://github.com/h2oai/h2o-3/issues/13447)
 - Enable DRF model output [(github)](https://github.com/h2oai/h2o-flow/commit/44ee1bf98dd69f33251a7a959b1000cc7f290427)
 - Add DRF to Flow (Model Output) [(#13517)](https://github.com/h2oai/h2o-3/issues/13517)
 - Grid for GBM [(github)](https://github.com/h2oai/h2o-dev/commit/ce96d2859aa86e4df393a13e00fbb7fcf603c166)
-- Run Deep Learning Regression from Flow [(HEXDEV-109)](https://0xdata.atlassian.net/browse/HEXDEV-109)
+- Run Deep Learning Regression from Flow [(private-#550)](https://github.com/h2oai/private-h2o-3/issues/550)
 
 ##### Python
 
@@ -11278,12 +11277,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/in
 
 ##### Web UI
 
-- Add Flow packs [(HEXDEV-190)](https://0xdata.atlassian.net/browse/HEXDEV-190) [(#13261)](https://github.com/h2oai/h2o-3/issues/13261)
+- Add Flow packs [(private-#483)](https://github.com/h2oai/private-h2o-3/issues/483) [(#13261)](https://github.com/h2oai/h2o-3/issues/13261)
 - Integrate H2O Help inside Help panel [(#13124)](https://github.com/h2oai/h2o-3/issues/13124) [(github)](https://github.com/h2oai/h2o-flow/commit/62e3c06e91bc0576e15516381bb59f31dbdf38ca)
 - Add quick toggle button to show/hide the sidebar [(github)](https://github.com/h2oai/h2o-flow/commit/b5fb2b54a04850c9b24bb0eb03769cb519039de6)
 - Add New, Open toolbar buttons [(github)](https://github.com/h2oai/h2o-flow/commit/b6efd33c9c8c2f5fe73e9ba83c1441d768ec47f7)
 - Auto-refresh data preview when parse setup input parameters are changed [(#13516)](https://github.com/h2oai/h2o-3/issues/13516)
-- Flow: Add playbar with Run, Continue, Pause, Progress controls [(HEXDEV-192)](https://0xdata.atlassian.net/browse/HEXDEV-192)
+- Flow: Add playbar with Run, Continue, Pause, Progress controls [(private-#481)](https://github.com/h2oai/private-h2o-3/issues/481)
 - You can now stop/cancel a running flow
 
 
@@ -11293,7 +11292,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/in
 ##### Algorithms
 
 - Display GLM coefficients only if available [(#13458)](https://github.com/h2oai/h2o-3/issues/13458)
-- Add random chance line to RoC chart [(HEXDEV-168)](https://0xdata.atlassian.net/browse/HEXDEV-168)
+- Add random chance line to RoC chart [(private-#496)](https://github.com/h2oai/private-h2o-3/issues/496)
 - Speed up DLSpiral test. Ignore Neurons test (MatVec) [(github)](https://github.com/h2oai/h2o-dev/commit/822862aa29fb63e52703ce91794a64e49bb96aed)
 - Use getRNG for Dropout [(github)](https://github.com/h2oai/h2o-dev/commit/94a5b4e46a4501e85fb4889e5c8b196c46f74525)
 - #13590: Add tests for determinism of RNGs [(github)](https://github.com/h2oai/h2o-dev/commit/e77c3ead2151a1202ec0b9c467641bc1c787e122)
@@ -11358,13 +11357,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/in
 - GBM: train error increases after hitting zero on prostate dataset [(#13555)](https://github.com/h2oai/h2o-3/issues/13555)
 - GBM : Variable importance displays 0's for response param => should not display response in table at all [(#13424)](https://github.com/h2oai/h2o-3/issues/13424)
 - GLM : R/Flow ==> Build GLM Model hangs at 4% [(#13448)](https://github.com/h2oai/h2o-3/issues/13448)
-- Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(HEXDEV-179)](https://0xdata.atlassian.net/browse/HEXDEV-179)
+- Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(private-#601)](https://github.com/h2oai/private-h2o-3/issues/601)
 - Flow: GLM - 'model.output.coefficients_magnitude.name' not found, so can't view model [(#13458)](https://github.com/h2oai/h2o-3/issues/13458)
 - GBM predict fails without response column [(#13470)](https://github.com/h2oai/h2o-3/issues/13470)
 - GBM: When validation set is provided, gbm should report both mse_valid and mse_train [(#13490)](https://github.com/h2oai/h2o-3/issues/13490)
 - PCA Assertion Error during Model Metrics [(#13530)](https://github.com/h2oai/h2o-3/issues/13530) [(github)](https://github.com/h2oai/h2o-dev/commit/69690db57ed9951a57df83b2ce30be30a49ca507)
 - KMeans: Size of clusters in Model Output is different from the labels generated on the training set [(#13525)](https://github.com/h2oai/h2o-3/issues/13525) [(github)](https://github.com/h2oai/h2o-dev/commit/6f8a857c8a060af0d2434cda91469ef8c23c86ae)
-- Inconsistency in GBM results:Gives different results even when run with the same set of params [(HEXDEV-194)](https://0xdata.atlassian.net/browse/HEXDEV-194)
+- Inconsistency in GBM results:Gives different results even when run with the same set of params [(private-#480)](https://github.com/h2oai/private-h2o-3/issues/480)
 - #13573: Fix some numerical edge cases [(github)](https://github.com/h2oai/h2o-dev/commit/4affd9baa005c08d6b1669e462ec7bfb4de5ec69)
 - Fix two missing float -> double conversion changes in tree scoring. [(github)](https://github.com/h2oai/h2o-dev/commit/b2cc99822db9b59766f3293e4dbbeeea547cd81e)
 - Flow: HIDDEN_DROPOUT_RATIOS for DL does not show default value [(#13232)](https://github.com/h2oai/h2o-3/issues/13232)
@@ -11379,7 +11378,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/in
 
 - SplitFrame on String column produce C0LChunk instead of CStrChunk [(#13460)](https://github.com/h2oai/h2o-3/issues/13460)
 -  Error in node$h2o$node : $ operator is invalid for atomic vectors [(#13348)](https://github.com/h2oai/h2o-3/issues/13348)
--  Response from /ModelBuilders don't conform to standard error json shape when there are errors [(HEXDEV-121)](https://0xdata.atlassian.net/browse/HEXDEV-121) [(github)](https://github.com/h2oai/h2o-dev/commit/dadf385b3e3b2f68afe88096ecfd51e5bc9e01cb)
+-  Response from /ModelBuilders don't conform to standard error json shape when there are errors [(private-#536)](https://github.com/h2oai/private-h2o-3/issues/536) [(github)](https://github.com/h2oai/h2o-dev/commit/dadf385b3e3b2f68afe88096ecfd51e5bc9e01cb)
 
 ##### Python
 
@@ -11395,12 +11394,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/in
 - How do i convert an enum column back to integer/double from R? [(#13529)](https://github.com/h2oai/h2o-3/issues/13529)
 - Summary in R is faulty [(#13523)](https://github.com/h2oai/h2o-3/issues/13523)
 - R: as.h2o should preserve R data types [(#13571)](https://github.com/h2oai/h2o-3/issues/13571)
-- NPE in GBM Prediction with Sliced Test Data [(HEXDEV-207)](https://0xdata.atlassian.net/browse/HEXDEV-207) [(github)](https://github.com/h2oai/h2o-dev/commit/e605ab109488c7630223320fdd8bad486492050a)
-- Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(HEXDEV-179)](https://0xdata.atlassian.net/browse/HEXDEV-179)
+- NPE in GBM Prediction with Sliced Test Data [(private-#472)](https://github.com/h2oai/private-h2o-3/issues/472) [(github)](https://github.com/h2oai/h2o-dev/commit/e605ab109488c7630223320fdd8bad486492050a)
+- Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(private-#601)](https://github.com/h2oai/private-h2o-3/issues/601)
 - Custom Functions don't work in apply() in R [(#13431)](https://github.com/h2oai/h2o-3/issues/13431)
-- got water.DException$DistributedException and then got java.lang.RuntimeException: Categorical renumber task [(HEXDEV-195)](https://0xdata.atlassian.net/browse/HEXDEV-195)
+- got water.DException$DistributedException and then got java.lang.RuntimeException: Categorical renumber task [(private-#479)](https://github.com/h2oai/private-h2o-3/issues/479)
 - H2O-R: as.h2o parses column name as one of the row entries [(#13584)](https://github.com/h2oai/h2o-3/issues/13584)
-- R-H2O Managing Memory in a loop [(PUB-1125)](https://0xdata.atlassian.net/browse/PUB-1125)
+- R-H2O Managing Memory in a loop [(#15604)](https://github.com/h2oai/h2o-3/issues/15604)
 - h2o.confusionMatrices for multinomial does not work [(#13570)](https://github.com/h2oai/h2o-3/issues/13570)
 - H2O-R not showing meaningful error msg
 
@@ -11414,12 +11413,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/in
 - 3 jvms, doing ModelMetrics on prostate, class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: --- Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <=  122 [(#13486)](https://github.com/h2oai/h2o-3/issues/13486)
 - Not able to start h2o on hadoop [(#13479)](https://github.com/h2oai/h2o-3/issues/13479)
 - one row (one col) dataset seems to get assertion error in parse setup request [(#13111)](https://github.com/h2oai/h2o-3/issues/13111)
-- Parse : Import file (move.com) => Parse => First row contains column names => column names not selected [(HEXDEV-171)](https://0xdata.atlassian.net/browse/HEXDEV-171) [(github)](https://github.com/h2oai/h2o-dev/commit/6f6d7023f9f2bafcb5461f46cf2825f233779f4a)
+- Parse : Import file (move.com) => Parse => First row contains column names => column names not selected [(private-#540)](https://github.com/h2oai/private-h2o-3/issues/540) [(github)](https://github.com/h2oai/h2o-dev/commit/6f6d7023f9f2bafcb5461f46cf2825f233779f4a)
 - The NY0 parse rule, in summary. Doesn't look like it's counting the 0's as NAs like h2o [(#13166)](https://github.com/h2oai/h2o-3/issues/13166)
 - 0 / Y / N parsing [(#13245)](https://github.com/h2oai/h2o-3/issues/13245)
-- NodePersistentStorage gets wiped out when laptop is restarted. [(HEXDEV-167)](https://0xdata.atlassian.net/browse/HEXDEV-167)
+- NodePersistentStorage gets wiped out when laptop is restarted. [(private-#497)](https://github.com/h2oai/private-h2o-3/issues/497)
 - Building a model and making a prediction accepts invalid frame types [(#13097)](https://github.com/h2oai/h2o-3/issues/13097)
-- Flow : Import file 15M rows 2.2 Cols => Parse => Error fetching job on UI =>Console : ERROR: Job was not successful Exiting with nonzero exit status [(HEXDEV-55)](https://0xdata.atlassian.net/browse/HEXDEV-55)
+- Flow : Import file 15M rows 2.2 Cols => Parse => Error fetching job on UI =>Console : ERROR: Job was not successful Exiting with nonzero exit status [(private-#596)](https://github.com/h2oai/private-h2o-3/issues/596)
 - Flow : Build GLM Model => Family tweedy => class hex.glm.LSMSolver$ADMMSolver$NonSPDMatrixException', with msg 'Matrix is not SPD, can't solve without regularization [(#13223)](https://github.com/h2oai/h2o-3/issues/13223)
 - Flow : Import File : File doesn't exist on all the hdfs nodes => Fails without valid message [(#13315)](https://github.com/h2oai/h2o-3/issues/13315)
 - Check reproducibility on multi-node vs single-node [(#13538)](https://github.com/h2oai/h2o-3/issues/13538)
@@ -11433,9 +11432,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-serre/1/in
 
 - Flow : Build Model => Parameters => shows meta text for some params [(#13552)](https://github.com/h2oai/h2o-3/issues/13552)
 - Flow: K-Means - "None" option should not appear in "Init" parameters [(#13451)](https://github.com/h2oai/h2o-3/issues/13451)
-- Flow: PCA - "None" option appears twice in "Transform" list [(HEXDEV-186)](https://0xdata.atlassian.net/browse/HEXDEV-186)
+- Flow: PCA - "None" option appears twice in "Transform" list [(private-#487)](https://github.com/h2oai/private-h2o-3/issues/487)
 - GBM Model : Params in flow show two times [(#13435)](https://github.com/h2oai/h2o-3/issues/13435)
-- Flow multinomial confusion matrix visualization [(HEXDEV-204)](https://0xdata.atlassian.net/browse/HEXDEV-204)
+- Flow multinomial confusion matrix visualization [(private-#473)](https://github.com/h2oai/private-h2o-3/issues/473)
 - Flow: It would be good if flow can report the actual distribution, instead of just reporting "Auto" in the model parameter listing [(#13554)](https://github.com/h2oai/h2o-3/issues/13554)
 - Unimplemented algos should be taken out from drop down of build model [(#13497)](https://github.com/h2oai/h2o-3/issues/13497)
 - [MapR] unable to give hdfs file name from Flow [(#13408)](https://github.com/h2oai/h2o-3/issues/13408)
@@ -11456,14 +11455,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 ##### Algorithms
 
 - Naive Bayes in H2O-dev [(#13171)](https://github.com/h2oai/h2o-3/issues/13171)
-- GLM model output, details from R [(HEXDEV-94)](https://0xdata.atlassian.net/browse/HEXDEV-94)
-- Run GLM Regression from Flow (including LBFGS) [(HEXDEV-110)](https://0xdata.atlassian.net/browse/HEXDEV-110)
+- GLM model output, details from R [(private-#565)](https://github.com/h2oai/private-h2o-3/issues/565)
+- Run GLM Regression from Flow (including LBFGS) [(private-#549)](https://github.com/h2oai/private-h2o-3/issues/549)
 - PCA [(#13170)](https://github.com/h2oai/h2o-3/issues/13170)
 - Port Random Forest to h2o-dev [(#13447)](https://github.com/h2oai/h2o-3/issues/13447)
 - Enable DRF model output [(github)](https://github.com/h2oai/h2o-flow/commit/44ee1bf98dd69f33251a7a959b1000cc7f290427)
 - Add DRF to Flow (Model Output) [(#13517)](https://github.com/h2oai/h2o-3/issues/13517)
 - Grid for GBM [(github)](https://github.com/h2oai/h2o-dev/commit/ce96d2859aa86e4df393a13e00fbb7fcf603c166)
-- Run Deep Learning Regression from Flow [(HEXDEV-109)](https://0xdata.atlassian.net/browse/HEXDEV-109)
+- Run Deep Learning Regression from Flow [(private-#550)](https://github.com/h2oai/private-h2o-3/issues/550)
 
 ##### Python
 
@@ -11485,12 +11484,12 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 
 ##### Web UI
 
-- Add Flow packs [(HEXDEV-190)](https://0xdata.atlassian.net/browse/HEXDEV-190) [(#13261)](https://github.com/h2oai/h2o-3/issues/13261)
+- Add Flow packs [(private-#483)](https://github.com/h2oai/private-h2o-3/issues/483) [(#13261)](https://github.com/h2oai/h2o-3/issues/13261)
 - Integrate H2O Help inside Help panel [(#13124)](https://github.com/h2oai/h2o-3/issues/13124) [(github)](https://github.com/h2oai/h2o-flow/commit/62e3c06e91bc0576e15516381bb59f31dbdf38ca)
 - Add quick toggle button to show/hide the sidebar [(github)](https://github.com/h2oai/h2o-flow/commit/b5fb2b54a04850c9b24bb0eb03769cb519039de6)
 - Add New, Open toolbar buttons [(github)](https://github.com/h2oai/h2o-flow/commit/b6efd33c9c8c2f5fe73e9ba83c1441d768ec47f7)
 - Auto-refresh data preview when parse setup input parameters are changed [(#13516)](https://github.com/h2oai/h2o-3/issues/13516)
--Flow: Add playbar with Run, Continue, Pause, Progress controls [(HEXDEV-192)](https://0xdata.atlassian.net/browse/HEXDEV-192)
+-Flow: Add playbar with Run, Continue, Pause, Progress controls [(private-#481)](https://github.com/h2oai/private-h2o-3/issues/481)
 - You can now stop/cancel a running flow
 
 
@@ -11501,7 +11500,7 @@ The following changes are improvements to existing features (which includes chan
 ##### Algorithms
 
 - Display GLM coefficients only if available [(#13458)](https://github.com/h2oai/h2o-3/issues/13458)
-- Add random chance line to RoC chart [(HEXDEV-168)](https://0xdata.atlassian.net/browse/HEXDEV-168)
+- Add random chance line to RoC chart [(private-#496)](https://github.com/h2oai/private-h2o-3/issues/496)
 - Allow validation dataset for AutoEncoder [(#13574)](https://github.com/h2oai/h2o-3/issues/13574)
 - Speed up DLSpiral test. Ignore Neurons test (MatVec) [(github)](https://github.com/h2oai/h2o-dev/commit/822862aa29fb63e52703ce91794a64e49bb96aed)
 - Use getRNG for Dropout [(github)](https://github.com/h2oai/h2o-dev/commit/94a5b4e46a4501e85fb4889e5c8b196c46f74525)
@@ -11577,22 +11576,22 @@ The following changes are to resolve incorrect software behavior:
 - GBM only populates either MSE_train or MSE_valid but displays both [(#13350)](https://github.com/h2oai/h2o-3/issues/13350)
 - GBM: train error increases after hitting zero on prostate dataset [(#13555)](https://github.com/h2oai/h2o-3/issues/13555)
 - GBM : Variable importance displays 0's for response param => should not display response in table at all [(#13424)](https://github.com/h2oai/h2o-3/issues/13424)
-- Inconsistency in GBM results:Gives different results even when run with the same set of params [(HEXDEV-194)](https://0xdata.atlassian.net/browse/HEXDEV-194)
+- Inconsistency in GBM results:Gives different results even when run with the same set of params [(private-#480)](https://github.com/h2oai/private-h2o-3/issues/480)
 - GLM : R/Flow ==> Build GLM Model hangs at 4% [(#13448)](https://github.com/h2oai/h2o-3/issues/13448)
-- Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(HEXDEV-179)](https://0xdata.atlassian.net/browse/HEXDEV-179)
+- Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(private-#601)](https://github.com/h2oai/private-h2o-3/issues/601)
 - Flow: GLM - 'model.output.coefficients_magnitude.name' not found, so can't view model [(#13458)](https://github.com/h2oai/h2o-3/issues/13458)
 - GBM predict fails without response column [(#13470)](https://github.com/h2oai/h2o-3/issues/13470)
 - GBM: When validation set is provided, gbm should report both mse_valid and mse_train [(#13490)](https://github.com/h2oai/h2o-3/issues/13490)
 - PCA Assertion Error during Model Metrics [(#13530)](https://github.com/h2oai/h2o-3/issues/13530) [(github)](https://github.com/h2oai/h2o-dev/commit/69690db57ed9951a57df83b2ce30be30a49ca507)
 - KMeans: Size of clusters in Model Output is different from the labels generated on the training set [(#13525)](https://github.com/h2oai/h2o-3/issues/13525) [(github)](https://github.com/h2oai/h2o-dev/commit/6f8a857c8a060af0d2434cda91469ef8c23c86ae)
-- Inconsistency in GBM results:Gives different results even when run with the same set of params [(HEXDEV-194)](https://0xdata.atlassian.net/browse/HEXDEV-194)
+- Inconsistency in GBM results:Gives different results even when run with the same set of params [(private-#480)](https://github.com/h2oai/private-h2o-3/issues/480)
 - divide by zero in modelmetrics for deep learning [(#13546)](https://github.com/h2oai/h2o-3/issues/13546)
-- AUC reported on training data is 0, but should be 1 [(HEXDEV-223)](https://0xdata.atlassian.net/browse/HEXDEV-223) [(github)](https://github.com/h2oai/h2o-dev/commit/312558524749a0b28bf22ffd8c34ebcd6996b350)
+- AUC reported on training data is 0, but should be 1 [(private-#457)](https://github.com/h2oai/private-h2o-3/issues/457) [(github)](https://github.com/h2oai/h2o-dev/commit/312558524749a0b28bf22ffd8c34ebcd6996b350)
 - GBM: reports 0th tree mse value for the validation set, different than the train set ,When only train sets is provided [(#13562)](https://github.com/h2oai/h2o-3/issues/13562)
 - #13573: Fix some numerical edge cases [(github)](https://github.com/h2oai/h2o-dev/commit/4affd9baa005c08d6b1669e462ec7bfb4de5ec69)
 - Fix two missing float -> double conversion changes in tree scoring. [(github)](https://github.com/h2oai/h2o-dev/commit/b2cc99822db9b59766f3293e4dbbeeea547cd81e)
-- Problems during Train/Test adaptation between Enum/Numeric [(HEXDEV-229)](https://0xdata.atlassian.net/browse/HEXDEV-229)
-- DRF/GBM balance_classes=True throws unimplemented exception [(HEXDEV-226)](https://0xdata.atlassian.net/browse/HEXDEV-226)
+- Problems during Train/Test adaptation between Enum/Numeric [(private-#451)](https://github.com/h2oai/private-h2o-3/issues/451)
+- DRF/GBM balance_classes=True throws unimplemented exception [(private-#454)](https://github.com/h2oai/private-h2o-3/issues/454)
 - Flow: HIDDEN_DROPOUT_RATIOS for DL does not show default value [(#13232)](https://github.com/h2oai/h2o-3/issues/13232)
 - Old GLM Parameters Missing [(#13426)](https://github.com/h2oai/h2o-3/issues/13426)
 - GLM: R/Flow ==> Build GLM Model hangs at 4% [(#13448)](https://github.com/h2oai/h2o-3/issues/13448)
@@ -11605,7 +11604,7 @@ The following changes are to resolve incorrect software behavior:
 
 - SplitFrame on String column produce C0LChunk instead of CStrChunk [(#13460)](https://github.com/h2oai/h2o-3/issues/13460)
 -  Error in node$h2o$node : $ operator is invalid for atomic vectors [(#13348)](https://github.com/h2oai/h2o-3/issues/13348)
--  Response from /ModelBuilders don't conform to standard error json shape when there are errors [(HEXDEV-121)](https://0xdata.atlassian.net/browse/HEXDEV-121)
+-  Response from /ModelBuilders don't conform to standard error json shape when there are errors [(private-#536)](https://github.com/h2oai/private-h2o-3/issues/536)
 
 ##### Python
 
@@ -11622,10 +11621,10 @@ The following changes are to resolve incorrect software behavior:
 - Custom Functions don't work in apply() in R [(#13431)](https://github.com/h2oai/h2o-3/issues/13431)
 - R: as.h2o should preserve R data types [(#13571)](https://github.com/h2oai/h2o-3/issues/13571)
 - as.h2o loses track of headers [(#13524)](https://github.com/h2oai/h2o-3/issues/13524)
-- NPE in GBM Prediction with Sliced Test Data [(HEXDEV-207)](https://0xdata.atlassian.net/browse/HEXDEV-207) [(github)](https://github.com/h2oai/h2o-dev/commit/e605ab109488c7630223320fdd8bad486492050a)
-- Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(HEXDEV-179)](https://0xdata.atlassian.net/browse/HEXDEV-179)
+- NPE in GBM Prediction with Sliced Test Data [(private-#472)](https://github.com/h2oai/private-h2o-3/issues/472) [(github)](https://github.com/h2oai/h2o-dev/commit/e605ab109488c7630223320fdd8bad486492050a)
+- Import file from R hangs at 75% for 15M Rows/2.2 K Columns [(private-#601)](https://github.com/h2oai/private-h2o-3/issues/601)
 - Custom Functions don't work in apply() in R [(#13431)](https://github.com/h2oai/h2o-3/issues/13431)
-- got water.DException$DistributedException and then got java.lang.RuntimeException: Categorical renumber task [(HEXDEV-195)](https://0xdata.atlassian.net/browse/HEXDEV-195)
+- got water.DException$DistributedException and then got java.lang.RuntimeException: Categorical renumber task [(private-#479)](https://github.com/h2oai/private-h2o-3/issues/479)
 - h2o.confusionMatrices for multinomial does not work [(#13570)](https://github.com/h2oai/h2o-3/issues/13570)
 - R: h2o.confusionMatrix should handle both models and model metric objects [(#13583)](https://github.com/h2oai/h2o-3/issues/13583)
 - H2O-R: as.h2o parses column name as one of the row entries [(#13584)](https://github.com/h2oai/h2o-3/issues/13584)
@@ -11637,17 +11636,17 @@ The following changes are to resolve incorrect software behavior:
 - 3 jvms, doing ModelMetrics on prostate, class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: --- Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <=  122 [(#13486)](https://github.com/h2oai/h2o-3/issues/13486)
 - Not able to start h2o on hadoop [(#13479)](https://github.com/h2oai/h2o-3/issues/13479)
 - one row (one col) dataset seems to get assertion error in parse setup request [(#13111)](https://github.com/h2oai/h2o-3/issues/13111)
-- Parse : Import file (move.com) => Parse => First row contains column names => column names not selected [(HEXDEV-171)](https://0xdata.atlassian.net/browse/HEXDEV-171) [(github)](https://github.com/h2oai/h2o-dev/commit/6f6d7023f9f2bafcb5461f46cf2825f233779f4a)
+- Parse : Import file (move.com) => Parse => First row contains column names => column names not selected [(private-#540)](https://github.com/h2oai/private-h2o-3/issues/540) [(github)](https://github.com/h2oai/h2o-dev/commit/6f6d7023f9f2bafcb5461f46cf2825f233779f4a)
 - The NY0 parse rule, in summary. Doesn't look like it's counting the 0's as NAs like h2o [(#13166)](https://github.com/h2oai/h2o-3/issues/13166)
 - 0 / Y / N parsing [(#13245)](https://github.com/h2oai/h2o-3/issues/13245)
-- NodePersistentStorage gets wiped out when laptop is restarted. [(HEXDEV-167)](https://0xdata.atlassian.net/browse/HEXDEV-167)
+- NodePersistentStorage gets wiped out when laptop is restarted. [(private-#497)](https://github.com/h2oai/private-h2o-3/issues/497)
 - Parse : Parsing random crap gives java.lang.ArrayIndexOutOfBoundsException: 13 [(#13420)](https://github.com/h2oai/h2o-3/issues/13420)
 - Flow: converting a column to enum while parsing does not work [(#13564)](https://github.com/h2oai/h2o-3/issues/13564)
 - Parse: Numbers completely parsed wrong [(#13568)](https://github.com/h2oai/h2o-3/issues/13568)
-- NodePersistentStorage gets wiped out when hadoop cluster is restarted [(HEXDEV-185)](https://0xdata.atlassian.net/browse/HEXDEV-185)
+- NodePersistentStorage gets wiped out when hadoop cluster is restarted [(private-#488)](https://github.com/h2oai/private-h2o-3/issues/488)
 - Parse: Fail gracefully when asked to parse a zip file with different files in it [(#13557)](https://github.com/h2oai/h2o-3/issues/13557)[(github)](https://github.com/h2oai/h2o-dev/commit/23a60d68e9d77fe07ae9d940b0ebb6636ef40ee3)
 - Building a model and making a prediction accepts invalid frame types [(#13097)](https://github.com/h2oai/h2o-3/issues/13097)
-- Flow : Import file 15M rows 2.2 Cols => Parse => Error fetching job on UI =>Console : ERROR: Job was not successful Exiting with nonzero exit status [(HEXDEV-55)](https://0xdata.atlassian.net/browse/HEXDEV-55)
+- Flow : Import file 15M rows 2.2 Cols => Parse => Error fetching job on UI =>Console : ERROR: Job was not successful Exiting with nonzero exit status [(private-#596)](https://github.com/h2oai/private-h2o-3/issues/596)
 - Flow : Build GLM Model => Family tweedy => class hex.glm.LSMSolver$ADMMSolver$NonSPDMatrixException', with msg 'Matrix is not SPD, can't solve without regularization [(#13223)](https://github.com/h2oai/h2o-3/issues/13223)
 - Flow : Import File : File doesn't exist on all the hdfs nodes => Fails without valid message [(#13315)](https://github.com/h2oai/h2o-3/issues/13315)
 - Check reproducibility on multi-node vs single-node [(#13538)](https://github.com/h2oai/h2o-3/issues/13538)
@@ -11657,9 +11656,9 @@ The following changes are to resolve incorrect software behavior:
 
 - Flow : Build Model => Parameters => shows meta text for some params [(#13552)](https://github.com/h2oai/h2o-3/issues/13552)
 - Flow: K-Means - "None" option should not appear in "Init" parameters [(#13451)](https://github.com/h2oai/h2o-3/issues/13451)
-- Flow: PCA - "None" option appears twice in "Transform" list [(HEXDEV-186)](https://0xdata.atlassian.net/browse/HEXDEV-186)
+- Flow: PCA - "None" option appears twice in "Transform" list [(private-#487)](https://github.com/h2oai/private-h2o-3/issues/487)
 - GBM Model : Params in flow show two times [(#13435)](https://github.com/h2oai/h2o-3/issues/13435)
-- Flow multinomial confusion matrix visualization [(HEXDEV-204)](https://0xdata.atlassian.net/browse/HEXDEV-204)
+- Flow multinomial confusion matrix visualization [(private-#473)](https://github.com/h2oai/private-h2o-3/issues/473)
 - Flow: It would be good if flow can report the actual distribution, instead of just reporting "Auto" in the model parameter listing [(#13554)](https://github.com/h2oai/h2o-3/issues/13554)
 - Unimplemented algos should be taken out from drop down of build model [(#13497)](https://github.com/h2oai/h2o-3/issues/13497)
 - [MapR] unable to give hdfs file name from Flow [(#13408)](https://github.com/h2oai/h2o-3/issues/13408)
@@ -11681,7 +11680,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 ##### API
 
 - Create python package [(#13192)](https://github.com/h2oai/h2o-3/issues/13192)
-- as.h2o in Python [(HEXDEV-72)](https://0xdata.atlassian.net/browse/HEXDEV-72)
+- as.h2o in Python [(private-#580)](https://github.com/h2oai/private-h2o-3/issues/580)
 
 ##### System
 
@@ -11694,7 +11693,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 
 - Flow: Job view should have info on start and end time [(#13281)](https://github.com/h2oai/h2o-3/issues/13281)
 - Flow: Implement 'File > Open' [(#13407)](https://github.com/h2oai/h2o-3/issues/13407)
-- Display IP address in ADMIN -> Cluster Status [(HEXDEV-159)](https://0xdata.atlassian.net/browse/HEXDEV-159)
+- Display IP address in ADMIN -> Cluster Status [(private-#505)](https://github.com/h2oai/private-h2o-3/issues/505)
 - Flow: Display alternate UI for splitFrames() [(#13398)](https://github.com/h2oai/h2o-3/issues/13398)
 
 
@@ -11703,8 +11702,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 - Added K-Means scoring [(github)](https://github.com/h2oai/h2o-dev/commit/220d2b40dc36dee6975a101e2eacb56a77861194)
 - Flow: Implement model output for Deep Learning [(#13134)](https://github.com/h2oai/h2o-3/issues/13134)
 - Flow: Implement model output for GLM [(#13136)](https://github.com/h2oai/h2o-3/issues/13136)
-- Deep Learning model output [(HEXDEV-89, Flow)](https://0xdata.atlassian.net/browse/HEXDEV-89),[(HEXDEV-88, Python)](https://0xdata.atlassian.net/browse/HEXDEV-88),[(HEXDEV-87, R)](https://0xdata.atlassian.net/browse/HEXDEV-87)
-- Run GLM Binomial from Flow (including LBFGS) [(HEXDEV-90)](https://0xdata.atlassian.net/browse/HEXDEV-90)
+- Deep Learning model output [(private-#570, Flow)](https://github.com/h2oai/private-h2o-3/issues/570),[(private-#570, Python)](https://github.com/h2oai/private-h2o-3/issues/570),[(private-#570, R)](https://github.com/h2oai/private-h2o-3/issues/570)
+- Run GLM Binomial from Flow (including LBFGS) [(private-#569)](https://github.com/h2oai/private-h2o-3/issues/569)
 - Flow: Display confusion matrices for multinomial models [(#13396)](https://github.com/h2oai/h2o-3/issues/13396)
 - During PCA, missing values in training data will be replaced with column mean [(github)](https://github.com/h2oai/h2o-dev/commit/166efad882162f7edc5cd8d4baa189476aa72d25)
 - Update parameters for best model scan [(github)](https://github.com/h2oai/h2o-dev/commit/f183de392cb45adea7af43ffa53b095c3764602f)
@@ -11716,7 +11715,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 - `beta_eps` added, passing tests changed [(github)](https://github.com/h2oai/h2o-dev/commit/5e5acb6bdb89ff966151b0bc1ae20e96577d0368)
 - For GLM, default values for `max_iters` parameter were changed from 1000 to 50.
 - For quantiles, probabilities are displayed.
-- Run Deep Learning Multinomial from Flow [(HEXDEV-108)](https://0xdata.atlassian.net/browse/HEXDEV-108)
+- Run Deep Learning Multinomial from Flow [(private-#551)](https://github.com/h2oai/private-h2o-3/issues/551)
 
 
 
@@ -11739,7 +11738,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 - Bind both TCP and UDP ports before clustering [(github)](https://github.com/h2oai/h2o-dev/commit/d83c35841800b2abcc9d479fc74583d6ccdc714c)
 - Round summary row#. Helps with pctiles for very small row counts. Add a test to check for getting close to the 50% percentile on small rows. [(github)](https://github.com/h2oai/h2o-dev/commit/7f4f7b159de0041894166f62d21e694dbd9c4c5d)
 - Increase Max Value size in DKV to 256MB [(github)](https://github.com/h2oai/h2o-dev/commit/336b06e2a129509d424156653a2e7e4d5e972ed8)
-- Flow: make parseRaw() do both import and parse in sequence [(HEXDEV-184)](https://0xdata.atlassian.net/browse/HEXDEV-184)
+- Flow: make parseRaw() do both import and parse in sequence [(private-#489)](https://github.com/h2oai/private-h2o-3/issues/489)
 - Remove notion of individual job/job tracking from Flow [(#13441)](https://github.com/h2oai/h2o-3/issues/13441)
 - Capability to name prediction results Frame in flow [(#13249)](https://github.com/h2oai/h2o-3/issues/13249)
 
@@ -11783,7 +11782,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 - Duplicate validation messages in k-means output [(#13309)](https://github.com/h2oai/h2o-3/issues/13309) [(github)](https://github.com/h2oai/h2o-dev/commit/7905ba668572cb0eb518d791dc3262a2e8ff2fe0)
 - Fixes Parse so that it returns to supplying generic column names when no column names exist [(github)](https://github.com/h2oai/h2o-dev/commit/d404bff2ef41e9a6e2d559c53c42225f11a81bff)
 - Flow: Import File: File doesn't exist on all the hdfs nodes => Fails without valid message [(#13315)](https://github.com/h2oai/h2o-3/issues/13315)
-- Flow: Parse => 1m.svm hangs at 42% [(HEXDEV-174)](https://0xdata.atlassian.net/browse/HEXDEV-174)
+- Flow: Parse => 1m.svm hangs at 42% [(private-#514)](https://github.com/h2oai/private-h2o-3/issues/514)
 - Prediction NFE [(#13312)](https://github.com/h2oai/h2o-3/issues/13312)
 - NPE doing Frame to key before it's fully parsed [(#13093)](https://github.com/h2oai/h2o-3/issues/13093)
 - `h2o_master_DEV_gradle_build_J8` #351 hangs for past 17 hrs [(#15458)](https://github.com/h2oai/h2o-3/issues/15458)
@@ -11797,14 +11796,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 - Incorrect dest.type, description in /CreateFrame jobs [(#13403)](https://github.com/h2oai/h2o-3/issues/13403)
 - space in windows filename on python [(#13423)](https://github.com/h2oai/h2o-3/issues/13423) [(github)](https://github.com/h2oai/h2o-dev/commit/c3a7f2f95ee41f5eb9bd9f4efd5b870af6cbc314)
 - Python end-to-end data science example 1 runs correctly [(#13193)](https://github.com/h2oai/h2o-3/issues/13193)
-- 3/NodePersistentStorage.json/foo/id should throw 404 instead of 500 for 'not-found' [(HEXDEV-163)](https://0xdata.atlassian.net/browse/HEXDEV-163)
-- POST /3/NodePersistentStorage.json should handle Content-Type:multipart/form-data [(HEXDEV-165)](https://0xdata.atlassian.net/browse/HEXDEV-165)
+- 3/NodePersistentStorage.json/foo/id should throw 404 instead of 500 for 'not-found' [(private-#501)](https://github.com/h2oai/private-h2o-3/issues/501)
+- POST /3/NodePersistentStorage.json should handle Content-Type:multipart/form-data [(private-#499)](https://github.com/h2oai/private-h2o-3/issues/499)
 - by class water.KeySnapshot$GlobalUKeySetTask; class java.lang.AssertionError: --- Attempting to block on task (class water.TaskGetKey) with equal or lower priority. Can lead to deadlock! 122 <= 122 [(#13107)](https://github.com/h2oai/h2o-3/issues/13107)
 - Sparkling water : val train:DataFrame = prostateRDD => Fails with ArrayIndexOutOfBoundsException [(#13391)](https://github.com/h2oai/h2o-3/issues/13391)
 - Flow : getModels produces error: Error calling GET /3/Models.json [(#13267)](https://github.com/h2oai/h2o-3/issues/13267)
 - Flow : Splitframe => java.lang.ArrayIndexOutOfBoundsException [(#13409)](https://github.com/h2oai/h2o-3/issues/13409)
-- ddply 'Could not find the operator' [(HEXDEV-162)](https://0xdata.atlassian.net/browse/HEXDEV-162) [(github)](https://github.com/h2oai/h2o-dev/commit/5f5dca9b9fc7d7d4888af0ab7ddad962f0381993)
-- h2o.table AIOOBE during NewChunk creation [(HEXDEV-161)](https://0xdata.atlassian.net/browse/HEXDEV-161) [(github)](https://github.com/h2oai/h2o-dev/commit/338d654bd2a80ddf0fba8f65272b3ba07237d2eb)
+- ddply 'Could not find the operator' [(private-#503)](https://github.com/h2oai/private-h2o-3/issues/503) [(github)](https://github.com/h2oai/h2o-dev/commit/5f5dca9b9fc7d7d4888af0ab7ddad962f0381993)
+- h2o.table AIOOBE during NewChunk creation [(private-#504)](https://github.com/h2oai/private-h2o-3/issues/504) [(github)](https://github.com/h2oai/h2o-dev/commit/338d654bd2a80ddf0fba8f65272b3ba07237d2eb)
 - Fix warning in h2o.ddply when supplying multiple grouping columns [(github)](https://github.com/h2oai/h2o-dev/commit/1a7adb0a1f1bffe7bf77e5332f6291d4325d6a7f)
 
 
@@ -11889,29 +11888,29 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 - Flow: Implement model building form init and validation [(#13118)](https://github.com/h2oai/h2o-3/issues/13118)
 - Added a shuffle-and-split-frame function; Use it to build a saner model on time-series data [(github)](https://github.com/h2oai/h2o-dev/commit/730c8d64316c913183a1271d1a2441f92fa11442)
 - Added binomial model metrics [(github)](https://github.com/h2oai/h2o-dev/commit/2d124bea91474f3f55eb5e33f2494ae52ffba749)
-- Run KMeans from R [(HEXDEV-105)](https://0xdata.atlassian.net/browse/HEXDEV-105)
-- Be able to create a new GLM model from an existing one with updated coefficients [(HEXDEV-48)](https://0xdata.atlassian.net/browse/HEXDEV-48)
-- Run KMeans from Python [(HEXDEV-106)](https://0xdata.atlassian.net/browse/HEXDEV-106)
-- Run Deep Learning Binomial from Flow [(HEXDEV-83)](https://0xdata.atlassian.net/browse/HEXDEV-83)
-- Run KMeans from Flow [(HEXDEV-104)](https://0xdata.atlassian.net/browse/HEXDEV-104)
-- Run Deep Learning from Python [(HEXDEV-85)](https://0xdata.atlassian.net/browse/HEXDEV-85)
-- Run Deep Learning from R [(HEXDEV-84)](https://0xdata.atlassian.net/browse/HEXDEV-84)
-- Run Deep Learning Multinomial from Flow [(HEXDEV-108)](https://0xdata.atlassian.net/browse/HEXDEV-108)
-- Run Deep Learning Regression from Flow [(HEXDEV-109)](https://0xdata.atlassian.net/browse/HEXDEV-109)
+- Run KMeans from R [(private-#554)](https://github.com/h2oai/private-h2o-3/issues/554)
+- Be able to create a new GLM model from an existing one with updated coefficients [(private-#599)](https://github.com/h2oai/private-h2o-3/issues/599)
+- Run KMeans from Python [(private-#553)](https://github.com/h2oai/private-h2o-3/issues/553)
+- Run Deep Learning Binomial from Flow [(private-#576)](https://github.com/h2oai/private-h2o-3/issues/576)
+- Run KMeans from Flow [(private-#555)](https://github.com/h2oai/private-h2o-3/issues/555)
+- Run Deep Learning from Python [(private-#574)](https://github.com/h2oai/private-h2o-3/issues/574)
+- Run Deep Learning from R [(private-#575)](https://github.com/h2oai/private-h2o-3/issues/575)
+- Run Deep Learning Multinomial from Flow [(private-#551)](https://github.com/h2oai/private-h2o-3/issues/551)
+- Run Deep Learning Regression from Flow [(private-#550)](https://github.com/h2oai/private-h2o-3/issues/550)
 
 
 ##### API
 
-- Flow: added REST API documentation to the web ui [(#13075)](https://0xdata.atlassian.net/browse/PUB-60)
+- Flow: added REST API documentation to the web ui [(#13075)](https://github.com/h2oai/h2o-3/issues/13075)
 - Flow: Implement visualization API [(#13130)](https://github.com/h2oai/h2o-3/issues/13130)
 
 
 
 ##### System
 
-- Dataset inspection from Flow [(HEXDEV-66)](https://0xdata.atlassian.net/browse/HEXDEV-66)
-- Basic data munging (Rapids) from R [(HEXDEV-70)](https://0xdata.atlassian.net/browse/HEXDEV-70)
-- Implement stack operator/stacking in Lightning [(HEXDEV-128)](https://0xdata.atlassian.net/browse/HEXDEV-128)
+- Dataset inspection from Flow [(private-#586)](https://github.com/h2oai/private-h2o-3/issues/586)
+- Basic data munging (Rapids) from R [(private-#582)](https://github.com/h2oai/private-h2o-3/issues/582)
+- Implement stack operator/stacking in Lightning [(private-#531)](https://github.com/h2oai/private-h2o-3/issues/531)
 
 
 
@@ -11973,8 +11972,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o-dev/rel-selberg/1/
 
 ##### UI
 
-- Flow: Parse => 1m.svm hangs at 42% [(PUBDEV-345)](https://0xdata.atlassian.net/browse/PUBDEV-345)
+- Flow: Parse => 1m.svm hangs at 42% [(private-#514)](https://github.com/h2oai/private-h2o-3/issues/514)
 - cup98 Dataset has columns that prevent validation/prediction [(#13349)](https://github.com/h2oai/h2o-3/issues/13349)
 - Flow: predict step failed to function [(#13234)](https://github.com/h2oai/h2o-3/issues/13234)
 - Flow: Arrays of numbers (ex. hidden in deeplearning)require brackets [(#13307)](https://github.com/h2oai/h2o-3/issues/13307)
-- F
