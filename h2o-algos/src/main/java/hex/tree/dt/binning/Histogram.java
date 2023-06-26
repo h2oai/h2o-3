@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static hex.tree.dt.binning.BinningStrategy.CATEGORICAL;
 
 public class Histogram {
     private final List<FeatureBins> _featuresBins;
@@ -33,7 +32,7 @@ public class Histogram {
      * @param featureIndex feature index
      * @return list of feature bins
      */
-    public List<NumericBin> getFeatureBins(int featureIndex) {
+    public List<AbstractBin> getFeatureBins(int featureIndex) {
         return _featuresBins.get(featureIndex).getFeatureBins();
     }
 
@@ -49,7 +48,7 @@ public class Histogram {
      */
     public static DataFeaturesLimits getFeaturesLimitsForConditions(Frame originData, DataFeaturesLimits conditionLimits) {
         FeaturesLimitsMRTask task = new FeaturesLimitsMRTask(conditionLimits == null
-                ? DataFeaturesLimits.defaultLimits(originData.numCols())
+                ? DataFeaturesLimits.defaultLimits(originData)
                 : conditionLimits.toDoubles());
         task.doAll(originData);
         return new DataFeaturesLimits(task._realFeatureLimits);

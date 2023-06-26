@@ -1,8 +1,11 @@
 package hex.tree.dt;
 
+import water.fvec.Frame;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -59,7 +62,7 @@ public class DataFeaturesLimits {
     }
 
     /**
-     * Serialize limits to n x 2 array, so it can be passed to MR task
+     * Serialize limits to 2D double array depending on the features types, so it can be passed to MR task
      *
      * @return
      */
@@ -69,11 +72,13 @@ public class DataFeaturesLimits {
                 .toArray(double[][]::new);
     }
 
-    public static double[][] defaultLimits(int numCols) {
-        return Stream.generate(() -> new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE})
-                .limit(numCols - 1 /*exclude the last prediction column*/).toArray(double[][]::new);
+    public static double[][] defaultLimits(Frame train) {
+        return IntStream.range(0, train.numCols() - 1 /*exclude the last prediction column*/)
+                .mapToObj(train::vec).map(v -> v.isNumeric() 
+                        ? new double[]{(-1) * Double.MAX_VALUE, Double.MAX_VALUE}
+                        : new double[v.cardinality()])
+               .toArray(double[][]::new);
     }
-
 
     /**
      * Get count of features.

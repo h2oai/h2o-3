@@ -4,6 +4,8 @@ import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 
+import static hex.tree.dt.NumericFeatureLimits.*;
+
 /**
  * MR task for counting samples in bins.
  */
@@ -14,9 +16,6 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
     // binsCount x 4 - min, max, count, count0
     public double[][] _bins;
 
-
-    public static final int LIMIT_MIN = 0;
-    public static final int LIMIT_MAX = 1;
     public static final int COUNT = 2;
     public static final int COUNT_0 = 3;
 
@@ -43,11 +42,20 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
         for (int row = 0; row < numRows; row++) {
             conditionsFailed = false;
             for (int column = 0; column < cs.length - 1 /*exclude prediction column*/; column++) {
-                // if the value is out of the given limit, skip this row
-                if (cs[column].atd(row) <= _featuresLimits[column][LIMIT_MIN]
-                        || cs[column].atd(row) > _featuresLimits[column][LIMIT_MAX]) {
-                    conditionsFailed = true;
-                    break;
+                // verifying limits is different for numerical and categorical columns
+                if(_featuresLimits[column][NUMERICAL_FLAG] == -1.0) {
+                    // if the value is out of the given limit, skip this row
+                    if (cs[column].atd(row) <= _featuresLimits[column][LIMIT_MIN]
+                            || cs[column].atd(row) > _featuresLimits[column][LIMIT_MAX]) {
+                        conditionsFailed = true;
+                        break;
+                    }
+                } else {
+                    // if the category is not in the given set (is false in given mask), skip this row
+                    if (_featuresLimits[column][(int) cs[column].atd(row)] == 0) {
+                        conditionsFailed = true;
+                        break;
+                    }
                 }
             }
             if (!conditionsFailed) {

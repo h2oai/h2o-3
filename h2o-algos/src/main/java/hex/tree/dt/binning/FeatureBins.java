@@ -5,10 +5,10 @@ import java.util.stream.Collectors;
 
 public class FeatureBins {
 
-    private List<NumericBin> _bins;
+    private List<AbstractBin> _bins;
     private final boolean _isConstant;
 
-    public FeatureBins(List<NumericBin> bins) {
+    public FeatureBins(List<AbstractBin> bins) {
         if (bins == null) {
             _isConstant = true;
         } else {
@@ -32,7 +32,7 @@ public class FeatureBins {
         for (int leftIndex = 0; leftIndex < _bins.size(); leftIndex++) {
             tmpAccumulatorLeft.accumulateLeftStatistics(_bins.get(leftIndex)._count0, _bins.get(leftIndex)._count);
             statistics.get(leftIndex).copyLeftValues(tmpAccumulatorLeft);
-            statistics.get(leftIndex)._maxBinValue = _bins.get(leftIndex)._max;
+            statistics.get(leftIndex)._maxBinValue = ((NumericBin)_bins.get(leftIndex))._max;
             // accumulate from the right (from the end of bins array)
             rightIndex = _bins.size() - leftIndex - 1;
             // firstly accumulate with old values, then add the actual bin for the future statistics 
@@ -48,7 +48,7 @@ public class FeatureBins {
         return _isConstant;
     }
 
-    List<NumericBin> getFeatureBins() {
-        return _bins.stream().map(NumericBin::clone).collect(Collectors.toList());
+    List<AbstractBin> getFeatureBins() {
+        return _bins.stream().map(AbstractBin::clone).collect(Collectors.toList());
     }
 }

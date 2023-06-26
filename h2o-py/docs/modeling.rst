@@ -92,12 +92,6 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2OSingleDecisionTreeEstimator`
--------------------------------------
-.. autoclass:: h2o.estimators.single_decision_tree.H2OSingleDecisionTreeEstimator
-    :show-inheritance:
-    :members:
-
 :mod:`H2OStackedEnsembleEstimator`
 ----------------------------------
 .. autoclass:: h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator

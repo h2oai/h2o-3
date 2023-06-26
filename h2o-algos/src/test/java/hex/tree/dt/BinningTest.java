@@ -1,5 +1,6 @@
 package hex.tree.dt;
 
+import hex.tree.dt.binning.AbstractBin;
 import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
 import hex.tree.dt.binning.NumericBin;
@@ -31,7 +32,7 @@ public class BinningTest extends TestUtil {
     private void testBinningValidity(Histogram histogram, int numRows) {
         // min and max values
         for (int i = 0; i < histogram.featuresCount(); i++) {
-            List<NumericBin> featureBins = histogram.getFeatureBins(i);
+            List<AbstractBin> featureBins = histogram.getFeatureBins(i);
             assertFalse(featureBins.isEmpty());
             // at least first and last bins are not empty
             assertNotEquals(0, featureBins.get(0)._count);
@@ -96,7 +97,7 @@ public class BinningTest extends TestUtil {
             Histogram histogram = new Histogram(basicData, dataLimits, BinningStrategy.EQUAL_WIDTH);
             
             double[][] binsArray = histogram.getFeatureBins(0).stream()
-                    .map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
+                    .map(bin -> new double[]{((NumericBin) bin)._min, ((NumericBin) bin)._max, 0, 0}).toArray(double[][]::new);
             
             CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(0, 
                     dataLimits.toDoubles(), binsArray).doAll(basicData);
@@ -120,7 +121,7 @@ public class BinningTest extends TestUtil {
 
 
             binsArray = histogram.getFeatureBins(1).stream()
-                    .map(bin -> new double[]{bin._min, bin._max, 0, 0}).toArray(double[][]::new);
+                    .map(bin -> new double[]{((NumericBin) bin)._min, ((NumericBin) bin)._max, 0, 0}).toArray(double[][]::new);
 
             task = new CountBinsSamplesCountsMRTask(1, dataLimits.toDoubles(), binsArray).doAll(basicData);
 

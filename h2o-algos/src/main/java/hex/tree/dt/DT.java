@@ -270,10 +270,11 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     public static DataFeaturesLimits getInitialFeaturesLimits(Frame data) {
         return new DataFeaturesLimits(
                 IntStream.range(0, data.numCols() - 1 /*exclude the last prediction column*/)
-                        .mapToObj(i -> data.vec(i))
-                        // todo - map depending on the type of the feature
+                        .mapToObj(data::vec)
                         // decrease min as the minimum border is always excluded and real min value could be lost
-                        .map(v -> new NumericFeatureLimits(v.min() - EPSILON, v.max()))
+                        .map(v -> v.isNumeric() 
+                                ? new NumericFeatureLimits(v.min() - EPSILON, v.max())
+                                : new CategoricalFeatureLimits(new boolean[v.cardinality()]))
                         .collect(Collectors.toList()));
     }
 
@@ -415,7 +416,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     private int[] countClasses(final DataFeaturesLimits featuresLimits) {
         GetClassCountsMRTask task = new GetClassCountsMRTask(featuresLimits == null
                 // create limits that are always fulfilled
-                ? DataFeaturesLimits.defaultLimits(_train.numCols())
+                ? DataFeaturesLimits.defaultLimits(_train)
                 : featuresLimits.toDoubles(), _nclass);
         task.doAll(_train);
 

@@ -9,6 +9,11 @@ import static hex.tree.dt.DT.EPSILON;
 public class NumericFeatureLimits extends AbstractFeatureLimits {
     public double _min;
     public double _max;
+
+    // indices for the serialized array
+    public static final int NUMERICAL_FLAG = 0;
+    public static final int LIMIT_MIN = 1;
+    public static final int LIMIT_MAX = 2;
     
     // min of the first bin is moved with precision EPSILON, one additional decimal point of the difference is allowed 
     private double EQUALS_PRECISION = EPSILON * 10; 
@@ -32,7 +37,8 @@ public class NumericFeatureLimits extends AbstractFeatureLimits {
 
     @Override
     public double[] toDoubles() {
-        return new double[]{_min, _max};
+        // -1.0 at index 0 identifies numeric feature limits
+        return new double[]{-1.0, _min, _max};
     }
 
     @Override

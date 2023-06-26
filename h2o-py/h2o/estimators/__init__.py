@@ -30,7 +30,6 @@ from .pca import H2OPrincipalComponentAnalysisEstimator
 from .psvm import H2OSupportVectorMachineEstimator
 from .random_forest import H2ORandomForestEstimator
 from .rulefit import H2ORuleFitEstimator
-from .single_decision_tree import H2OSingleDecisionTreeEstimator
 from .stackedensemble import H2OStackedEnsembleEstimator
 from .svd import H2OSingularValueDecompositionEstimator
 from .targetencoder import H2OTargetEncoderEstimator
@@ -67,7 +66,6 @@ __all__ = (
     "H2OGeneralizedLinearEstimator", "H2OGeneralizedLowRankEstimator", "H2OInfogram", "H2OIsolationForestEstimator",
     "H2OIsotonicRegressionEstimator", "H2OKMeansEstimator", "H2OModelSelectionEstimator", "H2ONaiveBayesEstimator",
     "H2OPrincipalComponentAnalysisEstimator", "H2OSupportVectorMachineEstimator", "H2ORandomForestEstimator",
-    "H2ORuleFitEstimator", "H2OSingleDecisionTreeEstimator", "H2OStackedEnsembleEstimator",
-    "H2OSingularValueDecompositionEstimator", "H2OTargetEncoderEstimator", "H2OUpliftRandomForestEstimator",
-    "H2OWord2vecEstimator", "H2OXGBoostEstimator"
+    "H2ORuleFitEstimator", "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator",
+    "H2OTargetEncoderEstimator", "H2OUpliftRandomForestEstimator", "H2OWord2vecEstimator", "H2OXGBoostEstimator"
 )
