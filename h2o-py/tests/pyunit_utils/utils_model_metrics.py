@@ -62,7 +62,7 @@ class CustomAttFunc:
         return [l[0] + r[0], l[1] + r[1]]
 
     def metric(self, l):
-        return l[0] / l[1]
+        return l[0] / l[1] if [1] != 0 else 0
 
 
 class CustomNullFunc:
