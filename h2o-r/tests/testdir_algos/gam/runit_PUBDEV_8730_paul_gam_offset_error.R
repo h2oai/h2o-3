@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-# This test is provided by Paul in JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8730
+# This test is provided by Paul in https://github.com/h2oai/h2o-3/issues/6980
 # This test is very clevel in it the prediction from both models will be the same.
 testGAMOffset <- function() {
   mt <- as.h2o(mtcars)

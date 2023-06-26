@@ -116,7 +116,7 @@ h2o.glm.wrapper <- function(x, y, training_frame,
           lambda_min_ratio = lambda_min_ratio,
           beta_constraints = beta_constraints,
           max_active_predictors = max_active_predictors,
-          #interactions = interactions,  #causes a bug when set to NULL (the default), the h2o.glm function needs to be fixed: https://0xdata.atlassian.net/browse/PUBDEV-4698
+          #interactions = interactions,  #causes a bug when set to NULL (the default), the h2o.glm function needs to be fixed: https://github.com/h2oai/h2o-3/issues/11577
           balance_classes = balance_classes,
           class_sampling_factors = class_sampling_factors,
           max_after_balance_size = max_after_balance_size,

@@ -123,7 +123,7 @@ Optional Miscellaneous Parameters
 
 - **modeling_plan**: The list of modeling steps to be used by the AutoML engine. (They may not all get executed, depending on other constraints.)
 
-- **preprocessing**: The list of preprocessing steps to run. Only ``["target_encoding"]`` is currently supported.  There is more information about how Target Encoding is automatically applied `here <https://0xdata.atlassian.net/browse/PUBDEV-7778>`__.  Experimental.
+- **preprocessing**: The list of preprocessing steps to run. Only ``["target_encoding"]`` is currently supported.  There is more information about how Target Encoding is automatically applied `here <https://github.com/h2oai/h2o-3/issues/7862>`__.  Experimental.
 
 - **exploitation_ratio**: Specify the budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.  Experimental.
 
@@ -502,7 +502,7 @@ Experimental Features
 Preprocessing
 ~~~~~~~~~~~~~
 
-As of H2O 3.32.0.1, AutoML now has a ``preprocessing`` option with `minimal support <https://0xdata.atlassian.net/browse/PUBDEV-7778>`__ for automated Target Encoding of high cardinality categorical variables.  The only currently supported option is ``preprocessing = ["target_encoding"]``: we automatically tune a Target Encoder model and apply it to columns that meet certain cardinality requirements for the tree-based algorithms (XGBoost, H2O GBM and Random Forest).  Work to improve the automated preprocessing support (improved model performance as well as customization) is documented in this `ticket <https://0xdata.atlassian.net/browse/PUBDEV-7795>`__.
+As of H2O 3.32.0.1, AutoML now has a ``preprocessing`` option with `minimal support <https://github.com/h2oai/h2o-3/issues/7862>`__ for automated Target Encoding of high cardinality categorical variables.  The only currently supported option is ``preprocessing = ["target_encoding"]``: we automatically tune a Target Encoder model and apply it to columns that meet certain cardinality requirements for the tree-based algorithms (XGBoost, H2O GBM and Random Forest).  Work to improve the automated preprocessing support (improved model performance as well as customization) is documented in this `ticket <https://github.com/h2oai/h2o-3/issues/7847>`__.
 
 
 
@@ -515,7 +515,7 @@ FAQ
 
   Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a first step you could leave all the algorithms on, and examine their performance characteristics (e.g. prediction speed) to get a sense of what might be practically useful in your specific use-case, and then turn off algorithms that are not interesting or useful to you.  We recommend using the `H2O Model Explainability <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html>`__ interface to explore and further evaluate your AutoML models, which can inform your choice of model (if you have other goals beyond simply maximizing model accuracy).
 
-  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
+  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://github.com/h2oai/h2o-3/issues/12851>`__ about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
 
   AutoML trains several Stacked Ensemble models during the run (unless ensembles are turned off using ``exclude_algos``).  We have subdivided the model training in AutoML into "model groups" with different priority levels.  After each group is completed, and at the very end of the AutoML process, we train (at most) two additional Stacked Ensembles with the existing models.  There are currently two types of Stacked Ensembles: one which includes all the base models ("All Models"), and one comprised only of the best model from each algorithm family ("Best of Family").  The Best of Family ensembles are more optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use in production (to generate predictions on new data) without much degradation in model performance when compared to the final "All Models" ensemble, for example.  This may be useful if you want the model performance boost from ensembling without the added time or complexity of a large ensemble. You can also inspect some of the earlier "All Models" Stacked Ensembles that have fewer models as an alternative to the Best of Family ensembles.
   The metalearner used in all ensembles is a variant of the default Stacked Ensemble metalearner: a non-negative GLM with regularization (Lasso or Elastic net, chosen by CV) to encourage more sparse ensembles.  The metalearner also uses a logit transform (on the base learner CV preds) for classification tasks before training.
@@ -539,7 +539,7 @@ FAQ
 
   AutoML includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
 
-  - XGBoost is not currently available on Windows machines, or on OS X with the new Apple M1 chip.  Please check the JIRA tickets for `Windows <https://h2oai.atlassian.net/browse/PUBDEV-8523>`__ and `Apple M1 <https://h2oai.atlassian.net/browse/PUBDEV-8482>`__ for updates. 
+  - XGBoost is not currently available on Windows machines, or on OS X with the new Apple M1 chip.  Please check the JIRA tickets for `Windows <https://github.com/h2oai/h2o-3/issues/7139>`__ and `Apple M1 <https://github.com/h2oai/h2o-3/issues/7180>`__ for updates. 
   - XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__. You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
 
 -   **Why doesn't AutoML use all the time that it's given?** 

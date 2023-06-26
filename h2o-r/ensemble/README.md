@@ -7,7 +7,7 @@ The **h2oEnsemble** R package provides functionality to create ensembles from th
 
 ![H2O Ensemble Super Learners](h2oEnsemble.png "H2O Ensemble Super Learners")
 
-H2O Ensemble currently supports [regression](https://en.wikipedia.org/wiki/Regression_analysis) and [binary classification](https://en.wikipedia.org/wiki/Binary_classification).  As is true of all the H2O algorithms, binary classification provides predicted values for each class in addition to a predicted class label.  Support for [multiclass classification](https://en.wikipedia.org/wiki/Multiclass_classification) will be included in a future release (follow the progress [here](https://0xdata.atlassian.net/browse/PUBDEV-2355)).
+H2O Ensemble currently supports [regression](https://en.wikipedia.org/wiki/Regression_analysis) and [binary classification](https://en.wikipedia.org/wiki/Binary_classification).  As is true of all the H2O algorithms, binary classification provides predicted values for each class in addition to a predicted class label.  Support for [multiclass classification](https://en.wikipedia.org/wiki/Multiclass_classification) will be included in a future release (follow the progress [here](https://github.com/h2oai/h2o-3/issues/15262)).
 
 
 ## Tutorial
@@ -99,7 +99,7 @@ If you want to use ensembles in production, then you may want to use the H2O Sta
 ## Known Issues
 
 - This package is incompatible with R 3.0.0-3.1.0 due to a [parser bug](https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=15753) in R.  Upgrade to R 3.1.1 or greater to resolve the issue.  It may work on earlier versions of R but has not been tested.
-- When using a `h2o.deeplearning.wrapper()` model as a base learner, it is not possible to reproduce ensemble model results exactly (even when using the `seed` argument of `h2o.ensemble()`) if your H2O cluster uses multiple cores.  This is due to the fact that `h2o.deeplearning()` results are only reproducible when trained on a single core.  More info [here](https://0xdata.atlassian.net/projects/TN/issues/TN-3).
+- When using a `h2o.deeplearning.wrapper()` model as a base learner, it is not possible to reproduce ensemble model results exactly (even when using the `seed` argument of `h2o.ensemble()`) if your H2O cluster uses multiple cores.  This is due to the fact that `h2o.deeplearning()` results are only reproducible when trained on a single core.  More info [here](https://github.com/h2oai/h2o-3/discussions/15514).
 - The [SNOW](https://cran.r-project.org/web/packages/snow/) cluster functionality is not active at this time (see the `parallel` option of the `h2o.ensemble` function).  There is a conflict with using the R parallel functionality in conjunction with the H2O parallel functionality.  The `h2o.*` base learning algorithms will use all cores available, so even when the `h2o.ensemble()` function is executed with the default `parallel = "seq"` option, the H2O algorithms will be training in parallel.  The `parallel` argument was intended to parallelize the cross-validation and base learning steps, but this functionality either needs to be re-architected to work in concert with H2O parallelism or removed in a future release.
 - Passing the `validation_frame` to `h2o.ensemble()` does not currently do anything.  Right now, you must use the `predict()` / `predict.h2o.ensemble()` function to generate predictions on a test set.
 

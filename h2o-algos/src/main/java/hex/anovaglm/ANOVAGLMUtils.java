@@ -42,7 +42,7 @@ public class ANOVAGLMUtils {
 
   /**
    * In order to calculate Type III SS, we need the individual predictors and their interactions.  For details, refer
-   * to ANOVAGLMTutorial https://h2oai.atlassian.net/browse/PUBDEV-8088 section IV
+   * to ANOVAGLMTutorial https://github.com/h2oai/h2o-3/issues/7561 section IV
    * 
    * @param predNamesIndividual: string containing individual predictor names
    * @param maxPredInt: maximum number of predictors allowed in interaction term generation
@@ -250,7 +250,7 @@ public class ANOVAGLMUtils {
 
   /***
    * This method is used to generate Model SS for all models built except the full model.  Refer to AnovaGLMTutorial
-   *  https://h2oai.atlassian.net/browse/PUBDEV-8088 section V.
+   *  https://github.com/h2oai/h2o-3/issues/7561 section V.
    * 
    * @param glmModels
    * @param family
@@ -359,7 +359,7 @@ public class ANOVAGLMUtils {
 
   /**
    * Generate frame transformation on two interacting columns.  Refer to AnovaGLMTutorial 
-   * https://h2oai.atlassian.net/browse/PUBDEV-8088 sectinos III.II. and IV.
+   * https://github.com/h2oai/h2o-3/issues/7561 sectinos III.II. and IV.
    * 
    * @param vec2Transform: frame containing the two predictors to transform
    * @param vecNames: name of the predictors
@@ -395,7 +395,7 @@ public class ANOVAGLMUtils {
   }
 
   /**
-   * perform data transformation described in AnovaGLMTutorial https://h2oai.atlassian.net/browse/PUBDEV-8088 
+   * perform data transformation described in AnovaGLMTutorial https://github.com/h2oai/h2o-3/issues/7561
    * section III.II on one predictor.
    * 
    * @param vec2Transform: frame containing that one predictor to transform.

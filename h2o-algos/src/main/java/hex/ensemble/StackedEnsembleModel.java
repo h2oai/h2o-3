@@ -366,7 +366,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // cross-validation metrics -- the true k-fold cv metrics for the ensemble would require training k sets of
     // cross-validated base models (rather than a single set of cross-validated base models), which is extremely
     // computationally expensive and awkward from the standpoint of the existing Stacked Ensemble API.
-    // More info: https://0xdata.atlassian.net/browse/PUBDEV-3971
+    // More info: https://github.com/h2oai/h2o-3/issues/10864
     // Need to do DeepClone because otherwise framekey is incorrect (metalearner train is levelone not train)
     if (null != this._output._metalearner._output._cross_validation_metrics) {
       this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics

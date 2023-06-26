@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 ####
-### Test offset implementation in R -https://0xdata.atlassian.net/browse/PUBDEV-1258
+### Test offset implementation in R - https://github.com/h2oai/h2o-3/issues/14236
 ####
 
 

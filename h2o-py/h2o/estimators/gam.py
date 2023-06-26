@@ -357,7 +357,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :type scale_tp_penalty_mat: bool
         :param bs: Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for
                monotone I-splines, 3 for NBSplineTypeI M-splines (refer to doc here:
-               https://h2oai.atlassian.net/browse/PUBDEV-8835).  If specified, must be the same size as gam_columns
+               https://github.com/h2oai/h2o-3/issues/6926).  If specified, must be the same size as gam_columns
                Defaults to ``None``.
         :type bs: List[int], optional
         :param scale: Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
@@ -1374,7 +1374,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     def bs(self):
         """
         Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for monotone
-        I-splines, 3 for NBSplineTypeI M-splines (refer to doc here: https://h2oai.atlassian.net/browse/PUBDEV-8835).
+        I-splines, 3 for NBSplineTypeI M-splines (refer to doc here: https://github.com/h2oai/h2o-3/issues/6926).
         If specified, must be the same size as gam_columns
 
         Type: ``List[int]``.

@@ -55,7 +55,7 @@ print.h2o.ensemble_performance <- function(x, metric = c("AUTO", "logloss", "MSE
       family <- "binomial"
     } else {
       # Will need to update this when the following is complete:
-      # https://0xdata.atlassian.net/browse/PUBDEV-2277 
+      # https://github.com/h2oai/h2o-3/issues/15184
       family <- "gaussian"
     }
   }

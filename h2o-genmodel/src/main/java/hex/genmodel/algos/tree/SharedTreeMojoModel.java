@@ -814,7 +814,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
         logger.error("\nTree inconsistency found:");
         if (node.depth == 1 && !weight_ok) { 
             logger.error("Note: this is a known issue for DRF and Isolation Forest models, " +
-                  "please refer to https://0xdata.atlassian.net/browse/PUBDEV-6140");
+                  "please refer to https://github.com/h2oai/h2o-3/issues/12971");
         }
         logger.error(node.getPrintString("parent"));
         logger.error(node.leftChild.getPrintString("left child"));

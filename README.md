@@ -54,29 +54,22 @@ Most people interact with three or four primary open source resources:  **GitHub
 
 > (Note: There is only one issue tracking system for the project.  GitHub issues are not enabled; you must use JIRA.)
 
-You can browse and create new issues in our open source **JIRA**:  <http://jira.h2o.ai>
+You can browse and create new issues in our GitHub repository:  <https://github.com/h2oai/h2o-3>
 
-*  You can **browse** and search for **issues** without logging in to JIRA:
-    1.  Click the `Issues` menu
-    1.  Click `Search for issues`
-*  To **create** an **issue** (either a bug or a feature request), please create yourself an account first:
-    1.  Click the `Log In` button on the top right of the screen
-    1.  Click `Create an acccount` near the bottom of the login box
-    1.  Once you have created an account and logged in, use the `Create` button on the menu to create an issue
-    1.  Create H2O-3 issues in the [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project.  (Note: Sparkling Water questions should be filed under the [SW](https://0xdata.atlassian.net/projects/SW/issues) project.)
-*	You can also vote for feature requests and/or other issues. Voting can help H2O prioritize the features that are included in each release.
-	1. Go to the [H2O JIRA page](https://0xdata.atlassian.net/).
-	2. Click **Log In** to either log in or create an account if you do not already have one.
-	3. Search for the feature that you want to prioritize, or create a new feature.
-	4. Click on the **Vote for this issue** link. This is located on the right side of the issue under the **People** section.
+*  You can **browse** and search for **issues** without logging in to Github:
+    1. Click the `Issues` tab on the top of the page
+    2. Apply filter to search for particular issues 
+*  To **create** an **issue** (either a bug or a feature request):
+    *  Create H2O-3 issues on the page [https://github.com/h2oai/h2o-3/issues/new/choose](https://github.com/h2oai/h2o-3/issues/new/choose).  (Note: Sparkling Water questions should be addressed under the [Sparkling Water](https://github.com/h2oai/sparkling-water/issues) repository.)
+
 
 <a name="OpenSourceResources"></a>
 ### 2.2 List of H2O Resources
 
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
-*  JIRA -- file bug reports / track issues here
-    * The [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project contains issues for the current H2O-3 project)
+*  GitHub issues -- file bug reports / track issues here
+    * The <https://github.com/h2oai/h2o-3/issues> page contains issues for the current H2O-3 project)
 *  Stack Overflow -- ask all code/software questions here
     * <http://stackoverflow.com/questions/tagged/h2o>
 *  Cross Validated (Stack Exchange) -- ask algorithm/theory questions here
@@ -709,7 +702,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Community"></a>
 ## 10. Community
 
-H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
+H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://github.com/h2oai/h2o-3/issues).  Please join us!  
 
 
 ### Team & Committers

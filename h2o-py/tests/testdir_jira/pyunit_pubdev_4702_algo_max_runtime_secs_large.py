@@ -171,7 +171,7 @@ def grabRuntimeInfo(err_bound, reduction_factor, model, training_data, x_indices
             model_within_max_runtime.append(1)
         else:
             print("########  Failure in PCA is not being counted.  Please fix this in "
-                  "JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8103")
+                  "Github issue: https://github.com/h2oai/h2o-3/issues/7546")
 
 
 def checkIteration(model):

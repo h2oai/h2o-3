@@ -96,7 +96,7 @@ function() {
   if (sum(test_pass_fail)>0)
     stop("Max_runtime_secs tests have failed.  Please check printout to determine which algos have failed....")
   else
-      print("PCA not tested.  Please fix JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8103")
+      print("PCA not tested.  Please fix https://github.com/h2oai/h2o-3/issues/7546")
 }
 
 cleanUP<-function(removeList) {
