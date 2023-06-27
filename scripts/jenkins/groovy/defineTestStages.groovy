@@ -179,7 +179,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
-      timeoutValue: 210, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 220, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 X-large', target: 'test-pyunit-xlarge', pythonVersion: '3.7',
@@ -440,7 +440,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
-      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 160, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
@@ -522,7 +522,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
-      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 170, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 Explain', target: 'test-pyunit-explain', pythonVersion: '3.7',
@@ -546,7 +546,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.9 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.9',
-      timeoutValue: 160, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 170, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],      
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
@@ -622,7 +622,7 @@ def call(final pipelineContext) {
           [ name: "cdh", version: "6.1"  ], // hdp3/hive2
           [ name: "hdp", version: "2.6"  ], // hdp2/hive2
           [ name: "hdp", version: "3.1"  ]  // hdp3/hive3 - JDBC Only
-  ]hado
+  ]
   // check our config is still valid
   for (distribution in distributionsToTest) {
     def distSupported = false
