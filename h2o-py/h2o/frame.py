@@ -441,7 +441,7 @@ class H2OFrame(Keyed, H2ODisplay):
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
                       skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
-        if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
+        if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. https://github.com/h2oai/h2o-3/issues/12573
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,

@@ -518,7 +518,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                               data={"auuc_type": auuc_type, "auuc_nbins": auuc_nbins})
             else:
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
-            # FIXME need to do the client-side filtering...  (PUBDEV-874)
+            # FIXME need to do the client-side filtering...  (https://github.com/h2oai/h2o-3/issues/13862)
             raw_metrics = None
             for mm in res["model_metrics"]:
                 if mm["frame"] is not None and mm["frame"]["name"] == test_data.frame_id:

@@ -23,7 +23,7 @@ system_overloaded = False # true if max run time increases while iteration numbe
 def algo_max_runtime_secs():
     '''
     This pyunit test is written to ensure that the max_runtime_secs can restrict the model training time for all
-    h2o algos.  See PUBDEV-4702.
+    h2o algos.  See https://github.com/h2oai/h2o-3/issues/11581.
     '''
     global model_within_max_runtime
     global err_bound

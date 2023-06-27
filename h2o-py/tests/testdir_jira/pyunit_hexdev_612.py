@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-"""Test for HEXDEV-612."""
+"""Test for https://github.com/h2oai/private-h2o-3/issues/160."""
 from tests import pyunit_utils
 import h2o
 import numpy as np

@@ -17,7 +17,7 @@ max_runtime_secs_small=1e-63    # small max_runtime_secs to make sure model did 
 def algo_max_runtime_secs():
     '''
     This pyunit test is written to ensure that the various model will not crash if the max_runtime_secs
-    is set to be too short.  See PUBDEV-4802.
+    is set to be too short.  See https://github.com/h2oai/h2o-3/issues/11681.
     '''
     global model_within_max_runtime
     seed = 12345

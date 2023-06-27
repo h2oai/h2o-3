@@ -47,12 +47,10 @@ More info on downloading & installing H2O is available in the [H2O User Guide](h
 <a name="Resources"></a>
 ## 2. Open Source Resources
 
-Most people interact with three or four primary open source resources:  **GitHub** (which you've already found), **JIRA** (for bug reports and issue tracking), **Stack Overflow** for H2O code/software-specific questions, and **h2ostream** (a Google Group / email discussion forum) for questions not suitable for Stack Overflow.  There is also a **Gitter** H2O developer chat group, however for archival purposes & to maximize accessibility, we'd prefer that standard H2O Q&A be conducted on Stack Overflow.
+Most people interact with three or four primary open source resources:  **GitHub** (which you've already found), **GitHub issues** (for bug reports and issue tracking), **Stack Overflow** for H2O code/software-specific questions, and **h2ostream** (a Google Group / email discussion forum) for questions not suitable for Stack Overflow.  There is also a **Gitter** H2O developer chat group, however for archival purposes & to maximize accessibility, we'd prefer that standard H2O Q&A be conducted on Stack Overflow.
 
 <a name="IssueTracking"></a>
 ### 2.1 Issue Tracking and Feature Requests
-
-> (Note: There is only one issue tracking system for the project.  GitHub issues are not enabled; you must use JIRA.)
 
 You can browse and create new issues in our GitHub repository:  <https://github.com/h2oai/h2o-3>
 

@@ -230,7 +230,7 @@ class H2OLocalServer(object):
     def _jar_paths():
         """Produce potential paths for an h2o.jar executable."""
 
-        # PUBDEV-3534 hook to use arbitrary h2o.jar
+        # https://github.com/h2oai/h2o-3/issues/10446 hook to use arbitrary h2o.jar
         own_jar = os.getenv("H2O_JAR_PATH", "")
         if own_jar != "":
             if not os.path.isfile(own_jar):

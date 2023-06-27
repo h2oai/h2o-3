@@ -86,8 +86,8 @@ For ideas about what to work on see the H2O-3 [Github issues](https://github.com
 
 To contribute code, fork the H2O-3 GitHub repo, create a branch for your work and when you're done, create a pull request.  Once a PR has been created, it will trigger the H2O-3 Jenkins test system and should start automatically running tests (this will show up in the comment history on the PR).  Make sure all the tests pass.  A few notes:
 
-* If there's not already a JIRA ticket associated with this task, please create one.
-* If there is a JIRA ticket associated with your changes, choose a branch name that includes that JIRA number.  e.g. `PUBDEV-1234_new_pca`
+* If there's not already a GitHub issue associated with this task, please create one.
+* If there is a GitHub issue associated with your changes, choose a branch name that includes that  number.  e.g. `gh-1234_new_pca`
 * New code must come with unit tests.  Here are some examples of [runits](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests), [pyunits](https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests) and [junits](https://github.com/h2oai/h2o-3/tree/master/h2o-algos/src/test/java/hex) to help get you started.
-* Use the JIRA number in the PR title.  e.g. "PUBDEV-1234: Added new `pca_method` option in the PCA algorithm".
-* Write a summary of all changes & additions to the code in the PR description and add a link to the JIRA.
+* Use the GitHube number in the PR title.  e.g. "GH-1234: Added new `pca_method` option in the PCA algorithm".
+* Write a summary of all changes & additions to the code in the PR description and add a link to the GitHub issue.
