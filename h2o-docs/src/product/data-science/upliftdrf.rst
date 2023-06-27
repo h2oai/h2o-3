@@ -329,6 +329,7 @@ Custom metric example for Uplift DRF
     att = perf.att(train=True)
     print(att)
 
+
 Uplift Curve and Area Under Uplift Curve (AUUC) calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
