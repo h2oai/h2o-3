@@ -55,7 +55,7 @@ class CustomAteFunc:
 
 class CustomAttFunc:
     def map(self, pred, act, w, o, model):
-        treatment = pred[1]
+        treatment = act[1]
         return [pred[0], 1] if treatment == 1 else [0, 0]
 
     def reduce(self, l, r):

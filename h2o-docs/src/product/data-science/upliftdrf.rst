@@ -126,6 +126,8 @@ Shared-tree algorithm parameters
 
 -  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree.  This method samples without replacement. This can be a value from 0.0 to 1.0 and defaults to ``1``.
 
+-  `custom_metric_func <algo-params/custom_metric_func.html>`__: Specify a custom evaluation function.
+
 -  `histogram_type <algo-params/histogram_type.html>`__: By default (``AUTO``) Uplift DRF bins from min...max in steps of :math:`\frac{(max-min)}{N}`. ``Random`` split points or quantile-based split points can be selected as well. ``RoundRobin`` can be specified to cycle through all histogram types (one per tree). Use one of these options to specify the type of histogram to use for finding optimal split points:
 
     - ``AUTO`` (default)
@@ -156,6 +158,8 @@ Shared-tree algorithm parameters
 -  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate on the x-axis. This method samples without replacement. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__). The range is 0.0 to 1.0, and this value defaults to ``0.6320000291``. 
 
 -  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with ``sample_rate``). This method samples without replacement. The range for this option is 0.0 to 1.0.
+
+-  `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
 
 Common parameters
 '''''''''''''''''
@@ -256,6 +260,74 @@ For example, we analyze data to determine if some medical help to recover from d
 - negative ATE means the medicine does not help with recovery in general
 - ATE equal or similar to zero means the medicine does not affect recovery in general
 - similar interpretation applies to ATT and ATC, the positive ATT is usually what scientists look for, but ATC is also an interesting metric (in an ideal case, positive both ATT and ATC say the treatment has an exact effect).
+
+Custom metric example for Uplift DRF
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. tabs::
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators import H2OUpliftRandomForestEstimator
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+
+    # Set the predictors, response, and treatment column:
+    predictors = ["f1", "f2", "f3", "f4", "f5", "f6","f7", "f8"]
+    # set the response as a factor
+    response = "conversion"
+    data[response] = data[response].asfactor()
+    # set the treatment as a factor
+    treatment_column = "treatment"
+    data[treatment_column] = data[treatment_column].asfactor()
+
+    # Split the dataset into a train and valid set:
+    train, valid = data.split_frame(ratios=[.8], seed=1234)
+
+    # Define custom metric function
+    # ``pred`` is prediction array of length 3, where:
+    #   - pred[0]  = ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_ct1 - p_y1_ct0``
+    #   - pred[1] = ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
+    #   - pred[2] = ``p_y1_ct0``: probability the response is 1 if the row is from the control group
+    # ``act`` is array with original data where
+    #   - act[0] = target variable
+    #   - act[1] = if the record belongs to the treatment or control group
+    # ``w`` (weight) and ``o`` (offset) are nor supported in Uplift DRF yet
+    
+    class CustomAteFunc:
+        def map(self, pred, act, w, o, model):
+            return [pred[0], 1]
+
+        def reduce(self, l, r):
+            return [l[0] + r[0], l[1] + r[1]]
+
+        def metric(self, l):
+            return l[0] / l[1]
+
+    custom_metric = h2o.upload_custom_metric(CustomAteFunc, func_name="ate", func_file="mm_ate.py")
+
+    # Build and train the model:
+    uplift_model = H2OUpliftRandomForestEstimator(ntrees=10,
+                                                  max_depth=5,
+                                                  treatment_column=treatment_column,
+                                                  uplift_metric="KL",
+                                                  min_rows=10,
+                                                  seed=1234,
+                                                  auuc_type="qini"
+                                                  custom_metric_func=custom_metric)
+    uplift_model.train(x=predictors, 
+                       y=response, 
+                       training_frame=train, 
+                       validation_frame=valid)
+
+    # Eval performance:
+    perf = uplift_model.model_performance()
+    custom_att = perf._metric_json["training_custom"]
+    print(custom_att)
+    att = perf.att(train=True)
+    print(att)
 
 
 Uplift Curve and Area Under Uplift Curve (AUUC) calculation
