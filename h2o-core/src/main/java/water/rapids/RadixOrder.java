@@ -74,9 +74,8 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
       batchSize = (int) Math.floor(minMem/dataSetMemoryPerRow);
       if (batchSize == 0)
         throw new RuntimeException("The minimum memory per node needed is too small to accommodate the sorting/merging " +
-                "operation.  Make sure the smallest node has at least "+minMem+" bytes of memory.");
+                "operation.  Make sure the smallest node has at least "+minMem*100+" bytes of memory.");
     }
-    Log.info("batchsize ", batchSize);
     
     // The Math.max ensures that batches of o and x are aligned, even for wide
     // keys.  To save % and / in deep iteration; e.g. in insert().
