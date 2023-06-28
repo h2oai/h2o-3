@@ -241,15 +241,29 @@ If you believe the estimate is a local optimum, you might want to increase the `
         library(h2o)
         h2o.init()
 
-        # Import the Tweedie dataset:
-        training_data <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p3_phi1_10KRows.csv")
+        # Import the tweedie 10k rows dataset:
+        train <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p1p2_phi2_5Cols_10KRows.csv")
 
         # Set the predictors and response:
         predictors <- c('abs.C1.', 'abs.C2.', 'abs.C3.', 'abs.C4.', 'abs.C5.')
-        response <- 'x'
+        response <- 'resp'
 
         # Build and train the model:
-        model <- h2o.glm(x = predictors, y = response, training_frame = training_data, family = 'tweedie', tweedie_variance_power = 3, lambda = 0, dispersion_parameter_method = "ml", init_dispersion_parameter = 0.5, fix_dispersion_parameter = TRUE, fix_tweedie_variance_power = FALSE)
+        model <- h2o.glm(x = predictors, 
+                         y = response, 
+                         training_frame = train, 
+                         family = "tweedie", 
+                         fix_dispersion_parameter = FALSE, 
+                         fix_tweedie_variance_power = FALSE, 
+                         tweedie_variance_power = 1.5, 
+                         lambda = 0, 
+                         compute_p_values = FALSE, 
+                         dispersion_parameter_method = "ml", 
+                         seed = 12345)
+
+        # Retrieve the tweedie variance power and dispersion:
+        print(c(model@params$actual$tweedie_variance_power, model@model$dispersion))
+        [1] 1.19325 2.01910
 
     .. code-tab:: python
 
@@ -257,7 +271,28 @@ If you believe the estimate is a local optimum, you might want to increase the `
         from h2o.estimators import H2OGeneralizedLinearEstimator
         h2o.init()
 
-        # Import the tweedie dataset:
+        # Import the tweedie 10k rows dataset:
+        train = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/tweedie_p1p2_phi2_5Cols_10KRows.csv")
+
+        # Set the predictors and response:
+        response = "resp"
+        predictors = ["abs.C1.", "abs.C2.", "abs.C3.", "abs.C4.", "abs.C5."]
+
+        # Buiild and train the model:
+        model = H2OGeneralizedLinearEstimator(family="tweedie", 
+                                              fix_dispersion_parameter=False, 
+                                              fix_tweedie_variance_power=False, 
+                                              tweedie_variance_power=1.5, 
+                                              lambda_=0, 
+                                              compute_p_values=False, 
+                                              dispersion_parameter_method="ml", 
+                                              seed=12345)
+        model.train(x=predictors, y=response, training_frame=train)
+
+        # Retrieve the tweedie variance power and dispersion:
+        print(model.actual_params["tweedie_variance_power"], 
+              model._model_json["output"]["dispersion"])
+        1.1932458137195066 2.019121907711618
 
 
 Regression Influence Diagnostic 
@@ -306,7 +341,7 @@ For the Gaussian family, we were able to calculate the exact RID; for the Binomi
         5     -0.006547774       0
         6     -0.044006742       1
 
-[380 rows x 16 columns] 
+        [380 rows x 16 columns] 
 
     .. code-tab:: python
 
@@ -327,6 +362,19 @@ For the Gaussian family, we were able to calculate the exact RID; for the Binomi
 
         # Retrieve the regression influence diagnostics:
         model.get_regression_influence_diagnostics()
+          AGE    RACE    DPROS    DCAPS    PSA    VOL    GLEASON    DFBETA_AGE    DFBETA_RACE    DFBETA_DPROS    DFBETA_DCAPS    DFBETA_PSA    DFBETA_VOL    DFBETA_GLEASON    DFBETA_Intercept    CAPSULE
+        -----  ------  -------  -------  -----  -----  ---------  ------------  -------------  --------------  --------------  ------------  ------------  ----------------  ------------------  ---------
+           65       1        2        1    1.4    0            6  -0.000117438   -0.000904955       0.010791       0.00612091   0.0184646       0.0245409        0.011172           -0.0159647           0
+           72       1        3        2    6.7    0            7  -0.0928261      0.0317816        -0.0403473     -0.296607     0.0744924       0.0533503       -0.030489            0.158871            0
+           70       1        1        2    4.9    0            6  -0.0213748      0.00294838        0.0527884     -0.10607      0.0217909       0.0154078        0.0284116           0.0134184           0
+           76       2        2        1   51.2   20            7  -0.11353       -0.203642          0.0296936      0.055365    -0.153839        0.0242024        0.0172388           0.114843            0
+           69       1        1        1   12.3   55.9          6  -0.00261436     0.00397739        0.0188107     -0.00289208   0.000939355    -0.033717         0.00905363         -0.00654777          0
+           71       1        3        2    3.3    0            8   0.0132995     -0.00540521        0.0079807      0.057775    -0.0267402      -0.0101142        0.032906           -0.0440067           1
+           68       2        4        2   31.9    0            7  -0.0639637     -0.297407         -0.135148      -0.294917    -0.0527299       0.103072         0.0113896           0.228666            0
+           61       2        4        2   66.7   27.2          7   0.0755647     -0.234867         -0.159723      -0.315108    -0.368596       -0.0791998        0.0838117           0.107002            0
+           69       1        1        1    3.9   24            7  -0.00866078    -0.000259061       0.0472046      0.00322434   0.0317235      -0.0194058       -0.0277221           0.0107889           0
+           68       2        1        2   13      0            6  -0.0120789     -0.0747856         0.0472865     -0.0734461    0.0191023       0.0182469        0.0239776           0.0238229           0
+        [380 rows x 16 columns]
 
 Interaction Column Support in CoxPH MOJO
 ''''''''''''''''''''''''''''''''''''''''
@@ -355,6 +403,85 @@ Once you pick a promising model, you can use ``<model_name>.inspect_model_fairne
 
 .. image:: /images/blog/shap.png
 
+Example
+^^^^^^^
+
+.. tabs::
+    .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # Import the HDMA dataset:
+        f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+        col_types <- list(by.col.name = c("high_priced"),
+                          types = c("factor"))
+        df <- h2o.importFile(path = f, col.types = col_types)
+
+        # Split the data so you can compare the performance
+        # of admissible vs non-admissible models later:
+        splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+        train <- splits[[1]]
+        test <- splits[[2]]
+
+        # Set the response column and predictor columns:
+        y <- "high_priced"
+        x <- c("loan_amount",
+               "loan_to_value_ratio",
+               "loan_term",
+               "intro_rate_period",
+               "property_value",
+               "income",
+               "debt_to_income_ratio")
+
+        # Fairness related information:
+        protected_columns <- c("derived_race", "derived_sex")
+        reference <- c("White", "Male")
+        favorable_class <- "0"
+
+        # Train your models:
+        gbm1 <- h2o.gbm(x, y, train)
+        h2o.inspect_model_fairness(gbm1, test, protected_columns, reference, favorable_class)
+
+        # You will receive graphs with accompanying explanations in the terminal.
+
+    .. code-tab:: python
+
+        import h2o
+        from h2o.estimators import H2OGradientBoostingEstimator
+        h2o.init()
+
+        # Import the HDMA dataset:
+        f = "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
+        col_types = {'high_priced': "enum"}
+        df = h2o.import_file(path=f, col_types=col_types)
+
+        # Split the data so you can compare the performance
+        # of admissible vs non-admissible models later:
+        train, test = df.split_frame(ratios=[0.8], seed=1)
+
+        # Set the response column and predictor columns:
+        y = "high_priced"
+        x =  ["loan_amount",
+              "loan_to_value_ratio",
+              "loan_term",
+              "intro_rate_period",
+              "property_value",
+              "income",
+              "debt_to_income_ratio"]
+
+        # Fairness related information:
+        protected_columns = ["derived_race", "derived_sex"]
+        reference = ["White", "Male"]
+        favorable_class = "0"
+
+        # Train your models:
+        gbm1 = H2OGradientBoostingEstimator()
+        gbm1.train(x, y, train)
+        gbm1.inspect_model_fairness(test, protected_columns, reference, favorable_class)
+
+        # You will receive graphs with accompanying explanations in the terminal.
+
 Upgrade to XGBoost 1.6
 ''''''''''''''''''''''
 
@@ -364,6 +491,51 @@ One notable highlight of XGBoost 1.6 is its boosted performance, thanks to optim
 
 MOJO Support for H2OAssembly
 ''''''''''''''''''''''''''''
+
+`H2OAssembly <https://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/assembly.html>`__ is part of the H2O-3 API that enables you to form a pipeline of data munging operations. The new version of the class introduces the download_mojo method that converts an H2OAssembly pipeline to the `MOJO2 artifact <https://docs.h2o.ai/driverless-ai/1-10-lts/docs/userguide/scoring-mojo-scoring-pipeline.html#>`__ that is well-known from DriverlessAI. The conversion currently supports the following transformation stages:
+
+- ``H2OColSelect``: selection of columns
+- ``H2OColOp``: unary column operations
+
+    - math functions: ``abs``, ``acos``, ``acosh``, ``asin``, ``asinh``, ``atan``, ``atanh``, ``ceil``, ``cos``, ``cosh``, ``cospi``, ``digamma``, ``exp``, ``expm1``, ``gamma``, ``lgamma``, ``log``, ``log1p``, ``log2``, ``log10``, ``logical_negation``, ``sign``, ``sin``, ``sinh``, ``sinpi``, ``sqrt``, ``tan``, ``tanh``, ``tanpi``, ``trigamma``, ``trunc``, ``round``, ``signif``
+    - conversion functions: ``ascharacter``, ``asfactor``, ``asnumeric``, ``as_date``
+    - string functions: ``lstrip``, ``rstrip``, ``gsub``, ``sub``, ``substring``, ``tolower``, ``toupper``, ``trim``, ``strsplit``, ``countmatches``, ``entropy``, ``nchar``, ``num_valid_substrings``, ``grep``
+    - time functions: ``day``, ``dayOfWeek``, ``hour``, ``minute``, ``second``, ``week``, ``year``
+
+- ``H2OBinaryOp``: binary column operations
+
+    - arithmetic functions: ``__add__``, ``__sub__``, ``__mul__``, ``__div__``, ``__floordiv__``, ``__pow__``, ``__mod__``
+    - comparison functions: ``__le__``, ``__lt__``, ``__ge__``, ``__gt__``, ``__eq__``, ``__ne__``
+    - logical functions: ``__and__``, ``__or__``
+    - string functions: ``strdistance``
+
+Example
+^^^^^^^
+
+.. tabs::
+    .. code-tab:: python
+    
+        from h2o.assembly import *
+        from h2o.transforms.preprocessing import *
+
+        # Load the iris dataset:
+        iris = h2o.load_dataset("iris")
+
+        # Build your assembly:
+        assembly = H2OAssembly(steps=[("col_select",
+                                       H2OColSelect(["Sepal.Length",
+                                       "Petal.Length", "Species"])),
+                                      ("cos_Sepal.Length",
+                                       H2OColOp(op=H2OFrame.cos,
+                                       col="Sepal.Length", inplace=True)),
+                                      ("str_cnt_Species",
+                                       H2OColOp(op=H2OFrame.countmatches,
+                                       col="Species", inplace=False,
+                                       pattern="s"))])
+        result = assembly.fit(iris)
+
+        # Download the MOJO artifact:
+        assembly.download_mojo(file_name="iris_mojo", path='')
 
 GBM Interpretability
 ''''''''''''''''''''
