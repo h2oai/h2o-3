@@ -83,4 +83,8 @@ public abstract class MojoModel extends GenModel {
   protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
+
+  protected MojoModel(String[] columns, String[][] domains, String responseColumn, String treatmentColumn) {
+    super(columns, domains, responseColumn, treatmentColumn);
+  }
 }

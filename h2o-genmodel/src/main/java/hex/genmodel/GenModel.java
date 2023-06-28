@@ -28,11 +28,22 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   /** Name of the column with offsets (used for certain types of models). */
   public String _offsetColumn;
+  
+  /** Name of the column determine treatment group, currently only for UpliftDRF models */
+  public String _treatmentColumn;
 
   public GenModel(String[] names, String[][] domains, String responseColumn) {
     _names = names;
     _domains = domains;
     _responseColumn = responseColumn;
+    _treatmentColumn = null;
+  }
+
+  public GenModel(String[] names, String[][] domains, String responseColumn, String treatmentColumn) {
+    _names = names;
+    _domains = domains;
+    _responseColumn = responseColumn;
+    _treatmentColumn = treatmentColumn;
   }
 
   /**
