@@ -50,7 +50,7 @@ task checkPullRequest {
 
 def checkPull(changeId) {
     def jsonSlurper = new JsonSlurper()
-    def pullDetails = jsonSlurper.parseText(new URL("https://api.github.com/repos/h2oai/h2o-3/pulls/$changeId").getText())
+        def pullDetails = jsonSlurper.parseText(new URL("https://api.github.com/repos/h2oai/h2o-3/pulls/$changeId").getText())
     def title = pullDetails.title
     println ""
     println "Checking pull request ($changeId): $title"
@@ -63,20 +63,24 @@ def checkPull(changeId) {
         println "PR check will be skipped for Snyk security upgrades"
         return []
     }
-    def hexdevMatcher = title =~ /.*HEXDEV-[0-9]{4,5}.*/
-    def itaMatcher = title =~ /.*ITA-[0-9]{3,5}.*/
-    if (hexdevMatcher.matches() || itaMatcher.matches()) {
-        println "HEXDEV and ITA jiras are not validated"
-        return []
+    def issueMatcher = title =~ /.*(GH-[0-9]{4,5}).*/
+    if (!issueMatcher.matches()) {
+        return ["Pull Request ${changeId} doesn't have associated GitHub issue. Please add the issue number (GH-XXXX) in the title of the PR"]
     }
-    def pubdevMatcher = title =~ /.*(PUBDEV-[0-9]{4,5}).*/
-    if (!pubdevMatcher.matches()) {
-        return ["Pull Request ${changeId} doesn't have associated JIRA ticket. Please add jira id (PUBDEV-XXXX) in the title of the PR"]
+    def issueId = issueMatcher[0][1]
+    if (!pullDetails.body.contains("#${issueId}") {
+        return ["The associated GitHub issue #${issueId} must be mentioned in the description of the PR."]
     }
-    def jiraId = pubdevMatcher[0][1]
-    def jiraDetails = jsonSlurper.parseText(new URL("https://h2oai.atlassian.net/rest/api/latest/issue/$jiraId").getText())
-    def status = jiraDetails.fields.status
-    if (status.name != 'In Progress') {
+        
+    def issueDetails = jsonSlurper.parseText(new URL("https://api.github.com/repos/h2oai/h2o-3/issues/${issueId}").getText())
+    if (issueDetails.milestone == null || issueDetails.milestone.state != "open"){
+        return ["The associated GitHub issue #${issueId} must be assigned to an opened milestone."]
+    }
+    if (issueDetails.assignee == null){
+        return ["The associated GitHub issue #${issueId} must  have an assignee."]
+    }
+    
+    :qif (status.name != 'In Progress') {
         return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
                 "This jira is not marked 'In Progress'. Please check if the associated jira ticket is correct and change the status to 'In Progress'"]
     }
@@ -100,10 +104,6 @@ def checkPull(changeId) {
             return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
                     "This jira is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch."]
         }
-    }
-    def productionImpact = jiraDetails.fields.customfield_12678
-    if (!productionImpact) {
-        return ["Jira ticket https://h2oai.atlassian.net/browse/${jiraId} doesn't specify impact of this change on production model use. Please fill in the field 'Production Impact'."]
     }
     println "Pull request #$changeId seems correct. Thank you and good luck in code review!"
     return []
