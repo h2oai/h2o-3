@@ -10,12 +10,12 @@ H2O Releases 3.40 & 3.42
 ~~~~~~~~~~~~~~~~~~~~~~~~
 .. image:: /images/blog/rel-3_42.png
 
-Our new major releases of H2O are packed with new features and fixes! Some of the major highlights of these releases are the new Decision Tree algorithm, the added ability to grid over Infogram, an upgrade to the version of XGBoost and an improvement to its speed, the completion of the maximum likelihood dispersion parameter and its expansion to the Negative Binomial family, and many more exciting features!
+Our new major releases of H2O are packed with new features and fixes! Some of the major highlights of these releases are the new Decision Tree algorithm, the added ability to grid over Infogram, an upgrade to the version of XGBoost and an improvement to its speed, the completion of the maximum likelihood dispersion parameter and its expansion to the Negative Binomial and the Tweedie families, and many more exciting features!
 
-Decision Tree
-'''''''''''''
+Decision Tree (Yuliia Syzon)
+''''''''''''''''''''''''''''
 
-We implemented the new `Decision Tree algorithm <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/decision-tree.html>`__ which is a powerful tool for classification and regression tasks. The Decision Tree algorithm creates a tree structure in which each internal node represents a test on one attribute. Each branch emerging from a node represents an outcome of the test, and each lead node represents a class label or a predicted value. The Decision Tree algorithm follows a recursive process to build the tree structure. This implementation currently only supports numeric features and a binary target variable. 
+We implemented the new `Decision Tree algorithm <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/decision-tree.html>`__ which is a powerful tool for classification and regression tasks. The Decision Tree algorithm creates a tree structure in which each internal node represents a test on one attribute. Each branch emerging from a node represents an outcome of the test, and each leaf node represents a class label or a predicted value. The Decision Tree algorithm follows a recursive process to build the tree structure. This implementation currently only supports numeric features and a binary target variable. 
 
 Binning for Tree Building
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,8 +90,8 @@ Example
         # Predict on the test data:
         pred_test = sdt_h2o.predict(test)
 
-GLM AIC and Log Likelihood Implementation
-'''''''''''''''''''''''''''''''''''''''''
+GLM AIC and Log Likelihood Implementation (Yuliia Syzon)
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 We have implemented the calculation of `full log likelihood and full Akaike Information Criterion (AIC) <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#likelihood-and-aic>`__ for the following Generalized Linear Models (GLM) families: Gaussian, Binomial, Quasibinomial, Fractional Binomial, Poisson, Negative Binomial, Gamma, Tweedie, and Multinomial.
 
@@ -161,8 +161,8 @@ Example
         pros_glm.aic()
         507657.118558785
 
-Maximum Likelihood Estimation of Dispersion Parameter Estimation for Negative Binomial GLM
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Maximum Likelihood Estimation of Dispersion Parameter Estimation for Negative Binomial GLM (Tomáš Frýda)
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 We implemented `negative binomial regression with dispersion parameter estimation using the maximum likelihood method <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#id2>`__ for Generalized Linear Models (GLM). Regularization is not supported when using dispersion parameter estimation that uses the maximum likelihood method. To use this new feature, set the ``dispersion_parameter_method="ml"`` along with ``family="negativebinomial"`` in the GLM constructor.
 
@@ -222,8 +222,8 @@ We implemented `negative binomial regression with dispersion parameter estimatio
         pros_glm._model_json["output"]["dispersion"]
         34.28340576771586
 
-Variance Power and Dispersion Estimation for Tweedie GLM
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Variance Power and Dispersion Estimation for Tweedie GLM (Tomáš Frýda)
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 We implemented `maximum likelihood estimation for Tweedie variance power <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#tweedie-likelihood-calculation>`__ in GLM. Regularization is not supported when using the maximum likelihood method. To use this new feature, set the ``dispersion_parameter_method="ml"`` along with ``family="tweedie"``, ``fix_dispersion_parameter=True``, and ``fix_tweedie_variance_power=False`` in the GLM constructor. Use ``init_dispersion_parameter`` to specify the dispersion parameter (:math:`\phi`) and ``tweedie_variance_power`` to specify the initial variance power to start the estimation at. 
 
@@ -295,8 +295,9 @@ If you believe the estimate is a local optimum, you might want to increase the `
         1.1932458137195066 2.019121907711618
 
 
-Regression Influence Diagnostic 
-'''''''''''''''''''''''''''''''
+Regression Influence Diagnostic (Wendy Wong)
+''''''''''''''''''''''''''''''''''''''''''''
+
 We implemented the `Regression Influence Diagnostic <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#regression-influence-diagnostics>`__ (RID) for the Gaussian and Binomial families for GLM. This implementation finds the influence of each data row on the GLM coefficients’ values for the IRLSM solver. RID determines the coefficient change for each predictor when a data row is included and excluded in the dataset used to train the GLM model.
 
 For the Gaussian family, we were able to calculate the exact RID; for the Binomial family, an approximation formula is used to determine the RID.
@@ -376,18 +377,18 @@ For the Gaussian family, we were able to calculate the exact RID; for the Binomi
            68       2        1        2   13      0            6  -0.0120789     -0.0747856         0.0472865     -0.0734461    0.0191023       0.0182469        0.0239776           0.0238229           0
         [380 rows x 16 columns]
 
-Interaction Column Support in CoxPH MOJO
-''''''''''''''''''''''''''''''''''''''''
+Interaction Column Support in CoxPH MOJO (Wendy Wong)
+'''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Cox Proportional Hazards (CoxPH) MOJO now supports all interaction columns (i.e. ``enum`` to ``enum``, ``num`` to ``enum``, and ``num`` to ``num`` interactions).
 
-Improved GAM Tutorial
-'''''''''''''''''''''
+Improved GAM Tutorial (Amin Sedaghat)
+'''''''''''''''''''''''''''''''''''''
 
 We improved the Generalized Additive Models (GAM) tutorial to make it more user-friendly by employing cognitive load theory principles. This change allows you to concentrate on a single concept for each instruction which reduces your cognitive strain and will help to improve your comprehension.
 
-Grid Over Infogram
-''''''''''''''''''
+Grid Over Infogram (Tomáš Frýda)
+''''''''''''''''''''''''''''''''
 
 As a continuation of the Admissible Machine Learning (ML), we implemented a simple way to `train models on features ranked using Infogram <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/admissible.html#inspect-model-fairness>`__. This eliminates the need to specify some threshold value.
 
@@ -482,15 +483,15 @@ Example
 
         # You will receive graphs with accompanying explanations in the terminal.
 
-Upgrade to XGBoost 1.6
-''''''''''''''''''''''
+Upgrade to XGBoost 1.6 (Adam Valenta)
+'''''''''''''''''''''''''''''''''''''
 
 The transition from XGBoost version 1.2 to 1.6 in the H2O-3 platform marks a major milestone in the evolution of this widely used algorithm. XGBoost, renowned for its efficiency and accuracy in handling structured datasets, has been a go-to choice for many data scientists. With the upgrade to version 1.6, H2O-3 raises the bar even further, providing users with an array of enhanced features and improvements.
 
 One notable highlight of XGBoost 1.6 is its boosted performance, thanks to optimized algorithms and implementation. The upgrade includes various efficiency enhancements, such as improved parallelization strategies, memory management, and algorithmic tweaks. These improvements translate into faster training times and more efficient memory utilization, allowing you to process larger datasets and experiment with complex models more efficiently.
 
-MOJO Support for H2OAssembly
-''''''''''''''''''''''''''''
+MOJO Support for H2OAssembly (Marek Novotný)
+''''''''''''''''''''''''''''''''''''''''''''
 
 `H2OAssembly <https://docs.h2o.ai/h2o/latest-stable/h2o-py/docs/assembly.html>`__ is part of the H2O-3 API that enables you to form a pipeline of data munging operations. The new version of the class introduces the download_mojo method that converts an H2OAssembly pipeline to the `MOJO2 artifact <https://docs.h2o.ai/driverless-ai/1-10-lts/docs/userguide/scoring-mojo-scoring-pipeline.html#>`__ that is well-known from DriverlessAI. The conversion currently supports the following transformation stages:
 
@@ -537,13 +538,13 @@ Example
         # Download the MOJO artifact:
         assembly.download_mojo(file_name="iris_mojo", path='')
 
-GBM Interpretability
-''''''''''''''''''''
+GBM Interpretability (Adam Valenta)
+'''''''''''''''''''''''''''''''''''
 
 We brought another insight into H2O’s Gradient Boosting Machines (GBM) algorithm. This enhancement is the ability to `retrieve row-to-tree assignments directly from the algorithm <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm-faq/reproducibility.html#can-i-access-the-row-to-tree-assignments-for-my-model>`__. This addresses the challenge of understanding how individual data points are assigned to specific decision trees within the ensemble. This new feature allows you to gain deeper insights into the decision-making process, thus enabling greater transparency and understanding of GBM models.
 
-GBM Poisson Distribution Deviance
-'''''''''''''''''''''''''''''''''
+GBM Poisson Distribution Deviance (Yuliia Syzon)
+''''''''''''''''''''''''''''''''''''''''''''''''
 
 Wehave updated the deviance calculation formula for the Poisson family in GBM. To ensure accurate and reliable results, we introduced a new formula:
 
@@ -559,13 +560,13 @@ which replaces the previously used formula:
 
 This previous formula, though optimized and maintaining the deviance function behavior, produced incorrect output values. No longer! To validate the correctness of the new formula, we compared it with the deviance calculations in scikit-learn.
 
-End of Support for Python 2.7 and 3.5
-'''''''''''''''''''''''''''''''''''''
+End of Support for Python 2.7 and 3.5 (Marek Novotný)
+'''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Support for Python 2.7 and 3.5 have been removed from the project to get rid of vulnerabilities connected with the `future <https://pypi.org/project/future/>`__ package. If you need to use Python 2.7 to 3.5, please contact sales@h2o.ai.
 
-Documentation Improvements
-''''''''''''''''''''''''''
+Documentation Improvements (Hannah Tillman)
+'''''''''''''''''''''''''''''''''''''''''''
 
 Parameters for all supervised and unsupervised algorithms have been standardized, updated, reordered, and alphabetized to help you more easily find the information you need. Each section has been divvied up into algorithm-specific parameters and common parameters. GBM, DRF, XGBoost, Uplift DRF, Isolation Forest, and Extended Isolation Forest have an additional “shared tree-based algorithm parameters” section. `All GLM family parameters have been centralized <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#shared-glm-family-parameters>`__ to the GLM page with icons showing which GLM family algorithm shares that parameter. `Autoencoder <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html#autoencoder-specific-parameters>`__ for Deep Learning and `HGLM <https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#hglm-parameters>`__ for GLM also have their own parameter-specific sections.
 
