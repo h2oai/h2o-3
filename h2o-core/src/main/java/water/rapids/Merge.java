@@ -18,6 +18,8 @@ public class Merge {
   
   public static int ASCENDING = 1;
   public static int DESCENDING = -1; 
+  public static final int MEM_MULTIPLIER = 30;  // multiplier applied to batchsize.  Determined by experiment.
+  public static final int OPTIMAL_BATCHSIZE = 1048576;
 
   private static final AtomicLong _mergeSeq = new AtomicLong(0);
 
