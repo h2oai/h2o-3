@@ -103,7 +103,9 @@ def checkPull(changeId) {
         os.write(projectRequest.getBytes());
     }
     try(InputStream is = connection.getInputStream()) {
-        def projectResponse = jsonSlurper.parseText(is.getText())
+        def responseText = is.getText()
+        println(responseText)
+        def projectResponse = jsonSlurper.parseText(responseText)
         if (projectResponse.data.repository.issue.projectV2 == null) {
             return ["The associated GitHub issue #${issueId} must be assigned to H2O-3 project."]
         }
