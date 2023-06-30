@@ -16,15 +16,13 @@ import com.github.ricksbrown.cowsay.Cowsay
 
 def GOOD_PR_PROCESS = """
 How to pass this check?
-    1. Always have a Jira before you start working on a task (otherwise you cannot know what branch to start from).
-    2. Make sure the Jira has a 'Fix Version' defined. If it doesn't consult the team what is a good fix version for your change.
-    3. If you are working on a Jira with 'Fix Version' ending with '.1' you are working on a change that should go to a master branch. 
+    1. Always have a GitHub issue before you start working on a task (otherwise you cannot know what branch to start from).
+    2. Make sure the GitHub issue has a milestone assigned. If it doesn't consult the team what is a good fix version for your change.
+    3. If you are working on a GitHub issue with the milestone ending with '.1' you are working on a change that should go to a master branch. 
        All other changes should go to the (current) fix release branch. Such branches are prefixed 'rel-'. 
-    4. Put the Jira to 'In Progress' state.
-    5. Specify whether your fix/change has impact on production model use (Jira field 'Production Impact'). Explicitly pick
-       'none' if there is no impact - the check is designed to pick one value.
-    6. Make a code change. Include Jira ticket ID (PUBDEV-XXXX) in the commit message of one of your commits. This is not checked. 
-    7. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines. This is checked.
+    4. Assign the issue to H2O-3 project and Put issue in the project to 'In Progress' state.
+    6. Make a code change. Include GitHub issue number (GH-XXXX) in the commit message of one of your commits. This is not checked. 
+    7. Submit a PR and issue number in PR's title and link the issue in the PR description, eg.: GH-4200: Adding support for Factorization Machines. This is checked.
 """
 
 task checkPullRequest {
@@ -70,9 +68,10 @@ def checkPull(changeId) {
     def issueId = issueMatcher[0][1]
     if (!pullDetails.body.contains("#${issueId}") {
         return ["The associated GitHub issue #${issueId} must be mentioned in the description of the PR."]
-    }
+    } 
         
     def issueDetails = jsonSlurper.parseText(new URL("https://api.github.com/repos/h2oai/h2o-3/issues/${issueId}").getText())
+    
     if (issueDetails.milestone == null || issueDetails.milestone.state != "open"){
         return ["The associated GitHub issue #${issueId} must be assigned to an opened milestone."]
     }
@@ -80,31 +79,35 @@ def checkPull(changeId) {
         return ["The associated GitHub issue #${issueId} must  have an assignee."]
     }
     
-    :qif (status.name != 'In Progress') {
-        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                "This jira is not marked 'In Progress'. Please check if the associated jira ticket is correct and change the status to 'In Progress'"]
-    }
-    def fixVersions = jiraDetails.fields.fixVersions
-    if (fixVersions.size() == 0) {
-        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                "This jira doesn't have a fix version set. Please check if the associated jira ticket is correct and validate with the team what should be the correct fixed version."]
-    }
-    if (fixVersions.size() > 1) {
-        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                "This jira has more than one fix version. Please check if the associated jira ticket is correct and validate with the team what should be the correct fixed version."]
-    }
-    def fixVersionValue = fixVersions.get(0).name
+    def fixVersionValue = issueDetails.milestone.title
     def baseBranch = pullDetails.base.ref
     if (fixVersionValue.endsWith('.1')) {
         if (baseBranch != 'master')
-            return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                    "This jira is marked for release in {$fixVersionValue}. This release will be done from a master branch. Change the base branch of the PR to 'master'."]
+            return ["Pull Request ${changeId} is linked to the GitHub issue https://github.com/h2oai/h2o-3/issues/${issueId}. " +
+                    "This issue is marked for release in {$fixVersionValue}. This release will be done from a master branch. Change the base branch of the PR to 'master'."]
     } else {
         if (!baseBranch.startsWith('rel-')) {
-            return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                    "This jira is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch."]
+            return ["Pull Request ${changeId} is linked to the GitHub issue https://github.com/h2oai/h2o-3/issues/${issueId}. " +
+                    "This issue is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch."]
         }
     }
+    
+    def projectRequest = '{"query":"{ repository(owner: \"h2oai\", name: \"h2o-3\") {issue(number: ' + "${changeId}" + '}) {projectV2(number: 112){number}}}}"}'
+    def projectRequestUrl = new URL("https://api.github.com/graphql")
+    def connection = (HttpURLConnection)projectRequestUrl.openConnection()
+    connection.setRequestMethod("POST")
+    connection.setRequestProperty("Authorization", "Bearer ${System.getenv("H2O-3-GET-PROJECT-TOKEN")}")
+    connection.connect()
+    try(OutputStream os = connection.getOutputStream()) {
+        os.write(projectRequest.getBytes());
+    }
+    try(InputStream is = connection.getInputStream()) {
+        def projectResponse = jsonSlurper.parseText(is.getText())
+        if (projectResponse.data.repository.issue.projectV2 == null) {
+            return ["The associated GitHub issue #${issueId} must be assigned to H2O-3 project."]
+        }
+    }
+    
     println "Pull request #$changeId seems correct. Thank you and good luck in code review!"
     return []
 }
