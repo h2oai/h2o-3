@@ -61,7 +61,7 @@ def checkPull(changeId) {
         println "PR check will be skipped for Snyk security upgrades"
         return []
     }
-    def issueMatcher = title =~ /.*(GH-[0-9]{4,5}).*/
+    def issueMatcher = title =~ /.*GH-([0-9]{4,5}).*/
     if (!issueMatcher.matches()) {
         return ["Pull Request ${changeId} doesn't have associated GitHub issue. Please add the issue number (GH-XXXX) in the title of the PR"]
     }
