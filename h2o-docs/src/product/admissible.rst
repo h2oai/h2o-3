@@ -35,6 +35,9 @@ The Fair Infogram plots all the features as points on a two-dimensional grid of 
 
 The goal of this tool is to assist the identification of admissible features which have little or no information-overlap with protected attributes yet are reasonably predictive for the response.
 
+.. note::
+    
+    Infogram is not able to remove correlated columns.
 
 Infogram Interface
 ------------------
