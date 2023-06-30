@@ -97,7 +97,7 @@ def checkPull(changeId) {
     def connection = (HttpURLConnection)projectRequestUrl.openConnection()
     connection.setRequestMethod("POST")
     connection.setDoOutput(true)
-    connection.setRequestProperty("Authorization", "Bearer ${System.getenv("H2O-3-GET-PROJECT-TOKEN")}")
+    connection.setRequestProperty("Authorization", "Bearer ${System.getenv("H2O3_GET_PROJECT_TOKEN")}")
     connection.connect()
     try(OutputStream os = connection.getOutputStream()) {
         os.write(projectRequest.getBytes());
