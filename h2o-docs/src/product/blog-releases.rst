@@ -584,9 +584,13 @@ General Blogs
 A Look at the UniformRobust method for ``histogram_type``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We introduced the `UniformRobust method for histogram <data-science/algo-params/histogram_type.html>`__ (``histogram_type="UniformRobust"``) in 3.36.1. and want to highlight its benefits! This method addresses issues found in the default UniformAdaptive method and preserve the runtime performance advantages compared to the QuantilesGlobal method.
+We introduced the `UniformRobust method for histogram <data-science/algo-params/histogram_type.html>`__ (``histogram_type="UniformRobust"``) in 3.36.1. and want to highlight its benefits! This method increases accuracy for datasets with a lot of outliers without causing a significant increase in time.
 
-The issue found with the default UniformAdaptive method deals with outlier issues related to binning. This issue can be seen in how the UniformAdaptive method handles certain datasets with many columns that are primarily comprised of small integers where there are also columns with artificial values upwards of 99999, 99998. While you can certainly handle this issue in pre-processing steps, the default binning method can fail on features with certain characteristics. Uniform binning looks at the min and max values in the column from the observations in the current tree node. It splits the interval into bins of the same length. However, when there are such large outliers, these outliers are classified into a single bin while the rest of the observations end up in another single bin. This, unfortunately, leaves most of the bins unused.
+The issue found with the default UniformAdaptive method deals with binning issues caused by how the method handles datasets with columns that have outliers. While you can certainly handle this issue in pre-processing steps, the default binning method can fail on features with certain characteristics. Uniform binning looks at the min and max values in the column from the observations in the current tree node. It splits the interval into bins of the same length. However, when there are such large outliers, these outliers are classified into a single bin while the rest of the observations end up in another single bin. This, unfortunately, leaves most of the bins unused.
+
+.. image:: /images/blog/empty-binning.png
+    :alt: An example of a histogram about income showing how outliers cause cause issues with binning resulting in many bins being unused. 
+    :align: center
 
 The introduction of the UniformRobust method mitigates these issues! By learning from histograms from the previous layer, we are able to fine-tune the split points for the current layer.
 
@@ -595,6 +599,10 @@ To begin, the root of the tree uses UniformAdaptive binning. After the first spl
 For the next level of split-points, we then take the boundaries of the non-empty bins and refine them according to the squared error that is accumulated in each bin. Non-empty bins with a higher squared error are split more than ones with a lower squared error. This act of splitting creates sub-bins, and these are refined uniformly. We aid this process by freeing up space by discarding empty bins based on the desired target number of bins.
 
 So, if uniform splitting fails, the next iteration attempts to correct the issue by repeating the procedure with new bins. This allows us to recursively refine the promising bins as we get deeper in the tree.
+
+.. image:: /images/blog/nonempty-split.png
+    :alt: An example of a histogram about income showing a better distribution of bins despite outlier values.
+    :align: center
 
 Overall, we have observed that the UniformRobust method has a runtime performance and accuracy that is similar to UniformAdaptve on datasets that have no outliers. On datasets with outliers, though, we see that UniformRobust significantly outperforms UniformAdaptive. UniformRobust also slightly outperforms QuantilesGlobal in accuracy in instances with outliers while being twice as fast (in a single node setting).
 
