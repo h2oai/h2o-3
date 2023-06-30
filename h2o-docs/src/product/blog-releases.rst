@@ -577,3 +577,88 @@ Prior Release Blogs
 ~~~~~~~~~~~~~~~~~~~
 
 You can find all prior release blogs `here <https://h2o.ai/blog/category/h2o-release/>`__.
+
+General Blogs
+-------------
+
+A Look at the UniformRobust method for ``histogram_type``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We introduced the `UniformRobust method for histogram <data-science/algo-params/histogram_type.html>`__ (``histogram_type="UniformRobust"``) in 3.36.1. and want to highlight its benefits! This method addresses issues found in the default UniformAdaptive method and preserve the runtime performance advantages compared to the QuantilesGlobal method.
+
+The issue found with the default UniformAdaptive method deals with outlier issues related to binning. This issue can be seen in how the UniformAdaptive method handles certain datasets with many columns that are primarily comprised of small integers where there are also columns with artificial values upwards of 99999, 99998. While you can certainly handle this issue in pre-processing steps, the default binning method can fail on features with certain characteristics. Uniform binning looks at the min and max values in the column from the observations in the current tree node. It splits the interval into bins of the same length. However, when there are such large outliers, these outliers are classified into a single bin while the rest of the observations end up in another single bin. This, unfortunately, leaves most of the bins unused.
+
+The introduction of the UniformRobust method mitigates these issues! By learning from histograms from the previous layer, we are able to fine-tune the split points for the current layer.
+
+To begin, the root of the tree uses UniformAdaptive binning. After the first split is made, we learn how the histograms were populated. Though this split has been made, the data has not yet been seen, so we do not yet know the exact distributions of the data in the right and left child nodes. If we see that UniformAdaptive binning fails, we can assume an issue still exists in the child nodes. Then, we approximate the distribution in the child nodes by the distribution in the parent node. We do this by looking at the bins of the histogram to check how many bins were empty compared to the total number of available bins. If too few bins are populated, that is when we switch to the new binning method.
+
+For the next level of split-points, we then take the boundaries of the non-empty bins and refine them according to the squared error that is accumulated in each bin. Non-empty bins with a higher squared error are split more than ones with a lower squared error. This act of splitting creates sub-bins, and these are refined uniformly. We aid this process by freeing up space by discarding empty bins based on the desired target number of bins.
+
+So, if uniform splitting fails, the next iteration attempts to correct the issue by repeating the procedure with new bins. This allows us to recursively refine the promising bins as we get deeper in the tree.
+
+Overall, we have observed that the UniformRobust method has a runtime performance and accuracy that is similar to UniformAdaptve on datasets that have no outliers. On datasets with outliers, though, we see that UniformRobust significantly outperforms UniformAdaptive. UniformRobust also slightly outperforms QuantilesGlobal in accuracy in instances with outliers while being twice as fast (in a single node setting).
+
+Example
+'''''''
+
+In the following example, you can compare the performance of the UniformRobust method against the UniformAdaptive method.
+
+.. tabs::
+    .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # Import the Swedish motor insurance dataset. This dataset has larger outlier
+        # values in the "Claims" column:
+        motor <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/Motor_insurance_sweden.txt")
+
+        # Set the predictors and response:
+        predictors <- c("Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make")
+        response <- "Claims"
+
+        # Build and train the UniformRobust model:
+        motor_robust <- h2o.gbm(histogram_type = "UniformRobust", seed = 1234, x = predictors, y = response, training_frame = motor)
+
+        # Build and train the UniformAdaptive model (we will use this model to
+        # compare with the UniformRobust model):
+        motor_adaptive <- h2o.gbm(histogram_type = "UniformAdaptive", seed = 1234, x = predictors, y = response, training_frame = motor)
+
+        # Compare the RMSE of the two models to see which model performed better:
+        print(c(h2o.rmse(motor_robust), h2o.rmse(motor_adaptive)))
+        [1] 36.03102 36.69582
+
+        # The RMSE is slightly lower in the UniformRobust model, showing that it performed better
+        # that UniformAdaptive on a dataset with outlier values!
+
+    .. code-tab:: python
+
+        import h2o
+        from h2o.estimators import H2OGradientBoostingEstimator
+        h2o.init()
+
+        # Import the Swedish motor insurance dataset. This dataset has larger outlier
+        # values in the "Claims" column:
+        motor = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/glm_test/Motor_insurance_sweden.txt")
+
+        # Set the predictors and response:
+        predictors = ["Payment", "Insured", "Kilometres", "Zone", "Bonus", "Make"]
+        response = "Claims"
+
+        # Build and train the UniformRobust model:
+        motor_robust = H2OGradientBoostingEstimator(histogram_type="UniformRobust", seed=1234)
+        motor_robust.train(x=predictors, y=response, training_frame=motor)
+
+        # Build and train the UniformAdaptive model (we will use this model to
+        # compare with the UniformRobust model):
+        motor_adaptive = H2OGradientBoostingEstimator(histogram_type="UniformAdaptive", seed=1234)
+        motor_adaptive.train(x=predictors, y=response, training_frame=motor)
+
+        # Compare the RMSE of the two models to see which model performed better:
+        print(motor_robust.rmse(), motor_adaptive.rmse())
+        36.03102136406947 36.69581743660738
+
+        # The RMSE is slightly lower in the UniformRobust model, showing that it performed better
+        # that UniformAdaptive on a dataset with outlier values!
+
+
