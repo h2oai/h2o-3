@@ -96,6 +96,7 @@ def checkPull(changeId) {
     def projectRequestUrl = new URL("https://api.github.com/graphql")
     def connection = (HttpURLConnection)projectRequestUrl.openConnection()
     connection.setRequestMethod("POST")
+    connection.setDoOutput(true)
     connection.setRequestProperty("Authorization", "Bearer ${System.getenv("H2O-3-GET-PROJECT-TOKEN")}")
     connection.connect()
     try(OutputStream os = connection.getOutputStream()) {
