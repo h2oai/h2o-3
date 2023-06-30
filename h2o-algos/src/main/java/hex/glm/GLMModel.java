@@ -16,15 +16,15 @@ import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toMap;
 /**
  * Created by tomasnykodym on 8/27/14.
  */
-public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> implements Model.Contributions{
 
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
@@ -178,6 +178,60 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return H2O.ARGS.nthreads; // VIF is relatively lightweight, on small data run all concurrently
     }
     return 2; // same strategy as in CV of "big data" - run 2 models concurrently
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    assert GLMParameters.GLMType.glm.equals(_parms._glmType);
+ ///    assert !_parms._standardize; // -------------------------------------!!!!!!!!!!!!!!
+    // There appears to be an issue with lambda > 0 - categorical var with n levels gets encoded to n columns not to n-1 => shaps don't add up to the result
+    class GLMContributions extends MRTask<GLMContributions>{
+      double[] _betas;
+      double[] _means;
+      DataInfo _dinfo;
+      GLMContributions(DataInfo dinfo, double[] betas, double[] means) {
+        _dinfo = dinfo;
+        _betas = betas;
+        _means = means;
+      }
+      
+      @Override
+      public void map(Chunk[] cs, NewChunk[] ncs) {
+        DataInfo.Row row = _dinfo.newDenseRow();
+        double biasTerm = (_dinfo._intercept?_betas[_betas.length-1]:0);
+        // bias Term  = intercept - beta*means
+        biasTerm += ArrayUtils.innerProduct(_means, _betas);
+        for (int j = 0; j < cs[0]._len; j++) {
+          _dinfo.extractDenseRow(cs, j, row);
+          for (int i = 0; i < _betas.length - (_dinfo._intercept?1:0); i++) {
+            final double x = row.get(i);
+            ncs[i].addNum(_betas[i] *(x - _means[i]));
+          }
+          ncs[_means.length].addNum(biasTerm);
+        }
+      }
+    }
+    
+    List<Frame> tmpFrames = new ArrayList<>();
+
+    assert _parms.train() != null;
+    Frame adaptedFrame = adaptFrameForScore(_parms.train(), false, tmpFrames);
+    DKV.put(adaptedFrame);
+    Map<String, Double> meansMap = FrameUtils.getMeans(adaptedFrame, Parameters.CategoricalEncodingScheme.AUTO);
+    double[] means = Arrays.stream(_output._coefficient_names)
+            .filter(c -> !"Intercept".equals(c))
+            .mapToDouble(c -> meansMap.getOrDefault(c, Double.NaN))
+            .toArray();
+
+    adaptedFrame = adaptFrameForScore(frame, false, tmpFrames); 
+    
+    GLMContributions contributions = new GLMContributions(_output._dinfo, _parms._standardize?_output.getNormBeta():_output.beta(), means)
+            .doAll(beta().length + (_output._dinfo._intercept?0:1), Vec.T_NUM, adaptedFrame);
+    
+    String[] colNames = new String[beta().length + (_output._dinfo._intercept?0:1)];
+    System.arraycopy(_output._coefficient_names,0, colNames, 0, colNames.length-1);
+    colNames[colNames.length-1] = "BiasTerm";
+    return contributions.outputFrame(destination_key, colNames, null);
   }
 
   public static class RegularizationPath extends Iced {

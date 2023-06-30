@@ -16,10 +16,7 @@ import water.persist.PersistManager;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1337,4 +1334,26 @@ public class FrameUtils {
     return chunks;
   }
 
+  public static Map<String, Double> getMeans(Frame fr, Model.Parameters.CategoricalEncodingScheme encodingScheme) {
+    assert encodingScheme.equals(Model.Parameters.CategoricalEncodingScheme.AUTO) ||
+            encodingScheme.equals(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit) ||
+            encodingScheme.equals(Model.Parameters.CategoricalEncodingScheme.OneHotInternal);
+    
+    Map<String, Double> result = new HashMap<>(fr.numCols());
+    for (int i = 0; i < fr.numCols(); i++) {
+      Vec vec = fr.vec(i);
+      String name = fr.name(i);
+      if (vec.get_type() == Vec.T_NUM) {
+        result.put(name, vec.mean());
+      } else if (vec.get_type() == Vec.T_CAT) {
+        double[] frequencies = VecUtils.collectDomainWeights(vec, null);
+        for (int j = 0; j < frequencies.length; j++) {
+          result.put(name + "." + vec.domain()[j], frequencies[j] / vec.length());
+        }
+      } else {
+        result.put(name, Double.NaN);
+      }
+    }
+    return result;
+  }
 }

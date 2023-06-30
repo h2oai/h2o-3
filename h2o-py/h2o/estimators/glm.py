@@ -33,7 +33,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryGLM',
                                       'h2o.model.extensions.StandardCoef',
                                       'h2o.model.extensions.VariableImportance',
-                                      'h2o.model.extensions.Fairness']}
+                                      'h2o.model.extensions.Fairness',
+                                      'h2o.model.extensions.Contributions']}
 
     @deprecated_params({'Lambda': 'lambda_'})
     def __init__(self,

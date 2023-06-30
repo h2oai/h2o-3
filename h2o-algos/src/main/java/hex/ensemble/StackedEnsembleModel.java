@@ -3,8 +3,6 @@ package hex.ensemble;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.genmodel.utils.LinkFunctionType;
-import hex.glm.GLMModel;
-import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
@@ -14,28 +12,201 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.MRUtils;
-import water.util.ReflectionUtils;
 import water.util.TwoDimTable;
 
-import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
-import static hex.util.DistributionUtils.familyToDistribution;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
  */
-public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnsembleModel.StackedEnsembleParameters,StackedEnsembleModel.StackedEnsembleOutput> {
+public class StackedEnsembleModel 
+        extends Model<StackedEnsembleModel,StackedEnsembleModel.StackedEnsembleParameters,StackedEnsembleModel.StackedEnsembleOutput> 
+        implements Model.Contributions{
 
   // common parameters for the base models (keeping them public for backwards compatibility, although it's nonsense)
   public ModelCategory modelCategory;
   public long trainingFrameRows = -1;
 
   public String responseColumn = null;
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    // calculate contribution from basemodels and make a weighted average; weighted by metalearner's contribution
+    HashSet<String> columnsSet = new HashSet<>();
+    List<String> baseModels = new ArrayList<>();
+    List<Integer> baseModelsIdx = new ArrayList<>();
+    baseModelsIdx.add(0);
+    Frame fr = new Frame();
+    try {
+      for (Key<Model> bm : _parms._base_models) {
+        if (isUsefulBaseModel(bm)) {
+          baseModels.add(bm.toString());
+          Frame contributions = ((Model.Contributions) bm.get()).scoreContributions(
+                  frame,
+                  Key.make(destination_key.toString() + "_" + bm),
+                  null,
+                  new ContributionsOptions().setOutputFormat(bm.get()._parms.algoName().equalsIgnoreCase("xgboost") ? ContributionsOutputFormat.Compact : ContributionsOutputFormat.Original));
+          columnsSet.addAll(Arrays.asList(contributions._names));
+          contributions.remove("BiasTerm");
+          contributions.setNames(
+                  Arrays.stream(contributions._names)
+                          .map(name -> bm + "_" + name)
+                          .toArray(String[]::new)
+          );
+          fr.add(contributions);
+          baseModelsIdx.add(fr.numCols());
+        }
+      }
+      String[] columns = (String[]) columnsSet.toArray(new String[0]);
+
+      List<Frame> tmpFrames = new ArrayList<>();
+
+      Frame adaptFr = adaptFrameForScore(frame, false, tmpFrames);
+
+      Frame levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, null);
+
+      Frame metalearnerContrib = ((Model.Contributions) _output._metalearner).scoreContributions(levelOneFrame,
+              Key.make(destination_key.toString() + "_" + _output._metalearner._key));
+
+      metalearnerContrib.setNames(Arrays.stream(metalearnerContrib._names)
+              .map(name -> "metalearner_" + name)
+              .toArray(String[]::new));
+
+      fr.add(metalearnerContrib);
+
+//      class CombinePhis extends MRTask<CombinePhis> {
+//        final String[] _columns;
+//        final int[][] _baseIdx;
+//        final int[] _metaIdx;
+//        final int _biasTermIdx;
+//        final int _biasTermSrc;
+//        final Integer[] _baseModelIdx;
+//
+//        CombinePhis(String[] columns, String[] baseModels, List<String> bigFrameColumns, Integer[] baseModelIdx) {
+//          _columns = columns;
+//          _baseIdx = new int[columns.length][baseModels.length];
+//          _metaIdx = new int[baseModels.length];
+//          _biasTermIdx = Arrays.asList(columns).indexOf("BiasTerm");
+//          _biasTermSrc = bigFrameColumns.indexOf("metalearner_BiasTerm");
+//          _baseModelIdx = baseModelIdx;
+//          for (int i = 0; i < columns.length; i++) {
+//            for (int j = 0; j < baseModels.length; j++) {
+//              _baseIdx[i][j] = bigFrameColumns.indexOf(baseModels[j] + "_" + columns[i]);
+//            }
+//          }
+//          for (int i = 0; i < baseModels.length; i++) {
+//            _metaIdx[i] = bigFrameColumns.indexOf("metalearner_" + baseModels[i]);
+//          }
+//        }
+//
+//        @Override
+//        public void map(Chunk[] cs, NewChunk[] ncs) {
+//          for (int i = 0; i < cs[0]._len; i++) {
+//            double[] normalizingTerms = new double[_metaIdx.length];
+//            for (int j = 0; j < _metaIdx.length; j++) {
+//              for (int k = _baseModelIdx[j]; k < _baseModelIdx[j+1]; k++) {
+//                //normalizingTerms[j] += Math.exp(cs[k].atd(i));
+//                normalizingTerms[j] += cs[k].atd(i);
+//              }
+//            }
+//            
+//            for (int j = 0; j < ncs.length; j++) {
+//              if (j == _biasTermIdx) {
+//                ncs[j].addNum(cs[_biasTermSrc].atd(i));
+//                continue;
+//              }
+//              double tmp = 0;
+//              for (int k = 0; k < _metaIdx.length; k++) {
+//                // tmp += Math.exp(cs[_baseIdx[j][k]].atd(i)) * cs[_metaIdx[k]].atd(i)/normalizingTerms[k];
+//                tmp += (cs[_baseIdx[j][k]].atd(i)) * cs[_metaIdx[k]].atd(i)/normalizingTerms[k];
+//              }
+//              ncs[j].addNum(tmp);
+//            }
+//          }
+//        }
+//      }
+//      ;
+//
+//      CombinePhis c = new CombinePhis(columns, baseModels.toArray(new String[0]),
+//              Arrays.asList(fr._names), baseModelsIdx.toArray(new Integer[0]));
+//      c.doAll(columns.length, Vec.T_NUM, fr);
+//      return c.outputFrame(destination_key, columns, null);
+    double[] expectedValues = IntStream.range(0, fr.numCols()).mapToDouble(i -> fr.vec(i).mean()).toArray();
+
+      class DeepSHAPApprox extends MRTask<DeepSHAPApprox> {
+        final String[] _columns;
+        final int[][] _baseIdx;
+        final int[] _metaIdx;
+        final int _biasTermIdx;
+        final int _biasTermSrc;
+        final Integer[] _baseModelIdx;
+        final double[] _expectedValues;
+
+        DeepSHAPApprox(String[] columns, String[] baseModels, List<String> bigFrameColumns, Integer[] baseModelIdx,
+                       double[] expectedValues) {
+          _columns = columns;
+          _baseIdx = new int[columns.length][baseModels.length];
+          _metaIdx = new int[baseModels.length];
+          _biasTermIdx = Arrays.asList(columns).indexOf("BiasTerm");
+          _biasTermSrc = bigFrameColumns.indexOf("metalearner_BiasTerm");
+          _baseModelIdx = baseModelIdx;
+          _expectedValues = expectedValues;
+          for (int i = 0; i < columns.length; i++) {
+            for (int j = 0; j < baseModels.length; j++) {
+              _baseIdx[i][j] = bigFrameColumns.indexOf(baseModels[j] + "_" + columns[i]);
+            }
+          }
+          for (int i = 0; i < baseModels.length; i++) {
+            _metaIdx[i] = bigFrameColumns.indexOf("metalearner_" + baseModels[i]);
+          }
+        }
+
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          for (int i = 0; i < cs[0]._len; i++) {
+            double[] normalizingTerms = new double[_metaIdx.length];
+            for (int j = 0; j < _metaIdx.length; j++) {
+              for (int k = _baseModelIdx[j]; k < _baseModelIdx[j + 1]; k++) {
+                //normalizingTerms[j] += Math.exp(cs[k].atd(i));
+                normalizingTerms[j] += cs[k].atd(i);
+              }
+            }
+
+            for (int j = 0; j < ncs.length; j++) {
+              if (j == _biasTermIdx) {
+                ncs[j].addNum(cs[_biasTermSrc].atd(i));
+                continue;
+              }
+              double tmp = 0;
+              for (int k = 0; k < _metaIdx.length; k++) {
+                // tmp += Math.exp(cs[_baseIdx[j][k]].atd(i)) * cs[_metaIdx[k]].atd(i)/normalizingTerms[k];
+                tmp += (cs[_baseIdx[j][k]].atd(i)) * cs[_metaIdx[k]].atd(i) / normalizingTerms[k];
+              }
+              ncs[j].addNum(tmp);
+            }
+          }
+        }
+      }
+      ;
+
+      DeepSHAPApprox c = new DeepSHAPApprox(columns, baseModels.toArray(new String[0]),
+              Arrays.asList(fr._names), baseModelsIdx.toArray(new Integer[0]), expectedValues);
+      c.doAll(columns.length, Vec.T_NUM, fr);
+      return c.outputFrame(destination_key, columns, null);
+      
+    
+    } finally {
+      fr.delete(true);
+    }
+  }
 
   public enum StackingStrategy {
     cross_validation,
@@ -193,7 +364,40 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    */
   @Override
   protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    final StackedEnsembleParameters.MetalearnerTransform transform; 
+    Frame levelOneFrame = getLevelOnePredictFrame(fr, adaptFrm, j);
+    // TODO: what if we're running multiple in parallel and have a name collision?
+    Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
+
+    // Score the dataset, building the class distribution & predictions
+
+    Model metalearner = this._output._metalearner;
+    Frame predictFr = metalearner.score(
+        levelOneFrame, 
+        destination_key, 
+        j, 
+        computeMetrics, 
+        CFuncRef.from(_parms._custom_metric_func)
+    );
+    ModelMetrics mmStackedEnsemble = null;
+    if (computeMetrics) {
+      // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
+      // We need to be able to look it up by the (this, fr) pair.
+      // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
+      Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
+      ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
+      mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
+      this.addModelMetrics(mmStackedEnsemble);
+      //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
+      for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
+        DKV.remove(mm);
+      }
+    }
+    Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
+    return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
+  }
+
+  private Frame getLevelOnePredictFrame(Frame fr, Frame adaptFrm, Job j) {
+    final StackedEnsembleParameters.MetalearnerTransform transform;
     if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
       if (!(_output.isBinomialClassifier() || _output.isMultinomialClassifier()))
         throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
@@ -243,35 +447,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
     // Add response column, weights columns to level one frame
     StackedEnsemble.addNonPredictorsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
-    // TODO: what if we're running multiple in parallel and have a name collision?
-    Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
-
-    // Score the dataset, building the class distribution & predictions
-
-    Model metalearner = this._output._metalearner;
-    Frame predictFr = metalearner.score(
-        levelOneFrame, 
-        destination_key, 
-        j, 
-        computeMetrics, 
-        CFuncRef.from(_parms._custom_metric_func)
-    );
-    ModelMetrics mmStackedEnsemble = null;
-    if (computeMetrics) {
-      // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
-      // We need to be able to look it up by the (this, fr) pair.
-      // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
-      Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
-      ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
-      mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
-      this.addModelMetrics(mmStackedEnsemble);
-      //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
-      for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
-        DKV.remove(mm);
-      }
-    }
-    Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
-    return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
+    return levelOneFrame;
   }
 
   private class StackedEnsemblePredictScoreResult extends PredictScoreResult {
