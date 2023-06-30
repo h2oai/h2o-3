@@ -66,7 +66,7 @@ def checkPull(changeId) {
         return ["Pull Request ${changeId} doesn't have associated GitHub issue. Please add the issue number (GH-XXXX) in the title of the PR"]
     }
     def issueId = issueMatcher[0][1]
-    if (!pullDetails.body.contains("#${issueId}") {
+    if (!pullDetails.body.contains("#${issueId}")) {
         return ["The associated GitHub issue #${issueId} must be mentioned in the description of the PR."]
     } 
         
