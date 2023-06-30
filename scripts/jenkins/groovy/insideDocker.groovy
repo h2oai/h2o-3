@@ -20,7 +20,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
     timeout(time: timeoutValue, unit: timeoutUnit) {
       docker.withRegistry("https://${registry}") {
         withCredentials([file(credentialsId: 'c096a055-bb45-4dac-ba5e-10e6e470f37e', variable: 'JUNIT_CORE_SITE_PATH'), [$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: "${awsCredsPrefix}AWS_ACCESS_KEY_ID", credentialsId: 'AWS S3 Credentials', secretKeyVariable: "${awsCredsPrefix}AWS_SECRET_ACCESS_KEY"]]) {
-          withCredentials([string(credentialsId: 'DRIVERLESS_AI_LICENSE_KEY', variable: 'DRIVERLESS_AI_LICENSE_KEY'), string("H2O3_GET_PROJECT_TOKEN", "H2O3_GET_PROJECT_TOKEN")]) {
+          withCredentials([string(credentialsId: 'DRIVERLESS_AI_LICENSE_KEY', variable: 'DRIVERLESS_AI_LICENSE_KEY'), string(credentialsId: "H2O3_GET_PROJECT_TOKEN", variable:  "H2O3_GET_PROJECT_TOKEN")]) {
             dockerGroupIdAdd = ""
             if (addToDockerGroup) {
               dockerGroupName = "docker"
