@@ -1,0 +1,86 @@
+#!/usr/bin/groovy
+
+@Library('test-shared-library') _
+
+def dockerImage
+def branchOrTag
+def steamImage
+
+pipeline {
+    agent { node { label 'linux&&docker' } }
+
+    parameters {
+        string(name: 'BRANCH_OR_TAG', defaultValue: 'master', description: 'Enter branch or tag you want to scan.')
+    }
+
+    options {
+        ansiColor('xterm')
+        timestamps()
+    }
+
+    stages {
+        stage('0. Init'){
+            steps{
+                script{
+                    dir("docker/prisma"){
+                        dockerImage = docker.build("node-java","-f Dockerfile .")
+                    }
+                }
+                
+            }
+        }
+        stage('1. Build jar') {
+            steps {
+                script{
+                    dockerImage.inside(){
+                        sh "./gradlew :h2o-assemblies:steam:shadowJar"
+                        archiveArtifacts artifacts: "h2o-assemblies/steam/build/libs/*.jar"
+                    }
+                }
+            }
+        }
+        stage('2. Scan jar using Prisma'){
+            steps {
+                script{
+                    branchOrTag = "${BRANCH_OR_TAG}".replace('/','-')
+                    steamImage = "h2o-assemblies/steam:${BUILD_NUMBER}-${branchOrTag}"
+                    
+                    sh "docker build . -t ${steamImage} -f ./docker/prisma/Dockerfile.scanningjars"
+
+                    // scan the image
+                    prismaCloudScanImage ca: '',
+                    cert: '',
+                    dockerAddress: 'unix:///var/run/docker.sock',
+                    image: "${steamImage}",
+                    key: '',
+                    logLevel: 'info',
+                    podmanPath: '',
+                    project: '',
+                    resultsFile: 'prisma-cloud-scan-results.json',
+                    ignoreImageBuildTime:true
+                }
+                
+            }
+        }
+        stage('3. Export results to CSV'){
+            steps{
+                withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${steamImage} > ${steamImage}.csv"
+                }
+                archiveArtifacts artifacts: "${steamImage}.csv"
+            }
+        }
+        stage('4. Publish report'){
+            steps{
+                prismaCloudPublish resultsFilePattern: 'prisma-cloud-scan-results.json'
+            }
+        }
+
+
+    }
+    post {
+      always {
+        cleanWs()
+      }
+    }
+}

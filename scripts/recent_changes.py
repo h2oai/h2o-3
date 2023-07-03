@@ -111,15 +111,15 @@ def parse_args(argv):
         i += 1
 
     if (g_user is None):
-        print "ERROR: user is not specified"
+        print("ERROR: user is not specified")
         usage()
 
     if (g_pass is None):
-        print "ERROR: pass is not specified"
+        print("ERROR: pass is not specified")
         usage()
 
     if (g_start_date is None):
-        print "ERROR: start_date is not specified"
+        print("ERROR: start_date is not specified")
         usage()
 
 
@@ -160,15 +160,15 @@ def main(argv):
         component_name = get_issue_component_name(issue)
         if (issue_type_name != last_issue_type_name):
             print("")
-            print "# " + issue_type_name
+            print("# " + issue_type_name)
             last_issue_type_name = issue_type_name
         if (component_name != last_component_name):
             print("")
-            print "## " + component_name
+            print("## " + component_name)
             last_component_name = component_name
         key = get_issue_key(issue)
         summary = get_issue_summary(issue)
-        print "* " + key + ": " + summary
+        print("* " + key + ": " + summary)
 
 if __name__ == "__main__":
     main(sys.argv)

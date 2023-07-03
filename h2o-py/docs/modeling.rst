@@ -20,6 +20,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2ODecisionTreeEstimator`
+-------------------------------
+.. autoclass:: h2o.estimators.decision_tree.H2ODecisionTreeEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2ODeepLearningEstimator`
 -------------------------------
 .. autoclass:: h2o.estimators.deeplearning.H2ODeepLearningEstimator

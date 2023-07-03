@@ -249,7 +249,7 @@ public class TestUtil extends Iced {
     return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
   }
 
-  protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
+  public static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows = numRows;
     cf.cols = numCols;

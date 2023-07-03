@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 import sys
 sys.path.insert(1, "../../../")
 import h2o
@@ -20,13 +18,17 @@ def test_modelselection_serialization():
     maxr_model.train(training_frame=d, x=my_x, y=my_y)
     model_path_maxr = maxr_model.download_model(tmpdir)
 
-    maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
+    maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep", build_glm_model=True)
     maxrsweep_model.train(training_frame=d, x=my_x, y=my_y)
     model_path_maxrsweep = maxrsweep_model.download_model(tmpdir)
 
-    maxrsweep_model_glm = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep", build_glm_model=False)
+    maxrsweep_model_glm = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
     maxrsweep_model_glm.train(training_frame=d, x=my_x, y=my_y)
     model_path_maxrsweep_glm = maxrsweep_model_glm.download_model(tmpdir)
+
+    maxrsweep_model_MM = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
+    maxrsweep_model_MM.train(training_frame=d, x=my_x, y=my_y)
+    model_path_maxrsweep_MM = maxrsweep_model_MM.download_model(tmpdir)
 
     # make sure results returned by maxr and maxrsweep are the same
     pyunit_utils.compare_frames_local(maxr_model.result()[2:4], maxrsweep_model.result()[2:4], prob=1.0, tol=1e-5)
@@ -54,7 +56,7 @@ def test_modelselection_serialization():
         pyunit_utils.compare_frames_local(pred_frame_allsubsets, pred_id_maxr, prob=1)
         model_from_id_maxrsweep = h2o.get_model(modelIDs_maxrsweep[ind]['name'])
         pred_id_maxrsweep = model_from_id_maxrsweep.predict(d)
-        pyunit_utils.compare_frames_local(pred_id_maxr, pred_id_maxrsweep, prob=1, tol=1e-6)
+        pyunit_utils.compare_frames_local(pred_id_maxr, pred_id_maxrsweep, prob=1, tol=1e-6)   
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_modelselection_serialization)

@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """Pyunit for h2o.utils.progressbar."""
-from __future__ import absolute_import, division, print_function
-
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without string support, only unicode)
-except:
-    from io import StringIO   # py3
+from io import StringIO
     
 import math
 import random

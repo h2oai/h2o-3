@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 import sys
 sys.path.insert(1, "../../../")
 import h2o
@@ -17,13 +15,17 @@ def test_gaussian_result_frame_model_id():
     maxr_model.train(training_frame=d, x=my_x, y=my_y)
     verifyCorrectAddedRemovedPreds(maxr_model, 'maxr')
         
-    maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
+    maxrsweep_model = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep", build_glm_model=True)
     maxrsweep_model.train(training_frame=d, x=my_x, y=my_y)
     verifyCorrectAddedRemovedPreds(maxrsweep_model, 'maxrsweep')
 
-    maxrsweep_model_glm = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep", build_glm_model=False)
+    maxrsweep_model_glm = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep")
     maxrsweep_model_glm.train(training_frame=d, x=my_x, y=my_y)
     verifyCorrectAddedRemovedPreds(maxrsweep_model_glm, 'maxrsweep')
+
+    maxrsweep_model_MM = modelSelection(seed=12345, max_predictor_number=7, mode="maxrsweep", multinode_mode=True)
+    maxrsweep_model_MM.train(training_frame=d, x=my_x, y=my_y)
+    verifyCorrectAddedRemovedPreds(maxrsweep_model_MM, 'maxrsweep')
 
     allsubsets_model = modelSelection(seed=12345, max_predictor_number=7, mode="allsubsets")
     allsubsets_model.train(training_frame=d, x=my_x, y=my_y)

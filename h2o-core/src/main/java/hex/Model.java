@@ -270,7 +270,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               return false;
             });
   }
-
+  
   /**
    * Identifies the default ordering method for models returned from Grid Search
    * @return default sort-by
@@ -579,6 +579,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public double missingColumnsType() { return Double.NaN; }
 
     public boolean hasCheckpoint() { return _checkpoint != null; }
+    
+    public boolean hasCustomMetricFunc() { return _custom_metric_func != null; }
 
     public long checksum() {
       return checksum(null);
@@ -1343,7 +1345,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return _dist.deviance(w, y, f);
   }
 
-  public double likelihood(double w, double y, double f) {
+  public double likelihood(double w, double y, double[] f) {
     return 0.0; // place holder.  This function is overridden in GLM.
   }
 
@@ -1731,7 +1733,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (expensive) {
             vec = test.anyVec().makeCon(1);
             toDelete.put(vec._key, "adapted missing vectors");
-            msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
+            // cross-validation generated weights will not be found in test/validation dataset.  This warning is
+            // invalid.  We will suppress this warning.
+            if (!names[i].contains("_internal_cv_weights_")) {
+              msgs.add(H2O.technote(1, "Test/Validation dataset is missing weights column '" +
+                      names[i] + "' (needed because a response was found and metrics are to be computed): " +
+                      "substituting in a column of 1s"));
+            }
           }
           else if (isTreatment && computeMetrics) {
             throw new IllegalArgumentException("Test/Validation dataset is missing treatment column '" + treatment + "'");
@@ -1893,6 +1901,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
 
+  public Frame score(Frame fr, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    return score(fr, null, null, true, customMetricFunc);
+  }
+
   /**
    * Adds a scoring-related warning. 
    * 
@@ -1919,6 +1931,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
+  
   protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics, List<Frame> tmpFrames) {
     Frame adaptFr = new Frame(fr);
     applyPreprocessors(adaptFr, tmpFrames);

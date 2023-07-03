@@ -111,7 +111,7 @@ class H2OCloud:
             print("+ CMD: " + str(cmd))
             subprocess.check_call(cmd)
         except Exception, e:
-            print e
+            print(e)
         finally:
             self.job_id = None
 
@@ -157,11 +157,11 @@ def main():
     if args.output is None:
         args.output = 'h2o-tmp/' + str(uuid.uuid4())
     print_barrier()
-    print ("Path to h2odriver:  " + args.driver)
-    print ("Number of nodes:    " + str(args.nodes))
-    print ("Size of each node:  " + args.mapperXmx)
-    print ("HDFS output dir:    " + args.output)
-    print ("Local port:         " + str(args.port))
+    print("Path to h2odriver:  " + args.driver)
+    print("Number of nodes:    " + str(args.nodes))
+    print("Size of each node:  " + args.mapperXmx)
+    print("HDFS output dir:    " + args.output)
+    print("Local port:         " + str(args.port))
 
     abspath_tempdir = tempfile.mkdtemp()
     g_runner = H2OCloud(abspath_tempdir, args.driver, args.nodes, args.mapperXmx, args.output)
@@ -188,7 +188,7 @@ def main():
         while g_keep_running:
             time.sleep(1)
     except Exception, e:
-        print e
+        print(e)
 
     try:
         g_runner.stop()

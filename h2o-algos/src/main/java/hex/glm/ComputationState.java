@@ -1032,7 +1032,7 @@ public final class ComputationState {
       gt._gram.dropCols(zeros);
       removeCols(zeros);
       res = new ComputationState.GramXY(gt._gram,ArrayUtils.removeIds(gt._xy, zeros),null,gt._beta == null?null:ArrayUtils.removeIds(gt._beta, zeros),activeData().activeCols(),null,gt._yy,gt._likelihood);
-    } else res = new GramXY(gt._gram,gt._xy,null,beta == null?null:beta,activeCols,null,gt._yy,gt._likelihood);
+    } else res = new GramXY(gt._gram,gt._xy,null, beta,activeCols,null,gt._yy,gt._likelihood);
     if (gaussian.equals(_parms._family))
       res.sumOfRowWeights = gt.sumOfRowWeights;
     return res;

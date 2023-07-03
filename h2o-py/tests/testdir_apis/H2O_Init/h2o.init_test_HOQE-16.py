@@ -10,7 +10,6 @@ recognize bugs in h2o.init() for this mode of operation.
 For this ticket, I think we should create a set of tests that check that h2o.init() is successful for each
 OS/client interface combination.
 """
-from __future__ import print_function
 import sys
 sys.path.insert(0, "../..")
 import h2o

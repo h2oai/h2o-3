@@ -5,8 +5,6 @@ h2o -- module for using H2O services.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 import subprocess
 import tempfile

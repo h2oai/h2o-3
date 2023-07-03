@@ -123,7 +123,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     int isInd = _cubicSplineNum;
     int msInd = _cubicSplineNum+_iSplineNum;
     int tpInd = _cubicSplineNum+_iSplineNum+_mSplineNum;
-    int gamIndex=0; // index into the sorted arrays with CS/I-splines/M front, TP back.
+    int gamIndex; // index into the sorted arrays with CS/I-splines/M front, TP back.
     for (int outIndex = 0; outIndex < _parms._gam_columns.length; outIndex++) { // go through each gam_column group
       String tempKey = allNull ? null : _parms._knot_ids[outIndex]; // one knot_id for each smoother
       if (_parms._bs[outIndex] == TP_SPLINE_TYPE) { // thin plate regression
@@ -1095,6 +1095,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           model._output._starT = _starT;
         }
       }
+      if (_parms._store_knot_locations)
+        model._output.copyKnots(_knots, _parms._gam_columns_sorted);
       copyGLMCoeffs(glm, model, _parms, nclasses());  // copy over coefficient names and generate coefficients as beta = z*GLM_beta
       copyGLMtoGAMModel(model, glm, _parms, valid()!=null);  // copy over fields from glm model to gam model
       if (_cvOn) {

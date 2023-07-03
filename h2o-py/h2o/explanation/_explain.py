@@ -5,10 +5,7 @@ import warnings
 from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
 
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
-except:
-    from io import StringIO  # py3
+from io import StringIO
 
 import h2o
 import numpy as np
@@ -49,7 +46,7 @@ def _dont_display(object):
     """
     import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if isinstance(object, matplotlib.figure.Figure):
+    if isinstance(object, matplotlib.figure.Figure) or is_decorated_plot_result(object) and (object.figure() is not None):
         plt.close()
     return object
 
@@ -182,7 +179,10 @@ class H2OExplanation(OrderedDict):
     def _ipython_display_(self):
         from IPython.display import display
         for v in self.values():
-            display(v)
+            if is_decorated_plot_result(v):
+                display(v.figure())
+            else:
+                display(v)
 
 
 @contextmanager

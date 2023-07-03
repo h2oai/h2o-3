@@ -785,8 +785,8 @@ public class RequestServer extends HttpServlet {
         if (s instanceof AssemblyV99) {
           // TODO: fix the AssemblyV99 response handler so that it produces the appropriate StreamingSchema
           Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
-          NanoResponse r = new NanoResponse(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
-          r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
+          NanoResponse r = new NanoResponse(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).file_name));
+          r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).file_name)+".java\"");
           return r;
         } else {
           throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());

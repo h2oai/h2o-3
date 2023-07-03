@@ -1,0 +1,28 @@
+name: Send slack alerts for new GitHub issues
+
+on:
+  issues: # workflow.yml should be placed in the default branch to trigger for issues
+    types: [opened]
+
+jobs:
+  send-slack-alert:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Post to a Slack channel
+      id: slack
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        channel-id: 'h2o-3-github-issues'
+        payload: |
+          {
+            "text": ":github: *H2O-3 GitHub Issue Opened*",
+            "attachments": [
+              {
+                "text": "*Title:* ${{ github.event.issue.title }}\n*Link:* ${{ github.event.issue.html_url }}",
+                "color": "good",
+                "fallback": "Build Alert"
+              }
+            ]
+          }
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

@@ -149,7 +149,6 @@ Building `h2o` requires a properly set up R environment with [required packages]
 
 ```
 grip
-future
 tabulate
 requests
 wheel
@@ -259,7 +258,7 @@ dependencies (like Hadoop) and using it saves build time as well as need to down
 
 ##### Step 2: Install required Python packages:
 
-    pip install grip future tabulate wheel
+    pip install grip tabulate wheel
 
 ##### Step 3: Install JDK
 
@@ -384,7 +383,7 @@ Install pip package manager:
 
 Next install required packages:
 
-    sudo pip install wheel requests future tabulate  
+    sudo pip install wheel requests tabulate  
 
 ##### Step 5. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
@@ -790,6 +789,7 @@ Jan Jendrusak
 Sebastien Poirier
 Tomáš Frýda
 Ard Kelmendi
+Yuliia Syzon
 ```
 
 <a name="Advisors"></a>

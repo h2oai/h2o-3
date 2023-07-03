@@ -1,4 +1,3 @@
-from future import standard_library
 import sys
 sys.path.insert(1,"../../")
 import h2o

@@ -1,12 +1,5 @@
-# Py2 compat
-from __future__ import print_function
-from future import standard_library
-
 from h2o import H2OFrame
 from h2o.expr import ExprNode
-
-standard_library.install_aliases()
-from past.builtins import basestring
 
 # standard lib
 from contextlib import contextmanager
@@ -33,10 +26,7 @@ import urllib.request, urllib.error, urllib.parse
 import uuid # call uuid.uuid4() to generate unique uuid numbers
 import numbers
 
-try:
-    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without string support, only unicode)
-except:
-    from io import StringIO  # py3
+from io import StringIO
     
 # 3rd parties
 try:
@@ -53,7 +43,6 @@ import scipy.special
 sys.path.insert(1, "../../")
 
 import h2o
-from h2o.utils.compatibility import PY2
 from h2o.model import H2OBinomialModel, H2OClusteringModel, H2OMultinomialModel, H2OOrdinalModel, H2ORegressionModel, H2OAnomalyDetectionModel
 from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
     H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
@@ -138,8 +127,6 @@ class _XStringIO(io.StringIO):
         self._alt = alt
         
     def write(self, s):
-        if PY2:
-            s = unicode(s)
         if self._alt is not None:
             self._alt.write(s)
         return super(_XStringIO, self).write(s)
@@ -364,7 +351,6 @@ def np_comparison_check(h2o_data, np_data, num_elements):
 
  # perform h2o predict and mojo predict.  Frames containing h2o prediction is returned and mojo predict are
 # returned.
-
 def mojo_predict(model, tmpdir, mojoname, glrmReconstruct=False, get_leaf_node_assignment=False, glrmIterNumber=-1, zipFilePath=None):
     
     """
@@ -788,8 +774,8 @@ def expect_model_param(models, attribute_name, expected_values):
     if type(expected_values) != list:
         expected_values = [expected_values]
     # limit precision. Rounding happens in some models like RF
-    actual_values = [x if isinstance(x,basestring) else round(float(x),5) for x in actual_values]
-    expected_values = [x if isinstance(x,basestring) else round(float(x),5) for x in expected_values]
+    actual_values = [x if isinstance(x, str) else round(float(x),5) for x in actual_values]
+    expected_values = [x if isinstance(x, str) else round(float(x),5) for x in expected_values]
     print("actual values: {0}".format(actual_values))
     print("expected values: {0}".format(expected_values))
     actual_values_len = len(actual_values)
@@ -1140,7 +1126,7 @@ def generate_one_cluster(cluster_center, cluster_number, cluster_size):
 
     pt_dists = np.random.uniform(0, cluster_size, [cluster_number, 1])
     coord_pts = len(cluster_center)     # dimension of each cluster point
-    one_cluster_data = np.zeros((cluster_number, coord_pts), dtype=np.float)
+    one_cluster_data = np.zeros((cluster_number, coord_pts), dtype=float)
 
     for p_ind in range(cluster_number):
         coord_indices = list(range(coord_pts))
@@ -1221,7 +1207,7 @@ def generate_training_set_mixed_glm(csv_filename, csv_filename_true_one_hot, row
     :return: None
     """
     # generate the random training data sets
-    enum_dataset = np.zeros((row_count, enum_col), dtype=np.int)   # generate the categorical predictors
+    enum_dataset = np.zeros((row_count, enum_col), dtype=np.int32)   # generate the categorical predictors
 
     # generate categorical data columns
     for indc in range(enum_col):
@@ -1446,7 +1432,7 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
 
             response_y = x_mat * weight + noise_std * np.random.standard_normal([num_row, 1])
 
-        discrete_y = np.zeros((num_sample, 1), dtype=np.int)
+        discrete_y = np.zeros((num_sample, 1), dtype=np.int32)
         for indR in range(num_sample):
             discrete_y[indR, 0] = lastClass
             for indC in range(lastClass):
@@ -1625,7 +1611,7 @@ def duplicate_scale_cols(col_indices, col_scale, old_filename, new_filename):
 
     np_frame = np.asmatrix(np.genfromtxt(old_filename, delimiter=',', dtype=None))
     (num_row, num_col) = np_frame.shape
-    np_frame_new = np.asmatrix(np.zeros((num_row, len(col_indices)), dtype=np.float))
+    np_frame_new = np.asmatrix(np.zeros((num_row, len(col_indices)), dtype=float))
 
     for ind in range(len(col_indices)):
         np_frame_new[:, ind] = np_frame[:, col_indices[ind]]*col_scale[ind]
@@ -2067,7 +2053,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
             num_feature = len(coeff_pvalues)
             num_class = (len(coeff_pvalues[0])-1)/2
 
-            coeffs = np.zeros((num_class,num_feature), dtype=np.float)
+            coeffs = np.zeros((num_class,num_feature), dtype=float)
 
             end_index = int(num_class+1)
             for col_index in range(len(coeff_pvalues)):
@@ -3544,8 +3530,8 @@ def check_data_rows(f1, f2, index_list=[], num_rows=10):
     :param num_rows:
     :return:
     '''
-    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
-    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    temp1 = f1.as_data_frame(use_pandas=True).values
+    temp2 = f2.as_data_frame(use_pandas=True).values
     if len(index_list)==0:
         index_list = random.sample(range(f1.nrow), num_rows)
 
@@ -3579,8 +3565,8 @@ def compare_data_rows(f1, f2, index_list=[], num_rows=10, tol=1e-3):
     :param num_rows:
     :return:
     '''
-    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
-    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    temp1 = f1.as_data_frame(use_pandas=True).values
+    temp2 = f2.as_data_frame(use_pandas=True).values
     if len(index_list)==0:
         index_list = random.sample(range(f1.nrow), num_rows)
 
@@ -3954,7 +3940,7 @@ def convertH2OFrameToDMatrixSparse(h2oFrame, yresp, enumCols=[]):
 
     pandas = __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols);
 
-    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1])
+    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1], feature_names=pandas[2])
 
 
 def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
@@ -3991,10 +3977,10 @@ def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
     pandaF = pd.concat([c0, pandaFtrain], axis=1)
     pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
     newX = list(pandaFtrain.columns.values)
-    data = pandaF.as_matrix(newX)
-    label = pandaF.as_matrix([yresp])
+    data = pandaF[newX].to_numpy()
+    label = pandaF[[yresp]].to_numpy()
 
-    return (data,label)
+    return (data,label,newX)
 
 def generatePandaEnumCols(pandaFtrain, cname, nrows):
     """
@@ -4006,7 +3992,7 @@ def generatePandaEnumCols(pandaFtrain, cname, nrows):
     :return:
     """
     cmissingNames=[cname+".missing(NA)"]
-    tempnp = np.zeros((nrows,1), dtype=np.int)
+    tempnp = np.zeros((nrows,1), dtype=np.int32)
     # check for nan and assign it correct value
     colVals = pandaFtrain[cname]
     for ind in range(nrows):
@@ -4618,3 +4604,58 @@ def download_mojo(model, mojo_zip_path=None, genmodel_path=None):
 def test_java_scoring(model, frame, predictions, epsilon):
     fr = H2OFrame._expr(ExprNode("model.testJavaScoring", model, frame, predictions, epsilon))
     return fr.flatten() == 1
+
+def checkLogWeightWarning(weightColName, wantWarnMessage=False):
+    """
+    This method will scrub the logs and check to make sure that no warning message regarding the weight column is or
+     is not found in the h2o logs depending on the setting of wantWarnMessage.  
+    :param weightColName: name of weight columns that the warning message is going to check against
+    :param wantWarnMessage: boolean, if true will make sure warning message about weight column is found.  Otherwise,
+        it will make sure the warning message about weight column is not found.
+    :return: None.  Will throw an error when warning message about the weightColName is supposed to be found but is not
+        or when the warning message is not supposed to be found but is found.  This depends on the setting of parameter
+        wantWarnMessage.
+    """
+    warningStatement = "WARN water.default: Test/Validation dataset is missing weights column '"+weightColName+"'"
+    checkLogWarning(warningStatement, wantWarnMessage)
+
+
+def checkLogWarning(warning_phrase, wantWarnMessage=False):
+    """
+    This method will scrup the logs and check to make sure that no warning message found in warning_phrase is found
+    in the h2o logs.
+    :param warning_phrase: warning message to consider
+    :param wantWarnMessage: boolean, if true will make sure warning message is found.  Else, it will make sure that the 
+        warning message is not found in the logs.
+    :return: None.  Will throw an error when warning message is or is not found according to the setting of wantWarnMessage.
+    """
+    import zipfile
+    import codecs
+    import tempfile
+
+    TMPDIR = tempfile.TemporaryDirectory()
+    logFileName = "h2oLogs.zip"
+    h2o.download_all_logs(dirname=TMPDIR.name, filename=logFileName)
+    numWarning = 0
+    logFile = os.path.join(TMPDIR.name, logFileName)
+    with zipfile.ZipFile(logFile, 'r') as zip:
+        zip.extractall(TMPDIR.name)
+        for oneName in zip.namelist():
+            if ".zip" in oneName:
+                fileName = os.path.join(TMPDIR.name, oneName)
+                with zipfile.ZipFile(fileName) as zip2:
+                    zip2.extractall(TMPDIR.name)
+                    filenames = zip2.namelist()
+                    for oneFile in filenames:
+                        with zip2.open(oneFile) as f:
+                            for line in f:
+                                strline = codecs.decode(line)
+                                if warning_phrase in strline:
+                                    numWarning = numWarning + 1
+                                    print(line)
+    print("total number of warning messages found: {0}".format(numWarning))
+    if wantWarnMessage:
+        assert numWarning > 0, "there should be warning messages {0}} " \
+                               "received but are not found.".format(warning_phrase)
+    else:
+        assert numWarning == 0, "there should be no warning messages ({0}) found but are found.".format(warning_phrase)

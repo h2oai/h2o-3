@@ -6,6 +6,10 @@ description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+ext {
+  defaultParquetVersion = "1.8.1"
+}
+
 def hasCustomHdfsDep = ext.has("hdfsDependency") && (ext.get("hdfsDependency") != defaultHdfsDependency)
 
 if (hasCustomHdfsDep) {
@@ -71,8 +75,12 @@ dependencies {
       transitive = false
     }
   }
-  api(project(":h2o-parquet-parser"))
+  api(project(":h2o-parquet-parser")) {
+    transitive = false
+  }
 }
+
+apply from: "${rootDir}/h2o-parsers/h2o-parquet-parser/parquet_dependencies.gradle"
 
 //
 // Bundle optional modules

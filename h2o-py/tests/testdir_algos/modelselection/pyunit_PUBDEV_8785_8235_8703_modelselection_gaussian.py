@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 import sys
 sys.path.insert(1, "../../../")
 import h2o
@@ -13,14 +11,18 @@ def test_modelselection_gaussian():
     d = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     my_y = "GLEASON"
     my_x = ["AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
-    model_maxrsweep = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweep")
+    model_maxrsweep = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweep", build_glm_model=True)
     model_maxrsweep.train(training_frame=d, x=my_x, y=my_y)
-    model_maxrsweep_glm = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweep", build_glm_model=False)
+    model_maxrsweep_MM = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweep", build_glm_model=True, 
+                                        multinode_mode=True)
+    model_maxrsweep_MM.train(training_frame=d, x=my_x, y=my_y)
+    model_maxrsweep_glm = modelSelection(seed=12345, max_predictor_number=3, mode="maxrsweep")
     model_maxrsweep_glm.train(training_frame=d, x=my_x, y=my_y)
     model_maxr = modelSelection(seed=12345, max_predictor_number=3, mode="maxr")
     model_maxr.train(training_frame=d, x=my_x, y=my_y)
 
     # make sure results returned by maxr and maxrsweep are the same
+    pyunit_utils.compare_frames_local(model_maxrsweep_MM.result()[2:4], model_maxrsweep.result()[2:4], prob=1.0, tol=1e-6)
     pyunit_utils.compare_frames_local(model_maxr.result()[2:4], model_maxrsweep.result()[2:4], prob=1.0, tol=1e-6)
     pyunit_utils.compare_frames_local(model_maxr.result()[2:4], model_maxrsweep_glm.result()[1:3], prob=1.0, tol=1e-6)
     model_allsubsets = modelSelection(seed=12345, max_predictor_number=3, mode="allsubsets")

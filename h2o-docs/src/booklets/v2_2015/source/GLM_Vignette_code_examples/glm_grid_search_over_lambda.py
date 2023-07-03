@@ -11,6 +11,6 @@ hyper_parameters = {"lambda":lambda_opts}
 grid = H2OGridSearch(H2OGeneralizedLinearEstimator(family="binomial"), hyper_params=hyper_parameters)
 grid.train(y = "CAPSULE", x = ["AGE", "RACE", "PSA", "GLEASON"], training_frame = h2o_df)
 for m in grid:
-    print "Model ID:", m.model_id, " auc:", m.auc()
-    print m.summary()
-    print "\n\n"
+    print("Model ID:", m.model_id, " auc:", m.auc())
+    print(m.summary())
+    print("\n\n")

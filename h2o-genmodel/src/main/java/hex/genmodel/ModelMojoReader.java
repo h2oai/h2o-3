@@ -405,4 +405,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   protected MojoReaderBackend getMojoReaderBackend() {
     return _reader;
   }
+
+  public String[] readStringArrays(int aSize, String title) throws IOException {
+    String[] stringArrays = new String[aSize];
+    int counter = 0;
+    for (String line : readtext(title)) {
+      stringArrays[counter++] = line;
+    }
+    return stringArrays;
+  }
 }

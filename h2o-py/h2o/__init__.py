@@ -5,12 +5,21 @@
 :mod:`h2o` -- module for using H2O services.
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 from codecs import open
 import os
 import sys
 import zipfile
+import warnings
+
+if sys.version_info.major < 3:
+    raise Exception("H2O-3 runs only on Python 3. Your Python version is %s." % sys.version)
+    
+if sys.version_info.minor < 6:
+    warnings.showwarning(
+        "Your Python version %s is not supported. Officially supported versions are 3.6.x - 3.9.x" % sys.version,
+        Warning,
+        "h2o",
+        1)
 
 __no_export = set(dir())  # variables defined above this are not exported
 
@@ -67,7 +76,6 @@ except:
 
 if __version__.endswith("99999"):
     print(__buildinfo__)
-
 
 try:
     # Export explain functions that are useful for lists of models

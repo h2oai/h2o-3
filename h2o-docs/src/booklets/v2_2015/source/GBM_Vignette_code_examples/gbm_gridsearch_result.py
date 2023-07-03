@@ -3,4 +3,4 @@ gs
 
 # print out the auc for all of the models
 for g in gs:
-    print g.model_id + " auc: " + str(g.auc())
+    print(g.model_id + " auc: " + str(g.auc()))

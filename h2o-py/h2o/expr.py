@@ -5,7 +5,6 @@ Rapids expressions. These are helper classes for H2OFrame.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 from collections import OrderedDict
@@ -404,11 +403,11 @@ class H2OCache(object):
         d = OrderedDict()
         # If also printing the rollup stats, build a full row-header
         if rollups:
-            col = next(iter(viewvalues(self._data)))  # Get a sample column
+            col = next(iter(self._data.values()))  # Get a sample column
             lrows = len(col['data'])  # Cached rows being displayed
             d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"] + list(map(str, range(lrows)))
         # For all columns...
-        for k, v in viewitems(self._data):
+        for k, v in self._data.items():
             x = v['data']  # Data to display
             t = v["type"]  # Column type
             if t == "enum":

@@ -3,7 +3,7 @@
 ``custom_metric_func``
 ----------------------
 
-- Available in: GBM, DRF 
+- Available in: GBM, DRF, Deeplearning 
 - Hyperparameter: no
 
 Description
@@ -12,6 +12,8 @@ Description
 Use this option to specify a custom evaluation function. A custom metric function can be used to produce adhoc scoring metrics if actuals are presented.
 
 **Note**: This option is only supported in the Python client.
+
+**Note**: In Deeplearning, custom metric is not supported for Auto-encoder option.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

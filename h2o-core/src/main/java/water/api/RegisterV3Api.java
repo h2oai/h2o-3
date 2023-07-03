@@ -444,7 +444,7 @@ public class RegisterV3Api extends AbstractRegister {
             "Execute an Rapids AstRoot.");
 
     context.registerEndpoint("_assembly_toJava",
-            "GET /99/Assembly.java/{assembly_id}/{pojo_name}", AssemblyHandler.class, "toJava",
+            "GET /99/Assembly.java/{assembly_id}/{file_name}", AssemblyHandler.class, "toJava",
             "Generate a Java POJO from the Assembly");
 
     context.registerEndpoint("_assembly_fit",

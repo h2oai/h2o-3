@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 from h2o.exceptions import H2OValueError
 from h2o.model import ModelBase
 from h2o.model.extensions import has_extension

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # This script must run from its own directory
-from __future__ import print_function
 import gen_csharp
 import gen_docs_json
 import gen_java

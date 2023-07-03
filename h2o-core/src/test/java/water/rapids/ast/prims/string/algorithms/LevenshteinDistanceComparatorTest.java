@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.string.algorithms;
 
 import org.junit.Test;
+import water.util.comparison.string.LevenshteinDistanceComparator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

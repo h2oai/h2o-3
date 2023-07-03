@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import h2o
 from tests import pyunit_utils
 

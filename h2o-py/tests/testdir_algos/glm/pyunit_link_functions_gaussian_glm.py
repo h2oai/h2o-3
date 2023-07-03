@@ -1,5 +1,3 @@
-from __future__ import division
-from __future__ import print_function
 from past.utils import old_div
 import sys
 sys.path.insert(1,"../../../")
@@ -17,7 +15,7 @@ def link_functions_gaussian():
   h2o_data.head()
 
   sm_data = pd.read_csv(zipfile.ZipFile(pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip")).
-                        open("prostate_complete.csv")).as_matrix()
+                        open("prostate_complete.csv")).values
   sm_data_response = sm_data[:,9]
   sm_data_features = sm_data[:,1:9]
 
@@ -30,7 +28,7 @@ def link_functions_gaussian():
   h2o_model = H2OGeneralizedLinearEstimator(family="gaussian", link="identity",alpha=0.5, Lambda=0)
   h2o_model.train(x=myX, y=myY, training_frame=h2o_data)
   sm_model = sm.GLM(endog=sm_data_response, exog=sm_data_features,
-                    family=sm.families.Gaussian(sm.families.links.identity)).fit()
+                    family=sm.families.Gaussian(sm.families.links.identity())).fit()
 
   print("Compare model deviances for link function identity")
   h2o_deviance = old_div(h2o_model.residual_deviance(), h2o_model.null_deviance())

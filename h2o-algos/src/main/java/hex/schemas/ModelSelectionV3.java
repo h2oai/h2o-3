@@ -71,7 +71,8 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "mode", // naive, maxr, maxrsweep, backward
                 "build_glm_model",
                 "p_values_threshold",
-                "influence"
+                "influence",
+                "multinode_mode"
         };
 
         @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -113,6 +114,11 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min", 
                 level = API.Level.critical)
         public boolean lambda_search;
+
+        @API(help = "For maxrsweep only.  If enabled, will attempt to perform sweeping action using multiple nodes in " +
+                "the cluster.  Defaults to false.",
+                level = API.Level.critical)
+        public boolean multinode_mode;
 
         @API(help = "For maxrsweep mode only.  If true, will return full blown GLM models with the desired predictor" +
                 "subsets.  If false, only the predictor subsets, predictor coefficients are returned.  This is for" +

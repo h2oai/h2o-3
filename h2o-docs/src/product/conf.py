@@ -18,9 +18,8 @@ import recommonmark
 from recommonmark.transform import AutoStructify
 from recommonmark.parser import CommonMarkParser
 import sphinx_rtd_theme
-from future.utils import PY2
 
-__open_kwargs = {} if PY2 else {'encoding': 'utf-8'}
+__open_kwargs = {'encoding': 'utf-8'}
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -74,7 +73,7 @@ if os.path.exists("project_version"):
     version = f.readline().strip()
 else:
     version = "AnonDeveloperBuild"
-print "version is " + str(version)
+print("version is " + str(version))
 # The full version, including alpha/beta/rc tags.
 release = version
 

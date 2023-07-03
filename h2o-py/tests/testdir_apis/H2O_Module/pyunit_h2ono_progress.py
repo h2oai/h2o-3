@@ -1,13 +1,9 @@
-from __future__ import print_function
 import sys
 sys.path.insert(1,"../../../")
 from tests import pyunit_utils
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-try:
-    from io import StringIO  # py3
-except ImportError:
-    from StringIO import StringIO  # py2
+from io import StringIO
 
 
 def h2ono_progress():

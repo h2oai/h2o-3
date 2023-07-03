@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import print_function
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm

@@ -3,10 +3,7 @@ package hex.modelselection;
 import hex.*;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
-import water.DKV;
-import water.H2O;
-import water.HeartBeat;
-import water.Key;
+import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
@@ -33,6 +30,9 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
     String[] _coefNames;
     public int _numPredictors;
     public String[] _predictorNames;
+    double[][] _currCPM;
+    Frame _currCPMFrame;
+    int[] _trackSweep;
     public int _glmNFolds = 0;
     Model.Parameters.FoldAssignmentScheme _foldAssignment = null;
     String _foldColumn = null;
@@ -251,7 +251,20 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             } finally {
                 model.update(_job);
                 model.unlock(_job);
+                Scope.exit();
             }
+        }
+        
+        Frame extractCPM(double[][] cpmA, String[] coefNames) {
+            String[] coefnames = (coefNames == null || coefNames.length ==0) ? _dinfo.coefNames() : coefNames;
+            List<String> predList = Arrays.stream(coefnames).collect(Collectors.toList());
+            if (_parms._intercept)
+                predList.add("intercept");
+            predList.add("XTYnYTY");
+            Frame cpm = new water.util.ArrayUtils().frame(Key.make(), predList.stream().toArray(String[]::new), 
+                    cpmA);
+            Scope.track(cpm);
+            return rebalance(cpm, false, Key.make().toString());
         }
 
         /***
@@ -263,20 +276,30 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             _coefNames = _dinfo.coefNames();
             // generate cross-product matrix (CPM) as in section III of doc
             CPMnPredNames cpmPredIndex = genCPMPredNamesIndex(_job._key, _dinfo, _predictorNames, _parms);
-            double[][] currCPM = cpmPredIndex._cpm;
-            int cpmSize = currCPM.length;
-            if (_parms._intercept)
-                sweepCPM(currCPM, new int[]{cpmSize-2}, false);
-            int[][] pred2CPMIndice = cpmPredIndex._pred2CPMMapping;
             _predictorNames = cpmPredIndex._predNames;
             if (_predictorNames.length < _parms._max_predictor_number)
                 error("max_predictor_number", "Your dataset contains duplicated predictors.  " +
-                        "After removal, reduce your max_predictor_number to "+_predictorNames.length+" or less.");
+                        "After removal, reduce your max_predictor_number to " + _predictorNames.length + " or less.");
             if (error_count() > 0)
                 throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ModelSelection.this);
+            int cpmSize = cpmPredIndex._cpm.length;
+            if (_parms._multinode_mode) {
+                _currCPMFrame = extractCPM(cpmPredIndex._cpm, cpmPredIndex._coefNames);
+                Scope.track(_currCPMFrame);
+                DKV.put(_currCPMFrame);
+                _trackSweep = IntStream.range(0, cpmPredIndex._cpm.length).map(x -> 1).toArray();
+                if (_parms._intercept)
+                    sweepCPMParallel(_currCPMFrame, new int[]{cpmSize - 2}, _trackSweep);
+                cpmPredIndex._cpm = null;   // array no longer needed
+            } else {
+                _currCPM = cpmPredIndex._cpm;
+                if (_parms._intercept)
+                    sweepCPM(_currCPM, new int[]{cpmSize - 2}, false);
+            }
+            int[][] pred2CPMIndice = cpmPredIndex._pred2CPMMapping;
             checkMemoryFootPrint(cpmSize);
             // generate mapping of predictor index to CPM indices due to enum columns add multiple rows/columns to CPM
-            double r2Scale = 1.0/calR2Scale(train(), _parms._response_column);
+            double r2Scale = 1.0 / calR2Scale(train(), _parms._response_column);
             CoeffNormalization coefNorm = generateScale(_dinfo, _parms._standardize);
 
             List<Integer> currSubsetIndices = new ArrayList<>();    // store best k predictor subsets for 1 to k predictors
@@ -289,19 +312,15 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
 
             for (int predNum = 1; predNum <= _parms._max_predictor_number; predNum++) { // find best predictor subset for each subset size
                 Set<BitSet> usedCombos = new HashSet<>();
-                if (bestModel == null) {
-                    bestModel = forwardStep(currSubsetIndices, validSubset, usedCombos, predictorIndices, currCPM, 
-                            pred2CPMIndice, null, _parms._intercept);
-                } else {
-                    bestModel = forwardStep(currSubsetIndices, validSubset, usedCombos, predictorIndices, currCPM, 
-                            pred2CPMIndice, bestModel, _parms._intercept);
-                }
-                validSubset.removeAll(currSubsetIndices);
-                _job.update(predNum, "Finished forward step with "+predNum+" predictors.");
+                bestModel = forwardStep(currSubsetIndices, validSubset, usedCombos, predictorIndices, pred2CPMIndice,
+                        bestModel, _parms._intercept);
 
-                if (predNum < _numPredictors && predNum > 1) {  // implement the replacement part
-                    bestModel = replacement(currSubsetIndices, validSubset, usedCombos, predictorIndices, bestModel,
-                            _parms._intercept, currCPM, pred2CPMIndice);
+                validSubset.removeAll(currSubsetIndices);
+                _job.update(predNum, "Finished forward step with " + predNum + " predictors.");
+
+                if (predNum <= _numPredictors && predNum > 1) {  // implement the replacement part
+                    bestModel = replacement(currSubsetIndices, validSubset, usedCombos, predictorIndices, bestModel, 
+                            pred2CPMIndice);
                     // reset validSubset
                     currSubsetIndices = IntStream.of(bestModel._predSubset).boxed().collect(Collectors.toList());
                     validSubset = IntStream.rangeClosed(0, predNames.size() - 1).boxed().collect(Collectors.toList());
@@ -313,8 +332,22 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                     DKV.put(bestR2Model);
                     model._output.updateBestModels(bestR2Model, predNum - 1);
                 } else {
-                    model._output.updateBestModels(_predictorNames, allCoefList, predNum-1, _parms._intercept,
-                            bestModel._CPM.length, bestModel._predSubset, bestModel._CPM, r2Scale, coefNorm,
+/*                    if (bestModel._CPM == null) {
+                        if (predNum < _parms._max_predictor_number) {
+                            throw new RuntimeException("sweeping has failed due to zero pivot values at predictor size "
+                                    + predNum + ".  To avoid this, perform experiment with max_predictor_number to be: "
+                                    + (predNum - 1) + " or less.");
+                        } else {
+                            warn("maxrsweep process", " has failed when all predictors are chosen.  R2 values is set" +
+                                    " to -1 to indicate that.  All predictors are chosen.");
+                            bestModel._CPM = cpmPredIndex._cpm;
+                            bestModel._predSubset = currSubsetIndices.stream().mapToInt(x->x).toArray();
+                            int cpmLastInd = bestModel._CPM.length-1;
+                            bestModel._CPM[cpmLastInd][cpmLastInd] = Double.MAX_VALUE;
+                        }
+                    }*/
+                    model._output.updateBestModels(_predictorNames, allCoefList, predNum - 1, _parms._intercept, 
+                            bestModel._CPM.length, bestModel._predSubset, bestModel._CPM, r2Scale, coefNorm, 
                             pred2CPMIndice, _dinfo);
                 }
             }
@@ -472,14 +505,14 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      * Given current predictor subset in currSubsetIndices, this method will add one more predictor to the subset and
      * choose the one that will increase the R2 by the most.
      */
-    public static SweepModel forwardStep(List<Integer> currSubsetIndices, List<Integer> validSubsets, 
-                                         Set<BitSet> usedCombo, BitSet predIndices, double[][] currCPM,
-                                         int[][] predInd2CPMInd, SweepModel bestModel, boolean hasIntercept) {
+    public SweepModel forwardStep(List<Integer> currSubsetIndices, List<Integer> validSubsets, Set<BitSet> usedCombo,
+                                  BitSet predIndices, int[][] predInd2CPMInd, SweepModel bestModel, 
+                                  boolean hasIntercept) {
         // generate all models
-        double[] subsetErrVar = bestModel==null? generateAllErrVar(currCPM, -1, currSubsetIndices, 
-                validSubsets, usedCombo, predIndices, predInd2CPMInd, hasIntercept):
-                generateAllErrVar(currCPM, bestModel._CPM.length-1, currSubsetIndices, validSubsets,
-                        usedCombo, predIndices, predInd2CPMInd, hasIntercept);
+        double[] subsetErrVar = bestModel == null ? generateAllErrVar(_currCPM, _currCPMFrame, -1, 
+                currSubsetIndices, validSubsets, usedCombo, predIndices, predInd2CPMInd, hasIntercept) :
+                generateAllErrVar(_currCPM, _currCPMFrame, bestModel._CPM.length - 1, currSubsetIndices, 
+                        validSubsets, usedCombo, predIndices, predInd2CPMInd, hasIntercept);
 
         // find the best subset and the corresponding cpm by checking for lowest error variance
         int bestInd = -1;
@@ -496,11 +529,16 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         } else {    // set new predictor subset to curSubsetIndices, 
             int newPredictor = validSubsets.get(bestInd);
             List<Integer> newIndices = extractCPMIndexFromPredOnly(predInd2CPMInd, new int[]{newPredictor});
-            sweepCPM(currCPM, newIndices.stream().mapToInt(x -> x).toArray(), false);
+            if (_parms._multinode_mode)
+                sweepCPMParallel(_currCPMFrame, newIndices.stream().mapToInt(x -> x).toArray(), _trackSweep);
+            else
+                sweepCPM(_currCPM, newIndices.stream().mapToInt(x -> x).toArray(), false);
             currSubsetIndices.add(newPredictor);
-            int[] subsetPred = currSubsetIndices.stream().mapToInt(Integer::intValue).toArray();
-            double[][] subsetCPM = extractPredSubsetsCPM(currCPM, subsetPred, predInd2CPMInd, hasIntercept);
-            return new SweepModel(subsetPred, subsetCPM,errorVarianceMin);
+            int[] subsetPred = currSubsetIndices.stream().mapToInt(x->x).toArray();
+            double[][] subsetCPM = _parms._multinode_mode ? 
+                    extractPredSubsetsCPMFrame(_currCPMFrame, subsetPred, predInd2CPMInd, hasIntercept) : 
+                    extractPredSubsetsCPM(_currCPM, subsetPred, predInd2CPMInd, hasIntercept);
+            return new SweepModel(subsetPred, subsetCPM, errorVarianceMin);
         }
     }
 
@@ -523,9 +561,9 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      * valid, then I will remove all predictors that have been chosen in currSubsetIndices.
      *
      */
-    public static SweepModel replacement(List<Integer> currSubsetIndices, List<Integer> validSubset,
-                                          Set<BitSet> usedCombos, BitSet predIndices, SweepModel bestModel, boolean hasIntercept,
-                                          double[][] currCPM, int[][] predictorIndex2CPMIndices) {
+    public SweepModel replacement(List<Integer> currSubsetIndices, List<Integer> validSubset, 
+                                         Set<BitSet> usedCombos, BitSet predIndices, SweepModel bestModel, 
+                                         int[][] predictorIndex2CPMIndices) {
         double errorVarianceMin = bestModel._errorVariance;
         int currSubsetSize = currSubsetIndices.size();  // predictor subset size
         int lastBestErrVarPosIndex = -1;
@@ -537,9 +575,9 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 ArrayList<Integer> oneLessSubset = new ArrayList<>(currSubsetIndices);
                 int removedPred = oneLessSubset.remove(index);
                 validSubset.removeAll(oneLessSubset);
-                currModel._predSubset = oneLessSubset.stream().mapToInt(Integer::intValue).toArray();
-                tempModel = forwardStepR(currSubsetIndices, validSubset, usedCombos, predIndices, currCPM,
-                        predictorIndex2CPMIndices, currModel, hasIntercept, errorVarianceMin, index, currCPM);
+                currModel._predSubset = oneLessSubset.stream().mapToInt(x -> x).toArray();
+                tempModel = forwardStepR(currSubsetIndices, validSubset, usedCombos, predIndices, 
+                        predictorIndex2CPMIndices, currModel, errorVarianceMin, index);
                 if (tempModel._CPM != null && errorVarianceMin > tempModel._errorVariance) {
                     currModel = tempModel;
                     errorVarianceMin = currModel._errorVariance;
@@ -556,6 +594,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         return bestErrVarModel;
     }
 
+
     /***
      * Given a currSubsetIndices and a predPos, this function will try to look for new predictor that will decrease the
      * error variance compared to bestErrVar.  This is slightly different than the forwardStep.  This is what happens,
@@ -569,17 +608,17 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      *    at predPos with the new predictor.
      * 5. If the lowest error variance found from generateAllErrVarR is higher than bestErrVar, nothing is done.
      */
-    public static SweepModel forwardStepR(List<Integer> currSubsetIndices, List<Integer> validSubsets,
-                                           Set<BitSet> usedCombo, BitSet predIndices, double[][] origCPM,
-                                           int[][] predInd2CPMInd, SweepModel bestModel, boolean hasIntercept,
-                                           double bestErrVar, int predPos, double[][] currCPM) {
+    public SweepModel forwardStepR(List<Integer> currSubsetIndices, List<Integer> validSubsets, 
+                                          Set<BitSet> usedCombo, BitSet predIndices, int[][] predInd2CPMInd, 
+                                          SweepModel bestModel, double bestErrVar, int predPos) {
         // generate all models
-        double[][] subsetCPMO = ArrayUtils.deepClone(bestModel._CPM); // grab cpm that has been swept by all predictors in currSubsetIndices
+        double[][] subsetCPMO = ArrayUtils.deepClone(bestModel._CPM); // grab cpm that swept by all in currSubsetIndices
         int predRemoved = currSubsetIndices.get(predPos);
-        int[] removedPredSweepInd = extractSweepIndices(currSubsetIndices, predPos, predRemoved, predInd2CPMInd, hasIntercept);
+        int[] removedPredSweepInd = extractSweepIndices(currSubsetIndices, predPos, predRemoved, predInd2CPMInd, 
+                _parms._intercept);
         SweepVector[][] removedPredSV = sweepCPM(subsetCPMO, removedPredSweepInd, true); // undo sweep by removed pred
-        double[] subsetErrVar = generateAllErrVarR(origCPM, subsetCPMO, predPos, currSubsetIndices, validSubsets,
-                usedCombo, predIndices, predInd2CPMInd, hasIntercept, removedPredSweepInd, removedPredSV);
+        double[] subsetErrVar = generateAllErrVarR(_currCPM, _currCPMFrame, subsetCPMO, predPos, currSubsetIndices, 
+                validSubsets, usedCombo, predIndices, predInd2CPMInd, _parms._intercept, removedPredSweepInd, removedPredSV);
         // find the best subset and the corresponding cpm by checking for lowest error variance
         int bestInd = -1;
         double errorVarianceMin = Double.MAX_VALUE;
@@ -598,15 +637,23 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             currSubsetIndices.add(predPos, newPredictor);  // add new replaced predictor into predictor subset
             int[] subsetPred = currSubsetIndices.stream().mapToInt(Integer::intValue).toArray();
             bestModel._predSubset = subsetPred;
-            sweepCPM(currCPM, predInd2CPMInd[predRemoved], false); // undo sweeping by replaced predictor on currCPM
-            sweepCPM(currCPM, predInd2CPMInd[newPredictor], false);// perform sweeping by newly chosen predictor on currCPM
-            double[][] subsetCPM = extractPredSubsetsCPM(currCPM, subsetPred, predInd2CPMInd, hasIntercept);
+            double[][] subsetCPM;
+            if (_parms._multinode_mode) {
+                sweepCPMParallel(_currCPMFrame, predInd2CPMInd[predRemoved], _trackSweep);
+                sweepCPMParallel(_currCPMFrame, predInd2CPMInd[newPredictor], _trackSweep);
+                subsetCPM = extractPredSubsetsCPMFrame(_currCPMFrame, subsetPred, predInd2CPMInd, _parms._intercept);
+            } else {
+                sweepCPM(_currCPM, predInd2CPMInd[predRemoved], false); // undo sweeping by replaced predictor on currCPM
+                sweepCPM(_currCPM, predInd2CPMInd[newPredictor], false);// perform sweeping by newly chosen predictor on currCPM
+                subsetCPM = extractPredSubsetsCPM(_currCPM, subsetPred, predInd2CPMInd, _parms._intercept);
+            }
             bestModel._CPM = subsetCPM;
             bestModel._errorVariance = errorVarianceMin;
             return bestModel;
         }
     }
-    
+
+
     /**
      * Given the training Frame array, build models for each training frame and return the GLMModel with the best
      * R2 values.

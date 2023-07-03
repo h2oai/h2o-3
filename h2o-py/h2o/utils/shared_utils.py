@@ -15,7 +15,6 @@ TODO: clean up this file that turned into a waste bin over the years:
 - utility functions used ONLY in tests should go to test utilities! no reason to export those to end users!
 - same for model_utils.py nearby
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 from .compatibility import *  # NOQA
 
 import csv
@@ -36,8 +35,8 @@ try:
     from contextlib import AbstractContextManager
 except ImportError:
     import abc
-    from future.utils import with_metaclass
-    class AbstractContextManager(with_metaclass(abc.ABCMeta)):
+    
+    class AbstractContextManager(metaclass=abc.ABCMeta):
         @classmethod
         def __subclasshook__(cls, C):
             if cls is AbstractContextManager:
@@ -123,13 +122,6 @@ def temp_ctr():
 def is_module_available(mod):
     if mod in sys.modules and sys.modules[mod] is not None:  # fast track + safer in unusual environments 
         return True
-    if PY2:
-        import imp
-        try:
-            imp.find_module(mod)
-            return True
-        except ImportError:
-            return False
         
     import importlib.util
     return importlib.util.find_spec(mod) is not None

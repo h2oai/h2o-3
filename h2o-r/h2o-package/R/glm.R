@@ -93,7 +93,7 @@
 #'        Defaults to family_default.
 #' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
 #' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
-#' @param calc_like \code{Logical}. if true, will return likelihood function value for HGLM. Defaults to FALSE.
+#' @param calc_like \code{Logical}. if true, will return likelihood function value. Defaults to FALSE.
 #' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
 #'        to FALSE.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
@@ -150,7 +150,7 @@
 #' @param dispersion_learning_rate Dispersion learning rate is only valid for tweedie family dispersion parameter estimation using ml. It must be
 #'        > 0.  This controls how much the dispersion parameter estimate is to be changed when the calculated
 #'        loglikelihood actually decreases with the new dispersion.  In this case, instead of setting new dispersion =
-#'        dispersion - change, we set new dispersion = dispersion + dispersion_learning_rate * change. Defaults to 0.5.
+#'        dispersion + change, we set new dispersion = dispersion + dispersion_learning_rate * change. Defaults to 0.5.
 #'        Defaults to 0.5.
 #' @param influence If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the
 #'        dataset. Must be one of: "dfbetas".

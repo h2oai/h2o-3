@@ -11,6 +11,7 @@ import hex.util.EffectiveParametersUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
+import org.apache.commons.math3.special.Gamma;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static hex.DistributionFactory.LogExpUtil.log;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
 import static hex.glm.GLMModel.GLMOutput.calculatePValuesFromZValues;
@@ -304,11 +306,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override
-  public double likelihood(double w, double y, double f) {
+  public double likelihood(double w, double y, double[] f) {
     if (w == 0) {
       return 0;
+    } else if (_finalScoring){
+      // time-consuming calculation for the final scoring
+      return _parms.likelihood(w, y, f);
     } else {
-      return w*(_parms.likelihood(y, f));
+      // optimized calculation for model build
+      return w*(_parms.likelihood(y, f[0]));
     }
   }
 
@@ -359,6 +365,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public static class GLMParameters extends Model.Parameters {
     static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver"};
+    final static double LOG2PI = Math.log(2 * Math.PI);
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip
     }
@@ -375,6 +382,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public Solver _solver = Solver.AUTO;
     public double _tweedie_variance_power;
     public double _tweedie_link_power;
+    public double _dispersion_estimated;
     public double _theta; // 1/k and is used by negative binomial distribution only
     public double _invTheta;
     public double [] _alpha;
@@ -628,6 +636,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _link = l;
       this._theta=theta;
       this._invTheta = 1.0/theta;
+      this._dispersion_estimated = _init_dispersion_parameter;
     }
 
     public final double variance(double mu){
@@ -688,6 +697,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
+          if (DispersionMethod.ml.equals(_dispersion_parameter_method)) {
+            return TweedieEstimator.deviance(yr, ym, _tweedie_variance_power);
+          }
           double theta = _tweedie_variance_power == 1
             ?Math.log(y1/ym)
             :(Math.pow(y1,1.-_tweedie_variance_power) - Math.pow(ym,1 - _tweedie_variance_power))/(1-_tweedie_variance_power);
@@ -703,14 +715,66 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      return deviance((double)yr,(double)ym);
     }
 
-    public final double likelihood(double yr, double ym){ 
+    // likelihood calculation used for the model building
+    public final double likelihood(double yr, double ym){
       if (_family.equals(Family.negativebinomial)) {
         return ((yr>0 && ym>0)?
                 (-GLMTask.sumOper(yr, _invTheta, 0)+_invTheta*Math.log(1+_theta*ym)-yr*Math.log(ym)-
                         yr*Math.log(_theta)+yr*Math.log(1+_theta*ym)):
                 ((yr==0 && ym>0)?(_invTheta*Math.log(1+_theta*ym)):0)); // with everything
+      }  else if (Family.tweedie.equals(_family) && DispersionMethod.ml.equals(_dispersion_parameter_method) && !_fix_tweedie_variance_power) {
+        return -TweedieEstimator.logLikelihood(yr, ym, _tweedie_variance_power, _init_dispersion_parameter);
       }  else
         return .5 * deviance(yr,ym);
+    }
+
+    // more time-consuming likelihood calculation used for the final scoring
+    public final double likelihood(double w, double yr, double[] ym) {
+      double prediction = ym[0];
+      double probabilityOf1;
+      switch (_family) {
+        case gaussian:
+          return -.5 * (w * Math.pow(yr - prediction , 2) / _dispersion_estimated 
+                  + log(_dispersion_estimated / w) + LOG2PI);
+        case binomial:
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
+          return w * (yr * log(probabilityOf1) + (1-yr) * log(1 - probabilityOf1));
+        case quasibinomial:
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
+          if (yr == prediction)
+            return 0;
+          else if (prediction > 1) // check what are possible values?
+            return -w * (yr * log(probabilityOf1));
+          else
+            return -w * (yr * log(probabilityOf1) + (1 - yr) * log(1 - probabilityOf1));
+        case fractionalbinomial:
+          // if probability is not given, then it is 1.0 if 1 is predicted and 0.0 if 0 is predicted
+          probabilityOf1 = ym.length > 1 ? ym[2] : ym[0]; // probability of 1 equals prediction
+          if (yr == prediction)
+            return 0;
+          return w * ((MathUtils.y_log_y(yr, probabilityOf1)) + MathUtils.y_log_y(1 - yr, 1 - probabilityOf1));
+        case poisson:
+          return w * (yr * log(prediction) - prediction - Gamma.logGamma(yr + 1)); // gamma(n) = (n-1)!
+        case negativebinomial:
+          // the estimated dispersion parameter is theta. The likelihood formula requires k. Theta=1/k.
+          double invThetaEstimated = 1 / _dispersion_estimated;
+          return yr * log(invThetaEstimated * prediction / w) - (yr + w/invThetaEstimated) * log(1 + invThetaEstimated * prediction / w) 
+                  + log(Gamma.gamma(yr + w / invThetaEstimated) / (Gamma.gamma(yr + 1) * Gamma.gamma(w / invThetaEstimated)));
+        case gamma:
+          double invPhiEst = 1 / _dispersion_estimated;
+          return w * invPhiEst * log(w * yr * invPhiEst / prediction) - w * yr * invPhiEst / prediction 
+                  - log(yr) - Gamma.logGamma(w * invPhiEst);
+        case tweedie:
+          return -TweedieEstimator.logLikelihood(yr, ym[0], _tweedie_variance_power, _init_dispersion_parameter);
+        case multinomial:
+          // if probability is not given, then it is 1.0 if prediction equals to the real y and 0 othervice
+          double predictedProbabilityOfActualClass = ym.length > 1 ? ym[(int) yr + 1] : (prediction == yr ? 1.0 : 0.0);
+          return w * log(predictedProbabilityOfActualClass);
+        default:
+          throw new RuntimeException("unknown family " + _family);
+      }
     }
 
     public final double linkDeriv(double x) { // note: compute an inverse of what R does
@@ -790,8 +854,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return 1.0 / xx;
         case tweedie:
           return _tweedie_link_power == 0
-            ?Math.max(2e-16,Math.exp(x))
-            :Math.pow(x, 1/ _tweedie_link_power);
+            ? Math.max(2e-16, Math.exp(x))
+            : Math.pow(x, 1/ _tweedie_link_power);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -864,6 +928,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public DistributionFamily getDistributionFamily() {
       return familyToDistribution(_family);
     }
+    
+    public void updateTweedieParams(double tweedieVariancePower, double tweedieLinkPower, double dispersion){
+      _tweedie_variance_power = tweedieVariancePower;
+      _tweedie_link_power = tweedieLinkPower;
+      _init_dispersion_parameter = dispersion;
+    }
   } // GLMParameters
 
   public static class GLMWeights {
@@ -886,15 +956,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final double _oneOLinkPowerSquare;
     double _theta;  // used by negative binomial, 0 < _theta <= 1
     double _invTheta;
+    double _dispersion;
     double _oneOeta;
     double _oneOetaSquare;
+    boolean _varPowerEstimation;
 
     final NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     
-    public GLMWeightsFun(GLMParameters parms) {this(parms._family,parms._link, parms._tweedie_variance_power, 
-            parms._tweedie_link_power, parms._theta);}
+    public GLMWeightsFun(GLMParameters parms) {
+      this(parms._family,parms._link, parms._tweedie_variance_power,
+              parms._tweedie_link_power, parms._theta, parms._init_dispersion_parameter,
+              GLMParameters.DispersionMethod.ml.equals(parms._dispersion_parameter_method) && !parms._fix_tweedie_variance_power);
+    }
 
-    public GLMWeightsFun(Family fam, Link link, double var_power, double link_power, double theta) {
+    public GLMWeightsFun(Family fam, Link link, double var_power, double link_power, double theta, double dispersion, boolean varPowerEstimation) {
       _family = fam;
       _link = link;
       _var_power = var_power;
@@ -907,6 +982,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _oneOLinkPowerSquare = _oneOLinkPower*_oneOLinkPower;
       _theta = theta;
       _invTheta = 1/theta;
+      _dispersion = dispersion;
+      _varPowerEstimation = varPowerEstimation;
     }
 
     /***
@@ -1075,6 +1152,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
         case tweedie:
+          if (_varPowerEstimation)
+            return TweedieEstimator.deviance(yr, ym, _var_power);
           double val;
           if (_var_power==1) {
             val = yr*Math.log(y1/ym)-(yr-ym);
@@ -1115,7 +1194,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
         case tweedie:
           x.dev = w*deviance(yr,ym);
-          x.l = likelihood(w, yr, ym); // todo: verify that this is not true for Poisson distribution
+          x.l = likelihood(w, yr, ym); 
           break;
         case negativebinomial:
           x.dev = w*deviance(yr,ym); // CHECKED-log/CHECKED-identity
@@ -1152,7 +1231,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gamma:
           if (yr == 0) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-        case tweedie: // we ignore the a(y,phi,p) term in the likelihood calculation here since we are not optimizing over them
+        case tweedie:
+          if (_varPowerEstimation)
+            return -TweedieEstimator.logLikelihood(yr, ym, _var_power, _dispersion);
+         //  we ignore the a(y,phi,p) term in the likelihood calculation here since we are not optimizing over them
           double temp = 0;
           if (_var_power==1) {
             temp = Math.pow(ym, _twoMinusVarPower)*_oneOtwoMinusVarPower-yr*Math.log(ym);
@@ -1317,6 +1399,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public final double    _ySigma;
   public final long      _nobs;
   public double[] _betaCndCheckpoint;  // store temporary beta coefficients for checkpointing purposes
+  public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -1334,9 +1417,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public void setZValues(double [] zValues, double dispersion, boolean dispersionEstimated) {
     _output._zvalues = zValues;
-    _output._dispersion = dispersion;
-    _output._dispersionEstimated = dispersionEstimated;
+    setDispersion(dispersion, dispersionEstimated);
   }
+  
+  public void setDispersion(double dispersion, boolean dispersionEstimated) {
+    _output._dispersion = dispersion;
+    _output._dispersionEstimated = dispersionEstimated; 
+  }
+  
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;

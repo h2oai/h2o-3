@@ -119,7 +119,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     server_algos = model_builders.keys()
     assert len(set(server_algos) - set(algos)) == 0, "FAIL: Our set of algos doesn't match what the server knows about.  Ours: " + repr(algos) + "; server's: " + repr(server_algos)
 
-    for algo, model_builder in model_builders.iteritems():
+    for algo, model_builder in model_builders.items():
         parameters_list = model_builder['parameters']
         test_parameters = { value['name'] : value['default_value'] for value in parameters_list } # collect default parameters
         if algo in algo_additional_default_params:

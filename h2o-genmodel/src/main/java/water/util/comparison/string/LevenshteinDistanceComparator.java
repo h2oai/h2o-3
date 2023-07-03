@@ -1,4 +1,4 @@
-package water.rapids.ast.prims.string.algorithms;
+package water.util.comparison.string;
 
 import no.priv.garshol.duke.Comparator;
 
