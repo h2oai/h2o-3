@@ -217,12 +217,14 @@ def test_make_leaderboard_custom_metric():
     
     ldb_custom = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], fvalid, sort_metric="custom").as_data_frame()
     ldb_mae = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], fvalid, sort_metric="mae").as_data_frame()
+
     assert (ldb_mae["model_id"] == ldb_custom["model_id"]).all()
 
     for scoring_data in ["train", "valid", "xval", "AUTO"]:
         print(scoring_data)
         ldb_custom = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], sort_metric="custom", scoring_data=scoring_data).as_data_frame()
         ldb_mae = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], sort_metric="mae", scoring_data=scoring_data).as_data_frame()
+
         print(ldb_custom)
         print(ldb_mae)
         assert (ldb_mae["model_id"] == ldb_custom["model_id"]).all()

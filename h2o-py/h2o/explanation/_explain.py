@@ -46,7 +46,7 @@ def _dont_display(object):
     """
     import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if isinstance(object, matplotlib.figure.Figure):
+    if isinstance(object, matplotlib.figure.Figure) or is_decorated_plot_result(object) and (object.figure() is not None):
         plt.close()
     return object
 
@@ -179,7 +179,10 @@ class H2OExplanation(OrderedDict):
     def _ipython_display_(self):
         from IPython.display import display
         for v in self.values():
-            display(v)
+            if is_decorated_plot_result(v):
+                display(v.figure())
+            else:
+                display(v)
 
 
 @contextmanager

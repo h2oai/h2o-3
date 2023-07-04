@@ -95,6 +95,7 @@ reference:
       - h2o.dayOfWeek
       - h2o.dct
       - h2o.ddply
+      - h2o.decision_tree
       - h2o.decryptionSetup
       - h2o.deepfeatures
       - h2o.deeplearning
