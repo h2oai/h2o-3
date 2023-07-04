@@ -140,7 +140,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Object obj = null;
     criterion = criterion.toLowerCase();
     
-    if ("custom".equals(criterion) && mm._custom_metric != null){
+    if ("custom".equals(criterion)){
+      if (null == mm._custom_metric) 
+        return Double.NaN;
       return mm._custom_metric.value;
     }
     
@@ -177,7 +179,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       }
     }
     if (null == method)
-      throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion);
+      throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion + " for model_id: " + mm._modelKey);
 
     try {
       return (double) method.invoke(obj);
