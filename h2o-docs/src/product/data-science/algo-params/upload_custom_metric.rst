@@ -3,7 +3,7 @@
 ``upload_custom_metric``
 ------------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, Deeplearning
 - Hyperparameter: no
 
 Description
@@ -22,6 +22,8 @@ Three separate fields must be specified when using this function:
 The parameters ``func_name`` and ``func_file`` must be unique for each uploaded custom distribution.
 
 **Note**: This option is only supported in the Python client.
+
+**Note**: In Deeplearning, custom metric is not supported for Auto-encoder option.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

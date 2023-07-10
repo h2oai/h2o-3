@@ -270,7 +270,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               return false;
             });
   }
-
+  
   /**
    * Identifies the default ordering method for models returned from Grid Search
    * @return default sort-by
@@ -579,6 +579,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public double missingColumnsType() { return Double.NaN; }
 
     public boolean hasCheckpoint() { return _checkpoint != null; }
+    
+    public boolean hasCustomMetricFunc() { return _custom_metric_func != null; }
 
     public long checksum() {
       return checksum(null);
@@ -1899,6 +1901,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
 
+  public Frame score(Frame fr, CFuncRef customMetricFunc) throws IllegalArgumentException {
+    return score(fr, null, null, true, customMetricFunc);
+  }
+
   /**
    * Adds a scoring-related warning. 
    * 
@@ -1925,6 +1931,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
+  
   protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics, List<Frame> tmpFrames) {
     Frame adaptFr = new Frame(fr);
     applyPreprocessors(adaptFr, tmpFrames);
