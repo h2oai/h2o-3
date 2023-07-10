@@ -37,7 +37,7 @@ The goal of this tool is to assist the identification of admissible features whi
 
 .. note::
     
-    Infogram should not be used to remove correlated columns.
+    Infogram should not be used to remove correlated columns. 
 
 Infogram Interface
 ------------------
