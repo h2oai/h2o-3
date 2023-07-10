@@ -132,8 +132,8 @@
 #' @param standardize_tp_gam_cols \code{Logical}. standardize tp (thin plate) predictor columns Defaults to FALSE.
 #' @param scale_tp_penalty_mat \code{Logical}. Scale penalty matrix for tp (thin plate) smoothers as in R Defaults to FALSE.
 #' @param bs Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for monotone
-#'        I-splines, 3 for NBSplineTypeI M-splines (refer to doc here: https://h2oai.atlassian.net/browse/PUBDEV-8835).
-#'        If specified, must be the same size as gam_columns
+#'        I-splines, 3 for NBSplineTypeI M-splines (refer to doc here: https://github.com/h2oai/h2o-3/issues/6926).  If
+#'        specified, must be the same size as gam_columns
 #' @param scale Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
 #' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
 #' @param store_knot_locations \code{Logical}. If set to true, will return knot locations as double[][] array for gam column names found

@@ -186,7 +186,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         // Compute error
         double err = yact[0] - ds[iact + 1];
         _sumsqe += w * err * err;           // Squared error
-        // Compute negative loglikelihood loss, according to https://0xdata.atlassian.net/secure/attachment/30135/30135_TMLErare.pdf Appendix C
+        // Compute negative loglikelihood loss, according to https://h2o-3-jira-github-migration.s3.amazonaws.com/TMLErare.pdf Appendix C
         _logloss += - w * (yact[0] * Math.log(Math.max(1e-15, ds[2])) + (1-yact[0]) * Math.log(Math.max(1e-15, ds[1])));
       } else {
         if (iact != 0 && iact != 1) return ds; // The actual is effectively a NaN

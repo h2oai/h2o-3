@@ -119,7 +119,7 @@ NULL
     .eval.frame(params$validation_frame)
   if (length(grep("stopping_metric", attributes(params)))>0) {
     if (params$stopping_metric=="r2")
-      stop("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
+      stop("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://github.com/h2oai/h2o-3/issues/12248 for progress.")
   }
   if (algo=="pca" && is.null(params$k)) # make sure to set k=1 for default for pca
     params$k=1
@@ -1015,7 +1015,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' @param train A logical value indicating whether to return the training metrics (constructed during training).
 #'
 #' Note: when the trained h2o model uses balance_classes, the training metrics constructed during training will be from the balanced training dataset.
-#' For more information visit: \url{https://0xdata.atlassian.net/browse/TN-9}
+#' For more information visit: \url{https://github.com/h2oai/h2o-3/discussions/15518}
 #' @param valid A logical value indicating whether to return the validation metrics (constructed during training).
 #' @param xval A logical value indicating whether to return the cross-validation metrics (constructed during training).
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
@@ -1078,7 +1078,6 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
     res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id, newdata.id), .params = parms)
 
     ####
-    # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
     model_metrics <- Filter(function(mm) { mm$frame$name==newdata.id}, res$model_metrics)[[1]]   # filter on newdata.id, R's builtin Filter function
     #
     ####

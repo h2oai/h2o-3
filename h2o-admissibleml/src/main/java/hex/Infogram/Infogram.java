@@ -511,8 +511,8 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
 
     /***
      * This method basically go through all the predictors and calculate the cmi associated with each predictor.  For
-     * core infogram, refer to https://h2oai.atlassian.net/browse/PUBDEV-8075 section I.  For fair infogram, refer to
-     * https://h2oai.atlassian.net/browse/PUBDEV-8075 section II.
+     * core infogram, refer to https://github.com/h2oai/h2o-3/issues/7830 section I.  For fair infogram, refer to
+     * https://github.com/h2oai/h2o-3/issues/7830 section II.
      * 
      * @param modelCount : current model count to build
      * @param numModel : total number of models to build
@@ -571,7 +571,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
     }
 
   /***
-   * Calculate the CMI for each predictor.  Refer to https://h2oai.atlassian.net/browse/PUBDEV-8075 section I step 2 
+   * Calculate the CMI for each predictor.  Refer to https://github.com/h2oai/h2o-3/issues/7830 section I step 2 
    * for core infogram, or section II step 3 for fair infogram 
    *
    */

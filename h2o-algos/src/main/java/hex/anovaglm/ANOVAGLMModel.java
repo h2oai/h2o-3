@@ -253,7 +253,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
   /**
    * The Type III SS calculation, degree of freedom, F-statistics and p-values will be included in the model
    * summary.  For details on how those are calculated, refer to ANOVAGLMTutorial  
-   * https://h2oai.atlassian.net/browse/PUBDEV-8088 section V.
+   * https://github.com/h2oai/h2o-3/issues/7561 section V.
    * 
    * @return a {@link TwoDimTable} representation of the result frame
    */

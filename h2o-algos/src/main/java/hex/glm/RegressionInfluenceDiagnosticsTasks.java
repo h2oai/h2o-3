@@ -15,7 +15,7 @@ import static water.util.ArrayUtils.*;
 
 /***
  * Classes defined here implemented the various pieces of regression influence diagnostics described in this doc:
- * https://h2oai.atlassian.net/browse/PUBDEV-8638.  Hence, whenever I refer to the document, I mean the one in the
+ * https://github.com/h2oai/h2o-3/issues/7044.  Hence, whenever I refer to the document, I mean the one in the
  * http link.
  */
 public class RegressionInfluenceDiagnosticsTasks {

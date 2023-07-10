@@ -2933,7 +2933,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
             if (genmodel._offsetColumn != null) {
               double offset = fr.vec(genmodel._offsetColumn).at(row);
-              // TODO: MOJO API is cumbersome in this case - will be fixed in https://0xdata.atlassian.net/browse/PUBDEV-7080
+              // TODO: MOJO API is cumbersome in this case - will be fixed in https://github.com/h2oai/h2o-3/issues/8560
               switch (genmodel.getModelCategory()) {
                 case Regression:
                   p = epmw.predictRegression(rowData, offset);

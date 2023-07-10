@@ -13,4 +13,4 @@ Suggests: testthat, cvAUC
 NeedsCompilation: no
 SystemRequirements: Java (>= 1.6)
 URL: https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble/h2oEnsemble-package
-BugReports: https://0xdata.atlassian.net/issues/?filter=14900
+BugReports: https://github.com/h2oai/h2o-3/issues

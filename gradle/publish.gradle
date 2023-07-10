@@ -98,11 +98,10 @@ publishing {
                       connection 'scm:git:https://github.com/h2oai/h2o-dev.git'
                       developerConnection 'scm:git:git@github.com:h2oai/h2o-dev.git'
                   }
-
-                  // Public H2O JIRA for issue management
+                    
                   issueManagement {
-                      system 'Jira'
-                      url    'http://jira.h2o.ai'
+                      system 'GitHub issues'
+                      url    'https://github.com/h2oai/h2o-3/issues'
                   }
                   // Developer information
                   developers {

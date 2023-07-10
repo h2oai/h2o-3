@@ -10,9 +10,9 @@ public class NBSplinesTypeIDerivative {
     /***
      * This class implements the first or second derivative of NBSpline Type I (derivative of Mi,k(t)) in order to 
      * generate the penalty function described in Section VI.I equation 16 of doc in 
-     * JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8398.
+     * the GitHub issue: https://github.com/h2oai/h2o-3/issues/7261.
      * Doc 2 is the doc for M-spline implementation and can be found here: 
-     * https://h2oai.atlassian.net/browse/PUBDEV-8835
+     * https://github.com/h2oai/h2o-3/issues/6926
      */
     private final int _order; // order k as in derivative of Mi,k(t)
     private final int _basisIndex; // index i

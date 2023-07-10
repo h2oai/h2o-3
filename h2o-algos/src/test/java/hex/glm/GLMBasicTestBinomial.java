@@ -1594,7 +1594,7 @@ public class GLMBasicTestBinomial extends TestUtil {
   }
 
   /***
-   * Generate coefficients of GLM binomial family in III.II of doc in https://h2oai.atlassian.net/browse/PUBDEV-8585
+   * Generate coefficients of GLM binomial family in III.II of doc in https://github.com/h2oai/h2o-3/issues/7080
    */
   public static double[] genBinomialCoeff(Frame train, String responseCol, String[] predictorNames, double[] betaOld, 
                                           boolean standardize) {
@@ -1615,7 +1615,7 @@ public class GLMBasicTestBinomial extends TestUtil {
   }
 
   /***
-   * Forming new coefficients using equation 8 of doc in https://h2oai.atlassian.net/browse/PUBDEV-8585
+   * Forming new coefficients using equation 8 of doc in https://github.com/h2oai/h2o-3/issues/7080
    */
   public static double[] formNewCoeff(double[][] tx, double[] z) {
     double[][] gram = formGram(tx);
@@ -1626,7 +1626,7 @@ public class GLMBasicTestBinomial extends TestUtil {
   }
 
   /**
-   * Forming right hand side of equation 8 without the gram matrix in doc https://h2oai.atlassian.net/browse/PUBDEV-8585
+   * Forming right hand side of equation 8 without the gram matrix in doc https://github.com/h2oai/h2o-3/issues/7080
    */
   public static double[] formY(double[][] tx, double[] z) {
     int coefLen = tx[0].length;
@@ -1703,7 +1703,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     return temp+beta[numPred];
   }
   
-  // form tilde X, tilde Z here as described in III.II of https://h2oai.atlassian.net/browse/PUBDEV-8585
+  // form tilde X, tilde Z here as described in III.II of https://github.com/h2oai/h2o-3/issues/7080
   public static double[][] formTX_TZ(double[][] x, double[] z, double[] w) {
     int numRows = z.length;
     int nPred = x[0].length;

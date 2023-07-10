@@ -11,7 +11,8 @@ import static org.junit.Assert.assertTrue;
 
 public class ClientParserZipGzipTest extends TestUtil {
   //
-  // This JUnit test is used to verify that fixes for HEXDEV-497: parsing zip files
+  // This JUnit test is used to verify that fixes for https://github.com/h2oai/private-h2o-3/issues/341: 
+  // parsing zip files
   // is working.  We are only testing it with a small dataset.  More comprehensive tests
   // can be found with Pyunit tests.
   //

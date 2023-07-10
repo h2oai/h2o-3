@@ -341,7 +341,7 @@ public class ModelSelectionUtils {
      * calculation the error variance with the addition of the new predictor.  All error variances will be stored in
      * an array and returned for further processing.  This is very similar to generateAllErrVar but they are not the
      * same.  For starters, the replaced predictors are included in the predictor subset allPreds. For details, refer to 
-     * https://h2oai.atlassian.net/browse/PUBDEV-8954, section VI.
+     * https://github.com/h2oai/h2o-3/issues/6538, section VI.
      */
     public static double[] generateAllErrVarR(final double[][] allCPM, final Frame allCPMFrame, double[][] prevCPM, int predPos,
                                               List<Integer> currSubsetIndices, List<Integer> validSubsets,
@@ -386,7 +386,7 @@ public class ModelSelectionUtils {
      * 3. sweep the subsetCPM with rows/columns associated with the new predictor;
      * 4. record the new error variance.
      * 
-     * For details, refer to https://h2oai.atlassian.net/browse/PUBDEV-8954, section VI.
+     * For details, refer to https://github.com/h2oai/h2o-3/issues/6538, section VI.
      */
     public static void genMSE4MorePredsR(final int[][] pred2CPMIndices, final double[][] allCPM, 
                                          final Frame allCPMFrame, double[][] prevCPM, final int[] allPreds, 
@@ -424,7 +424,7 @@ public class ModelSelectionUtils {
      * remaining predictor set validSubsets and put it into the array allPreds.  Then, it will spin off a process to 
      * calculation the error variance with the addition of the new predictor.  All error variances will be stored in
      * an array and returned for further processing.  For details, refer to 
-     * https://h2oai.atlassian.net/browse/PUBDEV-8954, section V.
+     * https://github.com/h2oai/h2o-3/issues/6538, section V.
      */
     public static double[] generateAllErrVar(final double[][] allCPM, Frame allCPMFrame, int prevCPMSize, 
                                              List<Integer> currSubsetIndices, List<Integer> validSubsets, 
@@ -464,7 +464,7 @@ public class ModelSelectionUtils {
 
     /***
      * This method will calculate the error variance value for all predictors in the allPreds.  For details,
-     * refer to https://h2oai.atlassian.net/browse/PUBDEV-8954, section V.
+     * refer to https://github.com/h2oai/h2o-3/issues/6538, section V.
      */
     public static void genMSE4MorePreds(final int[][] pred2CPMIndices, final double[][] allCPM, final Frame allCPMFrame, 
                                         final int[] allPreds, int lastSweepIndex, final double[] subsetMSE, 
@@ -609,7 +609,7 @@ public class ModelSelectionUtils {
 
     /***
      * This method will calculate the variance variance when only one predictor is considered in allPreds.  For details,
-     * refer to https://h2oai.atlassian.net/browse/PUBDEV-8954, section V.
+     * refer to https://github.com/h2oai/h2o-3/issues/6538, section V.
      */
     public static void genMSE1stPred(final int[][] pred2CPMIndices, final double[][] allCPM, final Frame allCPMFrame, 
                                      final int[] allPreds, final double[] subsetMSE, RecursiveAction[] resA, 
