@@ -92,7 +92,7 @@ def checkPull(changeId) {
         }
     }
     
-    def projectRequest = '{"query":"{ repository(owner: \\"h2oai\\", name: \\"h2o-3\\") {issue(number: ' + "${issueId}" + '}) {projectV2(number: 112){number}}}}"}'
+    def projectRequest = '{"query":"{ repository(owner: \\"h2oai\\", name: \\"h2o-3\\") {issue(number: ' + "${issueId}" + ') {projectV2(number: 112){number}}}}"}'
     def projectRequestUrl = new URL("https://api.github.com/graphql")
     def connection = (HttpURLConnection)projectRequestUrl.openConnection()
     connection.setRequestMethod("POST")
