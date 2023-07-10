@@ -7,6 +7,7 @@ configurations {
 
 dependencies {
   api project(":h2o-core")
+  compileOnly("org.apache.hadoop:hadoop-common:$defaultHadoopVersion")
   api "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
   api "com.amazonaws:aws-java-sdk-sts:${awsJavaSdkVersion}" // Required by WebIdentityTokenCredentialsProvider from AWS SDK
   api "org.apache.httpcomponents:httpclient:${httpClientVersion}"
