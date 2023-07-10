@@ -8,11 +8,13 @@ configurations {
 
 dependencies {
     api project(":h2o-core")
+    compileOnly("org.apache.hadoop:hadoop-common:$defaultHadoopVersion")
     api("org.apache.hadoop:$defaultHdfsDependency:$defaultHadoopVersion") {
         // Pull all dependencies to allow run directly from IDE or command line
         transitive = true
     }
     api("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
+    
     api("com.nimbusds:nimbus-jose-jwt:9.11.3")
 
     testImplementation project(":h2o-test-support")
