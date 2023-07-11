@@ -55,7 +55,7 @@ def checkPull(changeId) {
     println ""
     if (title.contains("[nocheck]")) {
         println "PR check will be skipped due to user request"
-        return []    
+        return []
     }
     if (title.contains("[Snyk]")) {
         println "PR check will be skipped for Snyk security upgrades"
@@ -91,7 +91,7 @@ def checkPull(changeId) {
         }
     }
     if (issueDetails.assignee == null){
-        errorMessages.add("The associated GitHub issue #${issueId} must  have an assignee.")
+        errorMessages.add("The associated GitHub issue #${issueId} must have an assignee.")
     }
     
     def projectRequest = '{"query":"{ repository(owner: \\"h2oai\\", name: \\"h2o-3\\") {issue(number: ' + "${issueId}" + ') {projectV2(number: 112){number}}}}"}'
