@@ -66,30 +66,32 @@ def checkPull(changeId) {
         return ["Pull Request ${changeId} doesn't have associated GitHub issue. Please add the issue number (GH-XXXX) in the title of the PR"]
     }
     def issueId = issueMatcher[0][1]
+    
+    def errorMessages = []
     if (!pullDetails.body.contains("#${issueId}")) {
-        return ["The associated GitHub issue #${issueId} must be mentioned in the description of the PR."]
+        errorMessages.add("The associated GitHub issue #${issueId} must be mentioned in the description of the PR.")
     } 
         
     def issueDetails = jsonSlurper.parseText(new URL("https://api.github.com/repos/h2oai/h2o-3/issues/${issueId}").getText())
     
     if (issueDetails.milestone == null || issueDetails.milestone.state != "open"){
-        return ["The associated GitHub issue #${issueId} must be assigned to an opened milestone."]
+        errorMessages.add("The associated GitHub issue #${issueId} must be assigned to an opened milestone.")
+    } else {
+        def fixVersionValue = issueDetails.milestone.title
+        def baseBranch = pullDetails.base.ref
+        if (fixVersionValue.endsWith('.1')) {
+            if (baseBranch != 'master')
+                errorMessages.add("Pull Request ${changeId} is linked to the GitHub issue https://github.com/h2oai/h2o-3/issues/${issueId}. " +
+                        "This issue is marked for release in {$fixVersionValue}. This release will be done from a master branch. Change the base branch of the PR to 'master'.")
+        } else {
+            if (!baseBranch.startsWith('rel-')) {
+                errorMessages.add("Pull Request ${changeId} is linked to the GitHub issue https://github.com/h2oai/h2o-3/issues/${issueId}. " +
+                        "This issue is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch.")
+            }
+        }
     }
     if (issueDetails.assignee == null){
-        return ["The associated GitHub issue #${issueId} must  have an assignee."]
-    }
-    
-    def fixVersionValue = issueDetails.milestone.title
-    def baseBranch = pullDetails.base.ref
-    if (fixVersionValue.endsWith('.1')) {
-        if (baseBranch != 'master')
-            return ["Pull Request ${changeId} is linked to the GitHub issue https://github.com/h2oai/h2o-3/issues/${issueId}. " +
-                    "This issue is marked for release in {$fixVersionValue}. This release will be done from a master branch. Change the base branch of the PR to 'master'."]
-    } else {
-        if (!baseBranch.startsWith('rel-')) {
-            return ["Pull Request ${changeId} is linked to the GitHub issue https://github.com/h2oai/h2o-3/issues/${issueId}. " +
-                    "This issue is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch."]
-        }
+        errorMessages.add("The associated GitHub issue #${issueId} must  have an assignee.")
     }
     
     def projectRequest = '{"query":"{ repository(owner: \\"h2oai\\", name: \\"h2o-3\\") {issue(number: ' + "${issueId}" + ') {projectV2(number: 112){number}}}}"}'
@@ -106,10 +108,12 @@ def checkPull(changeId) {
         def responseText = is.getText()
         def projectResponse = jsonSlurper.parseText(responseText)
         if (projectResponse.data.repository.issue.projectV2 == null) {
-            return ["The associated GitHub issue #${issueId} must be assigned to H2O-3 project."]
+            errorMessages.add("The associated GitHub issue #${issueId} must be assigned to H2O-3 project.")
         }
     }
     
-    println "Pull request #$changeId seems correct. Thank you and good luck in code review!"
-    return []
+    if (errorMessages.isEmpty()) {
+        println "Pull request #$changeId seems correct. Thank you and good luck in code review!"
+    }
+    return errorMessages
 }
