@@ -175,6 +175,7 @@ def test_make_leaderboard_custom_metric():
                                                 stopping_metric="custom",
                                                 stopping_tolerance=0.1,
                                                 stopping_rounds=3, nfolds=nfolds,
+                                                keep_cross_validation_predictions=True,
                                                 seed=123)
     model_custom1.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
@@ -184,6 +185,7 @@ def test_make_leaderboard_custom_metric():
                                                  stopping_metric="custom",
                                                  stopping_tolerance=0.1,
                                                  stopping_rounds=3, nfolds=nfolds,
+                                                 keep_cross_validation_predictions=True,
                                                  seed=123)
     model_custom2.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
@@ -205,20 +207,24 @@ def test_make_leaderboard_custom_metric():
                                              seed=123)
     model_custom_alt.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
 
-    assert "custom" in h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], fvalid).columns
-    ldb = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], fvalid).as_data_frame()
+    model_se = H2OStackedEnsembleEstimator(base_models=[model_custom1, model_custom2], metalearner_algorithm="gbm", custom_metric_func=custom_mae)
+    model_se.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
+
+    assert "custom" in h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], fvalid).columns
+    ldb = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], fvalid).as_data_frame()
     print(ldb)
     assert (ldb["mae"] == ldb["custom"]).all()
     
-    ldb_custom = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], fvalid, sort_metric="custom").as_data_frame()
-    ldb_mae = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], fvalid, sort_metric="mae").as_data_frame()
-    # assert not (ldb["model_id"] == ldb_custom["model_id"]).all()
+    ldb_custom = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], fvalid, sort_metric="custom").as_data_frame()
+    ldb_mae = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], fvalid, sort_metric="mae").as_data_frame()
+
     assert (ldb_mae["model_id"] == ldb_custom["model_id"]).all()
 
     for scoring_data in ["train", "valid", "xval", "AUTO"]:
         print(scoring_data)
-        ldb_custom = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], sort_metric="custom", scoring_data=scoring_data).as_data_frame()
-        ldb_mae = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3], sort_metric="mae", scoring_data=scoring_data).as_data_frame()
+        ldb_custom = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], sort_metric="custom", scoring_data=scoring_data).as_data_frame()
+        ldb_mae = h2o.make_leaderboard([model_custom1, model_custom2, model_custom3, model_se], sort_metric="mae", scoring_data=scoring_data).as_data_frame()
+
         print(ldb_custom)
         print(ldb_mae)
         assert (ldb_mae["model_id"] == ldb_custom["model_id"]).all()
