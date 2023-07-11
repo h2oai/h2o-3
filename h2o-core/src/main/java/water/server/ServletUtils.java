@@ -267,7 +267,7 @@ public class ServletUtils {
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("Content-Security-Policy", "default-src 'self' 'unsafe-eval' 'unsafe-inline'; img-src 'self' data:");
     // Note: ^^^ unsafe-eval/-inline are essential for Flow to work
-    //           this will also kill the component "Star H2O on Github" in Flow - see HEXDEV-739
+    //           this will also kill the component "Star H2O on Github" in Flow - see https://github.com/h2oai/private-h2o-3/issues/44
     // Custom headers - using addHeader - can be multi-value and cannot overwrite the security headers
     for (H2O.KeyValueArg header : H2O.ARGS.extra_headers) {
       response.addHeader(header._key, header._value);

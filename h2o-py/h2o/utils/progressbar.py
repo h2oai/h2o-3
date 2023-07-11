@@ -113,7 +113,8 @@ class ProgressBar(object):
         assert_is_type(widgets, None, [str, ProgressBarWidget])
         assert_is_type(file_mode, None, bool)
 
-        # Fix for PUBDEV-5048. H2O depends on isatty attribute, but some Python Notebooks override stdout and doesn't
+        # Fix for https://github.com/h2oai/h2o-3/issues/11742.
+        # H2O depends on isatty attribute, but some Python Notebooks override stdout and doesn't
         # specify it. The same holds for the encoding attribute bellow
         if not hasattr(sys.stdout, "isatty"):
             sys.stdout.isatty = lambda: False

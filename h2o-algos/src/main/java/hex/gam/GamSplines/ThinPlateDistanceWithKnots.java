@@ -18,7 +18,7 @@ import static water.util.ArrayUtils.transpose;
 
 /**
  * Implementation details of this class can be found in GamThinPlateRegressionH2O.doc attached to this 
- * JIRA: https://h2oai.atlassian.net/browse/PUBDEV-7860
+ * GitHub issue: https://github.com/h2oai/h2o-3/issues/7783
  **/
 public class ThinPlateDistanceWithKnots extends MRTask<ThinPlateDistanceWithKnots> {
   final double[][] _knots;  // store knot values for the spline class

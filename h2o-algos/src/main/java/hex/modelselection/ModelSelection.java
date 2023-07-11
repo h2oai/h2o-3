@@ -268,7 +268,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         }
 
         /***
-         * The maxrsweep mode is explained here in the pdf doc:  https://h2oai.atlassian.net/browse/PUBDEV-8954.
+         * The maxrsweep mode is explained here in the pdf doc:  https://github.com/h2oai/h2o-3/issues/6538.
          * Apart from actions specific to the sweeping implementation, the logic in this function is very similar to
          * that of maxr mode.
          */
@@ -387,7 +387,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
          *    e. Take subset pred0, pred4, pred2 and go through steps a,b,c,d again and only stop when the best R2 does
          *       not improve anymore.
          *       
-         * see doc at https://h2oai.atlassian.net/browse/PUBDEV-8444 for details.
+         * see doc at https://github.com/h2oai/h2o-3/issues/7217 for details.
          * 
          * @param model
          */
@@ -420,7 +420,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         
         /**
          * Implements the backward selection mode.  Refer to III of ModelSelectionTutorial.pdf in 
-         * https://h2oai.atlassian.net/browse/PUBDEV-8428
+         * https://github.com/h2oai/h2o-3/issues/7232
          */
         private int buildBackwardModels(ModelSelectionModel model) {
             List<String> predNames = new ArrayList<>(Arrays.asList(_predictorNames));
@@ -551,7 +551,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      *    e. Take subset pred0, pred4, pred2 and go through steps a,b,c,d again and only stop when the best R2 does
      *       not improve anymore.
      *
-     * see doc at https://h2oai.atlassian.net/browse/PUBDEV-8444 for details.
+     * see doc at https://github.com/h2oai/h2o-3/issues/7217 for details.
      *
      * The most important thing here is to make sure validSubset contains the true eligible predictors to choose
      * from.  Inside the for loop, I will remove and add predictors that have been chosen in oneLessSubset and add
@@ -682,7 +682,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      * R2 value is returned.  The added predictor which resulted in the highest R2 value will be added to 
      * currSubsetIndices.
      * 
-     * see doc at https://h2oai.atlassian.net/browse/PUBDEV-8444 for details.
+     * see doc at https://github.com/h2oai/h2o-3/issues/7217 for details.
      *
      * @param currSubsetIndices: stored predictors that are chosen in the subset
      * @param coefNames: predictor names of full training frame
@@ -749,7 +749,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
      *    e. Take subset pred0, pred4, pred2 and go through steps a,b,c,d again and only stop when the best R2 does
      *       not improve anymore.
      *       
-     * see doc at https://h2oai.atlassian.net/browse/PUBDEV-8444 for details.
+     * see doc at https://github.com/h2oai/h2o-3/issues/7217 for details.
      *
      */
     public static GLMModel replacement(List<Integer> currSubsetIndices, List<String> coefNames,

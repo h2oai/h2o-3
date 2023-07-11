@@ -23,7 +23,7 @@ system_overloaded = False # true if max run time increases while iteration numbe
 def algo_max_runtime_secs():
     '''
     This pyunit test is written to ensure that the max_runtime_secs can restrict the model training time for all
-    h2o algos.  See PUBDEV-4702.
+    h2o algos.  See https://github.com/h2oai/h2o-3/issues/11581.
     '''
     global model_within_max_runtime
     global err_bound
@@ -171,7 +171,7 @@ def grabRuntimeInfo(err_bound, reduction_factor, model, training_data, x_indices
             model_within_max_runtime.append(1)
         else:
             print("########  Failure in PCA is not being counted.  Please fix this in "
-                  "JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8103")
+                  "Github issue: https://github.com/h2oai/h2o-3/issues/7546")
 
 
 def checkIteration(model):

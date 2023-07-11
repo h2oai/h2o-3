@@ -3,8 +3,8 @@ sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
 
-# This test is to make sure that we have fixed the following JIRA properly using airlines data:
-# HEXDEV-497: Merged Gzip Files not read properly.
+# This test is to make sure that we have fixed the following issue properly using airlines data:
+# https://github.com/h2oai/private-h2o-3/issues/341: Merged Gzip Files not read properly.
 # I will import the original files and then the zip directory and compare them to see if they are the same.
 #
 # In this test, the first, third and fifth files have headers while the second and fourth do not.  Just curious

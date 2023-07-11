@@ -36,7 +36,7 @@ def pyunit_make_metrics(weights_col=None):
     print("\n\n======= REGRESSION ========\n")
     for distr in ["gaussian", "poisson", "laplace", "gamma"]:
         # Skipping on `laplace`
-        # GBM training fails due to a bug: https://0xdata.atlassian.net/browse/PUBDEV-7480
+        # GBM training fails due to a bug: https://github.com/h2oai/h2o-3/issues/8158
         if weights_col is not None and distr == "laplace":
             continue
         print("distribution: %s" % distr)

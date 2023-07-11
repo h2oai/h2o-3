@@ -9,7 +9,8 @@ from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 def algo_pr_auc_test():
     '''
-    This pyunit test is written to expose the pr_auc for all binomial runs of all algos per PUBDEV-5665.
+    This pyunit test is written to expose the pr_auc for all binomial runs of all algos
+    per https://github.com/h2oai/h2o-3/issues/12524.
     '''
 
     seed = 123456789

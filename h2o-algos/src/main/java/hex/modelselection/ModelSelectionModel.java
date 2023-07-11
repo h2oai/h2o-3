@@ -522,7 +522,7 @@ public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelecti
 
         /***
          * Eliminate predictors with lowest z-value (z-score) magnitude as described in III of 
-         * ModelSelectionTutorial.pdf in https://h2oai.atlassian.net/browse/PUBDEV-8428
+         * ModelSelectionTutorial.pdf in https://github.com/h2oai/h2o-3/issues/7232
          */
         void extractPredictors4NextModel(GLMModel model, int index, List<String> predNames, List<String> numPredNames, 
                                          List<String> catPredNames) {
