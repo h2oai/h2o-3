@@ -6,7 +6,7 @@ import h2o
 def read_1gb_cloud():
     '''
     Test h2o cluster read file.  Should run faster than what is observed under
-    https://0xdata.atlassian.net/browse/PUBDEV-2254
+    https://github.com/h2oai/h2o-3/issues/15163
     Right now this test is not run through Jenkins. Need to setup a cloud
     testing infrastructure which is a longer term project.
     You can take a look at markc_multimachine on jenkins for the current setup

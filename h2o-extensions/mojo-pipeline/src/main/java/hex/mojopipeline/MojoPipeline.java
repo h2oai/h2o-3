@@ -188,7 +188,7 @@ public class MojoPipeline extends Iced<MojoPipeline> {
             }
             break;
           default:
-            throw new UnsupportedOperationException("Output type " + column.getType() + " is currently not supported for MOJO2. See https://0xdata.atlassian.net/browse/PUBDEV-7741");
+            throw new UnsupportedOperationException("Output type " + column.getType() + " is currently not supported for MOJO2. See https://github.com/h2oai/h2o-3/issues/7898");
         }
       }
     }

@@ -8,7 +8,7 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 def test_AUCPR_early_stop():
     '''
     This pyunit test is written to ensure that the AUCPR can restrict the model training time for all
-    h2o algos.  See PUBDEV-6684.
+    h2o algos.  See https://github.com/h2oai/h2o-3/issues/8948.
     '''
     seed = 12345
 

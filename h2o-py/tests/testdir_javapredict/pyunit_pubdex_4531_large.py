@@ -5,7 +5,7 @@ sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
 
-# JIRA PUBDEV_4531.  Allow predictCsv to read user dataset separated by any separator.
+# GH issue: .  Allow predictCsv to read user dataset separated by any separator.
 # added parameter to do .setConvertInvalidNumbersToNa(true)
 def javapredict_pubdev_4531():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_train_null_column_name.csv"))

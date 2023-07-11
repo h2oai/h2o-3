@@ -5931,7 +5931,7 @@ h2o.target_encode_apply <- function(data, x, y, target_encode_map, holdout_type,
     noise_level <- ifelse(is.factor(data[[y]]), 0.01, (max(data[[y]], na.rm = TRUE) - min(data[[y]], na.rm = TRUE))*0.01)
   }
   
-  # Remove string columns from `data` (see: https://0xdata.atlassian.net/browse/PUBDEV-5266)
+  # Remove string columns from `data` (see: https://github.com/h2oai/h2o-3/issues/12138)
   dd <- h2o.describe(data)
   string_cols <- as.character(dd[which(dd$Type == "string"), "Label"])
   if (length(string_cols) > 0) {

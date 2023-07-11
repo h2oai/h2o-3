@@ -58,9 +58,7 @@ Tests exercise every capability of H2O in detail using appropriate datasets and 
 
 - [HDFS](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests/testdir_hdfs): Library of R tests that pull data from HDFS instead of locally. 
 
-- [Java Predict](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests/testdir_javapredict): Library of R tests that demonstrate how to use POJO output. 
-
-- [Jira](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests/testdir_jira): Library of R tests for filed Jira tickets; view the corresponding ticket on our [Jira page](http://0xdata.atlassian.net)
+- [Java Predict](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests/testdir_javapredict): Library of R tests that demonstrate how to use POJO output.
 
 - [Misc](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests/testdir_misc) and [Munging](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests/testdir_munging): These libraries contain R tests for data munging functions, including splicing, filtering, histograms, and column transformation. 
 

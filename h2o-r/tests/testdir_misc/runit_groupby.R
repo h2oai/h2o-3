@@ -29,7 +29,7 @@ test <- function(conn) {
   r_mean  <- sapply(races, mean)
   checkEqualsNumeric(r_mean, gp_mean)
 
-#   Unimplemented at the moment - refer to jira: https://0xdata.atlassian.net/browse/PUBDEV-2319
+#   Unimplemented at the moment - refer to https://github.com/h2oai/h2o-3/issues/15225
 #   Log.info("Test method = median ...")
 #   gp_median <- h2o.group_by(data = df.hex, by = "RACE", median("VOL"))
 #   gp_median <- as.data.frame(gp_median)[,2]

@@ -143,8 +143,6 @@ Common parameters
 
 -  `y <algo-params/y.html>`__: *Required* Specify the index or column name of the column to use as the dependent variable (response column). The response column can be numeric (regression) or categorical (classification).
 
-You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.
-
 Examples
 ~~~~~~~~
 

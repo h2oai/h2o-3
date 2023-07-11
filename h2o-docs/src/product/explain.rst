@@ -318,7 +318,7 @@ Residual Analysis plots the fitted values vs residuals on a test dataset. Ideall
 Variable Importance
 ~~~~~~~~~~~~~~~~~~~
 
-The `variable importance <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/variable-importance.html>`__ plot shows the relative importance os the most important variables in the model.  Variable importance is currently available in for all H2O models except Stacked Ensembles (planned for a `future release <https://0xdata.atlassian.net/browse/PUBDEV-5137>`__), so if you happen to use ``h2o.explain()`` on an AutoML object with a Stacked Ensemble at the top of the leaderboard, it will instead show the variable importance for the top "base model" (non-stacked model).  `Note for R users`: The variable importance plot shown in the ``h2o.explain()`` output in R is rendered in ggplot2 instead of base R (the ``h2o.varimp_plot()`` utility function currently only uses base R).  We will add a switch to generate the ggplot2 version in a `future release <https://0xdata.atlassian.net/browse/PUBDEV-7823>`__.
+The `variable importance <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/variable-importance.html>`__ plot shows the relative importance os the most important variables in the model.  Variable importance is currently available in for all H2O models except Stacked Ensembles (planned for a `future release <https://github.com/h2oai/h2o-3/issues/12009>`__), so if you happen to use ``h2o.explain()`` on an AutoML object with a Stacked Ensemble at the top of the leaderboard, it will instead show the variable importance for the top "base model" (non-stacked model).  `Note for R users`: The variable importance plot shown in the ``h2o.explain()`` output in R is rendered in ggplot2 instead of base R (the ``h2o.varimp_plot()`` utility function currently only uses base R).  We will add a switch to generate the ggplot2 version in a `future release <https://github.com/h2oai/h2o-3/issues/7818>`__.
 
 .. tabs::
    .. code-tab:: r R
@@ -563,7 +563,7 @@ The learning curve plot shows error metric dependence on learning progress (e.g.
 - Training on CV Models  (available when ``nfolds>1``)
 - Cross-validation  (available when ``nfolds>1``)
 
-If one of these is missing, that means those particular scoring metrics were not available in the model.  Learning curve plots will be included in the Explain function in a `future <https://h2oai.atlassian.net/browse/PUBDEV-8112>`__ release, but for now, this is offered as a stand-alone utility. 
+If one of these is missing, that means those particular scoring metrics were not available in the model.  Learning curve plots will be included in the Explain function in a `future <https://github.com/h2oai/h2o-3/issues/7537>`__ release, but for now, this is offered as a stand-alone utility. 
 
 .. tabs::
    .. code-tab:: r R
@@ -621,8 +621,8 @@ as shown below.
 Additional Information
 ----------------------
 
-The H2O Explainability interface is newly released and currently experimental.  From the initial release, we may evolve (and potentially break) the API, as we collect collect feedback from users and work to improve and expand the functionality.  We welcome feedback!  If you find bugs, or if you have any feature requests or suggested improvements, please create a ticket on the `H2O JIRA issue tracker <https://0xdata.atlassian.net/projects/PUBDEV>`__.
+The H2O Explainability interface is newly released and currently experimental.  From the initial release, we may evolve (and potentially break) the API, as we collect collect feedback from users and work to improve and expand the functionality.  We welcome feedback!  If you find bugs, or if you have any feature requests or suggested improvements, please create a ticket on the `GitHub issues <https://github.com/h2oai/h2o-3/issues>`__.
 
-Our roadmap for improving the the interface is `here <https://h2oai.atlassian.net/browse/PUBDEV-7806>`__.
+Our roadmap for improving the the interface is `here <https://github.com/h2oai/h2o-3/issues/7836>`__.
 
 

@@ -194,7 +194,7 @@ public class XGBoostSteps extends ModelingSteps {
             searchParams.put("_col_sample_rate_per_tree", new Double[]{0.7, 0.8, 0.9, 1.0}); // = _colsample_bytree: start higher to always use at least about 40% of columns
 //            searchParams.put("_min_split_improvement", new Float[]{0.01f, 0.05f, 0.1f, 0.5f, 1f, 5f, 10f, 50f}); // = _gamma
 //            searchParams.put("_tree_method", new XGBoostParameters.TreeMethod[]{XGBoostParameters.TreeMethod.auto});
-            searchParams.put("_booster", new XGBoostParameters.Booster[]{ // include gblinear? cf. https://0xdata.atlassian.net/browse/PUBDEV-7254
+            searchParams.put("_booster", new XGBoostParameters.Booster[]{ // include gblinear? cf. https://github.com/h2oai/h2o-3/issues/8381
                     XGBoostParameters.Booster.gbtree, //default, let's use it more often: note that some combinations may be trained multiple time by the RGS then.
                     XGBoostParameters.Booster.gbtree,
                     XGBoostParameters.Booster.dart
