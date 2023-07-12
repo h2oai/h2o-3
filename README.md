@@ -781,6 +781,8 @@ Sebastien Poirier
 Tomáš Frýda
 Ard Kelmendi
 Yuliia Syzon
+Adam Valenta
+Marek Novotny
 ```
 
 <a name="Advisors"></a>
