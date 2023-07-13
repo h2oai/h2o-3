@@ -35,7 +35,8 @@ from h2o.h2o import (connect, init, api, connection, resume,
                      interaction, as_list,
                      get_timezone, set_timezone, list_timezones,
                      load_dataset, demo, make_metrics, flow, upload_custom_metric, upload_custom_distribution,
-                     import_mojo, upload_mojo, print_mojo, load_grid, save_grid, estimate_cluster_mem)
+                     import_mojo, upload_mojo, print_mojo, load_grid, save_grid, estimate_cluster_mem, load_automl,
+                     upload_automl)
 from h2o.utils.shared_utils import mojo_predict_csv, mojo_predict_pandas
 from h2o.scoring import make_leaderboard
 from h2o.frame import H2OFrame  # NOQA

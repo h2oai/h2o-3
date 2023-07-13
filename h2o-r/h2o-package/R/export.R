@@ -261,6 +261,69 @@ h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_
   res$dir
 }
 
+#' Save an H2O AutoML Object to Disk
+#'
+#' Save an \linkS4class{H2OAutoML} to disk.
+#'
+#' In the case of existing files \code{force = TRUE} will overwrite the file.
+#' Otherwise, the operation will fail.
+#'
+#' The owner of the file saved is the user by which H2O cluster was executed.
+#'
+#' @param object An \linkS4class{H2OAutoML} object.
+#' @param path String indicating the directory the model will be written to.
+#' @param filename String indicating the file name.
+#' @param force Logical, indicates how to deal with files that already exist.
+#' @return Filepath of the persisted automl object
+#'
+#' @export
+h2o.save_automl <- function(object, path="", filename="", force=FALSE) {
+  if(!is(object, "H2OAutoML")) stop("`object` must be an H2OAutoML object")
+  if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
+  if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
+  if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
+  if(filename == "")
+    filename <- h2o.keyof(object)
+
+  path <- file.path(path, filename)
+  res <- .h2o.__remoteSend(.h2o.__SAVE_AUTOML(object), dir = path, force = force, h2oRestApiVersion = 99)
+  res$dir
+}
+
+#' Download the AutoML in binary format.
+#' The owner of the file saved is the user by which R session was executed.
+#'
+#' @param object An \linkS4class{H2OAutoML} object
+#' @param path The path where binary file should be downloaded. Downloaded to current directory by default.
+#' @param filename String indicating the file name.
+#' @return Filepath of the persisted automl object
+#'
+#' @export
+h2o.download_automl <- function(object, path=NULL, filename="") {
+  if(!is(object, "H2OAutoML")) {
+    stop("`object` must be an H2OAutoML object")
+  }
+  if(!is.null(path) && !(is.character(path))){
+    stop("The 'path' variable should be of type character")
+  }
+  if(!is.null(path) && !(file.exists(path))){
+    stop(paste0("'path',",path,", to save pojo cannot be found."))
+  }
+  if(is.null(path)){
+    path <- getwd()
+  }
+
+  if(filename == "") {
+    filename <- h2o.keyof(object)
+  }
+
+  #Path to save model, if `path` is provided
+  file_path <- file.path(path, filename)
+  writeBin(.h2o.doSafeGET(99, urlSuffix = .h2o.__FETCH_AUTOML(object), binary = TRUE), file_path, useBytes = TRUE)
+  return(file_path)
+}
+
+
 #' Deprecated - use h2o.save_mojo instead. Save an H2O Model Object as Mojo to Disk
 #'
 #' Save an MOJO (Model Object, Optimized) to disk.

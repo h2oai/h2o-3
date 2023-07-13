@@ -18,16 +18,24 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.leaderboard.*;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
+import water.api.StreamWriteOption;
+import water.api.StreamWriter;
 import water.automl.api.schemas3.AutoMLV99;
 import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.ByteVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
 import water.nbhm.NonBlockingHashMap;
+import water.persist.Persist;
 import water.util.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +54,7 @@ import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING
  * trained on collections of individual models to produce highly predictive ensemble models which, in most cases,
  * will be the top performing models in the AutoML Leaderboard.
  */
-public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
+public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable, StreamWriter {
 
   public enum Constraint {
     MODEL_COUNT,
@@ -71,9 +79,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       public LeaderboardCell[] createExtensions(Model model) {
         final AutoML aml = amlKey.get();
         ModelingStep step = aml.session().getModelingStep(model.getKey());
+        final int scoringSampleSize = 10000;
+        // The magic number 2*scoringSampleSize is the worst case - a frame with scoringSampleSize rows being resampled and scored
+        if (aml.getLeaderboardFrame() == null && aml._scoringTimePerRowFrame == null && aml._trainingFrame.numRows() > 2 * scoringSampleSize)
+          aml._scoringTimePerRowFrame = MRUtils.sampleFrame(aml.getTrainingFrame(), scoringSampleSize, aml._buildSpec.build_control.stopping_criteria.seed());
         return new LeaderboardCell[] {
                 new TrainingTime(model),
-                new ScoringTimePerRow(model, aml.getLeaderboardFrame() == null ? aml.getTrainingFrame() : aml.getLeaderboardFrame()),
+                new ScoringTimePerRow(model, aml.getLeaderboardFrame() == null ? (aml._scoringTimePerRowFrame == null ? aml.getTrainingFrame() : aml._scoringTimePerRowFrame) : aml.getLeaderboardFrame()),
 //                new ModelSize(model._key)
                 new AlgoName(model),
                 new ModelProvider(model, step),
@@ -138,7 +150,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   Frame _validationFrame;  // optional validation frame; the training_frame is split automatically if it's not specified.
   Frame _blendingFrame;    // optional blending frame for SE (usually if xval is disabled).
   Frame _leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics.
-
+  Frame _scoringTimePerRowFrame; // optionally created to speed up predict_time_per_row_ms calculation
   Vec _responseColumn;
   Vec _foldColumn;
   Vec _weightsColumn;
@@ -196,11 +208,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     this(null, startTime, buildSpec);
   }
 
+
   /**
    * @deprecated use {@link #AutoML(Key, AutoMLBuildSpec) instead}
    */
   @Deprecated
-  public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
+ public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec){
+    this(key, startTime, buildSpec, true);
+  }
+
+  /**
+   * @deprecated use {@link #AutoML(Key, AutoMLBuildSpec) instead}
+   */
+  @Deprecated
+  public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec, boolean validate) {
     super(key == null ? buildSpec.makeKey() : key);
     try {
       _startTime = startTime;
@@ -208,17 +229,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       _eventLog = EventLog.getOrMake(_key);
       eventLog().info(Stage.Workflow, "Project: "+buildSpec.project());
 
-      validateBuildSpec(buildSpec);
       _buildSpec = buildSpec;
-      // now that buildSpec is validated, we can assign it: all future logic can now safely access parameters through _buildSpec.
-      _runId = _buildSpec.instanceId();
-      _runCountdown = Countdown.fromSeconds(_buildSpec.build_control.stopping_criteria.max_runtime_secs());
-      _incrementalSeed.set(_buildSpec.build_control.stopping_criteria.seed());
-
-      prepareData();
-      initLeaderboard();
-      initPreprocessing();
+      if (validate) {
+         validateBuildSpec(buildSpec);
+        // now that buildSpec is validated, we can assign it: all future logic can now safely access parameters through _buildSpec.
+        _runId = _buildSpec.instanceId();
+        _runCountdown = Countdown.fromSeconds(_buildSpec.build_control.stopping_criteria.max_runtime_secs());
+        _incrementalSeed.set(_buildSpec.build_control.stopping_criteria.seed());
+        prepareData();
+        initLeaderboard();
+        initPreprocessing();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
+      }
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
       throw e;
@@ -840,6 +862,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     if (_trainingFrame != null && _origTrainingFrame != null)
       Frame.deleteTempFrameAndItsNonSharedVecs(_trainingFrame, _origTrainingFrame);
+    if (_scoringTimePerRowFrame != null) _scoringTimePerRowFrame.delete(jobKey, fs, true);
     if (leaderboard() != null) leaderboard().remove(fs, cascade);
     if (eventLog() != null) eventLog().remove(fs, cascade);
     if (session() != null) session().remove(fs, cascade);
@@ -908,6 +931,110 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     log.info("Cleaning up all CV Predictions for AutoML");
     for (Model model : leaderboard().getModels()) {
         model.deleteCrossValidationPreds();
+    }
+  }
+
+
+  protected AutoBuffer writeAutoML(AutoBuffer ab) {
+    // force calculation of all leaderboard values
+    _leaderboard.toTwoDimTable(new String[]{"ALL"});
+    try (PersistenceContext pc = PersistenceContext.begin()) {
+      ab.put(_key);
+      ab.put(_buildSpec);
+      ab.putKey(_leaderboard._key);
+      ab.putKey(_eventLog._key);
+      for (Model m : leaderboard().getModels()) {
+        PersistenceContext.putKey(ab, m._key);
+        if (_buildSpec.build_control.keep_cross_validation_predictions)
+          for (Key k : m._output._cross_validation_predictions)
+            PersistenceContext.putKey(ab,k);
+        if (_buildSpec.build_control.keep_cross_validation_models)
+          for (Key k : m._output._cross_validation_models)
+            PersistenceContext.putKey(ab,k);
+        if (_buildSpec.build_control.keep_cross_validation_fold_assignment)
+          PersistenceContext.putKey(ab,m._output._cross_validation_fold_assignment_frame_id);
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return ab;
+  }
+
+  protected static AutoML readAutoML(AutoBuffer ab, Futures fs) {
+    try (PersistenceContext pc = PersistenceContext.begin()) {
+      AutoML aml = new AutoML(ab.get(), null, ab.get(), false);
+      aml._leaderboard = (Leaderboard) ab.getKey(fs);
+      aml._eventLog = (EventLog) ab.getKey(fs);
+      fs.blockForPending();
+      for (Key mk : aml.leaderboard().getModelKeys()) {
+        Model m = (Model) PersistenceContext.getKey(ab, fs, mk);
+        if (aml._buildSpec.build_control.keep_cross_validation_predictions)
+          for (Key k : m._output._cross_validation_predictions)
+            PersistenceContext.loadKey(ab, fs, k);
+        if (aml._buildSpec.build_control.keep_cross_validation_models)
+          for (Key k : m._output._cross_validation_models)
+            PersistenceContext.loadKey(ab, fs, k);
+        if (aml._buildSpec.build_control.keep_cross_validation_fold_assignment)
+          PersistenceContext.loadKey(ab,fs ,m._output._cross_validation_fold_assignment_frame_id);
+      }
+      DKV.put(aml);
+      return aml;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void writeTo(OutputStream os, StreamWriteOption[] options) {
+    try (AutoBuffer ab = new AutoBuffer(os, true)) {
+      writeAutoML(ab);
+    }
+  }
+
+  public URI exportBinaryAutoML(String location, boolean force) throws IOException {
+    OutputStream os = null;
+    try {
+      URI targetUri = FileUtils.getURI(location);
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      os = p.create(targetUri.toString(), force);
+      writeTo(os, null);
+      os.close();
+      return targetUri;
+    } finally {
+      FileUtils.closeSilently(os);
+    }
+  }
+
+  public static AutoML uploadBinaryAutoML(String destinationFrame) throws IOException {
+    Frame fr = DKV.getGet(destinationFrame);
+    ByteVec vec = (ByteVec) fr.vec(0);
+    try (InputStream inputStream = vec.openStream(null)) {
+      final AutoBuffer ab = new AutoBuffer(inputStream);
+      Futures fs = new Futures();
+      AutoML aml = readAutoML(ab, fs);
+      fs.blockForPending();
+      ab.close();
+      return aml;
+    } finally {
+      DKV.remove(Key.make(destinationFrame));
+    }
+  }
+  public static AutoML importBinaryAutoML(String location) throws IOException {
+    InputStream is = null;
+    try {
+      URI targetUri = FileUtils.getURI(location);
+      Persist p = H2O.getPM().getPersistForURI(targetUri);
+      is = p.open(targetUri.toString());
+      final AutoBuffer ab = new AutoBuffer(is);
+      ab.sourceName = targetUri.toString();
+      Futures fs = new Futures();
+      AutoML aml = readAutoML(ab, fs);
+      fs.blockForPending();
+      ab.close();
+      is.close();
+      return aml;
+    } finally {
+      FileUtils.closeSilently(is);
     }
   }
 }

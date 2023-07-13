@@ -1579,6 +1579,17 @@ def load_model(path):
     res = api("POST /99/Models.bin/%s" % "", data={"dir": path})
     return get_model(res["models"][0]["model_id"]["name"])
 
+def upload_automl(path):
+    import h2o.automl
+    response = api("POST /3/PostFile.bin", filename=path)
+    frame_key = response["destination_frame"]
+    res = api("POST /99/AutoML.upload.bin", data={"dir": frame_key})
+    return h2o.automl.get_automl(res["automl_id"]["name"])
+
+def load_automl(path):
+    import h2o.automl
+    res = api("POST /99/AutoML.bin", data={"dir": path})
+    return h2o.automl.get_automl(res["automl_id"]["name"])
 
 def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, parallel=False, format="csv"):
     """
