@@ -81,6 +81,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  max_runtime_secs=0.0,  # type: float
                  weights_column=None,  # type: Optional[str]
                  offset_column=None,  # type: Optional[str]
+                 custom_metric_func=None,  # type: Optional[str]
                  seed=-1,  # type: int
                  score_training_samples=10000,  # type: int
                  keep_levelone_frame=False,  # type: bool
@@ -151,6 +152,9 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                function.
                Defaults to ``None``.
         :type offset_column: str, optional
+        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
+               Defaults to ``None``.
+        :type custom_metric_func: str, optional
         :param seed: Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based
                random number)
                Defaults to ``-1``.
@@ -186,6 +190,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self.max_runtime_secs = max_runtime_secs
         self.weights_column = weights_column
         self.offset_column = offset_column
+        self.custom_metric_func = custom_metric_func
         self.seed = seed
         self.score_training_samples = score_training_samples
         self.keep_levelone_frame = keep_levelone_frame
@@ -713,6 +718,20 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def offset_column(self, offset_column):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
 
     @property
     def seed(self):
