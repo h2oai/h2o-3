@@ -163,13 +163,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     }
 
-    Frame scoreContributions(Frame frame, Key<Frame> destination_key);
+    default Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+      throw H2O.unimpl("Calculating SHAP is not supported.");
+    }
 
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
       return scoreContributions(frame, destination_key, j, new ContributionsOptions());
     }
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
       return scoreContributions(frame, destination_key);
+    }
+
+    default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+      if (backgroundFrame != null) {
+        throw H2O.unimpl("Calculating SHAP with background frame is not supported for this model.");
+      }
+      return scoreContributions(frame, destination_key, j, options);
     }
 
     default void composeScoreContributionTaskMetadata(final String[] names, final byte[] types, final String[][] domains, final String[] originalFrameNames, final Contributions.ContributionsOptions options) {

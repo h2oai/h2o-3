@@ -144,7 +144,10 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Specify how to output feature contributions in XGBoost - XGBoost by default outputs contributions for 1-hot encoded features, " +
             "specifying a Compact output format will produce a per-feature contribution", values = {"Original", "Compact"}, json = false)
     public Model.Contributions.ContributionsOutputFormat predict_contributions_output_format;
-
+    
+    @API(help = "Specify background frame used for calculating marginal SHAP.", json = false)
+    public KeyV3.FrameKeyV3 background_frame;
+    
     @API(help = "Only for predict_contributions function - sort Shapley values and return top_n highest (optional)", json = false)
     public int top_n;
 
@@ -521,7 +524,8 @@ class ModelMetricsHandler extends Handler {
                   .setTopN(parms._top_n)
                   .setBottomN(parms._bottom_n)
                   .setCompareAbs(parms._compare_abs);
-          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
+          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options, 
+                  null==s.background_frame ? null : s.background_frame.key().get());
         } else if (s.row_to_tree_assignment) {
           Model.RowToTreeAssignment mc = getModelRowToTreeAssignmentObject(parms);
           mc.rowToTreeAssignment(parms._frame, Key.make(parms._predictions_name), j);

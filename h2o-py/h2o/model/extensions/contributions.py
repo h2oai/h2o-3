@@ -6,7 +6,7 @@ from h2o.utils.typechecks import assert_is_type, Enum
 
 class Contributions:
 
-    def _predict_contributions(self, test_data, output_format, top_n, bottom_n, compare_abs):
+    def _predict_contributions(self, test_data, output_format, top_n, bottom_n, compare_abs, background_frame):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost, DRF models and equivalent
         imported MOJOs).
@@ -45,6 +45,7 @@ class Contributions:
                                  "predict_contributions_output_format": output_format,
                                  "top_n": top_n,
                                  "bottom_n": bottom_n,
-                                 "compare_abs": compare_abs}), "contributions")
+                                 "compare_abs": compare_abs,
+                                 "background_frame": background_frame.frame_id if background_frame is not None else None}), "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)

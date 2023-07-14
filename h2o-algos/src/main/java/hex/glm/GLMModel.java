@@ -181,7 +181,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
     assert GLMParameters.GLMType.glm.equals(_parms._glmType);
  ///    assert !_parms._standardize; // -------------------------------------!!!!!!!!!!!!!!
     // There appears to be an issue with lambda > 0 - categorical var with n levels gets encoded to n columns not to n-1 => shaps don't add up to the result
@@ -211,27 +211,97 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         }
       }
     }
+
+    
+    abstract class ContributionsWithBackgroundFrame<T extends ContributionsWithBackgroundFrame<T>> extends MRTask<T> {
+      Frame  _background;
+      ContributionsWithBackgroundFrame(Frame background){
+        _background = background;
+      }
+
+
+      @Override
+      public void map(Chunk[] cs, NewChunk[] ncs) {
+          for (int bgIdx = 0; bgIdx < _background.numRows();) {
+            int finalBgIdx = bgIdx;
+            Chunk[] bgCs = IntStream
+                    .range(0, _background.numCols())
+                    .mapToObj(col -> _background.vec(col).chunkForRow(finalBgIdx))
+                    .toArray(Chunk[]::new);
+            map(cs, bgCs, ncs);
+            bgIdx += bgCs[0]._len;
+          }
+      }
+      
+      abstract protected void map(Chunk[] cs, Chunk[] bgCs, NewChunk[] ncs);
+    }
+
+    class GLMContributionsWithBackground extends ContributionsWithBackgroundFrame<GLMContributionsWithBackground> {
+      double[] _betas;
+      DataInfo _dinfo;
+
+      GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame background) {
+        super(background);
+        _dinfo = dinfo;
+        _betas = betas;
+      }
+
+      @Override
+      public void map(Chunk[] cs, Chunk[] bgCs, NewChunk[] ncs) {
+        DataInfo.Row row = _dinfo.newDenseRow();
+        DataInfo.Row bgRow = _dinfo.newDenseRow();
+        for (int j = 0; j < cs[0]._len; j++) {
+          _dinfo.extractDenseRow(cs, j, row);
+          
+          for (int k = 0; k < bgCs[0]._len; k++) {
+            _dinfo.extractDenseRow(bgCs, k, bgRow);
+            double biasTerm = (_dinfo._intercept ? _betas[_betas.length - 1] : 0);
+            for (int i = 0; i < _betas.length - (_dinfo._intercept ? 1 : 0); i++) {
+              ncs[i].addNum(_betas[i] * (row.get(i) - bgRow.get(i)));
+              biasTerm += _betas[i]*bgRow.get(i);
+            }
+            ncs[_betas.length - (_dinfo._intercept ? 1 : 0)].addNum(biasTerm);
+            ncs[_betas.length - (_dinfo._intercept ? 1 : 0) + 1].addNum(cs[0].start() + j);
+          }
+        }
+      }
+    }
     
     List<Frame> tmpFrames = new ArrayList<>();
 
-    assert _parms.train() != null;
-    Frame adaptedFrame = adaptFrameForScore(_parms.train(), false, tmpFrames);
-    DKV.put(adaptedFrame);
-    Map<String, Double> meansMap = FrameUtils.getMeans(adaptedFrame, Parameters.CategoricalEncodingScheme.AUTO);
-    double[] means = Arrays.stream(_output._coefficient_names)
-            .filter(c -> !"Intercept".equals(c))
-            .mapToDouble(c -> meansMap.getOrDefault(c, Double.NaN))
-            .toArray();
+    if (backgroundFrame == null) {
+      assert _parms.train() != null;
+      Frame adaptedFrame = adaptFrameForScore(_parms.train(), false, tmpFrames);
+      DKV.put(adaptedFrame);
+      Map<String, Double> meansMap = FrameUtils.getMeans(adaptedFrame, Parameters.CategoricalEncodingScheme.AUTO);
+      double[] means = Arrays.stream(_output._coefficient_names)
+              .filter(c -> !"Intercept".equals(c))
+              .mapToDouble(c -> meansMap.getOrDefault(c, Double.NaN))
+              .toArray();
 
-    adaptedFrame = adaptFrameForScore(frame, false, tmpFrames); 
-    
-    GLMContributions contributions = new GLMContributions(_output._dinfo, _parms._standardize?_output.getNormBeta():_output.beta(), means)
-            .doAll(beta().length + (_output._dinfo._intercept?0:1), Vec.T_NUM, adaptedFrame);
-    
-    String[] colNames = new String[beta().length + (_output._dinfo._intercept?0:1)];
-    System.arraycopy(_output._coefficient_names,0, colNames, 0, colNames.length-1);
-    colNames[colNames.length-1] = "BiasTerm";
-    return contributions.outputFrame(destination_key, colNames, null);
+      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+
+      GLMContributions contributions = new GLMContributions(_output._dinfo, _parms._standardize ? _output.getNormBeta() : _output.beta(), means)
+              .doAll(beta().length + (_output._dinfo._intercept ? 0 : 1), Vec.T_NUM, adaptedFrame);
+
+      String[] colNames = new String[beta().length + (_output._dinfo._intercept ? 0 : 1)];
+      System.arraycopy(_output._coefficient_names, 0, colNames, 0, colNames.length - 1);
+      colNames[colNames.length - 1] = "BiasTerm";
+      return contributions.outputFrame(destination_key, colNames, null);
+    } else {
+      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
+      DKV.put(adaptedBgFrame);
+      Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+      GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(_output._dinfo,
+              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedBgFrame)
+              .doAll(beta().length + (_output._dinfo._intercept ? 0 : 1)+1, Vec.T_NUM, adaptedFrame);
+
+      String[] colNames = new String[beta().length + (_output._dinfo._intercept ? 0 : 1)+1];
+      System.arraycopy(_output._coefficient_names, 0, colNames, 0, colNames.length - 1);
+      colNames[colNames.length - 2] = "BiasTerm";
+      colNames[colNames.length - 1] = "RowIdx";
+      return contributions.outputFrame(destination_key, colNames, null);
+    }
   }
 
   public static class RegularizationPath extends Iced {

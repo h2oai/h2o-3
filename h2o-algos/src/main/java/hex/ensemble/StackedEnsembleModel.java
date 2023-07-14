@@ -10,15 +10,12 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.MRUtils;
 import water.util.TwoDimTable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.IntStream;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
@@ -45,6 +42,8 @@ public class StackedEnsembleModel
     List<Integer> baseModelsIdx = new ArrayList<>();
     baseModelsIdx.add(0);
     Frame fr = new Frame();
+    Scope.enter();
+    Scope.track(fr);
     try {
       for (Key<Model> bm : _parms._base_models) {
         if (isUsefulBaseModel(bm)) {
@@ -139,72 +138,96 @@ public class StackedEnsembleModel
 //              Arrays.asList(fr._names), baseModelsIdx.toArray(new Integer[0]));
 //      c.doAll(columns.length, Vec.T_NUM, fr);
 //      return c.outputFrame(destination_key, columns, null);
-    double[] expectedValues = IntStream.range(0, fr.numCols()).mapToDouble(i -> fr.vec(i).mean()).toArray();
-
-      class DeepSHAPApprox extends MRTask<DeepSHAPApprox> {
+      
+      final Map<String, Double> meansMap = FrameUtils.getMeans(adaptFr, _parms._categorical_encoding);
+      final double[] expectedValues = Arrays.stream(columns)
+              .mapToDouble(c -> meansMap.getOrDefault(c, Double.NaN))
+              .toArray();
+      
+      final Map<String, Double> levelOneMeansMap = FrameUtils.getMeans(levelOneFrame, _parms._categorical_encoding);
+      final double[] levelOneExpectedValues = baseModels.stream()
+              .mapToDouble(c -> levelOneMeansMap.getOrDefault(c, Double.NaN))
+              .toArray();
+      
+      class GDeepSHAP extends MRTask<GDeepSHAP> {
         final String[] _columns;
         final int[][] _baseIdx;
         final int[] _metaIdx;
+        final int[] _columnsIdx;
+        final int[] _levelOneIdx;
         final int _biasTermIdx;
         final int _biasTermSrc;
         final Integer[] _baseModelIdx;
         final double[] _expectedValues;
+        final double[] _levelOneExpectedValues;
 
-        DeepSHAPApprox(String[] columns, String[] baseModels, List<String> bigFrameColumns, Integer[] baseModelIdx,
-                       double[] expectedValues) {
+        GDeepSHAP(String[] columns, String[] baseModels, List<String> bigFrameColumns, Integer[] baseModelIdx,
+                  double[] expectedValues, double[] levelOneExpectedValues) {
           _columns = columns;
           _baseIdx = new int[columns.length][baseModels.length];
           _metaIdx = new int[baseModels.length];
+          _columnsIdx = new int[columns.length];
+          _levelOneIdx = new int[baseModels.length];
           _biasTermIdx = Arrays.asList(columns).indexOf("BiasTerm");
           _biasTermSrc = bigFrameColumns.indexOf("metalearner_BiasTerm");
           _baseModelIdx = baseModelIdx;
           _expectedValues = expectedValues;
+          _levelOneExpectedValues = levelOneExpectedValues;
           for (int i = 0; i < columns.length; i++) {
             for (int j = 0; j < baseModels.length; j++) {
               _baseIdx[i][j] = bigFrameColumns.indexOf(baseModels[j] + "_" + columns[i]);
             }
+            _columnsIdx[i] = bigFrameColumns.indexOf(columns[i]);
           }
           for (int i = 0; i < baseModels.length; i++) {
             _metaIdx[i] = bigFrameColumns.indexOf("metalearner_" + baseModels[i]);
+            _levelOneIdx[i] = bigFrameColumns.indexOf(baseModels[i]);
           }
         }
 
+        
+        private double baseModelContribution(Chunk[] chunks, int rowIdx, int baseModelIdx, int featureIdx) {
+          return chunks[_baseIdx[featureIdx][baseModelIdx]].atd(rowIdx);
+        }
+        
+        private double metalearnerContribution(Chunk[] chunks, int rowIdx, int baseModelIdx){
+          return chunks[_metaIdx[baseModelIdx]].atd(rowIdx);
+        }
+        
+        private double levelOneFrameValue(Chunk[] chunks, int rowIdx, int baseModelIdx) {
+          return chunks[_levelOneIdx[baseModelIdx]].atd(rowIdx);
+        }
+        
+        private double inputSpaceValue(Chunk[] chunks, int rowIdx, int columnIdx) {
+          return chunks[_columnsIdx[columnIdx]].atd(rowIdx);
+        }
         @Override
         public void map(Chunk[] cs, NewChunk[] ncs) {
-          for (int i = 0; i < cs[0]._len; i++) {
-            double[] normalizingTerms = new double[_metaIdx.length];
-            for (int j = 0; j < _metaIdx.length; j++) {
-              for (int k = _baseModelIdx[j]; k < _baseModelIdx[j + 1]; k++) {
-                //normalizingTerms[j] += Math.exp(cs[k].atd(i));
-                normalizingTerms[j] += cs[k].atd(i);
-              }
-            }
-
-            for (int j = 0; j < ncs.length; j++) {
-              if (j == _biasTermIdx) {
-                ncs[j].addNum(cs[_biasTermSrc].atd(i));
+          for (int row = 0; row < cs[0]._len; row++) {
+            for (int col = 0; col < ncs.length; col++) {
+              if (col == _biasTermIdx) {
+                ncs[col].addNum(cs[_biasTermSrc].atd(row));
                 continue;
               }
-              double tmp = 0;
-              for (int k = 0; k < _metaIdx.length; k++) {
-                // tmp += Math.exp(cs[_baseIdx[j][k]].atd(i)) * cs[_metaIdx[k]].atd(i)/normalizingTerms[k];
-                tmp += (cs[_baseIdx[j][k]].atd(i)) * cs[_metaIdx[k]].atd(i) / normalizingTerms[k];
-              }
-              ncs[j].addNum(tmp);
+              // basemodel contribution * (metalearner contribution  / (base model prediction - base model prediction ref)
+              double seContribution = 0;
+              
             }
           }
         }
       }
       ;
-
-      DeepSHAPApprox c = new DeepSHAPApprox(columns, baseModels.toArray(new String[0]),
-              Arrays.asList(fr._names), baseModelsIdx.toArray(new Integer[0]), expectedValues);
+      fr.add(adaptFr);
+      fr.add(levelOneFrame);
+       GDeepSHAP c = new GDeepSHAP(columns, baseModels.toArray(new String[0]),
+              Arrays.asList(fr._names), baseModelsIdx.toArray(new Integer[0]),
+               expectedValues, levelOneExpectedValues);
       c.doAll(columns.length, Vec.T_NUM, fr);
       return c.outputFrame(destination_key, columns, null);
       
     
     } finally {
-      fr.delete(true);
+      Frame.deleteTempFrameAndItsNonSharedVecs(fr, frame);
     }
   }
 

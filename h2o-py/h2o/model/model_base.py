@@ -173,7 +173,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False):
+    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False, background_frame=None):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost, DRF models and equivalent
         imported MOJOs).
@@ -227,7 +227,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
         """
         if has_extension(self, 'Contributions'):
-            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs)
+            return self._predict_contributions(test_data, output_format, top_n, bottom_n, compare_abs, background_frame)
         err_msg = "This model doesn't support calculation of feature contributions."
         if has_extension(self, 'StandardCoef'):
             err_msg += " When features are independent, you can use the coef() method to get coefficients"
