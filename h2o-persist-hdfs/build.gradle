@@ -13,7 +13,13 @@ dependencies {
         // Pull all dependencies to allow run directly from IDE or command line
         transitive = true
     }
-    api("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
+    api("org.apache.hadoop:hadoop-aws:${defaultHadoopVersion}") {
+        exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
+    }
+    // aws-java-sdk-dynamodb is required for S3A support, S3A import throws NoClassDefFoundError (AmazonDynamoDBException)
+    api("com.amazonaws:aws-java-sdk-dynamodb:${awsJavaSdkVersion}") {
+        transitive = false
+    }
     
     api("com.nimbusds:nimbus-jose-jwt:9.11.3")
 
