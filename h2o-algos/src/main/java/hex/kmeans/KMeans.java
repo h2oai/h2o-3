@@ -424,7 +424,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // These lines cause the training metrics are recalculated on strange model values.
         // Especially for Constrained Kmeans, it returns a result that does not meet the constraints set
         // because scoring is based on calculated centroids and does not preserve the constraints
-        // There is a JIRA to explore this part of code: https://0xdata.atlassian.net/browse/PUBDEV-7097
+        // There is a GH issue to explore this part of code: https://github.com/h2oai/h2o-3/issues/8543
         if(!constrained) {
           model.score(_parms.train()).delete();
           model._output._training_metrics = ModelMetrics.getFromDKV(model,_parms.train());

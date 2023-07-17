@@ -60,7 +60,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         }
       }
     }
-    _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message
+    _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message, number of rows having values with current MSB
     if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
       Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
@@ -147,7 +147,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           MSBvalue = thisx.shiftRight(_shift).intValue();
           // may not be worth that as has to be global minimum so will rarely be
           // able to use as raw, but when we can maybe can do in bulk
-        } else {    // dealing with numeric columns (int or double)
+        } else {    // dealing with numeric columns (int or double), translate row value into MSB Bucket value
           thisx = isIntCols[0] ?
                   BigInteger.valueOf(_ascending[0]*chk[0].at8(r)).subtract(_base[0]).add(ONE):
                   MathUtils.convertDouble2BigInteger(_ascending[0]*chk[0].atd(r)).subtract(_base[0]).add(ONE);

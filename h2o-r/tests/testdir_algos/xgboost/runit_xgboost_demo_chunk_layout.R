@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 
-# To demonstrate effect of chunking on AUC: https://0xdata.atlassian.net/browse/PUBDEV-7449 
+# To demonstrate effect of chunking on AUC: https://github.com/h2oai/h2o-3/issues/8189
 demo.xgboost_chunk_layout <- function() {
     orig_df <- h2o.importFile(locate("smalldata/demos/bank-additional-full.csv"))
 

@@ -18,7 +18,7 @@ import static org.apache.commons.math3.special.Gamma.*;
 public class DispersionUtils {
     /***
      * Estimate dispersion factor using maximum likelihood.  I followed section IV of the doc in 
-     * https://h2oai.atlassian.net/browse/PUBDEV-8683 . 
+     * https://github.com/h2oai/h2o-3/issues/7013. 
      */
     public static double estimateGammaMLSE(GLMTask.ComputeGammaMLSETsk mlCT, double seOld, double[] beta, 
                                            GLMModel.GLMParameters parms, ComputationState state, Job job, GLMModel model) {

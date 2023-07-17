@@ -15,7 +15,7 @@ err_bound = 0.5              # fractor by which we allow the model runtime over-
 def test_r2_early_stop():
     '''
     This pyunit test is written to ensure that the max_runtime_secs can restrict the model training time for all
-    h2o algos.  See PUBDEV-4702.
+    h2o algos.  See https://github.com/h2oai/h2o-3/issues/11581.
     '''
     global model_within_max_runtime
     global err_bound

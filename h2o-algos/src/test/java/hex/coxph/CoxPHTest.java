@@ -619,7 +619,7 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       parms._ignored_columns   = new String[]{"id"};
       // Note: there is an issue on Java 11+ that makes efron method to fail
       // because this test is just supposed to test consistency we use breslow
-      // the original issue needs to be fixed in https://h2oai.atlassian.net/browse/PUBDEV-8756
+      // the original issue needs to be fixed in https://github.com/h2oai/h2o-3/issues/6577
       parms._ties              = CoxPHModel.CoxPHParameters.CoxPHTies.breslow;
 
       final CoxPH builder = new CoxPH(parms);

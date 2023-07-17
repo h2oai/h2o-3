@@ -717,7 +717,7 @@ public class RuleFitTest extends TestUtil {
             Scope.enter();
             final Frame fr = parseTestFile("./smalldata/diabetes/diabetes_text_train.csv");
             Scope.track(fr);
-           // final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10); // failing with these weights is ok because https://h2oai.atlassian.net/browse/PUBDEV-8249 is not a bug
+           // final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10); // failing with these weights is ok because https://github.com/h2oai/h2o-3/issues/7404 is not a bug
             final Vec weightsVector = Vec.makeOne(fr.numRows());
             weightsVector.set(1, 0.5);
             final String weightsColumnName = "weights";
@@ -773,7 +773,7 @@ public class RuleFitTest extends TestUtil {
         }
     }
 
-    @Test @Ignore // this failing is ok because https://h2oai.atlassian.net/browse/PUBDEV-8249 is not a bug
+    @Test @Ignore // this failing is ok because https://github.com/h2oai/h2o-3/issues/7404 is not a bug
     public void testDiabetesWithWeightsShowWhatGlmIsDoingSeparately() { 
         try {
             Scope.enter();

@@ -76,7 +76,9 @@ class CustomOneFunc:
 def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None):
     metric_name1 = metric_name1 if metric_name1 in metric._metric_json else metric_name1.upper()
     metric_name2 = metric_name2 if metric_name2 in metric._metric_json else metric_name2.upper()
-    assert metric._metric_json[metric_name1] == metric._metric_json[metric_name2], msg
+    metric_value1 = metric._metric_json[metric_name1]
+    metric_value2 = metric._metric_json[metric_name2]
+    assert metric_value1 == metric_value2, "{} {}={} {}={}".format(msg, metric_name1, metric_value1, metric_name2, metric_value2)
 
 
 def assert_all_metrics_equal(model, f_test, metric_name, value):
@@ -136,29 +138,29 @@ def dataset_iris():
 
 
 # Regression Model fixture
-def regression_model(ModelType, custom_metric_func):
+def regression_model(ModelType, custom_metric_func, params={}):
     (ftrain, fvalid, ftest) = dataset_prostate()
-    model = ModelType(model_id="regression", ntrees=3, max_depth=5,
+    model = ModelType(model_id="regression",
                       score_each_iteration=True,
-                      custom_metric_func=custom_metric_func)
+                      custom_metric_func=custom_metric_func,  **params)
     model.train(y="AGE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
     return model, ftest
 
 
 # Binomial model fixture
-def binomial_model(ModelType, custom_metric_func):
+def binomial_model(ModelType, custom_metric_func, params={}):
     (ftrain, fvalid, ftest) = dataset_prostate()
-    model = ModelType(model_id="binomial", ntrees=3, max_depth=5,
+    model = ModelType(model_id="binomial",
                       score_each_iteration=True,
-                      custom_metric_func=custom_metric_func)
+                      custom_metric_func=custom_metric_func,  **params)
     model.train(y="CAPSULE", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
     return model, ftest
 
 
-def multinomial_model(ModelType, custom_metric_func):
+def multinomial_model(ModelType, custom_metric_func, params={}):
     (ftrain, fvalid, ftest) = dataset_iris()
-    model = ModelType(model_id="multinomial", ntrees=3, max_depth=5,
+    model = ModelType(model_id="multinomial",
                       score_each_iteration=True,
-                      custom_metric_func=custom_metric_func)
+                      custom_metric_func=custom_metric_func, **params)
     model.train(y="class", x=ftrain.names, training_frame=ftrain, validation_frame=fvalid)
     return model, ftest

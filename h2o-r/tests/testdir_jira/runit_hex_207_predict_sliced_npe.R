@@ -1,7 +1,7 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 ######################################################################
-# Test for HEXDEV-207
+# Test for https://github.com/h2oai/private-h2o-3/issues/472
 # In R, predict fails with NPE when newdata is set to a sliced frame
 ######################################################################
 
@@ -22,4 +22,4 @@ test.hex.207 <- function() {
   
 }
 
-doTest("Test HEXDEV-207: Predict fails with NPE when test data is a sliced frame", test.hex.207)
+doTest("Predict fails with NPE when test data is a sliced frame", test.hex.207)

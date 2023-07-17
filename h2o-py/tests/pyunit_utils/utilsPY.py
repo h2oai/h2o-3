@@ -592,6 +592,9 @@ def javamunge(assembly, pojoname, test, compile_only=False):
               else:
                 assert hp==pp, "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
 
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    
 def locate(path):
     """
     Search for a relative path and turn it into an absolute path.

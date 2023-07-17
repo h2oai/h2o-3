@@ -9,7 +9,7 @@ import water.fvec.NewChunk;
 
 /**
  * class to gamified all gam_columns with bs set to 2.  For details regarding I-spline, please refer to doc I in 
- * JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8398.  This one performs gamification only.
+ * the GitHub issue: https://github.com/h2oai/h2o-3/issues/7261.  This one performs gamification only.
  */
 public class AddISGamColumns extends MRTask<AddISGamColumns> {
     double[][][] _knotsMat; // knots without duplication for I-spline

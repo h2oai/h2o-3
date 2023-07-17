@@ -67,7 +67,6 @@ For any acronym, spell out in 1st use, then provide acronym in parentheses after
 - IDE (integrated development environment)
 - IP (internet protocol)
 - IRLSM (Iteratively Reweighted Least Squares Method)
-- JIRA
 - JSON (JavaScript Object Notation)
 - JVM (Java virtual machine)
 - L-BFGS (Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm)

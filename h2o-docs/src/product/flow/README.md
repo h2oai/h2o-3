@@ -1174,12 +1174,13 @@ To obtain the most recent information, click the **Refresh** button.
 <a name="ReportIssue"></a>
 ## Reporting Issues
 
-If you experience an error with Flow, you can submit a JIRA ticket to notify our team. 
+If you experience an error with Flow, you can submit a GitHub issue to notify our team.
 
-1. First, click the **Admin** menu, then click **Download Logs**. This will download a file contains information that will help our developers identify the cause of the issue.  
-2. Click the **Help** menu, then click **Report an issue**. This will open our JIRA page where you can file your ticket.  
-3. Click the **Create** button at the top of the JIRA page. 
-4. Attach the log file from the first step, write a description of the error you experienced, then click the **Create** button at the bottom of the page. Our team will work to resolve the issue and you can track the progress of your ticket in JIRA. 
+1. First, click the **Admin** menu, then click **Download Logs**. This will download a file contains information that will help our developers identify the cause of the issue.
+2. Click the **Help** menu, then click **Report an issue**. This will open the GitHub issue page where you can file your ticket.
+3. Click the **New issue** button at the top of the page.
+4. On the next page click **Get started** button for the **Bug Report** item.
+5. Attach the log file from the first step, write a description of the error you experienced, then click the **Submit new issue** button at the bottom of the page.
 
 ---
 

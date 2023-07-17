@@ -216,7 +216,7 @@ public class EasyPredictModelWrapper implements Serializable {
      * In current implementation only AUTO encoding is supported by the Wrapper, users are required to set
      * this flag to true if they want to use POJOs/MOJOs with other encodings than AUTO.
      * 
-     * This requirement will be removed in https://0xdata.atlassian.net/browse/PUBDEV-6929 
+     * This requirement will be removed in https://github.com/h2oai/h2o-3/issues/8707
      * @param val if true, user needs to provide already encoded input in the RowData structure
      * @return self
      */
