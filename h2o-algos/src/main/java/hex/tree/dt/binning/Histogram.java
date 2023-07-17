@@ -48,7 +48,7 @@ public class Histogram {
      */
     public static DataFeaturesLimits getFeaturesLimitsForConditions(Frame originData, DataFeaturesLimits conditionLimits) {
         FeaturesLimitsMRTask task = new FeaturesLimitsMRTask(conditionLimits == null
-                ? DataFeaturesLimits.defaultLimits(originData)
+                ? getInitialFeaturesLimits(originData).toDoubles()
                 : conditionLimits.toDoubles());
         task.doAll(originData);
         return new DataFeaturesLimits(task._realFeatureLimits);

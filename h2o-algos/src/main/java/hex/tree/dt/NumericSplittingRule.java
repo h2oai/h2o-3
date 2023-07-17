@@ -10,6 +10,12 @@ public class NumericSplittingRule extends AbstractSplittingRule {
     this._criterionValue = criterionValue;
   }
 
+  public NumericSplittingRule(double threshold) {
+    this._featureIndex = -1; // tmp value, non initialized yet
+    this._threshold = threshold;
+    this._criterionValue = -1; // tmp value, non initialized yet
+  }
+
   private final int _featureIndex;
   private final double _threshold;
 

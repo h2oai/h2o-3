@@ -5,8 +5,7 @@ import water.fvec.Frame;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import static hex.tree.dt.NumericFeatureLimits.*;
 
 /**
  * Features limits for the whole dataset.
@@ -21,7 +20,9 @@ public class DataFeaturesLimits {
 
     public DataFeaturesLimits(final double[][] featureLimits) {
         this._featuresLimits = Arrays.stream(featureLimits)
-                .map(dd -> new NumericFeatureLimits(dd[0], dd[1]))
+                .map(dd -> dd[NUMERICAL_FLAG] == -1.0 
+                        ? new NumericFeatureLimits(dd[LIMIT_MIN], dd[LIMIT_MAX]) 
+                        : new CategoricalFeatureLimits(dd))
                 .collect(Collectors.toList());
     }
 
