@@ -2677,6 +2677,114 @@ h2o.coef_with_p_values <- function(object) {
 }
 
 #'
+#' Return the GLM linear constraints descriptions, constraints values, constraints bounds and whether the constraints
+#' satisfied the bounds (true) or not (false)
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv"
+#' train <- h2o.importFile(f) # need to add linear constraints here
+#' train[,1] <- as.factor(train[,1])
+#' train[,2] <- as.factor(train[,2])
+#' train[,3] <- as.factor(train[,3])
+#' train[,4] <- as.factor(train[,4])
+#' train[,5] <- as.factor(train[,5])
+#' train[,6] <- as.factor(train[,6])
+#' train[,7] <- as.factor(train[,7])
+#' train[,8] <- as.factor(train[,8])
+#' train[,9] <- as.factor(train[,9])
+#' train[,10] <- as.factor(train[,10])
+#' predictors <- c("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C13", "C14", 
+#'                 "C15", "C16", "C17", "C18", "C19", "C20")
+#' col_names <- c("C1.1", "C1.3", "constant", "C2.3", "C11", "C12")
+#' values <- c(0.5, 1.0, -3, 3, -4, 0.5)
+#' types <- c("lessthanequal", "lessthanequal", "lessthanqual", "lessthanequal", "lessthanqual", "lessthanequal")
+#' constraints_numbers <- c(0, 0, 0, 1, 1, 1)
+#' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
+#' response <- "C21"
+#' h2o_glm <- h2o.glm(seed = 1234, 
+#'                     lambda=0.0,
+#'                     solver="irlsm,
+#'                     linear_constraints=con,
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = train)
+#' h2o.get_constriants_info(h2o_glm)
+#' }
+#' @export
+h2o.get_constraints_info <- function(object) {
+    if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+        if (isNull(object@parameters$linear_constraints)) {
+            stop("GLM linear constraints information is only available where there are linear constraints specified
+            in the parameter linear_constraints!")
+        } else {
+            object@model$linear_constraints_table
+        }
+    } else {
+        stop("get_constraints_info is only available for GLM models with linear constraints specified in the parameter
+         linear_constraints!.")
+    }
+}
+
+#'
+#' Return the TRUE if all constraints are satisfied for a constraint GLM model and FALSE otherwise.  If you want to 
+#' check which constraint failed, use h2o.get_constraints_info method.
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv"
+#' train <- h2o.importFile(f) # need to add linear constraints here
+#' train[,1] <- as.factor(train[,1])
+#' train[,2] <- as.factor(train[,2])
+#' train[,3] <- as.factor(train[,3])
+#' train[,4] <- as.factor(train[,4])
+#' train[,5] <- as.factor(train[,5])
+#' train[,6] <- as.factor(train[,6])
+#' train[,7] <- as.factor(train[,7])
+#' train[,8] <- as.factor(train[,8])
+#' train[,9] <- as.factor(train[,9])
+#' train[,10] <- as.factor(train[,10])
+#' predictors <- c("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C13", "C14", 
+#'                 "C15", "C16", "C17", "C18", "C19", "C20")
+#' col_names <- c("C1.1", "C1.3", "constant", "C2.3", "C11", "C12")
+#' values <- c(0.5, 1.0, -3, 3, -4, 0.5)
+#' types <- c("lessthanequal", "lessthanequal", "lessthanqual", "lessthanequal", "lessthanqual", "lessthanequal")
+#' constraints_numbers <- c(0, 0, 0, 1, 1, 1)
+#' con <- data.frame(names=col_names, values=values, types=types, constraint_numbers=constraints_numbers)
+#' response <- "C21"
+#' h2o_glm <- h2o.glm(seed = 1234, 
+#'                     lambda=0.0,
+#'                     solver="irlsm,
+#'                     linear_constraints=con,
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = train)
+#' h2o.all_constraints_passed(h2o_glm)
+#' }
+#' @export
+h2o.all_constraints_passed <- function(object) {
+    if (is(object, "H2OModel") && object@algorithm %in% c("glm")) {
+        if (isNull(object@parameters$linear_constraints)) {
+            stop("h2o.all_constraints_passed is only available where there are linear constraints specified
+            in the parameter linear_constraints!")
+        } else {
+            object@model$all_constraints_satisfied
+        }
+    } else {
+        stop("h2o.all_constraints_passed is only available for GLM models with linear constraints specified in the
+         parameter linear_constraints!.")
+    }
+}
+
+#'
 #' Return the variable inflation factors associated with numerical predictors for GLM models.
 #'
 #' @param object An \linkS4class{H2OModel} object.
@@ -2967,6 +3075,41 @@ extract_scoring_history <- function(model, value) {
   } else {
       stop("negative_log_likelihood and average_objection functions are only available for GLM models.")
   }
+}
+
+#'
+#' Return the GLM coefficient names without building the actual GLM model by setting max_iterations=0.
+#'
+#' @param object an \linkS4class{H2OModel} object.
+#' 
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
+#' response <- "cylinders"
+#' cars_glm <- h2o.glm(balance_classes = TRUE, 
+#'                     seed = 1234, 
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = cars,
+#'                     max_iterations=0)
+#' h2o.coef_names(cars_glm)
+#' }
+#' @export
+h2o.coef_names <- function(object) {
+    if (is(object, "H2OModel") &&
+        (object@algorithm %in% c("glm"))) {
+        coef_names = object@model$coefficient_names
+        if (object@allparameters$intercept) { # intercept exist
+            return(coef_names[-length(coef_names)])
+        } else {
+            return(coef_names)
+        }
+    }
 }
 
 #'

@@ -10,25 +10,37 @@ import hex.gram.Gram;
 import hex.optimization.ADMM;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
+import jsr166y.ForkJoinTask;
+import jsr166y.RecursiveAction;
+import water.H2O;
+import water.H2ORuntime;
 import water.Job;
 import water.MemoryManager;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.MathUtils;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static hex.glm.ComputationState.GramGrad.findZeroCols;
+import static hex.glm.ConstrainedGLMUtils.*;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.glm.GLMUtils.calSmoothNess;
 import static hex.glm.GLMUtils.copyGInfo;
+import static water.util.ArrayUtils.*;
 
 public final class ComputationState {
+  private static final double R2_EPS = 1e-7;
+  public static final double EPS_CS = 1e-6;
+  public static final double EPS_CS_SQUARE = EPS_CS*EPS_CS;
+  private static final int MIN_PAR = 1000;
   final boolean _intercept;
   final int _nbetas;
-  private final GLMParameters _parms;
+  public final GLMParameters _parms;
   private BetaConstraint _bc;
   double _alpha;
   double[] _ymu;
@@ -46,7 +58,19 @@ public final class ComputationState {
   private boolean _lambdaNull; // true if lambda was not provided by user
   private double _gMax; // store max value of original gradient without dividing by math.max(1e-2, _parms._alpha[0])
   private DataInfo _activeData;
-  private BetaConstraint _activeBC = null;
+  private BetaConstraint _activeBC;
+  LinearConstraints[] _equalityConstraintsLinear = null;
+  LinearConstraints[] _lessThanEqualToConstraintsLinear = null;
+  LinearConstraints[] _equalityConstraintsBeta = null;
+  LinearConstraints[] _lessThanEqualToConstraintsBeta = null;
+  LinearConstraints[] _equalityConstraints = null;
+  LinearConstraints[] _lessThanEqualToConstraints = null;
+  double[] _lambdaEqual;
+  double[] _lambdaLessThanEqualTo;
+  ConstraintsDerivatives[] _derivativeEqual = null;
+  ConstraintsDerivatives[] _derivativeLess = null;
+  ConstraintsGram[] _gramEqual = null;
+  ConstraintsGram[] _gramLess = null;
   private final GLM.BetaInfo _modelBetaInfo;
   private double[] _beta; // vector of coefficients corresponding to active data
   private double[] _ubeta;  // HGLM, store coefficients of random effects;
@@ -66,7 +90,10 @@ public final class ComputationState {
   int[][] _gamBetaIndices;
   int _totalBetaLength; // actual coefficient length without taking into account active columns only
   int _betaLengthPerClass;
-
+  public boolean _noReg;
+  public boolean _hasConstraints;
+  public ConstrainedGLMUtils.ConstraintGLMStates _csGLMState;
+  
   public ComputationState(Job job, GLMParameters parms, DataInfo dinfo, BetaConstraint bc, GLM.BetaInfo bi){
     _job = job;
     _parms = parms;
@@ -85,6 +112,59 @@ public final class ComputationState {
         _likelihoodInfo = new double[4];
     }
     _modelBetaInfo = bi;
+  }
+
+  /**
+   * This method calculates 
+   * 1. the contribution of constraints to the gradient;
+   * 2. the contribution of ||h(beta)||^2 to the gradient and the hessian.
+   * 
+   * Note that this calculation is only needed once since the contributions to the derivative and hessian depends only
+   * on the value of linear constraint coefficients and not the actual glm model parameters.  Refer to the doc, 
+   * section VI.
+   */
+  public void initConstraintDerivatives(LinearConstraints[] equalityConstraints, LinearConstraints[] lessThanEqualToConstraints,
+                                        List<String> coeffNames) {
+    boolean hasEqualityConstraints = equalityConstraints != null;
+    boolean hasLessConstraints = lessThanEqualToConstraints != null;
+    _derivativeEqual = hasEqualityConstraints ? calDerivatives(equalityConstraints, coeffNames) : null;
+    _derivativeLess = hasLessConstraints ? calDerivatives(lessThanEqualToConstraints, coeffNames) : null;
+    // contribution to gradient and hessian from ||h(beta)||^2 without C, stays constant once calculated, active status can change
+    _gramEqual = hasEqualityConstraints ? calGram(_derivativeEqual) : null;
+    _gramLess = hasLessConstraints ? calGram(_derivativeLess) : null;
+  }
+
+  /***
+   * Any time when the glm coefficient changes, the constraints values will change and active constraints can be inactive
+   * and vice versa.  In addition, the active status of the derivatives and 2nd derivatives can change as well.  The
+   * derivative and 2nd derivatives are part of the ComputationState.  It is the purpose of this method to change the
+   * active status of the constraint derivatives (transpose(lambda)*h(beta)) and the 2nd order derivatives of 
+   * (ck/2*transpose(h(beta))*h(beta)).
+   */
+  public void updateConstraintInfo(LinearConstraints[] equalityConstraints, LinearConstraints[] lessThanEqualToConstraints) {
+    updateDerivativeActive(_derivativeEqual, _gramEqual, equalityConstraints);
+    updateDerivativeActive(_derivativeLess, _gramLess, lessThanEqualToConstraints);
+  }
+  
+  public void updateDerivativeActive(ConstraintsDerivatives[] derivativesConst, ConstraintsGram[] gramConst, 
+                                     LinearConstraints[] constraints) {
+    if (constraints != null) {
+      IntStream.range(0, derivativesConst.length).forEach(index -> {
+        derivativesConst[index]._active = constraints[index]._active;
+        gramConst[index]._active = constraints[index]._active;
+      });
+    }
+  }
+  
+  public void resizeConstraintInfo(LinearConstraints[] equalityConstraints,
+                                   LinearConstraints[] lessThanEqualToConstraints) {
+    boolean hasEqualityConstraints = _derivativeEqual != null;
+    boolean hasLessConstraints = _derivativeLess != null;
+    List<String> coeffNames = Arrays.stream(_activeData.coefNames()).collect(Collectors.toList());
+    _derivativeEqual = hasEqualityConstraints ? calDerivatives(equalityConstraints, coeffNames) : null;
+    _derivativeLess = hasLessConstraints ? calDerivatives(lessThanEqualToConstraints, coeffNames) : null;
+    _gramEqual = hasEqualityConstraints ? calGram(_derivativeEqual) : null;
+    _gramLess = hasLessConstraints ? calGram(_derivativeLess) : null;
   }
 
   public ComputationState(Job job, GLMParameters parms, DataInfo dinfo, BetaConstraint bc, GLM.BetaInfo bi, 
@@ -335,7 +415,8 @@ public final class ComputationState {
     int P = _dinfo.fullN();
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
-    _allIn = _allIn || _alpha*lambdaNew == 0 || _activeBC.hasBounds();
+    // keep all predictors for the case of beta constraints or linear constraints
+    _allIn = _allIn || _alpha*lambdaNew == 0 || _activeBC.hasBounds() || _parms._linear_constraints != null;
     if (!_allIn) {
       int newlySelected = 0;
       final double rhs = Math.max(0,_alpha * (2 * lambdaNew - lambdaOld));
@@ -513,6 +594,16 @@ public final class ComputationState {
     _bc = bc;
     _activeBC = _bc;
   }
+  
+  public void setLinearConstraints(LinearConstraints[] equalityC, LinearConstraints[] lessThanEqualToC, boolean forBeta) {
+     if (forBeta) {
+       _equalityConstraintsBeta = equalityC.length == 0 ? null : equalityC;
+       _lessThanEqualToConstraintsBeta = lessThanEqualToC.length == 0 ? null : lessThanEqualToC;
+     } else {
+       _equalityConstraintsLinear = equalityC.length == 0 ? null : equalityC;
+       _lessThanEqualToConstraintsLinear = lessThanEqualToC.length == 0 ? null : lessThanEqualToC;
+     }
+  }
 
   public void setActiveClass(int activeClass) {_activeClass = activeClass;}
 
@@ -539,7 +630,7 @@ public final class ComputationState {
    * This method will grab a subset of the gradient for each multinomial class.  However, if remove_collinear_columns is
    * on, fullInfo will only contains the gradient of active columns.
    */
-  public static class GLMSubsetGinfo extends GLMGradientInfo {
+  public static class GLMSubsetGinfo extends GLM.GLMGradientInfo {
     public final GLMGradientInfo _fullInfo;
     public GLMSubsetGinfo(GLMGradientInfo fullInfo, int N, int c, int [] ids) {
       super(fullInfo._likelihood, fullInfo._objVal, extractSubRange(N,c,ids,fullInfo._gradient));
@@ -834,9 +925,78 @@ public final class ComputationState {
       else
         gamVal = calSmoothNess(expandBeta(beta), _penaltyMatrix, _gamBetaIndices);  // take up memory
     }
-    return likelihood * _parms._obj_reg + gamVal + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
+    if (_csGLMState != null && (_equalityConstraints != null || _lessThanEqualToConstraints != null))
+      return _ginfo._objVal;
+    else
+      return likelihood * _parms._obj_reg + gamVal + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
   }
-  protected double  updateState(double [] beta, double likelihood) {
+
+  /***
+   *
+   *  This methold will calculate the first derivative of h(beta). Refer to the doc, section VI.I
+   *  
+   */
+  public static ConstrainedGLMUtils.ConstraintsDerivatives[] calDerivatives(LinearConstraints[] constraints, List<String> coefNames) {
+    int numConstraints = constraints.length;
+    ConstrainedGLMUtils.ConstraintsDerivatives[] constDeriv = new ConstrainedGLMUtils.ConstraintsDerivatives[numConstraints];
+    LinearConstraints oneConstraint;
+    for (int index=0; index<numConstraints; index++) {
+      oneConstraint = constraints[index];
+      constDeriv[index] = genOneDerivative(oneConstraint, coefNames);
+    }
+    return constDeriv;
+  }
+
+   /***
+   * Given a constraint, this method will calculate the first order derivative.  Note that this derivative does not 
+    * depend on the lambda applied to the constraint.  It only changes when the number of coefficients in beta changes and it
+    * needs to be called again.
+   */
+  public static ConstrainedGLMUtils.ConstraintsDerivatives genOneDerivative(LinearConstraints oneConstraints, List<String> coeffNames) {
+    ConstrainedGLMUtils.ConstraintsDerivatives constraintDerivative = new ConstrainedGLMUtils.ConstraintsDerivatives(oneConstraints._active);
+    IcedHashMap<String, Double> coeffNameValues = oneConstraints._constraints;
+    int index;
+    for (String coefName: coeffNameValues.keySet()) {
+      index = coeffNames.indexOf(coefName);
+      if (index >= 0)
+        constraintDerivative._constraintsDerivative.put(index, coeffNameValues.get(coefName));
+    }
+    return constraintDerivative;
+  }
+
+  /***
+   * This method to calculate contribution of penalty to gram (d2H/dbidbj), refer to the doc Section VI.II
+   */
+  public static ConstrainedGLMUtils.ConstraintsGram[] calGram(ConstrainedGLMUtils.ConstraintsDerivatives[] derivativeEqual) {
+    return Arrays.stream(derivativeEqual).map(x -> constructGram(x)).toArray(ConstrainedGLMUtils.ConstraintsGram[]::new);
+  }
+
+  /***
+   * This method is not called often.  If called, it will calculate the contribution of constraints to the 
+   * hessian.  Whenever there is a predictor number change, this function should be called again as it only looks 
+   * at the predictor index.  This predictor index will change when the number of predictors change.  It calculates
+   * the second derivative regardless of the active status because an inactive constraint may become active in the 
+   * future.  Note that here, only half of the 2nd derivatives are calculated, namely d(tranpose(h(beta))*h(beta)/dCidCj
+   * and not d(tranpose(h(beta))*h(beta)/dCjdCi since they are symmetric.
+   */
+  public static ConstrainedGLMUtils.ConstraintsGram constructGram(ConstrainedGLMUtils.ConstraintsDerivatives constDeriv) {
+    ConstrainedGLMUtils.ConstraintsGram cGram = new ConstrainedGLMUtils.ConstraintsGram();
+    List<Integer> predictorIndexc = constDeriv._constraintsDerivative.keySet().stream().collect(Collectors.toList());
+    Collections.sort(predictorIndexc);
+    while (!predictorIndexc.isEmpty()) {
+      Integer firstEle = predictorIndexc.get(0);
+      for (Integer oneCoeff : predictorIndexc) {
+        ConstrainedGLMUtils.CoefIndices coefPairs = new ConstrainedGLMUtils.CoefIndices(firstEle, oneCoeff);
+        cGram._coefIndicesValue.put(coefPairs, constDeriv._constraintsDerivative.get(firstEle)*constDeriv._constraintsDerivative.get(oneCoeff));
+      }
+      predictorIndexc.remove(0);
+    }
+    cGram._active = constDeriv._active; // calculate for active/inactive constraints, inactive may be active in future
+    return cGram;
+  }
+  
+  
+  protected double updateState(double [] beta, double likelihood) {
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
     double objOld = objective();
     _beta = beta;
@@ -860,7 +1020,7 @@ public final class ComputationState {
     return converged;
   }
 
-  protected double updateState(double [] beta,GLMGradientInfo ginfo){
+  public double updateState(double [] beta,GLMGradientInfo ginfo) {
     double objOld;
     if (_beta != null && beta.length > _beta.length) { // beta is full while _beta only contains active columns
       double[] shortBeta = shrinkFullArray(beta);
@@ -874,14 +1034,13 @@ public final class ComputationState {
       if(_beta == null)_beta = beta.clone();
       else System.arraycopy(beta,0,_beta,0,beta.length);
     }
-
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
-    return (_relImprovement = (objOld - objective())/Math.abs(objOld));
+    _relImprovement = (objOld - objective()) / Math.abs(objOld);
+    return _relImprovement;
   }
   
   double getBetaDiff() {return _betaDiff;}
-  double getGradientErr() {return _gradientErr;}
   protected void setBetaDiff(double betaDiff) { _betaDiff = betaDiff; }
   protected void setGradientErr(double gErr) { _gradientErr = gErr; }
   protected void setGinfo(GLMGradientInfo ginfo) {
@@ -924,6 +1083,247 @@ public final class ComputationState {
       return ArrayUtils.expandAndScatter(beta, (_dinfo.fullN() + 1) * _nbetas,_activeData._activeCols);
     else 
       return expandToFullArray(beta, _activeData.activeCols(), _totalBetaLength, _nbetas, _betaLengthPerClass);
+  }
+  
+  public static class GramGrad {
+    public double[][] _gram;
+    public double[] beta;
+    public double[] _grad;
+    public double objective;
+    public double _sumOfRowWeights;
+    public double[] _xy;
+    
+    public GramGrad(double[][] gramM, double[] grad, double[] b, double obj, double sumOfRowWeights, double[] xy) {
+      _gram = gramM;
+      beta = b;
+      _grad = grad;
+      objective = obj;
+      _sumOfRowWeights = sumOfRowWeights;
+      _xy = xy;
+    }
+
+    public Gram.Cholesky cholesky(Gram.Cholesky chol, double[][] xx) {
+      if( chol == null ) {
+        for( int i = 0; i < xx.length; ++i )
+          xx[i] = xx[i].clone();
+        chol = new Gram.Cholesky(xx, new double[0]);
+      }
+      final Gram.Cholesky fchol = chol;
+      final int sparseN = 0;
+      final int denseN = xx.length - sparseN;
+      // compute the cholesky of the diagonal and diagonal*dense parts
+      ForkJoinTask[] fjts = new ForkJoinTask[denseN];
+      // compute the outer product of diagonal*dense
+      //Log.info("SPARSEN = " + sparseN + "    DENSEN = " + denseN);
+      final int[][] nz = new int[denseN][];
+      for( int i = 0; i < denseN; ++i ) {
+        final int fi = i;
+        fjts[i] = new RecursiveAction() {
+          @Override protected void compute() {
+            int[] tmp = new int[sparseN];
+            double[] rowi = fchol._xx[fi];
+            int n = 0;
+            for( int k = 0; k < sparseN; ++k )
+              if (rowi[k] != .0) tmp[n++] = k;
+            nz[fi] = Arrays.copyOf(tmp, n);
+          }
+        };
+      }
+      ForkJoinTask.invokeAll(fjts);
+      for( int i = 0; i < denseN; ++i ) {
+        final int fi = i;
+        fjts[i] = new RecursiveAction() {
+          @Override protected void compute() {
+            double[] rowi = fchol._xx[fi];
+            int[]    nzi  = nz[fi];
+            for( int j = 0; j <= fi; ++j ) {
+              double[] rowj = fchol._xx[j];
+              int[]    nzj  = nz[j];
+              double s = 0;
+              for (int t=0,z=0; t < nzi.length && z < nzj.length; ) {
+                int k1 = nzi[t];
+                int k2 = nzj[z];
+                if (k1 < k2) { t++; continue; }
+                else if (k1 > k2) { z++; continue; }
+                else {
+                  s += rowi[k1] * rowj[k1];
+                  t++; z++;
+                }
+              }
+              rowi[j + sparseN] = xx[fi][j + sparseN] - s;
+            }
+          }
+        };
+      }
+      ForkJoinTask.invokeAll(fjts);
+      // compute the cholesky of dense*dense-outer_product(diagonal*dense)
+      double[][] arr = new double[denseN][];
+      for( int i = 0; i < arr.length; ++i )
+        arr[i] = Arrays.copyOfRange(fchol._xx[i], sparseN, sparseN + denseN);
+      final int p = H2ORuntime.availableProcessors();
+      Gram.InPlaceCholesky d = Gram.InPlaceCholesky.decompose_2(arr, 10, p);
+      fchol.setSPD(d.isSPD());
+      arr = d.getL();
+      for( int i = 0; i < arr.length; ++i ) {
+        // See PUBDEV-5585: we use a manual array copy instead of System.arraycopy because of behavior on Java 10
+        // Used to be: System.arraycopy(arr[i], 0, fchol._xx[i], sparseN, i + 1);
+        for (int j = 0; j < i + 1; j++)
+          fchol._xx[i][sparseN + j] = arr[i][j];
+      }
+
+      return chol;
+    }
+
+    public Gram.Cholesky qrCholesky(List<Integer> dropped_cols, double[][] Z, boolean standardized) {
+      final double [][] R = new double[Z.length][];
+      final double [] Zdiag = new double[Z.length];
+      final double [] ZdiagInv = new double[Z.length];
+      for(int i = 0; i < Z.length; ++i)
+        ZdiagInv[i] = 1.0/(Zdiag[i] = Z[i][i]);
+      for(int j = 0; j < Z.length; ++j) {
+        final double [] gamma = R[j] = new double[j+1];
+        for(int l = 0; l <= j; ++l) // compute gamma_l_j
+          gamma[l] = Z[j][l]*ZdiagInv[l];
+        double zjj = Z[j][j];
+        for(int k = 0; k < j; ++k) // only need the diagonal, the rest is 0 (dot product of orthogonal vectors)
+          zjj += gamma[k] * (gamma[k] * Z[k][k] - 2*Z[j][k]);
+        // Check R^2 for the current column and ignore if too high (1-R^2 too low), R^2 = 1- rs_res/rs_tot
+        // rs_res = zjj (the squared residual)
+        // rs_tot = sum((yi - mean(y))^2) = mean(y^2) - mean(y)^2,
+        //   mean(y^2) is on diagonal
+        //   mean(y) is in the intercept (0 if standardized)
+        //   might not be regularized with number of observations, that's why dividing by intercept diagonal
+        double rs_tot = standardized
+                ?ZdiagInv[j]
+                :1.0/(Zdiag[j]-Z[j][0]*ZdiagInv[0]*Z[j][0]);
+        if (j > 0 && zjj*rs_tot < R2_EPS) {
+          zjj=0;
+          dropped_cols.add(j-1);
+          ZdiagInv[j] = 0;
+        } else {
+          ZdiagInv[j] = 1. / zjj;
+        }
+        Z[j][j] = zjj;
+        int jchunk = Math.max(1,MIN_PAR/(Z.length-j));
+        int nchunks = (Z.length - j - 1)/jchunk;
+        nchunks = Math.min(nchunks, H2O.NUMCPUS);
+        if(nchunks <= 1) { // single threaded update
+          updateZ(gamma,Z,j);
+        } else { // multi-threaded update
+          final int fjchunk = (Z.length - 1 - j)/nchunks;
+          int rem = Z.length - 1 - j - fjchunk*nchunks;
+          for(int i = Z.length-rem; i < Z.length; ++i)
+            updateZij(i,j,Z,gamma);
+          RecursiveAction[] ras = new RecursiveAction[nchunks];
+          final int fj = j;
+          int k = 0;
+          for (int i = j + 1; i < Z.length-rem; i += fjchunk) { // update xj to zj //
+            final int fi = i;
+            ras[k++] = new RecursiveAction() {
+              @Override
+              protected final void compute() {
+                int max_i = Math.min(fi+fjchunk,Z.length);
+                for(int i = fi; i < max_i; ++i)
+                  updateZij(i,fj,Z,gamma);
+              }
+            };
+          }
+          ForkJoinTask.invokeAll(ras);
+        }
+      }
+      // update the R - we computed Rt/sqrt(diag(Z)) which we can directly use to solve the problem
+      if(R.length < 500)
+        for(int i = 0; i < R.length; ++i)
+          for (int j = 0; j <= i; ++j)
+            R[i][j] *= Math.sqrt(Z[j][j]);
+      else {
+        RecursiveAction[] ras = new RecursiveAction[R.length];
+        for(int i = 0; i < ras.length; ++i) {
+          final int fi = i;
+          final double [] Rrow = R[i];
+          ras[i] = new RecursiveAction() {
+            @Override
+            protected void compute() {
+              for (int j = 0; j <= fi; ++j)
+                Rrow[j] *= Math.sqrt(Z[j][j]);
+            }
+          };
+        }
+        ForkJoinTask.invokeAll(ras);
+      }
+      // deal with dropped_cols if present
+      if (dropped_cols.isEmpty()) 
+        return new Gram.Cholesky(R, new double[0], true);
+      else
+        return new Gram.Cholesky(dropIgnoredCols(R, Z, dropped_cols),new double[0], true);
+    }
+    
+    public static double[][] dropIgnoredCols(double[][] R, double[][] Z, List<Integer> dropped_cols) {
+      double[][] Rnew = new double[R.length-dropped_cols.size()][];
+      for(int i = 0; i < Rnew.length; ++i)
+        Rnew[i] = new double[i+1];
+      int j = 0;
+      for(int i = 0; i < R.length; ++i) {
+        if(Z[i][i] == 0) continue;
+        int k = 0;
+        for(int l = 0; l <= i; ++l) {
+          if(k < dropped_cols.size() && l == (dropped_cols.get(k)+1)) {
+            ++k;
+            continue;
+          }
+          Rnew[j][l - k] = R[i][l];
+        }
+        ++j;
+      }
+      return Rnew;
+    }
+
+    private final void updateZij(int i, int j, double [][] Z, double [] gamma) {
+      double [] Zi = Z[i];
+      double Zij = Zi[j];
+      for (int k = 0; k < j; ++k)
+        Zij -= gamma[k] * Zi[k];
+      Zi[j] = Zij;
+    }
+    private final void updateZ(final double [] gamma, final double [][] Z, int j){
+      for (int i = j + 1; i < Z.length; ++i)  // update xj to zj //
+        updateZij(i,j,Z,gamma);
+    }
+
+    public static double[][] dropCols(int[] cols, double[][] xx) {
+      Arrays.sort(cols);
+      int newXXLen = xx.length-cols.length;
+      double [][] xxNew = new double[newXXLen][newXXLen];
+      int oldXXLen = xx.length;
+      List<Integer> newIndices = IntStream.range(0, newXXLen).boxed().collect(Collectors.toList());
+      for (int index:cols)
+        newIndices.add(index,-1);
+      int newXindexX, newXindexY;
+      for (int rInd=0; rInd<oldXXLen; rInd++) {
+        newXindexX = newIndices.get(rInd);
+        for (int cInd=rInd; cInd<oldXXLen; cInd++) {
+          newXindexY = newIndices.get(cInd);
+          if (newXindexY >= 0 && newXindexX >= 0) {
+            xxNew[newXindexX][newXindexY] = xx[rInd][cInd];
+            xxNew[newXindexY][newXindexX] = xx[cInd][rInd];
+          }
+        }
+      }
+      return xxNew;
+    }
+
+    public static int[] findZeroCols(double[][] xx){
+      ArrayList<Integer> zeros = new ArrayList<>();
+      for(int i = 0; i < xx.length; ++i) {
+        if (sum(xx[i]) == 0)
+          zeros.add(i);
+      }
+      if(zeros.size() == 0) return new int[0];
+      int [] ary = new int[zeros.size()];
+      for(int i = 0; i < zeros.size(); ++i)
+        ary[i] = zeros.get(i);
+      return ary;
+    }
   }
 
   /**
@@ -1014,7 +1414,7 @@ public final class ComputationState {
     double obj_reg = _parms._obj_reg;
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
     GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,
-            _activeClass).doAll(activeData._adaptedFrame);
+            _activeClass, _hasConstraints).doAll(activeData._adaptedFrame);
     gt._gram.mul(obj_reg);
     if (_parms._glmType.equals(GLMParameters.GLMType.gam)) { // add contribution from GAM smoothness factor
         Integer[] activeCols=null;
@@ -1024,7 +1424,7 @@ public final class ComputationState {
         }
         gt._gram.addGAMPenalty(activeCols , _penaltyMatrix, _gamBetaIndices);
     }
-    ArrayUtils.mult(gt._xy,obj_reg);
+    mult(gt._xy,obj_reg);
     int [] activeCols = activeData.activeCols();
     int [] zeros = gt._gram.findZeroCols();
     GramXY res;
@@ -1052,6 +1452,67 @@ public final class ComputationState {
   public GramXY computeGramRCC(double[] beta, GLMParameters.Solver s) {
       return computeNewGram(_activeData, ArrayUtils.select(beta, _activeData.activeCols()), s);
   }
+
+  /***
+   * This function calculates the following values:
+   * 1. the hessian
+   * 2. the xy which is basically (hessian * old_beta + gradient)
+   */
+  protected GramGrad computeGram(double [] beta, GLMGradientInfo gradientInfo){
+    DataInfo activeData = activeData();
+    double obj_reg = _parms._obj_reg;
+    if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
+    GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,
+            _activeClass, _hasConstraints).doAll(activeData._adaptedFrame);
+    double[][] fullGram = gt._gram.getXX(); // only extract gram matrix
+    mult(fullGram, obj_reg);
+    if (_gramEqual != null)
+      elementwiseSumSymmetricArrays(fullGram, mult(sumGramConstribution(_gramEqual, fullGram.length), _csGLMState._ckCS));
+    if (_gramLess != null)
+      elementwiseSumSymmetricArrays(fullGram, mult(sumGramConstribution(_gramLess, fullGram.length), _csGLMState._ckCS));
+    if (_parms._glmType.equals(GLMParameters.GLMType.gam)) { // add contribution from GAM smoothness factor
+      gt._gram.addGAMPenalty(_penaltyMatrix, _gamBetaIndices, fullGram);
+    }
+    // form xy which is (Gram*beta_current + gradient)
+    double[] xy = formXY(fullGram, beta, gradientInfo._gradient);
+    // remove zeros in Gram matrix and throw an error if that coefficient is included in the constraint
+    int[] zeros = findZeroCols(fullGram);
+    if (_parms._family != Family.multinomial && zeros.length > 0 && zeros.length <= activeData.activeCols().length) {
+      fullGram = GramGrad.dropCols(zeros, fullGram); // shrink gram matrix
+      removeCols(zeros);  // update activeData.activeCols(), _beta
+      return new GramGrad(fullGram, ArrayUtils.removeIds(gradientInfo._gradient, zeros), 
+              ArrayUtils.removeIds(beta, zeros), gradientInfo._objVal, gt.sumOfRowWeights, ArrayUtils.removeIds(xy, zeros));
+    }
+    return new GramGrad(fullGram, gradientInfo._gradient, beta, gradientInfo._objVal, gt.sumOfRowWeights, xy);
+  }
+
+  /***
+   * 
+   * This method adds to objective function the contribution of 
+   *    transpose(lambda)*constraint vector + ck/2*transpose(constraint vector)*constraint vector
+   */
+  public static double addConstraintObj(double[] lambda, LinearConstraints[] constraints, double ckHalf) {
+    int numConstraints = constraints.length;
+    LinearConstraints oneC;
+    double objValueAdd = 0;
+    for (int index=0; index<numConstraints; index++) {
+      oneC = constraints[index];
+      if (oneC._active) {
+        objValueAdd += lambda[index]*oneC._constraintsVal;               // from linear constraints
+        objValueAdd += ckHalf*oneC._constraintsVal*oneC._constraintsVal; // from penalty
+      }
+    }
+    return objValueAdd;
+  }
+  
+  public static double[] formXY(double[][] fullGram, double[] beta, double[] grad) {
+    int len = grad.length;
+    double[] xy = new double[len];
+    multArrVec(fullGram, beta, xy);
+    return IntStream.range(0, len).mapToDouble(x -> xy[x]-grad[x]).toArray();
+  }
+  
+
 
   // get cached gram or incrementally update or compute new one
   public GramXY computeGram(double [] beta, GLMParameters.Solver s){
@@ -1092,12 +1553,22 @@ public final class ComputationState {
       if(!weighted || matches) {
         GLMTask.GLMIncrementalGramTask gt = new GLMTask.GLMIncrementalGramTask(newColsIds, activeData, _glmw, beta).doAll(activeData._adaptedFrame); // dense
         for (double[] d : gt._gram)
-          ArrayUtils.mult(d, obj_reg);
-        ArrayUtils.mult(gt._xy, obj_reg);
+          mult(d, obj_reg);
+        mult(gt._xy, obj_reg);
         // glue the update and old gram together
         return _currGram = GramXY.addCols(beta, activeCols, newColsIds, _currGram, gt._gram, gt._xy);
       }
     }
     return _currGram = computeNewGram(activeData,beta,s);
+  }
+  
+  public void setConstraintInfo(GLMGradientInfo gradientInfo, LinearConstraints[] equalityConstraints, 
+                                LinearConstraints[] lessThanEqualToConstraints, double[] lambdaEqual, double[] lambdaLessThan) {
+    _ginfo = gradientInfo;
+    _lessThanEqualToConstraints = lessThanEqualToConstraints;
+    _equalityConstraints = equalityConstraints;
+    _lambdaEqual = lambdaEqual;
+    _lambdaLessThanEqualTo = lambdaLessThan;
+    _likelihood = gradientInfo._likelihood;
   }
 }

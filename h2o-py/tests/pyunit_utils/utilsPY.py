@@ -1871,16 +1871,20 @@ def generate_sign_vec(table1, table2):
                 break       # found what we need.  Goto next column
 
     return sign_vec
+
 def equal_two_dicts(dict1, dict2, tolerance=1e-6, throwError=True):
     size1 = len(dict1)
     if (size1 == len(dict2)):   # only proceed if lengths are the same
         for key1 in dict1.keys():
             diff = abs(dict1[key1]-dict2[key1])
-            if (diff > tolerance):
+            if diff > tolerance:
+                print("values for key {0} are {1}, {2} and they differ by {3} and is more than "
+                      "{4}".format(key1, dict1[key1], dict2[key1], diff, tolerance))
                 if throwError:
                     assert False, "Dict 1 value {0} and Dict 2 value {1} do not agree.".format(dict1[key1], dict2[key1])
                 else:
                     return False
+    return True
 
 def equal_two_dicts_string(dict1, dict2, throwError=True):
     size1 = len(dict1)
