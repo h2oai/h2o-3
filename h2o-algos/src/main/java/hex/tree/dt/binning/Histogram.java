@@ -1,10 +1,8 @@
 package hex.tree.dt.binning;
 
-import hex.tree.dt.binning.NumericBin;
 import hex.tree.dt.DataFeaturesLimits;
 import hex.tree.dt.mrtasks.FeaturesLimitsMRTask;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.List;
 import java.util.stream.Collectors;

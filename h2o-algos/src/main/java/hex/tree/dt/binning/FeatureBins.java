@@ -1,12 +1,16 @@
 package hex.tree.dt.binning;
 
+import hex.tree.dt.NumericSplittingRule;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FeatureBins {
 
     private List<AbstractBin> _bins;
-    private final boolean _isConstant;
+    private final boolean _isConstant;  // todo - test this
 
     public FeatureBins(List<AbstractBin> bins) {
         if (bins == null) {

@@ -18,7 +18,6 @@ import water.util.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * Decision Tree
@@ -112,8 +111,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         double criterionValue = currentMinCriterionPair._2();
         return new NumericSplittingRule(bestFeatureIndex, threshold, criterionValue);
     }
-
-    private Double binaryEntropy(int leftCount, int leftCount0, int rightCount, int rightCount0) {
+    private static Double binaryEntropy(int leftCount, int leftCount0, int rightCount, int rightCount0) {
         double a1 = (entropyBinarySplit(leftCount0 * 1.0 / leftCount)
                 * leftCount / (leftCount + rightCount));
         double a2 = (entropyBinarySplit(rightCount0 * 1.0 / rightCount)
@@ -122,12 +120,12 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         return value;
     }
 
-    private double entropyBinarySplit(final double oneClassFrequency) {
+    private static double entropyBinarySplit(final double oneClassFrequency) {
         return -1 * ((oneClassFrequency < Precision.EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))
                 + ((1 - oneClassFrequency) < Precision.EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
     }
 
-    private Double calculateCriterionOfSplit(BinAccumulatedStatistics binStatistics) {
+    private static Double calculateCriterionOfSplit(BinAccumulatedStatistics binStatistics) {
         return binaryEntropy(binStatistics._leftCount, binStatistics._leftCount0,
                 binStatistics._rightCount, binStatistics._rightCount0);
     }
@@ -249,7 +247,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         _treeObj[nodeIndex] = new CompressedNode(bestSplittingRule);
 
         // todo - reorganize to generalize
-        int splitFeatureIndex = ((NumericSplittingRule) bestSplittingRule).getField();
+        int splitFeatureIndex = ((NumericSplittingRule) bestSplittingRule).getFeatureIndex();
         double threshold = ((NumericSplittingRule) bestSplittingRule).getThreshold();
         DataFeaturesLimits limitsLeft = actualLimits.updateMax(splitFeatureIndex, threshold);
         DataFeaturesLimits limitsRight = actualLimits.updateMin(splitFeatureIndex, threshold);
