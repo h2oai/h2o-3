@@ -854,7 +854,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                 || _parms._keep_cross_validation_predictions
                 || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
           String predName = cvModelBuilders[i].getPredictionKey();
-          Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
+          Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.from(_parms._custom_metric_func));
           result.makeModelMetrics(cvValid, adaptFr);
           mbs[i] = result.getMetricBuilder();
           DKV.put(cvModel);

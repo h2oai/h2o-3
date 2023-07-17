@@ -130,6 +130,11 @@ def is_module_available(mod):
 def can_use_pandas():
     return is_module_available('pandas')
 
+def can_use_polars():
+    return is_module_available('polars')
+
+def can_use_pyarrow():
+    return is_module_available('pyarrow')
 
 def can_use_numpy():
     return is_module_available('numpy')

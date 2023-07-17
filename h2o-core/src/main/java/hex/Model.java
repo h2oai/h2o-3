@@ -2288,6 +2288,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       super.postGlobal();
       if(_mb != null) {
         _mb.postGlobal(getComputedCustomMetric());
+        if (null != cFuncRef)
+          _mb._CMetricScoringTask = (CMetricScoringTask) this;
       }
     }
   }
