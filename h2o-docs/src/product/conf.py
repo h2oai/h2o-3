@@ -58,7 +58,7 @@ source_suffix = ['.md', '.rst']
 # The master toctree document.
 master_doc = 'index'
 
-# General information about the project.
+# General information about the project. 
 project = u'H2O'
 copyright = u'2016-2023 H2O.ai'
 author = u'h2o'
