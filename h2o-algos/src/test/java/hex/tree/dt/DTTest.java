@@ -28,9 +28,9 @@ public class DTTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = new TestFrameBuilder()
-                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
+                    .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
+                    .withDataForCol(1, ar("zero", "one", "one", "zero", "one", "two", "one", "one", "zero", "zero"))
                     .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
                     .withColNames("First", "Second", "Prediction")
                     .build();
@@ -59,9 +59,9 @@ public class DTTest extends TestUtil {
 //            System.out.println(DKV.getGet(model._output._treeKey));
 
             Frame test = new TestFrameBuilder()
-                    .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+                    .withVecTypes(Vec.T_NUM, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ard(1.88, 1.5, 0.88, 1.5, 0.88, 1.5, 0.88, 1.5, 8.0, 9.0))
+                    .withDataForCol(1, ar("zero", "one", "one", "zero", "one", "two", "one", "one", "zero", "zero"))
                     .withColNames("First", "Second")
                     .build();
             Scope.track_generic(test);
