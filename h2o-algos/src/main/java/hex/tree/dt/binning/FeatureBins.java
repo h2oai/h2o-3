@@ -66,10 +66,45 @@ public class FeatureBins {
         // calculate criterion for each splitting point (bin)
         // todo
         // init list with empty instances
-//        String categories = String.join("", _bins.stream().map(b -> String.valueOf(((CategoricalBin) b)._category)).collect(Collectors.toSet()));
-//        Set<String> splits = findAllCategoricalSplits(categories);
+        String categories = String.join("", _bins.stream().map(b -> String.valueOf(((CategoricalBin) b)._category)).collect(Collectors.toSet()));
+        Set<String> splits = findAllCategoricalSplits(categories);
 //        Set<BinAccumulatedStatistics> statistics = findAllCategoricalSplits(categories);
         return null;
     }
     
+    private Set<String> findAllCategoricalSplits(String categories) { // todo - test it
+        int recMaxDepth = categories.length() / 2; // floor. Generate only one half of the subsets as the rest is the complement
+        Set<String> masks = new HashSet<>();
+        // for 1 to recMaxDepth - 1 depth generate all options
+        for(int depth = 1; depth < recMaxDepth; depth++) {
+            for(String s: categories.split("")) {
+                // use substring method to clone (deep copy) the string
+                rec(masks, s, categories.substring(0).replaceAll(s, ""), depth - 1);
+            }
+        }
+        // for recMaxDepth - 1 depth (the highest) generate only half of the options for the even length and all options for the odd
+        if(categories.length() == recMaxDepth * 2) {
+            // try only one first category
+            rec(masks, categories.substring(0, 1), categories.substring(1), recMaxDepth - 1);
+        } // nope: should be covered if generate only half of the depth and half of the combination (include first value / complementary will exclude it)
+         else for(String s: categories.split("")) {
+            // use substring method to clone (deep copy) the string
+            rec(masks, s, categories.substring(0).replaceAll(s, ""), recMaxDepth - 1);
+        }
+//        List<String> res = masks.stream().sorted().collect(Collectors.toList());
+        return masks;
+    }
+
+    private void rec(Set<String> masks, String current, String categories, int stepsToGo) {
+        if (stepsToGo == 0) {
+            masks.add(current);
+            return;
+        }
+        for(String s: categories.split("")) {
+            if(s.charAt(0) > current.charAt(current.length()-1))
+                // use substring method to clone (deep copy) the string
+                rec(masks, current+s, categories.substring(0).replaceAll(s, ""), stepsToGo - 1);
+        }
+        
+    }
 }
