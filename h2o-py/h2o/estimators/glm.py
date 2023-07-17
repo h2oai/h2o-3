@@ -116,6 +116,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  dispersion_learning_rate=0.5,  # type: float
                  influence=None,  # type: Optional[Literal["dfbetas"]]
                  gainslift_bins=-1,  # type: int
+                 linear_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 init_optimal_glm=False,  # type: bool
+                 separate_linear_beta=False,  # type: bool
+                 constraint_inner_iteration_number=2,  # type: int
+                 constraint_increase_inner_loop=False,  # type: bool
+                 constraint_obj_eps=0.01,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -263,7 +269,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param non_negative: Restrict coefficients (not intercept) to be non-negative
                Defaults to ``False``.
         :type non_negative: bool
-        :param max_iterations: Maximum number of iterations
+        :param max_iterations: Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the
+               model coefficient names and model coefficient dimensions are needed.
                Defaults to ``-1``.
         :type max_iterations: int
         :param objective_epsilon: Converge if  objective value changes less than this. Default (of -1.0) indicates: If
@@ -288,7 +295,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param rand_link: Link function array for random component in HGLM.
                Defaults to ``None``.
         :type rand_link: List[Literal["[identity]", "[family_default]"]], optional
-        :param startval: double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+        :param startval: double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If
+               standardize is true, the standardized coefficients should be used.  Otherwise, use the regular
+               coefficients.
                Defaults to ``None``.
         :type startval: List[float], optional
         :param calc_like: if true, will return likelihood function value.
@@ -307,9 +316,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                Defaults to ``False``.
         :type cold_start: bool
         :param lambda_min_ratio: Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest
-               lambda that drives all coefficients to zero). Default indicates: if the number of observations is greater
-               than the number of variables, then lambda_min_ratio is set to 0.0001; if the number of observations is
-               less than the number of variables, then lambda_min_ratio is set to 0.01.
+               lambda that drives all coefficients to zero).  Default indicates: if the number of observations is
+               greater than the number of variables, then lambda_min_ratio is set to 0.0001; if the number of
+               observations is less than the number of variables, then lambda_min_ratio is set to 0.01.
                Defaults to ``-1.0``.
         :type lambda_min_ratio: float
         :param beta_constraints: Beta constraints
@@ -416,6 +425,43 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                binning.
                Defaults to ``-1``.
         :type gainslift_bins: int
+        :param linear_constraints: Linear constraints: used to specify linear constraints involving more than one
+               coefficients in standard form.  It is only supported for solver IRLSM.  It contains four columns: names
+               (strings for coefficient names or constant), values, types ( strings of 'Equal' or 'LessThanEqual'),
+               constraint_numbers (0 for first linear constraint, 1 for second linear constraint, ...
+               Defaults to ``None``.
+        :type linear_constraints: Union[None, str, H2OFrame], optional
+        :param init_optimal_glm: If true, will initialize coefficients with values derived from GLM runs without linear
+               constraints.  Only available for linear constraints.  Default to false.
+               Defaults to ``False``.
+        :type init_optimal_glm: bool
+        :param separate_linear_beta: If true, will keep the beta constraints and linear constraints separate.  After new
+               coefficients arefound, first beta constraints will be applied followed by the application of linear
+               constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
+               false, will combine the beta and linear constraints.  Default to false.
+               Defaults to ``False``.
+        :type separate_linear_beta: bool
+        :param constraint_inner_iteration_number: For constrained GLM only.  This is the number of iterations to run
+               before changing the constraint parameters like ckCS, epsilonkCS, etakCS.  If you want to want to put more
+               emphasis on the loglikelihood objective, set this to be a high number and vice versa if you want to put
+               more emphasis on the penaly part of the objective function.  Use gridsearch to find a good setting.
+               Default to 2.
+               Defaults to ``2``.
+        :type constraint_inner_iteration_number: int
+        :param constraint_increase_inner_loop: For constrained GLM only.  If true, will increase the innerloop iteration
+               by 1 everytime the innerfor loop is entered.  The goal of this is to allow the ck for penalty function to
+               increase quickly at thebeginning of the optimization and then slow down.  This will put the emphasis of
+               the algo to first find coefficients that will ensure an small penalty and then later on focus more on
+               satisfying the likelihood part of the objective function.  Default to false.
+               Defaults to ``False``.
+        :type constraint_increase_inner_loop: bool
+        :param constraint_obj_eps: For constrained GLM only.  It control the exit of the inner loop in the model
+               building process.  If thechange calculated as (new_obj-old_obj)/old_obj <= constraint_grad_eps, the inner
+               loop will exit regardless of whether the iteration number specified in constraint_inner_iteration_number
+               has been reached.  Any number < 0.01 is recommended.  Use gridsearch to find a good setting.  Default to
+               0.01.
+               Defaults to ``0.01``.
+        :type constraint_obj_eps: float
         """
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
@@ -497,6 +543,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         self.dispersion_learning_rate = dispersion_learning_rate
         self.influence = influence
         self.gainslift_bins = gainslift_bins
+        self.linear_constraints = linear_constraints
+        self.init_optimal_glm = init_optimal_glm
+        self.separate_linear_beta = separate_linear_beta
+        self.constraint_inner_iteration_number = constraint_inner_iteration_number
+        self.constraint_increase_inner_loop = constraint_increase_inner_loop
+        self.constraint_obj_eps = constraint_obj_eps
 
     @property
     def training_frame(self):
@@ -1569,7 +1621,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def max_iterations(self):
         """
-        Maximum number of iterations
+        Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model coefficient names
+        and model coefficient dimensions are needed.
 
         Type: ``int``, defaults to ``-1``.
 
@@ -1731,7 +1784,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def startval(self):
         """
-        double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+        double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If standardize is
+        true, the standardized coefficients should be used.  Otherwise, use the regular coefficients.
 
         Type: ``List[float]``.
         """
@@ -1818,9 +1872,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def lambda_min_ratio(self):
         """
         Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
-        coefficients to zero). Default indicates: if the number of observations is greater than the number of variables,
-        then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of variables, then
-        lambda_min_ratio is set to 0.01.
+        coefficients to zero).  Default indicates: if the number of observations is greater than the number of
+        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
+        variables, then lambda_min_ratio is set to 0.01.
 
         Type: ``float``, defaults to ``-1.0``.
 
@@ -2399,6 +2453,106 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
 
+    @property
+    def linear_constraints(self):
+        """
+        Linear constraints: used to specify linear constraints involving more than one coefficients in standard form.
+        It is only supported for solver IRLSM.  It contains four columns: names (strings for coefficient names or
+        constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers (0 for first linear
+        constraint, 1 for second linear constraint, ...
+
+        Type: ``Union[None, str, H2OFrame]``.
+        """
+        return self._parms.get("linear_constraints")
+
+    @linear_constraints.setter
+    def linear_constraints(self, linear_constraints):
+        self._parms["linear_constraints"] = H2OFrame._validate(linear_constraints, 'linear_constraints')
+
+    @property
+    def init_optimal_glm(self):
+        """
+        If true, will initialize coefficients with values derived from GLM runs without linear constraints.  Only
+        available for linear constraints.  Default to false.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("init_optimal_glm")
+
+    @init_optimal_glm.setter
+    def init_optimal_glm(self, init_optimal_glm):
+        assert_is_type(init_optimal_glm, None, bool)
+        self._parms["init_optimal_glm"] = init_optimal_glm
+
+    @property
+    def separate_linear_beta(self):
+        """
+        If true, will keep the beta constraints and linear constraints separate.  After new coefficients arefound, first
+        beta constraints will be applied followed by the application of linear constraints.  Note that the beta
+        constraints in this case will not be part of the objective function.  If false, will combine the beta and linear
+        constraints.  Default to false.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("separate_linear_beta")
+
+    @separate_linear_beta.setter
+    def separate_linear_beta(self, separate_linear_beta):
+        assert_is_type(separate_linear_beta, None, bool)
+        self._parms["separate_linear_beta"] = separate_linear_beta
+
+    @property
+    def constraint_inner_iteration_number(self):
+        """
+        For constrained GLM only.  This is the number of iterations to run before changing the constraint parameters
+        like ckCS, epsilonkCS, etakCS.  If you want to want to put more emphasis on the loglikelihood objective, set
+        this to be a high number and vice versa if you want to put more emphasis on the penaly part of the objective
+        function.  Use gridsearch to find a good setting.  Default to 2.
+
+        Type: ``int``, defaults to ``2``.
+        """
+        return self._parms.get("constraint_inner_iteration_number")
+
+    @constraint_inner_iteration_number.setter
+    def constraint_inner_iteration_number(self, constraint_inner_iteration_number):
+        assert_is_type(constraint_inner_iteration_number, None, int)
+        self._parms["constraint_inner_iteration_number"] = constraint_inner_iteration_number
+
+    @property
+    def constraint_increase_inner_loop(self):
+        """
+        For constrained GLM only.  If true, will increase the innerloop iteration by 1 everytime the innerfor loop is
+        entered.  The goal of this is to allow the ck for penalty function to increase quickly at thebeginning of the
+        optimization and then slow down.  This will put the emphasis of the algo to first find coefficients that will
+        ensure an small penalty and then later on focus more on satisfying the likelihood part of the objective
+        function.  Default to false.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("constraint_increase_inner_loop")
+
+    @constraint_increase_inner_loop.setter
+    def constraint_increase_inner_loop(self, constraint_increase_inner_loop):
+        assert_is_type(constraint_increase_inner_loop, None, bool)
+        self._parms["constraint_increase_inner_loop"] = constraint_increase_inner_loop
+
+    @property
+    def constraint_obj_eps(self):
+        """
+        For constrained GLM only.  It control the exit of the inner loop in the model building process.  If thechange
+        calculated as (new_obj-old_obj)/old_obj <= constraint_grad_eps, the inner loop will exit regardless of whether
+        the iteration number specified in constraint_inner_iteration_number has been reached.  Any number < 0.01 is
+        recommended.  Use gridsearch to find a good setting.  Default to 0.01.
+
+        Type: ``float``, defaults to ``0.01``.
+        """
+        return self._parms.get("constraint_obj_eps")
+
+    @constraint_obj_eps.setter
+    def constraint_obj_eps(self, constraint_obj_eps):
+        assert_is_type(constraint_obj_eps, None, numeric)
+        self._parms["constraint_obj_eps"] = constraint_obj_eps
+
     Lambda = deprecated_property('Lambda', lambda_)
 
     def get_regression_influence_diagnostics(self):
@@ -2599,3 +2753,95 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         m = H2OGeneralizedLinearEstimator()
         m._resolve_model(model_json["model_id"]["name"], model_json)
         return m
+
+    @staticmethod
+    def getConstraintsInfo(model):
+        """
+
+        Given a constrained GLM model, the constraints descriptions, constraints values, constraints conditions and 
+        whether the constraints are satisfied (true) or not (false) are returned.
+
+        :param model: GLM model with linear and beta (if applicable)  constraints
+        :return: H2OTwoDimTable containing the above constraints information.
+
+        :example:
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> response = "C21"
+        >>> predictors = list(range(0,20))
+        >>> loose_init_const = [] # this constraint is satisfied by default coefficient initialization
+        >>> # add loose constraints
+        >>> name = "C19"
+        >>> values = 0.5
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "C20"
+        >>> values = -0.8
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "constant"
+        >>> values = -1000
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> linear_constraints2 = h2o.H2OFrame(loose_init_const)
+        >>> linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])    
+        >>> # GLM model with GLM coefficients with default initialization
+        >>> h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", compute_p_values=True, remove_collinear_columns=True, 
+        ...                                         lambda_=0.0, solver="irlsm", linear_constraints=linear_constraints2,
+        ...                                         init_optimal_glm = False, seed=12345)
+        >>> h2o_glm.train(x=predictors, y=response, training_frame=train)
+        >>> print(H2OGeneralizedLinearEstimator.getConstraintsInfo(h2o_glm))
+        """
+        if model.actual_params["linear_constraints"] is not None:
+            return model._model_json["output"]["linear_constraints_table"]
+        else:
+            raise H2OValueError("getConstraintsInfo can only be called when there are linear constraints.")
+
+    @staticmethod
+    def allConstraintsPassed(model):
+        """
+
+        Given a constrainted GLM model, this will return true  if all beta (if exists) and linear constraints are
+         satified.  It will return false even if one constraint is not satisfied.  To see which ones failed, use
+         getConstraintsInfo function.
+
+        :param model:  GLM model with linear and beta (if applicable)  constraints
+        :return: boolean True or False
+
+        :example:
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/binomial_20_cols_10KRows.csv")
+        >>> response = "C21"
+        >>> predictors = list(range(0,20))
+        >>> loose_init_const = [] # this constraint is satisfied by default coefficient initialization
+        >>> # add loose constraints
+        >>> name = "C19"
+        >>> values = 0.5
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "C20"
+        >>> values = -0.8
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> name = "constant"
+        >>> values = -1000
+        >>> types = "LessThanEqual"
+        >>> contraint_numbers = 0
+        >>> loose_init_const.append([name, values, types, contraint_numbers])
+        >>> linear_constraints2 = h2o.H2OFrame(loose_init_const)
+        >>> linear_constraints2.set_names(["names", "values", "types", "constraint_numbers"])    
+        >>> # GLM model with GLM coefficients with default initialization
+        >>> h2o_glm = H2OGeneralizedLinearEstimator(family="binomial", compute_p_values=True, remove_collinear_columns=True, 
+        ...                                         lambda_=0.0, solver="irlsm", linear_constraints=linear_constraints2,
+        ...                                         init_optimal_glm = False, seed=12345)
+        >>> h2o_glm.train(x=predictors, y=response, training_frame=train)
+        >>> print(H2OGeneralizedLinearEstimator.allConstraintsPassed(h2o_glm))
+        """
+        if model.actual_params["linear_constraints"] is not None:
+            return model._model_json["output"]["all_constraints_satisfied"]
+        else:
+            raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
+

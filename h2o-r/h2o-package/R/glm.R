@@ -78,7 +78,8 @@
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
 #' @param intercept \code{Logical}. Include constant term in the model Defaults to TRUE.
 #' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
-#' @param max_iterations Maximum number of iterations Defaults to -1.
+#' @param max_iterations Maximum number of iterations.  Value should >=1.  A value of 0 is only set when only the model coefficient
+#'        names and model coefficient dimensions are needed. Defaults to -1.
 #' @param objective_epsilon Converge if  objective value changes less than this. Default (of -1.0) indicates: If lambda_search is set to
 #'        True the value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal
 #'        to zero, the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
@@ -92,7 +93,8 @@
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
 #' @param rand_link Link function array for random component in HGLM. Must be one of: "[identity]", "[family_default]".
-#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.
+#' @param startval double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.  If standardize is
+#'        true, the standardized coefficients should be used.  Otherwise, use the regular coefficients.
 #' @param calc_like \code{Logical}. if true, will return likelihood function value. Defaults to FALSE.
 #' @param HGLM \code{Logical}. If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned Defaults
 #'        to FALSE.
@@ -102,7 +104,7 @@
 #'        of alpha/lambda values starting from the values provided by current model.  If true will start GLM model from
 #'        scratch. Defaults to FALSE.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
-#'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
+#'        coefficients to zero).  Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
 #'        variables, then lambda_min_ratio is set to 0.01. Defaults to -1.
 #' @param beta_constraints Beta constraints
@@ -155,6 +157,29 @@
 #' @param influence If set to dfbetas will calculate the difference in beta when a datarow is included and excluded in the
 #'        dataset. Must be one of: "dfbetas".
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
+#' @param linear_constraints Linear constraints: used to specify linear constraints involving more than one coefficients in standard form.
+#'        It is only supported for solver IRLSM.  It contains four columns: names (strings for coefficient names or
+#'        constant), values, types ( strings of 'Equal' or 'LessThanEqual'), constraint_numbers (0 for first linear
+#'        constraint, 1 for second linear constraint, ...
+#' @param init_optimal_glm \code{Logical}. If true, will initialize coefficients with values derived from GLM runs without linear
+#'        constraints.  Only available for linear constraints.  Default to false. Defaults to FALSE.
+#' @param separate_linear_beta \code{Logical}. If true, will keep the beta constraints and linear constraints separate.  After new
+#'        coefficients arefound, first beta constraints will be applied followed by the application of linear
+#'        constraints.  Note that the beta constraints in this case will not be part of the objective function.  If
+#'        false, will combine the beta and linear constraints.  Default to false. Defaults to FALSE.
+#' @param constraint_inner_iteration_number For constrained GLM only.  This is the number of iterations to run before changing the constraint parameters
+#'        like ckCS, epsilonkCS, etakCS.  If you want to want to put more emphasis on the loglikelihood objective, set
+#'        this to be a high number and vice versa if you want to put more emphasis on the penaly part of the objective
+#'        function.  Use gridsearch to find a good setting.  Default to 2. Defaults to 2.
+#' @param constraint_increase_inner_loop \code{Logical}. For constrained GLM only.  If true, will increase the innerloop iteration by 1 everytime the
+#'        innerfor loop is entered.  The goal of this is to allow the ck for penalty function to increase quickly at
+#'        thebeginning of the optimization and then slow down.  This will put the emphasis of the algo to first find
+#'        coefficients that will ensure an small penalty and then later on focus more on satisfying the likelihood part
+#'        of the objective function.  Default to false. Defaults to FALSE.
+#' @param constraint_obj_eps For constrained GLM only.  It control the exit of the inner loop in the model building process.  If thechange
+#'        calculated as (new_obj-old_obj)/old_obj <= constraint_grad_eps, the inner loop will exit regardless of whether
+#'        the iteration number specified in constraint_inner_iteration_number has been reached.  Any number < 0.01 is
+#'        recommended.  Use gridsearch to find a good setting.  Default to 0.01. Defaults to 0.01.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -276,7 +301,13 @@ h2o.glm <- function(x,
                     fix_tweedie_variance_power = TRUE,
                     dispersion_learning_rate = 0.5,
                     influence = c("dfbetas"),
-                    gainslift_bins = -1)
+                    gainslift_bins = -1,
+                    linear_constraints = NULL,
+                    init_optimal_glm = FALSE,
+                    separate_linear_beta = FALSE,
+                    constraint_inner_iteration_number = 2,
+                    constraint_increase_inner_loop = FALSE,
+                    constraint_obj_eps = 0.01)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -459,6 +490,18 @@ h2o.glm <- function(x,
     parms$influence <- influence
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(linear_constraints))
+    parms$linear_constraints <- linear_constraints
+  if (!missing(init_optimal_glm))
+    parms$init_optimal_glm <- init_optimal_glm
+  if (!missing(separate_linear_beta))
+    parms$separate_linear_beta <- separate_linear_beta
+  if (!missing(constraint_inner_iteration_number))
+    parms$constraint_inner_iteration_number <- constraint_inner_iteration_number
+  if (!missing(constraint_increase_inner_loop))
+    parms$constraint_increase_inner_loop <- constraint_increase_inner_loop
+  if (!missing(constraint_obj_eps))
+    parms$constraint_obj_eps <- constraint_obj_eps
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -563,6 +606,12 @@ h2o.glm <- function(x,
                                     dispersion_learning_rate = 0.5,
                                     influence = c("dfbetas"),
                                     gainslift_bins = -1,
+                                    linear_constraints = NULL,
+                                    init_optimal_glm = FALSE,
+                                    separate_linear_beta = FALSE,
+                                    constraint_inner_iteration_number = 2,
+                                    constraint_increase_inner_loop = FALSE,
+                                    constraint_obj_eps = 0.01,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -750,6 +799,18 @@ h2o.glm <- function(x,
     parms$influence <- influence
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(linear_constraints))
+    parms$linear_constraints <- linear_constraints
+  if (!missing(init_optimal_glm))
+    parms$init_optimal_glm <- init_optimal_glm
+  if (!missing(separate_linear_beta))
+    parms$separate_linear_beta <- separate_linear_beta
+  if (!missing(constraint_inner_iteration_number))
+    parms$constraint_inner_iteration_number <- constraint_inner_iteration_number
+  if (!missing(constraint_increase_inner_loop))
+    parms$constraint_increase_inner_loop <- constraint_increase_inner_loop
+  if (!missing(constraint_obj_eps))
+    parms$constraint_obj_eps <- constraint_obj_eps
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

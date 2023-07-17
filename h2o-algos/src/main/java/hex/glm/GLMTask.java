@@ -1522,6 +1522,7 @@ public abstract class GLMTask  {
     double wsum, sumOfRowWeights;
     double _sumsqe;
     int _c = -1;
+    boolean _hasConstraints = false;
     
     public double[] getXY() {
       return _xy;
@@ -1544,6 +1545,15 @@ public abstract class GLMTask  {
       _ymu = null;
       _glmf = glmw;
       _c = c;
+    }
+
+    public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw, double [] beta, int c, boolean hasConst) {
+      super(null,dinfo,jobKey);
+      _beta = beta;
+      _ymu = null;
+      _glmf = glmw;
+      _c = c;
+      _hasConstraints = hasConst;
     }
 
     @Override public boolean handlesSparseData(){return true;}
@@ -1659,7 +1669,6 @@ public abstract class GLMTask  {
       return ArrayUtils.hasNaNsOrInfs(_xy) || _gram.hasNaNsOrInfs();
     }
   }
-  
 
  /* public static class GLMCoordinateDescentTask extends FrameTask2<GLMCoordinateDescentTask> {
     final GLMParameters _params;
