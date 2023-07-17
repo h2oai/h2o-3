@@ -291,10 +291,10 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             if (_train.hasInfs()) {
                 error("_train", "Infs are not supported");
             }
-            if (IntStream.range(0, _train.numCols() - 1) // ignore prediction column
-                    .mapToObj(index -> _train.vec(index).isCategorical()).anyMatch(i -> i)) {
-                error("_train", "Categorical features are not supported yet");
-            }
+//            if (IntStream.range(0, _train.numCols() - 1) // ignore prediction column
+//                    .mapToObj(index -> _train.vec(index).isCategorical()).anyMatch(i -> i)) {
+//                error("_train", "Categorical features are not supported yet");
+//            }
             if (!_response.isCategorical()) {
                 error("_response", "Only categorical response is supported");
             }
