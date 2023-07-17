@@ -67,49 +67,39 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     }
 
     /**
-     * Use binning and update features limits for child nodes.
+     * Find best split for current node based on the histogram.
      *
      * @param histogram - histogram for relevant data
-     * @return split info - holds feature index and threshold, null if the split could not be found.
+     * @return split info - holds the best split for current node, null if the split could not be found.
      */
     private AbstractSplittingRule findBestSplit(Histogram histogram) {
         int featuresNumber = histogram.featuresCount();
-        Pair<Double, Double> currentMinCriterionPair = new Pair<>(-1., Double.MAX_VALUE);
+        AbstractSplittingRule currentMinCriterionSplittingRule = null;
+        AbstractSplittingRule minCriterionSplittingRuleForFeature;
         int bestFeatureIndex = -1;
         for (int featureIndex = 0; featureIndex < featuresNumber; featureIndex++) {
             // skip constant features
             if (histogram.isConstant(featureIndex)) {
                 continue;
             }
-            // iterate all bins
-            Pair<Double, Double> minCriterionForFeature = histogram
-                    .calculateBinsStatisticsForFeature(featureIndex)
-                    .stream()
-                    // todo - consider setting min count of samples in bin instead of filtering splits
-                    .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
-                            && (binStatistics._rightCount >= _min_rows)))
-                    .peek(binStatistics -> Log.debug("counts: " + binStatistics._maxBinValue + " "
-                            + binStatistics._leftCount + " " + binStatistics._rightCount))
-                    // map to pairs (maxBinValue, criterion)
-                    .map(binStatistics -> new Pair<>(
-                            binStatistics._maxBinValue, calculateCriterionOfSplit(binStatistics)))
-                    .min(Comparator.comparing(Pair::_2))
-                    .orElse(null);
-            if (minCriterionForFeature == null) {
+            // find best split for current feature based on the criterion value
+            minCriterionSplittingRuleForFeature = findBestSplitForFeature(histogram, featureIndex);
+            
+            if (minCriterionSplittingRuleForFeature == null) {
                 continue; // split could not be found for this feature
             }
             // update current minimum criteria pair
-            if (minCriterionForFeature._2() < currentMinCriterionPair._2()) {
-                currentMinCriterionPair = minCriterionForFeature;
+            if (currentMinCriterionSplittingRule == null
+                    || minCriterionSplittingRuleForFeature._criterionValue < currentMinCriterionSplittingRule._criterionValue) {
+                currentMinCriterionSplittingRule = minCriterionSplittingRuleForFeature;
                 bestFeatureIndex = featureIndex;
             }
         }
         if (bestFeatureIndex == -1) {
             return null; // no split could be found
         }
-        double threshold = currentMinCriterionPair._1();
-        double criterionValue = currentMinCriterionPair._2();
-        return new NumericSplittingRule(bestFeatureIndex, threshold, criterionValue);
+
+        return currentMinCriterionSplittingRule;
     }
     private static Double binaryEntropy(int leftCount, int leftCount0, int rightCount, int rightCount0) {
         double a1 = (entropyBinarySplit(leftCount0 * 1.0 / leftCount)
@@ -119,6 +109,24 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         double value = a1 + a2;
         return value;
     }
+
+
+    private AbstractSplittingRule findBestSplitForFeature(Histogram histogram, int featureIndex) {
+        return (_train.vec(featureIndex).isNumeric()
+                ? histogram.calculateBinsStatisticsForNumericFeature(featureIndex)
+                : histogram.calculateBinsStatisticsForCategoricalFeature(featureIndex))
+                .stream()
+                // todo - consider setting min count of samples in bin instead of filtering splits
+                .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
+                        && (binStatistics._rightCount >= _min_rows)))
+                .peek(binStatistics -> Log.debug("split: " + binStatistics._splittingRule + ", counts: "
+                        + binStatistics._leftCount + " " + binStatistics._rightCount))
+                .peek(DT::calculateCriterionOfSplit) // calculates criterion value for splitting rule inside of statistics object
+                .map(binStatistics -> binStatistics._splittingRule)
+                .min(Comparator.comparing(AbstractSplittingRule::getCriterionValue))
+                .orElse(null);
+    }
+    
 
     private static double entropyBinarySplit(final double oneClassFrequency) {
         return -1 * ((oneClassFrequency < Precision.EPSILON ? 0 : (oneClassFrequency * Math.log(oneClassFrequency)))

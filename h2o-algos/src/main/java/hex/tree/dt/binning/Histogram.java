@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static hex.tree.dt.DT.getInitialFeaturesLimits;
+
 
 public class Histogram {
     private final List<FeatureBins> _featuresBins;
@@ -52,8 +54,12 @@ public class Histogram {
         return new DataFeaturesLimits(task._realFeatureLimits);
     }
 
-    public List<BinAccumulatedStatistics> calculateBinsStatisticsForFeature(int feature) {
-        return _featuresBins.get(feature).calculateBinsStatisticsForFeature();
+    public List<BinAccumulatedStatistics> calculateBinsStatisticsForNumericFeature(int feature) {
+        return _featuresBins.get(feature).calculateBinsStatisticsForNumericFeature();
+    }
+
+    public List<BinAccumulatedStatistics> calculateBinsStatisticsForCategoricalFeature(int feature) {
+        return _featuresBins.get(feature).calculateBinsStatisticsForCategoricalFeature();
     }
 
     public boolean isConstant(int featureIndex) {
