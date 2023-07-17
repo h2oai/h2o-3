@@ -1,17 +1,23 @@
 package hex.optimization;
 
 
+import hex.glm.ComputationState;
+import hex.glm.ConstrainedGLMUtils;
+import hex.glm.GLM;
 import water.Iced;
 import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.List;
+
+import static hex.glm.ComputationState.EPS_CS_SQUARE;
+import static hex.glm.ConstrainedGLMUtils.*;
 
 /**
  * Created by tomasnykodym on 9/29/15.
  */
 public class OptimizationUtils {
-
   public static class GradientInfo extends Iced {
     public double _objVal;
     public double [] _gradient;
@@ -455,5 +461,131 @@ public class OptimizationUtils {
       return _ginfox;
     }
   }
+  
+  public static final class ExactLineSearch {
+    public final double _betaLS1 = 1e-4;
+    public final double _betaLS2 = 0.99;
+    public final double _lambdaLS = 2;
+    public double _alphal;
+    public double _alphar;
+    public double _alphai;
+    public double[] _direction; // beta_k+1 - beta_k
+    public int _maxIteration = 50;  // 40 too low for tight constraints
+    public double[] _originalBeta;
+    public double[] _newBeta;
+    public GLM.GLMGradientInfo _ginfoOriginal;
+    public double _currGradDirIP; // current gradient and direction inner product
+    public String[] _coeffNames;
 
+    public ExactLineSearch(double[] betaCnd, ComputationState state, List<String> coeffNames) {
+      reset(betaCnd, state, coeffNames);
+    }
+    
+    public void reset(double[] betaCnd, ComputationState state, List<String> coeffNames) {
+      _direction = new double[betaCnd.length];      
+      ArrayUtils.subtract(betaCnd, state.beta(), _direction);
+      _ginfoOriginal = state.ginfo();
+      _originalBeta = state.beta();
+      _alphai = 1;
+      _alphal = 0;
+      _alphar = Double.POSITIVE_INFINITY;
+      _coeffNames = coeffNames.toArray(new String[0]);
+      _currGradDirIP = ArrayUtils.innerProduct(_ginfoOriginal._gradient, _direction);
+    }
+
+    /***
+     * Evaluate and make sure that step size alphi is not too big so that objective function is still decreasing.
+     */
+    public boolean evaluateFirstWolfe(GLM.GLMGradientInfo ginfoNew) {
+      double newObj = ginfoNew._objVal;
+      double rhs = _ginfoOriginal._objVal+_alphai*_betaLS1* _currGradDirIP;
+      return (newObj <= rhs);
+    }
+
+    /***
+     * Evaluate and make sure that step size alphi is not too small so that good
+     * progress is made in reducing the loss function.
+     */
+    public boolean evaluateSecondWolfe(GLM.GLMGradientInfo ginfo) {
+      double lhs = ArrayUtils.innerProduct(ginfo._gradient, _direction);
+      return lhs >= _betaLS2* _currGradDirIP;
+    }
+
+    public boolean setAlphai(boolean firstWolfe, boolean secondWolfe) {
+      if (!firstWolfe && secondWolfe) { // step is too long
+        _alphar = _alphai;
+        _alphai = 0.5*(_alphal+_alphar);
+        return true;
+      } else if (firstWolfe && !secondWolfe) { // step is too short
+        _alphal = _alphai;
+        if (_alphar < Double.POSITIVE_INFINITY)
+          _alphai = 0.5*(_alphal+_alphar);
+        else
+          _alphai = _lambdaLS * _alphai;
+        return true;
+      }
+      return false;
+    }
+    
+    public void setBetaConstraintsDeriv(double[] lambdaEqual, double[] lambdaLessThan, ComputationState state,
+                                        ConstrainedGLMUtils.LinearConstraints[] equalityConstraints,
+                                        ConstrainedGLMUtils.LinearConstraints[] lessThanEqualToConstraints,
+                                        GLM.GLMGradientSolver gradientSolver, double[] betaCnd) {
+      _newBeta = betaCnd;
+      updateConstraintValues(betaCnd, Arrays.asList(_coeffNames), equalityConstraints, lessThanEqualToConstraints);
+      calculateConstraintSquare(state, equalityConstraints, lessThanEqualToConstraints);
+      // update gradient from constraints transpose(lambda)*h(beta)(value, not changed, active status may change) 
+      // and gram contribution from ck/2*transpose(h(beta))*h(beta)), value not changed but active status may change
+      state.updateConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+      // calculate new gradient and objective function;
+      _ginfoOriginal =  calGradient(betaCnd, state, gradientSolver, lambdaEqual, lambdaLessThan,
+              equalityConstraints, lessThanEqualToConstraints);
+    }
+
+    public boolean findAlpha(double[] lambdaEqual, double[] lambdaLessThan, ComputationState state,
+                             ConstrainedGLMUtils.LinearConstraints[] equalityConstraints, 
+                             ConstrainedGLMUtils.LinearConstraints[] lessThanEqualToConstraints,
+                             GLM.GLMGradientSolver gradientSolver) {
+      if (_currGradDirIP > 0) {
+        return false;
+      }
+      GLM.GLMGradientInfo newGrad;
+      double[] newCoef;
+      int betaLen = _originalBeta.length;
+      double[] tempDirection = new double[betaLen];
+      boolean firstWolfe;
+      boolean secondWolfe;
+      boolean alphaiChange;
+      for (int index=0; index<_maxIteration; index++) {
+        ArrayUtils.mult(_direction, tempDirection, _alphai);    // tempCoef=alpha_i*direction
+        newCoef = ArrayUtils.add(tempDirection, _originalBeta); // newCoef = coef + alpha_i*direction
+        // calculate constraint values with new coefficients, constraints magnitude square
+        updateConstraintValues(newCoef, Arrays.asList(_coeffNames), equalityConstraints, lessThanEqualToConstraints);
+        calculateConstraintSquare(state, equalityConstraints, lessThanEqualToConstraints);
+        // update gradient from constraints transpose(lambda)*h(beta)(value, not changed, active status may change) 
+        // and gram contribution from ck/2*transpose(h(beta))*h(beta)), value not changed but active status may change
+        state.updateConstraintInfo(equalityConstraints, lessThanEqualToConstraints);
+        // calculate new gradient and objective function;
+        newGrad =  calGradient(newCoef, state, gradientSolver, lambdaEqual, lambdaLessThan,
+                equalityConstraints, lessThanEqualToConstraints);
+        // evaluate if first Wolfe condition is satisfied;
+        firstWolfe = evaluateFirstWolfe(newGrad);
+        // evaluate if second Wolfe condition is satisfied;
+        secondWolfe = evaluateSecondWolfe(newGrad);
+        // return if both conditions are satisfied;
+        if (firstWolfe && secondWolfe) {
+          _newBeta = newCoef;
+          _ginfoOriginal = newGrad;
+          return true;
+        }
+
+        // set alphai if first Wolfe condition is not satisfied, set alpha i if second Wolfe condition is not satisfied;
+        alphaiChange = setAlphai(firstWolfe, secondWolfe);
+        if (!alphaiChange || _alphar < EPS_CS_SQUARE) {
+          return false;
+        }
+      }
+      return false;
+    }
+  }
 }
