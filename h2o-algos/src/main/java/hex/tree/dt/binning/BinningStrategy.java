@@ -73,7 +73,7 @@ public enum BinningStrategy {
             } else {
                 CategoricalFeatureLimits featureLimits = (CategoricalFeatureLimits) featuresLimits.getFeatureLimits(feature);
                 List<AbstractBin> emptyBins = new ArrayList<>();
-                for (int category = 0; category <= featureLimits._mask.length; category++) {
+                for (int category = 0; category < featureLimits._mask.length; category++) {
                     // if the category is present in feature values, add new bin for this category
                     if (featureLimits._mask[category]) {
                         emptyBins.add(new CategoricalBin(category));
