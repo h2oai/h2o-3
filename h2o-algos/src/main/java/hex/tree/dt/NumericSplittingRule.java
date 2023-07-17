@@ -13,7 +13,7 @@ public class NumericSplittingRule extends AbstractSplittingRule {
   private final int _featureIndex;
   private final double _threshold;
 
-  public int getField() {
+  public int getFeatureIndex() {
     return _featureIndex;
   }
 

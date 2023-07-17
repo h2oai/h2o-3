@@ -107,11 +107,11 @@ public class CompressedDT extends Keyed<CompressedDT> {
             actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
             // proceed to the left branch
             extractRulesStartingWithNode(2 * nodeIndex + 1, actualRule +
-                    "(x" +  ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getField()
+                    "(x" +  ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getFeatureIndex()
                     + " <= " + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getThreshold() + ")");
             // proceed to the right branch
             extractRulesStartingWithNode(2 * nodeIndex + 2, actualRule +
-                    "(x" + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getField()
+                    "(x" + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getFeatureIndex()
                     + " > " + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getThreshold() + ")");
         }
     }

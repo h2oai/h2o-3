@@ -1,12 +1,14 @@
 package hex.tree.dt.binning;
 
+import hex.tree.dt.AbstractSplittingRule;
+
 /**
  * Statistics for single bin depending on all the data.
  * Holds how many samples (and 0-samples) are less or equal than the max bin value (left bins + current bin) and
  * how many samples (and 0-samples) are bigger than the max bin value (right bins excluding current bin)
  */
 public class BinAccumulatedStatistics {
-    public double _maxBinValue;
+    public AbstractSplittingRule _splittingRule;
 
     public int _leftCount0;
     public int _leftCount;
