@@ -140,7 +140,7 @@ Can I configure HDFS multiple times?
 
 Yes, you can specify multiple Hadoop configuration files at once and each provided resource will be processed.
 
-For example, if you need to specify both ``core-sit.xml`` and ``hdfs-site.xml`` you can configure both at once:
+For example, if you need to specify both ``core-site.xml`` and ``hdfs-site.xml`` you can configure both at once:
 
 ::
     
