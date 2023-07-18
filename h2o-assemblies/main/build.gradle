@@ -17,9 +17,6 @@ dependencies {
     api project(":h2o-persist-http")
     api project(":h2o-persist-hdfs")
     api project(":h2o-ext-krbstandalone")
-    if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
-        api project(":h2o-orc-parser")
-    }
     api project(":h2o-parquet-parser")
     api project(":h2o-k8s-int")
 
