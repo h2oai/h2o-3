@@ -584,32 +584,39 @@ General Blogs
 A Look at the UniformRobust method for ``histogram_type``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We introduced the `UniformRobust method for histogram <data-science/algo-params/histogram_type.html>`__ (``histogram_type="UniformRobust"``) in 3.36.1. and want to highlight its benefits! This method increases accuracy for datasets with a lot of outliers without causing a significant increase in time.
+Tree-based algorithms, especially Gradient Boosting Machines (GBM's), are one of the most popular algorithms used. They often out-perform linear models and neural networks for tabular data since they used a boosted approach where each tree built works to fix the error of the previous tree. As the model trains, it is continuously self-correcting.
 
-The default UniformAdaptive method has known binning issues caused by how the method handles datasets with columns that have outliers. While you can certainly handle this issue in pre-processing steps, the default binning method can fail on features with certain characteristics. Uniform binning looks at the min and max values in the column from the observations in the current tree node. It splits the interval into bins of the same length. However, when there are such large outliers, these outliers are classified into a single bin while the rest of the observations end up in another single bin. This, unfortunately, leaves most of the bins unused. This can also slow prediction calculation due to iterating through data bins with ineffective data distribution (primarily empty bins). Accuracy can also be affected since the diversity of the data can be lost.
+`H2O-3's GBM <data-science/gbm.html>`__ is able to train on real-world data out of the box: categoricals and missing values are automatically handled by the algorithm in a fully-distributed way. This means you can train the model on all your data without having to worry about sampling.
+
+In this post, we talk about an improvement to how our GBM handles numeric columns. Traditionally, a GBM model would split numeric columns using uniform range-based splitting. Suppose you had a column that had values ranging from 0 to 100. It would split the column into bins 0-10, 11-20, 21-30, ... 91-100. Each bin would be evaluated to determine the best way to split the data. The best split would be the one that most successfully splits your target column. For example, if you are trying to predict whether or not an employee will quit, the best split would be the one that could separate churn vs not-churn employees the most successfully.
+
+However, when you're handling data that has a column with outliers, this isn't the most effective way to handle your data. Suppose you're analyzing yearly income for a neighborhood: the vast majority of the people you're looking at are making somewhere between $20-$80k. However, there are a few outliers in the neighborhood who make well-over $1 million. When splitting the column up for binning, it will still make uniform splits regardless of the distribution of data. Because the column splitting gets skewed with large outliers, all the outlier observations are classified into a single bin while the rest of the observations end up in another single bin. This, unfortunately, leaves most of the bins unused.  
 
 .. image:: /images/blog/empty-binning.png
     :alt: An example of a histogram about income showing how outliers cause cause issues with binning resulting in many bins being unused. 
     :align: center
 
-The introduction of the UniformRobust method mitigates these issues! By learning from histograms from the previous layer, we are able to fine-tune the split points for the current layer.
+This can also drastically slow your prediction calculation since you're iterating through so many empty bins. You also sacrifice accuracy because your data loses its diversity in this uneven binning method. Uniform splitting on data with outliers is full of issues.
 
-To begin, the root of the tree uses UniformAdaptive binning. After the first split is made, we learn how the histograms were populated. Though this split has been made, the data has not yet been seen, so we do not yet know the exact distributions of the data in the right and left child nodes. If we see that UniformAdaptive binning fails (i.e. there are a lot of empty bins), we can assume an issue still exists in the child nodes. Then, we approximate the distribution in the child nodes by the distribution in the parent node. We do this by looking at the bins of the histogram to check how many bins were empty compared to the total number of available bins. If too few bins are populated, that is when we switch to the new binning method.
+The introduction of the `UniformRobust method for histogram <data-science/algo-params/histogram_type.html>`__ (``histogram_type="UniformRobust"``) mitigates these issues! By learning from histograms from the previous layer, we are able to fine-tune the split points for the current layer.
 
-For the next level of split-points, we then take the boundaries of the non-empty bins and refine them according to the squared error that is accumulated in each bin. Non-empty bins with a higher squared error are split more than ones with a lower squared error. This act of splitting creates sub-bins, and these are refined uniformly. We aid this process by freeing up space by discarding empty bins based on the desired target number of bins.
+The UniformRobust method isn't impeded by outliers this way because of how it finds splits each iteration. First, it does use uniform binning to create bins. But, it checks the distribution of the data in these bins. If there are a lot of empty bins due to outliers in the data, that means that uniform binning isn't the right way to split the data for this dataset. Then, it iterates through all the bins and redefines them: if a bin contains no data, it's deleted; if a bin contains too much data, it's split uniformly.
 
 So, in the case that UniformRobust splitting fails (i.e. the distribution of values is still significantly skewed), the next iteration of finding splits attempts to correct the issue by repeating the procedure with new bins. This allows us to refine the promising bins recursively as we get deeper into the tree.
+
+Let's return to that income example. Using the UniformRobust method, we still begin with uniform splitting and see that very uneven distribution. However, what this method does next is to eliminate all those empty bins and split all the bins containing too much data. 
+So, that bin that contained all the $0-100k yearly incomes is uniformly split. Then, with each iteration and each subsequent split, we will begin to see a much more even distribution of the data.
 
 .. image:: /images/blog/nonempty-split.png
     :alt: An example of a histogram about income showing a better distribution of bins despite outlier values.
     :align: center
 
-Overall, we have observed that the UniformRobust method has a runtime performance and accuracy that is similar to UniformAdaptve on datasets that have no outliers. On datasets with outliers, though, we see that UniformRobust significantly outperforms UniformAdaptive. UniformRobust also slightly outperforms QuantilesGlobal in accuracy in instances with outliers while being twice as fast (in a single node setting).
+This method of splitting has the best available runtime performance and accuracy on datasets with outliers. We're looking forward to you trying it out!
 
 Example
 '''''''
 
-In the following example, you can compare the performance of the UniformRobust method against the UniformAdaptive method.
+In the following example, you can compare the performance of the UniformRobust method against the UniformAdaptive method on the Swedish motor insurance dataset. This dataset has slightly larger outliers in its Claims column.
 
 .. tabs::
     .. code-tab:: r R
@@ -668,5 +675,4 @@ In the following example, you can compare the performance of the UniformRobust m
 
         # The RMSE is slightly lower in the UniformRobust model, showing that it performed better
         # that UniformAdaptive on a dataset with outlier values!
-
 
