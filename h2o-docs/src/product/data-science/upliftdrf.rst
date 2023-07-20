@@ -72,9 +72,9 @@ The final prediction is calculated in the same way as the DRF algorithm. Predict
 
 When the ``predict`` method is called on the test data, the result frame has these columns:
 
-- ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_ct1 - p_y1_ct0``
-- ``p_y1_ct1``: probability the response is 1 if the row is from the treatment group
-- ``p_y1_ct0``: probability the response is 1 if the row is from the control group
+- ``uplift_predict``: result uplift prediction score, which is calculated as ``p_y1_with_treatment - p_y1_without_treatment``
+- ``p_y1_with_treatment``: probability the response is 1 if the row is from the treatment group
+- ``p_y1_without_treatment``: probability the response is 1 if the row is from the control group
 
 Extremely Randomized Trees
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
