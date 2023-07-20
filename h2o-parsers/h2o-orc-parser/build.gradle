@@ -25,8 +25,7 @@ dependencies {
   api(project(":h2o-persist-hdfs")) {
       exclude group: 'ai.h2o', module: 'h2o-core'
       exclude group: 'net.java.dev.jets3t', module: 'jets3t'
-      exclude group: 'org.apache.hadoop', module: 'hadoop-client'
-      exclude group: 'org.apache.hadoop', module: 'hadoop-aws'
+      exclude group: 'org.apache.hadoop'
   }
 
   // Note: What is connection between hive-exec version and hadoop-version and orc version?
