@@ -9,11 +9,11 @@ from h2o.estimators.uplift_random_forest import H2OUpliftRandomForestEstimator
 
 # Custom model metrics fixture
 def custom_ate_mm():
-    return h2o.upload_custom_metric(CustomAteFunc, func_name="ate", func_file="mm_ate.py")
+    return h2o.upload_custom_metric(CustomAteFunc, func_name="Custom ATE", func_file="mm_ate.py")
 
 
 def custom_att_mm():
-    return h2o.upload_custom_metric(CustomAttFunc, func_name="att", func_file="mm_att.py")
+    return h2o.upload_custom_metric(CustomAttFunc, func_name="Custom ATT", func_file="mm_att.py")
 
 
 # Test that the custom model metric is computed

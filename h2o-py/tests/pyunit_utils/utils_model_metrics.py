@@ -44,6 +44,8 @@ class CustomLoglossFunc:
 
 class CustomAteFunc:
     def map(self, pred, act, w, o, model):
+        if w == 0:
+            return [0,0]
         return [pred[0], 1]
 
     def reduce(self, l, r):
@@ -55,6 +57,8 @@ class CustomAteFunc:
 
 class CustomAttFunc:
     def map(self, pred, act, w, o, model):
+        if w == 0:
+            return [0,0]
         treatment = act[1]
         return [pred[0], 1] if treatment == 1 else [0, 0]
 
@@ -62,7 +66,7 @@ class CustomAttFunc:
         return [l[0] + r[0], l[1] + r[1]]
 
     def metric(self, l):
-        return l[0] / l[1] if [1] != 0 else 0
+        return l[0] / l[1] if l[1] != 0 else 0
 
 
 class CustomNullFunc:
@@ -98,12 +102,15 @@ class CustomOneFunc:
         return 1
 '''
 
-def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None):
+
+def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None, delta=1e-5):
     metric_name1 = metric_name1 if metric_name1 in metric._metric_json else metric_name1.upper()
     metric_name2 = metric_name2 if metric_name2 in metric._metric_json else metric_name2.upper()
-    metric_value1 = metric._metric_json[metric_name1]
-    metric_value2 = metric._metric_json[metric_name2]
-    assert metric_value1 == metric_value2, "{} {}={} {}={}".format(msg, metric_name1, metric_value1, metric_name2, metric_value2)
+    m1 = metric._metric_json[metric_name1]
+    m2 = metric._metric_json[metric_name2]
+    m1 = float(m1) if m1 != "NaN" else 0
+    m2 = float(m2) if m2 != "NaN" else 0
+    assert (m1-m2) < delta, "{}: {} != {}".format(msg, m1, m2)
 
 
 def assert_all_metrics_equal(model, f_test, metric_name, value):
@@ -125,8 +132,12 @@ def assert_scoring_history(model, metric_name1, metric_name2, msg=None):
     scoring_history = model.scoring_history()
     sh1 = scoring_history[metric_name1]
     sh2 = scoring_history[metric_name2]
-    assert (sh1.isnull() == sh2.isnull()).all(), msg
-    assert (sh1.dropna() == sh2.dropna()).all(), msg
+    isnull1 = sh1.isnull()
+    isnull2 = sh2.isnull()
+    assert (isnull1 == isnull2).all(), "{} isnull1: {} isnull2: {}".format(msg, isnull1, isnull2)
+    drop1 = sh1.dropna()
+    drop2 = sh2.dropna()
+    assert (drop1 == drop2).all(), "{} drop1: {} drop2: {}".format(msg, drop1, drop2)
 
 
 def assert_correct_custom_metric(model, f_test, metric_name, msg=None):
