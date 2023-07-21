@@ -2,11 +2,10 @@ package water.persist;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.s3.S3FileSystem;
+import org.apache.hadoop.fs.s3a.S3AFileSystem;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.model.S3Object;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,10 +36,10 @@ public class PersistS3HdfsTest extends TestUtil  {
 
     PersistHdfs hdfsPersist = (PersistHdfs) H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
 
-    String existing = "s3://" + bucket + "/" + key;
+    String existing = "s3a://" + bucket + "/" + key;
     Path p = new Path(existing);
 
-    S3FileSystem fs = (S3FileSystem) FileSystem.get(p.toUri(), PersistHdfs.CONF);
+    S3AFileSystem fs = (S3AFileSystem) FileSystem.get(p.toUri(), PersistHdfs.CONF);
     // use crazy reflection to get to the actual S3 Service instance
     S3Service s3Service = (S3Service) getValue(fs, "store", "h", "proxyDescriptor", "fpp", "proxy", "s3Service");
 
