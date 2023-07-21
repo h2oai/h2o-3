@@ -158,11 +158,10 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  **kwargs):
         """
         Create a new H2OAutoML instance.
-        
-        :param int nfolds: Number of folds for k-fold cross-validation.
-            Use ``0`` to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
-            Defaults to ``-1``.
 
+        :param int nfolds: Specify a value >= 2 for the number of folds for k-fold cross-validation for the models in the AutoML or specify ``-1`` (default)
+            to let AutoML choose what it will do. If the data is big enough (depending on the cluster resources), it will create a blending frame
+            and will not do cross-validation. Otherwise, it will use 5 fold cross-validation.        
         :param bool balance_classes: Specify whether to oversample the minority classes to balance the class distribution. This option can increase
             the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size
             calculated using the ``max_after_balance_size`` parameter, then the majority classes will be undersampled to satisfy the size limit.
