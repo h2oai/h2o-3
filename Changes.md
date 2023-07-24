@@ -20,6 +20,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index
 #### Docs
 - [[#15629]](https://github.com/h2oai/h2o-3/issues/15629) - Fixed typo on Hadoop introduction page.
 - [[#15606]](https://github.com/h2oai/h2o-3/issues/15606) - Updated major release blog for user guide.
+- [[#15580]](https://github.com/h2oai/h2o-3/issues/15580) - Added information on UniformRobust method for `histogram_type` and created an accompanying blog post. 
 - [[#15563]](https://github.com/h2oai/h2o-3/issues/15563) - Updated out of date copyright year in user guide and python guide.
 - [[#6574]](https://github.com/h2oai/h2o-3/issues/6574) - Added a warning to Infogram user guide that it should not be used to remove correlated columns.
 - [[#6554]](https://github.com/h2oai/h2o-3/issues/6554) - Updated `nfolds` parameter description for AutoML in Python guide.
