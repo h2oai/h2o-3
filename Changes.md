@@ -7,6 +7,7 @@
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html</a>
 
 #### Bug
+- [[#15637]](https://github.com/h2oai/h2o-3/issues/15637) - Fixed AUCPR plot assigning incorrect values to the variable recalls and precisions. 
 - [[#6545]](https://github.com/h2oai/h2o-3/issues/6545) - Fixed out of memory error on multi-node sorting stage or sorted frame generation process.
 
 #### New Feature
