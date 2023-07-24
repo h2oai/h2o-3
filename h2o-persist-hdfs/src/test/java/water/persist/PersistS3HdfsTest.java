@@ -42,7 +42,7 @@ public class PersistS3HdfsTest extends TestUtil  {
     S3Object s3Object = fs.getAmazonS3ClientForTesting("testPubDev5663").getObject(bucket, key);
     
     assertNotNull(s3Object); // The object exists
-    assertFalse(fs.exists(p)); // But FS says it doesn't => S3 is broken in Hadoop
-    assertFalse(hdfsPersist.exists(existing)); // Our persist gives the same result
+    assert(fs.exists(p)); // But FS says it exists as well.
+    assert(hdfsPersist.exists(existing)); // Our persist gives the same result
   }
 }
