@@ -584,7 +584,7 @@ General Blogs
 A Look at the UniformRobust method for ``histogram_type``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Tree-based algorithms, especially Gradient Boosting Machines (GBM's), are one of the most popular algorithms used. They often out-perform linear models and neural networks for tabular data since they used a boosted approach where each tree built works to fix the error of the previous tree. As the model trains, it is continuously self-correcting.
+Tree-based algorithms, especially Gradient Boosting Machines (GBM's), are one of the most popular algorithms used. They often out-perform linear models and neural networks for tabular data since they used a boosted approach where each tree built works to fix the error of the previous tree. As the model trains, it is continuously self-correcting. 
 
 `H2O-3's GBM <data-science/gbm.html>`__ is able to train on real-world data out of the box: categoricals and missing values are automatically handled by the algorithm in a fully-distributed way. This means you can train the model on all your data without having to worry about sampling.
 
