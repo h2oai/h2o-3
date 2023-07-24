@@ -74,7 +74,7 @@ test.uplift.vs.h2oUplift <- function() {
     predh2o <- predict(modelh2o, testh2o)
 
     res <- as.data.frame(predh2o)
-    h2oPerf <- performance(res$p_y1_ct1, res$p_y1_ct0, test$y, test$treat, direction = 1)
+    h2oPerf <- performance(res$p_y1_with_treatment, res$p_y1_without_treatment, test$y, test$treat, direction = 1)
     h2oQini <- qini(h2oPerf)
 
     print(paste("H2O:", h2oQini, "upliftRF:", upliftQini$Qini)) 
