@@ -69,6 +69,20 @@ class CustomAttFunc:
         return l[0] / l[1] if l[1] != 0 else 0
 
 
+class CustomAtcFunc:
+    def map(self, pred, act, w, o, model):
+        if w == 0:
+            return [0,0]
+        treatment = act[1]
+        return [pred[0], 1] if treatment == 0 else [0, 0]
+
+    def reduce(self, l, r):
+        return [l[0] + r[0], l[1] + r[1]]
+
+    def metric(self, l):
+        return l[0] / l[1] if l[1] != 0 else 0
+
+
 class CustomNullFunc:
     def map(self, pred, act, w, o, model):
         return []
