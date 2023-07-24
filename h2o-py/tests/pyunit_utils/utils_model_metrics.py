@@ -71,8 +71,10 @@ class CustomAttFunc:
 
 class CustomAtcFunc:
     def map(self, pred, act, w, o, model):
-        control = 1 * w if act[1] == 0 else 0
-        return [pred[0] * control, control]
+        if w == 0:
+            return [0,0]
+        treatment = act[1]
+        return [pred[0], 1] if treatment == 0 else [0, 0]
 
     def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
