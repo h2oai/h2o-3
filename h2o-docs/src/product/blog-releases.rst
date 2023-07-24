@@ -600,7 +600,7 @@ This can also drastically slow your prediction calculation since you're iteratin
 
 The introduction of the `UniformRobust method for histogram <data-science/algo-params/histogram_type.html>`__ (``histogram_type="UniformRobust"``) mitigates these issues! By learning from histograms from the previous layer, we are able to fine-tune the split points for the current layer.
 
-The UniformRobust method isn't impeded by outliers this way because of how it finds splits each iteration. First, it does use uniform binning to create bins. But, it checks the distribution of the data in these bins. If there are a lot of empty bins due to outliers in the data, that means that uniform binning isn't the right way to split the data for this dataset. Then, it iterates through all the bins and redefines them: if a bin contains no data, it's deleted; if a bin contains too much data, it's split uniformly.
+The UniformRobust method isn't impeded by outliers. It starts out using uniform range based binning. Then, it checks the distribution of the data in each bin. Many empty bins will indicate this range based binning is suboptimal, so it will iterate through all the bins and redefine them. If a bin contains no data, it's deleted. If a bin contains too much data, then it's split uniformly.
 
 So, in the case that UniformRobust splitting fails (i.e. the distribution of values is still significantly skewed), the next iteration of finding splits attempts to correct the issue by repeating the procedure with new bins. This allows us to refine the promising bins recursively as we get deeper into the tree.
 
