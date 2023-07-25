@@ -2,6 +2,32 @@
 
 ## H2O
 
+### 3.42.0.2 - 7/25/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html</a>
+
+#### Bug
+- [[#15637]](https://github.com/h2oai/h2o-3/issues/15637) - Fixed AUCPR plot assigning incorrect values to the variable recalls and precisions. 
+- [[#6545]](https://github.com/h2oai/h2o-3/issues/6545) - Fixed out of memory error on multi-node sorting stage or sorted frame generation process.
+
+#### New Feature
+- [[#15614]](https://github.com/h2oai/h2o-3/issues/15614) - Enabled H2OFrame to pandas DataFrame using multi-thread from datatable to speed-up the conversion process.
+- [[#15597]](https://github.com/h2oai/h2o-3/issues/15597) - Added support for EMR 6.10.
+
+#### Engineering Task
+- [[#15626]](https://github.com/h2oai/h2o-3/issues/15626) - Updated Jira links in H2O Flow UI with GH issue links.
+
+#### Docs
+- [[#15629]](https://github.com/h2oai/h2o-3/issues/15629) - Fixed typo on Hadoop introduction page.
+- [[#15606]](https://github.com/h2oai/h2o-3/issues/15606) - Updated major release blog for user guide.
+- [[#15580]](https://github.com/h2oai/h2o-3/issues/15580) - Added information on UniformRobust method for `histogram_type` and created an accompanying blog post. 
+- [[#15563]](https://github.com/h2oai/h2o-3/issues/15563) - Updated out of date copyright year in user guide and python guide.
+- [[#6574]](https://github.com/h2oai/h2o-3/issues/6574) - Added a warning to Infogram user guide that it should not be used to remove correlated columns.
+- [[#6554]](https://github.com/h2oai/h2o-3/issues/6554) - Updated `nfolds` parameter description for AutoML in Python guide.
+
+#### Security
+- [[#15634]](https://github.com/h2oai/h2o-3/issues/15634) - Addressed CVE-2019-10086 by upgrading MOJO2 lib.
+
 ### 3.42.0.1 - 6/21/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/1/index.html</a>
