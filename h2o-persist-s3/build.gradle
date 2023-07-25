@@ -20,6 +20,7 @@ dependencies {
   testRuntimeOnly project(":${defaultWebserverModule}")
   testRuntimeOnly project(":h2o-parquet-parser")
   testImplementation project(":h2o-persist-hdfs")
+  testImplementation "org.apache.hadoop:hadoop-common:$defaultHadoopVersion"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
