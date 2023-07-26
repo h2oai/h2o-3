@@ -57,6 +57,7 @@ shadowJar {
   if (!project.hasProperty("jacocoCoverage")) {
     relocate 'org.joda.time', 'ai.h2o.org.joda.time'
   }
+  relocate "org.apache.hadoop", "ai.h2o.org.apache.hadoop"  
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'
