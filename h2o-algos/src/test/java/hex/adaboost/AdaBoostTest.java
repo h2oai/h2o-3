@@ -1,5 +1,7 @@
 package hex.adaboost;
 
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,6 +57,53 @@ public class AdaBoostTest extends TestUtil {
     }
 
     @Test
+    public void testBasicTrainGLM() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._n_estimators = 50;
+            p._weak_learner = AdaBoostModel.Algorithm.GLM;
+            p._response_column = response;
+
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+        } finally {
+            Scope.exit();
+        }
+    }    
+
+    @Test
+    public void testBasicTrainGLMWeakLerner() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            GLMModel.GLMParameters p = new GLMModel.GLMParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._response_column = response;
+
+            GLM adaBoost = new GLM(p);
+            GLMModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
+            System.out.println("score.toTwoDimTable(0,10,false) = " + score.toTwoDimTable(0, 10, false));
+        } finally {
+            Scope.exit();
+        }
+    }    
+
+    @Test
     public void testBasicTrainLarge() {
         try {
             Scope.enter();
@@ -95,10 +144,41 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
-            
+
             Frame score = adaBoostModel.score(test);
             Scope.track(score);
             toCSV(score, "../prostatescore.csv");
+
+            Frame scoreOriginal = Scope.track(parseTestFile("../prostatescore_original.csv"));
+            assertFrameEquals(scoreOriginal, score, 0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainAndScoreGLM() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._n_estimators = 2;
+            p._weak_learner = AdaBoostModel.Algorithm.GLM;
+            p._response_column = response;
+
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+
+            Frame score = adaBoostModel.score(test);
+            Scope.track(score);
+            toCSV(score, "../prostatescoreglm.csv");            
         } finally {
             Scope.exit();
         }

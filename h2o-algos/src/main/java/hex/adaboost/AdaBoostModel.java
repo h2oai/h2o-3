@@ -10,6 +10,8 @@ import water.fvec.Frame;
 public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostParameters, AdaBoostModel.AdaBoostOutput> {
     private static final Logger LOG = Logger.getLogger(AdaBoostModel.class);
 
+    public enum Algorithm {DRF, GLM, AUTO}
+
     public AdaBoostModel(Key<AdaBoostModel> selfKey, AdaBoostParameters parms,
                          AdaBoostOutput output) {
         super(selfKey, parms, output);
@@ -33,7 +35,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
         double alphas0 = 0;
         double alphas1 = 0;
         for (int i = 0; i < _output.alphas.length; i++) {
-            DRFModel drfModel = DKV.getGet(_output.models[i]);
+            Model drfModel = DKV.getGet(_output.models[i]);
             if (drfModel.score(data) == 0) {
                 alphas0 += _output.alphas[i];
             } else {
@@ -93,7 +95,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
         /**
          * TODO valenad1
          */
-        public String _weak_learner;
+        public Algorithm _weak_learner;
 
         /**
          * TODO valenad1
@@ -123,7 +125,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
         public AdaBoostParameters() {
             super();
             _n_estimators = 50;
-            _weak_learner = "DRF";
+            _weak_learner = Algorithm.AUTO;
             _learning_rate = 0.5;
         }
     }

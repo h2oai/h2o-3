@@ -1,12 +1,17 @@
 package hex.adaboost;
 
+import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import org.apache.log4j.Logger;
-import water.*;
+import water.DKV;
+import water.Key;
+import water.MRTask;
+import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -26,6 +31,16 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     public AdaBoost(AdaBoostModel.AdaBoostParameters parms) {
         super(parms);
         init(false);
+    }
+
+    @Override
+    public void init(boolean expensive) {
+        super.init(expensive);
+        if (expensive) {
+            if (_parms._weak_learner == AdaBoostModel.Algorithm.AUTO) {
+                _parms._weak_learner = AdaBoostModel.Algorithm.DRF;
+            }
+        }
     }
 
     private class AdaBoostDriver extends Driver {
@@ -52,28 +67,18 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         private void buildAdaboost() {
             _model._output.alphas = new double[(int)_parms._n_estimators];
             _model._output.models = new Key[(int)_parms._n_estimators];
-            System.out.println(train().toTwoDimTable(0,10,false));
             train().add("weights", Vec.makeCon(1.0, train().numRows()));
             train()._key = Key.make();
             DKV.put(train());
             Scope.track(train());
             for (int n = 0; n < _parms._n_estimators; n++) {
-                DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-                parms._train = train()._key;
-                parms._response_column = _parms._response_column;
-                parms._mtries = 1;
-                parms._min_rows = 1;
-                parms._weights_column = "weights";
-                parms._seed = _parms._seed + n;
-                parms._ntrees = 1;
-                parms._sample_rate = 1;
-                parms._max_depth = 1;
-                DRF job = new DRF(parms);
-                DRFModel drf = job.trainModel().get();
-                DKV.put(drf);
-                Scope.untrack(drf._key);
-                _model._output.models[n] = drf._key;
-                Frame score = drf.score(train());
+                ModelBuilder job = chooseWeakLearner();
+                job._parms._seed += n;
+                Model model = (Model) job.trainModel().get();
+                DKV.put(model);
+                Scope.untrack(model._key);
+                _model._output.models[n] = model._key;
+                Frame score = model.score(train());
                 Scope.track(score);
 
                 CountWe countWe = new CountWe().doAll(train().vec("weights"), train().vec(_parms._response_column), score.vec("predict"));
@@ -129,7 +134,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 }
             }
         }
-    }    
+    }
 
     @Override
     protected Driver trainModelImpl() {
@@ -151,6 +156,38 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     @Override
     public boolean isSupervised() {
         return true;
+    }
+    
+    private ModelBuilder chooseWeakLearner() {
+        switch (_parms._weak_learner) {
+            case GLM:
+                return getGLMWeakLearner();
+            default:
+            case DRF:
+                return getDRFWeakLearner();
+                
+        }
+    }
+    
+    private DRF getDRFWeakLearner() {
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = train()._key;
+        parms._response_column = _parms._response_column;
+        parms._mtries = 1;
+        parms._min_rows = 1;
+        parms._weights_column = "weights";
+        parms._ntrees = 1;
+        parms._sample_rate = 1;
+        parms._max_depth = 1;
+        parms._seed = _parms._seed;
+        return new DRF(parms);
+    }
+
+    private GLM getGLMWeakLearner() {
+        GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+        parms._train = train()._key;
+        parms._response_column = _parms._response_column;
+        return new GLM(parms);
     }
 
 }
