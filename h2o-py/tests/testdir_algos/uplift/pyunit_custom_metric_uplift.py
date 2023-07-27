@@ -18,7 +18,7 @@ def custom_att_mm():
 
 
 def custom_atc_mm():
-    return h2o.upload_custom_metric(CustomAttFunc, func_name="Custom ATC", func_file="mm_atc.py")
+    return h2o.upload_custom_metric(CustomAtcFunc, func_name="Custom ATC", func_file="mm_atc.py")
 
 
 # Test that the custom model metric is computed

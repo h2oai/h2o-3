@@ -44,9 +44,7 @@ class CustomLoglossFunc:
 
 class CustomAteFunc:
     def map(self, pred, act, w, o, model):
-        if w == 0:
-            return [0,0]
-        return [pred[0], 1]
+        return [pred[0], 1] 
 
     def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
@@ -57,8 +55,6 @@ class CustomAteFunc:
 
 class CustomAttFunc:
     def map(self, pred, act, w, o, model):
-        if w == 0:
-            return [0,0]
         treatment = act[1]
         return [pred[0], 1] if treatment == 1 else [0, 0]
 
@@ -71,8 +67,6 @@ class CustomAttFunc:
 
 class CustomAtcFunc:
     def map(self, pred, act, w, o, model):
-        if w == 0:
-            return [0,0]
         treatment = act[1]
         return [pred[0], 1] if treatment == 0 else [0, 0]
 
@@ -124,6 +118,7 @@ def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None, delta=1e-
     m2 = metric._metric_json[metric_name2]
     m1 = float(m1) if m1 != "NaN" else 0
     m2 = float(m2) if m2 != "NaN" else 0
+    print("{} == {}".format(m1, m2))
     assert (m1-m2) < delta, "{}: {} != {}".format(msg, m1, m2)
 
 
