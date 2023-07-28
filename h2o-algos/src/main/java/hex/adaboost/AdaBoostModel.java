@@ -1,11 +1,12 @@
 package hex.adaboost;
 
-import hex.*;
+import hex.Model;
+import hex.ModelCategory;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
 import hex.tree.drf.DRFModel;
-import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import org.apache.log4j.Logger;
 import water.*;
-import water.fvec.Frame;
 
 public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostParameters, AdaBoostModel.AdaBoostOutput> {
     private static final Logger LOG = Logger.getLogger(AdaBoostModel.class);
@@ -34,18 +35,24 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
     protected double[] score0(double[] data, double[] preds) {
         double alphas0 = 0;
         double alphas1 = 0;
+        double linearCombination = 0;
         for (int i = 0; i < _output.alphas.length; i++) {
             Model drfModel = DKV.getGet(_output.models[i]);
             if (drfModel.score(data) == 0) {
+                linearCombination += _output.alphas[i]*-1;
                 alphas0 += _output.alphas[i];
             } else {
+                linearCombination += _output.alphas[i]*1;
                 alphas1 += _output.alphas[i];
             }
         }
-        preds[1] = alphas0 > alphas1 ? 1 : 0;
-        preds[2] = alphas0 < alphas1 ? 1 : 0;
+        preds[0] = alphas0 > alphas1 ? 0 : 1;
+        preds[2] = 1/(1 + Math.exp(-2*linearCombination));
+        preds[1] = 1 - preds[2];
         return preds;
     }
+
+    @Override protected boolean needsPostProcess() { return false; /* pred[0] is already set by score0 */ }
 
     public static class AdaBoostOutput extends Model.Output {
         public double[] alphas;
