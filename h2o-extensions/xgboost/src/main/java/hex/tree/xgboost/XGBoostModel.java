@@ -715,6 +715,27 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             .outputFrame(destination_key, outputNames, null);
   }
 
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+    if (null == backgroundFrame)
+      return scoreContributions(frame, destination_key, j, options);
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    Frame adaptBgFrm = new Frame(backgroundFrame);
+    adaptTestForTrain(adaptBgFrm, true, false);
+
+    DataInfo di = model_info().dataInfo();
+    assert di != null;
+    final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
+            _output.features() : di.coefNames();
+    final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
+    
+
+    return new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, adaptFrm, adaptBgFrm)
+            .runAndGetOutput(j, destination_key, outputNames);
+  }
+  
   @Override
   public UpdateAuxTreeWeightsReport updateAuxTreeWeights(Frame frame, String weightsColumn) {
     if (weightsColumn == null) {

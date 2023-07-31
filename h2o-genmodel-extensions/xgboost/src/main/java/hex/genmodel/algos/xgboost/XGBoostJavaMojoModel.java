@@ -125,6 +125,11 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     return out_contribs;
   }
 
+  public final double[] calculateInterventionalContributions(FVec row, FVec background, double[] out_contribs, int[] catOffsets, boolean expand) {
+    _treeSHAPPredictor.calculateInterventionalContributions(row, background, out_contribs, catOffsets, expand);
+    return out_contribs;
+  }
+  
   @Override
   public final PredictContributions makeContributionsPredictor() {
     TreeSHAPPredictor<FVec> treeSHAPPredictor = _treeSHAPPredictor != null ? 

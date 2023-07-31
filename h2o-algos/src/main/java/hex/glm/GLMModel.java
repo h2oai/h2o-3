@@ -212,36 +212,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    
-    abstract class ContributionsWithBackgroundFrame<T extends ContributionsWithBackgroundFrame<T>> extends MRTask<T> {
-      Frame  _background;
-      ContributionsWithBackgroundFrame(Frame background){
-        _background = background;
-      }
 
 
-      @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-          for (int bgIdx = 0; bgIdx < _background.numRows();) {
-            int finalBgIdx = bgIdx;
-            Chunk[] bgCs = IntStream
-                    .range(0, _background.numCols())
-                    .mapToObj(col -> _background.vec(col).chunkForRow(finalBgIdx))
-                    .toArray(Chunk[]::new);
-            map(cs, bgCs, ncs);
-            bgIdx += bgCs[0]._len;
-          }
-      }
-      
-      abstract protected void map(Chunk[] cs, Chunk[] bgCs, NewChunk[] ncs);
-    }
 
-    class GLMContributionsWithBackground extends ContributionsWithBackgroundFrame<GLMContributionsWithBackground> {
+    class GLMContributionsWithBackground extends ContributionsWithBackgroundFrameTask<GLMContributionsWithBackground> {
       double[] _betas;
       DataInfo _dinfo;
 
-      GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame background) {
-        super(background);
+      GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame frame, Frame backgroundFrame) {
+        super(frame, backgroundFrame);
         _dinfo = dinfo;
         _betas = betas;
       }
@@ -293,14 +272,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       DKV.put(adaptedBgFrame);
       Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
       GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(_output._dinfo,
-              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedBgFrame)
-              .doAll(beta().length + (_output._dinfo._intercept ? 0 : 1)+1, Vec.T_NUM, adaptedFrame);
+              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame, adaptedBgFrame);
 
-      String[] colNames = new String[beta().length + (_output._dinfo._intercept ? 0 : 1)+1];
-      System.arraycopy(_output._coefficient_names, 0, colNames, 0, colNames.length - 1);
-      colNames[colNames.length - 2] = "BiasTerm";
-      colNames[colNames.length - 1] = "RowIdx";
-      return contributions.outputFrame(destination_key, colNames, null);
+      return contributions.runAndGetOutput(j, destination_key, _output._coefficient_names);
     }
   }
 

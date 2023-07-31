@@ -146,6 +146,11 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   }
 
   @Override
+  protected SharedTreeModelWithContributions<GBMModel, GBMParameters, GBMOutput>.ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets) {
+    return new ScoreContributionsWithBackgroundTask(fr, backgroundFrame, this, expand, catOffsets);
+  }
+
+  @Override
   protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model) {
       return new ScoreContributionsTask(this);
   }
