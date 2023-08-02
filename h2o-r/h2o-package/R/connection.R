@@ -844,17 +844,17 @@ h2o.resume <- function(recovery_dir=NULL) {
   if (nzchar(own_jar) && is_url(own_jar)) {
     h2o_url <- own_jar # md5 must have same file name and .md5 suffix
     md5_url <- paste(own_jar, ".md5", sep = "")
+    md5_file <- tempfile(fileext = ".md5")
+    download.file(url = md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
+    md5_check <- readLines(md5_file, n = 1L)
+    unlink(md5_file)
   } else {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
     h2o_url <- paste("https:/", base_url, "h2o.jar", sep = "/")
-    # Get MD5 checksum
-    md5_url <- paste("https:/", base_url, "h2o.jar.md5", sep = "/")
+    md5_check <- "CURRENT_R_PACKAGE_MD5_CHECKSUM"
   }
-  md5_file <- tempfile(fileext = ".md5")
-  download.file(url = md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
-  md5_check <- readLines(md5_file, n = 1L)
+
   if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
-  unlink(md5_file)
 
   # Save to temporary file first to protect against incomplete downloads
   temp_file <- paste(dest_file, "tmp", sep = ".")
