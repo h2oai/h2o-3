@@ -341,7 +341,7 @@ class GammaDistribution extends Distribution {
 
     @Override
     public double deviance(double w, double y, double f) {
-        return 2 * w * (DistributionFactory.LogExpUtil.log(f / y) + y / f - 1);
+        return 2 * w * (DistributionFactory.LogExpUtil.log(f / y) + ((y == 0 && f == 0) ? 1 : y / f) - 1);
     }
 
     @Override
