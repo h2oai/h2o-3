@@ -2897,15 +2897,17 @@ h2o.cor <- function(x, y = NULL, na.rm = FALSE, use, method = "Pearson") {
   x_categorical <- any(h2o.isfactor(x))
   y_categorical <- any(h2o.isfactor(y))
   
-  if (x_categorical || y_categorical) {
-    warning("NA")
+  if ((x_categorical && length(unique(h2o.levels(x))) > 2) || (y_categorical && length(unique(h2o.levels(y))) > 2)) {
+      warning("NA")
   }
+
 
   # Eager, mostly to match prior semantics but no real reason it need to be
   expr <- .newExpr("cor", x, y, .quote(use), .quote(method))
   if ((nrow(x) == 1L || (ncol(x) == 1L && ncol(y) == 1L))) .eval.scalar(expr)
   else .fetch.data(expr, ncol(x))
 }
+
 
 
 #'
