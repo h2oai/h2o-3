@@ -2898,7 +2898,7 @@ h2o.cor <- function(x, y = NULL, na.rm = FALSE, use, method = "Pearson") {
   y_categorical <- any(h2o.isfactor(y))
   
   if (x_categorical || y_categorical) {
-    warning("Categorical columns found in x or y.")
+    warning("NA")
   }
 
   # Eager, mostly to match prior semantics but no real reason it need to be
