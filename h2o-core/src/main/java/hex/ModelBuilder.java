@@ -1461,7 +1461,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       hide("_tweedie_power", "Only for Tweedie Distribution.");
     }
     if (_parms._tweedie_power <= 1 || _parms._tweedie_power >= 2) {
-      error("_tweedie_power", "Tweedie power must be between 1 and 2 (exclusive).");
+      error("_tweedie_power", "Tweedie power must be between 1 and 2 (exclusive). For the tweedie power 2 set distribution equal to Gamma.");
     }
 
     // Drop explicitly dropped columns
