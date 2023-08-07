@@ -275,6 +275,29 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         return self.metric("recall", thresholds=thresholds)
 
+    def precision(self, thresholds=None):
+        """
+        :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
+            If None, then the threshold maximizing the metric will be used.
+        :returns: Precision for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.precision()
+        """
+        return self.metric("precision", thresholds=thresholds)
+
     def sensitivity(self, thresholds=None):
         """
         :param thresholds: thresholds parameter must be a list (e.g. ``[0.01, 0.5, 0.99]``).
@@ -571,16 +594,16 @@ class H2OBinomialModelMetrics(MetricsBase):
             return decorate_plot_result(res=(self.fprs, self.tprs))
 
     def _plot_pr(self, server=False, save_to_file=None, plot=True):
-        recalls = [x[0] for x in self.recall(thresholds='all')]
-        precisions = self.tprs
+        recalls = self.tprs
+        precisions = [x[1] for x in self.precision(thresholds='all')]
         assert len(precisions) == len(recalls), "Precision and recall arrays must have the same length"
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
                 return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
             fig = plt.figure()
-            plt.xlabel('Recall (TP/(TP+FP))')
-            plt.ylabel('Precision (TPR)')
+            plt.xlabel('Recall (TP/(TP+FN))')
+            plt.ylabel('Precision (TP/(TP+FP)')
             plt.title('Precision Recall Curve')
             plt.text(0.75, 0.95, r'auc_pr={0:.4f}'.format(self._metric_json["pr_auc"]))
             plt.plot(recalls, precisions, 'b--')

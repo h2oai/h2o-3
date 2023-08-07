@@ -93,6 +93,7 @@ Tree-based algorithm parameters
 
       - ``AUTO``
       - ``UniformAdaptive``
+      - ``UniformRobust``
       - ``Random``
       - ``QuantilesGlobal``
       - ``RoundRobin``

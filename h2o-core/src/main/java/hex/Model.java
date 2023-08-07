@@ -2061,8 +2061,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String [] names = new String[ncols];
     if(output.hasTreatment()){
       names[0] = "uplift_predict";
-      names[1] = "p_y1_ct1";
-      names[2] = "p_y1_ct0";
+      names[1] = "p_y1_with_treatment";
+      names[2] = "p_y1_without_treatment";
     } else {
       names[0] = "predict";
       for (int i = 1; i < names.length; ++i) {
