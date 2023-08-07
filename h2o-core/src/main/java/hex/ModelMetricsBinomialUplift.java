@@ -142,13 +142,13 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             _mb = new MetricBuilderBinomialUplift(domain, thresholds);
             Chunk uplift = chks[0];
             Chunk actuals = chks[1];
-            Chunk treatment =chks[2];
+            Chunk treatment = chks[2];
             double[] ds = new double[1];
             float[] acts = new float[2];
             for (int i=0; i<chks[0]._len;++i) {
                 ds[0] = uplift.atd(i);
                 acts[0] = (float) actuals.atd(i);
-                acts[1] = (float )treatment.atd(i);
+                acts[1] = (float) treatment.atd(i);
                 _mb.perRow(ds, acts, 1, 0, null);
             }
         }
@@ -188,11 +188,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             _wYY += weight * y * y;
             _count++;
             _wcount += weight;
-            float treatmentGroup = yact[1]; // treatment = 1, control = 0
-            double treatmentEffect = ds[0];
+            int treatmentGroup = (int)yact[1]; // treatment = 1, control = 0
+            double treatmentEffect = ds[0] *  weight;
             _sumTE += treatmentEffect; // result prediction
             _sumTETreatment += treatmentGroup * treatmentEffect; 
-            _treatmentCount += treatmentGroup;
+            _treatmentCount += treatmentGroup *  weight;
             if (_auuc != null) {
                 _auuc.perRow(treatmentEffect, weight, y, treatmentGroup);
             }
@@ -206,7 +206,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             }
             _sumTE += mb._sumTE;
             _sumTETreatment += mb._sumTETreatment;
-            _treatmentCount += _treatmentCount;
+            _treatmentCount += mb._treatmentCount;
         }
 
         /**
