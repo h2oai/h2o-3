@@ -55,8 +55,8 @@ class CustomAteFunc:
 
 class CustomAttFunc:
     def map(self, pred, act, w, o, model):
-        treatment = act[1]
-        return [pred[0], 1] if treatment == 1 else [0, 0]
+        treatment = act[1] * w
+        return [pred[0] * treatment, treatment]
 
     def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
@@ -67,8 +67,8 @@ class CustomAttFunc:
 
 class CustomAtcFunc:
     def map(self, pred, act, w, o, model):
-        treatment = act[1]
-        return [pred[0], 1] if treatment == 0 else [0, 0]
+        control = 1 * w if act[1] == 0 else 0
+        return [pred[0] * control, control]
 
     def reduce(self, l, r):
         return [l[0] + r[0], l[1] + r[1]]
@@ -120,6 +120,7 @@ def assert_metrics_equal(metric, metric_name1, metric_name2, msg=None, delta=1e-
     m2 = float(m2) if m2 != "NaN" else 0
     print("{} == {}".format(m1, m2))
     assert abs(m1-m2) <= delta, "{}: {} != {}".format(msg, m1, m2)
+
 
 def assert_all_metrics_equal(model, f_test, metric_name, value):
     mm_train = model.model_performance(train=True)
