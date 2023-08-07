@@ -186,6 +186,8 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
     super.postGlobal();
     if(_mb != null) {
       _mb.postGlobal(getComputedCustomMetric());
+      if (null != cFuncRef)
+        _mb._CMetricScoringTask = (CMetricScoringTask) this;
     }
   }
 }
