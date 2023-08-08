@@ -75,15 +75,21 @@ public class PredictTreeSHAPWithBackgroundTask extends ContributionsWithBackgrou
                 // calculate Shapley values
                 _mojo.calculateInterventionalContributions(rowFVec, rowFBgVec, contribs, _outputAggregated ? _di._catOffsets : null, false);
                 
-                if (!_outputAggregated) {
-                    // make sure the contribution is on the level that's present in the foreground sample
-                    for (int i = 0; i < _di._catOffsets.length-1; i++) {
-                        final int fgIdx = Double.isNaN(input[i]) ? _di._catOffsets[i+1]-1 : _di._catOffsets[i] + (int)input[i];
-                        final int bgIdx = Double.isNaN(inputBg[i]) ? _di._catOffsets[i+1]-1 : _di._catOffsets[i] + (int)inputBg[i];
-                        contribs[fgIdx] += contribs[bgIdx];
-                        contribs[bgIdx] = 0;
-                    }
-                }
+                // FIXME: This is questionable decision. It seems logical at first to assign the contribution to the level
+                // that was present in the data but since this is in the expanded features it might happen that the level 
+                // now represented as one dimension is not used at all. To make it simpler to think about let's imagine
+                // GLM with category color x=red, b=blue. In GLM we can look and see that color.red has no importance (beta_{red} == 0) and
+                // the color.blue is the only important feature so the contribution is basically from switching blue 
+                // from 1 to 0 not from blue to zero and red to one. Can we get such information in tree models?
+//                if (!_outputAggregated) {
+//                    // make sure the contribution is on the level that's present in the foreground sample
+//                    for (int i = 0; i < _di._catOffsets.length-1; i++) {
+//                        final int fgIdx = Double.isNaN(input[i]) ? _di._catOffsets[i+1]-1 : _di._catOffsets[i] + (int)input[i];
+//                        final int bgIdx = Double.isNaN(inputBg[i]) ? _di._catOffsets[i+1]-1 : _di._catOffsets[i] + (int)inputBg[i];
+//                        contribs[fgIdx] += contribs[bgIdx];
+//                        contribs[bgIdx] = 0;
+//                    }
+//                }
                 
                 addContribToNewChunk(contribs, ncs);
             }

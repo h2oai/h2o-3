@@ -874,13 +874,20 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public final String[] coefOriginalNames() {
     int[] coefOriginalIndices = coefOriginalColumnIndices();
-    String[] originalNames = new String[coefOriginalIndices[coefOriginalIndices.length - 1]];
+    String[] originalNames = new String[coefOriginalIndices[coefOriginalIndices.length - 1] + 1]; //needs +1 since we have 0 based indexing so if we have index N we need to have N+1 elements
     int i = 0, j = 0;
     while (i < coefOriginalIndices.length && j < originalNames.length) {
       List<Integer> coefOriginalIndicesList = new ArrayList<>(coefOriginalIndices.length);
       for (int value : coefOriginalIndices) coefOriginalIndicesList.add(value);
       int end = coefOriginalIndicesList.lastIndexOf(coefOriginalIndices[i]);
       String prefix = findLongestCommonPrefix(Arrays.copyOfRange(coefNames(), i, end + 1));
+      if (end > i) { // categorical variable
+        // Let's hope levels in this categorical variable don't have common prefix with '.'
+        // We know that we encode cat. vars as "variable_name.level" so we know that the prefix should end
+        // with ".". So make sure it's the case otherwise this can break on categorical variables like "pclass" in titanic
+        // dataset where every level starts with "Class " which leads to "pclass.Class " as the original name
+        prefix = prefix.substring(0, prefix.lastIndexOf("."));
+      }
       if (".".equals(prefix.substring(prefix.length() - 1))) {
         prefix = prefix.substring(0, prefix.length() - 1);
       }

@@ -183,8 +183,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
     assert GLMParameters.GLMType.glm.equals(_parms._glmType);
- ///    assert !_parms._standardize; // -------------------------------------!!!!!!!!!!!!!!
-    // There appears to be an issue with lambda > 0 - categorical var with n levels gets encoded to n columns not to n-1 => shaps don't add up to the result
+
+    if (ContributionsOutputFormat.Compact.equals(options._outputFormat)) {
+      if (_parms._interactions != null && _parms._interactions.length > 0) {
+        throw H2O.unimpl("SHAP for GLM with interactions is not supported");
+      }
+    }
+    
     class GLMContributions extends MRTask<GLMContributions>{
       double[] _betas;
       double[] _means;
@@ -212,23 +217,25 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-
-
-
     class GLMContributionsWithBackground extends ContributionsWithBackgroundFrameTask<GLMContributionsWithBackground> {
       double[] _betas;
       DataInfo _dinfo;
 
-      GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame frame, Frame backgroundFrame) {
+      boolean _compact;
+      
+      GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame frame, Frame backgroundFrame, boolean compact) {
         super(frame, backgroundFrame);
         _dinfo = dinfo;
         _betas = betas;
+        _compact = compact;
       }
 
       @Override
       public void map(Chunk[] cs, Chunk[] bgCs, NewChunk[] ncs) {
         DataInfo.Row row = _dinfo.newDenseRow();
         DataInfo.Row bgRow = _dinfo.newDenseRow();
+        int idx;
+        double[] result = _compact?MemoryManager.malloc8d(ncs.length-1):null; // used only when output_format == compact
         for (int j = 0; j < cs[0]._len; j++) {
           _dinfo.extractDenseRow(cs, j, row);
           
@@ -236,11 +243,22 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             _dinfo.extractDenseRow(bgCs, k, bgRow);
             double biasTerm = (_dinfo._intercept ? _betas[_betas.length - 1] : 0);
             for (int i = 0; i < _betas.length - (_dinfo._intercept ? 1 : 0); i++) {
-              ncs[i].addNum(_betas[i] * (row.get(i) - bgRow.get(i)));
-              biasTerm += _betas[i]*bgRow.get(i);
+              if (_compact) {
+                idx = _dinfo.coefOriginalColumnIndices()[i];
+                result[idx] += _betas[i] * (row.get(i) - bgRow.get(i));
+                biasTerm += _betas[i] * bgRow.get(i);
+              } else {
+                ncs[i].addNum(_betas[i] * (row.get(i) - bgRow.get(i)));
+                biasTerm += _betas[i]*bgRow.get(i);
+              }
             }
-            ncs[_betas.length - (_dinfo._intercept ? 1 : 0)].addNum(biasTerm);
-            ncs[_betas.length - (_dinfo._intercept ? 1 : 0) + 1].addNum(cs[0].start() + j);
+            if (_compact)
+              for (int i = 0; i < result.length; i++) {
+                ncs[i].addNum(result[i]);
+                result[i] = 0;
+              }
+            //_betas.length - (_dinfo._intercept ? 1 : 0)
+            ncs[ncs.length-1].addNum(biasTerm);
           }
         }
       }
@@ -271,10 +289,31 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
       DKV.put(adaptedBgFrame);
       Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
-      GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(_output._dinfo,
-              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame, adaptedBgFrame);
-
-      return contributions.runAndGetOutput(j, destination_key, _output._coefficient_names);
+      DataInfo dinfo = _output._dinfo.clone();
+      dinfo._adaptedFrame = adaptedFrame;
+      GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(dinfo,
+              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame, adaptedBgFrame, 
+              ContributionsOutputFormat.Compact.equals(options._outputFormat));
+      String[] colNames = new String[ContributionsOutputFormat.Compact.equals(options._outputFormat)
+              ? dinfo.coefOriginalNames().length + 1 // +1 for bias term
+              : beta().length + (_output._dinfo._intercept ? 0 : 1)];
+      System.arraycopy(ContributionsOutputFormat.Compact.equals(options._outputFormat)
+              ? Arrays.stream(dinfo.coefOriginalNames()).map(name -> {
+                if (!dinfo._useAllFactorLevels && name.contains(".") && frame.find(name) == -1) {
+                  // We can have binary vars encoded as single variable + some contribution in intercept; we need to convert
+                  // the name of the encoded variable to the original variable name (e.g., sex.female -> sex)
+                  for (int i = 0; i < name.length(); i++) {
+                    name = name.substring(0, name.lastIndexOf("."));
+                    if (frame.find(name) >= 0)
+                      return name;
+                  }
+                }
+                return name;
+      }).toArray(String[]::new)
+              :_output._coefficient_names, 0, colNames, 0, colNames.length - 1);
+      colNames[colNames.length - 1] = "BiasTerm";
+      return contributions.runAndGetOutput(j, destination_key,
+              colNames);
     }
   }
 

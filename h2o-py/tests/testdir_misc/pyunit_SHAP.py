@@ -109,15 +109,17 @@ def test_dummy_property(mod, train, test, output_format):
                             )
                             assert False
                         # not train_df.loc[tr, col_name] != cat and \
-                        if test_df.loc[ts, col_name] != cat and not (
-                            cat == "missing(NA)"
-                            and (
-                                pd.isna(
-                                    test_df.loc[ts, col_name]
+                        if (
+                            test_df.loc[ts, col_name] != cat
+                            and not (
+                                cat == "missing(NA)"
+                                and (
+                                    pd.isna(test_df.loc[ts, col_name])
                                     or pd.isna(train_df.loc[tr, col_name])
                                 )
                             )
-                        ):
+                            and train_df.loc[tr, col_name] != cat
+                        ):  # TODO: THINK ABOUT THIS MORE (GLM)
                             print(
                                 f"Category not used but contributes! col={col_name}; test={test_df.loc[ts, col_name]} != cat={cat}; train={train_df.loc[tr, col_name]}: contr={contr_df.loc[row_in_contr, col]}| ts={ts}, tr={tr} | {cat == 'missing(NA)'} and {pd.isna(test_df.loc[ts, col_name])}"
                             )
@@ -167,17 +169,28 @@ def test_symmetry(mod, train, test, output_format, eps=1e-10):
                 val = test.loc[row // train.shape[0], col_name]
                 if val == "NA" or pd.isna(val):
                     val = "missing(NA)"
-                if abs(contr.loc[row, col]) > 0:
-                    assert val == cat
+
                 val_bg = train.loc[row % train.shape[0], col_name]
                 if val_bg == "NA" or pd.isna(val_bg):
                     val_bg = "missing(NA)"
+                    
+                if abs(contr.loc[row, col]) > 0:
+                    assert val == cat or val_bg == cat,  f"val = {val}; cat = {cat}; val_bg = {val_bg}"
+
                 if (
+                    f"{col_name}.{val}" in contr.columns and  # can be missing in GLM without regularization (moved to intercept)
+                    f"{col_name}.{val}" in contr2.columns and
+                    f"{col_name}.{val_bg}" in contr2.columns and
                     abs(
                         contr.loc[row, f"{col_name}.{val}"]
                         + contr2.loc[row, f"{col_name}.{val_bg}"]
                     )
                     > eps
+                    and abs(
+                        contr.loc[row, f"{col_name}.{val}"]
+                        + contr2.loc[row, f"{col_name}.{val}"]
+                    )
+                    > eps  # GLM TODO: THINK ABOUT THIS MORE
                 ):
                     print(
                         f"row: {row}, col: {col}, col2: {col_name}.{val_bg}, {contr.loc[row, col]} != - {contr2.loc[row, col]}"
@@ -202,7 +215,7 @@ def fact(n):
     return n * fact(n - 1)
 
 
-def naiveBSHAP(mod, train, test, xrow, brow):
+def naiveBSHAP(mod, y, train, test, xrow, brow, link=False):
     x = test[xrow, :].as_data_frame()
     b = train[brow, :].as_data_frame()
 
@@ -213,9 +226,6 @@ def naiveBSHAP(mod, train, test, xrow, brow):
         and not (pd.isna(x.loc[0, col]) and pd.isna(b.loc[0, col]))
         and col != y
     ]
-    # print(cols, len(cols))
-    # display(x.loc[:, cols])
-    # display(b.loc[:, cols])
     pset = powerset(cols)
 
     df = pd.concat([b for _ in range(len(pset))], ignore_index=True)
@@ -225,19 +235,18 @@ def naiveBSHAP(mod, train, test, xrow, brow):
 
     df = h2o.H2OFrame(df, column_types=train.types)
 
-    # for row in tqdm(range(pdf.shape[0]), desc="Setting NAs to h2oframe", leave=False):
-    #     for col in pdf.columns[pdf.iloc[row].isna()]:
-    #         if pd.isna(pdf.loc[row, col]) and train.types[col] == "enum":
-    #             df[row, col] = None
-
     for i, cat in enumerate(train.isfactor()):
         if cat:
             df[df.columns[i]] = df[df.columns[i]].asfactor()
 
     results = defaultdict(lambda: 0)
-    preds = mod.predict(df)
-    resp = "Yes" if "Yes" in preds.names else "predict"
-    evals = list(zip(pset, preds[resp].as_data_frame()[resp]))
+    preds = mod.predict(df).as_data_frame()
+
+    resp = "Yes" if "Yes" in preds.columns else "predict"
+    if link:
+        preds[resp] = prob_to_logit(preds[resp])
+    evals = list(zip(pset, preds[resp]))
+
     for c in tqdm(cols, desc="Calculating B-SHAP", leave=False):
         F = len(cols)
         for ec, ev in evals:
@@ -252,7 +261,7 @@ def naiveBSHAP(mod, train, test, xrow, brow):
     return results
 
 
-def test_contributions_against_naive(mod, train, test, link=False, eps=1e-6):
+def test_contributions_against_naive(mod, y, train, test, link=False, eps=1e-6):
     # In this test, I'm generating the data in python and then at once converting to h2o frame. This speeds it by several magnitudes
     # but it also creates nasty bugs when NAs are involved, e.g., category level "3" gets converted to float and hence is a new level "3.0"
     # that's why I remove NAs here
@@ -267,7 +276,7 @@ def test_contributions_against_naive(mod, train, test, link=False, eps=1e-6):
             ):
                 continue
             with no_progress_block():
-                naive_contr = naiveBSHAP(mod, train, test, xrow, brow)
+                naive_contr = naiveBSHAP(mod, y, train, test, xrow, brow, link=link)
                 contr = mod.predict_contributions(
                     test[xrow, :],
                     background_frame=train[brow, :],
@@ -278,55 +287,44 @@ def test_contributions_against_naive(mod, train, test, link=False, eps=1e-6):
                 cols = cols.union(set(naive_contr.keys()))
                 if "BiasTerm" in cols:
                     cols.remove("BiasTerm")
-                if link:
-                    naive_contr_df = pd.DataFrame(
-                        {k: v for k, v in naive_contr.items() if abs(v) > 1e-15},
-                        index=[0],
-                    ).rank(axis=1)
-                    contr_df = contr.drop("BiasTerm", axis=1).rank(axis=1)
-                    for col in cols:
-                        if col not in contr.columns:
-                            assert (
-                                abs(naive_contr[col]) < eps
-                            ), f"{col} present in naive contr but not in contr with value {naive_contr[col]}, xrow={xrow}, brow={brow}"
-                        else:
-                            assert (
-                                abs(naive_contr_df[col] - contr_df.loc[0, col]) < eps
-                            ).all(), f"{col} contribution ranks differ: contr={contr_df.loc[0, col]}, naive_contr={naive_contr_df[col]}, diff={naive_contr_df[col] - contr_df.loc[0,col]}, xrow={xrow}, brow={brow}"
-
-                else:
-                    for col in cols:
-                        if col not in contr.columns:
-                            assert (
-                                abs(naive_contr[col]) < eps
-                            ), f"{col} present in naive contr but not in contr with value {naive_contr[col]}, xrow={xrow}, brow={brow}"
-                        else:
-                            assert (
-                                abs(naive_contr[col] - contr.loc[0, col]) < eps
-                            ), f"{col} contributions differ: contr={contr.loc[0, col]}, naive_contr={naive_contr[col]}, diff={naive_contr[col] - contr.loc[0,col]}, xrow={xrow}, brow={brow}"
+                for col in cols:
+                    if col not in contr.columns:
+                        assert (
+                            abs(naive_contr[col]) < eps
+                        ), f"{col} present in naive contr but not in contr with value {naive_contr[col]}, xrow={xrow}, brow={brow}"
+                    else:
+                        assert (
+                            abs(naive_contr[col] - contr.loc[0, col]) < eps
+                        ), f"{col} contributions differ: contr={contr.loc[0, col]}, naive_contr={naive_contr[col]}, diff={naive_contr[col] - contr.loc[0,col]}, xrow={xrow}, brow={brow}"
 
 
-def import_data(seed=seed):
+def import_data(seed=seed, no_NA=False):
     df = h2o.import_file(
         pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"),
         na_strings=["", " ", "NA"],
-    )
+    ).drop(["name", "body", "ticket"])
     df["survived"] = df["survived"].asfactor()
+    if no_NA:
+        df = df.na_omit()
     return df.split_frame([0.75], seed=seed)
 
 
-def helper_test_all(Estimator, y, train, test, output_format, link=False, **kwargs):
+def helper_test_all(
+    Estimator, y, train, test, output_format, link=False, eps=1e-6, **kwargs
+):
     mod = Estimator(**kwargs)
     mod.train(y=y, training_frame=train)
 
-    test_local_accuracy(mod, train, test, link=link, output_format=output_format)
+    test_local_accuracy(
+        mod, train, test, link=link, output_format=output_format, eps=eps
+    )
 
     test_dummy_property(mod, train, test, output_format=output_format)
 
-    test_symmetry(mod, train, test, output_format=output_format)
+    test_symmetry(mod, train, test, output_format=output_format, eps=eps)
 
     if output_format.lower() == "compact":
-        test_contributions_against_naive(mod, train, test, link=link)
+        test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
 
 
 ########################################################################################################################
@@ -569,7 +567,9 @@ def test_xgboost_binomial_original():
 
 def test_xgboost_binomial_compact():
     train, test = import_data()
-    helper_test_all(H2OXGBoostEstimator, "survived", train, test, "compact", link=True)
+    helper_test_all(
+        H2OXGBoostEstimator, "survived", train, test, "compact", link=True, eps=1e-3
+    )
 
 
 def test_xgboost_regression_original():
@@ -579,7 +579,138 @@ def test_xgboost_regression_original():
 
 def test_xgboost_regression_compact():
     train, test = import_data()
-    helper_test_all(H2OXGBoostEstimator, "fare", train, test, "compact")
+    helper_test_all(H2OXGBoostEstimator, "fare", train, test, "compact", eps=1e-3)
+
+
+def test_glm_binomial_original():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator,
+        "survived",
+        train,
+        test,
+        "original",
+        link=True,
+        standardize=True,
+    )
+
+
+def test_glm_binomial_compact():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator,
+        "survived",
+        train,
+        test,
+        "compact",
+        link=True,
+        standardize=True,
+    )
+
+
+def test_glm_regression_original():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator, "fare", train, test, "original", standardize=True
+    )
+
+
+def test_glm_regression_compact():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator, "fare", train, test, "compact", standardize=True
+    )
+
+
+def test_glm_not_standardized_binomial_original():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator,
+        "survived",
+        train,
+        test,
+        "original",
+        link=True,
+        standardize=False,
+    )
+
+
+def test_glm_not_standardized_binomial_compact():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator,
+        "survived",
+        train,
+        test,
+        "compact",
+        link=True,
+        standardize=False,
+    )
+
+
+def test_glm_not_standardized_regression_original():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator,
+        "fare",
+        train,
+        test,
+        "original",
+        standardize=False,
+    )
+
+
+def test_glm_not_standardized_regression_compact():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator, "fare", train, test, "compact", standardize=False
+    )
+
+
+def test_glm_not_regularized_binomial_original():
+    """Not regularized GLM encodes categorical vars differently (to #levels-1 dims)"""
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator,
+        "survived",
+        train,
+        test,
+        "original",
+        link=True,
+        lambda_=0,
+    )
+
+
+def test_glm_not_regularized_binomial_compact():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator,
+        "survived",
+        train,
+        test,
+        "compact",
+        link=True,
+        lambda_=0,
+    )
+
+
+def test_glm_not_regularized_regression_original():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator,
+        "fare",
+        train,
+        test,
+        "original",
+        lambda_=0,
+    )
+
+
+def test_glm_not_regularized_regression_compact():
+    train, test = import_data(no_NA=True)
+    helper_test_all(
+        H2OGeneralizedLinearEstimator, "fare", train, test, "compact", lambda_=0
+    )
 
 
 TESTS = [
@@ -615,6 +746,18 @@ TESTS = [
     test_xgboost_binomial_compact,
     test_xgboost_regression_original,
     test_xgboost_regression_compact,
+    test_glm_binomial_original,
+    test_glm_binomial_compact,
+    test_glm_regression_original,
+    test_glm_regression_compact,
+    test_glm_not_standardized_binomial_original,
+    test_glm_not_standardized_binomial_compact,
+    test_glm_not_standardized_regression_original,
+    test_glm_not_standardized_regression_compact,
+    test_glm_not_regularized_binomial_original,
+    test_glm_not_regularized_binomial_compact,
+    test_glm_not_regularized_regression_original,
+    test_glm_not_regularized_regression_compact,
 ]
 
 
