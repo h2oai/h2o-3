@@ -165,6 +165,10 @@ At this point, determine whether you want to complete this quick start in either
         Type 'q()' to quit R.
         >
 
+        # By default, this setup is open. 
+        # Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+        #if you want to secure your installation.
+
         # Copy and paste the following commands in R to download dependency packages.
         > pkgs <- c("methods", "statmod", "stats", "graphics", "RCurl", "jsonlite", "tools", "utils")
         > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
@@ -199,6 +203,10 @@ At this point, determine whether you want to complete this quick start in either
 
    .. code-tab:: python
 
+      # By default, this setup is open. 
+      # Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+      #if you want to secure your installation.
+      
       # Before starting Python, run the following commands to install dependencies.
       # Prepend these commands with `sudo` only if necessary:
       # h2o-3 user$ [sudo] pip install -U requests
