@@ -167,7 +167,7 @@ At this point, determine whether you want to complete this quick start in either
 
         # By default, this setup is open. 
         # Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
-        #if you want to secure your installation.
+        # if you want to secure your installation.
 
         # Copy and paste the following commands in R to download dependency packages.
         > pkgs <- c("methods", "statmod", "stats", "graphics", "RCurl", "jsonlite", "tools", "utils")
@@ -205,7 +205,7 @@ At this point, determine whether you want to complete this quick start in either
 
       # By default, this setup is open. 
       # Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
-      #if you want to secure your installation.
+      # if you want to secure your installation.
       
       # Before starting Python, run the following commands to install dependencies.
       # Prepend these commands with `sudo` only if necessary:
