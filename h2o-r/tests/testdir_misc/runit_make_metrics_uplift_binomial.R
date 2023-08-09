@@ -25,8 +25,9 @@ test.make_metrics_uplift_binomial <- function() {
     pred <- h2o.assign(h2o.predict(model,train)[,1],"pred")
     actual <- h2o.assign(train[,response],"act")
     treat <- h2o.assign(train[,treatment],"treatment")
+    print(treat)
     
-    m0 <- h2o.make_metrics(pred, actual, treatment=treatment)
+    m0 <- h2o.make_metrics(pred, actual, treatment=treat)
     print(m0)
     m1 <- h2o.performance(model, train)
     print(m1)

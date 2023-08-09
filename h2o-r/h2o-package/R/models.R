@@ -1137,7 +1137,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
-  treatment <- .validate.H2OFrame(treatment, required=FALSE)
+  treatment <- .validate.H2OFrame(treatment, required=TRUE)
   if (!is.character(auc_type)) stop("auc_type argument must be of type character")
   if (!(auc_type %in% c("MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "NONE", "AUTO"))) {
     stop("auc_type argument must be MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, NONE, AUTO")
@@ -1149,6 +1149,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
     params$weights_frame <- h2o.getId(weights)
   }
   if (!is.null(treatment)) {
+      params$treatment_frame <- h2o.getId(treatment)
       if (!(auuc_type %in% c("qini", "lift", "gain", "AUTO"))) {
         stop("auuc_type argument must be gini, lift, gain or AUTO")
       }
@@ -1174,7 +1175,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
     params[["domain"]] <- out
   }
   params["auc_type"] <- auc_type  
-  url <- paste0("ModelMetrics/predictions_frame/",params$predictions_frame,"/actuals_frame/",params$actuals_frame)
+  url <- paste0("ModelMetrics/predictions_frame/",params$predictions_frame,"/actuals_frame/",params$actuals_frame,"/treatment_frame/",params$treatment_frame)
   res <- .h2o.__remoteSend(method = "POST", url, .params = params)
   model_metrics <- res$model_metrics
   metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
