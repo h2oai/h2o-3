@@ -15,7 +15,7 @@ H2O Quick Start with Flow
 
 .. note::
 
-This way of installation is not secured.
+   This way of installation is not secured.
 
 --------------
 

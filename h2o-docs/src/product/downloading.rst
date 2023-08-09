@@ -28,7 +28,7 @@ If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/late
 
 .. note::
 
-This way of installation is not secured. The only secure way of launching H2O is through R or Python using the ``h2o.init()`` argument.
+	This way of installation is not secured. The only secure way of launching H2O is through R or Python using the ``h2o.init()`` argument.
 
 
 Install in R

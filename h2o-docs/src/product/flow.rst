@@ -36,6 +36,12 @@ Download Flow
     cd h2o-|version|
     java -jar h2o.jar
 
+
+.. note:: 
+
+   This way of installation is not secured.
+
+
 3. Finally, to start Flow point your browser to http://localhost:54321.
 
 
