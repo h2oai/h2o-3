@@ -1,10 +1,9 @@
-# This test demonstrates issue PUBDEV-6160: Custom Metric is exposed in GLM but it is not actually supported
 import sys
 
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
-from tests.pyunit_utils import CustomMaeFunc, CustomRmseFunc, \
+from tests.pyunit_utils import CustomMaeFunc, CustomRmseFunc, CustomLoglossFunc, \
     dataset_prostate, dataset_iris
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
@@ -42,10 +41,13 @@ def multinomial_model(ModelType, custom_metric_func):
     return model, ftest
 
 
-def assert_custom_metric_undefined(model):
+def assert_custom_metric(model, metric):
     mm_train = model.model_performance(train=True)
-    assert mm_train._metric_json["custom_metric_name"] is None
-    assert mm_train._metric_json["custom_metric_value"] == 0
+    metric = metric if metric in mm_train._metric_json else metric.lower()
+    print(metric, mm_train._metric_json["custom_metric_value"])
+    assert mm_train._metric_json["custom_metric_name"].lower() == metric.lower()
+    assert mm_train._metric_json["custom_metric_value"] == mm_train._metric_json[metric] 
+                                                        
 
 
 # Custom model metrics fixture
@@ -57,19 +59,25 @@ def custom_rmse_mm():
     return h2o.upload_custom_metric(CustomRmseFunc, func_name="rmse", func_file="mm_rmse.py")
 
 
-# Shows that the custom model metric is not actually calculated
+def custom_logloss_mm():
+    return h2o.upload_custom_metric(CustomLoglossFunc, func_name="logloss", func_file="mm_logloss.py")
+
+
+# Shows that the custom model metric is actually calculated
 def test_custom_metric_computation_regression():
     (model, _) = regression_model(H2OGeneralizedLinearEstimator, custom_mae_mm())
-    assert_custom_metric_undefined(model)
+    assert_custom_metric(model, "MAE")
 
 def test_custom_metric_computation_binomial():
     (model, _) = binomial_model(H2OGeneralizedLinearEstimator, custom_rmse_mm())
-    assert_custom_metric_undefined(model)
+    assert_custom_metric(model, "RMSE")
 
+    (model, _) = binomial_model(H2OGeneralizedLinearEstimator, custom_logloss_mm())
+    assert_custom_metric(model, "logloss")
 
 def test_custom_metric_computation_multinomial():
     (model, _) = multinomial_model(H2OGeneralizedLinearEstimator, custom_rmse_mm())
-    assert_custom_metric_undefined(model)
+    assert_custom_metric(model, "RMSE")
 
 
 # Tests to invoke in this suite

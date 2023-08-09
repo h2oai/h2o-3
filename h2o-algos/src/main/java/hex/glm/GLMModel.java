@@ -2202,7 +2202,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return sb;
   }
 
-  private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j, boolean computeMetrics){
+  private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j, boolean computeMetrics, CFuncRef customMetric){
     int responseId = adaptFrm.find(_output.responseName());
     if(responseId > -1 && adaptFrm.vec(responseId).isBad()) { // remove inserted invalid response
       adaptFrm = new Frame(adaptFrm.names(),adaptFrm.vecs());
@@ -2212,7 +2212,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final boolean detectedComputeMetrics = computeMetrics && (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad());
     String [] domain = _output.nclasses()<=1 ? null : !detectedComputeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    return new GLMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,detectedComputeMetrics, generatePredictions);
+    return new GLMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,detectedComputeMetrics, generatePredictions, customMetric);
   }
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
@@ -2227,7 +2227,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
-    GLMScore gs = makeScoringTask(adaptFrm,true,j, computeMetrics);
+    GLMScore gs = makeScoringTask(adaptFrm,true,j, computeMetrics, customMetricFunc);
     assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     gs.doAll(names.length,Vec.T_NUM,gs._dinfo._adaptedFrame);
     ModelMetrics.MetricBuilder<?> mb = null;
@@ -2252,7 +2252,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    */
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    GLMScore gs = makeScoringTask(adaptFrm,false,null, true);// doAll(names.length,Vec.T_NUM,adaptFrm);
+    GLMScore gs = makeScoringTask(adaptFrm,false,null, true, CFuncRef.from(_parms._custom_metric_func));// doAll(names.length,Vec.T_NUM,adaptFrm);
     assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     return gs.doAll(gs._dinfo._adaptedFrame)._mb;
   }
