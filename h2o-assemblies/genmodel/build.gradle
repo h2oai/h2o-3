@@ -36,7 +36,7 @@ for (comp in optionalComponents) {
 shadowJar {
   mergeServiceFiles()
   classifier = ''
-  relocate 'com.google.gson', 'ai.h2o.com.google.gson' // Should be eventually removed: PUBDEV-5508
+  relocate 'com.google.gson', 'ai.h2o.com.google.gson' // Should be eventually removed: https://github.com/h2oai/h2o-3/issues/12372
   relocate 'org.apache.commons.text', 'ai.h2o.org.apache.commons.text'
   relocate 'org.apache.commons.lang3', 'ai.h2o.org.apache.commons.lang3'
   relocate 'org.antlr', 'ai.h2o.org.antlr'  

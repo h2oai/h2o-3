@@ -17,7 +17,7 @@ test.make_metrics_regression <- function(weights_col = NULL) {
     for (distribution in c("gaussian","laplace","poisson","gamma")) {
       if (!is.null(weights_col) && distribution=="laplace") {
           # Skipping on `laplace`
-          # GBM training fails due to a bug: https://0xdata.atlassian.net/browse/PUBDEV-7480
+          # GBM training fails due to a bug: https://github.com/h2oai/h2o-3/issues/8158
           next
       }
       model <- h2o.gbm(x=predictors,y=response,distribution = distribution,training_frame=train,

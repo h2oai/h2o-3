@@ -5,7 +5,7 @@ import java.io.Serializable;
 import static hex.genmodel.algos.gam.GamUtilsISplines.*;
 
 /**
- * I implemented the spline described in Section III of doc in JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8398.
+ * I implemented the spline described in Section III of doc in the GitHub issue https://github.com/h2oai/h2o-3/issues/7261.
  * Any reference to doc I in the code refer to the one here with the http link.
  *
  * The recursive formula in equation 5 is used.  It is implemented as a binary tree with current node with order m

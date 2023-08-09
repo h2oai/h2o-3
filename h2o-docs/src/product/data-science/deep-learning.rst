@@ -501,7 +501,7 @@ FAQ
    combined during reduction, or is each Mapper manipulating a shared
    object that's persistent across nodes?**
 
- Neither; there's one model per compute node, so multiple Mappers/threads share one model, which is why H2O is not reproducible unless a small dataset is used and ``force_load_balance=F`` or ``reproducible=T``, which effectively rebalances to a single chunk and leads to only one thread to launch a ``map()``. The current behavior is simple model averaging; between-node model averaging via "Elastic Averaging" is currently `in progress <https://0xdata.atlassian.net/browse/HEXDEV-206>`__.
+ Neither; there's one model per compute node, so multiple Mappers/threads share one model, which is why H2O is not reproducible unless a small dataset is used and ``force_load_balance=F`` or ``reproducible=T``, which effectively rebalances to a single chunk and leads to only one thread to launch a ``map()``. The current behavior is simple model averaging; between-node model averaging via "Elastic Averaging" is currently `in progress <https://github.com/h2oai/h2o-3/issues/13535>`__.
 
 -  **Is the loss function and backpropagation performed after each
    individual training sample, each iteration, or at the epoch level?**

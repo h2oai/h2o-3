@@ -101,7 +101,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "elastic_averaging_moving_rate",
         "elastic_averaging_regularization",
         "export_checkpoints_dir", 
-        "auc_type"
+        "auc_type", 
+        "custom_metric_func",
     };
 
 

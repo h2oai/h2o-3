@@ -182,6 +182,11 @@
             "distribution" : "iop4.2",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-iop4.2.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-iop4.2.zip"
+        },
+        {
+            "distribution" : "emr6.10",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-emr6.10.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-emr6.10.zip"
         }
     ],
 

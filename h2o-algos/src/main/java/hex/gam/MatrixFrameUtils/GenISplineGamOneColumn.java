@@ -11,7 +11,7 @@ import water.util.ArrayUtils;
 import static hex.gam.GamSplines.NBSplinesTypeIDerivative.genISPenaltyMatrix;
 
 /**
- * Gamified one gam column at a time using I-spline.  See doc in JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8398.
+ * Gamified one gam column at a time using I-spline. See doc in the GH issue: https://github.com/h2oai/h2o-3/issues/7261.
  * This one is different from AddISGamColumns because it generates the penalty matrix, zTranform if applicable and
  * perform scaling of the penalty matrix apart from performing gamification.
  */

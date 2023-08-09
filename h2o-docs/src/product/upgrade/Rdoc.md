@@ -372,7 +372,7 @@ creating new columns
 
 # Support 
 
-Users of the H2O package may submit general inquiries and bug reports using the "h2o" tag on [Stack Overflow](https://stackoverflow.com/questions/tagged/h2o). Alternatively, specific bugs or issues may be filed to the H2O JIRA, [https://0xdata.atlassian.net](https://0xdata.atlassian.net).
+Users of the H2O package may submit general inquiries and bug reports using the "h2o" tag on [Stack Overflow](https://stackoverflow.com/questions/tagged/h2o). Alternatively, specific bugs or issues may be filed to the GitHub issue, [https://github.com/h2oai/h2o-3/issues](https://github.com/h2oai/h2o-3/issues).
 
 # References
 
