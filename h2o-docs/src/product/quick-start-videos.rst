@@ -13,6 +13,10 @@ H2O Quick Start with Flow
 
    </iframe>
 
+.. note::
+
+This way of installation is not secured.
+
 --------------
 
 H2O Quick Start with Python

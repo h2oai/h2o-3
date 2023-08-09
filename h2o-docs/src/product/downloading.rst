@@ -26,6 +26,10 @@ If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/late
 
 3. Point your browser to http://localhost:54321 to open up the H2O Flow web GUI.
 
+.. note::
+
+This way of installation is not secured. The only secure way of launching H2O is through R or Python using the ``h2o.init()`` argument.
+
 
 Install in R
 ------------
