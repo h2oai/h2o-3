@@ -38,6 +38,7 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
+import water.udf.CFuncRef;
 import water.util.*;
 
 import java.text.DecimalFormat;
@@ -3336,7 +3337,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("Scoring after " + timeSinceLastScoring() + "ms"));
       long t1 = System.currentTimeMillis();
       Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
-      _model.score(train).delete();
+      _model.score(_parms.train(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
       scorePostProcessing(train, t1);
     }
 
@@ -3355,7 +3356,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Log.info(LogMsg("Training metrics computed in " + (t2 - t1) + "ms"));
       if (_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
-        _model.score(valid).delete();
+        _model.score(_parms.valid(), null, CFuncRef.from(_parms._custom_metric_func)).delete();
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
         ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
         validScore.fillFrom(_model._output._validation_metrics);
