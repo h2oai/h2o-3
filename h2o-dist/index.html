@@ -247,6 +247,35 @@
       .pre {
           white-space: pre;
       }
+      
+      .callout {
+          padding: 15px;
+          background-color: #eee;
+          color: #000;
+          position: relative;
+          border-left: solid 4px #999;
+      }
+      
+      .callout--warning {
+          padding-left: 55px;
+          border-left-color: #cc0000;
+          background-color: rgb(204 0 0 / 0.15);
+      }
+      
+      .callout--warning::before {
+          content: '⚠';
+          font-size: 32px;
+          font-weight: 200;
+          font-family: 'Open Sans', sans-serif, system-ui;
+          color: #ee0000;
+          position: absolute;
+          top: 4px;
+          left: 10px;
+      }
+      
+      .callout--warning a {
+          color:  #ee0000;
+      }
 
     </style>
     <script>
@@ -562,7 +591,7 @@
             </div>
             <h2>Get started with H<sub>2</sub>O in 3 easy steps</h2>
             <p>1. Download H<sub>2</sub>O. This is a zip file that contains everything you need to get started.</p>
-            <p> By default, this setup is open. If you want to secure your installation, follow <a href="https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html" target="_blank"> Security Guidelines.</a></p>
+            <p class="callout callout--warning">By default, this setup is open. If you want to secure your installation, follow the <a href="https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html" target="_blank">Security Guidelines.</a></p>
             <p>2. From your terminal, run:</p>
 
             <button class="btn copy_button" id="btnCopy1" data-clipboard-target='#to_copy1'></button>
@@ -590,7 +619,7 @@
                 <p class="terminal" id="to_copy12">
                     pip install matplotlib<br/>
                 </p>
-                <p> By default, this setup is open. If you want to secure your installation, follow <a href="https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html" target="_blank"> Security Guidelines.</a></p>
+                <p class="callout callout--warning">By default, this setup is open. If you want to secure your installation, follow the <a href="https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html" target="_blank">Security Guidelines.</a></p>
                 <p>At the command line, copy and paste these commands one line at a time:</p>
                   <button class="btn copy_button" id="btnCopy2" data-clipboard-target='#to_copy2'></button>
                 <p class="terminal" id="to_copy2">
@@ -610,7 +639,7 @@
             <div id="quickstart-r" style="display:none">
                 <h2>Use H<sub>2</sub>O directly from R</h2>
 
-                <p> By default, this setup is open. If you want to secure your installation, follow <a href="https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html" target="_blank"> Security Guidelines.</a></p>
+                <p class="callout callout--warning">By default, this setup is open. If you want to secure your installation, follow the <a href="https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html" target="_blank">Security Guidelines.</a></p>
 
                 <p>Copy and paste these commands into R one line at a time:</p>
                   <button class="btn copy_button" id="btnCopy3" data-clipboard-target='#to_copy3'></button>
