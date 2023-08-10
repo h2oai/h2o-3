@@ -100,6 +100,10 @@ learn more:
 
 -  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git.
 
+.. note::
+   
+   By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.
+
 Use Cases
 ~~~~~~~~~
 
