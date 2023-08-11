@@ -3,7 +3,7 @@ package hex.tree.dt;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.tree.dt.binning.BinAccumulatedStatistics;
+import hex.tree.dt.binning.SplitStatistics;
 import hex.tree.dt.binning.BinningStrategy;
 import hex.tree.dt.binning.Histogram;
 import hex.tree.dt.mrtasks.GetClassCountsMRTask;
@@ -114,16 +114,19 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
     private AbstractSplittingRule findBestSplitForFeature(Histogram histogram, int featureIndex) {
         return (_train.vec(featureIndex).isNumeric()
-                ? histogram.calculateBinsStatisticsForNumericFeature(featureIndex)
-                : histogram.calculateBinsStatisticsForCategoricalFeature(featureIndex))
+                ? histogram.calculateSplitStatisticsForNumericFeature(featureIndex)
+                : histogram.calculateSplitStatisticsForCategoricalFeature(featureIndex))
                 .stream()
                 // todo - consider setting min count of samples in bin instead of filtering splits
                 .filter(binStatistics -> ((binStatistics._leftCount >= _min_rows)
                         && (binStatistics._rightCount >= _min_rows)))
                 .peek(binStatistics -> Log.debug("split: " + binStatistics._splittingRule + ", counts: "
                         + binStatistics._leftCount + " " + binStatistics._rightCount))
-                .peek(DT::calculateCriterionOfSplit) // calculates criterion value for splitting rule inside of statistics object
+                // calculate criterion value for the splitting rule and fill the splitting rule with the rest of info
+                .peek(binStatistics -> binStatistics.setCriterionValue(calculateCriterionOfSplit(binStatistics))
+                        .setFeatureIndex(featureIndex))
                 .map(binStatistics -> binStatistics._splittingRule)
+                // get splitting rule with the lowest criterion value
                 .min(Comparator.comparing(AbstractSplittingRule::getCriterionValue))
                 .orElse(null);
     }
@@ -134,7 +137,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
                 + ((1 - oneClassFrequency) < Precision.EPSILON ? 0 : ((1 - oneClassFrequency) * Math.log(1 - oneClassFrequency))));
     }
 
-    private static Double calculateCriterionOfSplit(BinAccumulatedStatistics binStatistics) {
+    private static double calculateCriterionOfSplit(SplitStatistics binStatistics) {
         return binaryEntropy(binStatistics._leftCount, binStatistics._leftCount0,
                 binStatistics._rightCount, binStatistics._rightCount0);
     }

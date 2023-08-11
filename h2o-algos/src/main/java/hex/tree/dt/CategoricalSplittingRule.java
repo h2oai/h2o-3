@@ -12,7 +12,12 @@ public class CategoricalSplittingRule extends AbstractSplittingRule {
     _criterionValue = criterionValue;
   }
 
-  private final int _featureIndex;
+  public CategoricalSplittingRule(boolean[] mask) {
+    _featureIndex = -1; // tmp value, non initialized yet
+    _mask = mask;
+    _criterionValue = -1; // tmp value, non initialized yet
+  }
+  
   private final boolean[] _mask;
 
   public boolean[] getMask() {

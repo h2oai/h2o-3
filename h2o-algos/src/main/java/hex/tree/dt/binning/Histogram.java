@@ -22,7 +22,9 @@ public class Histogram {
         // call strategy to create bins for each feature separately
         _featuresBins = IntStream
                 .range(0, originData.numCols() - 1/*exclude the last prediction column*/)
-                .mapToObj(i -> new FeatureBins(_binningStrategy.createFeatureBins(originData, featuresLimitsForConditions, i)))
+                .mapToObj(i -> new FeatureBins(
+                        _binningStrategy.createFeatureBins(originData, featuresLimitsForConditions, i),
+                        originData.vec(i).cardinality()))
                 .collect(Collectors.toList());
     }
 
@@ -55,12 +57,12 @@ public class Histogram {
         return new DataFeaturesLimits(task._realFeatureLimits);
     }
 
-    public List<BinAccumulatedStatistics> calculateBinsStatisticsForNumericFeature(int feature) {
-        return _featuresBins.get(feature).calculateBinsStatisticsForNumericFeature();
+    public List<SplitStatistics> calculateSplitStatisticsForNumericFeature(int feature) {
+        return _featuresBins.get(feature).calculateSplitStatisticsForNumericFeature();
     }
 
-    public List<BinAccumulatedStatistics> calculateBinsStatisticsForCategoricalFeature(int feature) {
-        return _featuresBins.get(feature).calculateBinsStatisticsForCategoricalFeature();
+    public List<SplitStatistics> calculateSplitStatisticsForCategoricalFeature(int feature) {
+        return _featuresBins.get(feature).calculateSplitStatisticsForCategoricalFeature();
     }
 
     public boolean isConstant(int featureIndex) {
