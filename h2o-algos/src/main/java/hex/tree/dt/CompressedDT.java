@@ -1,6 +1,5 @@
 package hex.tree.dt;
 
-import org.apache.commons.math3.util.Precision;
 import water.Key;
 import water.Keyed;
 
@@ -82,21 +81,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
     }
 
     public void extractRulesStartingWithNode(int nodeIndex, String actualRule) {
-        if(_nodes != null) {
-            if (_nodes[nodeIndex][0] == 1) {
-                // if node is a list, add the rule to the list and return
-                _listOfRules.add(actualRule + " -> (" + _nodes[nodeIndex][1] + ", " + _nodes[nodeIndex][2] + ")");
-                return;
-            }
-
-            actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
-            // proceed to the left branch
-            extractRulesStartingWithNode(2 * nodeIndex + 1, actualRule +
-                    "(x" + _nodes[nodeIndex][1] + " <= " + _nodes[nodeIndex][2] + ")");
-            // proceed to the right branch
-            extractRulesStartingWithNode(2 * nodeIndex + 2, actualRule +
-                    "(x" + _nodes[nodeIndex][1] + " > " + _nodes[nodeIndex][2] + ")");
-        } else {
+        // todo - implement for categorical features
             if (_nodesObj[nodeIndex] instanceof CompressedLeaf) {
                 // if node is a list, add the rule to the list and return
                 _listOfRules.add(actualRule + " -> (" + ((CompressedLeaf) _nodesObj[nodeIndex]).getDecisionValue()
@@ -106,14 +91,9 @@ public class CompressedDT extends Keyed<CompressedDT> {
 
             actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
             // proceed to the left branch
-            extractRulesStartingWithNode(2 * nodeIndex + 1, actualRule +
-                    "(x" +  ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getFeatureIndex()
-                    + " <= " + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getThreshold() + ")");
+            extractRulesStartingWithNode(2 * nodeIndex + 1, ((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule().toString());
             // proceed to the right branch
-            extractRulesStartingWithNode(2 * nodeIndex + 2, actualRule +
-                    "(x" + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getFeatureIndex()
-                    + " > " + ((NumericSplittingRule)((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule()).getThreshold() + ")");
-        }
+            extractRulesStartingWithNode(2 * nodeIndex + 2, actualRule + " not (" + ((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule().toString() + ")");
     }
 
     public List<String> getListOfRules() {

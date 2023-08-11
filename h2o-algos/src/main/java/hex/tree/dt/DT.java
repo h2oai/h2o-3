@@ -101,6 +101,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
         return currentMinCriterionSplittingRule;
     }
+    
     private static Double binaryEntropy(int leftCount, int leftCount0, int rightCount, int rightCount0) {
         double a1 = (entropyBinarySplit(leftCount0 * 1.0 / leftCount)
                 * leftCount / (leftCount + rightCount));

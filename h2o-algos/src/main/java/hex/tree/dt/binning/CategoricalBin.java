@@ -6,19 +6,21 @@ package hex.tree.dt.binning;
 public class CategoricalBin extends AbstractBin {
     public int _category;
 
-    public CategoricalBin(int category, int count0, int count) {
+    public CategoricalBin(int category, int count, int count0) {
         _category = category;
-        _count0 = count0;
         _count = count;
+        _count0 = count0;
     }
 
     public CategoricalBin(int category) {
         _category = category;
+        _count = 0;
+        _count0 = 0;
     }
 
     
     public CategoricalBin clone() {
-        return new CategoricalBin(_category, _count0, _count);
+        return new CategoricalBin(_category, _count, _count0);
     }
 
 }

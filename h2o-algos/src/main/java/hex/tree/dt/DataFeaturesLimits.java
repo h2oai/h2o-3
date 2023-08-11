@@ -95,6 +95,4 @@ public class DataFeaturesLimits {
         }
         return true;
     }
-
-
 }

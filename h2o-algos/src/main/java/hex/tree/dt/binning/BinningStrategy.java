@@ -133,8 +133,7 @@ public enum BinningStrategy {
     private static List<AbstractBin> calculateCategoricalBinSamplesCount(Frame data, List<AbstractBin> bins,
                                                                          double[][] featuresLimits, int feature) {
         // run MR task to compute accumulated statistic for bins - one task for one feature, calculates all bins at once
-        double[][] binsArray = bins.stream()
-                .map(bin -> new double[]{((CategoricalBin)bin)._category, 0, 0}).toArray(double[][]::new);
+        double[][] binsArray = bins.stream().map(AbstractBin::toDoubles).toArray(double[][]::new);
         CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(feature, featuresLimits, binsArray);
         task.doAll(data);
         for(int i = 0; i < binsArray.length; i ++) {
@@ -156,9 +155,7 @@ public enum BinningStrategy {
     private static List<AbstractBin> calculateNumericBinSamplesCount(Frame data, List<AbstractBin> bins,
                                                              double[][] featuresLimits, int feature) {
         // run MR task to compute accumulated statistic for bins - one task for one feature, calculates all bins at once
-        double[][] binsArray = bins.stream()
-                // -1.0 to identify numeric feature
-                .map(bin -> new double[]{-1.0, ((NumericBin)bin)._min, ((NumericBin)bin)._max, 0, 0}).toArray(double[][]::new);
+        double[][] binsArray = bins.stream().map(AbstractBin::toDoubles).toArray(double[][]::new);
         CountBinsSamplesCountsMRTask task = new CountBinsSamplesCountsMRTask(feature, featuresLimits, binsArray);
         task.doAll(data);
         for(int i = 0; i < binsArray.length; i ++) {

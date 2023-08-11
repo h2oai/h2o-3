@@ -29,9 +29,4 @@ public class NumericBin extends AbstractBin {
     public NumericBin clone() {
         return new NumericBin(_min, _max, _count0, _count);
     }
-
-//    @Override
-//    public AbstractBin clone() {
-//        return null;
-//    }
 }

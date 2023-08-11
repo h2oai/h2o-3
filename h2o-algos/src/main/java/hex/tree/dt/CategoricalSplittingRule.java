@@ -6,18 +6,14 @@ import java.util.Arrays;
 public class CategoricalSplittingRule extends AbstractSplittingRule {
 
   public CategoricalSplittingRule(int featureIndex, boolean[] mask, double criterionValue) {
-    this._featureIndex = featureIndex;
+    _featureIndex = featureIndex;
     // categories for the left split - bitmask
-    this._mask = mask;
-    this._criterionValue = criterionValue;
+    _mask = mask;
+    _criterionValue = criterionValue;
   }
 
   private final int _featureIndex;
   private final boolean[] _mask;
-
-  public int getField() {
-    return _featureIndex;
-  }
 
   public boolean[] getMask() {
     return _mask;

@@ -9,4 +9,5 @@ public abstract class AbstractBin {
     public int _count;
 
     public abstract AbstractBin clone();
+    public abstract double[] toDoubles();
 }

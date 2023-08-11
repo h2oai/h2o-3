@@ -29,6 +29,7 @@ public class Histogram {
 
     /**
      * Get list of feature bins (copy) - for testing.
+     *
      * @param featureIndex feature index
      * @return list of feature bins
      */

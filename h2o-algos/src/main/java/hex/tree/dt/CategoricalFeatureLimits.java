@@ -8,14 +8,15 @@ import java.util.stream.IntStream;
  */
 public class CategoricalFeatureLimits extends AbstractFeatureLimits {
     public boolean[] _mask;
+    
     public CategoricalFeatureLimits(final boolean[] mask) {
         _mask = Arrays.copyOf(mask, mask.length);
     }
 
     public CategoricalFeatureLimits(final double[] doubleMask) {
         _mask = new boolean[doubleMask.length];
-        for(int i = 0; i < doubleMask.length; i++) {
-            if(doubleMask[i] == 1.0) {
+        for (int i = 0; i < doubleMask.length; i++) {
+            if (doubleMask[i] == 1.0) {
                 _mask[i] = true;
             }
         }
@@ -27,7 +28,7 @@ public class CategoricalFeatureLimits extends AbstractFeatureLimits {
         Arrays.fill(_mask, true);
     }
 
-    public void setNewSetOfCategories(final boolean[] mask) {
+    public void setNewMask(final boolean[] mask) {
         _mask = Arrays.copyOf(mask, mask.length);
     }
 
