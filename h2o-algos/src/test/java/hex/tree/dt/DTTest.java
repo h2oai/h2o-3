@@ -30,8 +30,8 @@ public class DTTest extends TestUtil {
             Frame train = new TestFrameBuilder()
                     .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ar("zero", "one", "one", "zero", "one", "two", "one", "one", "zero", "zero"))
-                    .withDataForCol(2, ar("1", "1", "0", "1", "0", "1", "0", "1", "1", "1"))
+                    .withDataForCol(1, ar("two", "one", "three", "two", "two", "one", "one", "one", "three", "three"))
+                    .withDataForCol(2, ar("0", "1", "1", "0", "0", "1", "1", "1", "1", "0"))
                     .withColNames("First", "Second", "Prediction")
                     .build();
 
@@ -61,7 +61,7 @@ public class DTTest extends TestUtil {
             Frame test = new TestFrameBuilder()
                     .withVecTypes(Vec.T_NUM, Vec.T_CAT)
                     .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
-                    .withDataForCol(1, ar("zero", "one", "one", "zero", "one", "two", "one", "one", "zero", "zero"))
+                    .withDataForCol(1, ar("two", "one", "three", "two", "two", "one", "one", "one", "three", "three"))
                     .withColNames("First", "Second")
                     .build();
             Scope.track_generic(test);
@@ -72,16 +72,16 @@ public class DTTest extends TestUtil {
             Frame prediction = model.score(test);
             Scope.track_generic(prediction);
             System.out.println(Arrays.toString(FrameUtils.asInts(prediction.vec(0))));
-            assertEquals(1, prediction.vec(0).at(0), 0.1);
+            assertEquals(0, prediction.vec(0).at(0), 0.1);
             assertEquals(1, prediction.vec(0).at(1), 0.1);
-            assertEquals(0, prediction.vec(0).at(2), 0.1);
-            assertEquals(1, prediction.vec(0).at(3), 0.1);
+            assertEquals(1, prediction.vec(0).at(2), 0.1);
+            assertEquals(0, prediction.vec(0).at(3), 0.1);
             assertEquals(0, prediction.vec(0).at(4), 0.1);
             assertEquals(1, prediction.vec(0).at(5), 0.1);
-            assertEquals(0, prediction.vec(0).at(6), 0.1);
+            assertEquals(1, prediction.vec(0).at(6), 0.1);
             assertEquals(1, prediction.vec(0).at(7), 0.1);
             assertEquals(1, prediction.vec(0).at(8), 0.1);
-            assertEquals(1, prediction.vec(0).at(9), 0.1);
+            assertEquals(0, prediction.vec(0).at(9), 0.1);
 
         } finally {
             Scope.exit();
