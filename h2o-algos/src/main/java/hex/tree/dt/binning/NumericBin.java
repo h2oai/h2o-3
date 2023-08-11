@@ -9,21 +9,29 @@ public class NumericBin extends AbstractBin {
     public double _min;
     public double _max;
 
-    public NumericBin(double min, double max, int count0, int count) {
+    public static final int MIN_INDEX = 3;
+    public static final int MAX_INDEX = 4;
+
+    public NumericBin(double min, double max, int count, int count0) {
         _min = min;
         _max = max;
-        _count0 = count0;
+
         _count = count;
+        _count0 = count0;
     }
 
     public NumericBin(double min, double max) {
         _min = min;
         _max = max;
+        _count = 0;
+        _count0 = 0;
     }
 
     public NumericBin(Pair<Double, Double> binLimits) {
         _min = binLimits._1();
         _max = binLimits._2();
+        _count = 0;
+        _count0 = 0;
     }
     
     public NumericBin clone() {
