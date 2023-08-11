@@ -32,6 +32,18 @@ public class CategoricalFeatureLimits extends AbstractFeatureLimits {
         _mask = Arrays.copyOf(mask, mask.length);
     }
 
+    public void setNewMaskExcluded(final boolean[] maskToExclude) {
+        _mask = Arrays.copyOf(_mask, _mask.length);
+        // length of the mask is number of categories in the initial dataset, has to be the same through the whole build
+        assert _mask.length == maskToExclude.length;
+        for (int i = 0; i < maskToExclude.length; i++) {
+            // if the category is defined in the given mask, it should be excluded from the actual mask
+            if(maskToExclude[i]) {
+                _mask[i] = false;
+            }
+        }
+    }
+
     public CategoricalFeatureLimits clone() {
         return new CategoricalFeatureLimits(Arrays.copyOf(_mask, _mask.length));
     }

@@ -257,12 +257,19 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 //        _tree[nodeIndex][2] = bestSplittingRule._threshold;
 
         _treeObj[nodeIndex] = new CompressedNode(bestSplittingRule);
-
-        // todo - reorganize to generalize
-        int splitFeatureIndex = ((NumericSplittingRule) bestSplittingRule).getFeatureIndex();
-        double threshold = ((NumericSplittingRule) bestSplittingRule).getThreshold();
-        DataFeaturesLimits limitsLeft = actualLimits.updateMax(splitFeatureIndex, threshold);
-        DataFeaturesLimits limitsRight = actualLimits.updateMin(splitFeatureIndex, threshold);
+        
+        int splitFeatureIndex = bestSplittingRule.getFeatureIndex();
+        DataFeaturesLimits limitsLeft, limitsRight;
+        if(_train.vec(splitFeatureIndex).isNumeric()) {
+            // create left and right limits separated by threshold
+            double threshold = ((NumericSplittingRule) bestSplittingRule).getThreshold();
+            limitsLeft = actualLimits.updateMax(splitFeatureIndex, threshold);
+            limitsRight = actualLimits.updateMin(splitFeatureIndex, threshold);
+        } else {
+            boolean[] mask = ((CategoricalSplittingRule) bestSplittingRule).getMask();
+            limitsLeft = actualLimits.updateMask(splitFeatureIndex, mask);
+            limitsRight = actualLimits.updateMaskExcluded(splitFeatureIndex, mask);
+        }
 
 
         // store limits for left child

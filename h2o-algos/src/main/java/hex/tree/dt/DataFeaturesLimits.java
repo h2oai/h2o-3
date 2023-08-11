@@ -56,6 +56,34 @@ public class DataFeaturesLimits {
         return clone;
     }
 
+    /**
+     * Creates new instance of limits with updated mask - replaces old mask with new more precise one.
+     *
+     * @param selectedFeature feature index to update mask
+     * @param newMask          new mask for the feature
+     * @return clone with updated mask
+     */
+    public DataFeaturesLimits updateMask(final int selectedFeature, final boolean[] newMask) {
+        DataFeaturesLimits clone = new DataFeaturesLimits(
+                _featuresLimits.stream().map(AbstractFeatureLimits::clone).collect(Collectors.toList()));
+        ((CategoricalFeatureLimits) clone._featuresLimits.get(selectedFeature)).setNewMask(newMask);
+        return clone;
+    }
+
+    /**
+     * Creates new instance of limits with updated mask - excludes from the current mask categories defined by the new one.
+     *
+     * @param selectedFeature feature index to update mask
+     * @param maskToExclude          new mask for the feature
+     * @return clone with updated mask
+     */
+    public DataFeaturesLimits updateMaskExcluded(int selectedFeature, boolean[] maskToExclude) {
+        DataFeaturesLimits clone = new DataFeaturesLimits(
+                _featuresLimits.stream().map(AbstractFeatureLimits::clone).collect(Collectors.toList()));
+        ((CategoricalFeatureLimits) clone._featuresLimits.get(selectedFeature)).setNewMaskExcluded(maskToExclude);
+        return clone;
+    }
+    
     public AbstractFeatureLimits getFeatureLimits(int featureIndex) {
         return _featuresLimits.get(featureIndex);
     }
