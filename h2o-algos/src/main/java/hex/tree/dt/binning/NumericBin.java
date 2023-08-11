@@ -27,6 +27,11 @@ public class NumericBin extends AbstractBin {
     }
     
     public NumericBin clone() {
-        return new NumericBin(_min, _max, _count0, _count);
+        return new NumericBin(_min, _max, _count, _count0);
+    }
+
+    public double[] toDoubles() {
+        // Place numeric flag -1.0 on the index 0 to mark that the feature is numeric
+        return new double[]{-1.0, _count, _count0, _min, _max};
     }
 }

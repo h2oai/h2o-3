@@ -22,5 +22,9 @@ public class CategoricalBin extends AbstractBin {
     public CategoricalBin clone() {
         return new CategoricalBin(_category, _count, _count0);
     }
+    
+    public double[] toDoubles() {
+        return new double[]{_category, _count, _count0};
+    }
 
 }

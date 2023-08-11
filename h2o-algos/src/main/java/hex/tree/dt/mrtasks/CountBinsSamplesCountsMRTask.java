@@ -4,7 +4,10 @@ import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 
-import static hex.tree.dt.NumericFeatureLimits.*;
+import static hex.tree.dt.NumericFeatureLimits.LIMIT_MAX;
+import static hex.tree.dt.NumericFeatureLimits.LIMIT_MIN;
+import static hex.tree.dt.binning.NumericBin.*;
+
 
 /**
  * MR task for counting samples in bins.
@@ -13,11 +16,18 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
     public int _featureSplit;
     // numCol x 2 - min and max for each feature
     double[][] _featuresLimits;
-    // binsCount x 4 - min, max, count, count0
+    // binsCount x bin_encoding_len (5 or 3), depending on feature type:
+    // for numeric feature bin_encoding_len = 5:      {numeric flag (-1.0), count, count0, min, max}
+    // for categorical feature bin_encoding_len = 3:  {category, count, count0}
     public double[][] _bins;
 
-    public static final int COUNT = 2;
-    public static final int COUNT_0 = 3;
+    // indices for the serialized array
+    public static final int NUMERICAL_FLAG = 0;
+
+    // for both numeric and categorical features indices of count and count0 are the same
+    public static final int COUNT = 1;
+    public static final int COUNT_0 = 2;
+
 
     public CountBinsSamplesCountsMRTask(int featureSplit, double[][] featuresLimits, double[][] bins) {
         _featureSplit = featureSplit;
@@ -31,7 +41,7 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
         {
             double[][] tmpBins = new double[_bins.length][];
             for (int b = 0; b < _bins.length; b++) {
-                tmpBins[b] = new double[]{_bins[b][0], _bins[b][1], 0, 0};
+                tmpBins[b] = _bins[b].clone();
             }
             _bins = tmpBins;
         }
@@ -43,35 +53,50 @@ public class CountBinsSamplesCountsMRTask extends MRTask<CountBinsSamplesCountsM
             conditionsFailed = false;
             for (int column = 0; column < cs.length - 1 /*exclude prediction column*/; column++) {
                 // verifying limits is different for numerical and categorical columns
-                if(_featuresLimits[column][NUMERICAL_FLAG] == -1.0) {
-                    // if the value is out of the given limit, skip this row
-                    if (cs[column].atd(row) <= _featuresLimits[column][LIMIT_MIN]
-                            || cs[column].atd(row) > _featuresLimits[column][LIMIT_MAX]) {
-                        conditionsFailed = true;
-                        break;
-                    }
-                } else {
-                    // if the category is not in the given set (is false in given mask), skip this row
-                    if (_featuresLimits[column][(int) cs[column].atd(row)] == 0) {
-                        conditionsFailed = true;
-                        break;
-                    }
+                if (!verifyLimits(cs[column].atd(row), column)) {
+                    conditionsFailed = true;
+                    break;
                 }
             }
             if (!conditionsFailed) {
-                for (int i = 0; i < _bins.length; i++) {
-                    // count feature values in the current bin
-                    if ((cs[_featureSplit].atd(row) > _bins[i][LIMIT_MIN])
-                            && (cs[_featureSplit].atd(row) < _bins[i][LIMIT_MAX]
-                            || Precision.equals(cs[_featureSplit].atd(row), _bins[i][LIMIT_MAX], Precision.EPSILON))) {
-                        _bins[i][COUNT]++;
-                        if (Precision.equals(cs[classFeature].atd(row), 0, Precision.EPSILON)) {
-                            _bins[i][COUNT_0]++;
+                // for categorical features the bin corresponds to the categorical value itself 
+                if (!isNumerical(_featureSplit)) {
+                    _bins[(int) cs[_featureSplit].atd(row)][COUNT]++;
+                    if (Precision.equals(cs[classFeature].atd(row), 0, Precision.EPSILON)) {
+                        _bins[(int) cs[_featureSplit].atd(row)][COUNT_0]++;
+                    }
+                } else {
+                    for (int i = 0; i < _bins.length; i++) {
+                        // count feature values in the current bin
+                        if (checkBinBelonging(cs[_featureSplit].atd(row), i)) {
+                            _bins[i][COUNT]++;
+                            if (Precision.equals(cs[classFeature].atd(row), 0, Precision.EPSILON)) {
+                                _bins[i][COUNT_0]++;
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    private boolean isNumerical(int feature) {
+        return _featuresLimits[feature][NUMERICAL_FLAG] == -1.0;
+    }
+
+    private boolean verifyLimits(double featureValue, int column) {
+        // verifying limits is different for numerical and categorical columns
+        if (isNumerical(column)) {
+            return featureValue > _featuresLimits[column][LIMIT_MIN]
+                    && featureValue <= _featuresLimits[column][LIMIT_MAX];
+        } else {
+            // actual categorical value is true(1.0) in feature limits
+            return _featuresLimits[column][(int) featureValue] == 1.0;
+        }
+    }
+
+    private boolean checkBinBelonging(double featureValue, int bin) {
+        return featureValue > _bins[bin][MIN_INDEX] && featureValue <= _bins[bin][MAX_INDEX];
     }
 
     @Override
