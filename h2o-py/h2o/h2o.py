@@ -2043,6 +2043,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     if weights is not None:
         params["weights_frame"] = weights.frame_id
     if treatment is not None:
+        assert treatment.ncol == 1, "`treatment` frame should have exactly 1 column"
         params["treatment_frame"] = treatment.frame_id
         allowed_auuc_types = ["qini", "lift", "gain", "AUTO"]
         assert auuc_type in allowed_auuc_types, "auuc_type should be "+(" ".join([str(type) for type in allowed_auuc_types]))
