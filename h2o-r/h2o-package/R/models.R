@@ -1147,7 +1147,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
-  treatment <- .validate.H2OFrame(treatment, required=TRUE)
+  treatment <- .validate.H2OFrame(treatment, required=FALSE)
   if (!is.character(auc_type)) stop("auc_type argument must be of type character")
   if (!(auc_type %in% c("MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "NONE", "AUTO"))) {
     stop("auc_type argument must be MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, NONE, AUTO")
