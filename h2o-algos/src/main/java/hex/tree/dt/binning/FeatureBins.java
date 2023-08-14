@@ -3,10 +3,7 @@ package hex.tree.dt.binning;
 import hex.tree.dt.CategoricalSplittingRule;
 import hex.tree.dt.NumericSplittingRule;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class FeatureBins {
@@ -39,7 +36,7 @@ public class FeatureBins {
         // init list with empty instances
         List<SplitStatistics> statistics = _bins.stream()
                 .map(b -> new SplitStatistics()).collect(Collectors.toList());
-        // calculate accumulative statistics for each bin: 
+        // calculate accumulative statistics for each split: 
         // left split - bins to the left + current; 
         // right split - bins to the right.
         SplitStatistics tmpAccumulatorLeft = new SplitStatistics();
@@ -68,6 +65,14 @@ public class FeatureBins {
     }
 
     public List<SplitStatistics> calculateSplitStatisticsForCategoricalFeature() {
+        // for binomial classification sort bins by the frequency of one class and split similarly to the sequential feature
+        return calculateStatisticsForCategoricalFeatureBinomialClassification();
+        
+        // full approach for binomial/multinomial/regression, works fpr up to 10 categories
+//        return calculateStatisticsForCategoricalFeatureFullApproach();
+    }
+
+    private List<SplitStatistics> calculateStatisticsForCategoricalFeatureFullApproach() {
         // calculate accumulative statistics for each subset of categories: 
         // left split - categories included in the subset; 
         // right split - categories not included in subset.
@@ -130,10 +135,47 @@ public class FeatureBins {
     }
 
     private boolean[] createMaskFromString(String categories) {
-        boolean[] mask = new boolean[_numOfCategories]; // should be array of false
+        boolean[] mask = new boolean[_numOfCategories]; // array of false
         for (String c : categories.split("")) {
             mask[Integer.parseInt(c)] = true;
         }
         return mask;
     }
+
+    private boolean[] createMaskFromBins(List<CategoricalBin> bins) {
+        boolean[] mask = new boolean[_numOfCategories]; // array of false
+        bins.stream().map(CategoricalBin::getCategory).forEach(c -> mask[c] = true);
+        return mask;
+    }
+
+    public List<SplitStatistics> calculateStatisticsForCategoricalFeatureBinomialClassification() {
+        List<CategoricalBin> sortedBins = _bins.stream()
+                .map(b -> (CategoricalBin) b)
+                .sorted(Comparator.comparingInt(CategoricalBin::getCount0))
+                .collect(Collectors.toList());
+        
+        // init list with empty instances
+        List<SplitStatistics> statistics = sortedBins.stream()
+                .map(b -> new SplitStatistics()).collect(Collectors.toList());
+        // calculate accumulative statistics for each split: 
+        // left split - bins to the left + current; 
+        // right split - bins to the right.
+        SplitStatistics tmpAccumulatorLeft = new SplitStatistics();
+        SplitStatistics tmpAccumulatorRight = new SplitStatistics();
+        int rightIndex;
+        for (int leftIndex = 0; leftIndex < statistics.size(); leftIndex++) {
+            tmpAccumulatorLeft.accumulateLeftStatistics(sortedBins.get(leftIndex)._count, sortedBins.get(leftIndex)._count0);
+            statistics.get(leftIndex).copyLeftValues(tmpAccumulatorLeft);
+            statistics.get(leftIndex)._splittingRule = new CategoricalSplittingRule(
+                    createMaskFromBins(sortedBins.subList(0, leftIndex + 1))); // subList takes toIndex exclusive, so +1
+            // accumulate from the right (from the end of bins array)
+            rightIndex = sortedBins.size() - leftIndex - 1;
+            // firstly accumulate with old values, then add the actual bin for the future statistics 
+            // as the values of the actual bin are not included in its right statistics
+            statistics.get(rightIndex).copyRightValues(tmpAccumulatorRight);
+            tmpAccumulatorRight.accumulateRightStatistics(sortedBins.get(rightIndex)._count, sortedBins.get(rightIndex)._count0);
+        }
+        return statistics;
+    }
+    
 }

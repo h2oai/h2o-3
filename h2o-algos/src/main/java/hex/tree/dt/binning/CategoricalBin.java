@@ -18,6 +18,9 @@ public class CategoricalBin extends AbstractBin {
         _count0 = 0;
     }
 
+    public int getCategory() {
+        return _category;
+    }
     
     public CategoricalBin clone() {
         return new CategoricalBin(_category, _count, _count0);

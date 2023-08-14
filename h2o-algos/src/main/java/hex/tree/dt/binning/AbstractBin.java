@@ -7,6 +7,10 @@ package hex.tree.dt.binning;
 public abstract class AbstractBin {
     public int _count0;
     public int _count;
+    
+    public int getCount0() {
+        return _count0;
+    }
 
     public abstract AbstractBin clone();
     public abstract double[] toDoubles();
