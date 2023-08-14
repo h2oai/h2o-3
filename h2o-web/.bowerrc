@@ -1,3 +1,4 @@
 {
-  "directory": "lib"
+  "directory": "lib",
+  "registry": "https://bower.herokuapp.com"
 }
