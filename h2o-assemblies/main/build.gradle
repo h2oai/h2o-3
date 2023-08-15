@@ -64,7 +64,9 @@ shadowJar {
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
   
-  relocate 'org.apache.hadoop', 'ai.h2o.org.apache.hadoop'  
+  relocate ('org.apache.hadoop', 'ai.h2o.org.apache.hadoop') {
+      exclude 'org.apache.hadoop.net.DNSDomainNameResolver'
+  }
     
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
