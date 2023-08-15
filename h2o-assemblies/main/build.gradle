@@ -66,6 +66,7 @@ shadowJar {
   
   relocate ('org.apache.hadoop', 'ai.h2o.org.apache.hadoop') {
       exclude 'org.apache.hadoop.net.DNSDomainNameResolver'
+      exclude 'org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback'
   }
     
   manifest {
