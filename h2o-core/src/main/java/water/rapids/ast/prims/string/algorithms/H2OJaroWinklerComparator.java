@@ -8,8 +8,6 @@
  */
 package water.rapids.ast.prims.string.algorithms;
 
-import no.priv.garshol.duke.Comparator;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.lang.*;
@@ -21,7 +19,7 @@ import java.lang.*;
  * E. Yancey, RESEARCH REPORT SERIES (Statistics #2005-05), US Bureau
  * of the Census. http://www.census.gov/srd/papers/pdf/rrs2005-05.pdf
  */
-public class H2OJaroWinklerComparator implements Comparator {
+public class H2OJaroWinklerComparator implements StringComparator {
 
   public double compare(String s1, String s2) {
     return similarity(s1, s2);

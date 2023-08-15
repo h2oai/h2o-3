@@ -1,6 +1,5 @@
 package water.rapids.ast.prims.string;
 
-import no.priv.garshol.duke.comparators.*;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -10,11 +9,8 @@ import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.prims.string.algorithms.H2OJaroWinklerComparator;
-import water.rapids.ast.prims.string.algorithms.LevenshteinDistanceComparator;
+import water.rapids.ast.prims.string.algorithms.*;
 import water.rapids.vals.ValFrame;
-
-import no.priv.garshol.duke.Comparator;
 
 /**
  * Calculates string distances between elements of two frames
@@ -76,7 +72,7 @@ public class AstStrDistance extends AstPrimitive {
     @Override
     public void map(Chunk[] cs, NewChunk[] nc) {
       BufferedString tmpStr = new BufferedString();
-      Comparator cmp = makeComparator(_measure);
+      StringComparator cmp = makeComparator(_measure);
       int N = nc.length;
       assert N * 2 == cs.length;
       for (int i = 0; i < N; i++) {
@@ -108,7 +104,7 @@ public class AstStrDistance extends AstPrimitive {
     }
   }
 
-  private static Comparator makeComparator(String measure) {
+  private static StringComparator makeComparator(String measure) {
     switch (measure) {
       case "jaccard":
       case "JaccardIndex":

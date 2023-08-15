@@ -1,7 +1,5 @@
 package water.rapids.ast.prims.string.algorithms;
 
-import no.priv.garshol.duke.Comparator;
-
 import static org.apache.commons.lang.math.IEEE754rUtils.min;
 
 /**
@@ -24,7 +22,7 @@ import static org.apache.commons.lang.math.IEEE754rUtils.min;
  * limitations under the License.
  * #L%
  **/
-public class LevenshteinDistanceComparator implements Comparator {
+public class LevenshteinDistanceComparator implements StringComparator {
 
   @Override
   public boolean isTokenized() {
