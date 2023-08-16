@@ -2,6 +2,23 @@
 
 ## H2O
 
+### 3.42.0.3 - 8/22/2023
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index.html</a>
+
+#### Bug
+- [[#15679]](https://github.com/h2oai/h2o-3/issues/15679) - Fixed GBM invalid tree index feature interaction.
+- [[#15666]](https://github.com/h2oai/h2o-3/issues/15666) - Updated test to showcase GBM checkpointing.
+
+#### Improvement
+- [[#6707]](https://github.com/h2oai/h2o-3/issues/6707) - Added extended message to `h2o.init()` to help users get around version mismatch error.
+
+#### Docs
+- [[#15680]](https://github.com/h2oai/h2o-3/issues/15680) - Added security installation disclaimer in documentation and on the download page.
+
+#### Security
+- [[#15687]](https://github.com/h2oai/h2o-3/issues/15687) - Replaced dependencies on no.priv.garshol.duke:duke:1.2 by extracting string comparators from Duke library.
+
 ### 3.42.0.2 - 7/25/2023
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/2/index.html</a>
