@@ -140,7 +140,7 @@ private GString getCommandStandaloneKeytab(final stageConfig, final jar = 'build
 private GString getCommandStandalone(final stageConfig, final jar = 'build/h2o.jar', final authArgs = '', final hiveArgs = '') {
     def defaultPort = 54321
     return """
-            java -cp ${jar}:\$(cat /opt/hive-jdbc-cp):\$HADOOP_HOME/hadoop-common.jar:${stageConfig.customData.extraClasspath} water.H2OApp \\
+            java -cp ${jar}:\$(cat /opt/hive-jdbc-cp):${stageConfig.customData.extraClasspath} water.H2OApp \\
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
                 -spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
