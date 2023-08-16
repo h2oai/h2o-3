@@ -255,10 +255,10 @@ Overall treatment effect metrics show how the uplift predictions look across the
 
 The interpretation depends on concrete data meanings. We currently support only Bernoulli data distribution, so whether the treatment impacts the target value y=1 or not. 
 
-For example, we analyze data to determine if some medical help to recover from disease or not. We have patients in the treatment group and the control group. The target variable is if the medicine (treatment) helped recovery (y=1) or not (y=0). In this case:
+For example, we want to analyze data to determine if some medical will help to recover from a disease or not. We have patients in the treatment group and the control group. The target variable is if the medicine (treatment) helped recovery (y=1) or not (y=0). In this case:
 - positive ATE means the medicine helps with recovery in general
 - negative ATE means the medicine does not help with recovery in general
-- ATE equal or similar to zero means the medicine does not affect recovery in general
+- ATE equal to or close to zero means the medicine does not affect recovery in general
 - similar interpretation applies to ATT and ATC, the positive ATT is usually what scientists look for, but ATC is also an interesting metric (in an ideal case, positive both ATT and ATC say the treatment has an exact effect).
 
 Custom metric example for Uplift DRF

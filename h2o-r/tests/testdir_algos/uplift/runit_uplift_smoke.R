@@ -55,6 +55,8 @@ test.uplift <- function() {
         min_rows = 10,
         nbins = 100,
         seed = seed) 
+      
+    print(model)  
         
     # test model metrics
     print("Test model metrics")
