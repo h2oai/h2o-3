@@ -25,4 +25,4 @@ test.feature_interaction_with_cv <- function() {
     print(h2o.feature_interaction(model = my_cv_gbm))
 }
 
-doTest("Test Empty Model Metrics", test.feature_interaction_with_cv)
+doTest("Test feature interaction with CV enabled", test.feature_interaction_with_cv)
