@@ -81,6 +81,7 @@ private GString getCommandStandalone(final stageConfig) {
             fi
             export CLOUD_IP=\$(hostname --ip-address)
             export CLOUD_PORT=${defaultPort}
+            export HADOOP_S3_FILESYSTEMS=${stageConfig.customData.bundledS3FileSystems}
             """
 }
 

@@ -589,7 +589,8 @@ def call(final pipelineContext) {
         version: distribution.version,
         commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
         ldapConfigPath: ldapConfigPath,
-        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt'
+        ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt',
+        bundledS3FileSystems: 's3a,s3n'
       ], 
       pythonVersion: '3.6',
       customDockerArgs: [ '--privileged' ],
@@ -599,6 +600,7 @@ def call(final pipelineContext) {
     def standaloneStage = evaluate(stageTemplate.inspect())
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
+    standaloneStage.customData.bundledS3FileSystems = 's3a'
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
@@ -672,10 +674,12 @@ def call(final pipelineContext) {
     def standaloneStage = evaluate(stageTemplate.inspect())
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
+    standaloneStage.customData.bundledS3FileSystems = 's3a'
 
     def standaloneKeytabStage = evaluate(stageTemplate.inspect())
     standaloneKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE KEYTAB"
     standaloneKeytabStage.customData.mode = 'STANDALONE_KEYTAB'
+    standaloneKeytabStage.customData.bundledS3FileSystems = 's3a'
 
     def standaloneDriverKeytabStage = evaluate(stageTemplate.inspect())
     standaloneDriverKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - DRIVER KEYTAB"
