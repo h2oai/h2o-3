@@ -1,6 +1,8 @@
 package hex.tree.uplift;
 
 import hex.*;
+import hex.genmodel.MojoModel;
+import hex.genmodel.algos.upliftdrf.UpliftDrfMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import org.apache.log4j.Logger;
@@ -470,6 +472,13 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             row++;
         }
         return table;
+    }
+
+    @Override
+    public PojoWriter makePojoWriter(Model<?, ?, ?> genericModel, MojoModel mojoModel) {
+        UpliftDrfMojoModel upliftDrfMojoModel = (UpliftDrfMojoModel) mojoModel;
+        CompressedTree[][] trees = MojoUtils.extractCompressedTrees(upliftDrfMojoModel);
+        return new UpliftDrfPojoWriter(genericModel, upliftDrfMojoModel.getCategoricalEncoding(), false, trees, upliftDrfMojoModel._balanceClasses);
     }
 
     @Override

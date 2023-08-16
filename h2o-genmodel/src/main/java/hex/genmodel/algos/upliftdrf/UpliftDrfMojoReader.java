@@ -16,6 +16,7 @@ public class UpliftDrfMojoReader extends SharedTreeMojoReader<UpliftDrfMojoModel
     protected void readModelData() throws IOException {
         super.readModelData();
         _model._treatmentColumn = readkv("treatment_column");
+        _model._thresholds = readkv("thresholds");
     }
 
     @Override

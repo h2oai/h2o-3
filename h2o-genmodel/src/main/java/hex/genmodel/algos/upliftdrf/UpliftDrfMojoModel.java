@@ -4,6 +4,8 @@ import hex.genmodel.algos.tree.SharedTreeMojoModel;
 
 public class UpliftDrfMojoModel extends SharedTreeMojoModel {
     
+    protected double[] _thresholds;
+    
     public UpliftDrfMojoModel(String[] columns, String[][] domains, String responseColumn, String treatmentColumn){
         super(columns, domains, responseColumn, treatmentColumn);
     }
@@ -11,9 +13,9 @@ public class UpliftDrfMojoModel extends SharedTreeMojoModel {
     @Override
     public double[] unifyPreds(double[] row, double offset, double[] preds) {
         assert _nclasses == 2;
-        preds[0] /= _ntree_groups;
         preds[1] /= _ntree_groups;
         preds[2] /= _ntree_groups;
+        preds[0] = preds[1] - preds[2];
         return preds;
     }
 
@@ -26,5 +28,9 @@ public class UpliftDrfMojoModel extends SharedTreeMojoModel {
     @Override
     public double getInitF() {
         return 0;
+    }
+
+    public double[] getThresholds() {
+        return _thresholds;
     }
 }
