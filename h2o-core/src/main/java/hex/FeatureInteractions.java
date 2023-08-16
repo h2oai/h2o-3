@@ -43,6 +43,9 @@ public class FeatureInteractions {
     }
 
     public int maxDepth() {
+        if (this.entrySet().size() == 0){
+            return 0;
+        }
         return Collections.max(this.entrySet(), Comparator.comparingInt(entry -> entry.getValue().depth)).getValue().depth;
     }
     
