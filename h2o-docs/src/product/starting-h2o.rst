@@ -404,7 +404,7 @@ The flatfile contains a list of nodes in the form ``IP:PORT`` that are going to 
 Web Server
 ^^^^^^^^^^
 
-The web server IP is auto-configured in the same way as internal communication IP, nevertheless the created socket listens on all available interfaces. A specific API can be specified with the ``-web_ip`` option.
+By default, the web server IP is auto-configured in the same way as internal communication IP, nevertheless the created socket listens on all available interfaces. A specific IP can be specified with the ``-web_ip`` option.
 
 Options
 '''''''
