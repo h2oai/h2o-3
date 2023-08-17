@@ -35,6 +35,8 @@ dependencies {
         exclude group: "org.apache.zookeeper"
         exclude group: "org.eclipse.jetty"
     }
+    
+    // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
     implementation 'org.apache.hive.shims:hive-shims-common:2.3.9'
 
     constraints {
@@ -64,6 +66,9 @@ shadowJar {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
+    
+  // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
+  // Excluding other classes of org.apache.hive.shims:hive-shims-common.
   exclude 'org/apache/hadoop/hive/thrift/**/*.*'
   exclude 'org/apache/hadoop/hive/io/**/*.*'
   exclude 'org/apache/hadoop/hive/upgrade/**/*.*'
