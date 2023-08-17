@@ -3,7 +3,7 @@
 ``upload_custom_metric``
 ------------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, GLM
 - Hyperparameter: no
 
 Description
