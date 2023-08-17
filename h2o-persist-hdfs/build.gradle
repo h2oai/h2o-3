@@ -8,15 +8,25 @@ configurations {
 
 dependencies {
     api project(":h2o-core")
+    compileOnly("org.apache.hadoop:hadoop-common:$defaultHadoopVersion")
     api("org.apache.hadoop:$defaultHdfsDependency:$defaultHadoopVersion") {
         // Pull all dependencies to allow run directly from IDE or command line
         transitive = true
     }
-    api("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
+    api("org.apache.hadoop:hadoop-aws:${defaultHadoopVersion}") {
+        exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
+    }
+    // aws-java-sdk-dynamodb is required for S3A support, S3A import throws NoClassDefFoundError (AmazonDynamoDBException)
+    api("com.amazonaws:aws-java-sdk-dynamodb:${awsJavaSdkVersion}") {
+        transitive = false
+    }
+    
     api("com.nimbusds:nimbus-jose-jwt:9.11.3")
 
     testImplementation project(":h2o-test-support")
+    testImplementation "org.apache.hadoop:hadoop-common:$defaultHadoopVersion"
     testImplementation "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
+    testImplementation "org.jets3t:jets3t:0.9.7"
     testRuntimeOnly project(":${defaultWebserverModule}")
     testRuntimeOnly project(":h2o-persist-s3")
 }

@@ -25,15 +25,13 @@ dependencies {
     api(project(":h2o-persist-s3")) {
         exclude group: "org.apache.hadoop"
     }
-    api(project(":h2o-persist-hdfs")) {
-        exclude group: "org.apache.hadoop"
-    }
+    api(project(":h2o-persist-hdfs"))
     api(project(":h2o-parquet-parser")) {
         exclude group: "org.apache.hadoop"
     }
     // Force latest version Hadoop with unused components excluded - we need Hadoop for Parquet and S3A export 
-    api "org.apache.hadoop:hadoop-hdfs-client:3.3.5"
-    api("org.apache.hadoop:hadoop-common:3.3.5") {
+    api "org.apache.hadoop:hadoop-hdfs-client:${defaultHadoopVersion}"
+    api("org.apache.hadoop:hadoop-common:${defaultHadoopVersion}") {
         exclude group: "com.sun.jersey"
         exclude group: "javax.servlet"
         exclude group: "org.apache.avro"
@@ -42,18 +40,11 @@ dependencies {
         exclude group: "org.eclipse.jetty"
         exclude group: "org.apache.hadoop.thirdparty", module: "hadoop-shaded-protobuf_3_7"
     }
-    api("org.apache.hadoop:hadoop-aws:3.3.5") {
-        exclude group: "com.amazonaws", module: "aws-java-sdk-bundle"
-    }
-    // aws-java-sdk-dynamodb is required for S3A support, S3A import throws NoClassDefFoundError (AmazonDynamoDBException)
-    api("com.amazonaws:aws-java-sdk-dynamodb:${awsJavaSdkVersion}") {
-        transitive = false
-    }
     // Upgrade dependencies coming from Hadoop to address vulnerabilities 
     api "org.apache.commons:commons-compress:1.21"
     // Force specific Parquet version to avoid dependency on vulnerable FasterXML jackson-mapper-asl
     api "org.apache.parquet:parquet-hadoop:${defaultParquetVersion}"
-    api("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.5") {
+    api("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
         transitive = false
     }
     // Google OAuth force version
