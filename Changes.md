@@ -14,6 +14,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index
 - [[#6707]](https://github.com/h2oai/h2o-3/issues/6707) - Added extended message to `h2o.init()` to help users get around version mismatch error.
 
 #### Docs
+- [[#15694]](https://github.com/h2oai/h2o-3/issues/15694) - Added `custom_metric_func` and `upload_custom_metric` to GLM.
 - [[#15680]](https://github.com/h2oai/h2o-3/issues/15680) - Added security installation disclaimer in documentation and on the download page.
 
 #### Security
