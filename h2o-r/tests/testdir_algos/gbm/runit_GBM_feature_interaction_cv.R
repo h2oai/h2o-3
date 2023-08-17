@@ -22,7 +22,8 @@ test.feature_interaction_with_cv <- function() {
     
     # feature interaction with cv model where tree depth = 0
     my_cv_gbm <- h2o.getModel(my_gbm@model$cross_validation_models[[1]]$name)
-    print(h2o.feature_interaction(model = my_cv_gbm))
+    fi <-h2o.feature_interaction(model = my_cv_gbm)
+    #print(fi == NaN)
 }
 
 doTest("Test feature interaction with CV enabled", test.feature_interaction_with_cv)
