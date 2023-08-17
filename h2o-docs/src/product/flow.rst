@@ -25,7 +25,10 @@ Download Flow
   .. substitution-code-block:: bash
 
     curl -o h2o.zip http://download.h2o.ai/versions/h2o-|version|.zip
-        
+
+.. note::
+   
+   By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.        
 
 2. Next in your terminal, enter the following command lines one at a time. The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3-|version| folder, and the fourth line runs your jar file.
 

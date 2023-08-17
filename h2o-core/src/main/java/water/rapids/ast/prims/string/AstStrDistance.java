@@ -1,6 +1,5 @@
 package water.rapids.ast.prims.string;
 
-import no.priv.garshol.duke.Comparator;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -11,6 +10,7 @@ import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
+import water.util.comparison.string.StringComparator;
 import water.util.comparison.string.StringComparatorFactory;
 
 /**
@@ -73,7 +73,7 @@ public class AstStrDistance extends AstPrimitive {
     @Override
     public void map(Chunk[] cs, NewChunk[] nc) {
       BufferedString tmpStr = new BufferedString();
-      Comparator cmp = StringComparatorFactory.makeComparator(_measure);
+      StringComparator cmp = StringComparatorFactory.makeComparator(_measure);
       int N = nc.length;
       assert N * 2 == cs.length;
       for (int i = 0; i < N; i++) {

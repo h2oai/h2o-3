@@ -687,7 +687,17 @@ def standalone_test(test, init_options={}):
     h2o.log_and_echo("STARTING TEST "+test.__name__)
     h2o.log_and_echo("")
     h2o.log_and_echo("------------------------------------------------------------")
-    test()
+    import os
+    import tempfile
+    with tempfile.TemporaryDirectory() as dir:  # Create a temporary dir that will clean itself
+        tempfile._once_lock.acquire()  # Better lock to avoid race conditions (but since we don't test in multiple threads (to avoid side-effects on the backend) it should not matter)
+        old_tempdir = tempfile.tempdir
+        try:
+            tempfile.tempdir = dir  # Tell tempfile to use this temporary dir as the root for all other temporary dirs
+            test()
+        finally:
+            tempfile.tempdir = old_tempdir
+            tempfile._once_lock.release()
 
 def run_tests(tests, run_in_isolation=True, init_options={}):
     #flatten in case of nested tests/test suites
