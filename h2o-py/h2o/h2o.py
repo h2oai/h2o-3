@@ -136,7 +136,7 @@ def connection():
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
          max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, 
-         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True,verbose = True,**kwargs):
+         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, verbose = True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
