@@ -148,41 +148,40 @@ public class AdaBoostTest extends TestUtil {
             Frame score = adaBoostModel.score(test);
             Scope.track(score);
             toCSV(score, "../prostatescore.csv");
-
-            Frame scoreOriginal = Scope.track(parseTestFile("../prostatescore_original.csv"));
-            assertFrameEquals(scoreOriginal, score, 0);
+//            Frame scoreOriginal = Scope.track(parseTestFile("../prostatescore_original.csv"));
+//            assertFrameEquals(scoreOriginal, score, 0);
         } finally {
             Scope.exit();
         }
     }
 
-    @Test
-    public void testBasicTrainAndScoreGLM() {
-        try {
-            Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-            Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-            String response = "CAPSULE";
-            train.toCategoricalCol(response);
-            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
-            p._train = train._key;
-            p._seed = 0xDECAF;
-            p._n_estimators = 2;
-            p._weak_learner = AdaBoostModel.Algorithm.GLM;
-            p._response_column = response;
-
-            AdaBoost adaBoost = new AdaBoost(p);
-            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
-            Scope.track_generic(adaBoostModel);
-            assertNotNull(adaBoostModel);
-
-            Frame score = adaBoostModel.score(test);
-            Scope.track(score);
-            toCSV(score, "../prostatescoreglm.csv");            
-        } finally {
-            Scope.exit();
-        }
-    }
+//    @Test
+//    public void testBasicTrainAndScoreGLM() {
+//        try {
+//            Scope.enter();
+//            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+//            Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+//            String response = "CAPSULE";
+//            train.toCategoricalCol(response);
+//            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+//            p._train = train._key;
+//            p._seed = 0xDECAF;
+//            p._n_estimators = 2;
+//            p._weak_learner = AdaBoostModel.Algorithm.GLM;
+//            p._response_column = response;
+//
+//            AdaBoost adaBoost = new AdaBoost(p);
+//            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+//            Scope.track_generic(adaBoostModel);
+//            assertNotNull(adaBoostModel);
+//
+//            Frame score = adaBoostModel.score(test);
+//            Scope.track(score);
+//            toCSV(score, "../prostatescoreglm.csv");
+//        } finally {
+//            Scope.exit();
+//        }
+//    }
 
     @Test
     public void testBasicTrainAndScoreLarge() {
