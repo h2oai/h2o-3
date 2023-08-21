@@ -9,6 +9,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.42.0/3/index
 #### Bug
 - [[#15679]](https://github.com/h2oai/h2o-3/issues/15679) - Fixed GBM invalid tree index feature interaction.
 - [[#15666]](https://github.com/h2oai/h2o-3/issues/15666) - Updated test to showcase GBM checkpointing.
+- [[#6605]](https://github.com/h2oai/h2o-3/issues/6605) - Fixed `h2o.feature_interaction` failing on cross-validation models with early stopping. 
 
 #### Improvement
 - [[#6707]](https://github.com/h2oai/h2o-3/issues/6707) - Added extended message to `h2o.init()` to help users get around version mismatch error.
