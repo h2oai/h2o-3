@@ -78,7 +78,7 @@ public class FeatureInteractions {
     }
     
     private TwoDimTable constructFeatureInteractionsTable(int depth) {
-        assert depth != 0 : "Depth has to be > 0.";
+        assert depth >= 0  : "Depth has to be >= 0.";
         String[] colHeaders = new String[] {"Interaction", "Gain", "FScore", "wFScore", "Average wFScore", "Average Gain", 
                 "Expected Gain", "Gain Rank", "FScore Rank", "wFScore Rank", "Avg wFScore Rank", "Avg Gain Rank", 
                 "Expected Gain Rank", "Average Rank", "Average Tree Index", "Average Tree Depth"};
