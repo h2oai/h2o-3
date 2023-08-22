@@ -142,6 +142,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         return tmp;
       }
 
+      protected void softMax(double[] x) {
+        final double max = ArrayUtils.maxValue(x);
+        double scaling = 0;
+        for (int i = 0; i < x.length; i++) {
+          x[i] = Math.exp(x[i] - max);
+          scaling += x[i];
+        }
+        for (int i = 0; i < x.length; i++) {
+          x[i] /= scaling;
+        }
+      }
+    
 
       protected void forwardPass(DataInfo.Row row, double[][] forwardPassActivations) {
         // Zero out the activations
@@ -176,7 +188,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           forwardPassActivations[2*i][l] = linearPred(w, b, forwardPassActivations[2*i - 1], l);
           forwardPassActivations[2*i+1][l] = forwardPassActivations[2*i][l];
           if (w.rows() == 2) {// binomial classification
-            forwardPassActivations[2*i+1][l] = _activation.apply(forwardPassActivations[2*i][l]);
+           // forwardPassActivations[2*i+1][l] = _activation.apply(forwardPassActivations[2*i][l]);
           } else {
             if (model_info().data_info()._normRespMul != null)
               forwardPassActivations[2*i+1][l] = (forwardPassActivations[2*i+1][l] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
@@ -185,6 +197,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             forwardPassActivations[2*i+1][l]= _dist.linkInv(forwardPassActivations[2*i+1][l]);
           }
         }
+        if (w.rows() == 2) // binomial classification
+          softMax(forwardPassActivations[2*i+1]);
       }
 
       protected void linearSHAP(Storage.DenseRowMatrix weights,
@@ -253,44 +267,54 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
 
       protected void backwardPass(double[][] forwardPass, double[][] forwardBgPass, double[][] backwardPass, DataInfo.Row row, DataInfo.Row bgRow) {
-        final int outputNeuron = 0;//backwardPass[backwardPass.length - 1].length - 1; // in regression we have one output and in binom. class we care only about P(y==1).
         int i = backwardPass.length - 1;
         final int backwardPassOffset = 1;
-        //for (int j = 0; j < backwardPass[i].length; j++) {
-          if (outputNeuron == 0) {
-            float[] outWeight = new float[backwardPass[i].length];
-            for (int j = 0; j < outWeight.length; j++) {
-              if (model_info.data_info._normRespMul != null) {
-                outWeight[j] = (float) (model_info.get_weights(i - backwardPassOffset).get(0,j) / model_info.data_info._normRespMul[0]);
-              } else {
-                outWeight[j] = model_info.get_weights(i-backwardPassOffset).get(0,j);
-              }
-            }
-            
-            linearSHAP(
-                    new Storage.DenseRowMatrix(outWeight, 1, backwardPass[i].length),
-                    backwardPass[i],
-                    outputNeuron
-            );
+        final int outputNeuron = model_info.get_weights(backwardPass.length - 1 - backwardPassOffset).rows() - 1; // in regression we have one output and in binom. class we care only about P(y==1).
+        if (outputNeuron == 0) {
+        float[] outWeight = new float[backwardPass[i].length];
+        for (int j = 0; j < outWeight.length; j++) {
+          if (model_info.data_info._normRespMul != null) {
+            outWeight[j] = (float) (model_info.get_weights(i - backwardPassOffset).get(outputNeuron, j) / model_info.data_info._normRespMul[outputNeuron]);
+          } else {
+            outWeight[j] = model_info.get_weights(i - backwardPassOffset).get(outputNeuron, j);
           }
-        //}
+        }
+       
+          linearSHAP(
+                  new Storage.DenseRowMatrix(outWeight, 1, backwardPass[i].length),
+                  backwardPass[i],
+                  0
+          );
+        } else {
+          Storage.DenseRowMatrix m = new Storage.DenseRowMatrix(2, backwardPass[i].length);
+          nonLinearActivationSHAP(
+                  model_info.get_weights(i - backwardPassOffset),
+                  forwardPass,
+                  forwardBgPass,
+                  i - backwardPassOffset,
+                  m
+          );
+          for (int j = 0; j < m.cols(); j++) {
+            backwardPass[i][j] = m.get(outputNeuron, j);
+          }
+        }
 
         for (i = backwardPass.length - 2; i >= backwardPassOffset; i--) {
-          Storage.DenseRowMatrix m = new Storage.DenseRowMatrix(backwardPass[i+1].length, backwardPass[i].length);
-            nonLinearActivationSHAP(
-                    model_info.get_weights(i-backwardPassOffset),
-                    forwardPass,
-                    forwardBgPass,
-                    i-backwardPassOffset,
-                    m
-            );
-            combineMultiplicators(m, backwardPass, i);
+          Storage.DenseRowMatrix m = new Storage.DenseRowMatrix(backwardPass[i + 1].length, backwardPass[i].length);
+          nonLinearActivationSHAP(
+                  model_info.get_weights(i - backwardPassOffset),
+                  forwardPass,
+                  forwardBgPass,
+                  i - backwardPassOffset,
+                  m
+          );
+          combineMultiplicators(m, backwardPass, i);
         }
 
         Storage.DenseRowMatrix weights = model_info.get_weights(0);
         Arrays.fill(backwardPass[0], 0.0);
         for (i = 0; i < _origIndices.length; i++)
-            backwardPass[0][_origIndices[i]] += (backwardPass[1][i])*(row.get(i) - bgRow.get(i));
+          backwardPass[0][_origIndices[i]] += (backwardPass[1][i]) * (row.get(i) - bgRow.get(i));
       }
 
       @Override
