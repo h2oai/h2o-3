@@ -823,12 +823,11 @@ public class DataInfo extends Keyed<DataInfo> {
     return res;
   }
 
-  public final int[] coefOriginalColumnIndices() {
-    if (_coefOriginalIndices != null) return _coefOriginalIndices; // already computed
+  public final int[] coefOriginalColumnIndices(Frame adaptedFrame) {
     int k = 0;
     final int n = fullN(); // total number of columns to compute
     int[] res = new int[n];
-    final Vec [] vecs = _adaptedFrame.vecs();
+    final Vec [] vecs = adaptedFrame.vecs();
 
     // first do all of the expanded categorical names
     for(int i = 0; i < _cats; ++i) {
@@ -868,12 +867,18 @@ public class DataInfo extends Keyed<DataInfo> {
           res[k++] = i+_cats;
       }
     }
-    _coefOriginalIndices = res;
+    if (null != _adaptedFrame && adaptedFrame._key.equals(_adaptedFrame._key))
+      _coefOriginalIndices = res;
     return res;
   }
+  
+  public final int[] coefOriginalColumnIndices() {
+    if (_coefOriginalIndices != null) return _coefOriginalIndices; // already computed
+    return coefOriginalColumnIndices(_adaptedFrame);
+  }
 
-  public final String[] coefOriginalNames() {
-    int[] coefOriginalIndices = coefOriginalColumnIndices();
+  public final String[] coefOriginalNames(Frame adaptedFrame) {
+    int[] coefOriginalIndices = coefOriginalColumnIndices(adaptedFrame);
     String[] originalNames = new String[coefOriginalIndices[coefOriginalIndices.length - 1] + 1]; //needs +1 since we have 0 based indexing so if we have index N we need to have N+1 elements
     int i = 0, j = 0;
     while (i < coefOriginalIndices.length && j < originalNames.length) {
@@ -896,6 +901,10 @@ public class DataInfo extends Keyed<DataInfo> {
       j++;
     }
     return originalNames;
+  }
+  
+  public final String[] coefOriginalNames() {
+    return coefOriginalNames(_adaptedFrame);
   }
 
   // Return permutation matrix mapping input names to adaptedFrame colnames

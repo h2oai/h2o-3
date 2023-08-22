@@ -763,6 +763,3 @@ TESTS = [
 
 if __name__ == "__main__":
     pyunit_utils.run_tests(TESTS)
-else:
-    for t in TESTS:
-        t()
