@@ -40,6 +40,7 @@ The following data sources are supported:
 * A Directory (with many data files inside at the *same* level -- no support for recursive import of data)
 * S3/S3N
 * Native Language Data Structure (c.f. the subsequent section)
+* Google Storage (gs://)
 
 .. code-block:: python
 

@@ -629,10 +629,13 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         # For now, redirect to h2o.model.extensions.feature_interaction for models that support the feature, and print legacy message for others..
         # Later, the method will be exposed only for models supporting the feature.
         if has_extension(self, 'FeatureInteraction'):
-            return self._feature_interaction(max_interaction_depth=max_interaction_depth, 
-                                             max_tree_depth=max_tree_depth, 
-                                             max_deepening=max_deepening, 
-                                             path=path)
+            table = self._feature_interaction(max_interaction_depth=max_interaction_depth,
+                                              max_tree_depth=max_tree_depth,
+                                              max_deepening=max_deepening,
+                                              path=path)
+            if table is None:
+                print("There is no feature interaction for this model.")
+            return table
         print("No calculation available for this model")
 
     def h(self, frame, variables):

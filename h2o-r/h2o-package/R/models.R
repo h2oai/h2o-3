@@ -3225,7 +3225,10 @@ h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree
             
             json <- .h2o.doSafePOST(urlSuffix = "FeatureInteraction", parms=parms)
             source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
-            
+            if(is.null(source$feature_interaction)){
+                warning(paste0("There is no feature interaction for this model."))
+                return(NULL)
+            }
             return(source$feature_interaction)
         } else {
             warning(paste0("No calculation available for this model"))
