@@ -1975,7 +1975,7 @@ def load_dataset(relative_path):
 
 
 def make_metrics(predicted, actual, domain=None, distribution=None, weights=None, treatment=None, auc_type="NONE",
-                 auuc_type="AUTO", auuc_nbins=-1):
+                 auuc_type="AUTO", auuc_nbins=-1, custom_auuc_thresholds=None):
     """
     Create Model Metrics from predicted and actual values in H2O.
 
@@ -2006,6 +2006,8 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
                
     :param auuc_nbins: For uplift binomial classification you have to specify number of bins to be used 
            for calculation the AUUC. Default is -1, which means 1000.
+    :param custom_auuc_thresholds Array of custom thresholds to calculate AUUC, if the thresholds are specified, 
+            the number of AUUC bins is equal to thresholds size    
     :examples:
 
     >>> fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
@@ -2041,6 +2043,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     assert_is_type(distribution, str, None)
     assert_satisfies(actual.ncol, actual.ncol == 1)
     assert_is_type(auc_type, str)
+    assert_is_type(custom_auuc_thresholds, [float], None)
     allowed_auc_types = ["MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "AUTO", "NONE"]
     assert auc_type in allowed_auc_types, "auc_type should be "+(" ".join([str(type) for type in allowed_auc_types]))
     if domain is None and any(actual.isfactor()):
@@ -2056,6 +2059,9 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
         params["auuc_type"] = auuc_type
         assert auuc_nbins == -1 or auuc_nbins > 0, "auuc_nbis should be -1 or higner than 0."  
         params["auuc_nbins"] = auuc_nbins
+        if custom_auuc_thresholds is not None:
+            assert len(custom_auuc_thresholds) > 0, "custom_auuc_thresholds size should be higher than 0."
+            params["custom_auuc_thresholds"] = custom_auuc_thresholds
     params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)

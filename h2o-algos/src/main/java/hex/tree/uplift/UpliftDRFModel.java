@@ -81,13 +81,7 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     }
 
     @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        if (_output.getModelCategory() == ModelCategory.BinomialUplift) {
-            if(_output._metricThresholds == null){
-                return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, new double[]{0});
-            }
-            return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, _output._metricThresholds);
-        }
-        throw H2O.unimpl();
+        return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, _output._metricThresholds);
     }
 
     @Override

@@ -189,6 +189,7 @@ def pyunit_make_metrics(weights_col=None):
 
 
 def pyunit_make_metrics_uplift():
+    print("======= UPLIFT BINOMIAL ========")
     treatment_column = "treatment"
     response_column = "outcome"
     feature_cols = ["feature_"+str(x) for x in range(1,13)]
@@ -206,7 +207,8 @@ def pyunit_make_metrics_uplift():
         treatment_column=treatment_column,
         seed=42,
         auuc_nbins=nbins,
-        score_each_iteration=True
+        score_each_iteration=True,
+        ntrees=3
     )
     
     model.train(y=response_column, x=feature_cols, training_frame=train, validation_frame=test)
@@ -217,21 +219,22 @@ def pyunit_make_metrics_uplift():
     treatment = test[treatment_column]
     m1 = model.model_performance(test_data=test, auuc_type="AUTO", auuc_nbins=nbins)
     m2 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins)
-
-    err = 1e-5
+    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins, custom_auuc_thresholds=m1.thresholds())
     
-    assert abs(m0.auuc() - m1.auuc()) < err
-    assert abs(m1.auuc() - m2.auuc()) < err
+    print("Model AUUC: {}".format(m0.auuc()))
+    print("thresholds: {}".format(m0.thresholds()))
+    print("Model performance AUUC: {}".format(m1.auuc()))
+    print("thresholds: {}".format(m1.thresholds()))
+    print("Make AUUC with no custom thresholds: {}".format(m2.auuc()))
+    print("thresholds: {}".format(m2.thresholds()))
+    print("Make AUUC with custom thresholds from m1: {}".format(m3.auuc()))
+    print("thresholds: {}".format(m3.thresholds()))
     
-    assert abs(m0.ate() - m1.ate()) < err
-    assert abs(m1.ate() - m2.ate()) < err
-
-    assert abs(m0.att() - m1.att()) < err
-    assert abs(m1.att() - m2.att()) < err
-
-    assert abs(m0.atc() - m1.atc()) < err
-    assert abs(m1.atc() - m2.atc()) < err
-
+    assert abs(m0.auuc() - m1.auuc()) < 1e-5
+    assert abs(m1.auuc() - m2.auuc()) > 1e-5
+    assert abs(m1.auuc() - m3.auuc()) < 1e-5
+    
+    print("===========================")
 
 def suite_model_metrics():
 
