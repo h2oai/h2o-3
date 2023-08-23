@@ -18,10 +18,8 @@ except ImportError:
     def tqdm(x, *args, **kwargs):
         return x
 
-
 from h2o.estimators import *
 from h2o.explanation._explain import no_progress_block
-
 
 seed = 6
 K = 5
@@ -51,6 +49,7 @@ def remove_all_but(*args):
 def test_local_accuracy(
     mod, train, test, link=False, eps=1e-5, output_format="original"
 ):
+    print("Testing local accuracy...")
     with no_progress_block():
         cf = mod.predict_contributions(
             test, background_frame=train, output_format=output_format
@@ -70,10 +69,11 @@ def test_local_accuracy(
 
     assert (
         np.abs(p - mu) < eps
-    ).any(), f"Failed local accuracy test: {mod.key} on {test.frame_id}. max diff = {np.max(np.abs(p-mu))}, mean diff = {np.mean(np.abs(p-mu))}"
+    ).any(), f"Failed local accuracy test: {mod.key} on {test.frame_id}. max diff = {np.max(np.abs(p - mu))}, mean diff = {np.mean(np.abs(p - mu))}"
 
 
 def test_dummy_property(mod, train, test, output_format):
+    print("Testing dummy property...")
     contr_h2o = (
         mod.predict_contributions(
             test, background_frame=train, output_format=output_format
@@ -112,12 +112,12 @@ def test_dummy_property(mod, train, test, output_format):
                         if (
                             test_df.loc[ts, col_name] != cat
                             and not (
-                                cat == "missing(NA)"
-                                and (
-                                    pd.isna(test_df.loc[ts, col_name])
-                                    or pd.isna(train_df.loc[tr, col_name])
-                                )
+                            cat == "missing(NA)"
+                            and (
+                                pd.isna(test_df.loc[ts, col_name])
+                                or pd.isna(train_df.loc[tr, col_name])
                             )
+                        )
                             and train_df.loc[tr, col_name] != cat
                         ):  # TODO: THINK ABOUT THIS MORE (GLM)
                             print(
@@ -136,6 +136,7 @@ def test_dummy_property(mod, train, test, output_format):
 def test_symmetry(mod, train, test, output_format, eps=1e-10):
     """This test does not test the symmetry axiom from shap. It tests whether contributions are same magnitude
     but opposite sign if we switch the background with the foreground."""
+    print("Testing symmetry...")
     contr = (
         mod.predict_contributions(
             test, background_frame=train, output_format=output_format
@@ -173,9 +174,9 @@ def test_symmetry(mod, train, test, output_format, eps=1e-10):
                 val_bg = train.loc[row % train.shape[0], col_name]
                 if val_bg == "NA" or pd.isna(val_bg):
                     val_bg = "missing(NA)"
-                    
+
                 if abs(contr.loc[row, col]) > 0:
-                    assert val == cat or val_bg == cat,  f"val = {val}; cat = {cat}; val_bg = {val_bg}"
+                    assert val == cat or val_bg == cat, f"val = {val}; cat = {cat}; val_bg = {val_bg}"
 
                 if (
                     f"{col_name}.{val}" in contr.columns and  # can be missing in GLM without regularization (moved to intercept)
@@ -187,9 +188,9 @@ def test_symmetry(mod, train, test, output_format, eps=1e-10):
                     )
                     > eps
                     and abs(
-                        contr.loc[row, f"{col_name}.{val}"]
-                        + contr2.loc[row, f"{col_name}.{val}"]
-                    )
+                    contr.loc[row, f"{col_name}.{val}"]
+                    + contr2.loc[row, f"{col_name}.{val}"]
+                )
                     > eps  # GLM TODO: THINK ABOUT THIS MORE
                 ):
                     print(
@@ -223,8 +224,8 @@ def naiveBSHAP(mod, y, train, test, xrow, brow, link=False):
         col
         for col in x.columns.values[(x != b).values[0]]
         if col in mod._model_json["output"]["names"]
-        and not (pd.isna(x.loc[0, col]) and pd.isna(b.loc[0, col]))
-        and col != y
+           and not (pd.isna(x.loc[0, col]) and pd.isna(b.loc[0, col]))
+           and col != y
     ]
     pset = powerset(cols)
 
@@ -265,6 +266,7 @@ def test_contributions_against_naive(mod, y, train, test, link=False, eps=1e-6):
     # In this test, I'm generating the data in python and then at once converting to h2o frame. This speeds it by several magnitudes
     # but it also creates nasty bugs when NAs are involved, e.g., category level "3" gets converted to float and hence is a new level "3.0"
     # that's why I remove NAs here
+    print("Testing against naive shap calculation...")
     train = train.na_omit()
     test = test.na_omit()
     for xrow in tqdm(sample(range(test.nrow), k=LARGE_K), desc="X row"):
@@ -295,7 +297,7 @@ def test_contributions_against_naive(mod, y, train, test, link=False, eps=1e-6):
                     else:
                         assert (
                             abs(naive_contr[col] - contr.loc[0, col]) < eps
-                        ), f"{col} contributions differ: contr={contr.loc[0, col]}, naive_contr={naive_contr[col]}, diff={naive_contr[col] - contr.loc[0,col]}, xrow={xrow}, brow={brow}"
+                        ), f"{col} contributions differ: contr={contr.loc[0, col]}, naive_contr={naive_contr[col]}, diff={naive_contr[col] - contr.loc[0, col]}, xrow={xrow}, brow={brow}"
 
 
 def import_data(seed=seed, no_NA=False):
@@ -310,7 +312,7 @@ def import_data(seed=seed, no_NA=False):
 
 
 def helper_test_all(
-    Estimator, y, train, test, output_format, link=False, eps=1e-6, **kwargs
+    Estimator, y, train, test, output_format, link=False, eps=1e-6, skip_naive=False, **kwargs
 ):
     mod = Estimator(**kwargs)
     mod.train(y=y, training_frame=train)
@@ -323,7 +325,7 @@ def helper_test_all(
 
     test_symmetry(mod, train, test, output_format=output_format, eps=eps)
 
-    if output_format.lower() == "compact":
+    if output_format.lower() == "compact" and not skip_naive:
         test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
 
 
@@ -713,6 +715,375 @@ def test_glm_not_regularized_regression_compact():
     )
 
 
+def test_deeplearning_1hidden_tanh_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh", hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_tanh_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_tanh_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh", hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_tanh_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_tanh_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh", hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_tanh_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_tanh_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh", hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_tanh_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_tanh_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh", hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_tanh_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_tanh_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_tanh_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_tanh_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_tanh_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_tanh_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_tanh_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_tanh_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_tanh_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_tanh_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_tanh_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_tanh_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_tanh_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_tanh_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_tanh_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_relu_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier", hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_relu_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier", hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_relu_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_relu_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier", hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_relu_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_relu_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_relu_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="rectifier",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_relu_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="rectifier",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_relu_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="rectifier",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_relu_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="rectifier",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_relu_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_relu_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_relu_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier_with_dropout",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_relu_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier_with_dropout",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_relu_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier_with_dropout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_relu_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier_with_dropout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_relu_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier_with_dropout",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_relu_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier_with_dropout",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_relu_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True,
+        activation="rectifier_with_dropout", hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_relu_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True,
+        activation="rectifier_with_dropout", hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_relu_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True,
+        activation="rectifier_with_dropout", hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_relu_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True,
+        activation="rectifier_with_dropout", hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_relu_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True,
+        activation="rectifier_with_dropout", hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_relu_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True,
+        activation="rectifier_with_dropout", hidden=[5] * 5
+    )
+
+
 TESTS = [
     test_drf_one_tree_binomial_original,
     test_drf_one_tree_binomial_compact,
@@ -758,8 +1129,55 @@ TESTS = [
     test_glm_not_regularized_binomial_compact,
     test_glm_not_regularized_regression_original,
     test_glm_not_regularized_regression_compact,
+    test_deeplearning_1hidden_tanh_regression_original,
+    test_deeplearning_1hidden_tanh_regression_compact,
+    test_deeplearning_2hidden_tanh_regression_original,
+    test_deeplearning_2hidden_tanh_regression_compact,
+    test_deeplearning_5hidden_tanh_regression_original,
+    test_deeplearning_5hidden_tanh_regression_compact,
+    test_deeplearning_1hidden_tanh_binomial_original,
+    test_deeplearning_1hidden_tanh_binomial_compact,
+    test_deeplearning_2hidden_tanh_binomial_original,
+    test_deeplearning_2hidden_tanh_binomial_compact,
+    test_deeplearning_5hidden_tanh_binomial_original,
+    test_deeplearning_5hidden_tanh_binomial_compact,
+    test_deeplearning_1hidden_tanh_with_dropout_regression_original,
+    test_deeplearning_1hidden_tanh_with_dropout_regression_compact,
+    test_deeplearning_2hidden_tanh_with_dropout_regression_original,
+    test_deeplearning_2hidden_tanh_with_dropout_regression_compact,
+    test_deeplearning_5hidden_tanh_with_dropout_regression_original,
+    test_deeplearning_5hidden_tanh_with_dropout_regression_compact,
+    test_deeplearning_1hidden_tanh_with_dropout_binomial_original,
+    test_deeplearning_1hidden_tanh_with_dropout_binomial_compact,
+    test_deeplearning_2hidden_tanh_with_dropout_binomial_original,
+    test_deeplearning_2hidden_tanh_with_dropout_binomial_compact,
+    test_deeplearning_5hidden_tanh_with_dropout_binomial_original,
+    test_deeplearning_5hidden_tanh_with_dropout_binomial_compact,
+    test_deeplearning_1hidden_relu_regression_original,
+    test_deeplearning_1hidden_relu_regression_compact,
+    test_deeplearning_2hidden_relu_regression_original,
+    test_deeplearning_2hidden_relu_regression_compact,
+    test_deeplearning_5hidden_relu_regression_original,
+    test_deeplearning_5hidden_relu_regression_compact,
+    test_deeplearning_1hidden_relu_binomial_original,
+    test_deeplearning_1hidden_relu_binomial_compact,
+    test_deeplearning_2hidden_relu_binomial_original,
+    test_deeplearning_2hidden_relu_binomial_compact,
+    test_deeplearning_5hidden_relu_binomial_original,
+    test_deeplearning_5hidden_relu_binomial_compact,
+    test_deeplearning_1hidden_relu_with_dropout_regression_original,
+    test_deeplearning_1hidden_relu_with_dropout_regression_compact,
+    test_deeplearning_2hidden_relu_with_dropout_regression_original,
+    test_deeplearning_2hidden_relu_with_dropout_regression_compact,
+    test_deeplearning_5hidden_relu_with_dropout_regression_original,
+    test_deeplearning_5hidden_relu_with_dropout_regression_compact,
+    test_deeplearning_1hidden_relu_with_dropout_binomial_original,
+    test_deeplearning_1hidden_relu_with_dropout_binomial_compact,
+    test_deeplearning_2hidden_relu_with_dropout_binomial_original,
+    test_deeplearning_2hidden_relu_with_dropout_binomial_compact,
+    test_deeplearning_5hidden_relu_with_dropout_binomial_original,
+    test_deeplearning_5hidden_relu_with_dropout_binomial_compact,
 ]
-
 
 if __name__ == "__main__":
     pyunit_utils.run_tests(TESTS)

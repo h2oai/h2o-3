@@ -54,6 +54,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb.append("    torch.nn.Linear("+model_info.get_weights(_parms._hidden.length).cols()+", "+model_info.get_weights(_parms._hidden.length).rows()+"),\n");
     if (model_info.data_info._normRespMul != null)
       sb.append("    torch.nn.Linear(1, 1)\n");
+    if (model_info._classification)
+      sb.append("    torch.nn.SoftMax()\n");
     sb.append(")\n\n");
 
     for (int i = 0; i <= _parms._hidden.length; i++) {
@@ -91,7 +93,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       final Function<Double, Double> _activation;
       final int[] _origIndices;
 
-      public DeepSHAPContributionsWithBackground(Frame fr, Frame backgroundFrame, int[] origIndices, boolean compact) {
+      public DeepSHAPContributionsWithBackground(Frame fr, Frame backgroundFrame, int[] origIndices) {
         super(fr, backgroundFrame);
         assert !(_parms._activation.equals(DeepLearningParameters.Activation.Maxout) ||
                 _parms._activation.equals(DeepLearningParameters.Activation.MaxoutWithDropout));
@@ -114,7 +116,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             _activation = v -> v;
         }
         _origIndices = origIndices;
-
       }
 
       protected double tanhActivation(double v) {
@@ -170,14 +171,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           }
           forwardPassActivations[0][l] += b.get(l);
           forwardPassActivations[1][l] = _activation.apply(forwardPassActivations[0][l]);
+          if (null != model_info.get_params()._hidden_dropout_ratios)
+            forwardPassActivations[1][l] *= 1-model_info.get_params()._hidden_dropout_ratios[0];
         }
         // hidden layers
         for (int i = 1; i < _parms._hidden.length; i++) {
           w = model_info.get_weights(i);
           b = model_info.get_biases(i);
-          for (int l = 0; l < w.rows(); l++) {
+          for (int l = 0; l < w.rows(); l++) {   
             forwardPassActivations[2*i][l] = linearPred(w, b, forwardPassActivations[2*i - 1], l);
             forwardPassActivations[2*i+1][l] = _activation.apply(forwardPassActivations[2*i][l]);
+            if (null != model_info.get_params()._hidden_dropout_ratios)
+              forwardPassActivations[2*i+1][l] *= 1-model_info.get_params()._hidden_dropout_ratios[i-1];
           }
         }
         // output layer
@@ -185,11 +190,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         w = model_info.get_weights(i);
         b = model_info.get_biases(i);
         for (int l = 0; l < w.rows(); l++) {
+
           forwardPassActivations[2*i][l] = linearPred(w, b, forwardPassActivations[2*i - 1], l);
           forwardPassActivations[2*i+1][l] = forwardPassActivations[2*i][l];
-          if (w.rows() == 2) {// binomial classification
-           // forwardPassActivations[2*i+1][l] = _activation.apply(forwardPassActivations[2*i][l]);
-          } else {
+          if (w.rows() == 1) {
             if (model_info().data_info()._normRespMul != null)
               forwardPassActivations[2*i+1][l] = (forwardPassActivations[2*i+1][l] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
             
@@ -249,16 +253,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
       protected void combineMultiplicators(Storage.DenseRowMatrix m, double[][] contributions, int currentLayer) {
         final int prevLayer = currentLayer + 1; // Contains multiplicators with respect to the output
-//        for (int i = 0; i < contributions[currentLayer].length; i++) {
-//          contributions[currentLayer][i] = 0;
-//          for (int j = 0; j < contributions[prevLayer].length; j++) {
-//            contributions[currentLayer][i] += m.get(j, i) * contributions[prevLayer][j];
-//          }
-//        }
-
-//        for (int i = 0; i < contributions[currentLayer].length; i++) {
-//            contributions[currentLayer][i] = m.get(i, i) * contributions[prevLayer][i];
-//        }
         Arrays.fill(contributions[currentLayer], 0);
         for (int i = 0; i < m.rows(); i++) {
           for (int j = 0; j < m.cols(); j++)
@@ -268,7 +262,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
       protected void backwardPass(double[][] forwardPass, double[][] forwardBgPass, double[][] backwardPass, DataInfo.Row row, DataInfo.Row bgRow) {
         int i = backwardPass.length - 1;
-        final int backwardPassOffset = 1;
+        final int backwardPassOffset = _origIndices == null ? 0 : 1;
         final int outputNeuron = model_info.get_weights(backwardPass.length - 1 - backwardPassOffset).rows() - 1; // in regression we have one output and in binom. class we care only about P(y==1).
         if (outputNeuron == 0) {
         float[] outWeight = new float[backwardPass[i].length];
@@ -279,7 +273,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             outWeight[j] = model_info.get_weights(i - backwardPassOffset).get(outputNeuron, j);
           }
         }
-       
           linearSHAP(
                   new Storage.DenseRowMatrix(outWeight, 1, backwardPass[i].length),
                   backwardPass[i],
@@ -311,32 +304,37 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           combineMultiplicators(m, backwardPass, i);
         }
 
-        Storage.DenseRowMatrix weights = model_info.get_weights(0);
-        Arrays.fill(backwardPass[0], 0.0);
-        for (i = 0; i < _origIndices.length; i++)
-          backwardPass[0][_origIndices[i]] += (backwardPass[1][i]) * (row.get(i) - bgRow.get(i));
+        if (null != _origIndices) {
+          Arrays.fill(backwardPass[0], 0.0);
+          for (i = 0; i < _origIndices.length; i++)
+            backwardPass[0][_origIndices[i]] += (backwardPass[1][i]) * (row.get(i) - bgRow.get(i));
+        } else {
+          for (i = 0; i < backwardPass[0].length; i++)
+            backwardPass[0][i] *= (row.get(i) - bgRow.get(i));
+        }
       }
 
       @Override
       protected void map(Chunk[] cs, Chunk[] bgCs, NewChunk[] ncs) {
         double[][] forwardPass = new double[2*(_parms._hidden.length + 1)][];
         double[][] forwardBgPass = new double[2*(_parms._hidden.length + 1)][];
-        double[][] backwardPass = new double[_parms._hidden.length + 2][];
+        final int backwardPassOffset = _origIndices==null?1:2;
+        double[][] backwardPass = new double[_parms._hidden.length + backwardPassOffset][];
         backwardPass[0] = MemoryManager.malloc8d(ncs.length-1);
-        backwardPass[1] = MemoryManager.malloc8d(model_info.get_weights(0).cols());
+        if (backwardPassOffset > 1)
+          backwardPass[1] = MemoryManager.malloc8d(model_info.get_weights(0).cols());
         for (int i = 0; i < _parms._hidden.length; i++) {
           forwardPass[2*i] = MemoryManager.malloc8d(_parms._hidden[i]);
           forwardBgPass[2*i] = MemoryManager.malloc8d(_parms._hidden[i]);
           forwardPass[2*i+1] = MemoryManager.malloc8d(_parms._hidden[i]);
           forwardBgPass[2*i+1] = MemoryManager.malloc8d(_parms._hidden[i]);
-          backwardPass[i + 2] = MemoryManager.malloc8d(_parms._hidden[i]);
+          backwardPass[i + backwardPassOffset] = MemoryManager.malloc8d(_parms._hidden[i]);
         }
         forwardPass[2*_parms._hidden.length] = new double[model_info.get_weights(_parms._hidden.length).rows()];
         forwardBgPass[2*_parms._hidden.length] = new double[model_info.get_weights(_parms._hidden.length).rows()];
         forwardPass[2*_parms._hidden.length+1] = new double[model_info.get_weights(_parms._hidden.length).rows()];
         forwardBgPass[2*_parms._hidden.length+1] = new double[model_info.get_weights(_parms._hidden.length).rows()];
-        //backwardPass[_parms._hidden.length + 1] = new double[model_info.get_weights(_parms._hidden.length).cols()];
-
+        
         DataInfo.Row row = model_info.data_info.newDenseRow();
         DataInfo.Row bgRow = model_info.data_info.newDenseRow();
         for (int j = 0; j < cs[0]._len; j++) {
@@ -362,10 +360,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     DKV.put(adaptedBgFrame);
     Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
     DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(adaptedFrame, adaptedBgFrame,
-            model_info.data_info().coefOriginalColumnIndices(adaptedFrame),
-            ContributionsOutputFormat.Compact.equals(options._outputFormat));
+            ContributionsOutputFormat.Compact.equals(options._outputFormat)
+                    ? model_info.data_info().coefOriginalColumnIndices(adaptedFrame)
+                    : null);
     
-    String[] cols = model_info.data_info.coefOriginalNames(adaptedFrame);
+    String[] cols = ContributionsOutputFormat.Compact.equals(options._outputFormat) 
+            ? model_info.data_info.coefOriginalNames(adaptedFrame)
+            : model_info.data_info.coefNames();
     String[] colNames = new String[cols.length+1]; // +1 for bias term
 
     System.arraycopy(cols, 0, colNames, 0, colNames.length - 1);
