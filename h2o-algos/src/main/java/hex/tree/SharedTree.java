@@ -838,7 +838,7 @@ public abstract class SharedTree<
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       out._scored_train[out._ntrees].fillFrom(mm);
-
+      
       // Score again on validation data
       if( _parms._valid != null) {
         Frame v = new Frame(valid());

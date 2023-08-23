@@ -4,6 +4,7 @@ import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
+import hex.tree.uplift.UpliftDRFModel;
 import org.apache.log4j.Logger;
 import water.Iced;
 import water.Key;

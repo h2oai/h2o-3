@@ -164,8 +164,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         
         public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) { 
             super(2,domain); 
-            assert thresholds != null: "Thresholds should not be null for metric creation.";
+            if(thresholds == null){
+                _auuc = null;
+            }
             _auuc = new AUUC.AUUCBuilder(thresholds);
+            
         }
         
         @Override public double[] perRow(double[] ds, float[] yact, Model m) {
@@ -174,7 +177,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
 
         @Override
         public double[] perRow(double[] ds, float[] yact, double weight, double offset, Model m) {
-            assert _auuc == null || yact.length == 2 : "Treatment must be included in `yact` when calculating AUUC";
+            assert yact.length == 2 : "Treatment must be included in `yact` when calculating AUUC";
             if(Float .isNaN(yact[0])) return ds; // No errors if   actual   is missing
             if(weight == 0 || Double.isNaN(weight)) return ds;
             int y = (int)yact[0];

@@ -4459,6 +4459,53 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
+  public void testMojoMetrics() throws Exception {
+    GBMModel gbm = null;
+    try {
+      Scope.enter();
+      Frame frame = new TestFrameBuilder()
+              .withName("data")
+              .withColNames("ColA", "ColB", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(0, 1, 0, 1, 0, 1, 0))
+              .withDataForCol(1, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+              .withDataForCol(2, ard(1, 0, 1, 1, 1, 0, 1))
+              .build();
+
+      frame = frame.toCategoricalCol(2);
+
+      Frame frameVal = new TestFrameBuilder()
+              .withName("dataVal")
+              .withColNames("ColA", "ColB", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(0, 1, 1, 1, 0, 0, 1))
+              .withDataForCol(1, ard(Double.NaN, 1, 3, 2, 4, 8, 7))
+              .withDataForCol(2, ard(1, 1, 1, 0, 0, 1, 1))
+              .build();
+
+      frameVal = frameVal.toCategoricalCol(2);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = frame._key;
+      parms._valid = frameVal._key;
+      parms._response_column = "Response";
+      parms._ntrees = 1;
+      parms._min_rows = 0.1;
+      parms._distribution = bernoulli;
+
+      gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+      Frame train_score = gbm.score(frame);
+      Scope.track_generic(train_score);
+      
+      assertTrue(gbm.testJavaScoring(frame, train_score, 1e-15));
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testGBMFeatureInteractions() {
     Scope.enter();
     try {
