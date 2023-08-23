@@ -150,7 +150,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
         outputNames = new String[]{"lp"};
         break;
       case BinomialUplift:
-        outputNames = new String[]{"uplift_predict", "p_y1_ct1", "p_y1_ct0"};
+        outputNames = new String[]{"uplift_predict", "p_y1_with_treatment", "p_y1_without_treatment"};
         break;
       default:
         throw new UnsupportedOperationException("Getting output column names for model category '" + 
