@@ -578,7 +578,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         }
         if (converged) {
           LOG.warn("Model cannot be further improved by building more trees, " +
-                  "stopping with ntrees=" + _model._output._ntrees + ".");
+                  "stopping with ntrees=" + _model._output._ntrees + ". Setting actual ntrees to the " + _model._output._ntrees+".");
+          _parms._ntrees = _model._output._ntrees;
           return true;
         }
       }

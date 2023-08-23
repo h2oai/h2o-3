@@ -12,6 +12,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.FrameUtils;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -287,6 +288,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       for (int j = 0; j < nclasses; j++) {
         FeatureInteractions currentTreeFeatureInteractions = new FeatureInteractions();
         SharedTreeSubgraph tree = this.getSharedTreeSubgraph(i, j);
+        
         List<SharedTreeNode> interactionPath = new ArrayList<>();
         Set<String> memo = new HashSet<>();
 
@@ -295,7 +297,10 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
         featureInteractions.mergeWith(currentTreeFeatureInteractions);
       }
     }
-
+    if(featureInteractions.isEmpty()){
+      Log.warn("There is no feature interaction for this model.");
+      return null;
+    }
     return featureInteractions;
   }
 

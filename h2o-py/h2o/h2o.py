@@ -413,7 +413,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
                 na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
                 partition_by=None, quotechar=None, escapechar=None):
     """
-    Import a dataset that is already on the cluster.
+    Import files into an H2O cluster. The default behavior is to pass-through to the parse phase automatically.
 
     The path to the data must be a valid path for each node in the H2O cluster. If some node in the H2O cluster
     cannot see the file, then an exception will be thrown by the H2O cluster. Does a parallel/distributed

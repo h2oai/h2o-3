@@ -7,7 +7,6 @@ from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 import tempfile
 import os
 
-
 # Check and make sure transformed gam frame is correctedly saved with h2o.save_moddel
 def test_gam_transformed_frame_serialization():
     h2o_data = h2o.import_file(

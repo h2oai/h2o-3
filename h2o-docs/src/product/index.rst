@@ -16,6 +16,7 @@ Additional Resources:
 - See how are customers are using H2O at https://www.h2o.ai/customers/.
 - Keep up to date with the latest H2O blogs at https://www.h2o.ai/blog/.
 - Review projects, applications, research papers, tutorials, courses, and books that use H2O at https://github.com/h2oai/awesome-h2o.
+- Learn about securing your installation by following our `security guidelines <security.html>`__.
 
 .. toctree::
    :maxdepth: 2

@@ -1,6 +1,10 @@
 Quick Start Videos
 ==================
 
+.. note::
+   
+   By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.
+
 
 H2O Quick Start with Flow
 -------------------------

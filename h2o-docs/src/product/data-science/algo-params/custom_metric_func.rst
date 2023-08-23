@@ -3,7 +3,7 @@
 ``custom_metric_func``
 ----------------------
 
-- Available in: GBM, DRF, Deeplearning, Stacked Ensembles
+- Available in: GBM, DRF, Deeplearning, Stacked Ensembles, GLM
 - Hyperparameter: no
 
 Description

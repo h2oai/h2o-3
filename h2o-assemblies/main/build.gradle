@@ -17,11 +17,27 @@ dependencies {
     api project(":h2o-persist-http")
     api project(":h2o-persist-hdfs")
     api project(":h2o-ext-krbstandalone")
-    if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
-        api project(":h2o-orc-parser")
-    }
     api project(":h2o-parquet-parser")
+    api("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
+        transitive = false
+    }
     api project(":h2o-k8s-int")
+
+    api "org.apache.hadoop:hadoop-hdfs-client:${defaultHadoopVersion}"
+    implementation("org.apache.hadoop:hadoop-mapreduce-client-core:${defaultHadoopVersion}") {
+        transitive = false
+    }
+    api("org.apache.hadoop:hadoop-common:${defaultHadoopVersion}") {
+        exclude group: "com.sun.jersey"
+        exclude group: "javax.servlet"
+        exclude group: "org.apache.avro"
+        exclude group: "org.apache.curator"
+        exclude group: "org.apache.zookeeper"
+        exclude group: "org.eclipse.jetty"
+    }
+    
+    // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
+    implementation 'org.apache.hive.shims:hive-shims-common:2.3.9'
 
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
@@ -50,6 +66,17 @@ shadowJar {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
+    
+  // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
+  // Excluding other classes of org.apache.hive.shims:hive-shims-common.
+  exclude 'org/apache/hadoop/hive/thrift/**/*.*'
+  exclude 'org/apache/hadoop/hive/io/**/*.*'
+  exclude 'org/apache/hadoop/hive/upgrade/**/*.*'
+  exclude 'org/apache/hadoop/hive/shims/Utils.*'
+  exclude 'org/apache/hadoop/hive/shims/CombineHiveKey.*'
+  exclude 'org/apache/hadoop/hive/shims/*Shims*.*'
+  exclude 'org/apache/hadoop/hive/shims/HiveHarFileSystem.*'
+    
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
     attributes 'Add-Opens': 'java.base/java.lang java.base/java.util java.base/java.lang.reflect'

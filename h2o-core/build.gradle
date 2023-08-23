@@ -23,14 +23,6 @@ dependencies {
 
   api "com.google.code.gson:gson:${gsonVersion}"
   api 'commons-lang:commons-lang:2.6'
-  
-  // Duke library: collection of String comparators
-  api('no.priv.garshol.duke:duke:1.2') {
-    exclude group: 'org.apache.lucene', module: 'lucene-core'
-    exclude group: 'org.apache.lucene', module: 'lucene-analyzers-common'
-    exclude group: 'org.apache.lucene', module: 'lucene-spatial'
-    exclude group: 'org.mapdb', module: 'mapdb'
-  }
 
   testImplementation project(':h2o-test-support')
   testRuntimeOnly project(":${defaultWebserverModule}")
