@@ -1143,7 +1143,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' }
 #' @export
 h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, treatment=NULL, 
-                                auc_type="NONE", auuc_type="AUTO", auuc_nbins=-1) {
+                                auc_type="NONE", auuc_type="AUTO", auuc_nbins=-1, custom_auuc_thresholds=NULL) {
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
@@ -1168,6 +1168,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
       }
       params$auuc_type <- auuc_type
       params$auuc_nbins <- auuc_nbins
+      params$custom_auuc_thresholds <- custom_auuc_thresholds
   }
   params$domain <- domain
   params$distribution <- distribution

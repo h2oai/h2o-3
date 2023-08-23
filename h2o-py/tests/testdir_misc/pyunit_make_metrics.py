@@ -219,34 +219,23 @@ def pyunit_make_metrics_uplift():
     treatment = valid[treatment_column]
     m1 = model.model_performance(test_data=valid, auuc_type="AUTO") 
     m2 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins)
+    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins, custom_auuc_thresholds=m1.thresholds())
     
-    new_nbins = nbins - 10
-    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=new_nbins)
-    
-    print("Model AUUC: {}".format(model.auuc()))
-    print("thresholds: {}".format(model.default_auuc_thresholds()))
-    print("Model performance AUUC: {}".format(m0.auuc()))
+    print("Model AUUC: {}".format(m0.auuc()))
     print("thresholds: {}".format(m0.thresholds()))
-    print("Model performance AUUC recalculate with data: {}".format(m1.auuc()))
+    print("Model performance AUUC: {}".format(m1.auuc()))
     print("thresholds: {}".format(m1.thresholds()))
-    print("Make AUUC: {}".format(m2.auuc()))
+    print("Make AUUC with no custom thresholds: {}".format(m2.auuc()))
     print("thresholds: {}".format(m2.thresholds()))
-    print("Make AUUC with new number of bins: {}".format(m3.auuc()))
+    print("Make AUUC with custom thresholds from m1: {}".format(m3.auuc()))
     print("thresholds: {}".format(m3.thresholds()))
-
-    tol = 1e-5
-
-    # default model auuc is calculated from train data, default thresholds are from validation data
-    assert abs(model.auuc() - m0.auuc()) > tol 
-    # model performance uses default thresholds, so AUUCs are same
-    assert abs(m0.auuc() - m1.auuc()) < tol
-    # make method calculates new thresholds but from the same data with same nbins so AUUCs are same
-    assert abs(m1.auuc() - m2.auuc()) < tol
-    # make method with the new auuc_nbins parameter calculates the new thresholds
-    assert abs(m2.auuc() - m3.auuc()) > tol
+    
+    assert abs(m0.auuc() - m1.auuc()) < 1e-5
+    assert abs(m1.auuc() - m2.auuc()) > 1e-5
+    assert abs(m1.auuc() - m3.auuc()) < 1e-5
     
     print("===========================")
-    
+
 
 def suite_model_metrics():
 

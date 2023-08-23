@@ -461,7 +461,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         return self._model_json["output"]["training_metrics"]._metric_json
     
     def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type=None, 
-                          auuc_type=None):
+                          auuc_type=None, auuc_nbins=-1, custom_auuc_thresholds=None):
         """
         Generate model metrics for this model on ``test_data``.
 
@@ -489,6 +489,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 - None (default)
                 
             If type is ``"auto"`` ("qini"), AUUC is calculated. 
+        :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to ``-1``, which means 1000.
+        :param list float: List of custom thresholds to calculate AUUC when ``test_data`` is not None. Defaults None.
         :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
         """
         
@@ -516,12 +518,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                               data={"auc_type": auc_type})
             elif auuc_type is not None:
                 assert_is_type(auuc_type, Enum("AUTO", "qini", "gain", "lift"))
+                assert_is_type(custom_auuc_thresholds, [float], None)
+                if custom_auuc_thresholds is not None and len(custom_auuc_thresholds) == 0:
+                    print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the custom_auuc_tresholds are empty.")
+                    return
                 if (self._model_json["treatment_column_name"] is not None) and not(self._model_json["treatment_column_name"] in test_data.names):
                     print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the treatment column in your dataset.")
                     return
                 
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                              data={"auuc_type": auuc_type})
+                              data={"auuc_type": auuc_type, "auuc_nbins": auuc_nbins, "custom_auuc_thresholds": custom_auuc_thresholds})
             else:
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
             # FIXME need to do the client-side filtering...  (https://github.com/h2oai/h2o-3/issues/13862)
