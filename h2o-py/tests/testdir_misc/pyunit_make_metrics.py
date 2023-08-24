@@ -219,9 +219,14 @@ def pyunit_make_metrics_uplift():
     treatment = valid[treatment_column]
     m1 = model.model_performance(test_data=valid, auuc_type="AUTO") 
     m2 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins)
-    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins, custom_auuc_thresholds=m1.thresholds())
+    m3 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins, 
+                          custom_auuc_thresholds=m1.thresholds())
+    m4 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins, 
+                          custom_auuc_thresholds=model.default_auuc_thresholds())
     
-    print("Model AUUC: {}".format(m0.auuc()))
+    print("Model AUUC: {}".format(model.auuc()))
+    print("thresholds: {}".format(model.default_auuc_thresholds()))
+    print("Model performance AUUC: {}".format(m0.auuc()))
     print("thresholds: {}".format(m0.thresholds()))
     print("Model performance AUUC: {}".format(m1.auuc()))
     print("thresholds: {}".format(m1.thresholds()))
@@ -229,9 +234,16 @@ def pyunit_make_metrics_uplift():
     print("thresholds: {}".format(m2.thresholds()))
     print("Make AUUC with custom thresholds from m1: {}".format(m3.auuc()))
     print("thresholds: {}".format(m3.thresholds()))
-    
+    print("Make AUUC with custom thresholds from model defaults: {}".format(m4.auuc()))
+    print("thresholds: {}".format(m4.thresholds()))
+
+    # default model auuc is calculated from train data, default thresholds are from validation data
+    assert abs(model.auuc() - m0.auuc()) > 1e-5 
+    # model performance uses default auuc thresholds 
     assert abs(m0.auuc() - m1.auuc()) < 1e-5
+    # make method without custom thresholds calculate own thresholds which can differ from defaults one
     assert abs(m1.auuc() - m2.auuc()) > 1e-5
+    # if we use thresholds from performance metric and use it as custom, it makes the same metrics
     assert abs(m1.auuc() - m3.auuc()) < 1e-5
     
     print("===========================")

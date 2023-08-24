@@ -13,11 +13,7 @@ public class UpliftDRFModelV3 extends SharedTreeModelV3<UpliftDRFModel,
         public static final class UpliftDRFModelOutputV3 extends SharedTreeModelV3.SharedTreeModelOutputV3<UpliftDRFModel.UpliftDRFOutput, UpliftDRFModelOutputV3> {
 
             @API(help="Default thresholds to calculate AUUC metric. If validation is enabled, thresholds from validation metrics is saved here. Otherwise thresholds are from training metrics.")
-<<<<<<< HEAD
             public double[] default_auuc_thresholds;
-=======
-            public double[] _metricThresholds;
->>>>>>> Fix UpliftOtput annotation
 
             @Override public UpliftDRFModelV3.UpliftDRFModelOutputV3 fillFromImpl(UpliftDRFModel.UpliftDRFOutput impl) {
                 UpliftDRFModelV3.UpliftDRFModelOutputV3 uov3 = super.fillFromImpl(impl);
