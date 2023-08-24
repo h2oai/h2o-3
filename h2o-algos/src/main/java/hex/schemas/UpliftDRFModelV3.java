@@ -1,6 +1,7 @@
 package hex.schemas;
 
 import hex.tree.uplift.UpliftDRFModel;
+import water.api.API;
 
 public class UpliftDRFModelV3 extends SharedTreeModelV3<UpliftDRFModel,
             UpliftDRFModelV3,
@@ -10,6 +11,8 @@ public class UpliftDRFModelV3 extends SharedTreeModelV3<UpliftDRFModel,
             UpliftDRFModelV3.UpliftDRFModelOutputV3> {
 
         public static final class UpliftDRFModelOutputV3 extends SharedTreeModelV3.SharedTreeModelOutputV3<UpliftDRFModel.UpliftDRFOutput, UpliftDRFModelOutputV3> {
+
+            @API(help="Default thresholds to calculate AUUC metric. If validation is enabled, thresholds from validation metrics is saved here. Otherwise thresholds are from training metrics.")
             public double[] _metricThresholds;
 
             @Override public UpliftDRFModelV3.UpliftDRFModelOutputV3 fillFromImpl(UpliftDRFModel.UpliftDRFOutput impl) {
