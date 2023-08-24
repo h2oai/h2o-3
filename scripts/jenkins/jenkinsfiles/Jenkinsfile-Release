@@ -347,6 +347,39 @@ EOF
                                 e.printStackTrace()
                             }
                         }
+                        // upload PyPI client package - already created in PUBLISH_STAGE_NAME
+                        def UPLOAD_PYPI_CLIENT_STAGE_NAME = 'Upload PyPI client Package'
+                        stage(UPLOAD_PYPI_CLIENT_STAGE_NAME) {
+                            try {
+                                pipelineContext.getBuildSummary().addStageSummary(this, UPLOAD_PYPI_CLIENT_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                                pipelineContext.getBuildSummary().setStageDetails(this, UPLOAD_PYPI_CLIENT_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                                withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
+                                    insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
+                                        sh """
+                                            echo "Activating Python ${env.PYTHON_VERSION}"
+                                            . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+
+                                            cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/client
+
+                                            if [ "\$UPLOAD_TO_PYPI" = true ]; then
+                                                if [ "\$TEST_RELEASE" = true ]; then
+                                                    echo '****** WARNING! Upload to PyPI suppressed ******'
+                                                else
+                                                    echo '****** Upload h2o_client to PyPI ******'
+                                                    twine upload dist/h2o_client-${env.PROJECT_VERSION}-py2.py3-none-any.whl
+                                                fi
+                                            else
+                                                echo '****** WARNING! Upload PyPI Conda suppressed ******'
+                                            fi
+                                        """
+                                    }
+                                }
+                                pipelineContext.getBuildSummary().markStageSuccessful(this, UPLOAD_PYPI_CLIENT_STAGE_NAME)
+                            } catch (Exception e) {
+                                pipelineContext.getBuildSummary().markStageFailed(this, UPLOAD_PYPI_CLIENT_STAGE_NAME)
+                                e.printStackTrace()
+                            }
+                        }
                     }
 
                     if (params.BUILD_CONDA) {
