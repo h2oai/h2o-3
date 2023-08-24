@@ -484,9 +484,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
     @Override
     protected void addCustomInfo(UpliftDRFModel.UpliftDRFOutput out) {
         if(out._validation_metrics != null){
-            out._metricThresholds = ((ModelMetricsBinomialUplift)out._validation_metrics)._auuc._ths;
+            out._defaultAuucThresholds = ((ModelMetricsBinomialUplift)out._validation_metrics)._auuc._ths;
         } else {
-            out._metricThresholds = ((ModelMetricsBinomialUplift)out._training_metrics)._auuc._ths;
+            out._defaultAuucThresholds = ((ModelMetricsBinomialUplift)out._training_metrics)._auuc._ths;
         }
     }
 

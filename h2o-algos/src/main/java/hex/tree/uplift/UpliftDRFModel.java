@@ -6,7 +6,6 @@ import hex.tree.SharedTreeModel;
 import hex.tree.SharedTreeModelWithContributions;
 import hex.tree.SharedTreePojoWriter;
 import hex.util.EffectiveParametersUtils;
-import water.H2O;
 import water.Key;
 
 public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
@@ -38,7 +37,7 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
 
     public static class UpliftDRFOutput extends SharedTreeModelWithContributions.SharedTreeOutput {
         
-        public double[] _metricThresholds; // thresholds for AUUC to calculate metrics
+        public double[] _defaultAuucThresholds; // thresholds for AUUC to calculate metrics
         
         public UpliftDRFOutput( UpliftDRF b) { super(b); }
 
@@ -81,7 +80,7 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     }
 
     @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-        return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, _output._metricThresholds);
+        return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, _output._defaultAuucThresholds);
     }
 
     @Override

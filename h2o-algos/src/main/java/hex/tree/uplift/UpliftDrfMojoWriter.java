@@ -18,6 +18,6 @@ public class UpliftDrfMojoWriter extends SharedTreeMojoWriter<UpliftDRFModel, Up
     @Override
     protected void writeModelData() throws IOException {
         super.writeModelData();
-        writekv("thresholds", model._output._metricThresholds);
+        writekv("default_auuc_thresholds", model._output._defaultAuucThresholds);
     }
 }

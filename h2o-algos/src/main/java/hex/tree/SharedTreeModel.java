@@ -5,8 +5,6 @@ import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.glm.GLMModel;
-import hex.schemas.UpliftDRFModelV3;
 import hex.tree.uplift.UpliftDRFModel;
 import hex.util.LinearAlgebraUtils;
 import org.apache.log4j.Logger;
@@ -168,7 +166,7 @@ public abstract class SharedTreeModel<
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain, _parms._auc_type);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
-      case BinomialUplift: return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, ((UpliftDRFModel.UpliftDRFOutput)_output)._metricThresholds);
+      case BinomialUplift: return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain, ((UpliftDRFModel.UpliftDRFOutput)_output)._defaultAuucThresholds);
       default: throw H2O.unimpl();
     }
   }

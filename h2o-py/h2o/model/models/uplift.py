@@ -368,6 +368,9 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model.qini(train=True)
         """
         return self._delegate_to_metrics(method='qini', train=train, valid=valid)
+    
+    def default_auuc_thresholds(self):
+        return self._model_json['output']['default_auuc_thresholds']
 
     def ate(self, train=False, valid=False):
         """
