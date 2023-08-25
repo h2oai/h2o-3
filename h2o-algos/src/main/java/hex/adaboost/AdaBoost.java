@@ -67,10 +67,13 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         private void buildAdaboost() {
             _model._output.alphas = new double[(int)_parms._n_estimators];
             _model._output.models = new Key[(int)_parms._n_estimators];
-            train().add("weights", Vec.makeCon(1.0, train().numRows()));
-            train()._key = Key.make();
-            DKV.put(train());
-            Scope.track(train());
+//            Vec weights = train().anyVec().makeCons(1,1,null,null)[0];
+//            train().add("weights", weights);
+//            DKV.put(weights);
+//            train()._key = Key.make();
+//            DKV.put(train());
+//            Scope.track(weights);
+            System.out.println("train().toTwoDimTable() = " + train().toTwoDimTable());
             for (int n = 0; n < _parms._n_estimators; n++) {
                 ModelBuilder job = chooseWeakLearner();
                 job._parms._seed += n;
@@ -171,7 +174,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     
     private DRF getDRFWeakLearner() {
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-        parms._train = train()._key;
+        parms._train = _parms._train;
         parms._response_column = _parms._response_column;
         parms._mtries = 1;
         parms._min_rows = 1;

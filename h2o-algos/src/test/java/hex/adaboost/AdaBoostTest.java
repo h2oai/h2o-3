@@ -8,6 +8,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.runner.RunWith;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -130,14 +131,19 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(train);
             Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            test.add("weights", test.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(test);            
             String response = "CAPSULE";
             train.toCategoricalCol(response);
             test.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._n_estimators = 1;
+            p._weights_column = "weights";
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -145,7 +151,9 @@ public class AdaBoostTest extends TestUtil {
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
 
-            Frame score = adaBoostModel.score(test);
+            System.out.println("train.toTwoDimTable() = " + train.toTwoDimTable());
+            
+            Frame score = adaBoostModel.score(train);
             Scope.track(score);
             toCSV(score, "../prostatescore.csv");
 //            Frame scoreOriginal = Scope.track(parseTestFile("../prostatescore_original.csv"));
