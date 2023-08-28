@@ -40,12 +40,15 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(train);
             String response = "CAPSULE";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._n_estimators = 50;
+            p._weights_column = "weights";
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -62,6 +65,8 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(train);
             String response = "CAPSULE";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
@@ -69,6 +74,7 @@ public class AdaBoostTest extends TestUtil {
             p._seed = 0xDECAF;
             p._n_estimators = 50;
             p._weak_learner = AdaBoostModel.Algorithm.GLM;
+            p._weights_column = "weights";
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -109,12 +115,15 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("bigdata/laptop/creditcardfraud/creditcardfraud.csv"));
+            train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(train);
             String response = "Class";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._n_estimators = 50;
+            p._weights_column = "weights";
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -196,13 +205,18 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("bigdata/laptop/creditcardfraud/creditcardfraud.csv"));
+            train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(train);            
             Frame test = Scope.track(parseTestFile("bigdata/laptop/creditcardfraud/creditcardfraud.csv"));
+            test.add("weights", test.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(test);            
             String response = "Class";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._n_estimators = 50;
+            p._weights_column = "weights";
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -223,7 +237,11 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+            train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(train);            
             Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test_preprocessed.csv"));
+            test.add("weights", test.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(test);            
             String response = "IsDepDelayed";
             train.toCategoricalCol(response);
             test.toCategoricalCol(response);
@@ -231,6 +249,7 @@ public class AdaBoostTest extends TestUtil {
             p._train = train._key;
             p._seed = 0xDECAF;
             p._n_estimators = 50;
+            p._weights_column = "weights";
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -251,7 +270,11 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/higgs/higgs_train_5k.csv"));
+            train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(train);            
             Frame test = Scope.track(parseTestFile("smalldata/higgs/higgs_test_5k.csv"));
+            test.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
+            DKV.put(test);            
             String response = "response";
             train.toCategoricalCol(response);
             test.toCategoricalCol(response);
@@ -259,6 +282,7 @@ public class AdaBoostTest extends TestUtil {
             p._train = train._key;
             p._seed = 0xDECAF;
             p._n_estimators = 50;
+            p._weights_column = "weights";
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);

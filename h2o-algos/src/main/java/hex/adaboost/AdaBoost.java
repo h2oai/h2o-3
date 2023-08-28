@@ -188,7 +188,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
 
     private GLM getGLMWeakLearner() {
         GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
-        parms._train = train()._key;
+        parms._train = _parms._train;
         parms._response_column = _parms._response_column;
         return new GLM(parms);
     }
