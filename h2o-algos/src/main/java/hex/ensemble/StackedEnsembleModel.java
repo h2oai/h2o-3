@@ -81,63 +81,7 @@ public class StackedEnsembleModel
 
       fr.add(metalearnerContrib);
 
-//      class CombinePhis extends MRTask<CombinePhis> {
-//        final String[] _columns;
-//        final int[][] _baseIdx;
-//        final int[] _metaIdx;
-//        final int _biasTermIdx;
-//        final int _biasTermSrc;
-//        final Integer[] _baseModelIdx;
-//
-//        CombinePhis(String[] columns, String[] baseModels, List<String> bigFrameColumns, Integer[] baseModelIdx) {
-//          _columns = columns;
-//          _baseIdx = new int[columns.length][baseModels.length];
-//          _metaIdx = new int[baseModels.length];
-//          _biasTermIdx = Arrays.asList(columns).indexOf("BiasTerm");
-//          _biasTermSrc = bigFrameColumns.indexOf("metalearner_BiasTerm");
-//          _baseModelIdx = baseModelIdx;
-//          for (int i = 0; i < columns.length; i++) {
-//            for (int j = 0; j < baseModels.length; j++) {
-//              _baseIdx[i][j] = bigFrameColumns.indexOf(baseModels[j] + "_" + columns[i]);
-//            }
-//          }
-//          for (int i = 0; i < baseModels.length; i++) {
-//            _metaIdx[i] = bigFrameColumns.indexOf("metalearner_" + baseModels[i]);
-//          }
-//        }
-//
-//        @Override
-//        public void map(Chunk[] cs, NewChunk[] ncs) {
-//          for (int i = 0; i < cs[0]._len; i++) {
-//            double[] normalizingTerms = new double[_metaIdx.length];
-//            for (int j = 0; j < _metaIdx.length; j++) {
-//              for (int k = _baseModelIdx[j]; k < _baseModelIdx[j+1]; k++) {
-//                //normalizingTerms[j] += Math.exp(cs[k].atd(i));
-//                normalizingTerms[j] += cs[k].atd(i);
-//              }
-//            }
-//            
-//            for (int j = 0; j < ncs.length; j++) {
-//              if (j == _biasTermIdx) {
-//                ncs[j].addNum(cs[_biasTermSrc].atd(i));
-//                continue;
-//              }
-//              double tmp = 0;
-//              for (int k = 0; k < _metaIdx.length; k++) {
-//                // tmp += Math.exp(cs[_baseIdx[j][k]].atd(i)) * cs[_metaIdx[k]].atd(i)/normalizingTerms[k];
-//                tmp += (cs[_baseIdx[j][k]].atd(i)) * cs[_metaIdx[k]].atd(i)/normalizingTerms[k];
-//              }
-//              ncs[j].addNum(tmp);
-//            }
-//          }
-//        }
-//      }
-//      ;
-//
-//      CombinePhis c = new CombinePhis(columns, baseModels.toArray(new String[0]),
-//              Arrays.asList(fr._names), baseModelsIdx.toArray(new Integer[0]));
-//      c.doAll(columns.length, Vec.T_NUM, fr);
-//      return c.outputFrame(destination_key, columns, null);
+
       
       final Map<String, Double> meansMap = FrameUtils.getMeans(adaptFr, _parms._categorical_encoding);
       final double[] expectedValues = Arrays.stream(columns)

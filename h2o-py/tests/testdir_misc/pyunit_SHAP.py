@@ -314,7 +314,8 @@ def import_data(seed=seed, no_NA=False):
 def helper_test_all(
     Estimator, y, train, test, output_format, link=False, eps=1e-6, skip_naive=False, **kwargs
 ):
-    mod = Estimator(**kwargs)
+    # Using seed to prevent DL models to end up with an unstable model
+    mod = Estimator(seed=seed, **kwargs)
     mod.train(y=y, training_frame=train)
 
     test_local_accuracy(
@@ -718,77 +719,88 @@ def test_glm_not_regularized_regression_compact():
 def test_deeplearning_1hidden_tanh_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh", hidden=[5]
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5]
     )
 
 
 def test_deeplearning_1hidden_tanh_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5]
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True, activation="tanh",
+        hidden=[5]
     )
 
 
 def test_deeplearning_2hidden_tanh_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh", hidden=[5, 5]
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5, 5]
     )
 
 
 def test_deeplearning_2hidden_tanh_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5, 5]
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True, activation="tanh",
+        hidden=[5, 5]
     )
 
 
 def test_deeplearning_5hidden_tanh_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh", hidden=[5] * 5
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5] * 5
     )
 
 
 def test_deeplearning_5hidden_tanh_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5] * 5
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True, activation="tanh",
+        hidden=[5] * 5
     )
 
 
 def test_deeplearning_1hidden_tanh_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh", hidden=[5]
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5]
     )
 
 
 def test_deeplearning_1hidden_tanh_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5]
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5]
     )
 
 
 def test_deeplearning_2hidden_tanh_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh", hidden=[5, 5]
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5, 5]
     )
 
 
 def test_deeplearning_2hidden_tanh_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5, 5]
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5, 5]
     )
 
 
 def test_deeplearning_5hidden_tanh_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh",
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh",
         hidden=[5] * 5
     )
 
@@ -796,14 +808,16 @@ def test_deeplearning_5hidden_tanh_binomial_original():
 def test_deeplearning_5hidden_tanh_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5] * 5
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5] * 5
     )
 
 
 def test_deeplearning_1hidden_tanh_with_dropout_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
         hidden=[5]
     )
 
@@ -811,7 +825,8 @@ def test_deeplearning_1hidden_tanh_with_dropout_regression_original():
 def test_deeplearning_1hidden_tanh_with_dropout_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
         hidden=[5]
     )
 
@@ -819,39 +834,44 @@ def test_deeplearning_1hidden_tanh_with_dropout_regression_compact():
 def test_deeplearning_2hidden_tanh_with_dropout_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
-        hidden=[5, 5]
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
     )
 
 
 def test_deeplearning_2hidden_tanh_with_dropout_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
-        hidden=[5, 5]
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
     )
 
 
 def test_deeplearning_5hidden_tanh_with_dropout_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
-        hidden=[5] * 5
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5] * 5, hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
     )
 
 
 def test_deeplearning_5hidden_tanh_with_dropout_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
-        hidden=[5] * 5
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5] * 5, hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
     )
 
 
 def test_deeplearning_1hidden_tanh_with_dropout_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
         hidden=[5]
     )
 
@@ -859,7 +879,8 @@ def test_deeplearning_1hidden_tanh_with_dropout_binomial_original():
 def test_deeplearning_1hidden_tanh_with_dropout_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
         hidden=[5]
     )
 
@@ -867,53 +888,60 @@ def test_deeplearning_1hidden_tanh_with_dropout_binomial_compact():
 def test_deeplearning_2hidden_tanh_with_dropout_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
-        hidden=[5, 5]
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
     )
 
 
 def test_deeplearning_2hidden_tanh_with_dropout_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
-        hidden=[5, 5]
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
     )
 
 
 def test_deeplearning_5hidden_tanh_with_dropout_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh_with_dropout",
-        hidden=[5] * 5
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5] * 5, hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
     )
 
 
 def test_deeplearning_5hidden_tanh_with_dropout_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh_with_dropout",
-        hidden=[5] * 5
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5] * 5, hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
     )
 
 
 def test_deeplearning_1hidden_relu_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier", hidden=[5]
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier", hidden=[5]
     )
 
 
 def test_deeplearning_1hidden_relu_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier", hidden=[5]
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier", hidden=[5]
     )
 
 
 def test_deeplearning_2hidden_relu_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier",
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier",
         hidden=[5, 5]
     )
 
@@ -921,14 +949,16 @@ def test_deeplearning_2hidden_relu_regression_original():
 def test_deeplearning_2hidden_relu_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier", hidden=[5, 5]
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier", hidden=[5, 5]
     )
 
 
 def test_deeplearning_5hidden_relu_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier",
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier",
         hidden=[5] * 5
     )
 
@@ -936,7 +966,8 @@ def test_deeplearning_5hidden_relu_regression_original():
 def test_deeplearning_5hidden_relu_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier",
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier",
         hidden=[5] * 5
     )
 
@@ -944,7 +975,8 @@ def test_deeplearning_5hidden_relu_regression_compact():
 def test_deeplearning_1hidden_relu_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="rectifier",
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier",
         hidden=[5]
     )
 
@@ -952,7 +984,8 @@ def test_deeplearning_1hidden_relu_binomial_original():
 def test_deeplearning_1hidden_relu_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="rectifier",
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier",
         hidden=[5]
     )
 
@@ -960,7 +993,8 @@ def test_deeplearning_1hidden_relu_binomial_compact():
 def test_deeplearning_2hidden_relu_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="rectifier",
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier",
         hidden=[5, 5]
     )
 
@@ -968,7 +1002,8 @@ def test_deeplearning_2hidden_relu_binomial_original():
 def test_deeplearning_2hidden_relu_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="rectifier",
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier",
         hidden=[5, 5]
     )
 
@@ -976,7 +1011,8 @@ def test_deeplearning_2hidden_relu_binomial_compact():
 def test_deeplearning_5hidden_relu_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, activation="tanh",
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh",
         hidden=[5] * 5
     )
 
@@ -984,14 +1020,16 @@ def test_deeplearning_5hidden_relu_binomial_original():
 def test_deeplearning_5hidden_relu_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, activation="tanh", hidden=[5] * 5
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5] * 5
     )
 
 
 def test_deeplearning_1hidden_relu_with_dropout_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier_with_dropout",
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2,
         hidden=[5]
     )
 
@@ -999,7 +1037,8 @@ def test_deeplearning_1hidden_relu_with_dropout_regression_original():
 def test_deeplearning_1hidden_relu_with_dropout_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier_with_dropout",
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2,
         hidden=[5]
     )
 
@@ -1007,80 +1046,294 @@ def test_deeplearning_1hidden_relu_with_dropout_regression_compact():
 def test_deeplearning_2hidden_relu_with_dropout_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier_with_dropout",
-        hidden=[5, 5]
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
     )
 
 
 def test_deeplearning_2hidden_relu_with_dropout_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier_with_dropout",
-        hidden=[5, 5]
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
     )
 
 
 def test_deeplearning_5hidden_relu_with_dropout_regression_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, activation="rectifier_with_dropout",
-        hidden=[5] * 5
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5] * 5, hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
     )
 
 
 def test_deeplearning_5hidden_relu_with_dropout_regression_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, activation="rectifier_with_dropout",
-        hidden=[5] * 5
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5] * 5, hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
     )
 
 
 def test_deeplearning_1hidden_relu_with_dropout_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True,
-        activation="rectifier_with_dropout", hidden=[5]
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2, hidden=[5]
     )
 
 
 def test_deeplearning_1hidden_relu_with_dropout_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True,
-        activation="rectifier_with_dropout", hidden=[5]
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2, hidden=[5]
     )
 
 
 def test_deeplearning_2hidden_relu_with_dropout_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True,
-        activation="rectifier_with_dropout", hidden=[5, 5]
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2, hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
     )
 
 
 def test_deeplearning_2hidden_relu_with_dropout_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True,
-        activation="rectifier_with_dropout", hidden=[5, 5]
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2, hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
     )
 
 
 def test_deeplearning_5hidden_relu_with_dropout_binomial_original():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True,
-        activation="rectifier_with_dropout", hidden=[5] * 5
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2, hidden=[5] * 5,
+        hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
     )
 
 
 def test_deeplearning_5hidden_relu_with_dropout_binomial_compact():
     train, test = import_data()
     helper_test_all(
-        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True,
-        activation="rectifier_with_dropout", hidden=[5] * 5
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="rectifier_with_dropout", input_dropout_ratio=0.2, hidden=[5] * 5,
+        hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
+    )
+
+
+def test_deeplearning_1hidden_maxout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout", hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_maxout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout", hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_maxout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_maxout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout", hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_maxout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_maxout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_maxout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_maxout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout",
+        hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_maxout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_2hidden_maxout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout",
+        hidden=[5, 5]
+    )
+
+
+def test_deeplearning_5hidden_maxout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="tanh",
+        hidden=[5] * 5
+    )
+
+
+def test_deeplearning_5hidden_maxout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="tanh", hidden=[5] * 5
+    )
+
+
+def test_deeplearning_1hidden_maxout_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_maxout_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_maxout_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
+    )
+
+
+def test_deeplearning_2hidden_maxout_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
+    )
+
+
+def test_deeplearning_5hidden_maxout_with_dropout_regression_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5] * 5, hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
+    )
+
+
+def test_deeplearning_5hidden_maxout_with_dropout_regression_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "fare", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2,
+        hidden=[5] * 5, hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
+    )
+
+
+def test_deeplearning_1hidden_maxout_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2, hidden=[5]
+    )
+
+
+def test_deeplearning_1hidden_maxout_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2, hidden=[5]
+    )
+
+
+def test_deeplearning_2hidden_maxout_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2, hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
+    )
+
+
+def test_deeplearning_2hidden_maxout_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2, hidden=[5, 5], hidden_dropout_ratios=[0.3, 0.5]
+    )
+
+
+def test_deeplearning_5hidden_maxout_with_dropout_binomial_original():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "original", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2, hidden=[5] * 5,
+        hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
+    )
+
+
+def test_deeplearning_5hidden_maxout_with_dropout_binomial_compact():
+    train, test = import_data()
+    helper_test_all(
+        H2ODeepLearningEstimator, "survived", train, test, "compact", skip_naive=True, reproducible=True,
+        activation="maxout_with_dropout", input_dropout_ratio=0.2, hidden=[5] * 5,
+        hidden_dropout_ratios=[0.3, 0.5, 0.1, 0.4, 0.6]
     )
 
 
@@ -1177,6 +1430,30 @@ TESTS = [
     test_deeplearning_2hidden_relu_with_dropout_binomial_compact,
     test_deeplearning_5hidden_relu_with_dropout_binomial_original,
     test_deeplearning_5hidden_relu_with_dropout_binomial_compact,
+    test_deeplearning_1hidden_maxout_regression_original,
+    test_deeplearning_1hidden_maxout_regression_compact,
+    test_deeplearning_2hidden_maxout_regression_original,
+    test_deeplearning_2hidden_maxout_regression_compact,
+    test_deeplearning_5hidden_maxout_regression_original,
+    test_deeplearning_5hidden_maxout_regression_compact,
+    test_deeplearning_1hidden_maxout_binomial_original,
+    test_deeplearning_1hidden_maxout_binomial_compact,
+    test_deeplearning_2hidden_maxout_binomial_original,
+    test_deeplearning_2hidden_maxout_binomial_compact,
+    test_deeplearning_5hidden_maxout_binomial_original,
+    test_deeplearning_5hidden_maxout_binomial_compact,
+    test_deeplearning_1hidden_maxout_with_dropout_regression_original,
+    test_deeplearning_1hidden_maxout_with_dropout_regression_compact,
+    test_deeplearning_2hidden_maxout_with_dropout_regression_original,
+    test_deeplearning_2hidden_maxout_with_dropout_regression_compact,
+    test_deeplearning_5hidden_maxout_with_dropout_regression_original,
+    test_deeplearning_5hidden_maxout_with_dropout_regression_compact,
+    test_deeplearning_1hidden_maxout_with_dropout_binomial_original,
+    test_deeplearning_1hidden_maxout_with_dropout_binomial_compact,
+    test_deeplearning_2hidden_maxout_with_dropout_binomial_original,
+    test_deeplearning_2hidden_maxout_with_dropout_binomial_compact,
+    test_deeplearning_5hidden_maxout_with_dropout_binomial_original,
+    test_deeplearning_5hidden_maxout_with_dropout_binomial_compact,
 ]
 
 if __name__ == "__main__":

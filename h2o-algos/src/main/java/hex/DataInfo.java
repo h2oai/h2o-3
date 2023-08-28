@@ -7,6 +7,7 @@ import water.util.ArrayUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static water.util.ArrayUtils.findLongestCommonPrefix;
 
@@ -867,7 +868,7 @@ public class DataInfo extends Keyed<DataInfo> {
           res[k++] = i+_cats;
       }
     }
-    if (null != _adaptedFrame && adaptedFrame._key.equals(_adaptedFrame._key))
+    if (null != _adaptedFrame && Objects.equals(_adaptedFrame._key, adaptedFrame._key))
       _coefOriginalIndices = res;
     return res;
   }
