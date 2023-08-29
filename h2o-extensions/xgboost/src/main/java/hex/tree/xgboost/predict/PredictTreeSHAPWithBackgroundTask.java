@@ -2,8 +2,10 @@ package hex.tree.xgboost.predict;
 
 import hex.ContributionsWithBackgroundFrameTask;
 import hex.DataInfo;
+import hex.DistributionFactory;
 import hex.Model;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.XGBoostOutput;
 import water.Job;
@@ -20,16 +22,17 @@ public class PredictTreeSHAPWithBackgroundTask extends ContributionsWithBackgrou
     protected final XGBoostModelInfo _modelInfo;
     protected final XGBoostOutput _output;
     protected final boolean _outputAggregated;
-
+    protected final boolean _outputSpace;
     protected transient XGBoostJavaMojoModel _mojo;
 
     public PredictTreeSHAPWithBackgroundTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output,
-                                             Model.Contributions.ContributionsOptions options, Frame frame, Frame backgroundFrame) {
+                                             Model.Contributions.ContributionsOptions options, Frame frame, Frame backgroundFrame, boolean outputSpace) {
         super(frame, backgroundFrame);
         _di = di;
         _modelInfo = modelInfo;
         _output = output;
         _outputAggregated = Model.Contributions.ContributionsOutputFormat.Compact.equals(options._outputFormat);
+        _outputSpace = outputSpace;
     }
 
 
@@ -49,9 +52,21 @@ public class PredictTreeSHAPWithBackgroundTask extends ContributionsWithBackgrou
     }
 
     protected void addContribToNewChunk(double[] contribs, NewChunk[] nc) {
-        for (int i = 0; i < nc.length; i++) {
-            nc[i].addNum(contribs[i]);
+        double transformationRatio = 1;
+        double biasTerm = contribs[contribs.length - 1];
+        if (_outputSpace && _output.isBinomialClassifier()) {
+            final double linkSpaceX = Arrays.stream(contribs).sum();
+            final double linkSpaceBg = biasTerm;
+            // FIXME: What's the proper way of getting the link here? _modelInfo._parameters._distribution is set to AUTO by default
+            final double outSpaceX = DistributionFactory.getDistribution(DistributionFamily.bernoulli).linkInv(linkSpaceX);
+            final double outSpaceBg = DistributionFactory.getDistribution(DistributionFamily.bernoulli).linkInv(linkSpaceBg);
+            transformationRatio = Math.abs(linkSpaceX-linkSpaceBg) < 1e-6 ? 0 : (outSpaceX-outSpaceBg)/(linkSpaceX-linkSpaceBg);
+            biasTerm = outSpaceBg;
         }
+        for (int i = 0; i < nc.length - 1; i++) {
+            nc[i].addNum(contribs[i] * transformationRatio);
+        }
+        nc[nc.length - 1].addNum(biasTerm);
     }
 
 

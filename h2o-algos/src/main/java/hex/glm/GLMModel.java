@@ -189,45 +189,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         throw H2O.unimpl("SHAP for GLM with interactions is not supported");
       }
     }
-    
-    class GLMContributions extends MRTask<GLMContributions>{
-      double[] _betas;
-      double[] _means;
-      DataInfo _dinfo;
-      GLMContributions(DataInfo dinfo, double[] betas, double[] means) {
-        _dinfo = dinfo;
-        _betas = betas;
-        _means = means;
-      }
-      
-      @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        DataInfo.Row row = _dinfo.newDenseRow();
-        double biasTerm = (_dinfo._intercept?_betas[_betas.length-1]:0);
-        // bias Term  = intercept - beta*means
-        biasTerm += ArrayUtils.innerProduct(_means, _betas);
-        for (int j = 0; j < cs[0]._len; j++) {
-          _dinfo.extractDenseRow(cs, j, row);
-          for (int i = 0; i < _betas.length - (_dinfo._intercept?1:0); i++) {
-            final double x = row.get(i);
-            ncs[i].addNum(_betas[i] *(x - _means[i]));
-          }
-          ncs[_means.length].addNum(biasTerm);
-        }
-      }
-    }
-
     class GLMContributionsWithBackground extends ContributionsWithBackgroundFrameTask<GLMContributionsWithBackground> {
       double[] _betas;
       DataInfo _dinfo;
-
       boolean _compact;
-      
-      GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame frame, Frame backgroundFrame, boolean compact) {
+      boolean _output_space;
+
+      GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame frame, Frame backgroundFrame, boolean compact, boolean output_space) {
         super(frame, backgroundFrame);
         _dinfo = dinfo;
         _betas = betas;
         _compact = compact;
+        _output_space = output_space;
       }
 
       @Override
@@ -235,86 +208,73 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         DataInfo.Row row = _dinfo.newDenseRow();
         DataInfo.Row bgRow = _dinfo.newDenseRow();
         int idx;
-        double[] result = _compact?MemoryManager.malloc8d(ncs.length-1):null; // used only when output_format == compact
+        double[] result = MemoryManager.malloc8d(ncs.length - 1); // used only when output_format == compact
+        double transformationRatio = 1; // used for transforming to output space 
         for (int j = 0; j < cs[0]._len; j++) {
           _dinfo.extractDenseRow(cs, j, row);
-          
+
           for (int k = 0; k < bgCs[0]._len; k++) {
             _dinfo.extractDenseRow(bgCs, k, bgRow);
+            Arrays.fill(result, 0);
             double biasTerm = (_dinfo._intercept ? _betas[_betas.length - 1] : 0);
             for (int i = 0; i < _betas.length - (_dinfo._intercept ? 1 : 0); i++) {
-              if (_compact) {
-                idx = _dinfo.coefOriginalColumnIndices()[i];
-                result[idx] += _betas[i] * (row.get(i) - bgRow.get(i));
-                biasTerm += _betas[i] * bgRow.get(i);
-              } else {
-                ncs[i].addNum(_betas[i] * (row.get(i) - bgRow.get(i)));
-                biasTerm += _betas[i]*bgRow.get(i);
-              }
+              idx = _compact ? _dinfo.coefOriginalColumnIndices()[i] : i;
+              result[idx] += _betas[i] * (row.get(i) - bgRow.get(i));
+              biasTerm += _betas[i] * bgRow.get(i);
             }
-            if (_compact)
-              for (int i = 0; i < result.length; i++) {
-                ncs[i].addNum(result[i]);
-                result[i] = 0;
-              }
-            //_betas.length - (_dinfo._intercept ? 1 : 0)
-            ncs[ncs.length-1].addNum(biasTerm);
+
+            if (_output_space) {
+              final double linkSpaceX = Arrays.stream(result).sum()+biasTerm;
+              final double linkSpaceBg = biasTerm;
+              final double outSpaceX = _parms.linkInv(linkSpaceX);
+              final double outSpaceBg = _parms.linkInv(linkSpaceBg);
+              transformationRatio = Math.abs(linkSpaceX - linkSpaceBg) < 1e-6 ? 0 : (outSpaceX - outSpaceBg) / (linkSpaceX - linkSpaceBg);
+              biasTerm = outSpaceBg;
+            }
+
+            for (int i = 0; i < result.length; i++) {
+              ncs[i].addNum(result[i] * transformationRatio);
+            }
+            ncs[ncs.length - 1].addNum(biasTerm);
           }
         }
       }
     }
-    
+
     List<Frame> tmpFrames = new ArrayList<>();
 
-    if (backgroundFrame == null) {
-      assert _parms.train() != null;
-      Frame adaptedFrame = adaptFrameForScore(_parms.train(), false, tmpFrames);
-      DKV.put(adaptedFrame);
-      Map<String, Double> meansMap = FrameUtils.getMeans(adaptedFrame, Parameters.CategoricalEncodingScheme.AUTO);
-      double[] means = Arrays.stream(_output._coefficient_names)
-              .filter(c -> !"Intercept".equals(c))
-              .mapToDouble(c -> meansMap.getOrDefault(c, Double.NaN))
-              .toArray();
+    if (backgroundFrame == null)
+      throw H2O.unimpl("GLM supports contribution calculation only with background frame.");
 
-      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+    Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
+    DKV.put(adaptedBgFrame);
+    Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+    DataInfo dinfo = _output._dinfo.clone();
+    dinfo._adaptedFrame = adaptedFrame;
+    GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(dinfo,
+            _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame, adaptedBgFrame,
+            ContributionsOutputFormat.Compact.equals(options._outputFormat), options._outputSpace);
+    String[] colNames = new String[ContributionsOutputFormat.Compact.equals(options._outputFormat)
+            ? dinfo.coefOriginalNames().length + 1 // +1 for bias term
+            : beta().length + (_output._dinfo._intercept ? 0 : 1)];
+    System.arraycopy(ContributionsOutputFormat.Compact.equals(options._outputFormat)
+            ? Arrays.stream(dinfo.coefOriginalNames()).map(name -> {
+      if (!dinfo._useAllFactorLevels && name.contains(".") && frame.find(name) == -1) {
+        // We can have binary vars encoded as single variable + some contribution in intercept; we need to convert
+        // the name of the encoded variable to the original variable name (e.g., sex.female -> sex)
+        for (int i = 0; i < name.length(); i++) {
+          name = name.substring(0, name.lastIndexOf("."));
+          if (frame.find(name) >= 0)
+            return name;
+        }
+      }
+      return name;
+    }).toArray(String[]::new)
+            : _output._coefficient_names, 0, colNames, 0, colNames.length - 1);
+    colNames[colNames.length - 1] = "BiasTerm";
+    return contributions.runAndGetOutput(j, destination_key,
+            colNames);
 
-      GLMContributions contributions = new GLMContributions(_output._dinfo, _parms._standardize ? _output.getNormBeta() : _output.beta(), means)
-              .doAll(beta().length + (_output._dinfo._intercept ? 0 : 1), Vec.T_NUM, adaptedFrame);
-
-      String[] colNames = new String[beta().length + (_output._dinfo._intercept ? 0 : 1)];
-      System.arraycopy(_output._coefficient_names, 0, colNames, 0, colNames.length - 1);
-      colNames[colNames.length - 1] = "BiasTerm";
-      return contributions.outputFrame(destination_key, colNames, null);
-    } else {
-      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      DKV.put(adaptedBgFrame);
-      Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
-      DataInfo dinfo = _output._dinfo.clone();
-      dinfo._adaptedFrame = adaptedFrame;
-      GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(dinfo,
-              _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame, adaptedBgFrame, 
-              ContributionsOutputFormat.Compact.equals(options._outputFormat));
-      String[] colNames = new String[ContributionsOutputFormat.Compact.equals(options._outputFormat)
-              ? dinfo.coefOriginalNames().length + 1 // +1 for bias term
-              : beta().length + (_output._dinfo._intercept ? 0 : 1)];
-      System.arraycopy(ContributionsOutputFormat.Compact.equals(options._outputFormat)
-              ? Arrays.stream(dinfo.coefOriginalNames()).map(name -> {
-                if (!dinfo._useAllFactorLevels && name.contains(".") && frame.find(name) == -1) {
-                  // We can have binary vars encoded as single variable + some contribution in intercept; we need to convert
-                  // the name of the encoded variable to the original variable name (e.g., sex.female -> sex)
-                  for (int i = 0; i < name.length(); i++) {
-                    name = name.substring(0, name.lastIndexOf("."));
-                    if (frame.find(name) >= 0)
-                      return name;
-                  }
-                }
-                return name;
-      }).toArray(String[]::new)
-              :_output._coefficient_names, 0, colNames, 0, colNames.length - 1);
-      colNames[colNames.length - 1] = "BiasTerm";
-      return contributions.runAndGetOutput(j, destination_key,
-              colNames);
-    }
   }
 
   public static class RegularizationPath extends Iced {

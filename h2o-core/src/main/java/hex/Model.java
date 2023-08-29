@@ -137,6 +137,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public int _topN;
       public int _bottomN;
       public boolean _compareAbs;
+      public boolean _outputSpace; // Used only iff SHAP is in link space
 
       public ContributionsOptions setOutputFormat(ContributionsOutputFormat outputFormat) {
         _outputFormat = outputFormat;
@@ -158,6 +159,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return this;
       }
 
+      public ContributionsOptions setOutputSpace(boolean outputSpace) {
+        _outputSpace = outputSpace;
+        return this;
+      }
+      
       public boolean isSortingRequired() {
         return _topN != 0 || _bottomN != 0;
       }

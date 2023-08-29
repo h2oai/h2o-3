@@ -47,12 +47,17 @@ def remove_all_but(*args):
 
 
 def test_local_accuracy(
-    mod, train, test, link=False, eps=1e-5, output_format="original"
+    mod, train, test, link=False, eps=1e-5, output_format="original", output_space=False
 ):
-    print("Testing local accuracy...")
+    if link:
+        print("Testing local accuracy in link space...")
+    elif not link and output_space:
+        print("Testing local accuracy in output space...")
+    else:
+        print("Testing local accuracy...")
     with no_progress_block():
         cf = mod.predict_contributions(
-            test, background_frame=train, output_format=output_format
+            test, background_frame=train, output_format=output_format, output_space=output_space
         )
         pf = mod.predict(test)
         col = "Yes" if "Yes" in pf.names else "predict"
@@ -321,7 +326,12 @@ def helper_test_all(
     test_local_accuracy(
         mod, train, test, link=link, output_format=output_format, eps=eps
     )
-
+    
+    if link:
+        test_local_accuracy(
+            mod, train, test, link=False, output_format=output_format, eps=eps, output_space=True
+        )
+    
     test_dummy_property(mod, train, test, output_format=output_format)
 
     test_symmetry(mod, train, test, output_format=output_format, eps=eps)

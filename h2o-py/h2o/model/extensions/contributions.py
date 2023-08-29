@@ -6,7 +6,7 @@ from h2o.utils.typechecks import assert_is_type, Enum
 
 class Contributions:
 
-    def _predict_contributions(self, test_data, output_format, top_n, bottom_n, compare_abs, background_frame):
+    def _predict_contributions(self, test_data, output_format, top_n, bottom_n, compare_abs, background_frame, output_space):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost, DRF models and equivalent
         imported MOJOs).
@@ -23,18 +23,22 @@ class Contributions:
         :param Enum output_format: Specify how to output feature contributions in XGBoost. XGBoost by default outputs 
             contributions for 1-hot encoded features, specifying a Compact output format will produce a per-feature
             contribution. One of: ``"Original"``, ``"Compact"``.
-        :param top_n: Return only #top_n highest contributions + bias:
+        :param top_n: Return only #top_n the highest contributions + bias:
         
             - If ``top_n<0`` then sort all SHAP values in descending order
             - If ``top_n<0 && bottom_n<0`` then sort all SHAP values in descending order
             
-        :param bottom_n: Return only #bottom_n lowest contributions + bias:
+        :param bottom_n: Return only #bottom_n the lowest contributions + bias:
         
             - If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
             - If ``bottom_n<0`` then sort all SHAP values in ascending order
             - If ``top_n<0 && bottom_n<0`` then sort all SHAP values in descending order
             
         :param compare_abs: True to compare absolute values of contributions
+        :param background_frame: Specify background frame used as a reference for calculating SHAP.
+        :param output_space: If true, transform contributions so that they sum up to the difference in the output space
+            (applicable iff contributions are in link space). 
+            Note that this transformation is an approximation and the contributions won't be exact SHAP values.
         :returns: A new H2OFrame made of feature contributions.
 
         """
@@ -46,6 +50,8 @@ class Contributions:
                                  "top_n": top_n,
                                  "bottom_n": bottom_n,
                                  "compare_abs": compare_abs,
-                                 "background_frame": background_frame.frame_id if background_frame is not None else None}), "contributions")
+                                 "background_frame": background_frame.frame_id if background_frame is not None else None,
+                                 "output_space": output_space
+                                 }), "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)

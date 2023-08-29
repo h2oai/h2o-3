@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.ContributionsWithBackgroundFrameTask;
+import hex.DistributionFactory;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.tree.*;
@@ -109,7 +110,7 @@ public abstract class SharedTreeModelWithContributions<
       Frame adaptBackgroundFrm = removeSpecialColumns(backgroundFrame);
 
       final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
-      return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, false, null)
+      return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, false, null, options._outputSpace)
               .runAndGetOutput(j, destination_key, outputNames);
     } else {
       Frame adaptFrm = removeSpecialColumns(frame);
@@ -155,12 +156,12 @@ public abstract class SharedTreeModelWithContributions<
           }
         }
 
-      return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, true, catOffsets)
+      return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, true, catOffsets, options._outputSpace)
               .runAndGetOutput(j, destination_key, outputNames);
     }
   }
   
-  protected abstract ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets);
+  protected abstract ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets, boolean output_space);
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
 
@@ -293,13 +294,15 @@ public abstract class SharedTreeModelWithContributions<
     protected transient SharedTreeOutput _output;
     protected transient TreeSHAPPredictor<double[]> _treeSHAP;
     protected boolean _expand;
+    protected boolean _outputSpace;
     protected int[] _catOffsets;
 
-    public ScoreContributionsWithBackgroundTask(Frame fr, Frame backgroundFrame, SharedTreeModel model, boolean expand, int[] catOffsets) {
+    public ScoreContributionsWithBackgroundTask(Frame fr, Frame backgroundFrame, SharedTreeModel model, boolean expand, int[] catOffsets, boolean outputSpace) {
       super(fr, backgroundFrame);
       _modelKey = model._key;
       _expand = expand;
       _catOffsets = catOffsets;
+      _outputSpace = outputSpace;
     }
 
     @Override
@@ -355,9 +358,20 @@ public abstract class SharedTreeModelWithContributions<
     protected void doModelSpecificComputation(double[] contribs) {/*For children*/}
 
     protected void addContribToNewChunk(double[] contribs, NewChunk[] nc) {
-      for (int i = 0; i < nc.length; i++) {
-        nc[i].addNum(contribs[i]);
+      double transformationRatio = 1;
+      double biasTerm = contribs[contribs.length - 1];
+      if (_outputSpace) {
+        final double linkSpaceX = Arrays.stream(contribs).sum();
+        final double linkSpaceBg = biasTerm;
+        final double outSpaceX = DistributionFactory.getDistribution(_parms).linkInv(linkSpaceX);
+        final double outSpaceBg = DistributionFactory.getDistribution(_parms).linkInv(linkSpaceBg);
+        transformationRatio = Math.abs(linkSpaceX - linkSpaceBg) < 1e-6 ? 0 : (outSpaceX - outSpaceBg) / (linkSpaceX - linkSpaceBg);
+        biasTerm = outSpaceBg;
       }
+      for (int i = 0; i < nc.length - 1; i++) {
+        nc[i].addNum(contribs[i] * transformationRatio);
+      }
+      nc[nc.length - 1].addNum(biasTerm);
     }
   }
 
