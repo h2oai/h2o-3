@@ -8,7 +8,7 @@ The first step toward building and scoring your models is getting your data into
 Supported File Formats
 ----------------------
 
-H2O currently supports the following file types:
+H2O supports the following file types:
 
 - CSV (delimited, UTF-8 only) files (including GZipped CSV)
 - ORC
@@ -18,6 +18,7 @@ H2O currently supports the following file types:
 - XLSX (BIFF 8 only)
 - Avro version 1.8.0 (without multifile parsing or column type modification)
 - Parquet
+- Google Storage (gs://)
 
 **Notes**: 
  

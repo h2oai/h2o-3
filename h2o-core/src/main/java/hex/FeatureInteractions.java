@@ -41,12 +41,18 @@ public class FeatureInteractions {
             }
         }
     }
+    
+    public boolean isEmpty(){
+        return entrySet().isEmpty();
+    }
 
     public int maxDepth() {
+        if(isEmpty()) return 0;
         return Collections.max(this.entrySet(), Comparator.comparingInt(entry -> entry.getValue().depth)).getValue().depth;
     }
     
     public TwoDimTable[] getAsTable() {
+        if(isEmpty()) return  null;
         int maxDepth = maxDepth();
         TwoDimTable[] twoDimTables = new TwoDimTable[maxDepth + 1];
         for (int depth = 0; depth < maxDepth + 1; depth++) {
@@ -55,7 +61,7 @@ public class FeatureInteractions {
         return twoDimTables;
     }
     
-    List<FeatureInteraction> getFeatureInteractionsOfDepth(int depthRequired) {
+    private List<FeatureInteraction> getFeatureInteractionsOfDepth(int depthRequired) {
         return this.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue().depth == depthRequired)
@@ -63,7 +69,7 @@ public class FeatureInteractions {
                 .collect(Collectors.toList());
     }
 
-    List<FeatureInteraction> getFeatureInteractionsWithLeafStatistics() {
+    private List<FeatureInteraction> getFeatureInteractionsWithLeafStatistics() {
         return this.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue().hasLeafStatistics == true)
@@ -71,7 +77,8 @@ public class FeatureInteractions {
                 .collect(Collectors.toList());
     }
     
-    TwoDimTable constructFeatureInteractionsTable(int depth) {
+    private TwoDimTable constructFeatureInteractionsTable(int depth) {
+        assert depth >= 0  : "Depth has to be >= 0.";
         String[] colHeaders = new String[] {"Interaction", "Gain", "FScore", "wFScore", "Average wFScore", "Average Gain", 
                 "Expected Gain", "Gain Rank", "FScore Rank", "wFScore Rank", "Avg wFScore Rank", "Avg Gain Rank", 
                 "Expected Gain Rank", "Average Rank", "Average Tree Index", "Average Tree Depth"};
@@ -134,7 +141,7 @@ public class FeatureInteractions {
         return table;
     }
 
-    int indexOfInteractionWithName(String name, List<FeatureInteraction> featureInteractions) {
+    private int indexOfInteractionWithName(String name, List<FeatureInteraction> featureInteractions) {
         for (int i = 0; i < featureInteractions.size(); i++)
             if (featureInteractions.get(i).name == name)
                 return i;
@@ -182,7 +189,7 @@ public class FeatureInteractions {
         return splitValueHistograms;
     }
     
-    TwoDimTable constructHistogramForFeatureInteraction(FeatureInteraction featureInteraction) {
+    private TwoDimTable constructHistogramForFeatureInteraction(FeatureInteraction featureInteraction) {
         String[] colHeaders = new String[] {"Split Value", "Count"};
         String[] colTypes = new String[] {"double", "int"};
         String[] colFormat = new String[] {"%.5f", "%d"};
@@ -297,11 +304,13 @@ public class FeatureInteractions {
     }
     
     public static TwoDimTable[][] getFeatureInteractionsTable(FeatureInteractions featureInteractions) {
+        if(featureInteractions == null) {
+            return null;
+        }
         TwoDimTable[][] table = new TwoDimTable[3][];
-        table[0] =  featureInteractions.getAsTable();
+        table[0] = featureInteractions.getAsTable();
         table[1] = new TwoDimTable[]{featureInteractions.getLeafStatisticsTable()};
         table[2] = featureInteractions.getSplitValueHistograms();
-
         return table;
     }
 }
