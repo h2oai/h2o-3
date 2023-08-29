@@ -2,16 +2,14 @@ package hex.adaboost;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelBuilderHelper;
 import hex.ModelCategory;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import org.apache.log4j.Logger;
-import water.DKV;
-import water.Key;
-import water.MRTask;
-import water.Scope;
+import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -49,7 +47,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         public void computeImpl() {
             _model = null;
             try {
-                init(false);
+                init(true);
                 if (error_count() > 0) {
                     throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(AdaBoost.this);
                 }
@@ -67,31 +65,32 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         private void buildAdaboost() {
             _model._output.alphas = new double[(int)_parms._n_estimators];
             _model._output.models = new Key[(int)_parms._n_estimators];
-//            Vec weights = train().anyVec().makeCons(1,1,null,null)[0];
-//            train().add("weights", weights);
-//            DKV.put(weights);
-//            train()._key = Key.make();
-//            DKV.put(train());
-//            Scope.track(weights);
-            System.out.println("train().toTwoDimTable() = " + train().toTwoDimTable());
+            Frame _trainWithWeights = new Frame(train());
+            Vec weights = _trainWithWeights.anyVec().makeCons(1,1,null,null)[0];
+            _trainWithWeights.add("weights", weights);
+            DKV.put(_trainWithWeights);
+            Scope.track(weights);
             for (int n = 0; n < _parms._n_estimators; n++) {
-                ModelBuilder job = chooseWeakLearner();
+                ModelBuilder job = chooseWeakLearner(_trainWithWeights);
                 job._parms._seed += n;
                 Model model = (Model) job.trainModel().get();
                 DKV.put(model);
                 Scope.untrack(model._key);
                 _model._output.models[n] = model._key;
-                Frame score = model.score(train());
+                Frame score = model.score(_trainWithWeights);
                 Scope.track(score);
 
-                CountWe countWe = new CountWe().doAll(train().vec("weights"), train().vec(_parms._response_column), score.vec("predict"));
+                CountWe countWe = new CountWe().doAll(_trainWithWeights.vec("weights"), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
                 double e_m = countWe.We / countWe.W;
                 double alpha_m = _parms._learning_rate * Math.log((1 - e_m) / e_m);
                 _model._output.alphas[n] = alpha_m;
 
                 UpdateW updateW = new UpdateW(alpha_m);
-                updateW.doAll(train().vec("weights"), train().vec(_parms._response_column), score.vec("predict"));
+                updateW.doAll(_trainWithWeights.vec("weights"), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
+                _job.update(1);
+                _model.update(_job);
             }
+            DKV.remove(_trainWithWeights._key);
         }
     }
     
@@ -161,20 +160,20 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         return true;
     }
     
-    private ModelBuilder chooseWeakLearner() {
+    private ModelBuilder chooseWeakLearner(Frame frame) {
         switch (_parms._weak_learner) {
             case GLM:
-                return getGLMWeakLearner();
+                return getGLMWeakLearner(frame);
             default:
             case DRF:
-                return getDRFWeakLearner();
+                return getDRFWeakLearner(frame);
                 
         }
     }
     
-    private DRF getDRFWeakLearner() {
+    private DRF getDRFWeakLearner(Frame frame) {
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-        parms._train = _parms._train;
+        parms._train = frame._key;
         parms._response_column = _parms._response_column;
         parms._mtries = 1;
         parms._min_rows = 1;
@@ -186,7 +185,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         return new DRF(parms);
     }
 
-    private GLM getGLMWeakLearner() {
+    private GLM getGLMWeakLearner(Frame frame) {
         GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
         parms._train = _parms._train;
         parms._response_column = _parms._response_column;
