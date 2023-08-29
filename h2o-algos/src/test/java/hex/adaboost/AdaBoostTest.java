@@ -39,9 +39,10 @@ public class AdaBoostTest extends TestUtil {
     public void testBasicTrain() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
             train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
             DKV.put(train);
+            Scope.track(train);
             String response = "CAPSULE";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
@@ -64,9 +65,10 @@ public class AdaBoostTest extends TestUtil {
     public void testBasicTrainGLM() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
             train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
             DKV.put(train);
+            Scope.track(train);
             String response = "CAPSULE";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
@@ -104,7 +106,6 @@ public class AdaBoostTest extends TestUtil {
             assertNotNull(adaBoostModel);
             Frame score = adaBoostModel.score(train);
             Scope.track(score);
-            System.out.println("score.toTwoDimTable(0,10,false) = " + score.toTwoDimTable(0, 10, false));
         } finally {
             Scope.exit();
         }
@@ -114,9 +115,10 @@ public class AdaBoostTest extends TestUtil {
     public void testBasicTrainLarge() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parseTestFile("bigdata/laptop/creditcardfraud/creditcardfraud.csv"));
+            Frame train = parseTestFile("bigdata/laptop/creditcardfraud/creditcardfraud.csv");
             train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
             DKV.put(train);
+            Scope.track(train);
             String response = "Class";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
@@ -139,15 +141,12 @@ public class AdaBoostTest extends TestUtil {
     public void testBasicTrainAndScore() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
             train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
             DKV.put(train);
-            Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-            test.add("weights", test.anyVec().makeCons(1,1,null,null)[0]);
-            DKV.put(test);            
+            Scope.track(train);
             String response = "CAPSULE";
             train.toCategoricalCol(response);
-            test.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
@@ -204,12 +203,10 @@ public class AdaBoostTest extends TestUtil {
     public void testBasicTrainAndScoreLarge() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parseTestFile("bigdata/laptop/creditcardfraud/creditcardfraud.csv"));
+            Frame train = parseTestFile("bigdata/laptop/creditcardfraud/creditcardfraud.csv");
             train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
-            DKV.put(train);            
-            Frame test = Scope.track(parseTestFile("bigdata/laptop/creditcardfraud/creditcardfraud.csv"));
-            test.add("weights", test.anyVec().makeCons(1,1,null,null)[0]);
-            DKV.put(test);            
+            DKV.put(train);
+            Scope.track(train);
             String response = "Class";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
@@ -224,7 +221,7 @@ public class AdaBoostTest extends TestUtil {
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
 
-            Frame score = adaBoostModel.score(test);
+            Frame score = adaBoostModel.score(train);
             Scope.track(score);
             toCSV(score, "../creditcardfraudscore.csv");
         } finally {
@@ -236,15 +233,12 @@ public class AdaBoostTest extends TestUtil {
     public void testBasicTrainAirlines() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/testng/airlines_train_preprocessed.csv"));
+            Frame train = parseTestFile("smalldata/testng/airlines_train_preprocessed.csv");
             train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
-            DKV.put(train);            
-            Frame test = Scope.track(parseTestFile("smalldata/testng/airlines_test_preprocessed.csv"));
-            test.add("weights", test.anyVec().makeCons(1,1,null,null)[0]);
-            DKV.put(test);            
+            DKV.put(train);
+            Scope.track(train);
             String response = "IsDepDelayed";
             train.toCategoricalCol(response);
-            test.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
@@ -257,7 +251,7 @@ public class AdaBoostTest extends TestUtil {
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
 
-            Frame score = adaBoostModel.score(test);
+            Frame score = adaBoostModel.score(train);
             Scope.track(score);
             toCSV(score, "../airlinesscore.csv");
         } finally {
@@ -269,15 +263,12 @@ public class AdaBoostTest extends TestUtil {
     public void testBasicTrainHiggs() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/higgs/higgs_train_5k.csv"));
+            Frame train = parseTestFile("smalldata/higgs/higgs_train_5k.csv");
             train.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
-            DKV.put(train);            
-            Frame test = Scope.track(parseTestFile("smalldata/higgs/higgs_test_5k.csv"));
-            test.add("weights", train.anyVec().makeCons(1,1,null,null)[0]);
-            DKV.put(test);            
+            DKV.put(train);
+            Scope.track(train);
             String response = "response";
             train.toCategoricalCol(response);
-            test.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
@@ -290,7 +281,7 @@ public class AdaBoostTest extends TestUtil {
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
 
-            Frame score = adaBoostModel.score(test);
+            Frame score = adaBoostModel.score(train);
             Scope.track(score);
             toCSV(score, "../higgsscore.csv");
         } finally {
