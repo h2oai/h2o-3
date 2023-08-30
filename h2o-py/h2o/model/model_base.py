@@ -411,6 +411,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 "Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
                 "was requested.".format(num_weight_matrices, matrix_id))
         return h2o.get_frame(self._model_json["output"]["weights"][matrix_id]["URL"].split("/")[3])
+    
+    
 
     def biases(self, vector_id=0):
         """
@@ -446,6 +448,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     def catoffsets(self):
         """Categorical offsets for one-hot encoding."""
         return self._model_json["output"]["catoffsets"]
+    
+    def default_threshold(self):
+        """Default threshold for binomial classification model."""
+        return self._model_json["output"]["default_threshold"]
 
     def training_model_metrics(self):
         """
