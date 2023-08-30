@@ -3,7 +3,10 @@ package hex.adaboost;
 import water.MRTask;
 import water.fvec.Chunk;
 
-class CountWe extends MRTask<CountWe> {
+/**
+ * Count sum of all weights and sum of bad predicted weights for AdaBoost purpose
+ */
+class CountWeTask extends MRTask<CountWeTask> {
     double W = 0;
     double We = 0;
 
@@ -19,7 +22,7 @@ class CountWe extends MRTask<CountWe> {
     }
 
     @Override
-    public void reduce(CountWe mrt) {
+    public void reduce(CountWeTask mrt) {
         W += mrt.W;
         We += mrt.We;
     }

@@ -80,13 +80,13 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 Frame score = model.score(_trainWithWeights);
                 Scope.track(score);
 
-                CountWe countWe = new CountWe().doAll(_trainWithWeights.vec("weights"), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
+                CountWeTask countWe = new CountWeTask().doAll(_trainWithWeights.vec("weights"), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
                 double e_m = countWe.We / countWe.W;
                 double alpha_m = _parms._learning_rate * Math.log((1 - e_m) / e_m);
                 _model._output.alphas[n] = alpha_m;
 
-                UpdateW updateW = new UpdateW(alpha_m);
-                updateW.doAll(_trainWithWeights.vec("weights"), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
+                UpdateWeightsTask updateWeightsTask = new UpdateWeightsTask(alpha_m);
+                updateWeightsTask.doAll(_trainWithWeights.vec("weights"), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
                 _job.update(1);
                 _model.update(_job);
             }

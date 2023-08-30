@@ -8,16 +8,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.runner.RunWith;
-import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.FrameUtils;
+import water.util.VecUtils;
 
 import java.io.File;
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @CloudSize(1)
@@ -276,6 +280,54 @@ public class AdaBoostTest extends TestUtil {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    
+    @Test
+    public void testCountWe() {
+        Scope.enter();
+        try {
+            Frame train = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0))
+                    .withDataForCol(1, ar("0", "0", "0", "0", "0", "1", "1", "1", "1", "1"))
+                    .withDataForCol(2, ar("1", "1", "1", "1", "1", "0", "0", "0", "0", "0"))
+                    .build();
+            train = ensureDistributed(train);
+            Scope.track(train);
+
+            CountWeTask countWeTask = new CountWeTask().doAll(train);
+            assertEquals("Sum of weights is not correct",10, countWeTask.W, 0);
+            assertEquals("Sum of error weights is not correct",10, countWeTask.We, 0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testUpdateWeights() {
+        Scope.enter();
+        try {
+            Frame train = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_CAT)
+                    .withDataForCol(0, ard(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0))
+                    .withDataForCol(1, ar("1", "0", "0", "0", "0", "1", "1", "1", "1", "1"))
+                    .withDataForCol(2, ar("1", "1", "1", "1", "1", "0", "0", "0", "0", "0"))
+                    .build();
+            train = ensureDistributed(train);
+            Scope.track(train);
+
+            double alpha = 2;
+            UpdateWeightsTask updateWeightsTask = new UpdateWeightsTask(alpha);
+            updateWeightsTask.doAll(train);
+
+            Vec weightsExpected =  Vec.makeCon(Math.exp(alpha),train.numRows());
+            weightsExpected.set(0, Math.exp(-alpha));
+            System.out.println("weights = ");
+            System.out.println(new Frame(train.vec(0)).toTwoDimTable(0, (int) train.numRows(), false));
+            assertVecEquals("Weights are not correctly updated", weightsExpected, train.vec(0),0);
+        } finally {
+            Scope.exit();
         }
     }
 }
