@@ -59,25 +59,25 @@ public class AUUC extends Iced {
     
     public double[] upliftByType(AUUCType type){
         int idx = getIndexByAUUCType(type);
-        return _uplift[idx];
+        return idx < 0  ? null : _uplift[idx];
     }
 
     public double[] upliftNormalizedByType(AUUCType type){
         int idx = getIndexByAUUCType(type);
-        return _upliftNormalized[idx];
+        return idx < 0  ? null : _upliftNormalized[idx];
     }
     
     public double[] upliftRandomByType(AUUCType type){
         int idx = getIndexByAUUCType(type);
-        return _upliftRandom[idx];
-    }
-    
-    public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType, int nbins) {
-        this(nbins, probs, y, uplift, auucType);
+        return idx < 0  ? null : _upliftRandom[idx];
     }
     
     public AUUC(int nBins, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(new AUUCImpl(calculateQuantileThresholds(nBins, probs)).doAll(probs, y, uplift)._bldr, auucType);
+    }
+
+    public AUUC(double[] customThresholds, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
+        this(new AUUCImpl(customThresholds).doAll(probs, y, uplift)._bldr, auucType);
     }
 
     public AUUC(AUUCBuilder bldr, AUUCType auucType) {

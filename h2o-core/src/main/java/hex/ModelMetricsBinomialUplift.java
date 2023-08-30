@@ -163,8 +163,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                 mb = new UpliftBinomialMetrics(labels.domain(), customAuucThresholds).doAll(fr)._mb;
             }
             labels.remove();
-            Frame preds = new Frame(predictedProbs);
-            ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, preds,
+            ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, new Frame(predictedProbs),
                     fr.vec("labels"), fr.vec("treatment"), auucType, auucNbins); // use the Vecs from the frame (to make sure the ESPC is identical)
             mm._description = "Computed on user-given predictions and labels.";
             return mm;
@@ -283,13 +282,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds,
                                               final Vec resp, final Vec treatment, AUUC.AUUCType auucType, int nbins) {
             AUUC auuc = null;
-            if (preds != null) {
-                if (resp != null) {
-                    if (_auuc == null) {
-                        auuc = new AUUC(preds.vec(0), resp, treatment, auucType, nbins);
-                    } else {
-                        auuc = new AUUC(_auuc, auucType);
-                    }
+            if (preds != null && resp != null && treatment != null) {
+                if (_auuc == null || _auuc._nBins > 0) {
+                    auuc = new AUUC(nbins, preds.vec(0), resp, treatment, auucType);
+                } else {
+                    auuc = new AUUC(_auuc._thresholds, preds.vec(0), resp, treatment, auucType);
                 }
             }
             return makeModelMetrics(m, f, auuc);
