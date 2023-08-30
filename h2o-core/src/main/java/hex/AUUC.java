@@ -76,13 +76,12 @@ public class AUUC extends Iced {
         this(new AUUCImpl(calculateQuantileThresholds(nbins, probs)).doAll(probs, y, uplift)._bldr, auucType);
     }
 
-    public AUUC(AUUCBuilder bldr, AUUCType auucType) {
-        this(bldr, true, auucType);
-    }
-    
-
     public AUUC(double[] customThresholds, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(new AUUCImpl(customThresholds).doAll(probs, y, uplift)._bldr, auucType);
+    }
+
+    public AUUC(AUUCBuilder bldr, AUUCType auucType) {
+        this(bldr, true, auucType);
     }
 
     public AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
