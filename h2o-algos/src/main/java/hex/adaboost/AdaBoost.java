@@ -2,7 +2,6 @@ package hex.adaboost;
 
 import hex.Model;
 import hex.ModelBuilder;
-import hex.ModelBuilderHelper;
 import hex.ModelCategory;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -11,7 +10,6 @@ import hex.tree.drf.DRFModel;
 import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -65,11 +63,13 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         private void buildAdaboost() {
             _model._output.alphas = new double[(int)_parms._n_estimators];
             _model._output.models = new Key[(int)_parms._n_estimators];
+            
             Frame _trainWithWeights = new Frame(train());
             Vec weights = _trainWithWeights.anyVec().makeCons(1,1,null,null)[0];
             _trainWithWeights.add("weights", weights);
             DKV.put(_trainWithWeights);
             Scope.track(weights);
+            
             for (int n = 0; n < _parms._n_estimators; n++) {
                 ModelBuilder job = chooseWeakLearner(_trainWithWeights);
                 job._parms._seed += n;
@@ -91,50 +91,6 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 _model.update(_job);
             }
             DKV.remove(_trainWithWeights._key);
-        }
-    }
-    
-    private class CountWe extends MRTask<CountWe> {
-        double W = 0;
-        double We = 0;
-
-        @Override
-        public void map(Chunk weights, Chunk response, Chunk predict) {
-            for (int row = 0; row < weights._len; row++) {
-                double weight = weights.atd(row);
-                W += weight;
-                if (response.at8(row) != predict.at8(row)) {
-                    We += weight;
-                }
-            }
-        }
-
-        @Override
-        public void reduce(CountWe mrt) {
-            W += mrt.W;
-            We += mrt.We;
-        }        
-    }
-
-    private class UpdateW extends MRTask<UpdateW> {
-        double exp_am;
-        double exp_am_inverse;
-
-        public UpdateW(double alpha_m) {
-            exp_am = Math.exp(alpha_m);
-            exp_am_inverse = Math.exp(-alpha_m);
-        }
-
-        @Override
-        public void map(Chunk weights, Chunk response, Chunk predict) {
-            for (int row = 0; row < weights._len; row++) {
-                double weight = weights.atd(row);
-                if (response.at8(row) != predict.at8(row)) {
-                    weights.set(row, weight*exp_am);
-                } else {
-                    weights.set(row, weight*exp_am_inverse);
-                }
-            }
         }
     }
 
@@ -187,7 +143,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
 
     private GLM getGLMWeakLearner(Frame frame) {
         GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
-        parms._train = _parms._train;
+        parms._train = frame._key;
         parms._response_column = _parms._response_column;
         return new GLM(parms);
     }
