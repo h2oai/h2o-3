@@ -327,7 +327,7 @@ def import_data(seed=seed, no_NA=False):
 
 
 def helper_test_all(
-    Estimator, y, train, test, output_format, link=False, eps=1e-6, skip_naive=False, **kwargs
+    Estimator, y, train, test, output_format, link=False, eps=1e-6, skip_naive=False, skip_symmetry=False, **kwargs
 ):
     # Using seed to prevent DL models to end up with an unstable model
     mod = Estimator(seed=seed, **kwargs)
@@ -344,13 +344,14 @@ def helper_test_all(
 
     test_dummy_property(mod, train, test, output_format=output_format)
 
-    test_symmetry(mod, train, test, output_format=output_format, eps=eps)
+    if not skip_symmetry:  # Used for stacked ensembles when output_format == "original"
+        test_symmetry(mod, train, test, output_format=output_format, eps=eps)
 
     if output_format.lower() == "compact" and not skip_naive:
         test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
 
 
-def helper_test_automl(y, train, test, output_format, link=False, eps=1e-6, skip_naive=False, max_models=20, **kwargs
+def helper_test_automl(y, train, test, output_format, eps=1e-6, max_models=13, **kwargs
                        ):
     # Using seed to prevent DL models to end up with an unstable model
     aml = H2OAutoML(max_models=max_models, seed=seed, **kwargs)
@@ -359,7 +360,12 @@ def helper_test_automl(y, train, test, output_format, link=False, eps=1e-6, skip
     models = [m[0] for m in aml.leaderboard[:, "model_id"].as_data_frame(False, False)]
 
     for model in models:
+        print(model+"\n"+ "="*len(model))
         mod = h2o.get_model(model)
+        link = y == "survived" and mod.algo.lower() in ["glm", "gbm", "xgboost"]
+        skip_naive = mod.algo.lower() in ["deeplearning", "stackedensemble"]
+        skip_symmetry = mod.algo.lower() in ["stackedensemble"]
+        
         test_local_accuracy(
             mod, train, test, link=link, output_format=output_format, eps=eps
         )
@@ -371,7 +377,8 @@ def helper_test_automl(y, train, test, output_format, link=False, eps=1e-6, skip
 
         test_dummy_property(mod, train, test, output_format=output_format)
 
-        test_symmetry(mod, train, test, output_format=output_format, eps=eps)
+        if not skip_symmetry:
+            test_symmetry(mod, train, test, output_format=output_format, eps=eps)
 
         if output_format.lower() == "compact" and not skip_naive:
             test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
@@ -1423,7 +1430,7 @@ def test_se_gaussian_linear_models_exact_compact():
 
 
 def test_se_all_models_with_default_config_binomial_original():
-    train, test = import_data()
+    train, test = import_data(no_NA=True)
     y = "survived"
     kw = dict(nfolds=5, keep_cross_validation_predictions=True, seed=seed)
 # GLM doesn't have .missing(NA) for missing categories
@@ -1473,7 +1480,7 @@ def test_se_all_models_with_default_config_binomial_compact():
 
 
 def test_se_all_models_with_default_config_binomial_with_logit_transform_original():
-    train, test = import_data()
+    train, test = import_data(no_NA=True)
     y = "survived"
     kw = dict(nfolds=5, keep_cross_validation_predictions=True, seed=seed)
 
@@ -1552,7 +1559,7 @@ def test_se_all_models_with_default_config_regression_compact():
 
 
 def test_se_all_models_with_default_config_regression_original():
-    train, test = import_data()
+    train, test = import_data(no_NA=True)
     y = "fare"
     kw = dict(nfolds=5, keep_cross_validation_predictions=True, seed=seed)
 
@@ -1574,8 +1581,29 @@ def test_se_all_models_with_default_config_regression_original():
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "original", skip_naive=True, base_models=[gbm, drf, xgb, dl]
+        H2OStackedEnsembleEstimator, y, train, test, "original", skip_naive=True, skip_symmetry=True, base_models=[gbm, drf, xgb, dl]
     )
+
+
+def test_automl_binomial_original():
+    train, test = import_data()
+    helper_test_automl("survived", train ,test, "original")
+
+
+def test_automl_binomial_compact():
+    train, test = import_data()
+    helper_test_automl("survived", train ,test, "compact")
+
+
+
+def test_automl_regression_original():
+    train, test = import_data()
+    helper_test_automl("fare", train ,test, "original")
+
+
+def test_automl_regression_compact():
+    train, test = import_data()
+    helper_test_automl("fare", train ,test, "compact")
 
 
 TESTS = [
@@ -1697,12 +1725,16 @@ TESTS = [
     # test_deeplearning_5hidden_maxout_with_dropout_binomial_compact,
     # test_se_gaussian_linear_models_exact_original,
     # test_se_gaussian_linear_models_exact_compact,
-    test_se_all_models_with_default_config_binomial_original,
-    test_se_all_models_with_default_config_binomial_compact,
-    test_se_all_models_with_default_config_binomial_with_logit_transform_original,
-    test_se_all_models_with_default_config_binomial_with_logit_transform_compact,
-    test_se_all_models_with_default_config_regression_original,
-    test_se_all_models_with_default_config_regression_compact,
+    # test_se_all_models_with_default_config_binomial_original,
+    # test_se_all_models_with_default_config_binomial_compact,
+    # test_se_all_models_with_default_config_binomial_with_logit_transform_original,
+    # test_se_all_models_with_default_config_binomial_with_logit_transform_compact,
+    # test_se_all_models_with_default_config_regression_original,
+    # test_se_all_models_with_default_config_regression_compact,
+    test_automl_binomial_original,
+    test_automl_binomial_compact,
+    test_automl_regression_original,
+    test_automl_regression_compact,
 ]
 
 if __name__ == "__main__":

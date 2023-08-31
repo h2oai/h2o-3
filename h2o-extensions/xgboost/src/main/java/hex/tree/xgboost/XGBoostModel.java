@@ -21,10 +21,7 @@ import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.SBPrintStream;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -718,22 +715,27 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
-    if (null == backgroundFrame)
-      return scoreContributions(frame, destination_key, j, options);
-    Frame adaptFrm = new Frame(frame);
-    adaptTestForTrain(adaptFrm, true, false);
-    Frame adaptBgFrm = new Frame(backgroundFrame);
-    adaptTestForTrain(adaptBgFrm, true, false);
+    Log.info("Starting contributions calculation for " + this._key + "...");
+    try {
+      if (null == backgroundFrame)
+        return scoreContributions(frame, destination_key, j, options);
+      Frame adaptFrm = new Frame(frame);
+      adaptTestForTrain(adaptFrm, true, false);
+      Frame adaptBgFrm = new Frame(backgroundFrame);
+      adaptTestForTrain(adaptBgFrm, true, false);
 
-    DataInfo di = model_info().dataInfo();
-    assert di != null;
-    final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
-            _output.features() : di.coefNames();
-    final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
-    
+      DataInfo di = model_info().dataInfo();
+      assert di != null;
+      final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ?
+              _output.features() : di.coefNames();
+      final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
-    return new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, adaptFrm, adaptBgFrm, options._outputSpace)
-            .runAndGetOutput(j, destination_key, outputNames);
+
+      return new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, adaptFrm, adaptBgFrm, options._outputSpace)
+              .runAndGetOutput(j, destination_key, outputNames);
+    } finally {
+      Log.info("Finished contributions calculation for " + this._key + "...");
+    }
   }
   
   @Override

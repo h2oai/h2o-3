@@ -96,6 +96,8 @@ public abstract class SharedTreeModelWithContributions<
   }
 
 
+  protected abstract ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets, boolean output_space);
+
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
     if (backgroundFrame == null)
@@ -105,20 +107,23 @@ public abstract class SharedTreeModelWithContributions<
       throw new UnsupportedOperationException(
               "Calculating contributions is currently not supported for multinomial models.");
     }
-    if (options._outputFormat == ContributionsOutputFormat.Compact || _output._domains == null) {
-      Frame adaptFrm = removeSpecialColumns(frame);
-      Frame adaptBackgroundFrm = removeSpecialColumns(backgroundFrame);
 
-      final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
-      return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, false, null, options._outputSpace)
-              .runAndGetOutput(j, destination_key, outputNames);
-    } else {
-      Frame adaptFrm = removeSpecialColumns(frame);
-      Frame adaptBackgroundFrm = removeSpecialColumns(backgroundFrame);
-      assert Parameters.CategoricalEncodingScheme.Enum.equals(_parms._categorical_encoding) : "Unsupported categorical encoding. Only enum is supported.";
-      int[] catOffsets = new int[_output._domains.length + 1];
+    Log.info("Starting contributions calculation for " + this._key + "...");
+    try {
+      if (options._outputFormat == ContributionsOutputFormat.Compact || _output._domains == null) {
+        Frame adaptFrm = removeSpecialColumns(frame);
+        Frame adaptBackgroundFrm = removeSpecialColumns(backgroundFrame);
 
-      String[] outputNames;
+        final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
+        return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, false, null, options._outputSpace)
+                .runAndGetOutput(j, destination_key, outputNames);
+      } else {
+        Frame adaptFrm = removeSpecialColumns(frame);
+        Frame adaptBackgroundFrm = removeSpecialColumns(backgroundFrame);
+        assert Parameters.CategoricalEncodingScheme.Enum.equals(_parms._categorical_encoding) : "Unsupported categorical encoding. Only enum is supported.";
+        int[] catOffsets = new int[_output._domains.length + 1];
+
+        String[] outputNames;
         int nCols = 1;
         for (int i = 0; i < _output._domains.length; i++) {
           if (!(_output._names[i].equals(_parms._response_column) ||
@@ -156,12 +161,13 @@ public abstract class SharedTreeModelWithContributions<
           }
         }
 
-      return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, true, catOffsets, options._outputSpace)
-              .runAndGetOutput(j, destination_key, outputNames);
+        return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, true, catOffsets, options._outputSpace)
+                .runAndGetOutput(j, destination_key, outputNames);
+      }
+    } finally {
+      Log.info("Finished contributions calculation for " + this._key + "...");
     }
   }
-  
-  protected abstract ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets, boolean output_space);
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
 

@@ -126,15 +126,28 @@ public class StackedEnsembleModel
           for (int col = 0; col < _columns.length; col++) {
             multiplier[bm] += baseModelContribution(cs, row, bm, col);
           }
-          if (_metaLearnerTransform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
-            final double deltaIn = multiplier[bm];
-            final double biasTerm = baseModelBiasTerm(cs, row, bm);
-            final double deltaOut = _metaLearnerTransform.transform(biasTerm+deltaIn) - _metaLearnerTransform.transform(biasTerm);
-            multiplier[bm] = div(metalearnerContribution(cs, row, bm), multiplier[bm]) * deltaOut/deltaIn;
-          } else {
-            multiplier[bm] = div(metalearnerContribution(cs, row, bm), multiplier[bm]);
-          }
+          multiplier[bm] = div(metalearnerContribution(cs, row, bm), multiplier[bm]);
         }
+        
+        // Should we deal here with metalearner transform? No, since the transformation is one dimensional and
+        // transforms all the inputs independently the generalized rescale rule cancels it out.
+        //
+        //    Let B stand for basemodel, L for logit metalearner transform, M for metalearner.
+        //    Contributions of the transform sum up to f_L(x) - f_L(b) and since the transform is one dimensional
+        //    we know that phi_L = f_L(x) - f_L(b).
+        //    Let denote the final contributions as phi, (/) as Hadamard division and (*) Hadamard product.
+        //
+        //    Without the metalearner transform the generalized rescale rule gives us:
+        //    phi = phi_B (phi_M (/) (f_B(x)-f_B(b)))
+        //
+        //    With metalearner transform we have:
+        //    phi = (phi_B(phi_L(phi_M (/) (f_L(x)-f_L(b))) (/) (f_B(x)-f_B(b)))) = 
+        //        = (phi_B((f_L(x) - f_L(b))(phi_M (*) (1 (/) (f_L(x)-f_L(b)))) (/) (f_B(x)-f_B(b)))) =
+        //        # Hadamard product is commutative and associative 
+        //        = (phi_B( (f_L(x) - f_L(b)) (/) (f_L(x)-f_L(b)) (*) phi_M)) (/) (f_B(x)-f_B(b)))) =
+        //        = (phi_B( 1 (*) phi_M) (/) (f_B(x)-f_B(b)))) =
+        //        = phi_B (phi_M (/) (f_B(x)-f_B(b)))
+
 
         for (int col = 0; col < ncs.length-3; col++) {
           result = 0;
@@ -152,7 +165,7 @@ public class StackedEnsembleModel
   
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
-    // calculate contribution from basemodels and make a weighted average; weighted by metalearner's contribution
+    Log.info("Starting contributions calculation for "+this._key+"...");
     List<String> baseModels = new ArrayList<>();
     List<Integer> baseModelsIdx = new ArrayList<>();
     String[] columns = null;
@@ -194,9 +207,7 @@ public class StackedEnsembleModel
               throw new RuntimeException("Base model contributions have different columns. This is not expected. Please fill in a bug report.");
             }
           }
-          if (baseModels.size() == 0)
-            throw new RuntimeException("Stacked Ensemble \""+this._key+"\" doesn't use any base models. Stopping contribution calculation as no feature contributes.");
-          contributions.setNames(
+              contributions.setNames(
                   Arrays.stream(contributions._names)
                           .map(name -> bm + "_" + name)
                           .toArray(String[]::new)
@@ -205,6 +216,9 @@ public class StackedEnsembleModel
           baseModelsIdx.add(fr.numCols());
         }
       }
+      if (baseModels.size() == 0)
+        throw new RuntimeException("Stacked Ensemble \""+this._key+"\" doesn't use any base models. Stopping contribution calculation as no feature contributes.");
+
       assert  columns[columns.length-3].equals("BiasTerm") && columns[columns.length-2].equals("RowIdx") && columns[columns.length-1].equals("BackgroundRowIdx");
       String[] colsWithRows = columns;
       columns = Arrays.copyOfRange(columns, 0, columns.length-3);
@@ -234,6 +248,7 @@ public class StackedEnsembleModel
       c.doAll(colsWithRows.length, Vec.T_NUM, fr);
       return c.outputFrame(destination_key, colsWithRows, null);
     } finally {
+      Log.info("Finished contributions calculation for "+this._key+"...");
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, frame);
     }
   }
@@ -293,15 +308,7 @@ public class StackedEnsembleModel
       Logit;
 
       private LinkFunction logitLink = LinkFunctionFactory.getLinkFunction(LinkFunctionType.logit);
-      public double transform(double x) {
-        if (this == Logit) {
-          final double p = Math.min(1 - 1e-9, Math.max(x, 1e-9)); // 0 and 1 don't work well with logit
-          return logitLink.link(p);
-        } else {
-          throw H2O.unimpl("Transformation "+this.name()+" is not supported.");
-        }
-      }
-      
+       
       public Frame transform(StackedEnsembleModel model, Frame frame, Key<Frame> destKey) {
         if (this == Logit) {
           return new MRTask() {
