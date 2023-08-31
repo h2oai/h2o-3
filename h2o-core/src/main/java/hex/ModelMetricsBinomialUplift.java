@@ -156,7 +156,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             fr.add("labels", labels);
             fr.add("treatment", treatment);
             MetricBuilderBinomialUplift mb;
-            if(customAuucThresholds == null) {
+            if (customAuucThresholds == null) {
                 mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, predictedProbs)).doAll(fr)._mb;
             } else {
                 mb = new UpliftBinomialMetrics(labels.domain(), customAuucThresholds).doAll(fr)._mb;
