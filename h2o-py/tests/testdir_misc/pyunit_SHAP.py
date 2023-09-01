@@ -351,20 +351,23 @@ def helper_test_all(
         test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
 
 
-def helper_test_automl(y, train, test, output_format, eps=1e-6, max_models=13, **kwargs
+def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, monotone=False, **kwargs
                        ):
     # Using seed to prevent DL models to end up with an unstable model
-    aml = H2OAutoML(max_models=max_models, seed=seed, **kwargs)
+    aml = H2OAutoML(max_models=max_models, seed=seed,
+                    monotone_constraints=dict(age=1, family_size=-1) if monotone else None,
+                    **kwargs)
     aml.train(y=y, training_frame=train)
 
     models = [m[0] for m in aml.leaderboard[:, "model_id"].as_data_frame(False, False)]
 
     for model in models:
-        print(model+"\n"+ "="*len(model))
+        print(model+"\n" + "="*len(model))
         mod = h2o.get_model(model)
         link = y == "survived" and mod.algo.lower() in ["glm", "gbm", "xgboost"]
         skip_naive = mod.algo.lower() in ["deeplearning", "stackedensemble"]
         skip_symmetry = mod.algo.lower() in ["stackedensemble"]
+        skip_dummy =  mod.algo.lower() in ["glm", "stackedensemble"] and output_format == "original"
         
         test_local_accuracy(
             mod, train, test, link=link, output_format=output_format, eps=eps
@@ -375,7 +378,8 @@ def helper_test_automl(y, train, test, output_format, eps=1e-6, max_models=13, *
                 mod, train, test, link=False, output_format=output_format, eps=eps, output_space=True
             )
 
-        test_dummy_property(mod, train, test, output_format=output_format)
+        if not skip_dummy:
+            test_dummy_property(mod, train, test, output_format=output_format)
 
         if not skip_symmetry:
             test_symmetry(mod, train, test, output_format=output_format, eps=eps)
@@ -1587,154 +1591,180 @@ def test_se_all_models_with_default_config_regression_original():
 
 def test_automl_binomial_original():
     train, test = import_data()
-    helper_test_automl("survived", train ,test, "original")
+    helper_test_automl("survived", train, test, "original")
 
 
 def test_automl_binomial_compact():
     train, test = import_data()
-    helper_test_automl("survived", train ,test, "compact")
+    helper_test_automl("survived", train, test, "compact")
 
 
 
 def test_automl_regression_original():
     train, test = import_data()
-    helper_test_automl("fare", train ,test, "original")
+    helper_test_automl("fare", train, test, "original")
 
 
 def test_automl_regression_compact():
     train, test = import_data()
-    helper_test_automl("fare", train ,test, "compact")
+    helper_test_automl("fare", train, test, "compact")
+
+
+def test_automl_binomial_monotone_constraints_original():
+    train, test = import_data()
+    helper_test_automl("survived", train, test, "original", monotone=True)
+
+
+def test_automl_binomial_monotone_constraints_compact():
+    train, test = import_data()
+    helper_test_automl("survived", train, test, "compact", monotone=True)
+
+
+
+def test_automl_regression_monotone_constraints_original():
+    train, test = import_data()
+    helper_test_automl("fare", train, test, "original", monotone=True)
+
+
+def test_automl_regression_monotone_constraints_compact():
+    train, test = import_data()
+    helper_test_automl("fare", train, test, "compact", monotone=True)
+
 
 
 TESTS = [
-    # test_drf_one_tree_binomial_original,
-    # test_drf_one_tree_binomial_compact,
-    # test_drf_one_tree_regression_original,
-    # test_drf_one_tree_regression_compact,
-    # test_drf_binomial_original,
-    # test_drf_binomial_compact,
-    # test_drf_regression_original,
-    # test_drf_regression_compact,
-    # test_xrt_one_tree_binomial_original,
-    # test_xrt_one_tree_binomial_compact,
-    # test_xrt_one_tree_regression_original,
-    # test_xrt_one_tree_regression_compact,
-    # test_xrt_binomial_original,
-    # test_xrt_binomial_compact,
-    # test_xrt_regression_original,
-    # test_xrt_regression_compact,
-    # test_gbm_one_tree_binomial_original,
-    # test_gbm_one_tree_binomial_compact,
-    # test_gbm_one_tree_regression_original,
-    # test_gbm_one_tree_regression_compact,
-    # test_gbm_binomial_original,
-    # test_gbm_binomial_compact,
-    # test_gbm_regression_original,
-    # test_gbm_regression_compact,
-    # test_xgboost_one_tree_binomial_original,
-    # test_xgboost_one_tree_binomial_compact,
-    # test_xgboost_one_tree_regression_original,
-    # test_xgboost_one_tree_regression_compact,
-    # test_xgboost_binomial_original,
-    # test_xgboost_binomial_compact,
-    # test_xgboost_regression_original,
-    # test_xgboost_regression_compact,
-    # test_glm_binomial_original,
-    # test_glm_binomial_compact,
-    # test_glm_regression_original,
-    # test_glm_regression_compact,
-    # test_glm_not_standardized_binomial_original,
-    # test_glm_not_standardized_binomial_compact,
-    # test_glm_not_standardized_regression_original,
-    # test_glm_not_standardized_regression_compact,
-    # test_glm_not_regularized_binomial_original,
-    # test_glm_not_regularized_binomial_compact,
-    # test_glm_not_regularized_regression_original,
-    # test_glm_not_regularized_regression_compact,
-    # test_deeplearning_1hidden_tanh_regression_original,
-    # test_deeplearning_1hidden_tanh_regression_compact,
-    # test_deeplearning_2hidden_tanh_regression_original,
-    # test_deeplearning_2hidden_tanh_regression_compact,
-    # test_deeplearning_5hidden_tanh_regression_original,
-    # test_deeplearning_5hidden_tanh_regression_compact,
-    # test_deeplearning_1hidden_tanh_binomial_original,
-    # test_deeplearning_1hidden_tanh_binomial_compact,
-    # test_deeplearning_2hidden_tanh_binomial_original,
-    # test_deeplearning_2hidden_tanh_binomial_compact,
-    # test_deeplearning_5hidden_tanh_binomial_original,
-    # test_deeplearning_5hidden_tanh_binomial_compact,
-    # test_deeplearning_1hidden_tanh_with_dropout_regression_original,
-    # test_deeplearning_1hidden_tanh_with_dropout_regression_compact,
-    # test_deeplearning_2hidden_tanh_with_dropout_regression_original,
-    # test_deeplearning_2hidden_tanh_with_dropout_regression_compact,
-    # test_deeplearning_5hidden_tanh_with_dropout_regression_original,
-    # test_deeplearning_5hidden_tanh_with_dropout_regression_compact,
-    # test_deeplearning_1hidden_tanh_with_dropout_binomial_original,
-    # test_deeplearning_1hidden_tanh_with_dropout_binomial_compact,
-    # test_deeplearning_2hidden_tanh_with_dropout_binomial_original,
-    # test_deeplearning_2hidden_tanh_with_dropout_binomial_compact,
-    # test_deeplearning_5hidden_tanh_with_dropout_binomial_original,
-    # test_deeplearning_5hidden_tanh_with_dropout_binomial_compact,
-    # test_deeplearning_1hidden_relu_regression_original,
-    # test_deeplearning_1hidden_relu_regression_compact,
-    # test_deeplearning_2hidden_relu_regression_original,
-    # test_deeplearning_2hidden_relu_regression_compact,
-    # test_deeplearning_5hidden_relu_regression_original,
-    # test_deeplearning_5hidden_relu_regression_compact,
-    # test_deeplearning_1hidden_relu_binomial_original,
-    # test_deeplearning_1hidden_relu_binomial_compact,
-    # test_deeplearning_2hidden_relu_binomial_original,
-    # test_deeplearning_2hidden_relu_binomial_compact,
-    # test_deeplearning_5hidden_relu_binomial_original,
-    # test_deeplearning_5hidden_relu_binomial_compact,
-    # test_deeplearning_1hidden_relu_with_dropout_regression_original,
-    # test_deeplearning_1hidden_relu_with_dropout_regression_compact,
-    # test_deeplearning_2hidden_relu_with_dropout_regression_original,
-    # test_deeplearning_2hidden_relu_with_dropout_regression_compact,
-    # test_deeplearning_5hidden_relu_with_dropout_regression_original,
-    # test_deeplearning_5hidden_relu_with_dropout_regression_compact,
-    # test_deeplearning_1hidden_relu_with_dropout_binomial_original,
-    # test_deeplearning_1hidden_relu_with_dropout_binomial_compact,
-    # test_deeplearning_2hidden_relu_with_dropout_binomial_original,
-    # test_deeplearning_2hidden_relu_with_dropout_binomial_compact,
-    # test_deeplearning_5hidden_relu_with_dropout_binomial_original,
-    # test_deeplearning_5hidden_relu_with_dropout_binomial_compact,
-    # test_deeplearning_1hidden_maxout_regression_original,
-    # test_deeplearning_1hidden_maxout_regression_compact,
-    # test_deeplearning_2hidden_maxout_regression_original,
-    # test_deeplearning_2hidden_maxout_regression_compact,
-    # test_deeplearning_5hidden_maxout_regression_original,
-    # test_deeplearning_5hidden_maxout_regression_compact,
-    # test_deeplearning_1hidden_maxout_binomial_original,
-    # test_deeplearning_1hidden_maxout_binomial_compact,
-    # test_deeplearning_2hidden_maxout_binomial_original,
-    # test_deeplearning_2hidden_maxout_binomial_compact,
-    # test_deeplearning_5hidden_maxout_binomial_original,
-    # test_deeplearning_5hidden_maxout_binomial_compact,
-    # test_deeplearning_1hidden_maxout_with_dropout_regression_original,
-    # test_deeplearning_1hidden_maxout_with_dropout_regression_compact,
-    # test_deeplearning_2hidden_maxout_with_dropout_regression_original,
-    # test_deeplearning_2hidden_maxout_with_dropout_regression_compact,
-    # test_deeplearning_5hidden_maxout_with_dropout_regression_original,
-    # test_deeplearning_5hidden_maxout_with_dropout_regression_compact,
-    # test_deeplearning_1hidden_maxout_with_dropout_binomial_original,
-    # test_deeplearning_1hidden_maxout_with_dropout_binomial_compact,
-    # test_deeplearning_2hidden_maxout_with_dropout_binomial_original,
-    # test_deeplearning_2hidden_maxout_with_dropout_binomial_compact,
-    # test_deeplearning_5hidden_maxout_with_dropout_binomial_original,
-    # test_deeplearning_5hidden_maxout_with_dropout_binomial_compact,
-    # test_se_gaussian_linear_models_exact_original,
-    # test_se_gaussian_linear_models_exact_compact,
-    # test_se_all_models_with_default_config_binomial_original,
-    # test_se_all_models_with_default_config_binomial_compact,
-    # test_se_all_models_with_default_config_binomial_with_logit_transform_original,
-    # test_se_all_models_with_default_config_binomial_with_logit_transform_compact,
-    # test_se_all_models_with_default_config_regression_original,
-    # test_se_all_models_with_default_config_regression_compact,
+    test_drf_one_tree_binomial_original,
+    test_drf_one_tree_binomial_compact,
+    test_drf_one_tree_regression_original,
+    test_drf_one_tree_regression_compact,
+    test_drf_binomial_original,
+    test_drf_binomial_compact,
+    test_drf_regression_original,
+    test_drf_regression_compact,
+    test_xrt_one_tree_binomial_original,
+    test_xrt_one_tree_binomial_compact,
+    test_xrt_one_tree_regression_original,
+    test_xrt_one_tree_regression_compact,
+    test_xrt_binomial_original,
+    test_xrt_binomial_compact,
+    test_xrt_regression_original,
+    test_xrt_regression_compact,
+    test_gbm_one_tree_binomial_original,
+    test_gbm_one_tree_binomial_compact,
+    test_gbm_one_tree_regression_original,
+    test_gbm_one_tree_regression_compact,
+    test_gbm_binomial_original,
+    test_gbm_binomial_compact,
+    test_gbm_regression_original,
+    test_gbm_regression_compact,
+    test_xgboost_one_tree_binomial_original,
+    test_xgboost_one_tree_binomial_compact,
+    test_xgboost_one_tree_regression_original,
+    test_xgboost_one_tree_regression_compact,
+    test_xgboost_binomial_original,
+    test_xgboost_binomial_compact,
+    test_xgboost_regression_original,
+    test_xgboost_regression_compact,
+    test_glm_binomial_original,
+    test_glm_binomial_compact,
+    test_glm_regression_original,
+    test_glm_regression_compact,
+    test_glm_not_standardized_binomial_original,
+    test_glm_not_standardized_binomial_compact,
+    test_glm_not_standardized_regression_original,
+    test_glm_not_standardized_regression_compact,
+    test_glm_not_regularized_binomial_original,
+    test_glm_not_regularized_binomial_compact,
+    test_glm_not_regularized_regression_original,
+    test_glm_not_regularized_regression_compact,
+    test_deeplearning_1hidden_tanh_regression_original,
+    test_deeplearning_1hidden_tanh_regression_compact,
+    test_deeplearning_2hidden_tanh_regression_original,
+    test_deeplearning_2hidden_tanh_regression_compact,
+    test_deeplearning_5hidden_tanh_regression_original,
+    test_deeplearning_5hidden_tanh_regression_compact,
+    test_deeplearning_1hidden_tanh_binomial_original,
+    test_deeplearning_1hidden_tanh_binomial_compact,
+    test_deeplearning_2hidden_tanh_binomial_original,
+    test_deeplearning_2hidden_tanh_binomial_compact,
+    test_deeplearning_5hidden_tanh_binomial_original,
+    test_deeplearning_5hidden_tanh_binomial_compact,
+    test_deeplearning_1hidden_tanh_with_dropout_regression_original,
+    test_deeplearning_1hidden_tanh_with_dropout_regression_compact,
+    test_deeplearning_2hidden_tanh_with_dropout_regression_original,
+    test_deeplearning_2hidden_tanh_with_dropout_regression_compact,
+    test_deeplearning_5hidden_tanh_with_dropout_regression_original,
+    test_deeplearning_5hidden_tanh_with_dropout_regression_compact,
+    test_deeplearning_1hidden_tanh_with_dropout_binomial_original,
+    test_deeplearning_1hidden_tanh_with_dropout_binomial_compact,
+    test_deeplearning_2hidden_tanh_with_dropout_binomial_original,
+    test_deeplearning_2hidden_tanh_with_dropout_binomial_compact,
+    test_deeplearning_5hidden_tanh_with_dropout_binomial_original,
+    test_deeplearning_5hidden_tanh_with_dropout_binomial_compact,
+    test_deeplearning_1hidden_relu_regression_original,
+    test_deeplearning_1hidden_relu_regression_compact,
+    test_deeplearning_2hidden_relu_regression_original,
+    test_deeplearning_2hidden_relu_regression_compact,
+    test_deeplearning_5hidden_relu_regression_original,
+    test_deeplearning_5hidden_relu_regression_compact,
+    test_deeplearning_1hidden_relu_binomial_original,
+    test_deeplearning_1hidden_relu_binomial_compact,
+    test_deeplearning_2hidden_relu_binomial_original,
+    test_deeplearning_2hidden_relu_binomial_compact,
+    test_deeplearning_5hidden_relu_binomial_original,
+    test_deeplearning_5hidden_relu_binomial_compact,
+    test_deeplearning_1hidden_relu_with_dropout_regression_original,
+    test_deeplearning_1hidden_relu_with_dropout_regression_compact,
+    test_deeplearning_2hidden_relu_with_dropout_regression_original,
+    test_deeplearning_2hidden_relu_with_dropout_regression_compact,
+    test_deeplearning_5hidden_relu_with_dropout_regression_original,
+    test_deeplearning_5hidden_relu_with_dropout_regression_compact,
+    test_deeplearning_1hidden_relu_with_dropout_binomial_original,
+    test_deeplearning_1hidden_relu_with_dropout_binomial_compact,
+    test_deeplearning_2hidden_relu_with_dropout_binomial_original,
+    test_deeplearning_2hidden_relu_with_dropout_binomial_compact,
+    test_deeplearning_5hidden_relu_with_dropout_binomial_original,
+    test_deeplearning_5hidden_relu_with_dropout_binomial_compact,
+    test_deeplearning_1hidden_maxout_regression_original,
+    test_deeplearning_1hidden_maxout_regression_compact,
+    test_deeplearning_2hidden_maxout_regression_original,
+    test_deeplearning_2hidden_maxout_regression_compact,
+    test_deeplearning_5hidden_maxout_regression_original,
+    test_deeplearning_5hidden_maxout_regression_compact,
+    test_deeplearning_1hidden_maxout_binomial_original,
+    test_deeplearning_1hidden_maxout_binomial_compact,
+    test_deeplearning_2hidden_maxout_binomial_original,
+    test_deeplearning_2hidden_maxout_binomial_compact,
+    test_deeplearning_5hidden_maxout_binomial_original,
+    test_deeplearning_5hidden_maxout_binomial_compact,
+    test_deeplearning_1hidden_maxout_with_dropout_regression_original,
+    test_deeplearning_1hidden_maxout_with_dropout_regression_compact,
+    test_deeplearning_2hidden_maxout_with_dropout_regression_original,
+    test_deeplearning_2hidden_maxout_with_dropout_regression_compact,
+    test_deeplearning_5hidden_maxout_with_dropout_regression_original,
+    test_deeplearning_5hidden_maxout_with_dropout_regression_compact,
+    test_deeplearning_1hidden_maxout_with_dropout_binomial_original,
+    test_deeplearning_1hidden_maxout_with_dropout_binomial_compact,
+    test_deeplearning_2hidden_maxout_with_dropout_binomial_original,
+    test_deeplearning_2hidden_maxout_with_dropout_binomial_compact,
+    test_deeplearning_5hidden_maxout_with_dropout_binomial_original,
+    test_deeplearning_5hidden_maxout_with_dropout_binomial_compact,
+    test_se_gaussian_linear_models_exact_original,
+    test_se_gaussian_linear_models_exact_compact,
+    test_se_all_models_with_default_config_binomial_original,
+    test_se_all_models_with_default_config_binomial_compact,
+    test_se_all_models_with_default_config_binomial_with_logit_transform_original,
+    test_se_all_models_with_default_config_binomial_with_logit_transform_compact,
+    test_se_all_models_with_default_config_regression_original,
+    test_se_all_models_with_default_config_regression_compact,
     test_automl_binomial_original,
     test_automl_binomial_compact,
     test_automl_regression_original,
     test_automl_regression_compact,
+    test_automl_binomial_monotone_constraints_original,
+    test_automl_binomial_monotone_constraints_compact,
+    test_automl_regression_monotone_constraints_original,
+    test_automl_regression_monotone_constraints_compact,
 ]
 
 if __name__ == "__main__":
