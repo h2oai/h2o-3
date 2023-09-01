@@ -51,7 +51,7 @@ h2o.pipeline <- function(model_id = NULL)
   } else {
     model$estimator_model <- NULL
   }
-  model$transformers <- unlist(lapply(model$transformers, function(dt) new("H2ODataTransformer", id=dt$id)))
+  model$transformers <- unlist(lapply(model$transformers, function(dt) new("H2ODataTransformer", id=dt$id, description=dt$description)))
   # class(model) <- "H2OPipeline"
   return(model)
 }

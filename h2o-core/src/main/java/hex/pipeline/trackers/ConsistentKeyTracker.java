@@ -40,7 +40,7 @@ public class ConsistentKeyTracker implements FrameTracker {
         return context.getTrain();
       case Validation:
         return context.getValid();
-      case Scoring:
+      case Test:
       default:
         return null;
     }

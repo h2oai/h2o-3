@@ -2,6 +2,7 @@ package hex.pipeline;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.pipeline.DataTransformer.FrameType;
 import hex.pipeline.trackers.CompositeFrameTracker;
@@ -28,6 +29,7 @@ import java.util.stream.Stream;
  */
 public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineParameters, PipelineModel.PipelineOutput> {
 
+  private static final KeyGen TRANSFORM_KEY_GEN = new PatternKeyGen("{0}_trf_by_{1}");
 
   public PipelineModel(Key<PipelineModel> selfKey, PipelineParameters parms, PipelineOutput output) {
     super(selfKey, parms, output);
@@ -86,7 +88,7 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     if (fr == null) return null;
     try (Scope.Safe s = Scope.safe(fr)) {
       PipelineContext context = newContext(fr);
-      Frame result = newChain().transform(fr, FrameType.Scoring, context, new UnaryCompleter<Frame>() {
+      Frame result = newChain().transform(fr, FrameType.Test, context, new UnaryCompleter<Frame>() {
         @Override
         public Frame apply(Frame frame, PipelineContext context) {
           if (_output._estimator == null) {
@@ -101,10 +103,33 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
         }
       });
       Scope.untrack(result);
+      DKV.put(result);
       return result;
     }
   }
-  
+
+  /**
+   * applies all the pipeline transformers to the input frame.
+   * @param fr
+   * @return the transformed frame, as it would be passed to the estimator model if fr was used for predict/scoring.
+   */
+  @Override
+  public Frame transform(Frame fr) {
+    if (fr == null) return null;
+    try (Scope.Safe s = Scope.safe(fr)) {
+      PipelineContext context = newContext(fr);
+      Frame result = newChain().transform(fr, FrameType.Test, context, new UnaryCompleter<Frame>() {
+        @Override
+        public Frame apply(Frame frame, PipelineContext context) {
+          return new Frame(TRANSFORM_KEY_GEN.make(fr.getKey(), getKey()), frame.names(), frame.vecs()); 
+        }
+      });
+      Scope.untrack(result);
+      DKV.put(result);
+      return result;
+    }
+  }
+
   private TransformerChain newChain() {
     //no need to call `prepare` on this chain as we're using the output transformers, which have been prepared during training.
     return new TransformerChain(_output._transformers);
@@ -197,7 +222,6 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
       return 0;
     }
 
-    private transient ModelParametersAccessor mpa = new ModelParametersAccessor();
     @Override
     public Object getParameter(String name) {
       String[] tokens = parseParameterName(name);
@@ -306,7 +330,12 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelinePa
     public Model getEstimatorModel() {
       return _estimator == null ? null : _estimator.get();
     }
-    
+
+    @Override
+    public ModelCategory getModelCategory() {
+      Model em = getEstimatorModel();
+      return em == null ? super.getModelCategory() : em._output.getModelCategory();
+    }
   }
   
 }

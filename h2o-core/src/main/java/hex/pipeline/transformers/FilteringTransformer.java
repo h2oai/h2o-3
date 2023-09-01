@@ -4,11 +4,12 @@ import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineContext;
 import water.fvec.Frame;
 
+/**
+ * WiP: not used for now.
+ * An abstract transformer to sample/filter the input the frame.
+ */
 public abstract class FilteringTransformer<S extends DataTransformer> extends DataTransformer<S> {
   
-  //same logic as with caching but there we want to be able to transform full frame once, 
-  // and then just filter rows if frame is a subframe of the full one (can we determine this quickly?)
-  //filtering can be enabled/disabled (mainly during CV)
   boolean _filterEnabled = true;
   
   @Override

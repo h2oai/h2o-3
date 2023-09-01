@@ -1,8 +1,5 @@
 package hex;
 
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelParametersBuilderFactory;
 import water.util.Log;
 import water.util.PojoUtils;
 import water.util.PojoUtils.FieldNaming;
@@ -17,6 +14,13 @@ import java.util.Map;
  * that will be used to provide the standard params for all type of algos.
  * 
  * Otherwise, if there's no {@value #ALGO_PARAM} hyper-parameter, this factory behaves similarly to {@link ModelParametersBuilderFactory}.
+ * 
+ * TODO: future improvement. When griding over multiple algos, we may want to apply different values for an hyper-parameter with the same name on algo-A and algo-B.
+ *       In this case, we should be able to handle hyper-parameters differently based on naming convention. For example using `$` to prefix the param with the algo:
+ *       - GBM$_max_depth = [3, 5, 7, 9, 11]
+ *       - XGBoost$_max_depth = [5, 10, 15]
+ *       as soon as the algo is defined, then the params are assigned this way:
+ *       - if `_my_param` is provided, check if `Algo$_my_param` is also provided: if so then apply only the latter, otherwise apply the former.
  */
 public class ModelParametersGenericBuilderFactory extends ModelParametersDelegateBuilderFactory<Model.Parameters> {
   

@@ -14,7 +14,7 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   
   protected MP _params;
   private Key<M> _modelKey;
-  private final KeyGen _modelKeyGen = new PatternKeyGen("{0}_{n}_model");
+  private final KeyGen _modelKeyGen;
   
   private final int _model_type;
   
@@ -31,6 +31,9 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   public ModelAsFeatureTransformer(MP params, Key<M> modelKey) {
     _params = params;
     _modelKey = modelKey;
+    _modelKeyGen = modelKey == null 
+            ? new PatternKeyGen("{0}_{n}_model")    // if no modelKey provided, then a new key and its corresponding model is trained for each 
+            : new KeyGen.ConstantKeyGen(modelKey);  // if modelKey provided, only use that one
     _model_type = params == null ? TypeMap.NULL : TypeMap.getIcedId(params.javaName());
   }
 
@@ -80,7 +83,7 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
   }
 
   protected void doPrepare(PipelineContext context) {
-    if (getModel() != null) return; // if modelKey was provided, use it immediately. TODO: use a constant keygen to handle this case
+    if (getModel() != null) return; // if modelKey was provided, use it immediately. 
     prepareModelParams(context);
     excludeColumns(_params.getNonPredictors());
     Key<M> km = lookupModel(_params);
@@ -99,6 +102,7 @@ public class ModelAsFeatureTransformer<S extends ModelAsFeatureTransformer, M ex
     // to train the model, we use the train frame from context by default
 
     if (_params._train == null) { // do not propagate params from context otherwise as they were defined for the default training frame
+      assert context.getTrain() != null;
       _params._train = context.getTrain().getKey();
       if (_params._valid == null && context.getValid() != null) _params._valid = context.getValid().getKey();
       if (_params._response_column == null) _params._response_column = context._params._response_column;

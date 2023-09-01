@@ -3,7 +3,6 @@ package hex.pipeline;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersDelegateBuilderFactory;
-import hex.ModelParametersGenericBuilderFactory;
 import hex.pipeline.PipelineModel.PipelineParameters;
 import water.util.Log;
 import water.util.PojoUtils;
@@ -14,6 +13,11 @@ import java.util.Map;
 
 import static hex.ModelParametersGenericBuilderFactory.ALGO_PARAM;
 
+/**
+ * Similar to {@link hex.ModelParametersGenericBuilderFactory} but for pipelines:
+ * - pipeline estimator params can be created dynamically based on {@value hex.ModelParametersGenericBuilderFactory#ALGO_PARAM} hyper-param.
+ * - then other hyper-parameters can be set.
+ */
 public class ModelParametersGenericPipelineBuilderFactory extends ModelParametersDelegateBuilderFactory<PipelineParameters> {
 
   public ModelParametersGenericPipelineBuilderFactory() {
@@ -39,12 +43,6 @@ public class ModelParametersGenericPipelineBuilderFactory extends ModelParameter
       return this;
     }
 
-    /**
-     * in addition to {@link hex.ModelParametersGenericBuilderFactory.GenericParamsBuilder} can do, for pipelines I need:
-     * - pipeline estimator params can be created dynamically based on some hyper-param (estimator.algo?).
-     * - then other hyperparameters can be set: problem with pipeline default params? (everything is null)
-     * @return
-     */
     @Override
     public PipelineParameters build() {
       PipelineParameters result = params;

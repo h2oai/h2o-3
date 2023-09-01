@@ -5,6 +5,7 @@ import hex.pipeline.DataTransformer;
 import hex.pipeline.PipelineContext;
 import water.DKV;
 import water.KeyGen;
+import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.ast.prims.advmath.AstKFold;
@@ -59,10 +60,11 @@ public class KFoldColumnGenerator extends DataTransformer<KFoldColumnGenerator> 
     if (_response_column == null) _response_column = context._params._response_column;
     assert !(_response_column == null && _scheme == FoldAssignmentScheme.Stratified);
     
-    if (context.getTrain().find(_fold_column) < 0) {
+    if (context.getTrain() != null && context.getTrain().find(_fold_column) < 0) {
       Frame withFoldC = doTransform(context.getTrain(), FrameType.Training, context);
       withFoldC._key = _trainWFoldKeyGen.make(context.getTrain()._key);
       DKV.put(withFoldC);
+      Scope.track(withFoldC);
       context.setTrain(withFoldC);
     }
     // now that we have a fold column, reassign cv params to avoid confusion

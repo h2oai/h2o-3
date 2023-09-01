@@ -10,6 +10,11 @@ import water.util.FrameUtils;
 
 import java.util.Collection;
 
+/**
+ * WIP: not ready for production usage for now due to memory + frame lifecycle issues.
+ * If a Frame is cached, then returning a shallow copy is not enough as the individual Vecs could then be removed from DKV.
+ * Deep copy would however increase the memory cost of caching.
+ */
 public class CachingTransformer<S extends CachingTransformer, T extends DataTransformer> extends DelegateTransformer<S, T> {
   
   boolean _cacheEnabled = true;

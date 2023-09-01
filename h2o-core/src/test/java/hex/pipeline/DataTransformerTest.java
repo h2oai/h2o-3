@@ -23,7 +23,6 @@ import static water.TestUtil.*;
 @CloudSize(1)
 public class DataTransformerTest {
   
-  
   @Test
   public void test_transform() {
     try {

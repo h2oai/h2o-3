@@ -18,7 +18,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   public enum FrameType {
     Training,
     Validation,
-    Scoring
+    Test
   }
 
   public boolean _enabled = true;  // flag allowing to enable/disable transformers dynamically esp. in pipelines (can be used as a pipeline hyperparam in grids).
@@ -153,7 +153,7 @@ public abstract class DataTransformer<SELF extends DataTransformer> extends Iced
   protected void doCleanup(Futures futures) {}
   
   public final Frame transform(Frame fr) {
-    return transform(fr, FrameType.Scoring, null);
+    return transform(fr, FrameType.Test, null);
   }
   
   public final Frame transform(Frame fr, FrameType type, PipelineContext context) {

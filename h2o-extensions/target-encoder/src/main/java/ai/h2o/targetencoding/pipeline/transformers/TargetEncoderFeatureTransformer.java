@@ -36,7 +36,7 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
   @Override
   protected Frame doTransform(Frame fr, FrameType type, PipelineContext context) {
     assert type != null;
-    assert context != null || type == FrameType.Scoring;
+    assert context != null || type == FrameType.Test;
     validateTransform();
     switch (type) {
       case Training:
@@ -51,7 +51,7 @@ public class TargetEncoderFeatureTransformer extends ModelAsFeatureTransformer<T
         } else {
           return getModel().transform(fr);
         }
-      case Scoring:
+      case Test:
       default:
         return getModel().transform(fr);
     }

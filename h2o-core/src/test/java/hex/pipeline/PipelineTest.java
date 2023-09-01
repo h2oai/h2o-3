@@ -23,6 +23,7 @@ import water.test.dummy.DummyModel;
 import water.test.dummy.DummyModelParameters;
 import water.util.ArrayUtils;
 
+import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
@@ -37,7 +38,7 @@ public class PipelineTest {
 
   @Rule
   public DKVIsolation isolation = new DKVIsolation();
-  
+
   private void checkFrameState(Frame fr) {
     assertNotNull(fr.getKey());
     assertNotNull(DKV.get(fr.getKey()));
@@ -81,19 +82,29 @@ public class PipelineTest {
     assertEquals(0, tracker.transformations.size());
     checkFrameState(fr);
 
-    Frame transformed = Scope.track(pmodel.score(fr));
-    assertNotNull(transformed);
-    TestUtil.printOutFrameAsTable(transformed);
+    Frame scored = Scope.track(pmodel.score(fr));
+    assertNotNull(scored);
+    TestUtil.printOutFrameAsTable(scored);
     assertEquals(1, tracker.transformations.size());
-    assertArrayEquals(new String[] {"one", "two", "target", "foo", "bar"}, transformed.names());
+    assertArrayEquals(new String[] {"one", "two", "target", "foo", "bar"}, scored.names());
     checkFrameState(fr);
+    checkFrameState(scored);
 
-    Frame retransformed = Scope.track(pmodel.score(fr));
-    TestUtil.printOutFrameAsTable(retransformed);
+    Frame rescored = Scope.track(pmodel.score(fr));
+    TestUtil.printOutFrameAsTable(rescored);
     assertEquals(2, tracker.transformations.size());
-    assertNotSame(transformed, retransformed);
-    assertFrameEquals(transformed, retransformed, 1.6);
+    assertNotSame(scored, rescored);
+    assertFrameEquals(scored, rescored, 1.6);
     checkFrameState(fr);
+    checkFrameState(rescored);
+
+    Frame transformed = Scope.track(pmodel.transform(fr));
+    TestUtil.printOutFrameAsTable(transformed);
+    assertEquals(3, tracker.transformations.size());
+    assertNotSame(scored, transformed);
+    assertFrameEquals(scored, transformed, 1.6);
+    checkFrameState(fr);
+    checkFrameState(transformed);
   }
 
   @Test
@@ -134,9 +145,22 @@ public class PipelineTest {
     checkFrameState(fr);
       
     Frame predictions = Scope.track(pmodel.score(fr));
+    assertEquals(2, tracker.transformations.size());
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
     checkFrameState(fr);
+    checkFrameState(predictions);
+    
+    Frame transformed = Scope.track(pmodel.transform(fr));
+    assertEquals(3, tracker.transformations.size());
+    assertNotNull(transformed);
+    TestUtil.printOutFrameAsTable(transformed);
+    assertArrayEquals(
+            Arrays.stream(emodel._output._names).sorted().toArray(), //model reorders input columns to obtain this output
+            Arrays.stream(transformed.names()).sorted().toArray()
+    );
+    checkFrameState(fr);
+    checkFrameState(transformed);
   }
   
   @Test 
@@ -205,6 +229,7 @@ public class PipelineTest {
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
     checkFrameState(fr);
+    checkFrameState(predictions);
   }
 
   @Test
@@ -259,6 +284,7 @@ public class PipelineTest {
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
     checkFrameState(fr);
+    checkFrameState(predictions);
   }
   
   @Test
@@ -301,7 +327,20 @@ public class PipelineTest {
     Frame predictions = Scope.track(pmodel.score(fr));
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
+    assertEquals(2, tracker.transformations.size());
     checkFrameState(fr);
+    checkFrameState(predictions);
+    
+    Frame transformed = Scope.track(pmodel.transform(fr));
+    assertNotNull(transformed);
+    TestUtil.printOutFrameAsTable(transformed);
+    assertEquals(3, tracker.transformations.size());
+    assertArrayEquals(
+            Arrays.stream(emodel._output._names).sorted().toArray(), //model reorders input columns to obtain this output
+            Arrays.stream(transformed.names()).sorted().toArray()
+    );
+    checkFrameState(fr);
+    checkFrameState(transformed);
   }
   
   @Test 
@@ -349,6 +388,7 @@ public class PipelineTest {
     assertNotNull(predictions);
     TestUtil.printOutFrameAsTable(predictions);
     checkFrameState(fr);
+    checkFrameState(predictions);
   }
   
   @Test

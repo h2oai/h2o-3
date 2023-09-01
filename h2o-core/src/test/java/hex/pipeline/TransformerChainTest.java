@@ -189,8 +189,8 @@ public class TransformerChainTest {
         }
       };
 
-      assertEquals(new Pair<>(3L, 5L), chain.transform(fr1, FrameType.Scoring, null, dim));
-      assertEquals(new Pair<>(3L, 7L), chain.transform(fr2, FrameType.Scoring, null, dim));
+      assertEquals(new Pair<>(3L, 5L), chain.transform(fr1, FrameType.Test, null, dim));
+      assertEquals(new Pair<>(3L, 7L), chain.transform(fr2, FrameType.Test, null, dim));
     } finally {
       Scope.exit();
     }
@@ -212,7 +212,7 @@ public class TransformerChainTest {
 
       Frame[] transformed = chain.transform(
               new Frame[] {fr1, fr1, fr2},
-              new FrameType[]{FrameType.Scoring, FrameType.Scoring, FrameType.Scoring},
+              new FrameType[]{FrameType.Test, FrameType.Test, FrameType.Test},
               null,
               (fs, c) -> fs
       );
@@ -232,7 +232,7 @@ public class TransformerChainTest {
 
       Set<String> uniqueCols = chain.transform(
               new Frame[] {fr1, fr1, fr2},
-              new FrameType[]{FrameType.Scoring, FrameType.Scoring, FrameType.Scoring},
+              new FrameType[]{FrameType.Test, FrameType.Test, FrameType.Test},
               null,
               (Frame[] fs, PipelineContext c) -> 
                       Arrays.stream(fs)
