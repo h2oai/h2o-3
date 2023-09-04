@@ -572,7 +572,7 @@ public class TreeHandlerTest extends TestUtil {
                     durationEnabled, greaterThan(durationDisabled * slowdownFactor));
 
             // duration disabled and "auto" should be similar in this case, 10x factor of tolerance because we are measuring in ms
-            assertEquals(durationDisabled, durationAuto, (double) 10 * durationDisabled);
+            assertEquals("Duration is not the same, if it consistent failure, then we have a real bug.", durationDisabled, durationAuto, (double) 10 * durationDisabled);
         } finally {
             Scope.exit();
         }

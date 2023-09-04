@@ -5,8 +5,8 @@ import ai.h2o.mojos.runtime.frame.MojoFrame;
 import ai.h2o.mojos.runtime.frame.MojoFrameMeta;
 import ai.h2o.mojos.runtime.transforms.MojoTransform;
 import ai.h2o.mojos.runtime.transforms.MojoTransformBuilderFactory;
-import no.priv.garshol.duke.Comparator;
 import water.util.comparison.string.StringComparatorFactory;
+import water.util.comparison.string.StringComparator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -67,7 +67,7 @@ public class StringPropertiesBinaryTransform extends MojoTransform {
         
         private static final HashMap<String,StringPropertiesBinaryFunction> _supportedFunctions = new HashMap<String,StringPropertiesBinaryFunction>() {{
             put("strDistance", new StringPropertiesBinaryFunction() {
-                Comparator _comparator = null;
+                StringComparator _comparator = null;
                 
                 boolean _compareEmpty = false;
                 

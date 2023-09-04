@@ -15,6 +15,10 @@ If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/late
 
 1. Click the ``Download H2O`` button on the `http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html>`__ page. This downloads a zip file that contains everything you need to get started.
 
+.. note::
+	
+	By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.
+
 2. From your terminal, unzip and start H2O as in the example below. 
 
  .. substitution-code-block:: bash
@@ -26,11 +30,14 @@ If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/late
 
 3. Point your browser to http://localhost:54321 to open up the H2O Flow web GUI.
 
-
 Install in R
 ------------
 
 Perform the following steps in R to install H2O. Copy and paste these commands one line at a time.
+
+.. note::
+	
+	By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.
 
 1. The following two commands remove any previously installed H2O packages for R.
 
@@ -69,6 +76,10 @@ Alternatively you can install H2O’s R package from `CRAN <https://cran.r-proje
 
 Install in Python
 -----------------
+
+.. note::
+	
+	By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.
 
 Run the following commands in a Terminal window to install H2O for Python. 
 

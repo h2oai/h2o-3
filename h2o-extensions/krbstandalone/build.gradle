@@ -3,6 +3,7 @@ description = "H2O Kerberos Standalone support"
 dependencies {
     api project(":h2o-core")
     api project(":h2o-persist-hdfs")
+    compileOnly("org.apache.hadoop:hadoop-common:$defaultHadoopVersion")
     api("org.apache.hadoop:hadoop-auth:$defaultHadoopVersion") {
         // Pull all dependencies to allow run directly from IDE or command line
         transitive = true

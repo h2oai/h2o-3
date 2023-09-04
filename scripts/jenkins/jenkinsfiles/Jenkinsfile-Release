@@ -334,6 +334,9 @@ EOF
                                                 else
                                                     echo '****** Upload to PyPI ******'
                                                     twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                                    echo '****** Upload h2o_client to PyPI ******'
+                                                    cd ../client/dist
+                                                    twine upload h2o_client-${env.PROJECT_VERSION}-py2.py3-none-any.whl
                                                 fi
                                             else
                                                 echo '****** WARNING! Upload PyPI Conda suppressed ******'
