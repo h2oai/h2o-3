@@ -1,6 +1,5 @@
 package hex.tree.dt.mrtasks;
 
-import org.apache.commons.math3.util.Precision;
 import water.MRTask;
 import water.fvec.Chunk;
 
@@ -32,25 +31,29 @@ public class GetClassCountsMRTask extends MRTask<GetClassCountsMRTask> {
             conditionsFailed = false;
             // - 1 because of the class column - don't check limits on it
             for (int column = 0; column < cs.length - 1 /*exclude prediction column*/; column++) {
-                // verifying limits is different for numerical and categorical columns
-                if(_featuresLimits[column][NUMERICAL_FLAG] == -1.0) {
-                    // if the value is out of the given limit, skip this row
-                    if (cs[column].atd(row) <= _featuresLimits[column][LIMIT_MIN]
-                            || cs[column].atd(row) > _featuresLimits[column][LIMIT_MAX]) {
-                        conditionsFailed = true;
-                        break;
-                    }
-                } else {
-                    // if the category is not in the given set (is false in given mask), skip this row
-                    if (_featuresLimits[column][(int) cs[column].atd(row)] == 0.0) {
-                        conditionsFailed = true;
-                        break;
-                    }
+                if (!verifyLimits(cs[column].atd(row), column)) {
+                    conditionsFailed = true;
+                    break;
                 }
             }
             if (!conditionsFailed) {
                 _countsByClass[(int) cs[classColumn].atd(row)]++;
             }
+        }
+    }
+
+    private boolean isNumerical(int feature) {
+        return _featuresLimits[feature][NUMERICAL_FLAG] == -1.0;
+    }
+
+    private boolean verifyLimits(double featureValue, int column) {
+        // verifying limits is different for numerical and categorical columns
+        if (isNumerical(column)) {
+            return featureValue > _featuresLimits[column][LIMIT_MIN]
+                    && featureValue <= _featuresLimits[column][LIMIT_MAX];
+        } else {
+            // actual categorical value is true(1.0) in feature limits
+            return _featuresLimits[column][(int) featureValue] == 1.0;
         }
     }
 
