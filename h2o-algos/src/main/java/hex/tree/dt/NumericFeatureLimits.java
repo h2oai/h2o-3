@@ -16,7 +16,7 @@ public class NumericFeatureLimits extends AbstractFeatureLimits {
     public static final int LIMIT_MAX = 2;
     
     // min of the first bin is moved with precision EPSILON, one additional decimal point of the difference is allowed 
-    private double EQUALS_PRECISION = EPSILON * 10; 
+    private static final double EQUALS_PRECISION = EPSILON * 10; 
     
     public NumericFeatureLimits(final double min, final double max) {
         _min = min;
