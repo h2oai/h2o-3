@@ -1,13 +1,16 @@
 package hex.adaboost;
 
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import hex.tree.drf.DRFModel;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.runner.RunWith;
+import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -21,8 +24,7 @@ import water.util.VecUtils;
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
@@ -57,6 +59,23 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
+
+            for (int i = 0; i < adaBoostModel._output.models.length; i++) {
+                System.out.println("Tree = " + i);
+                DRFModel drfModel = DKV.getGet(adaBoostModel._output.models[i]);
+                SharedTreeSubgraph tree = drfModel.getSharedTreeSubgraph(0,0);
+                if (tree.rootNode.getColName() == null) {
+                    // FIXME - why are some of the trees empty? Are all of the columns bad for split?
+                    System.out.println("    Empty tree");
+                    continue;
+                }
+                System.out.println("    Root = " + tree.rootNode.getColName() + " " + tree.rootNode.getSplitValue());
+                System.out.println("    Left = " + tree.rootNode.getLeftChild().isLeaf() + " " + tree.rootNode.getLeftChild().getPredValue());
+                System.out.println("    Right = " + tree.rootNode.getRightChild().isLeaf() + " " + tree.rootNode.getRightChild().getPredValue());
+                assertNotNull(tree.rootNode.getColName());
+                assertTrue(tree.rootNode.getLeftChild().isLeaf());
+                assertTrue(tree.rootNode.getRightChild().isLeaf());
+            }
         } finally {
             Scope.exit();
         }
@@ -157,7 +176,7 @@ public class AdaBoostTest extends TestUtil {
             Scope.track(score);
             toCSV(score, "../prostatescore.csv");
 //            Frame scoreOriginal = Scope.track(parseTestFile("../prostatescore_original.csv"));
-//            assertFrameEquals(scoreOriginal, score, 0);
+//            assertFrameEquals(new Frame(scoreOriginal.vec(0)), new Frame(score.vec(0)), 0);
         } finally {
             Scope.exit();
         }
