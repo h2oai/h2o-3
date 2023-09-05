@@ -12,6 +12,10 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.TwoDimTable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * TODO valenad1
@@ -91,6 +95,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 _model.update(_job);
             }
             DKV.remove(_trainWithWeights._key);
+            _model._output._model_summary = createModelSummaryTable();
         }
     }
 
@@ -146,6 +151,33 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         parms._train = frame._key;
         parms._response_column = _parms._response_column;
         return new GLM(parms);
+    }
+
+    public TwoDimTable createModelSummaryTable() {
+        List<String> colHeaders = new ArrayList<>();
+        List<String> colTypes = new ArrayList<>();
+        List<String> colFormat = new ArrayList<>();
+
+        colHeaders.add("Number of weak learners"); colTypes.add("int"); colFormat.add("%d");
+        colHeaders.add("Learning rate"); colTypes.add("int"); colFormat.add("%d");
+        colHeaders.add("Weak learner"); colTypes.add("int"); colFormat.add("%d");
+        colHeaders.add("Seed"); colTypes.add("long"); colFormat.add("%d");
+
+        final int rows = 1;
+        TwoDimTable table = new TwoDimTable(
+                "Model Summary", null,
+                new String[rows],
+                colHeaders.toArray(new String[0]),
+                colTypes.toArray(new String[0]),
+                colFormat.toArray(new String[0]),
+                "");
+        int row = 0;
+        int col = 0;
+        table.set(row, col++, _parms._n_estimators);
+        table.set(row, col++, _parms._learning_rate);
+        table.set(row, col++, _parms._weak_learner.toString());
+        table.set(row, col, _parms._seed);
+        return table;
     }
 
 }
