@@ -83,7 +83,7 @@ class Jetty9Helper {
     }
 
     static HttpConfiguration makeHttpConfiguration(ConnectionConfiguration cfg) {
-        final H2OHttpConfiguration httpConfiguration = new H2OHttpConfiguration();
+        final HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setSendServerVersion(false);
         httpConfiguration.setRequestHeaderSize(cfg.getRequestHeaderSize());
         httpConfiguration.setResponseHeaderSize(cfg.getResponseHeaderSize());
