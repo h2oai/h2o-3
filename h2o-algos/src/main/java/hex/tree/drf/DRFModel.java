@@ -71,8 +71,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
   }
 
   @Override
-  protected SharedTreeModelWithContributions<DRFModel, DRFParameters, DRFOutput>.ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets, boolean output_space) {
-    return new ScoreContributionsWithBackgroundTaskDRF(fr, backgroundFrame, this, expand, catOffsets);
+  protected SharedTreeModelWithContributions<DRFModel, DRFParameters, DRFOutput>.ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets, ContributionsOptions options) {
+    return new ScoreContributionsWithBackgroundTaskDRF(fr, backgroundFrame, options._outputPerReference,  this, expand, catOffsets);
   }
 
   @Override
@@ -146,8 +146,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
   
   public class ScoreContributionsWithBackgroundTaskDRF extends ScoreContributionsWithBackgroundTask {
 
-    public ScoreContributionsWithBackgroundTaskDRF(Frame fr, Frame backgroundFrame, SharedTreeModel model, boolean expand, int[] catOffsets) {
-      super(fr, backgroundFrame, model, expand, catOffsets, false);
+    public ScoreContributionsWithBackgroundTaskDRF(Frame fr, Frame backgroundFrame, boolean perReference, SharedTreeModel model, boolean expand, int[] catOffsets) {
+      super(fr, backgroundFrame, perReference, model, expand, catOffsets, false);
     }
 
     @Override

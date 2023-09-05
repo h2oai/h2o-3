@@ -162,10 +162,10 @@ public class StackedEnsembleModel
       }
     }
   }
-  
+
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
-    Log.info("Starting contributions calculation for "+this._key+"...");
+    Log.info("Starting contributions calculation for " + this._key + "...");
     List<String> baseModels = new ArrayList<>();
     List<Integer> baseModelsIdx = new ArrayList<>();
     String[] columns = null;
@@ -181,8 +181,12 @@ public class StackedEnsembleModel
                   frame,
                   Key.make(destination_key.toString() + "_" + bm),
                   j,
-                  new ContributionsOptions().setOutputFormat(options._outputFormat).setOutputSpace(true),
+                  new ContributionsOptions()
+                          .setOutputFormat(options._outputFormat)
+                          .setOutputSpace(true)
+                          .setOutputPerReference(true),
                   backgroundFrame);
+
           if (null == columns)
             columns = contributions._names;
 
@@ -191,7 +195,7 @@ public class StackedEnsembleModel
               HashSet<String> colSet = new HashSet<>();
               List<String> colList = Arrays.asList(columns);
               List<String> contrList = Arrays.asList(contributions._names);
-               colSet.addAll(colList);
+              colSet.addAll(colList);
               if (colSet.containsAll(contrList)) {
                 int[] perm = new int[columns.length];
                 for (int i = 0; i < columns.length; i++) {
@@ -207,7 +211,7 @@ public class StackedEnsembleModel
               throw new RuntimeException("Base model contributions have different columns. This is not expected. Please fill in a bug report.");
             }
           }
-              contributions.setNames(
+          contributions.setNames(
                   Arrays.stream(contributions._names)
                           .map(name -> bm + "_" + name)
                           .toArray(String[]::new)
@@ -216,12 +220,12 @@ public class StackedEnsembleModel
           baseModelsIdx.add(fr.numCols());
         }
       }
-      if (baseModels.size() == 0)
-        throw new RuntimeException("Stacked Ensemble \""+this._key+"\" doesn't use any base models. Stopping contribution calculation as no feature contributes.");
+      if (baseModels.isEmpty())
+        throw new RuntimeException("Stacked Ensemble \"" + this._key + "\" doesn't use any base models. Stopping contribution calculation as no feature contributes.");
 
-      assert  columns[columns.length-3].equals("BiasTerm") && columns[columns.length-2].equals("RowIdx") && columns[columns.length-1].equals("BackgroundRowIdx");
+      assert columns[columns.length - 3].equals("BiasTerm") && columns[columns.length - 2].equals("RowIdx") && columns[columns.length - 1].equals("BackgroundRowIdx");
       String[] colsWithRows = columns;
-      columns = Arrays.copyOfRange(columns, 0, columns.length-3);
+      columns = Arrays.copyOfRange(columns, 0, columns.length - 3);
 
       List<Frame> tmpFrames = new ArrayList<>();
       Frame adaptFr = adaptFrameForScore(frame, false, tmpFrames);
@@ -230,10 +234,13 @@ public class StackedEnsembleModel
       tmpFrames = new ArrayList<>();
       Frame adaptFrBg = adaptFrameForScore(backgroundFrame, false, tmpFrames);
       Frame levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, null);
-      
+
       Frame metalearnerContrib = ((Model.Contributions) _output._metalearner).scoreContributions(levelOneFrame,
-              Key.make(destination_key.toString() + "_" + _output._metalearner._key), j,
-              new ContributionsOptions().setOutputFormat(options._outputFormat).setOutputSpace(true),
+              Key.make(destination_key + "_" + _output._metalearner._key), j,
+              new ContributionsOptions()
+                      .setOutputFormat(options._outputFormat)
+                      .setOutputSpace(options._outputSpace)
+                      .setOutputPerReference(true),
               levelOneFrameBg);
 
       metalearnerContrib.setNames(Arrays.stream(metalearnerContrib._names)
@@ -241,14 +248,26 @@ public class StackedEnsembleModel
               .toArray(String[]::new));
 
       fr.add(metalearnerContrib);
+
+      Frame indivContribs = new GDeepSHAP(columns, baseModels.toArray(new String[0]),
+              fr._names, baseModelsIdx.toArray(new Integer[0]), _parms._metalearner_transform)
+              .withPostMapAction(JobUpdatePostMap.forJob(j))
+              .doAll(colsWithRows.length, Vec.T_NUM, fr)
+              .outputFrame(options._outputPerReference ? destination_key : Key.make(destination_key + "_individual_contribs"), colsWithRows, null);
       
-      GDeepSHAP c = new GDeepSHAP(columns, baseModels.toArray(new String[0]),
-              fr._names, baseModelsIdx.toArray(new Integer[0]), _parms._metalearner_transform);
+      if (options._outputPerReference)
+        return indivContribs;
       
-      c.doAll(colsWithRows.length, Vec.T_NUM, fr);
-      return c.outputFrame(destination_key, colsWithRows, null);
+      try {
+        return new ContributionsMeanAggregator((int) frame.numRows(), columns.length + 1 /* (bias term) */, (int)backgroundFrame.numRows())
+                .withPostMapAction(JobUpdatePostMap.forJob(j))
+                .doAll(columns.length + 1, Vec.T_NUM, indivContribs)
+                .outputFrame(destination_key, Arrays.copyOfRange(colsWithRows, 0, columns.length + 1), null);
+      } finally {
+        indivContribs.delete(true);
+      }
     } finally {
-      Log.info("Finished contributions calculation for "+this._key+"...");
+      Log.info("Finished contributions calculation for " + this._key + "...");
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, frame);
     }
   }

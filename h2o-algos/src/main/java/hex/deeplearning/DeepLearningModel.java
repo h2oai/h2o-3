@@ -93,8 +93,8 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
     final int[] _origIndices;
     final int _hiddenLayerMultiplier;
 
-    public DeepSHAPContributionsWithBackground(Frame fr, Frame backgroundFrame, int[] origIndices) {
-      super(fr, backgroundFrame);
+    public DeepSHAPContributionsWithBackground(Frame fr, Frame backgroundFrame, boolean perReference, int[] origIndices) {
+      super(fr, backgroundFrame, perReference);
 
       switch (_parms._activation) {
         case Tanh:
@@ -451,7 +451,10 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
       Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
       DKV.put(adaptedBgFrame);
       Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
-      DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(adaptedFrame, adaptedBgFrame,
+      DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(
+              adaptedFrame,
+              adaptedBgFrame,
+              options._outputPerReference,
               ContributionsOutputFormat.Compact.equals(options._outputFormat)
                       ? model_info.data_info().coefOriginalColumnIndices(adaptedFrame)
                       : null);

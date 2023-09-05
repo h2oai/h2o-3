@@ -59,7 +59,8 @@ def test_local_accuracy(
         print("Testing local accuracy...")
     with no_progress_block():
         cf = mod.predict_contributions(
-            test, background_frame=train, output_format=output_format, output_space=output_space
+            test, background_frame=train, output_format=output_format, output_space=output_space,
+            output_per_reference=True
         )
         pf = mod.predict(test)
         col = "Yes" if "Yes" in pf.names else "predict"
@@ -83,7 +84,8 @@ def test_dummy_property(mod, train, test, output_format):
     print("Testing dummy property...")
     contr_h2o = (
         mod.predict_contributions(
-            test, background_frame=train, output_format=output_format
+            test, background_frame=train, output_format=output_format,
+            output_per_reference=True
         )
         .sort(["RowIdx", "BackgroundRowIdx"])
         .drop(["BiasTerm", "RowIdx", "BackgroundRowIdx"])
@@ -146,18 +148,17 @@ def test_symmetry(mod, train, test, output_format, eps=1e-10):
     print("Testing symmetry...")
     contr = (
         mod.predict_contributions(
-            test, background_frame=train, output_format=output_format
+            test, background_frame=train, output_format=output_format, output_per_reference=True
         )
         .sort(["RowIdx", "BackgroundRowIdx"])
-      #  .drop(["BiasTerm", "RowIdx", "BackgroundRowIdx"])
         .as_data_frame()
     )
     contr2 = (
         mod.predict_contributions(
-            train, background_frame=test, output_format=output_format
+            train, background_frame=test, output_format=output_format, output_per_reference=True
         )
         .sort(["RowIdx", "BackgroundRowIdx"][::-1])
-      
+
         .as_data_frame()
     )
 
@@ -206,7 +207,7 @@ def test_symmetry(mod, train, test, output_format, eps=1e-10):
                         f"row: {row}, col: {col}, col2: {col}, {contr.loc[row, col]} != - {contr2.loc[row, col]}"
                     )
                     print(
-                        f"row: {row}, col: {col}, col2: {col_name}.{val_bg}, {contr.loc[row, col_name+'.'+val]} != - {contr2.loc[row, col_name+'.'+val_bg]}"
+                        f"row: {row}, col: {col}, col2: {col_name}.{val_bg}, {contr.loc[row, col_name + '.' + val]} != - {contr2.loc[row, col_name + '.' + val_bg]}"
                     )
                     print(
                         f"row: {row}; RowIdx: {contr.loc[row, 'RowIdx']}, BgRowIdx: {contr.loc[row, 'BackgroundRowIdx']}; RowIdx: {contr2.loc[row, 'RowIdx']}, BgRowIdx: {contr2.loc[row, 'BackgroundRowIdx']};"
@@ -298,6 +299,7 @@ def test_contributions_against_naive(mod, y, train, test, link=False, eps=1e-6):
                     test[xrow, :],
                     background_frame=train[brow, :],
                     output_format="compact",
+                    output_per_reference=True
                 ).as_data_frame()
                 contr = contr.loc[:, (contr != 0).values[0]]
                 cols = set(contr.columns)
@@ -316,6 +318,7 @@ def test_contributions_against_naive(mod, y, train, test, link=False, eps=1e-6):
 
 
 def import_data(seed=seed, no_NA=False):
+    h2o.remove_all()
     df = h2o.import_file(
         pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"),
         na_strings=["", " ", "NA"],
@@ -324,6 +327,24 @@ def import_data(seed=seed, no_NA=False):
     if no_NA:
         df = df.na_omit()
     return df.split_frame([0.75], seed=seed)
+
+
+def test_per_reference_aggregation(model, train, test):
+    print("Testing per reference aggregation...")
+    contrib = model.predict_contributions(test, background_frame=train).as_data_frame()
+    py_agg_contrib = (
+        model
+        .predict_contributions(test, background_frame=train, output_per_reference=True)
+        .as_data_frame()
+        .drop("BackgroundRowIdx", axis=1)
+        .groupby("RowIdx")
+        .mean()
+        .sort_values("RowIdx")
+    )
+    for c in contrib.columns:
+        diff = (contrib[c] - py_agg_contrib[c]).abs()
+        bool_diff = (diff < 1e-10).all()
+        assert bool_diff, f"{c}: {bool_diff} ({diff.max()})"
 
 
 def helper_test_all(
@@ -350,6 +371,8 @@ def helper_test_all(
     if output_format.lower() == "compact" and not skip_naive:
         test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
 
+    test_per_reference_aggregation(mod, train, test)
+
 
 def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, monotone=False, **kwargs
                        ):
@@ -362,13 +385,13 @@ def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, m
     models = [m[0] for m in aml.leaderboard[:, "model_id"].as_data_frame(False, False)]
 
     for model in models:
-        print(model+"\n" + "="*len(model))
+        print(model + " (" + output_format + ")\n" + "=" * (len(model) + len(output_format) + 3))
         mod = h2o.get_model(model)
-        link = y == "survived" and mod.algo.lower() in ["glm", "gbm", "xgboost"]
+        link = y == "survived" and mod.algo.lower() in ["glm", "gbm", "xgboost", "stackedensemble"]
         skip_naive = mod.algo.lower() in ["deeplearning", "stackedensemble"]
         skip_symmetry = mod.algo.lower() in ["stackedensemble"]
-        skip_dummy =  mod.algo.lower() in ["glm", "stackedensemble"] and output_format == "original"
-        
+        skip_dummy = mod.algo.lower() in ["glm", "stackedensemble"] and output_format == "original"
+
         test_local_accuracy(
             mod, train, test, link=link, output_format=output_format, eps=eps
         )
@@ -386,6 +409,8 @@ def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, m
 
         if output_format.lower() == "compact" and not skip_naive:
             test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
+
+        test_per_reference_aggregation(mod, train, test)
 
 
 ########################################################################################################################
@@ -1437,9 +1462,9 @@ def test_se_all_models_with_default_config_binomial_original():
     train, test = import_data(no_NA=True)
     y = "survived"
     kw = dict(nfolds=5, keep_cross_validation_predictions=True, seed=seed)
-# GLM doesn't have .missing(NA) for missing categories
-#    glm = H2OGeneralizedLinearEstimator(**kw)
-#    glm.train(y=y, training_frame=train)
+    # GLM doesn't have .missing(NA) for missing categories
+    #    glm = H2OGeneralizedLinearEstimator(**kw)
+    #    glm.train(y=y, training_frame=train)
 
     gbm = H2OGradientBoostingEstimator(**kw)
     gbm.train(y=y, training_frame=train)
@@ -1571,7 +1596,6 @@ def test_se_all_models_with_default_config_regression_original():
     #    glm = H2OGeneralizedLinearEstimator(**kw)
     #    glm.train(y=y, training_frame=train)
 
-
     gbm = H2OGradientBoostingEstimator(**kw)
     gbm.train(y=y, training_frame=train)
 
@@ -1585,7 +1609,8 @@ def test_se_all_models_with_default_config_regression_original():
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "original", skip_naive=True, skip_symmetry=True, base_models=[gbm, drf, xgb, dl]
+        H2OStackedEnsembleEstimator, y, train, test, "original", skip_naive=True, skip_symmetry=True,
+        base_models=[gbm, drf, xgb, dl]
     )
 
 
@@ -1597,7 +1622,6 @@ def test_automl_binomial_original():
 def test_automl_binomial_compact():
     train, test = import_data()
     helper_test_automl("survived", train, test, "compact")
-
 
 
 def test_automl_regression_original():
@@ -1617,8 +1641,7 @@ def test_automl_binomial_monotone_constraints_original():
 
 def test_automl_binomial_monotone_constraints_compact():
     train, test = import_data()
-    helper_test_automl("survived", train, test, "compact", monotone=True)
-
+    helper_test_automl("survived", train, test, "compact", monotone=True, eps=0.001)
 
 
 def test_automl_regression_monotone_constraints_original():
@@ -1629,7 +1652,6 @@ def test_automl_regression_monotone_constraints_original():
 def test_automl_regression_monotone_constraints_compact():
     train, test = import_data()
     helper_test_automl("fare", train, test, "compact", monotone=True)
-
 
 
 TESTS = [

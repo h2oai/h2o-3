@@ -731,7 +731,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
 
-      return new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, adaptFrm, adaptBgFrm, options._outputSpace)
+      return new PredictTreeSHAPWithBackgroundTask(di, model_info(), _output, options, 
+              adaptFrm, adaptBgFrm, options._outputPerReference, options._outputSpace)
               .runAndGetOutput(j, destination_key, outputNames);
     } finally {
       Log.info("Finished contributions calculation for " + this._key + "...");

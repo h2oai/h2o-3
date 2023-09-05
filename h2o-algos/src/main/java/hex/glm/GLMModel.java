@@ -186,8 +186,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     boolean _compact;
     boolean _outputSpace;
 
-    GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame frame, Frame backgroundFrame, boolean compact, boolean outputSpace) {
-      super(frame, backgroundFrame);
+    GLMContributionsWithBackground(DataInfo dinfo, double[] betas, Frame frame, Frame backgroundFrame, boolean perReference, boolean compact, boolean outputSpace) {
+      super(frame, backgroundFrame, perReference);
       _dinfo = dinfo;
       _betas = betas;
       _compact = compact;
@@ -257,7 +257,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       dinfo._adaptedFrame = adaptedFrame;
       GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(dinfo,
               _parms._standardize ? _output.getNormBeta() : _output.beta(), adaptedFrame, adaptedBgFrame,
-              ContributionsOutputFormat.Compact.equals(options._outputFormat), options._outputSpace);
+              options._outputPerReference, ContributionsOutputFormat.Compact.equals(options._outputFormat), options._outputSpace);
       String[] colNames = new String[ContributionsOutputFormat.Compact.equals(options._outputFormat)
               ? dinfo.coefOriginalNames().length + 1 // +1 for bias term
               : beta().length + (_output._dinfo._intercept ? 0 : 1)];

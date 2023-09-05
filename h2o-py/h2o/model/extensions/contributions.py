@@ -6,7 +6,7 @@ from h2o.utils.typechecks import assert_is_type, Enum
 
 class Contributions:
 
-    def _predict_contributions(self, test_data, output_format, top_n, bottom_n, compare_abs, background_frame, output_space):
+    def _predict_contributions(self, test_data, output_format, top_n, bottom_n, compare_abs, background_frame, output_space, output_per_reference):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost, DRF models and equivalent
         imported MOJOs).
@@ -39,6 +39,9 @@ class Contributions:
         :param output_space: If true, transform contributions so that they sum up to the difference in the output space
             (applicable iff contributions are in link space). 
             Note that this transformation is an approximation and the contributions won't be exact SHAP values.
+        :param output_per_reference: If True, return contributions against each background sample (aka reference),
+            i.e. phi(feature, x, bg), otherwise return contributions averaged over the background 
+            sample (phi(feature, x) = E_{bg} phi(feature, x, bg)).
         :returns: A new H2OFrame made of feature contributions.
 
         """
@@ -51,7 +54,8 @@ class Contributions:
                                  "bottom_n": bottom_n,
                                  "compare_abs": compare_abs,
                                  "background_frame": background_frame.frame_id if background_frame is not None else None,
-                                 "output_space": output_space
+                                 "output_space": output_space,
+                                 "output_per_reference": output_per_reference
                                  }), "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)

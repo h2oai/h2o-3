@@ -96,7 +96,7 @@ public abstract class SharedTreeModelWithContributions<
   }
 
 
-  protected abstract ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets, boolean output_space);
+  protected abstract ScoreContributionsWithBackgroundTask getScoreContributionsWithBackgroundTask(SharedTreeModel model, Frame fr, Frame backgroundFrame, boolean expand, int[] catOffsets, ContributionsOptions options);
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
@@ -115,7 +115,7 @@ public abstract class SharedTreeModelWithContributions<
         Frame adaptBackgroundFrm = removeSpecialColumns(backgroundFrame);
 
         final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
-        return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, false, null, options._outputSpace)
+        return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, false, null, options)
                 .runAndGetOutput(j, destination_key, outputNames);
       } else {
         Frame adaptFrm = removeSpecialColumns(frame);
@@ -161,7 +161,7 @@ public abstract class SharedTreeModelWithContributions<
           }
         }
 
-        return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, true, catOffsets, options._outputSpace)
+        return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, true, catOffsets, options)
                 .runAndGetOutput(j, destination_key, outputNames);
       }
     } finally {
@@ -303,8 +303,8 @@ public abstract class SharedTreeModelWithContributions<
     protected boolean _outputSpace;
     protected int[] _catOffsets;
 
-    public ScoreContributionsWithBackgroundTask(Frame fr, Frame backgroundFrame, SharedTreeModel model, boolean expand, int[] catOffsets, boolean outputSpace) {
-      super(fr, backgroundFrame);
+    public ScoreContributionsWithBackgroundTask(Frame fr, Frame backgroundFrame, boolean perReference, SharedTreeModel model, boolean expand, int[] catOffsets, boolean outputSpace) {
+      super(fr, backgroundFrame, perReference);
       _modelKey = model._key;
       _expand = expand;
       _catOffsets = catOffsets;

@@ -138,7 +138,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public int _bottomN;
       public boolean _compareAbs;
       public boolean _outputSpace; // Used only iff SHAP is in link space
-
+      public boolean _outputPerReference; // If T, return contributions against each background sample (aka reference), i.e. phi(feature, x, bg), otherwise return contributions averaged over the background sample (phi(feature, x) = E_{bg} phi(feature, x, bg))
+      
+      
       public ContributionsOptions setOutputFormat(ContributionsOutputFormat outputFormat) {
         _outputFormat = outputFormat;
         return this;
@@ -164,6 +166,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return this;
       }
       
+      
+      public ContributionsOptions setOutputPerReference(boolean perReference) {
+        _outputPerReference = perReference;
+        return this;
+      }
       public boolean isSortingRequired() {
         return _topN != 0 || _bottomN != 0;
       }
