@@ -61,11 +61,6 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
         public AdaBoostOutput(AdaBoost adaBoostModel) {
             super(adaBoostModel);
         }
-
-        @Override
-        public boolean isAdaboost() {
-            return true;
-        }
     }
 
     @Override

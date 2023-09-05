@@ -1127,7 +1127,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean hasFold () { return _hasFold;}
     public boolean hasTreatment() { return _hasTreatment;}
     public boolean hasResponse() { return isSupervised(); }
-    public boolean isAdaboost()  {return false;};
     public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
