@@ -38,6 +38,7 @@ reference:
       - h2o
       - h2o.abs
       - h2o.acos
+      - h2o.adaBoost
       - h2o.aggregated_frame
       - h2o.aggregator
       - h2o.aic
