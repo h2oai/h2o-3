@@ -36,12 +36,8 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
     /**
      * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
-     * Shape n x 2.
-     * Values of second dimension: (feature index, threshold) or (-1, decision value).
      * While building the tree nodes are being filled from index 0 iteratively
      */
-    private double[][] _tree;
-
     private AbstractCompressedNode[] _treeObj;
 
     private DTModel _model;
@@ -57,7 +53,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         super(parameters);
         _min_rows = parameters._min_rows;
         _nodesCount = 0;
-        _tree = null;
         _treeObj = null;
         init(true);
     }
@@ -182,11 +177,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      * @param nodeIndex     node index
      */
     public void makeLeafFromNode(int[] countsByClass, int nodeIndex) {
-        if (_tree != null) {
-            _tree[nodeIndex][0] = 1; // indicates leaf
-            _tree[nodeIndex][1] = selectDecisionValue(countsByClass);
-            _tree[nodeIndex][2] = calculateProbability(countsByClass)[0]; // for now keep only prob. of class 0. will be improved later
-        }
         _treeObj[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbability(countsByClass)[0]);
         // nothing to return, node is modified inplace
     }
@@ -250,12 +240,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             makeLeafFromNode(countsByClass, nodeIndex);
             return;
         }
-
-//        // flag that node is not a list
-//        _tree[nodeIndex][0] = 0;
-//        _tree[nodeIndex][1] = bestSplittingRule._splitFeatureIndex;
-//        _tree[nodeIndex][2] = bestSplittingRule._threshold;
-
+        
         _treeObj[nodeIndex] = new CompressedNode(bestSplittingRule);
         
         int splitFeatureIndex = bestSplittingRule.getFeatureIndex();
@@ -351,10 +336,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             DKV.put(compressedDT);
             _job.update(1);
             _model.update(_job);
-//            System.out.println("Tree: " + compressedSDT.toString());
             System.out.println("Rules: " + String.join("\n", compressedDT.getListOfRules()));
-//            Log.debug("Tree:");
-//            Log.debug(Arrays.deepToString(_tree));
         }
 
         /**
@@ -362,7 +344,6 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
          */
         private void buildDTIteratively() {
             int treeLength = (int) Math.pow(2, _parms._max_depth + 1) - 1;
-            _tree = new double[treeLength][3];
             _treeObj = new AbstractCompressedNode[treeLength];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits(_train));

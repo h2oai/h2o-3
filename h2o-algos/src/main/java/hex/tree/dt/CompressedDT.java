@@ -16,11 +16,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
 
     /**
      * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
-     * Shape n x 3.
-     * Values of second dimension: (indicator of leaf (0/1), feature index or decision value, threshold or probability).
-     * For a leaf: (1, decision value, probability), for an internal node: (0, feature index, threshold)
      */
-    private final double[][] _nodes;
     private final AbstractCompressedNode[] _nodesObj;
 
     private final ArrayList<String> _listOfRules;
@@ -36,7 +32,6 @@ public class CompressedDT extends Keyed<CompressedDT> {
 
     public CompressedDT(AbstractCompressedNode[] nodes) {
         _key = Key.make("CompressedDT" + Key.rand());
-        _nodes = null;
         _nodesObj = nodes;
         _listOfRules = new ArrayList<>();
         extractRulesStartingWithNode(0, "");
@@ -74,9 +69,6 @@ public class CompressedDT extends Keyed<CompressedDT> {
 
     @Override
     public String toString() {
-        if(_nodes != null) {
-            return Arrays.stream(_nodes).map(n -> "(" + n[0] + "," + n[1] + "," + n[2] + ")").collect(Collectors.joining(";"));
-        } 
         return Arrays.stream(_nodesObj).map(AbstractCompressedNode::toString).collect(Collectors.joining(";"));
     }
 
@@ -100,8 +92,8 @@ public class CompressedDT extends Keyed<CompressedDT> {
         return _listOfRules;
     }
 
-    public double[][] getNodes() {
-        return _nodes;
+    public AbstractCompressedNode[] getNodes() {
+        return _nodesObj;
     }
 
 }
