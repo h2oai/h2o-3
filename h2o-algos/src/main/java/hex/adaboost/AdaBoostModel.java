@@ -92,7 +92,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
         /**
          * TODO valenad1
          */
-        public long _n_estimators;
+        public int _n_estimators;
 
         /**
          * TODO valenad1

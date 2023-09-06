@@ -7,6 +7,7 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
+import hex.tree.dt.DTModel;
 import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -31,6 +32,20 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     public AdaBoost(AdaBoostModel.AdaBoostParameters parms) {
         super(parms);
         init(false);
+    }
+
+    public AdaBoost(boolean startup_once) {
+        super(new AdaBoostModel.AdaBoostParameters(), startup_once);
+    }
+
+    @Override
+    public boolean havePojo() {
+        return false;
+    }
+
+    @Override
+    public boolean haveMojo() {
+        return false;
     }
 
     @Override
