@@ -3,9 +3,7 @@ package hex.tree.dt;
 import water.Key;
 import water.Keyed;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -19,22 +17,15 @@ public class CompressedDT extends Keyed<CompressedDT> {
      */
     private final AbstractCompressedNode[] _nodesObj;
 
-    private final ArrayList<String> _listOfRules;
+    private final String[] _listOfRules;
 
-
-    public CompressedDT(double[][] nodes) {
-        _key = Key.make("CompressedDT" + Key.rand());
-        _nodes = nodes;
-        _nodesObj = null;
-        _listOfRules = new ArrayList<>();
-        extractRulesStartingWithNode(0, "");
-    }
-
-    public CompressedDT(AbstractCompressedNode[] nodes) {
+    public CompressedDT(AbstractCompressedNode[] nodes, int leavesCount) {
         _key = Key.make("CompressedDT" + Key.rand());
         _nodesObj = nodes;
-        _listOfRules = new ArrayList<>();
-        extractRulesStartingWithNode(0, "");
+        _listOfRules = new String[leavesCount];
+        // creating object Integer variable to allow incrementation
+        Integer nextFreeSpotHolder = 0;
+        extractRulesStartingWithNode(0, "", nextFreeSpotHolder);
     }
 
     /**
@@ -72,23 +63,30 @@ public class CompressedDT extends Keyed<CompressedDT> {
         return Arrays.stream(_nodesObj).map(AbstractCompressedNode::toString).collect(Collectors.joining(";"));
     }
 
-    public void extractRulesStartingWithNode(int nodeIndex, String actualRule) {
-        // todo - implement for categorical features
-            if (_nodesObj[nodeIndex] instanceof CompressedLeaf) {
-                // if node is a list, add the rule to the list and return
-                _listOfRules.add(actualRule + " -> (" + ((CompressedLeaf) _nodesObj[nodeIndex]).getDecisionValue()
-                        + ", " + ((CompressedLeaf) _nodesObj[nodeIndex]).getProbabilities() + ")");
-                return;
-            }
+    public int extractRulesStartingWithNode(int nodeIndex, String actualRule, int nextFreeSpot) {
+        if (_nodesObj[nodeIndex] instanceof CompressedLeaf) {
+            // if node is a leaf, add the rule to the list of rules at index given by the nextFreeSpot parameter
+            _listOfRules[nextFreeSpot] = actualRule + " -> (" + ((CompressedLeaf) _nodesObj[nodeIndex]).getDecisionValue()
+                    + ", " + ((CompressedLeaf) _nodesObj[nodeIndex]).getProbabilities() + ")";
+            System.out.println(nextFreeSpot);
+            // move nextFreeSpot to the next index and return it to be used for other branches
+            nextFreeSpot++;
+            return nextFreeSpot;
+        }
 
-            actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
-            // proceed to the left branch
-            extractRulesStartingWithNode(2 * nodeIndex + 1, ((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule().toString());
-            // proceed to the right branch
-            extractRulesStartingWithNode(2 * nodeIndex + 2, actualRule + " not (" + ((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule().toString() + ")");
+        actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
+        // proceed to the left branch
+        nextFreeSpot = extractRulesStartingWithNode(2 * nodeIndex + 1, 
+                ((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule().toString(), nextFreeSpot);
+        // proceed to the right branch
+        nextFreeSpot = extractRulesStartingWithNode(2 * nodeIndex + 2, 
+                actualRule + " not (" + ((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule().toString() + ")", 
+                nextFreeSpot);
+        // return current index of the next free spot in the array
+        return nextFreeSpot;
     }
 
-    public List<String> getListOfRules() {
+    public String[] getListOfRules() {
         return _listOfRules;
     }
 

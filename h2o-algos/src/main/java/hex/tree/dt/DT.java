@@ -35,6 +35,11 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
     int _nodesCount;
 
     /**
+     * Current number of build leaves.
+     */
+    int _leavesCount;
+
+    /**
      * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
      * While building the tree nodes are being filled from index 0 iteratively
      */
@@ -53,6 +58,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         super(parameters);
         _min_rows = parameters._min_rows;
         _nodesCount = 0;
+        _leavesCount = 0;
         _treeObj = null;
         init(true);
     }
@@ -178,6 +184,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      */
     public void makeLeafFromNode(int[] countsByClass, int nodeIndex) {
         _treeObj[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbability(countsByClass)[0]);
+        _leavesCount++;
         // nothing to return, node is modified inplace
     }
 
@@ -328,9 +335,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         private void buildDT() {
             buildDTIteratively();
             Log.debug("depth: " + _parms._max_depth + ", nodes count: " + _nodesCount);
-
-//            CompressedSDT compressedSDT = new CompressedSDT(_tree);
-            CompressedDT compressedDT = new CompressedDT(_treeObj);
+            CompressedDT compressedDT = new CompressedDT(_treeObj, _leavesCount);
 
             _model._output._treeKey = compressedDT._key;
             DKV.put(compressedDT);
