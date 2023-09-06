@@ -329,12 +329,12 @@ def import_data(seed=seed, no_NA=False):
     return df.split_frame([0.75], seed=seed)
 
 
-def test_per_reference_aggregation(model, train, test):
+def test_per_reference_aggregation(model, train, test, output_format):
     print("Testing per reference aggregation...")
-    contrib = model.predict_contributions(test, background_frame=train).as_data_frame()
+    contrib = model.predict_contributions(test, background_frame=train, output_format=output_format).as_data_frame()
     py_agg_contrib = (
         model
-        .predict_contributions(test, background_frame=train, output_per_reference=True)
+        .predict_contributions(test, background_frame=train, output_per_reference=True, output_format=output_format)
         .as_data_frame()
         .drop("BackgroundRowIdx", axis=1)
         .groupby("RowIdx")
@@ -371,7 +371,7 @@ def helper_test_all(
     if output_format.lower() == "compact" and not skip_naive:
         test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
 
-    test_per_reference_aggregation(mod, train, test)
+    test_per_reference_aggregation(mod, train, test, output_format)
 
 
 def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, monotone=False, **kwargs
@@ -1479,7 +1479,7 @@ def test_se_all_models_with_default_config_binomial_original():
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "original", skip_naive=True, base_models=[gbm, drf, xgb, dl]
+        H2OStackedEnsembleEstimator, y, train, test, "original", link=True, skip_naive=True, base_models=[gbm, drf, xgb, dl]
     )
 
 
@@ -1504,7 +1504,7 @@ def test_se_all_models_with_default_config_binomial_compact():
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "compact", skip_naive=True, base_models=[glm, gbm, drf, xgb, dl]
+        H2OStackedEnsembleEstimator, y, train, test, "compact", link=True, skip_naive=True, base_models=[glm, gbm, drf, xgb, dl]
     )
 
 
@@ -1530,7 +1530,7 @@ def test_se_all_models_with_default_config_binomial_with_logit_transform_origina
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "original", skip_naive=True, base_models=[gbm, drf, xgb, dl],
+        H2OStackedEnsembleEstimator, y, train, test, "original", link=True, skip_naive=True, base_models=[gbm, drf, xgb, dl],
         metalearner_transform="logit"
     )
 
@@ -1557,7 +1557,7 @@ def test_se_all_models_with_default_config_binomial_with_logit_transform_compact
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "compact", skip_naive=True, base_models=[gbm, drf, xgb, dl],
+        H2OStackedEnsembleEstimator, y, train, test, "compact", link=True, skip_naive=True, base_models=[gbm, drf, xgb, dl],
         metalearner_transform="logit"
     )
 
