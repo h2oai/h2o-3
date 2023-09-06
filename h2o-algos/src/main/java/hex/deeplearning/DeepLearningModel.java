@@ -445,6 +445,9 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options, Frame backgroundFrame) {
+    if (null == backgroundFrame)
+      throw new UnsupportedOperationException("Only baseline SHAP is supported for this model. Please provide background frame.");
+    
     Log.info("Starting contributions calculation for "+this._key+"...");
     try {
       List<Frame> tmpFrames = new LinkedList<>();

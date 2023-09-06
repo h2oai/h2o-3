@@ -304,7 +304,7 @@ class Fairness:
         return plt.gcf()
 
     def fair_shap_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1,
-                       save_plot_path_prefix=None):
+                       save_plot_path_prefix=None, reference_frame=None):
         """
         SHAP summary plot for one feature with protected groups on y-axis.
 
@@ -362,6 +362,7 @@ class Fairness:
         assert_is_type(jitter, float)
         assert_is_type(alpha, float, int)
         assert_is_type(autoscale, bool)
+        assert_is_type(reference_frame, None, h2o.H2OFrame)
 
         from h2o.plot import get_matplotlib_pyplot
         plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
@@ -376,7 +377,7 @@ class Fairness:
                 for i in range(len(protected_columns)):
                     filtered_hdf = filtered_hdf[filtered_hdf[protected_columns[i]] == pg[i], :]
                 if filtered_hdf.nrow == 0: continue
-                cont = NumpyFrame(self.predict_contributions(filtered_hdf))
+                cont = NumpyFrame(self.predict_contributions(filtered_hdf, output_format="compact", background_frame=reference_frame))
                 vals = NumpyFrame(filtered_hdf)[column]
                 maxes.append(np.nanmax(vals))
                 if len(contr_columns) == 1 and all((c not in cont.columns for c in contr_columns)):
@@ -470,6 +471,11 @@ class Fairness:
         plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
         fair = self.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference,
                                       favorable_class=favorable_class)
+        
+        reference_frame = frame
+        for i, pc in enumerate(protected_columns):
+            reference_frame = reference_frame[reference_frame[pc] == reference[i], :]
+        
         cols_to_show = sorted(
             list(set(metrics).union({"AIR_{}".format(m) for m in metrics}).intersection(fair["overview"].columns)))
         overview = fair["overview"]
@@ -552,6 +558,6 @@ class Fairness:
             result["shap"]["plots"] = H2OExplanation()
             for col in sorted_features:
                 result["shap"]["plots"][col] = display(
-                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize))
+                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize, reference_frame=reference_frame))
 
         return result

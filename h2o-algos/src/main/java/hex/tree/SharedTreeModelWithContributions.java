@@ -67,10 +67,12 @@ public abstract class SharedTreeModelWithContributions<
       throw new UnsupportedOperationException(
               "Calculating contributions is currently not supported for multinomial models.");
     }
-    if (options._outputFormat == ContributionsOutputFormat.Compact) {
-      throw new UnsupportedOperationException(
-              "Only output_format \"Original\" is supported for this model.");
-    }
+    
+    //FIXME: Original in DRF and GBM corresponds to Compact in XGBoost 
+//    if (options._outputFormat == ContributionsOutputFormat.Compact) {
+//      throw new UnsupportedOperationException(
+//              "Only output_format \"Original\" is supported for this model.");
+//    }
     if (!options.isSortingRequired()) {
       return scoreContributions(frame, destination_key, j);
     }

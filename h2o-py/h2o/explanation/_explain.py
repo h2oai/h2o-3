@@ -622,7 +622,8 @@ def shap_summary_plot(
         colormap=None,  # type: str
         figsize=(12, 12),  # type: Union[Tuple[float], List[float]]
         jitter=0.35,  # type: float
-        save_plot_path=None # type: Optional[str]
+        save_plot_path=None, # type: Optional[str]
+        background_frame=None  # type: Optional[h2o.H2OFrame]
 ):  # type: (...) -> plt.Figure
     """
     SHAP summary plot.
@@ -696,7 +697,7 @@ def shap_summary_plot(
         random.shuffle(permutation)
 
     with no_progress_block():
-        contributions = NumpyFrame(model.predict_contributions(frame))
+        contributions = NumpyFrame(model.predict_contributions(frame, output_format="compact", background_frame=background_frame))
     frame = NumpyFrame(frame)
     contribution_names = contributions.columns
 
@@ -759,7 +760,8 @@ def shap_explain_row_plot(
         figsize=(16, 9),  # type: Union[List[float], Tuple[float]]
         plot_type="barplot",  # type: str
         contribution_type="both",  # type: str
-        save_plot_path=None # type: Optional[str]
+        save_plot_path=None,  # type: Optional[str]
+        background_frame=None  # type: Optional[h2o.H2OFrame]
 ):  # type: (...) -> plt.Figure
     """
     SHAP local explanation.
@@ -820,7 +822,7 @@ def shap_explain_row_plot(
 
     row = frame[row_index, :]
     with no_progress_block():
-        contributions = NumpyFrame(model.predict_contributions(row))
+        contributions = NumpyFrame(model.predict_contributions(row, output_format="compact", background_frame=background_frame))
     contribution_names = contributions.columns
     prediction = float(contributions.sum(axis=1))
     bias = float(contributions["BiasTerm"])
