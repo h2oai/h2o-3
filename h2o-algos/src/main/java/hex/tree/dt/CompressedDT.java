@@ -15,13 +15,13 @@ public class CompressedDT extends Keyed<CompressedDT> {
     /**
      * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
      */
-    private final AbstractCompressedNode[] _nodesObj;
+    private final AbstractCompressedNode[] _nodes;
 
     private final String[] _listOfRules;
 
     public CompressedDT(AbstractCompressedNode[] nodes, int leavesCount) {
         _key = Key.make("CompressedDT" + Key.rand());
-        _nodesObj = nodes;
+        _nodes = nodes;
         _listOfRules = new String[leavesCount];
         // creating object Integer variable to allow incrementation
         Integer nextFreeSpotHolder = 0;
@@ -36,18 +36,18 @@ public class CompressedDT extends Keyed<CompressedDT> {
      * @return class label
      */
     public DTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex, String ruleExplanation) {
-        boolean isALeaf = _nodesObj[actualNodeIndex] instanceof CompressedLeaf;
+        boolean isALeaf = _nodes[actualNodeIndex] instanceof CompressedLeaf;
         // first value 1 means that the node is list, return prediction for the list
         if (isALeaf) {
-            double decisionValue = ((CompressedLeaf) _nodesObj[actualNodeIndex]).getDecisionValue();
-            double probability = ((CompressedLeaf) _nodesObj[actualNodeIndex]).getProbabilities();
+            double decisionValue = ((CompressedLeaf) _nodes[actualNodeIndex]).getDecisionValue();
+            double probability = ((CompressedLeaf) _nodes[actualNodeIndex]).getProbabilities();
             return new DTPrediction((int) decisionValue, probability, ruleExplanation + " -> (" 
                     + decisionValue + ", probabilities: " + probability + ", " + (1 - probability) + ")");
         }
         if (!ruleExplanation.isEmpty()) {
             ruleExplanation += " and ";
         }
-        AbstractSplittingRule splittingRule = ((CompressedNode) _nodesObj[actualNodeIndex]).getSplittingRule();
+        AbstractSplittingRule splittingRule = ((CompressedNode) _nodes[actualNodeIndex]).getSplittingRule();
         // splitting rule is true - left, false - right
         if(splittingRule.routeSample(rowValues)) {
             return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1, 
@@ -60,14 +60,14 @@ public class CompressedDT extends Keyed<CompressedDT> {
 
     @Override
     public String toString() {
-        return Arrays.stream(_nodesObj).map(AbstractCompressedNode::toString).collect(Collectors.joining(";"));
+        return Arrays.stream(_nodes).map(AbstractCompressedNode::toString).collect(Collectors.joining(";"));
     }
 
     public int extractRulesStartingWithNode(int nodeIndex, String actualRule, int nextFreeSpot) {
-        if (_nodesObj[nodeIndex] instanceof CompressedLeaf) {
+        if (_nodes[nodeIndex] instanceof CompressedLeaf) {
             // if node is a leaf, add the rule to the list of rules at index given by the nextFreeSpot parameter
-            _listOfRules[nextFreeSpot] = actualRule + " -> (" + ((CompressedLeaf) _nodesObj[nodeIndex]).getDecisionValue()
-                    + ", " + ((CompressedLeaf) _nodesObj[nodeIndex]).getProbabilities() + ")";
+            _listOfRules[nextFreeSpot] = actualRule + " -> (" + ((CompressedLeaf) _nodes[nodeIndex]).getDecisionValue()
+                    + ", " + ((CompressedLeaf) _nodes[nodeIndex]).getProbabilities() + ")";
             System.out.println(nextFreeSpot);
             // move nextFreeSpot to the next index and return it to be used for other branches
             nextFreeSpot++;
@@ -77,10 +77,10 @@ public class CompressedDT extends Keyed<CompressedDT> {
         actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
         // proceed to the left branch
         nextFreeSpot = extractRulesStartingWithNode(2 * nodeIndex + 1, 
-                ((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule().toString(), nextFreeSpot);
+                ((CompressedNode) _nodes[nodeIndex]).getSplittingRule().toString(), nextFreeSpot);
         // proceed to the right branch
         nextFreeSpot = extractRulesStartingWithNode(2 * nodeIndex + 2, 
-                actualRule + " not (" + ((CompressedNode) _nodesObj[nodeIndex]).getSplittingRule().toString() + ")", 
+                actualRule + " not (" + ((CompressedNode) _nodes[nodeIndex]).getSplittingRule().toString() + ")", 
                 nextFreeSpot);
         // return current index of the next free spot in the array
         return nextFreeSpot;
@@ -91,7 +91,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
     }
 
     public AbstractCompressedNode[] getNodes() {
-        return _nodesObj;
+        return _nodes;
     }
 
 }

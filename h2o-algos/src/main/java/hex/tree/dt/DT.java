@@ -43,7 +43,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      * List of nodes, for each node holds either split feature index and threshold or just decision value if it is list.
      * While building the tree nodes are being filled from index 0 iteratively
      */
-    private AbstractCompressedNode[] _treeObj;
+    private AbstractCompressedNode[] _tree;
 
     private DTModel _model;
     transient Random _rand;
@@ -59,7 +59,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         _min_rows = parameters._min_rows;
         _nodesCount = 0;
         _leavesCount = 0;
-        _treeObj = null;
+        _tree = null;
         init(true);
     }
 
@@ -183,7 +183,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
      * @param nodeIndex     node index
      */
     public void makeLeafFromNode(int[] countsByClass, int nodeIndex) {
-        _treeObj[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbability(countsByClass)[0]);
+        _tree[nodeIndex] = new CompressedLeaf(selectDecisionValue(countsByClass), calculateProbability(countsByClass)[0]);
         _leavesCount++;
         // nothing to return, node is modified inplace
     }
@@ -248,7 +248,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
             return;
         }
         
-        _treeObj[nodeIndex] = new CompressedNode(bestSplittingRule);
+        _tree[nodeIndex] = new CompressedNode(bestSplittingRule);
         
         int splitFeatureIndex = bestSplittingRule.getFeatureIndex();
         DataFeaturesLimits limitsLeft, limitsRight;
@@ -335,7 +335,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
         private void buildDT() {
             buildDTIteratively();
             Log.debug("depth: " + _parms._max_depth + ", nodes count: " + _nodesCount);
-            CompressedDT compressedDT = new CompressedDT(_treeObj, _leavesCount);
+            CompressedDT compressedDT = new CompressedDT(_tree, _leavesCount);
 
             _model._output._treeKey = compressedDT._key;
             DKV.put(compressedDT);
@@ -349,7 +349,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
          */
         private void buildDTIteratively() {
             int treeLength = (int) Math.pow(2, _parms._max_depth + 1) - 1;
-            _treeObj = new AbstractCompressedNode[treeLength];
+            _tree = new AbstractCompressedNode[treeLength];
             Queue<DataFeaturesLimits> limitsQueue = new LinkedList<>();
             limitsQueue.add(getInitialFeaturesLimits(_train));
             // build iteratively each node of the tree (each cell of the array) by picking limits from the queue
