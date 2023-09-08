@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 import os
+import warnings
 
 import h2o
 from h2o.base import Keyed
@@ -543,6 +544,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :return: the negative likelihood function value
         """
+        warning_message = "This is the simplified negative log likelihood function used during training for speedup. " \
+                          "To see the correct values (for loglikelihood and AIC), set calc_like=True and call " \
+                          "model.model_performance().loglikelihood() and model.model_performance().aic()"
+        warnings.warn(warning_message, UserWarning, stacklevel=2)
         return self._extract_scoring_history("negative_log_likelihood")
 
     def average_objective(self):
