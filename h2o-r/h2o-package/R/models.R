@@ -2584,6 +2584,10 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #' }
 #' @export 
 h2o.negative_log_likelihood <- function(model) {
+    warning_message <- paste("This is the simplified negative log likelihood function used during training for speedup.",
+                             "To see the correct values (for loglikelihood and AIC), set calc_like=True and call", 
+                             "model.model_performance().loglikelihood() and model.model_performance().aic()")
+    warning(warning_message)
     return(extract_scoring_history(model, "negative_log_likelihood"))
 }
 
