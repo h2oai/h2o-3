@@ -285,6 +285,8 @@ def test_contributions_against_naive(mod, y, train, test, link=False, eps=1e-6):
     print("Testing against naive shap calculation...")
     train = train.na_omit()
     test = test.na_omit()
+    if mod.actual_params.get("ntrees", 0) > 50 and y == "survived":
+        eps = 1e-3  # With more trees we get more numerical errors (preds in floats, contribs in double) and link seems to increase the the likelihood of num. errors  (big num. "squeezed" close to 1 and then on python side "unsqueezed" -> smaller error in link space increases in the "unlinked" space)
     for xrow in tqdm(sample(range(test.nrow), k=LARGE_K), desc="X row"):
         if any([test[xrow, k] == "NA" for k, v in train.types.items() if v == "enum"]):
             continue  # Converting NA from pandas to h2oFrame gets very messy
@@ -389,7 +391,7 @@ def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, m
         mod = h2o.get_model(model)
         link = y == "survived" and mod.algo.lower() in ["glm", "gbm", "xgboost", "stackedensemble"]
         skip_naive = mod.algo.lower() in ["deeplearning", "stackedensemble"]
-        skip_symmetry = mod.algo.lower() in ["stackedensemble"]
+        skip_symmetry = mod.algo.lower() in ["stackedensemble"] and output_format == "original"
         skip_dummy = mod.algo.lower() in ["glm", "stackedensemble"] and output_format == "original"
 
         test_local_accuracy(
@@ -410,7 +412,7 @@ def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, m
         if output_format.lower() == "compact" and not skip_naive:
             test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
 
-        test_per_reference_aggregation(mod, train, test)
+        test_per_reference_aggregation(mod, train, test, output_format)
 
 
 ########################################################################################################################
