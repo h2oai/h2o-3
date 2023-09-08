@@ -2009,6 +2009,15 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AIC )
   if( is(object, "H2OModel") ) {
+      if (model@allparameters$calc_like) {
+          warning_message <- paste("This is the AIC function using the simplified negative log likelihood used during",
+                                   "training for speedup. To see the correct value call h2o.aic().")
+      } else {
+          warning_message <- paste("This is the AIC function using the simplified negative log likelihood used during",
+                                   "training for speedup. To see the correct value, set calc_like=True, ",
+                                   "retrain and call h2o.aic().")
+      }
+      warning(warning_message)
     model.parts <- .model.parts(object)
     if ( !train && !valid && !xval ) {
       metric <- model.parts$tm@metrics$AIC
@@ -2584,9 +2593,13 @@ h2o.get_regression_influence_diagnostics <- function(model, predictorSize = -1) 
 #' }
 #' @export 
 h2o.negative_log_likelihood <- function(model) {
-    warning_message <- paste("This is the simplified negative log likelihood function used during training for speedup.",
-                             "To see the correct values (for loglikelihood and AIC), set calc_like=True and call", 
-                             "model.model_performance().loglikelihood() and model.model_performance().aic()")
+    if (model@allparameters$calc_like) {
+        warning_message <- paste("This is the simplified negative log likelihood function used during training for speedup.",
+                                 "To see the correct value call h2o.loglikelihood(model)")
+    } else {
+        warning_message <- paste("This is the simplified negative log likelihood function used during training for speedup.",
+                                 "To see the correct value, set calc_like=True, retrain and call h2o.loglikelihood(model)")
+    }
     warning(warning_message)
     return(extract_scoring_history(model, "negative_log_likelihood"))
 }
@@ -2615,6 +2628,10 @@ h2o.negative_log_likelihood <- function(model) {
 #' }
 #' @export 
 h2o.average_objective <- function(model) {
+
+    warning_message <- paste("This objective function is calculated based on the simplified negative log likelihood ",
+                             "function used during training for speedup.")
+    warning(warning_message)
     return(extract_scoring_history(model, "objective"))
 }
 
