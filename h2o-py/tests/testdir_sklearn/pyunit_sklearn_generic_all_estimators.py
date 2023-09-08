@@ -199,6 +199,7 @@ failing = [
     'H2OWord2vecEstimator',  # needs a separate test (requires pre_trained model as parameter)
     'H2OUpliftRandomForestEstimator',  # generic part is not implemented yet
     'H2ODecisionTreeEstimator',  # generic part is not implemented yet
+    'H2OAdaBoostEstimator',  # generic part is not implemented yet or test needs to be adjusted just for classification
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Estimator') and name not in ['H2OAutoMLEstimator'] + failing]
