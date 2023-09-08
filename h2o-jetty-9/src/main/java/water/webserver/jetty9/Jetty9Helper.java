@@ -31,6 +31,8 @@ import water.webserver.iface.LoginType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collections;
 
 class Jetty9Helper {
@@ -88,9 +90,29 @@ class Jetty9Helper {
         httpConfiguration.setRequestHeaderSize(cfg.getRequestHeaderSize());
         httpConfiguration.setResponseHeaderSize(cfg.getResponseHeaderSize());
         httpConfiguration.setOutputBufferSize(cfg.getOutputBufferSize(httpConfiguration.getOutputBufferSize()));
-        httpConfiguration.setRelativeRedirectAllowed(cfg.isRelativeRedirectAllowed());
+        setRelativeRedirectAllowed(httpConfiguration, cfg.isRelativeRedirectAllowed());
         httpConfiguration.setIdleTimeout(cfg.getIdleTimeout());
         return httpConfiguration;
+    }
+    
+    static void setRelativeRedirectAllowed(HttpConfiguration httpConfiguration, boolean isRelativeRedirectAllowed) {
+        Method[] methods = httpConfiguration.getClass().getMethods();
+        Method method = null;
+        for (Method m : methods) {
+            if (m.getName().equals("setRelativeRedirectAllowed")) {
+                method = m;
+                break;
+            }
+        }
+        if (method != null) {
+            try {
+                method.invoke(httpConfiguration, isRelativeRedirectAllowed);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     HandlerWrapper authWrapper(Server jettyServer) {
