@@ -550,9 +550,13 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :return: the negative likelihood function value
         """
-        warning_message = "This is the simplified negative log likelihood function used during training for speedup. " \
-                          "To see the correct values (for loglikelihood and AIC), set calc_like=True and call " \
-                          "model.model_performance().loglikelihood() and model.model_performance().aic()"
+        if self.parms['calc_like']:
+            warning_message = "This is the simplified negative log likelihood function used during training for " \
+                              "speedup. To see the correct value call model.model_performance().loglikelihood()"
+        else:
+            warning_message = "This is the simplified negative log likelihood function used during training for " \
+                              "speedup. To see the correct value, set calc_like=True, retrain the model and call " \
+                              "model.model_performance().loglikelihood()"
         warnings.warn(warning_message, UserWarning, stacklevel=2)
         return self._extract_scoring_history("negative_log_likelihood")
 
@@ -563,6 +567,9 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :return: the average objective function value
         """
+        warning_message = "This objective function is calculated based on the simplified negative log likelihood " \
+                          "function used during training for speedup."
+        warnings.warn(warning_message, UserWarning, stacklevel=2)
         return self._extract_scoring_history("objective")
 
         
@@ -1047,6 +1054,16 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: The AIC.
         """
+        if self.parms['calc_like']:
+            warning_message = "This is the AIC function using the simplified negative log likelihood used during " \
+                              "training for speedup. To see the correct value call " \
+                              "model.model_performance().aic() again."
+        else:
+            
+            warning_message = "This is the AIC function using the simplified negative log likelihood used during " \
+                              "training for speedup. To see the correct value, set calc_like=True, " \
+                              "retrain the model and call model.model_performance().aic() again."
+        warnings.warn(warning_message, UserWarning, stacklevel=2)
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in tm.items(): m[k] = None if v is None else v.aic()
