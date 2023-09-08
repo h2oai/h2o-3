@@ -900,12 +900,15 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' h2o.predict_contributions(prostate_gbm, prostate, top_n=2, bottom_n=2)
 #' }
 #' @export
-predict_contributions.H2OModel <- function(object, newdata, output_format = c("original", "compact"), top_n=0, bottom_n=0, compare_abs=FALSE, ...) {
+predict_contributions.H2OModel <- function(object, newdata, output_format = c("compact", "original"), top_n=0, bottom_n=0, compare_abs=FALSE, background_frame = NULL, output_space = FALSE, output_per_reference = FALSE, ...) {
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
-    .check_model_suitability_for_calculation_of_contributions(object)
-    params <- list(predict_contributions = TRUE, top_n=top_n, bottom_n=bottom_n, compare_abs=compare_abs)
+    .check_model_suitability_for_calculation_of_contributions(object, background_frame)
+    params <- list(predict_contributions = TRUE, top_n=top_n, bottom_n=bottom_n, compare_abs=compare_abs,
+         background_frame=if (is.null(background_frame)) NULL else h2o.keyof(background_frame),
+         output_space=output_space, output_per_reference=output_per_reference
+    )
     params$predict_contributions_output_format <- match.arg(output_format)
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
     res <- .h2o.__remoteSend(url, method = "POST", .params = params, h2oRestApiVersion = 4)
