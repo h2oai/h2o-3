@@ -67,8 +67,7 @@ public class Jetty9HelperTest {
 
   @Test
   public void testMakeHttpConfiguration() {
-    HttpConfiguration defaultCfg = Jetty9Helper.makeHttpConfiguration(
-            new ConnectionConfiguration(false));
+    HttpConfiguration defaultCfg = Jetty9Helper.makeHttpConfiguration(new ConnectionConfiguration(false));
     assertFalse(defaultCfg.getSendServerVersion());
     assertEquals(defaultCfg.getRequestHeaderSize(), 32 * 1024);
     assertEquals(defaultCfg.getResponseHeaderSize(), 32 * 1024);
