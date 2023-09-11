@@ -5,41 +5,43 @@
 def dockerImage
 
 def setScanningStages(assemblyType, startingStageIndex) {
-    def assemblyImage
-    stage("${startingStageIndex}. Scan ${assemblyType} jar using Prisma"){
-        steps {
-            script{
-                branchName = "${env.BRANCH_NAME}".replace('/','-')
-                assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
+    return {
+        def assemblyImage
+        stage("${startingStageIndex}. Scan ${assemblyType} jar using Prisma") {
+            steps {
+                script {
+                    branchName = "${env.BRANCH_NAME}".replace('/', '-')
+                    assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
 
-                sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
+                    sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
 
-                // scan the image
-                prismaCloudScanImage ca: '',
-                        cert: '',
-                        dockerAddress: 'unix:///var/run/docker.sock',
-                        image: "${assemblyImage}",
-                        key: '',
-                        logLevel: 'info',
-                        podmanPath: '',
-                        project: '',
-                        resultsFile: "prisma-${assemblyType}-scan-results.json",
-                        ignoreImageBuildTime:true
+                    // scan the image
+                    prismaCloudScanImage ca: '',
+                            cert: '',
+                            dockerAddress: 'unix:///var/run/docker.sock',
+                            image: "${assemblyImage}",
+                            key: '',
+                            logLevel: 'info',
+                            podmanPath: '',
+                            project: '',
+                            resultsFile: "prisma-${assemblyType}-scan-results.json",
+                            ignoreImageBuildTime: true
+                }
+
             }
-
         }
-    }
-    stage("${startingStageIndex + 1}. Export results for ${assemblyType} jar to CSV"){
-        steps{
-            withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}.csv"
+        stage("${startingStageIndex + 1}. Export results for ${assemblyType} jar to CSV") {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}.csv"
+                }
+                archiveArtifacts artifacts: "${assemblyImage}.csv"
             }
-            archiveArtifacts artifacts: "${assemblyImage}.csv"
         }
-    }
-    stage("${startingStageIndex + 2}. Publish report for ${assemblyType} jar"){
-        steps{
-            prismaCloudPublish resultsFilePattern: "prisma-${assemblyType}-scan-results.json"
+        stage("${startingStageIndex + 2}. Publish report for ${assemblyType} jar") {
+            steps {
+                prismaCloudPublish resultsFilePattern: "prisma-${assemblyType}-scan-results.json"
+            }
         }
     }
 }
