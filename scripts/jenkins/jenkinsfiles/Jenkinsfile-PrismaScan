@@ -68,12 +68,12 @@ pipeline {
                 }
             }
         }
-        stage('2. Scan steam assembly jar') {
+        stage('2. Steam assembly jar') {
             steps {
                 setScanningStages("steam", 2)
             }
         }
-        stage('3. Scan main assembly jar') {
+        stage('3. Main assembly jar') {
             steps {
                 setScanningStages("main", 3)
             }
