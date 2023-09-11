@@ -77,8 +77,10 @@ pipeline {
                 }
             }
         }
-        setScanningStages("steam", 2)
-        setScanningStages("main", 5)
+        stage("Scanning stages") {
+            setScanningStages("steam", 2)
+            setScanningStages("main", 5)
+        }
 
     }
     post {
