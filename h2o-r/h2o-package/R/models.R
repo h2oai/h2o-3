@@ -2009,15 +2009,12 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$AIC )
   if( is(object, "H2OModel") ) {
-      if (model@allparameters$calc_like) {
-          warning_message <- paste0("This is the AIC function using the simplified negative log likelihood used during ",
-                                   "training for speedup. To see the correct value call h2o.aic(model).")
-      } else {
+      if (!object@allparameters$calc_like) {
           warning_message <- paste0("This is the AIC function using the simplified negative log likelihood used during ",
                                    "training for speedup. To see the correct value, set calc_like=True, ",
                                    "retrain and call h2o.aic(model).")
+          warning(warning_message)
       }
-      warning(warning_message)
     model.parts <- .model.parts(object)
     if ( !train && !valid && !xval ) {
       metric <- model.parts$tm@metrics$AIC
