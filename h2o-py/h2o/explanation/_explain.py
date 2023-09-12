@@ -606,7 +606,8 @@ def _uniformize(data, col_name):
     xs = np.linspace(0, 1, 100)
     quantiles = np.nanquantile(col, xs)
     res = np.interp(col, quantiles, xs)
-    res = (res - np.nanmin(res)) / (np.nanmax(res) - np.nanmin(res))
+    if not np.all(np.isnan(res)):
+        res = (res - np.nanmin(res)) / (np.nanmax(res) - np.nanmin(res))
     return res
 
 
@@ -646,6 +647,7 @@ def shap_summary_plot(
     :param figsize: figure size; passed directly to matplotlib.
     :param jitter: amount of jitter used to show the point density.
     :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
     :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:
@@ -727,13 +729,21 @@ def shap_summary_plot(
         col_name = top_n_features[i]
         col = contributions[permutation, col_name]
         dens = _density(col)
+        color = (
+            _uniformize(frame, col_name)[permutation]
+            if colorize_factors or not frame.isfactor(col_name)
+            else np.full(frame.nrow, 0.5)
+        )
+
+        if not np.any(np.isfinite(color)) or np.nanmin(color) == np.nanmax(color):
+            plt.scatter(0, i, alpha=alpha, c="grey")
+            continue  # constant variable; plotting it can throw StopIteration in some versions of matplotlib
+
         plt.scatter(
             col,
             i + dens * np.random.uniform(-jitter, jitter, size=len(col)),
             alpha=alpha,
-            c=_uniformize(frame, col_name)[permutation]
-            if colorize_factors or not frame.isfactor(col_name)
-            else np.full(frame.nrow, 0.5),
+            c=color,
             cmap=colormap
         )
         plt.clim(0, 1)
@@ -789,6 +799,7 @@ def shap_explain_row_plot(
         
         Used only for ``plot_type="barplot"``.
     :param save_plot_path: a path to save the plot via using matplotlib function savefig.
+    :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
     :returns: object that contains the resulting matplotlib figure (can be accessed using ``result.figure()``).
 
     :examples:

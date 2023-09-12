@@ -868,6 +868,43 @@ def test_pd_plot_row_value():
     assert_row_value(gbm.pd_plot(train, "sex", row_index=i).figure(), train[i, "sex"], "sex")
 
 
+def test_shap_plots_with_background_frame():
+    data = h2o.upload_file(pyunit_utils.locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+
+    x = ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3',]
+        # 'BILL_AMT4', 'BILL_AMT5', 'BILL_AMT6', 'PAY_AMT1', 'PAY_AMT2', 'PAY_AMT3', 'PAY_AMT4', 'PAY_AMT5', 'PAY_AMT6' ]
+    y = "default payment next month"
+    protected_columns = ['SEX', 'EDUCATION', 'MARRIAGE',]
+
+    for c in [y]+protected_columns:
+        data[c] = data[c].asfactor()
+
+    train, test = data[1:500,:].split_frame([0.98])
+    print(test.nrow)
+    reference = ["1", "2", "2"]  # university educated single man
+    favorable_class = "0"  # no default next month
+
+    aml = H2OAutoML(max_models=12)
+    aml.train(x, y, train)
+
+    for algo in ["deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost"]:
+        print(algo)
+        model = aml.get_best_model(algo)
+        # test shap summary
+        assert isinstance(model.shap_summary_plot(test, background_frame=train).figure(), matplotlib.pyplot.Figure)
+        matplotlib.pyplot.close()
+
+        # test shap explain row
+        assert isinstance(model.shap_explain_row_plot(test, 1, background_frame=train).figure(), matplotlib.pyplot.Figure)
+        matplotlib.pyplot.close()
+    
+        # test fair shap plot
+        for p in model.fair_shap_plot(test, "AGE", protected_columns, figsize=(4, 3), background_frame=train).values():
+            assert isinstance(p, matplotlib.pyplot.Figure)
+        matplotlib.pyplot.close()
+
+
+
 pyunit_utils.run_tests([
     test_get_xy,
     test_varimp,
@@ -888,4 +925,5 @@ pyunit_utils.run_tests([
     test_pareto_front_corner_cases,
     test_pd_plot_row_value,
     test_fairness_plots,
+    test_shap_plots_with_background_frame,
     ])

@@ -304,7 +304,7 @@ class Fairness:
         return plt.gcf()
 
     def fair_shap_plot(self, frame, column, protected_columns, autoscale=True, figsize=(16, 9), jitter=0.35, alpha=1,
-                       save_plot_path_prefix=None, reference_frame=None):
+                       save_plot_path_prefix=None, background_frame=None):
         """
         SHAP summary plot for one feature with protected groups on y-axis.
 
@@ -320,7 +320,7 @@ class Fairness:
         :param save_plot_path_prefix: A prefix of the path to save the plot via using matplotlib function savefig. 
                                       The suffix of the path will be determined from a column name for which SHAP values
                                       were calculated for.
-        
+        :background_frame: Optional frame, that is used as the source of baselines for the marginal SHAP.
         :return: H2OExplanation object
 
         :examples:
@@ -362,7 +362,7 @@ class Fairness:
         assert_is_type(jitter, float)
         assert_is_type(alpha, float, int)
         assert_is_type(autoscale, bool)
-        assert_is_type(reference_frame, None, h2o.H2OFrame)
+        assert_is_type(background_frame, None, h2o.H2OFrame)
 
         from h2o.plot import get_matplotlib_pyplot
         plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
@@ -377,9 +377,10 @@ class Fairness:
                 for i in range(len(protected_columns)):
                     filtered_hdf = filtered_hdf[filtered_hdf[protected_columns[i]] == pg[i], :]
                 if filtered_hdf.nrow == 0: continue
-                cont = NumpyFrame(self.predict_contributions(filtered_hdf, output_format="compact", background_frame=reference_frame))
+                cont = NumpyFrame(self.predict_contributions(filtered_hdf, output_format="compact", background_frame=background_frame))
                 vals = NumpyFrame(filtered_hdf)[column]
-                maxes.append(np.nanmax(vals))
+                if not np.all(np.isnan(vals)):
+                    maxes.append(np.nanmax(vals))
                 if len(contr_columns) == 1 and all((c not in cont.columns for c in contr_columns)):
                     contr_columns = [c for c in cont.columns if c.startswith("{}.".format(contr_columns[0]))]
                 for cc in contr_columns:
@@ -391,6 +392,9 @@ class Fairness:
         for contr_column, result in results.items():
             plt.figure(figsize=figsize)
             for i, (pg, contr, vals) in enumerate(result):
+                if not np.any(np.isfinite(vals)) or np.nanmin(vals) == np.nanmax(vals):
+                    plt.scatter(0, i, label=", ".join(pg), alpha=alpha, c="grey")
+                    continue  # constant variable; plotting it can throw StopIteration in some versions of matplotlib
                 indices = np.arange(len(contr))
                 np.random.shuffle(indices)
                 contr = contr[indices]
@@ -558,6 +562,6 @@ class Fairness:
             result["shap"]["plots"] = H2OExplanation()
             for col in sorted_features:
                 result["shap"]["plots"][col] = display(
-                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize, reference_frame=reference_frame))
+                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize, background_frame=reference_frame))
 
         return result

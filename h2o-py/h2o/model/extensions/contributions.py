@@ -47,6 +47,10 @@ class Contributions:
         """
         assert_is_type(output_format, None, Enum("Original", "Compact"))
         if not isinstance(test_data, h2o.H2OFrame): raise H2OValueError("test_data must be an instance of H2OFrame")
+        assert_is_type(background_frame, None, h2o.H2OFrame)
+        assert_is_type(output_space, bool)
+        assert_is_type(output_per_reference, bool)
+
         j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                            data={"predict_contributions": True,
                                  "predict_contributions_output_format": output_format,
