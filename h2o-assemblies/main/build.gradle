@@ -51,6 +51,13 @@ dependencies {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
             because 'Fixes CVE-2022-42003'
         }
+        api('org.codehaus.jettison:jettison:1.5.4') {
+            because 'Fixes CVE-2023-1436'
+            because 'Fixes CVE-2022-45693'
+            because 'Fixes CVE-2022-45685'
+            because 'Fixes CVE-2022-40150'
+            because 'Fixes CVE-2022-40149'
+        }
         api('com.google.guava:guava:32.0.1-jre') {
             because 'Fixes CVE-2023-2976'
             because 'Fixes CVE-2020-8908'
