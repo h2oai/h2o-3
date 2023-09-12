@@ -1054,7 +1054,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: The AIC.
         """
-        if not self.parms['calc_like']['actual_value']:
+        if 'calc_like' in self.parms and not self.parms['calc_like']['actual_value']:
             warning_message = "This is the AIC function using the simplified negative log likelihood used during " \
                               "training for speedup. To see the correct value, set calc_like=True, " \
                               "retrain the model and call model.model_performance().aic() again."
