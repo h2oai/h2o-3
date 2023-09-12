@@ -755,6 +755,39 @@ fairness_plots_test <- function() {
 }
 
 
+shap_plots_work_with_background_frame_test <- function(){
+ data <- h2o.uploadFile(locate("smalldata/admissibleml_test/taiwan_credit_card_uci.csv"))
+
+  x <- c('LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'BILL_AMT3')
+  y <- "default payment next month"
+  protected_columns <- c('SEX', 'EDUCATION', 'MARRIAGE')
+
+  for (col in c(y, protected_columns))
+    data[[col]] <- h2o.asfactor(data[[col]])
+
+  splits <- h2o.splitFrame(data[1:500,])
+  train <- splits[[1]]
+  test <- splits[[2]]
+  reference <- c("1", "2", "2")  # university educated single man
+  favorable_class <- "0"  # no default next month
+
+  aml <- h2o.automl(x, y, train, max_models=12)
+
+
+  ALGOS <- c("deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost")
+ 
+  for (algo in ALGOS) {
+    cat(algo, "\n")
+    model <- h2o.get_best_model(aml, algo)
+    expect_ggplot(plot(h2o.shap_summary_plot(model, test, background_frame = train)))
+    expect_ggplot(plot(h2o.shap_explain_row_plot(model, test, 2, background_frame = train)))
+    lapply(h2o.fair_shap_plot(model, test, protected_columns = protected_columns, column="AGE", background_frame = train), 
+        function (gg) expect_ggplot(plot(gg))
+    )
+  }
+}
+
+
 doSuite("Explanation Tests", makeSuite(
    varimp_test
    , explanation_test_single_model_regression
@@ -773,4 +806,5 @@ doSuite("Explanation Tests", makeSuite(
    , explanation_test_some_dataframe_pareto_front
    , pareto_front_corner_cases_test
    , fairness_plots_test
+   , shap_plots_work_with_background_frame_test
 ))

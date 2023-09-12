@@ -26,6 +26,8 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
   public ContributionsWithBackgroundFrameTask(Frame fr, Frame backgroundFrame, boolean perReference) {
     _frame = fr;
     _backgroundFrame = backgroundFrame;
+    assert _frame.numRows() > 0 : "Frame has to contain at least one row.";
+    assert _backgroundFrame.numRows() > 0 : "Background frame has to contain at least one row.";
     _isFrameBigger = fr.numRows() > backgroundFrame.numRows();
     _aggregate = !perReference;
   }

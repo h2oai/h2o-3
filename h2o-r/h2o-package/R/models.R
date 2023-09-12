@@ -872,6 +872,15 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #'                 If bottom_n<0 then sort all SHAP values in ascending order
 #'                 If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
 #' @param compare_abs True to compare absolute values of contributions
+#' @param background_frame Optional frame, that is used as the source of baselines for
+#'                         the baseline SHAP (when output_per_reference == TRUE) or for
+#'                         the marginal SHAP (when output_per_reference == FALSE).
+#' @param output_space If TRUE, linearly scale the contributions so that they sum up to the prediction.
+#'                     NOTE: This will result only in approximate SHAP values even if the model supports exact SHAP calculation.
+#'                     NOTE: This will not have any effect if the estimator doesn't use a link function.
+#' @param output_per_reference If TRUE, return baseline SHAP, i.e., contribution for each data point for each reference from the background_frame.
+#'                             If FALSE, return TreeSHAP if no background_frame is provided, or marginal SHAP if background frame is provided.
+#'                             Can be used only with background_frame.
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2OFrame contain feature contributions for each input row.
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
@@ -898,15 +907,19 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' h2o.predict_contributions(prostate_gbm, prostate, top_n=-1)
 #' # Compute SHAP and pick the top two highest and top two lowest
 #' h2o.predict_contributions(prostate_gbm, prostate, top_n=2, bottom_n=2)
+#' 
+#' # Compute Marginal SHAP, this enables looking at the contributions against different baselines, e.g., older people in the following example
+#' h2o.predict_contributions(prostate_gbm, prostate, background_frame=prostate[prostate$AGE > 75, ])
 #' }
 #' @export
-predict_contributions.H2OModel <- function(object, newdata, output_format = c("compact", "original"), top_n=0, bottom_n=0, compare_abs=FALSE, background_frame = NULL, output_space = FALSE, output_per_reference = FALSE, ...) {
+predict_contributions.H2OModel <- function(object, newdata, output_format = c("compact", "original"), top_n=0, bottom_n=0, compare_abs=FALSE,
+                                           background_frame = NULL, output_space = FALSE, output_per_reference = FALSE, ...) {
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
     .check_model_suitability_for_calculation_of_contributions(object, background_frame)
     params <- list(predict_contributions = TRUE, top_n=top_n, bottom_n=bottom_n, compare_abs=compare_abs,
-         background_frame=if (is.null(background_frame)) NULL else h2o.keyof(background_frame),
+         background_frame=if (is.H2OFrame(background_frame)) h2o.getId(background_frame) else NULL,
          output_space=output_space, output_per_reference=output_per_reference
     )
     params$predict_contributions_output_format <- match.arg(output_format)

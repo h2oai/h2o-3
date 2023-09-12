@@ -1639,17 +1639,26 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
 }
 
 .check_model_suitability_for_calculation_of_contributions <- function(model, background_frame=NULL) {
+    if (is.null(model)) stop("Model is NULL.")
     is_h2o_model <- .is_h2o_model(model)
+      
     if (!is_h2o_model || !(.is_h2o_tree_model(model) || model@algorithm == "generic" ||
-     (!is.null(background_frame) && tolower(model@algorithm) %in% c("glm", "deeplearning", "stackedensemble")))) {
-        err_msg <-  "Calculation of feature contributions requires a tree-based model."
+     (is.H2OFrame(background_frame) && tolower(model@algorithm) %in% c("glm", "deeplearning", "stackedensemble")))) {
+      if (is.null(background_frame)) {
+        err_msg <-  "Calculation of feature contributions without a background frame requires a tree-based model."
         if (is_h2o_model && .has_model_coefficients(model)) {
             err_msg <- paste(err_msg, " When features are independent, you can use the h2o.coef() method to get coefficients")
             err_msg <- paste(err_msg, " for non-standardized data or h2o.coef_norm() to get coefficients for standardized data.")
             err_msg <- paste(err_msg, " You can plot standardized coefficient magnitudes by calling h2o.std_coef_plot() on the model.")
         }
-        stop(err_msg)
+      } else {
+        err_msg <- "Calculation of feature contribution with a background frame requires model to be one of DeepLearning, DRF, GBM, GLM, StackedEnsemble, or XGBoost."
+      }
+      stop(err_msg)
     }
+
+    if (is.H2OFrame(background_frame) && nrow(background_frame) == 0)
+      stop("Background frame has to contain at least one row.")
 }
 
 #' SHAP Summary Plot
@@ -1665,6 +1674,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
 #'                If specified, then the \code{top_n_features} parameter will be ignored.
 #' @param top_n_features Integer specifying the maximum number of columns to show (ranked by variable importance).
 #' @param sample_size Integer specifying the maximum number of observations to be plotted.
+#' @param background_frame Optional frame, that is used as the source of baselines for the marginal SHAP.
 #'
 #' @return A ggplot2 object
 #' @examples
@@ -1698,11 +1708,12 @@ h2o.shap_summary_plot <-
            newdata,
            columns = NULL,
            top_n_features = 20,
-           sample_size = 1000) {
+           sample_size = 1000,
+           background_frame=NULL) {
     .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
-    .check_model_suitability_for_calculation_of_contributions(model)
+    .check_model_suitability_for_calculation_of_contributions(model, background_frame=background_frame)
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
     }
@@ -1728,7 +1739,7 @@ h2o.shap_summary_plot <-
     h2o.no_progress({
       newdata_df <- as.data.frame(newdata)
 
-      contributions <- as.data.frame(h2o.predict_contributions(model, newdata))
+      contributions <- as.data.frame(h2o.predict_contributions(model, newdata, output_format="compact", background_frame=background_frame))
       contributions_names <- names(contributions)
 
       encode_cols <- !all(contributions_names[contributions_names != "BiasTerm"] %in% names(newdata_df))
@@ -1876,6 +1887,7 @@ h2o.shap_summary_plot <-
 #' @param plot_type Either "barplot" or "breakdown".  Defaults to "barplot".
 #' @param contribution_type When \code{plot_type == "barplot"}, plot one of "negative",
 #'                          "positive", or "both" contributions.  Defaults to "both".
+#' @param background_frame Optional frame, that is used as the source of baselines for the marginal SHAP.
 #' @return A ggplot2 object.
 #' @examples
 #'\dontrun{
@@ -1906,11 +1918,12 @@ h2o.shap_summary_plot <-
 h2o.shap_explain_row_plot <-
   function(model, newdata, row_index, columns = NULL, top_n_features = 10,
            plot_type = c("barplot", "breakdown"),
-           contribution_type = c("both", "positive", "negative")) {
+           contribution_type = c("both", "positive", "negative"),
+           background_frame = NULL) {
     .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
-    .check_model_suitability_for_calculation_of_contributions(model)
+    .check_model_suitability_for_calculation_of_contributions(model, background_frame = background_frame)
 
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
@@ -1935,7 +1948,7 @@ h2o.shap_explain_row_plot <-
 
     h2o.no_progress({
       contributions <-
-        as.data.frame(h2o.predict_contributions(model, newdata[row_index,]))
+        as.data.frame(h2o.predict_contributions(model, newdata[row_index,], output_format = "compact", background_frame = background_frame))
       contributions_names <- names(contributions)
       prediction <- as.data.frame(h2o.predict(model, newdata[row_index,]))
       newdata_df <- as.data.frame(newdata[row_index,])
@@ -4376,6 +4389,7 @@ h2o.fair_pd_plot <- function(model, newdata, protected_columns, column, autoscal
 #' @param protected_columns List of categorical columns that contain sensitive information
 #'                          such as race, gender, age etc.
 #' @param autoscale If TRUE, try to guess when to use log transformation on X axis.
+#' @param background_frame Optional frame, that is used as the source of baselines for the marginal SHAP.
 #' @returns list of ggplot2 objects
 #'
 #' @examples
@@ -4405,11 +4419,16 @@ h2o.fair_pd_plot <- function(model, newdata, protected_columns, column, autoscal
 #' }
 #'
 #' @export
-h2o.fair_shap_plot <- function(model, newdata, protected_columns, column, autoscale = TRUE) {
+h2o.fair_shap_plot <- function(model, newdata, protected_columns, column, autoscale = TRUE, background_frame = NULL) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  .check_model_suitability_for_calculation_of_contributions(model)
+  .check_model_suitability_for_calculation_of_contributions(model, background_frame = background_frame)
+
+  if (missing(model)) stop("Model has to be specified.")
+  if (missing(newdata)) stop("Newdata has to be specified.")
+  if (missing(protected_columns)) stop("Protected columns has to be specified.")
+  if (missing(column)) stop("Column has to be specified.")
 
   newdata_df <- as.data.frame(newdata)
 
@@ -4428,7 +4447,7 @@ h2o.fair_shap_plot <- function(model, newdata, protected_columns, column, autosc
       min(newdata[[column]], na.rm = TRUE) > 0
 
   h2o.no_progress({
-    contr <- as.data.frame(h2o.predict_contributions(model, newdata))
+    contr <- as.data.frame(h2o.predict_contributions(model, newdata, output_format = "compact", background_frame = background_frame))
   })
   names(contr) <- paste0("contribution_of_", names(contr))
   contr_columns <- paste0("contribution_of_", column)
