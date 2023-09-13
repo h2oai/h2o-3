@@ -84,6 +84,10 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
 
   @API(help="One ASCII character used to escape other characters.", direction=API.Direction.INOUT)
   public byte escapechar = ParseSetup.DEFAULT_ESCAPE_CHAR;
+  
+  @API(help="If true, will force the column types to be either the ones in Parquet schema for Parquet files or the " +
+          "ones stored in column_types.  Default to false.", direction=API.Direction.INPUT)
+  public boolean force_col_types;
 
   @Override
   public ParseSetup fillImpl(ParseSetup impl) {

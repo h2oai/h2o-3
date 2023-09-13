@@ -54,6 +54,9 @@
 #' @param decrypt_tool (Optional) Specify a Decryption Tool (key-reference
 #'        acquired by calling \link{h2o.decryptionSetup}.
 #' @param skipped_columns a list of column indices to be skipped during parsing.
+#' @param force_col_types (Optional) if true will force parser to return the exact column types specified in 
+#'         column_types.  For parquet, if column_types is not specified, the parquet schema will be used to determine 
+#'         the actual column type.
 #' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
 #' @param partition_by names of the columns the persisted dataset has been partitioned by.
 #' @param quotechar A hint for the parser which character to expect as quoting character. None (default) means autodetection.
@@ -79,7 +82,7 @@
 #' @name h2o.importFile
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
-                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
+                           col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL, force_col_types=FALSE,
                            custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="") {
   h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
                    na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns,
@@ -130,7 +133,7 @@ if(parse) {
     srcKey <- res$destination_frames
     return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1),pattern=pattern, destination_frame=destination_frame,
             header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool,
-            skipped_columns=skipped_columns, custom_non_data_line_markers=custom_non_data_line_markers, partition_by=partition_by,
+            skipped_columns=skipped_columns, force_col_types=force_col_types, custom_non_data_line_markers=custom_non_data_line_markers, partition_by=partition_by,
             quotechar=quotechar, escapechar=escapechar) )
 }
   myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
@@ -153,7 +156,7 @@ h2o.importHDFS <- function(path, pattern = "", destination_frame = "", parse = T
 h2o.uploadFile <- function(path, destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
                            col.types = NULL, na.strings = NULL, progressBar = FALSE,
-                           parse_type=NULL, decrypt_tool=NULL, skipped_columns=NULL,
+                           parse_type=NULL, decrypt_tool=NULL, skipped_columns=NULL, force_col_types=FALSE,
                            quotechar=NULL, escapechar="\\") {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
@@ -189,7 +192,8 @@ h2o.uploadFile <- function(path, destination_frame = "",
     if (verbose) pt <- proc.time()[[3]]
     ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names,
                         col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type,
-                        decrypt_tool = decrypt_tool, skipped_columns = skipped_columns, quotechar=quotechar, escapechar=escapechar)
+                        decrypt_tool = decrypt_tool, skipped_columns = skipped_columns, force_col_types=force_col_types, 
+                        quotechar=quotechar, escapechar=escapechar)
     if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
     ans
   } else {

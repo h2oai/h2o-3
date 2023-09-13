@@ -43,6 +43,8 @@ public class ParseSetup extends Iced {
   String[][] _data;           // First few rows of parsed/tokenized data
   int[] _parse_columns_indices; // store column indices to be parsed into the final file
   byte[] _nonDataLineMarkers;
+  boolean _force_col_types = false; // at end of parsing, change column type to users specified ones
+  String[] _orig_column_types;  // copy over the original column type setup before translating to byte[]
 
   String[] _synthetic_column_names; // Columns with constant values to be added to parsed Frame
   String[][] _synthetic_column_values; // For each imported file contains array of values for each synthetic column
@@ -70,7 +72,7 @@ public class ParseSetup extends Iced {
             ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
             ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data,
             new ParseWriter.ParseErr[0], ps._chunk_size, ps._decrypt_tool, ps._skipped_columns,
-            ps._nonDataLineMarkers, ps._escapechar);
+            ps._nonDataLineMarkers, ps._escapechar, ps._force_col_types);
   }
 
   public static ParseSetup makeSVMLightSetup(){
@@ -91,6 +93,14 @@ public class ParseSetup extends Iced {
   public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
                     byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
                     int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers, byte escapeChar) {
+    this(parse_type, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data, errs, 
+            chunkSize, decrypt_tool, skipped_columns, nonDataLineMarkers, escapeChar, false);
+  }
+
+  public ParseSetup(ParserInfo parse_type, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames,
+                    byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs,
+                    int chunkSize, Key<DecryptionTool> decrypt_tool, int[] skipped_columns, byte[] nonDataLineMarkers,
+                    byte escapeChar, boolean force_col_types) {
     _parse_type = parse_type;
     _separator = sep;
     _nonDataLineMarkers = nonDataLineMarkers;
@@ -107,6 +117,7 @@ public class ParseSetup extends Iced {
     _decrypt_tool = decrypt_tool;
     _skipped_columns = skipped_columns;
     _escapechar = escapeChar;
+    _force_col_types = force_col_types;
     setParseColumnIndices(ncols, _skipped_columns);
   }
 
@@ -156,7 +167,9 @@ public class ParseSetup extends Iced {
         ps.chunk_size,
         ps.decrypt_tool != null ? ps.decrypt_tool.key() : null, ps.skipped_columns,
         ps.custom_non_data_line_markers != null ? ps.custom_non_data_line_markers.getBytes() : null,
-        ps.escapechar);
+        ps.escapechar, ps.force_col_types);
+    this._orig_column_types = ps.column_types == null ? null : ps.column_types.clone();
+    this._force_col_types = ps.force_col_types;
   }
 
   /**
@@ -232,6 +245,9 @@ public class ParseSetup extends Iced {
     for(int i=0; i< types.length; i++)
       types[i] = Vec.TYPE_STR[_column_types[i]];
     return types;
+  }
+  public String[] getOrigColumnTypes() {
+    return _orig_column_types;
   }
   public byte[] getColumnTypes() { return _column_types; }
 
@@ -835,6 +851,16 @@ public class ParseSetup extends Iced {
 
   public ParseSetup setColumnTypes(byte[] column_types) {
     this._column_types = column_types;
+    return this;
+  }
+  
+  public ParseSetup setOrigColumnTypes(String[] col_types) {
+    this._orig_column_types = col_types;
+    return this;
+  }
+  
+  public ParseSetup setForceColTypes(boolean force_col_types) {
+    this._force_col_types = force_col_types;
     return this;
   }
 
