@@ -51,6 +51,9 @@ dependencies {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
             because 'Fixes CVE-2022-42003'
         }
+        api('net.minidev:json-smart:2.4.10') {
+            because 'Fixes CVE-2023-1370'
+        }
         api('org.jetbrains.kotlin:kotlin-stdlib:1.6.21') {
             because 'Fixes CVE-2020-29582'
             because 'Fixes CVE-2022-24329'
