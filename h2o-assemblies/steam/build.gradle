@@ -72,6 +72,9 @@ dependencies {
             because 'Fixes CVE-2020-8908'
             because 'Fixes CVE-2018-10237'
         }
+        api('com.squareup.okio:okio:3.5.0') {
+            because 'Fixes CVE-2023-3635'
+        }
     }
 }
 
