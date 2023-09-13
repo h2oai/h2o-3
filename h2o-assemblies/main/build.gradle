@@ -56,6 +56,11 @@ dependencies {
             because 'Fixes CVE-2020-8908'
             because 'Fixes CVE-2018-10237'
         }
+        api('org.xerial.snappy:snappy-java:1.1.10.3') {
+            because 'Fixes CVE-2023-34455'
+            because 'Fixes CVE-2023-34454'
+            because 'Fixes CVE-2023-34453'
+        }
     }
 }
 
