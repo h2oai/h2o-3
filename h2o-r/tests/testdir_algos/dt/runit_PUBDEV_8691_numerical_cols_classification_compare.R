@@ -43,8 +43,8 @@ test.compare.classification.with.r <- function() {
     r_train_accuracy <- sum(r_predict == dataR$response) / h2o.nrow(data)
     print("R training accuracy")
     print(r_train_accuracy)
-#    expect_true(train_accuracy >= r_train_accuracy ||
-#                  abs(train_accuracy - r_train_accuracy) < 0.1)
+    expect_true(train_accuracy >= r_train_accuracy ||
+                    abs(train_accuracy - r_train_accuracy) < 0.1)
   }
   #check and make sure logloss is decreasing
   count <- 2
