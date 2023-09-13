@@ -407,7 +407,7 @@ public class DT extends ModelBuilder<DTModel, DTModel.DTParameters, DTModel.DTOu
 
 
     /**
-     * Count classes withing samples satisfying given limits.
+     * Count classes within samples satisfying given limits.
      *
      * @param featuresLimits limits
      * @return pair (count0, count1)
