@@ -37,16 +37,10 @@ public class KMeansTest extends TestUtil {
     return kmm;
   }
 
-  //PUBDEV-871: Double-check the training metrics (gathered by computeStatsFillModel) and the scoring logic by scoring on the training set
   private static void checkConsistency(KMeansModel kmm) {
-    //FIXME: TODO: remove this false, and fix the algo! PUBDEV-871
-    if (false) {
       KMeansModel.KMeansParameters parms = kmm._parms;
       Assert.assertTrue((ArrayUtils.sum(kmm._output._size) - parms.train().numRows()) <= 1);
 
-//    Log.info(kmm._output._model_summary);
-//    Log.info(kmm._output._scoring_history);
-//    Log.info(((ModelMetricsClustering)kmm._output._training_metrics).createCentroidStatsTable().toString());
       kmm.score(parms.train()).delete(); //this scores on the training data and appends a ModelMetrics
       ModelMetricsClustering mm = (ModelMetricsClustering) ModelMetrics.getFromDKV(kmm, parms.train());
       Assert.assertTrue(Arrays.equals(mm._size, ((ModelMetricsClustering) kmm._output._training_metrics)._size));
@@ -56,7 +50,6 @@ public class KMeansTest extends TestUtil {
       Assert.assertTrue(MathUtils.compare(mm._totss, ((ModelMetricsClustering) kmm._output._training_metrics)._totss, 1e-6, 1e-6));
       Assert.assertTrue(MathUtils.compare(mm._betweenss, ((ModelMetricsClustering) kmm._output._training_metrics)._betweenss, 1e-6, 1e-6));
       Assert.assertTrue(MathUtils.compare(mm._tot_withinss, ((ModelMetricsClustering) kmm._output._training_metrics)._tot_withinss, 1e-6, 1e-6));
-    }
   }
 
   @Test public void testIris() {
