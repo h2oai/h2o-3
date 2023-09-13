@@ -71,20 +71,21 @@ public class AUUC extends Iced {
         int idx = getIndexByAUUCType(type);
         return idx < 0  ? null : _upliftRandom[idx];
     }
-    
-    public AUUC(int nBins, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
-        this(new AUUCImpl(calculateQuantileThresholds(nBins, probs)).doAll(probs, y, uplift)._bldr, auucType);
-    }
 
-    public AUUC(double[] customThresholds, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
-        this(new AUUCImpl(customThresholds).doAll(probs, y, uplift)._bldr, auucType);
+    public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType, int nbins) {
+        this(new AUUCImpl(calculateQuantileThresholds(nbins, probs)).doAll(probs, y, uplift)._bldr, auucType);
     }
 
     public AUUC(AUUCBuilder bldr, AUUCType auucType) {
         this(bldr, true, auucType);
     }
+    
 
-    private AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
+    public AUUC(double[] customThresholds, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
+        this(new AUUCImpl(customThresholds).doAll(probs, y, uplift)._bldr, auucType);
+    }
+
+    public AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
         _auucType = auucType;
         _auucTypeIndx = getIndexByAUUCType(_auucType);
         _nBins = bldr._nBins;
@@ -316,11 +317,11 @@ public class AUUC extends Iced {
 
     public double auucNormalized(){ return auucNormalized(_auucTypeIndx); }
 
-    private static class AUUCImpl extends MRTask<AUUCImpl> {
+    public static class AUUCImpl extends MRTask<AUUCImpl> {
         final double[] _thresholds;
         AUUCBuilder _bldr;
         
-        AUUCImpl(double[] thresholds) {
+        public AUUCImpl(double[] thresholds) {
             _thresholds = thresholds; 
         }
         

@@ -4,7 +4,6 @@ import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
-import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -163,8 +162,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                 mb = new UpliftBinomialMetrics(labels.domain(), customAuucThresholds).doAll(fr)._mb;
             }
             labels.remove();
-            ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, new Frame(predictedProbs),
-                    fr.vec("labels"), fr.vec("treatment"), auucType, auucNbins); // use the Vecs from the frame (to make sure the ESPC is identical)
+            ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, auucType);
             mm._description = "Computed on user-given predictions and labels.";
             return mm;
         } finally {
@@ -274,7 +272,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                     treatment = frameWithExtraColumns.vec(m._parms._treatment_column);
                 }
             }
-            int auucNbins = m==null || m._parms._auuc_nbins == -1? 
+            int auucNbins = m==null || m._parms._auuc_nbins == -1?
                     AUUC.NBINS : m._parms._auuc_nbins;
             return makeModelMetrics(m, f, preds, resp, treatment, auucType, auucNbins);
         }
@@ -282,17 +280,19 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds,
                                               final Vec resp, final Vec treatment, AUUC.AUUCType auucType, int nbins) {
             AUUC auuc = null;
-            if (preds != null && resp != null && treatment != null) {
-                if (_auuc == null || _auuc._nBins > 0) {
-                    auuc = new AUUC(nbins, preds.vec(0), resp, treatment, auucType);
-                } else {
-                    auuc = new AUUC(_auuc._thresholds, preds.vec(0), resp, treatment, auucType);
+            if (preds != null) {
+                if (resp != null) {
+                        auuc = new AUUC(preds.vec(0), resp, treatment, auucType, nbins);
                 }
             }
             return makeModelMetrics(m, f, auuc);
         }
 
-        private ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc) {
+        private ModelMetrics makeModelMetrics(final Model m, final Frame f, AUUC.AUUCType auucType) {
+            return makeModelMetrics(m, f, new AUUC(_auuc, auucType));
+        }
+
+        public ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc) {
             double sigma = Double.NaN;
             double ate = Double.NaN;
             double atc = Double.NaN;
