@@ -6,7 +6,7 @@ library(rpart)
 test.compare.classification.with.r <- function() {
   data <-
     h2o.importFile(
-      "/Users/wendycwong/temp/sdt_5numCols_10kRows.csv"
+        locate("smalldata/sdt/sdt_5numCols_10kRows.csv")
     )
   data["response"] <- as.factor(data["response"])
   dataR <- as.data.frame(data)

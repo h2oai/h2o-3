@@ -6,7 +6,7 @@ library(rpart)
 test.compare.classification.with.r.enum <- function() {
   data <-
     h2o.importFile(
-      "https://s3.amazonaws.com/h2o-public-test-data/smalldata/sdt/sdt_5EnumCols_5NumCols_10KRows_binomial.csv"
+        locate("smalldata/sdt/sdt_5EnumCols_5NumCols_10KRows_binomial.csv")
     )
   data["response"] <- as.factor(data["response"])
   dataR <- as.data.frame(data)
