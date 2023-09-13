@@ -52,6 +52,9 @@ dependencies {
             because 'Fixes CVE-2022-42003'
             because 'Fixes PRISMA-2023-0067'
         }
+        api('net.minidev:json-smart:2.4.10') {
+            because 'Fixes CVE-2023-1370'
+        }
         api('com.google.guava:guava:32.0.1-jre') {
             because 'Fixes CVE-2023-2976'
             because 'Fixes CVE-2020-8908'
