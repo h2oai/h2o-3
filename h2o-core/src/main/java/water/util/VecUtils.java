@@ -1,6 +1,5 @@
 package water.util;
 
-import hex.genmodel.InMemoryMojoReaderBackend;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
@@ -8,7 +7,6 @@ import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
@@ -184,6 +182,41 @@ public class VecUtils {
     }
   }
 
+  public static Vec toDoubleVec(Vec src) {
+    switch (src.get_type()) {
+      case Vec.T_CAT:
+        return categoricalToDouble(src);
+      case Vec.T_STR:
+        return stringToDouble(src);
+      case Vec.T_NUM:
+      case Vec.T_TIME:
+      case Vec.T_UUID:
+        if (src.isInt())
+          return intToDouble(src);
+        else
+          return src.makeCopy(null, Vec.T_NUM);
+      default:
+        throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
+                + " given to toNumericVec()");
+    }
+  }
+
+  public static Vec toIntegerVec(Vec src) {
+    switch (src.get_type()) {
+      case Vec.T_CAT:
+        return categoricalToInt(src);
+      case Vec.T_STR:
+        return stringToInteger(src);
+      case Vec.T_NUM:
+      case Vec.T_TIME:
+      case Vec.T_UUID:
+        return src.makeCopy(null, Vec.T_NUM);
+      default:
+        throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
+                + " given to toNumericVec()");
+    }
+  }
+
   /**
    * Create a new {@link Vec} of numeric values from a string {@link Vec}. Any rows that cannot be
    * converted to a number are set to NA.
@@ -226,6 +259,71 @@ public class VecUtils {
     return res;
   }
 
+  public static Vec stringToDouble(Vec src) {
+    if(!src.isString()) throw new H2OIllegalArgumentException("stringToNumeric conversion only works on string columns");
+    Vec res = new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if (chk instanceof C0DChunk) { // all NAs
+          for (int i=0; i < chk._len; i++)
+            newChk.addNA();
+        } else {
+          BufferedString tmpStr = new BufferedString();
+          for (int i=0; i < chk._len; i++) {
+            if (!chk.isNA(i)) {
+              tmpStr = chk.atStr(tmpStr, i);
+              switch (tmpStr.getNumericType()) {
+                case BufferedString.NA:
+                  newChk.addNA(); break;
+                case BufferedString.INT:
+                  double temp = Long.parseLong(tmpStr.toString())*1.0;
+                  newChk.addNum(temp); break;
+                case BufferedString.REAL:
+                  newChk.addNum(1.0*Double.parseDouble(tmpStr.toString())); break;
+                default:
+                  throw new H2OIllegalValueException("Received unexpected type when parsing a string to a number.", this);
+              }
+            } else newChk.addNA();
+          }
+        }
+      }
+    }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
+    assert res != null;
+    return res;
+  }
+
+
+  public static Vec stringToInteger(Vec src) {
+    if(!src.isString()) throw new H2OIllegalArgumentException("stringToNumeric conversion only works on string columns");
+    Vec res = new MRTask() {
+      @Override public void map(Chunk chk, NewChunk newChk){
+        if (chk instanceof C0DChunk) { // all NAs
+          for (int i=0; i < chk._len; i++)
+            newChk.addNA();
+        } else {
+          BufferedString tmpStr = new BufferedString();
+          for (int i=0; i < chk._len; i++) {
+            if (!chk.isNA(i)) {
+              tmpStr = chk.atStr(tmpStr, i);
+              switch (tmpStr.getNumericType()) {
+                case BufferedString.NA:
+                  newChk.addNA(); break;
+                case BufferedString.INT:
+                  newChk.addNum(Long.parseLong(tmpStr.toString()),0); break;
+                case BufferedString.REAL:
+                  long temp = Math.round(Double.parseDouble(tmpStr.toString()));
+                  newChk.addNum(temp); break;
+                default:
+                  throw new H2OIllegalValueException("Received unexpected type when parsing a string to a number.", this);
+              }
+            } else newChk.addNA();
+          }
+        }
+      }
+    }.doAll(Vec.T_NUM, src).outputFrame().anyVec();
+    assert res != null;
+    return res;
+  }
+  
   /**
    * Create a new {@link Vec} of numeric values from a categorical {@link Vec}.
    *
@@ -261,6 +359,48 @@ public class VecUtils {
           for (int i=0;i<c._len;++i)
             if( !c.isNA(i) )
               c.set(i, Integer.parseInt(src.domain()[(int)c.at8(i)]));
+        }
+      }.doAll(newVec);
+    }
+    return newVec;
+  }
+
+  public static Vec intToDouble(final Vec src) {
+     Vec newVec = copyOver(src, Vec.T_NUM, null);
+     
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          for (int i=0;i<c._len;++i)
+            if( !c.isNA(i) ) {
+              double temp = Integer.parseInt(src.domain()[(int) c.at8(i)])*1.0;
+              c.set(i, temp);
+            }
+        }
+      }.doAll(newVec);
+    
+    return newVec;
+  }
+
+  public static Vec categoricalToDouble(final Vec src) {
+    if( src.isInt() && (src.domain()==null || src.domain().length == 0)) return copyOver(src, Vec.T_NUM, null);
+    if( !src.isCategorical() ) throw new IllegalArgumentException("categoricalToInt conversion only works on categorical columns.");
+    // check if the 1st lvl of the domain can be parsed as int
+    boolean useDomain=false;
+    Vec newVec = copyOver(src, Vec.T_NUM, null);
+    try {
+      Integer.parseInt(src.domain()[0]);
+      useDomain=true;
+    } catch (NumberFormatException e) {
+      // makeCopy and return...
+    }
+    if( useDomain ) {
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          for (int i=0;i<c._len;++i)
+            if( !c.isNA(i) ) {
+              double temp = Integer.parseInt(src.domain()[(int) c.at8(i)]);
+              c.set(i, temp);
+            }
         }
       }.doAll(newVec);
     }

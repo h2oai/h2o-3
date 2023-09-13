@@ -72,7 +72,7 @@ public class ParseSetup extends Iced {
             ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
             ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data,
             new ParseWriter.ParseErr[0], ps._chunk_size, ps._decrypt_tool, ps._skipped_columns,
-            ps._nonDataLineMarkers, ps._escapechar, ps._force_col_types);
+            ps._nonDataLineMarkers, ps._escapechar);
   }
 
   public static ParseSetup makeSVMLightSetup(){
@@ -249,6 +249,11 @@ public class ParseSetup extends Iced {
   public String[] getOrigColumnTypes() {
     return _orig_column_types;
   }
+  
+  public boolean getForceColTypes() {
+    return _force_col_types;
+  }
+  
   public byte[] getColumnTypes() { return _column_types; }
 
   public static byte[] strToColumnTypes(String[] strs) {

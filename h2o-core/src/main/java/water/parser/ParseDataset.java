@@ -404,6 +404,12 @@ public final class ParseDataset {
     }
     job.update(0,"Calculating data summary.");
     logParseResults(fr);
+    if (setup.getForceColTypes())  {
+      String[] originalColumnTypes = setup.getOrigColumnTypes();
+      if (originalColumnTypes != null) // force change the column types specified by user 
+        forceChangeColumnTypes(fr, originalColumnTypes);
+    }
+      
     // Release the frame for overwriting
     fr.update(job);
     Frame fr2 = DKV.getGet(fr._key);
@@ -416,6 +422,24 @@ public final class ParseDataset {
         assert DKV.get(k) == null : "Input key " + k + " not deleted during parse";
       }
     return pds;
+  }
+  
+  private static void forceChangeColumnTypes(Frame fr, String[] columnTypes) {
+    int numCols = columnTypes.length;
+    for (int index=0; index<numCols; index++) {
+      switch (columnTypes[index]) {
+        case "enum":
+        case "factor":
+        case "categorical": fr.replace((index), fr.vec(index).toCategoricalVec()).remove(); break;
+        case "int":
+        case "long": fr.replace((index), fr.vec(index).toIntegerVec()).remove(); break;
+        case "float":
+        case "double":
+        case "real": fr.replace((index), fr.vec(index).toDoubleVec()).remove(); break;
+        case "numeric": fr.replace((index), fr.vec(index).toNumericVec()); break;
+        default: break; // no conversion for other data types.
+      }
+    }
   }
   private static class CreateParse2GlobalCategoricalMaps extends DTask<CreateParse2GlobalCategoricalMaps> {
     private final Key   _parseCatMapsKey;
