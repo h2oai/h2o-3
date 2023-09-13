@@ -460,8 +460,7 @@ public class Vec extends Keyed<Vec> {
 //    System.out.println("made vecs " + Arrays.toString(res));
     return res;
   }
-
-
+  
   private static void fillDoubleChunks(Vec v, final Vec[] ds, final double [] values){
     new MRTask(){
       public void map(Chunk c){
@@ -1335,6 +1334,10 @@ public class Vec extends Keyed<Vec> {
    * @return A categorical vector based on the contents of the original vector.
    */
   public Vec toCategoricalVec() {return VecUtils.toCategoricalVec(this);}
+  
+  public Vec toIntegerVec() {return VecUtils.toIntegerVec(this);}
+  
+  public Vec toDoubleVec() { return VecUtils.toDoubleVec(this); }
   /**
    * Convenience method for converting to a string vector.
    * @return A string vector based on the contents of the original vector.
