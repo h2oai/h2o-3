@@ -7,7 +7,6 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
-import hex.tree.dt.DTModel;
 import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -27,6 +26,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     private static final Logger LOG = Logger.getLogger(AdaBoost.class);
 
     private AdaBoostModel _model;
+    private String _weightsName = "weights";
 
     // Called from an http request
     public AdaBoost(AdaBoostModel.AdaBoostParameters parms) {
@@ -55,6 +55,10 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
             if (_parms._weak_learner == AdaBoostModel.Algorithm.AUTO) {
                 _parms._weak_learner = AdaBoostModel.Algorithm.DRF;
             }
+            if (_parms._weights_column != null) {
+                // _parms._weights_column cannot be used all time since it breaks scoring
+                _weightsName = _parms._weights_column;
+            }
         }
     }
 
@@ -82,12 +86,19 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         private void buildAdaboost() {
             _model._output.alphas = new double[(int)_parms._n_estimators];
             _model._output.models = new Key[(int)_parms._n_estimators];
-            
-            Frame _trainWithWeights = new Frame(train());
-            Vec weights = _trainWithWeights.anyVec().makeCons(1,1,null,null)[0];
-            _trainWithWeights.add("weights", weights);
-            DKV.put(_trainWithWeights);
-            Scope.track(weights);
+
+            Frame _trainWithWeights;
+            if (_parms._weights_column == null) {
+                _trainWithWeights = new Frame(train());
+                Vec weights = _trainWithWeights.anyVec().makeCons(1,1,null,null)[0];
+                _weightsName = _trainWithWeights.uniquify(_weightsName); // be sure that we are not accidentally using some column in the train
+                _trainWithWeights.add(_weightsName, weights);
+                DKV.put(_trainWithWeights);
+                Scope.track(weights);
+                _weightsName = _trainWithWeights.lastVecName();
+            } else {
+                _trainWithWeights = _parms.train();
+            }
             
             for (int n = 0; n < _parms._n_estimators; n++) {
                 ModelBuilder job = chooseWeakLearner(_trainWithWeights);
@@ -99,17 +110,19 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 Frame score = model.score(_trainWithWeights);
                 Scope.track(score);
 
-                CountWeTask countWe = new CountWeTask().doAll(_trainWithWeights.vec("weights"), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
+                CountWeTask countWe = new CountWeTask().doAll(_trainWithWeights.vec(_weightsName), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
                 double e_m = countWe.We / countWe.W;
                 double alpha_m = _parms._learning_rate * Math.log((1 - e_m) / e_m);
                 _model._output.alphas[n] = alpha_m;
 
                 UpdateWeightsTask updateWeightsTask = new UpdateWeightsTask(alpha_m);
-                updateWeightsTask.doAll(_trainWithWeights.vec("weights"), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
+                updateWeightsTask.doAll(_trainWithWeights.vec(_weightsName), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
                 _job.update(1);
                 _model.update(_job);
             }
-            DKV.remove(_trainWithWeights._key);
+            if (_trainWithWeights != _parms.train()) {
+                DKV.remove(_trainWithWeights._key);
+            }
             _model._output._model_summary = createModelSummaryTable();
         }
     }
@@ -153,7 +166,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         parms._response_column = _parms._response_column;
         parms._mtries = 1;
         parms._min_rows = 1;
-        parms._weights_column = "weights";
+        parms._weights_column = _weightsName;
         parms._ntrees = 1;
         parms._sample_rate = 1;
         parms._max_depth = 1;

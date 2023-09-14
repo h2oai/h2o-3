@@ -19,10 +19,10 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.FrameUtils;
-import water.util.VecUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
 @RunWith(H2ORunner.class)
 public class AdaBoostTest extends TestUtil {
     
-    public boolean print = true;
+    public boolean print = false;
 
     @Rule
     public EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -351,6 +351,125 @@ public class AdaBoostTest extends TestUtil {
             System.out.println("weights = ");
             System.out.println(new Frame(train.vec(0)).toTwoDimTable(0, (int) train.numRows(), false));
             assertVecEquals("Weights are not correctly updated", weightsExpected, train.vec(0),0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainAndScoreWithExternalWeightsColumn() {
+        try {
+            // Train reference model
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            Scope.track(train);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._n_estimators = 10;
+            p._response_column = response;
+
+            AdaBoost adaBoostReference = new AdaBoost(p);
+            AdaBoostModel adaBoostReferenceModel = adaBoostReference.trainModel().get();
+            Scope.track_generic(adaBoostReferenceModel);
+            assertNotNull(adaBoostReferenceModel);
+
+            // Add weights column to frame and train different model
+            Vec weights = train.anyVec().makeCons(1,1,null,null)[0];
+            train.add("weights", weights);
+            DKV.put(train);
+            Scope.track(train);
+            p._weights_column = "weights";
+
+            AdaBoost adaBoostWithExternalWeights = new AdaBoost(p);
+            AdaBoostModel adaBoostModelWithExternalWeights = adaBoostWithExternalWeights.trainModel().get();
+            Scope.track_generic(adaBoostModelWithExternalWeights);
+            assertNotNull(adaBoostModelWithExternalWeights);
+
+            // Check that output is identical
+            Frame scoreReference = adaBoostReferenceModel.score(train);
+            Scope.track(scoreReference);
+            Frame scoreWithExternalWeights = adaBoostModelWithExternalWeights.score(train);
+            Scope.track(scoreWithExternalWeights);
+            assertFrameEquals(scoreReference, scoreWithExternalWeights, 0); // output should be identical
+            assertFalse("Weights column should be change in the training", weights.isConst());
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainAndScoreWithCustomWeightsColumn() {
+        try {
+            // Train reference model
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            Scope.track(train);
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._n_estimators = 10;
+            p._response_column = response;
+
+            AdaBoost adaBoostReference = new AdaBoost(p);
+            AdaBoostModel adaBoostReferenceModel = adaBoostReference.trainModel().get();
+            Scope.track_generic(adaBoostReferenceModel);
+            assertNotNull(adaBoostReferenceModel);
+
+            // Set custom weights column
+            p._weights_column = "RACE";
+            double maxReference = train.vec("RACE").max(); // for future assert
+            AdaBoost adaBoostWithExternalWeights = new AdaBoost(p);
+            AdaBoostModel adaBoostModelWithExternalWeights = adaBoostWithExternalWeights.trainModel().get();
+            Scope.track_generic(adaBoostModelWithExternalWeights);
+            assertNotNull(adaBoostModelWithExternalWeights);
+
+            // Check that output is identical
+            Frame scoreReference = adaBoostReferenceModel.score(train);
+            Scope.track(scoreReference);
+            Frame scoreWithExternalWeights = adaBoostModelWithExternalWeights.score(train);
+            Scope.track(scoreWithExternalWeights);
+            // output should be different since the weights are not initialize on purpose
+            assertFalse(Arrays.equals(FrameUtils.asDoubles(scoreReference.vec("predict")), FrameUtils.asDoubles(scoreWithExternalWeights.vec("predict"))));
+            assertNotEquals("RACE column should be changed in the training", maxReference, train.vec("RACE").max());
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainAndScoreWithDuplicatedWeightsColumn() {
+        try {
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            // Add weights column to frame
+            Vec weights = train.anyVec().makeCons(1,1,null,null)[0];
+            train.add("weights", weights);
+            DKV.put(train);
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            Scope.track(train);
+
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._n_estimators = 10;
+            p._response_column = response;
+            p._ignore_const_cols = false;
+
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+
+            // Check that output is identical
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
+            assertTrue("Weights column should not be changed in the training", weights.isConst());
         } finally {
             Scope.exit();
         }
