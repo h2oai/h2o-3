@@ -17,8 +17,9 @@ public class AdaBoostV3 extends ModelBuilderSchema<
                 "ignored_columns",
                 "ignore_const_cols",
                 "categorical_encoding",
+                "weights_column",
 
-                // Extended Isolation Forest specific
+                // AdaBoost specific
                 "n_estimators",
                 "weak_learner",
                 "learning_rate",

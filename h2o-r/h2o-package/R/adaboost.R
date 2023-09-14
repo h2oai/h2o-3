@@ -17,6 +17,13 @@
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
+#'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
+#'        an accurate prediction, remove all rows with weight == 0.
 #' @param n_estimators Number of AdaBoost weak learners. Defaults to 50.
 #' @param weak_learner Weak learner Must be one of: "AUTO", "DRF", "GLM". Defaults to AUTO.
 #' @param learning_rate Learning rate Defaults to 0.5.
@@ -48,6 +55,7 @@ h2o.adaBoost <- function(x,
                          model_id = NULL,
                          ignore_const_cols = TRUE,
                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                         weights_column = NULL,
                          n_estimators = 50,
                          weak_learner = c("AUTO", "DRF", "GLM"),
                          learning_rate = 0.5,
@@ -79,6 +87,8 @@ h2o.adaBoost <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
   if (!missing(n_estimators))
     parms$n_estimators <- n_estimators
   if (!missing(weak_learner))
@@ -97,6 +107,7 @@ h2o.adaBoost <- function(x,
                                          training_frame,
                                          ignore_const_cols = TRUE,
                                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                         weights_column = NULL,
                                          n_estimators = 50,
                                          weak_learner = c("AUTO", "DRF", "GLM"),
                                          learning_rate = 0.5,
@@ -133,6 +144,8 @@ h2o.adaBoost <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
   if (!missing(n_estimators))
     parms$n_estimators <- n_estimators
   if (!missing(weak_learner))

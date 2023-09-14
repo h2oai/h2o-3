@@ -27,6 +27,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 weights_column=None,  # type: Optional[str]
                  n_estimators=50,  # type: int
                  weak_learner="auto",  # type: Literal["auto", "drf", "glm"]
                  learning_rate=0.5,  # type: float
@@ -49,6 +50,15 @@ class H2OAdaBoostEstimator(H2OEstimator):
                Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
+        :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
+               to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
+               that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
+               not increase the size of the data frame. This is typically the number of times a row is repeated, but
+               non-integer values are supported as well. During training, rows with higher weights matter more, due to
+               the larger loss function pre-factor. If you set weight = 0 for a row, the returned prediction frame at
+               that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
+               Defaults to ``None``.
+        :type weights_column: str, optional
         :param n_estimators: Number of AdaBoost weak learners.
                Defaults to ``50``.
         :type n_estimators: int
@@ -69,6 +79,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
         self.ignored_columns = ignored_columns
         self.ignore_const_cols = ignore_const_cols
         self.categorical_encoding = categorical_encoding
+        self.weights_column = weights_column
         self.n_estimators = n_estimators
         self.weak_learner = weak_learner
         self.learning_rate = learning_rate
@@ -129,6 +140,26 @@ class H2OAdaBoostEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+    @property
+    def weights_column(self):
+        """
+        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
+        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
+        frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
+        During training, rows with higher weights matter more, due to the larger loss function pre-factor. If you set
+        weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get an
+        accurate prediction, remove all rows with weight == 0.
+
+        Type: ``str``.
+        """
+        return self._parms.get("weights_column")
+
+    @weights_column.setter
+    def weights_column(self, weights_column):
+        assert_is_type(weights_column, None, str)
+        self._parms["weights_column"] = weights_column
 
     @property
     def n_estimators(self):
