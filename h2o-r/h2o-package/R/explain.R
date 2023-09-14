@@ -1416,7 +1416,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
                        data = results)
   column_value <- as.data.frame(newdata[[column]])
   histogram <- stat_count_or_bin(!.is_continuous(newdata[[column]]),
-                                 ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+                                 ggplot2::aes(x = .data[[col_name]], y = (ggplot2::after_stat(count) / max(ggplot2::after_stat(count))) * diff(y_range) / 1.61),
                                  position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
                                  inherit.aes = FALSE, data = column_value)
   rug_part <- ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, text = NULL),
@@ -1583,7 +1583,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
     color = .data$target, fill = .data$target, text = .data$text
   ), data = pdp) +
     stat_count_or_bin(!.is_continuous(newdata[[column]]),
-                      ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_[["y_range"]]) / 1.61),
+                      ggplot2::aes(x = .data[[col_name]], y = (ggplot2::after_stat(count) / max(ggplot2::after_stat(count))) * diff(y_[["y_range"]]) / 1.61),
                       position = ggplot2::position_nudge(y = y_[["y_range"]][[1]] - 0.05 * diff(y_[["y_range"]])), alpha = 0.2,
                       inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
     geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
@@ -2721,7 +2721,7 @@ h2o.pd_multi_plot <- function(object,
         color = .data$target, fill = .data$target, text = .data$text
       ), data = pdp) +
         stat_count_or_bin(!.is_continuous(newdata[[column]]),
-                          ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+                          ggplot2::aes(x = .data[[col_name]], y = (ggplot2::after_stat(count) / max(ggplot2::after_stat(count))) * diff(y_range) / 1.61),
                           position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
                           inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
         geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
@@ -2832,7 +2832,7 @@ h2o.pd_multi_plot <- function(object,
                          data = data
     ) +
       stat_count_or_bin(!.is_continuous(newdata[[column]]),
-                        ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+                        ggplot2::aes(x = .data[[col_name]], y = (ggplot2::after_stat(count) / max(ggplot2::after_stat(count))) * diff(y_range) / 1.61),
                         position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
                         inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
       geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id)))
@@ -3098,6 +3098,7 @@ h2o.learning_curve_plot <- function(model,
                                     cv_lines = NULL
                                     ) {
   .check_for_ggplot2()
+  .data <- NULL
   .preprocess_scoring_history <- function(model, scoring_history, training_metric=NULL) {
     scoring_history <- scoring_history[, !sapply(scoring_history, function(col) all(is.na(col)))]
     if (model@algorithm %in% c("glm", "gam") && model@allparameters$lambda_search) {
@@ -3345,21 +3346,21 @@ h2o.learning_curve_plot <- function(model,
 
   labels <- names(colors)[names(colors) %in% labels]
   colors <- colors[labels]
-  p <- ggplot2::ggplot(ggplot2::aes_string(
-    x = "x",
-    y = "metric",
-    color = "type",
-    fill = "type"
+  p <- ggplot2::ggplot(ggplot2::aes(
+    x = .data$x,
+    y = .data$metric,
+    color = .data$type,
+    fill = .data$type
   ),
                   data = scoring_history)
   if (cv_ribbon) {
     cvsh <- cvsh[!is.na(cvsh$lower_bound) &
                    !is.na(cvsh$upper_bound),]
-    p <- p + ggplot2::geom_line(ggplot2::aes_string(y = "mean"), data = cvsh) +
+    p <- p + ggplot2::geom_line(ggplot2::aes(y = .data$mean), data = cvsh) +
     ggplot2::geom_ribbon(
-      ggplot2::aes_string(
-        ymin = "lower_bound",
-        ymax = "upper_bound",
+      ggplot2::aes(
+        ymin = .data$lower_bound,
+        ymax = .data$upper_bound,
         y = NULL,
         color = NULL
       ),
@@ -3376,7 +3377,7 @@ h2o.learning_curve_plot <- function(model,
   p <- p +
     ggplot2::geom_line() +
     ggplot2::geom_point() +
-    ggplot2::geom_vline(ggplot2::aes_(
+    ggplot2::geom_vline(ggplot2::aes(
       xintercept = selected_timestep_value,
       linetype = paste0("Selected\n", timestep)
     ), color = "#2FBB24") +
@@ -3641,7 +3642,9 @@ h2o.pareto_front <- function(object,
 #' @param exclude_explanations Exclude specified model explanations.
 #' @param plot_overrides Overrides for individual model explanations, e.g.
 #' \code{list(shap_summary_plot = list(columns = 50))}.
-#'
+#' @param background_frame Optional frame, that is used as the source of baselines for the marginal SHAP.
+#'                         Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
+#' 
 #' @return List of outputs with class "H2OExplanation"
 #' @examples
 #'\dontrun{
@@ -3681,7 +3684,8 @@ h2o.explain <- function(object,
                         top_n_features = 5,
                         include_explanations = "ALL",
                         exclude_explanations = NULL,
-                        plot_overrides = NULL) {
+                        plot_overrides = NULL,
+                        background_frame = NULL) {
   .check_for_ggplot2()
   models_info <- .process_models_or_automl(object, newdata)
   multiple_models <- length(models_info$model_ids) > 1
@@ -3914,18 +3918,20 @@ h2o.explain <- function(object,
 
   # SHAP summary
   if (!"shap_summary" %in% skip_explanations && !models_info$is_multinomial_classification) {
-    num_of_tree_models <- sum(sapply(models_info$model_ids, .is_h2o_tree_model))
-    if (num_of_tree_models > 0) {
+    shap_models <- if (is.H2OFrame(background_frame)) models_info$model_ids else Filter(.is_h2o_tree_model, models_info$model_ids)
+    num_of_shap_models <- length(shap_models)
+    if (num_of_shap_models > 0) {
       result$shap_summary <- list(
         header = .h2o_explanation_header("SHAP Summary"),
         description = .describe("shap_summary"),
         plots = list())
-      for (m in Filter(.is_h2o_tree_model, models_info$model_ids)) {
+      for (m in shap_models) {
         m <- models_info$get_model(m)
         result$shap_summary$plots[[m@model_id]] <- .customized_call(
           h2o.shap_summary_plot,
           model = m,
           newdata = newdata,
+          background_frame = background_frame,
           overrides = plot_overrides$shap_summary
         )
         if (models_info$is_automl) break
@@ -4053,7 +4059,9 @@ h2o.explain <- function(object,
 #' @param exclude_explanations Exclude specified model explanations.
 #' @param plot_overrides Overrides for individual model explanations, e.g.,
 #'                       \code{list(shap_explain_row = list(columns = 5))}
-#'
+#' @param background_frame Optional frame, that is used as the source of baselines for the marginal SHAP.
+#'                         Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
+#' 
 #' @return List of outputs with class "H2OExplanation"
 #' @examples
 #'\dontrun{
@@ -4094,7 +4102,8 @@ h2o.explain_row <- function(object,
                             top_n_features = 5,
                             include_explanations = "ALL",
                             exclude_explanations = NULL,
-                            plot_overrides = NULL) {
+                            plot_overrides = NULL,
+                            background_frame = NULL) {
   .check_for_ggplot2()
   models_info <- .process_models_or_automl(object, newdata)
   if (missing(row_index))
@@ -4201,21 +4210,22 @@ h2o.explain_row <- function(object,
   }
 
   if (!"shap_explain_row" %in% skip_explanations && !models_info$is_multinomial_classification) {
-    num_of_tree_models <- sum(sapply(models_info$model_ids, .is_h2o_tree_model))
-    if (num_of_tree_models > 0) {
+    shap_models <- if(is.H2OFrame(background_frame)) models_info$model_ids else Filter(.is_h2o_tree_model, models_info$model_ids)
+    num_of_shap_models <- length(shap_models)
+    if (num_of_shap_models > 0) {
       result$shap_explain_row <- list(
         header = .h2o_explanation_header("SHAP explanation"),
         description = .describe("shap_explain_row"),
         plots = list()
       )
-      tree_models <- Filter(.is_h2o_tree_model, models_info$model_ids)
-      for (m in tree_models) {
+      for (m in shap_models) {
         m <- models_info$get_model(m)
         result$shap_explain_row$plots[[m@model_id]] <- .customized_call(
           h2o.shap_explain_row_plot,
           model = m,
           newdata = newdata,
           row_index = row_index,
+          background_frame = background_frame,
           overrides = plot_overrides$shap_explain_row
         )
         if (models_info$is_automl) break
@@ -4639,6 +4649,9 @@ h2o.fair_pr_plot <- function(model, newdata, protected_columns, reference, favor
 #'                  If set to NULL, it will use the biggest group as the reference.
 #' @param favorable_class Positive/favorable outcome class of the response.
 #' @param metrics Character vector of metrics to show.
+#' @param background_frame Optional frame, that is used as the source of baselines for the marginal SHAP.
+#'                         Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
+#' 
 #' @return H2OExplanation object
 #'
 #' @examples
@@ -4675,7 +4688,8 @@ h2o.inspect_model_fairness <-
            protected_columns,
            reference,
            favorable_class,
-           metrics = c("auc", "aucpr", "f1", "p.value", "selectedRatio", "total")) {
+           metrics = c("auc", "aucpr", "f1", "p.value", "selectedRatio", "total"),
+           background_frame = NULL) {
     .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
@@ -4774,14 +4788,14 @@ h2o.inspect_model_fairness <-
     for (v in pi$Variable) {
       result[["PDP"]][["plots"]][[v]] <- h2o.fair_pd_plot(model, newdata, protected_columns, v)
     }
-    if (.is_h2o_tree_model(model)) {
+    if (.is_h2o_tree_model(model) || is.H2OFrame(background_frame)) {
       result[["SHAP"]] <- list(
         header = .h2o_explanation_header("SHAP plot for Individual Protected Groups"),
         description = .describe("fairness_shap"),
         plots = list()
       )
       for (v in pi$Variable) {
-          result[["SHAP"]][["plots"]][[v]] <- h2o.fair_shap_plot(model, newdata, protected_columns, v)
+          result[["SHAP"]][["plots"]][[v]] <- h2o.fair_shap_plot(model, newdata, protected_columns, v, background_frame = background_frame)
       }
     }
     class(result) <- "H2OExplanation"

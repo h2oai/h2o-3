@@ -416,7 +416,7 @@ class Fairness:
 
     def inspect_model_fairness(self, frame, protected_columns, reference, favorable_class,
                                metrics=("auc", "aucpr", "f1", "p.value", "selectedRatio", "total"), figsize=(16, 9),
-                               render=True):
+                               render=True, background_frame=None):
         """
          Produce plots and dataframes related to a single model fairness.
 
@@ -429,6 +429,8 @@ class Fairness:
         :param metrics: List of metrics to show.
         :param figsize: Figure size; passed directly to Matplotlib
         :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
+        :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
+                                 Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
         :return: H2OExplanation object
 
         :examples:
@@ -459,7 +461,7 @@ class Fairness:
         from h2o.explanation import H2OExplanation
         from h2o.explanation import Description
         from h2o.explanation._explain import NumpyFrame
-        from h2o.explanation._explain import _display, _dont_display, Header
+        from h2o.explanation._explain import _display, _dont_display, Header, _is_tree_model
         from h2o.model.extensions import has_extension
         from h2o.plot import get_matplotlib_pyplot
         from h2o.utils.typechecks import assert_is_type
@@ -471,6 +473,7 @@ class Fairness:
         assert_is_type(metrics, [str], tuple)
         assert_is_type(figsize, tuple, list)
         assert_is_type(render, bool)
+        assert_is_type(background_frame, None, h2o.H2OFrame)
 
         plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
         fair = self.fairness_metrics(frame=frame, protected_columns=protected_columns, reference=reference,
@@ -555,13 +558,14 @@ class Fairness:
             result["pdp"]["plots"][col] = display(self.fair_pd_plot(frame, col, protected_columns, figsize=figsize))
 
         # SHAP per group
-        if has_extension(self, "Contributions"):
+        if has_extension(self, "Contributions") and (_is_tree_model(self) or background_frame is not None):
             result["shap"] = H2OExplanation()
             result["shap"]["header"] = display(Header("SHAP for Individual Protected Groups"))
             result["shap"]["description"] = display(Description("fairness_shap"))
             result["shap"]["plots"] = H2OExplanation()
             for col in sorted_features:
                 result["shap"]["plots"][col] = display(
-                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize, background_frame=reference_frame))
+                    self.fair_shap_plot(frame, col, protected_columns, figsize=figsize, background_frame=background_frame))
+
 
         return result

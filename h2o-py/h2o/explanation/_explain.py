@@ -10,6 +10,7 @@ from io import StringIO
 import h2o
 import numpy as np
 from h2o.exceptions import H2OValueError
+from h2o.model.extensions import has_extension
 from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, is_decorated_plot_result
 
 
@@ -3073,7 +3074,8 @@ def explain(
         figsize=(16, 9),  # type: Tuple[float]
         render=True,  # type: bool
         qualitative_colormap="Dark2",  # type: str
-        sequential_colormap="RdYlBu_r"  # type: str
+        sequential_colormap="RdYlBu_r",  # type: str
+        background_frame=None  # type: Optional[h2o.H2OFrame]
 ):
     # type: (...) -> H2OExplanation
     """
@@ -3096,6 +3098,10 @@ def explain(
     :param plot_overrides: overrides for individual model explanations.
     :param figsize: figure size; passed directly to matplotlib.
     :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
+    :param qualitative_colormap: used for setting qualitative colormap, that is passed to individual plots.
+    :param sequential_colormap:  used for setting sequential colormap, that is passed to individual plots.
+    :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
+                             Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
     :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
@@ -3255,20 +3261,24 @@ def explain(
                                        figsize=figsize)))
 
     # SHAP Summary
-    if len(tree_models_to_show) > 0 and not multinomial_classification \
-            and "shap_summary" in explanations:
-        result["shap_summary"] = H2OExplanation()
-        result["shap_summary"]["header"] = display(Header("SHAP Summary"))
-        result["shap_summary"]["description"] = display(Description("shap_summary"))
-        result["shap_summary"]["plots"] = H2OExplanation()
-        for tree_model in tree_models_to_show:
-            result["shap_summary"]["plots"][tree_model.model_id] = display(shap_summary_plot(
-                tree_model,
-                **_custom_args(
-                    plot_overrides.get("shap_summary_plot"),
-                    frame=frame,
-                    figsize=figsize
-                )))
+    if "shap_summary" in explanations and not multinomial_classification:
+        shap_models = tree_models_to_show
+        if background_frame is not None:
+            shap_models = [m for m in models_to_show if has_extension(m, "Contributions")]
+        if len(shap_models) > 0:
+            result["shap_summary"] = H2OExplanation()
+            result["shap_summary"]["header"] = display(Header("SHAP Summary"))
+            result["shap_summary"]["description"] = display(Description("shap_summary"))
+            result["shap_summary"]["plots"] = H2OExplanation()
+            for shap_model in shap_models:
+                result["shap_summary"]["plots"][shap_model.model_id] = display(shap_summary_plot(
+                    shap_model,
+                    **_custom_args(
+                        plot_overrides.get("shap_summary_plot"),
+                        frame=frame,
+                        figsize=figsize,
+                        background_frame=background_frame
+                    )))
 
     # PDP
     if "pdp" in explanations:
@@ -3349,6 +3359,7 @@ def explain_row(
         qualitative_colormap="Dark2",  # type: str
         figsize=(16, 9),  # type: Tuple[float]
         render=True,  # type: bool
+        background_frame=None  # type: Optional[h2o.H2OFrame]
 ):
     # type: (...) -> H2OExplanation
     """
@@ -3372,7 +3383,8 @@ def explain_row(
     :param qualitative_colormap: a colormap name.
     :param figsize: figure size; passed directly to matplotlib.
     :param render: if ``True``, render the model explanations; otherwise model explanations are just returned.
-
+    :param background_frame: optional frame, that is used as the source of baselines for the marginal SHAP.
+                             Setting it enables calculating SHAP in more models but it can be more time and memory consuming. 
     :returns: H2OExplanation containing the model explanations including headers and descriptions.
 
     :examples:
@@ -3448,16 +3460,20 @@ def explain_row(
                                                                      plot_overrides.get("leaderboard"),
                                                                      frame=frame)))
 
-    if len(tree_models_to_show) > 0 and not multinomial_classification and \
-            "shap_explain_row" in explanations:
-        result["shap_explain_row"] = H2OExplanation()
-        result["shap_explain_row"]["header"] = display(Header("SHAP Explanation"))
-        result["shap_explain_row"]["description"] = display(Description("shap_explain_row"))
-        for tree_model in tree_models_to_show:
-            result["shap_explain_row"][tree_model.model_id] = display(shap_explain_row_plot(
-                tree_model, row_index=row_index,
-                **_custom_args(plot_overrides.get("shap_explain_row"),
-                               frame=frame, figsize=figsize)))
+    if "shap_explain_row" in explanations and not multinomial_classification:
+        shap_models = tree_models_to_show
+        if background_frame is not None:
+            shap_models = [m for m in models_to_show if has_extension(m, "Contributions")]
+        if len(shap_models) > 0:
+            result["shap_explain_row"] = H2OExplanation()
+            result["shap_explain_row"]["header"] = display(Header("SHAP Explanation"))
+            result["shap_explain_row"]["description"] = display(Description("shap_explain_row"))
+            result["shap_explain_row"]["plots"] = H2OExplanation()
+            for shap_model in shap_models:
+                result["shap_explain_row"]["plots"][shap_model.model_id] = display(shap_explain_row_plot(
+                    shap_model, row_index=row_index,
+                    **_custom_args(plot_overrides.get("shap_explain_row"),
+                                frame=frame, figsize=figsize, background_frame=background_frame)))
 
     if "ice" in explanations and not multiple_models:
         result["ice"] = H2OExplanation()

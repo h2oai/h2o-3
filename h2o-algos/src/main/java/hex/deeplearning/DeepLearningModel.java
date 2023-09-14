@@ -43,49 +43,6 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
     return LinearAlgebraUtils.toEigen;
   }
 
-
-  //   for debugging only
-  String toPyTorch() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("nn = torch.nn.Sequential(\n");
-    for (int i = 0; i < _parms._hidden.length; i++) {
-      sb.append("    torch.nn.Linear(" + model_info.get_weights(i).cols() + ", " + model_info.get_weights(i).rows() + "),\n");
-      sb.append("    torch.nn.Tanh(),\n");
-    }
-    sb.append("    torch.nn.Linear(" + model_info.get_weights(_parms._hidden.length).cols() + ", " + model_info.get_weights(_parms._hidden.length).rows() + "),\n");
-    if (model_info.data_info._normRespMul != null)
-      sb.append("    torch.nn.Linear(1, 1)\n");
-    if (model_info._classification)
-      sb.append("    torch.nn.SoftMax()\n");
-    sb.append(")\n\n");
-
-    for (int i = 0; i <= _parms._hidden.length; i++) {
-      String weights = "";
-      String biases = "[";
-      weights += "[";
-      for (int k = 0; k < model_info.get_weights(i).rows(); k++) {
-        weights += "[";
-        for (int l = 0; l < model_info.get_weights(i).cols(); l++) {
-          weights += model_info.get_weights(i).get(k, l) + ",";
-        }
-        weights += "],";
-        biases += model_info.get_biases(i).get(k) + ", ";
-      }
-      weights += "]";
-      biases += "]";
-
-
-      sb.append("nn[" + (2 * i) + "].weight.data = torch.tensor(" + weights + ", dtype=torch.float32)\n");
-      sb.append("nn[" + (2 * i) + "].bias.data = torch.tensor(" + biases + ", dtype=torch.float32)\n");
-    }
-
-    if (model_info.data_info._normRespMul != null) {
-      sb.append("nn[" + (2 * _parms._hidden.length + 1) + "].weight.data = torch.tensor([[" + (1. / model_info.data_info._normRespMul[0]) + "]], dtype=torch.float32)\n");
-      sb.append("nn[" + (2 * _parms._hidden.length + 1) + "].bias.data = torch.tensor([" + (model_info.data_info._normRespSub[0]) + "], dtype=torch.float32)\n");
-    }
-    return sb.toString();
-  }
-
   class DeepSHAPContributionsWithBackground extends ContributionsWithBackgroundFrameTask<DeepSHAPContributionsWithBackground> {
 
     final Function<Double, Double> _activation;

@@ -775,16 +775,40 @@ shap_plots_work_with_background_frame_test <- function(){
 
 
   ALGOS <- c("deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost")
- 
+  models <- c()
   for (algo in ALGOS) {
     cat(algo, "\n")
     model <- h2o.get_best_model(aml, algo)
+    models <- c(model, models)
     expect_ggplot(plot(h2o.shap_summary_plot(model, test, background_frame = train)))
     expect_ggplot(plot(h2o.shap_explain_row_plot(model, test, 2, background_frame = train)))
     lapply(h2o.fair_shap_plot(model, test, protected_columns = protected_columns, column="AGE", background_frame = train), 
         function (gg) expect_ggplot(plot(gg))
     )
+
+    imf <- h2o.inspect_model_fairness(model, test, protected_columns = protected_columns,
+                                      reference = reference, favorable_class = favorable_class, background_frame = train)
+    expect_true(length(imf[["SHAP"]][["plots"]]) > 1)
   }
+
+  cat("explain\n")
+  ex <- h2o.explain(models, test)
+  exb <- h2o.explain(models, test, background_frame = train)
+
+  expect_true(length(ex$shap_summary$plots) < length(exb$shap_summary$plots))
+
+  expect_true(!any(grepl("GLM|DeepLearning|StackedEnsemble", names(ex$shap_summary$plots))))
+  expect_true(any(grepl("GLM|DeepLearning|StackedEnsemble", names(exb$shap_summary$plots))))
+
+  cat("explain_row\n")
+  ex <- h2o.explain_row(models, test, 1)
+  exb <- h2o.explain_row(models, test, 1, background_frame = train)
+
+  expect_true(length(ex$shap_explain_row$plots) < length(exb$shap_explain_row$plots))
+
+  expect_true(!any(grepl("GLM|DeepLearning|StackedEnsemble", names(ex$shap_explain_row$plots))))
+  expect_true(any(grepl("GLM|DeepLearning|StackedEnsemble", names(exb$shap_explain_row$plots))))
+
 }
 
 
