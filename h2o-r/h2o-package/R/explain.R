@@ -170,8 +170,8 @@ case_insensitive_match_arg <- function(arg, choices) {
 #' @param model_ids character vector
 #' @return character vector
 .shorten_model_ids <- function(model_ids) {
-  shortened_model_ids <- gsub("(.*)_AutoML_[\\d_]+(_.*)?$", "\\1\\2", model_ids, perl=TRUE)
-  shortened_model_ids <- gsub("(Grid_[^_]*)_.*?(_model_\\d+)?$", "\\1\\2", shortened_model_ids, perl=TRUE)
+  shortened_model_ids <- gsub("(.*)_AutoML_[\\d_]+(_.*)?$", "\\1\\2", model_ids, perl = TRUE)
+  shortened_model_ids <- gsub("(Grid_[^_]*)_.*?(_model_\\d+)?$", "\\1\\2", shortened_model_ids, perl = TRUE)
   if (length(unique(shortened_model_ids)) == length(unique(model_ids))) {
     return(shortened_model_ids)
   }
@@ -1240,7 +1240,7 @@ pd_ice_common <- function(model,
   }
 }
 
-handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value=NULL, nbins, show_rug) {
+handle_ice <- function(model, newdata, column, target, centered, show_logodds, show_pdp, models_info, output_graphing_data, grouping_variable_value = NULL, nbins, show_rug) {
   .data <- NULL
   col_name <- make.names(column)
   margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
@@ -1501,7 +1501,7 @@ handle_ice <- function(model, newdata, column, target, centered, show_logodds, s
     q <- q + ggplot2::scale_x_datetime()
 
   if (output_graphing_data) {
-    list(figure=q, graphing_data=graphing_data)
+    list(figure = q, graphing_data = graphing_data)
   } else {
     return(q)
   }
@@ -1585,7 +1585,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
     stat_count_or_bin(!.is_continuous(newdata[[column]]),
                       ggplot2::aes(x = .data[[col_name]], y = (ggplot2::after_stat(count) / max(ggplot2::after_stat(count))) * diff(y_[["y_range"]]) / 1.61),
                       position = ggplot2::position_nudge(y = y_[["y_range"]][[1]] - 0.05 * diff(y_[["y_range"]])), alpha = 0.2,
-                      inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
+                      inherit.aes = FALSE, data = rug_data[, col_name, drop = FALSE]) +
     geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
     geom_pointrange_or_ribbon(!.is_continuous(newdata[[column]]), ggplot2::aes(
       ymin = y_[["y_min"]],
@@ -1638,7 +1638,7 @@ handle_pdp <- function(newdata, column, target, show_logodds, row_index, models_
   return(p)
 }
 
-.check_model_suitability_for_calculation_of_contributions <- function(model, background_frame=NULL) {
+.check_model_suitability_for_calculation_of_contributions <- function(model, background_frame = NULL) {
     if (is.null(model)) stop("Model is NULL.")
     is_h2o_model <- .is_h2o_model(model)
       
@@ -1709,11 +1709,11 @@ h2o.shap_summary_plot <-
            columns = NULL,
            top_n_features = 20,
            sample_size = 1000,
-           background_frame=NULL) {
+           background_frame = NULL) {
     .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
-    .check_model_suitability_for_calculation_of_contributions(model, background_frame=background_frame)
+    .check_model_suitability_for_calculation_of_contributions(model, background_frame = background_frame)
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
     }
@@ -1739,7 +1739,7 @@ h2o.shap_summary_plot <-
     h2o.no_progress({
       newdata_df <- as.data.frame(newdata)
 
-      contributions <- as.data.frame(h2o.predict_contributions(model, newdata, output_format="compact", background_frame=background_frame))
+      contributions <- as.data.frame(h2o.predict_contributions(model, newdata, output_format = "compact", background_frame = background_frame))
       contributions_names <- names(contributions)
 
       encode_cols <- !all(contributions_names[contributions_names != "BiasTerm"] %in% names(newdata_df))
@@ -2143,7 +2143,7 @@ h2o.shap_explain_row_plot <-
     }
   }
 
-.varimp_matrix <- function(object, top_n = Inf, num_of_features=NULL){
+.varimp_matrix <- function(object, top_n = Inf, num_of_features = NULL){
   models_info <- .process_models_or_automl(object, NULL,
                                            require_multiple_models = TRUE,
                                            top_n_from_AutoML = top_n, only_with_varimp = TRUE,
@@ -2723,7 +2723,7 @@ h2o.pd_multi_plot <- function(object,
         stat_count_or_bin(!.is_continuous(newdata[[column]]),
                           ggplot2::aes(x = .data[[col_name]], y = (ggplot2::after_stat(count) / max(ggplot2::after_stat(count))) * diff(y_range) / 1.61),
                           position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                          inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
+                          inherit.aes = FALSE, data = rug_data[, col_name, drop = FALSE]) +
         geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
         geom_pointrange_or_ribbon(!.is_continuous(newdata[[column]]), ggplot2::aes(
           ymin = .data$mean_response - .data$stddev_response,
@@ -2834,7 +2834,7 @@ h2o.pd_multi_plot <- function(object,
       stat_count_or_bin(!.is_continuous(newdata[[column]]),
                         ggplot2::aes(x = .data[[col_name]], y = (ggplot2::after_stat(count) / max(ggplot2::after_stat(count))) * diff(y_range) / 1.61),
                         position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                        inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
+                        inherit.aes = FALSE, data = rug_data[, col_name, drop = FALSE]) +
       geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id)))
     if (show_rug)
       p <- p +
@@ -2938,8 +2938,8 @@ h2o.pd_multi_plot <- function(object,
       )
     }
     subtitle <- paste0("grouping variable: ", grouping_variable, " = '", as.data.frame(curr_frame[[grouping_variable]])[1,1], "'")
-    result[[i]] <- plot + ggplot2::labs(subtitle=subtitle)
-    h2o.rm(curr_frame, cascade=FALSE)
+    result[[i]] <- plot + ggplot2::labs(subtitle = subtitle)
+    h2o.rm(curr_frame, cascade = FALSE)
     i <- i + 1
   }
   return(result)
@@ -3099,7 +3099,7 @@ h2o.learning_curve_plot <- function(model,
                                     ) {
   .check_for_ggplot2()
   .data <- NULL
-  .preprocess_scoring_history <- function(model, scoring_history, training_metric=NULL) {
+  .preprocess_scoring_history <- function(model, scoring_history, training_metric = NULL) {
     scoring_history <- scoring_history[, !sapply(scoring_history, function(col) all(is.na(col)))]
     if (model@algorithm %in% c("glm", "gam") && model@allparameters$lambda_search) {
       scoring_history <- scoring_history[scoring_history["alpha"] == model@model$alpha_best,]
@@ -3387,12 +3387,12 @@ h2o.learning_curve_plot <- function(model,
       title = "Learning Curve",
       subtitle = paste("for", .shorten_model_ids(model@model_id))
     ) +
-   ggplot2::scale_color_manual(values = colors, breaks=names(colors), labels = names(colors)) +
-   ggplot2::scale_fill_manual(values = colors, breaks=names(colors), labels = names(colors)) +
-    ggplot2::guides(color=ggplot2::guide_legend(
+   ggplot2::scale_color_manual(values = colors, breaks = names(colors), labels = names(colors)) +
+   ggplot2::scale_fill_manual(values = colors, breaks = names(colors), labels = names(colors)) +
+    ggplot2::guides(color = ggplot2::guide_legend(
       override.aes = list(
-        shape=shape[labels],
-        fill=fill[labels]
+        shape = shape[labels],
+        fill = fill[labels]
       )
     )) +
     ggplot2::theme_bw() +
