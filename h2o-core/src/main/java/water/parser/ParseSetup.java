@@ -168,8 +168,8 @@ public class ParseSetup extends Iced {
         ps.decrypt_tool != null ? ps.decrypt_tool.key() : null, ps.skipped_columns,
         ps.custom_non_data_line_markers != null ? ps.custom_non_data_line_markers.getBytes() : null,
         ps.escapechar, ps.force_col_types);
-    this._orig_column_types = ps.column_types == null ? null : ps.column_types.clone();
     this._force_col_types = ps.force_col_types;
+    this._orig_column_types = this._force_col_types ? (ps.column_types == null ? null : ps.column_types.clone()) : null;
   }
 
   /**
@@ -286,7 +286,7 @@ public class ParseSetup extends Iced {
    * Should be override in subclasses. */
   protected Parser parser(Key jobKey) {
     ParserProvider pp = ParserService.INSTANCE.getByInfo(_parse_type);
-    if (pp != null) {
+    if (pp != null) { // fill up parquet setup here
       return pp.createParser(this, jobKey);
     }
 
