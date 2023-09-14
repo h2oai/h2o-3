@@ -57,6 +57,10 @@ dependencies {
         api('net.minidev:json-smart:2.4.10') {
             because 'Fixes CVE-2023-1370'
         }
+        api('org.jetbrains.kotlin:kotlin-stdlib:1.6.21') {
+            because 'Fixes CVE-2020-29582'
+            because 'Fixes CVE-2022-24329'
+        }
         api('org.codehaus.jettison:jettison:1.5.4') {
             because 'Fixes CVE-2023-1436'
             because 'Fixes CVE-2022-45693'

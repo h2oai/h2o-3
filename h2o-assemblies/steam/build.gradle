@@ -65,8 +65,9 @@ dependencies {
             because 'Fixes CVE-2022-40150'
             because 'Fixes CVE-2022-40149'
         }
-        api('org.jetbrains.kotlin:kotlin-stdlib:1.4.32') {
+        api('org.jetbrains.kotlin:kotlin-stdlib:1.6.21') {
             because 'Fixes CVE-2020-29582'
+            because 'Fixes CVE-2022-24329'
         }
         api('com.google.guava:guava:32.0.1-jre') {
             because 'Fixes CVE-2023-2976'
