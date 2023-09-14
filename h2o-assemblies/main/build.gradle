@@ -45,7 +45,10 @@ dependencies {
     api "org.eclipse.jetty.websocket:websocket-server:${jetty9MainVersion}"
     
     // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
-    implementation 'org.apache.hive.shims:hive-shims-common:2.3.9'
+    implementation('org.apache.hive.shims:hive-shims-common:2.3.9')
+    {
+        exclude group: "org.apache.thrift", module: "libthrift"
+    }
 
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
