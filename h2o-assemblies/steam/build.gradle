@@ -63,6 +63,7 @@ dependencies {
             because 'Fixes CVE-2022-45693'
             because 'Fixes CVE-2022-45685'
             because 'Fixes CVE-2022-40150'
+            because 'Fixes CVE-2022-40149'
         }
         api('org.jetbrains.kotlin:kotlin-stdlib:1.4.32') {
             because 'Fixes CVE-2020-29582'
