@@ -1,5 +1,6 @@
 package hex.adaboost;
 
+import hex.Model;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -177,6 +178,39 @@ public class AdaBoostTest extends TestUtil {
             toCSV(score, "../prostatescore.csv");
 //            Frame scoreOriginal = Scope.track(parseTestFile("../prostatescore_original.csv"));
 //            assertFrameEquals(new Frame(scoreOriginal.vec(0)), new Frame(score.vec(0)), 0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testBasicTrainAndScoreCategorical() {
+        try {
+            Scope.enter();
+            Frame train = parseTestFile("smalldata/prostate/prostate.csv");
+            Scope.track(train);
+            String response = "CAPSULE";
+            train.toCategoricalCol(response);
+            train.toCategoricalCol("RACE");
+            train.toCategoricalCol("DPROS");
+            train.toCategoricalCol("DCAPS");
+            train.toCategoricalCol("GLEASON");
+            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._n_estimators = 50;
+            p._response_column = response;
+            p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+
+            AdaBoost adaBoost = new AdaBoost(p);
+            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
+            Scope.track_generic(adaBoostModel);
+            assertNotNull(adaBoostModel);
+
+            System.out.println("train.toTwoDimTable() = " + train.toTwoDimTable());
+
+            Frame score = adaBoostModel.score(train);
+            Scope.track(score);
         } finally {
             Scope.exit();
         }
