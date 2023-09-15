@@ -45,7 +45,10 @@ dependencies {
     api "org.eclipse.jetty.websocket:websocket-server:${jetty9MainVersion}"
     
     // Need to a newer org.apache.hadoop.hive.shims.ShimLoader to make older hive JDBC drivers work on Hadoop 3.
-    implementation 'org.apache.hive.shims:hive-shims-common:2.3.9'
+    implementation('org.apache.hive.shims:hive-shims-common:2.3.9')
+    {
+        exclude group: "org.apache.thrift", module: "libthrift"
+    }
 
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
@@ -54,10 +57,24 @@ dependencies {
         api('net.minidev:json-smart:2.4.10') {
             because 'Fixes CVE-2023-1370'
         }
+        api('org.jetbrains.kotlin:kotlin-stdlib:1.6.21') {
+            because 'Fixes CVE-2020-29582'
+            because 'Fixes CVE-2022-24329'
+        }
+        api('org.codehaus.jettison:jettison:1.5.4') {
+            because 'Fixes CVE-2023-1436'
+            because 'Fixes CVE-2022-45693'
+            because 'Fixes CVE-2022-45685'
+            because 'Fixes CVE-2022-40150'
+            because 'Fixes CVE-2022-40149'
+        }
         api('com.google.guava:guava:32.0.1-jre') {
             because 'Fixes CVE-2023-2976'
             because 'Fixes CVE-2020-8908'
             because 'Fixes CVE-2018-10237'
+        }
+        api('com.squareup.okio:okio:3.5.0') {
+            because 'Fixes CVE-2023-3635'
         }
     }
 }
