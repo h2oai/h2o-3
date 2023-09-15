@@ -22,18 +22,18 @@ public class AdaBoostV3 extends ModelBuilderSchema<
                 // AdaBoost specific
                 "n_estimators",
                 "weak_learner",
-                "learning_rate",
+                "learn_rate",
                 "seed",
         };
 
         @API(help = "Number of AdaBoost weak learners.", gridable = true)
         public int n_estimators;
 
-        @API(help = "Weak learner", gridable = true, values = {"AUTO", "DRF", "GLM"})
+        @API(help = "Choose a weak learner type. Defaults to DRF.", gridable = true, values = {"AUTO", "DRF", "GLM"})
         public AdaBoostModel.Algorithm weak_learner;
 
-        @API(help = "Learning rate", gridable = true)
-        public double learning_rate;
+        @API(help="Learning rate (from 0.0 to 1.0)", gridable = true)
+        public double learn_rate;
 
         @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
         public long seed;

@@ -26,7 +26,7 @@
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param n_estimators Number of AdaBoost weak learners. Defaults to 50.
 #' @param weak_learner Weak learner Must be one of: "AUTO", "DRF", "GLM". Defaults to AUTO.
-#' @param learning_rate Learning rate Defaults to 0.5.
+#' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.5.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
@@ -58,7 +58,7 @@ h2o.adaBoost <- function(x,
                          weights_column = NULL,
                          n_estimators = 50,
                          weak_learner = c("AUTO", "DRF", "GLM"),
-                         learning_rate = 0.5,
+                         learn_rate = 0.5,
                          seed = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -93,8 +93,8 @@ h2o.adaBoost <- function(x,
     parms$n_estimators <- n_estimators
   if (!missing(weak_learner))
     parms$weak_learner <- weak_learner
-  if (!missing(learning_rate))
-    parms$learning_rate <- learning_rate
+  if (!missing(learn_rate))
+    parms$learn_rate <- learn_rate
   if (!missing(seed))
     parms$seed <- seed
 
@@ -110,7 +110,7 @@ h2o.adaBoost <- function(x,
                                          weights_column = NULL,
                                          n_estimators = 50,
                                          weak_learner = c("AUTO", "DRF", "GLM"),
-                                         learning_rate = 0.5,
+                                         learn_rate = 0.5,
                                          seed = -1,
                                          segment_columns = NULL,
                                          segment_models_id = NULL,
@@ -150,8 +150,8 @@ h2o.adaBoost <- function(x,
     parms$n_estimators <- n_estimators
   if (!missing(weak_learner))
     parms$weak_learner <- weak_learner
-  if (!missing(learning_rate))
-    parms$learning_rate <- learning_rate
+  if (!missing(learn_rate))
+    parms$learn_rate <- learn_rate
   if (!missing(seed))
     parms$seed <- seed
 

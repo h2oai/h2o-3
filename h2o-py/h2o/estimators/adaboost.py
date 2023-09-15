@@ -30,7 +30,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
                  weights_column=None,  # type: Optional[str]
                  n_estimators=50,  # type: int
                  weak_learner="auto",  # type: Literal["auto", "drf", "glm"]
-                 learning_rate=0.5,  # type: float
+                 learn_rate=0.5,  # type: float
                  seed=-1,  # type: int
                  ):
         """
@@ -65,9 +65,9 @@ class H2OAdaBoostEstimator(H2OEstimator):
         :param weak_learner: Weak learner
                Defaults to ``"auto"``.
         :type weak_learner: Literal["auto", "drf", "glm"]
-        :param learning_rate: Learning rate
+        :param learn_rate: Learning rate (from 0.0 to 1.0)
                Defaults to ``0.5``.
-        :type learning_rate: float
+        :type learn_rate: float
         :param seed: Seed for pseudo random number generator (if applicable)
                Defaults to ``-1``.
         :type seed: int
@@ -82,7 +82,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
         self.weights_column = weights_column
         self.n_estimators = n_estimators
         self.weak_learner = weak_learner
-        self.learning_rate = learning_rate
+        self.learn_rate = learn_rate
         self.seed = seed
 
     @property
@@ -190,18 +190,18 @@ class H2OAdaBoostEstimator(H2OEstimator):
         self._parms["weak_learner"] = weak_learner
 
     @property
-    def learning_rate(self):
+    def learn_rate(self):
         """
-        Learning rate
+        Learning rate (from 0.0 to 1.0)
 
         Type: ``float``, defaults to ``0.5``.
         """
-        return self._parms.get("learning_rate")
+        return self._parms.get("learn_rate")
 
-    @learning_rate.setter
-    def learning_rate(self, learning_rate):
-        assert_is_type(learning_rate, None, numeric)
-        self._parms["learning_rate"] = learning_rate
+    @learn_rate.setter
+    def learn_rate(self, learn_rate):
+        assert_is_type(learn_rate, None, numeric)
+        self._parms["learn_rate"] = learn_rate
 
     @property
     def seed(self):
