@@ -23,9 +23,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
         _key = Key.make("CompressedDT" + Key.rand());
         _nodes = nodes;
         _listOfRules = new String[leavesCount];
-        // creating object Integer variable to allow incrementation
-        Integer nextFreeSpotHolder = 0;
-        extractRulesStartingWithNode(0, "", nextFreeSpotHolder);
+        extractRulesStartingWithNode(0, "", 0);
     }
 
     /**
@@ -77,7 +75,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
         actualRule = actualRule.isEmpty() ? actualRule : actualRule + " and ";
         // proceed to the left branch
         nextFreeSpot = extractRulesStartingWithNode(2 * nodeIndex + 1, 
-                ((CompressedNode) _nodes[nodeIndex]).getSplittingRule().toString(), nextFreeSpot);
+                actualRule + ((CompressedNode) _nodes[nodeIndex]).getSplittingRule().toString(), nextFreeSpot);
         // proceed to the right branch
         nextFreeSpot = extractRulesStartingWithNode(2 * nodeIndex + 2, 
                 actualRule + " not (" + ((CompressedNode) _nodes[nodeIndex]).getSplittingRule().toString() + ")", 
