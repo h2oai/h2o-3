@@ -102,7 +102,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
         /**
          * TODO valenad1
          */
-        public double _learning_rate;
+        public double _learn_rate;
 
         @Override
         public String algoName() {
@@ -128,7 +128,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
             super();
             _n_estimators = 50;
             _weak_learner = Algorithm.AUTO;
-            _learning_rate = 0.5;
+            _learn_rate = 0.5;
         }
     }
 }

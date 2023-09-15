@@ -112,7 +112,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
 
                 CountWeTask countWe = new CountWeTask().doAll(_trainWithWeights.vec(_weightsName), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
                 double e_m = countWe.We / countWe.W;
-                double alpha_m = _parms._learning_rate * Math.log((1 - e_m) / e_m);
+                double alpha_m = _parms._learn_rate * Math.log((1 - e_m) / e_m);
                 _model._output.alphas[n] = alpha_m;
 
                 UpdateWeightsTask updateWeightsTask = new UpdateWeightsTask(alpha_m);
@@ -187,7 +187,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         List<String> colFormat = new ArrayList<>();
 
         colHeaders.add("Number of weak learners"); colTypes.add("int"); colFormat.add("%d");
-        colHeaders.add("Learning rate"); colTypes.add("int"); colFormat.add("%d");
+        colHeaders.add("Learn rate"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Weak learner"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Seed"); colTypes.add("long"); colFormat.add("%d");
 
@@ -202,7 +202,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         int row = 0;
         int col = 0;
         table.set(row, col++, _parms._n_estimators);
-        table.set(row, col++, _parms._learning_rate);
+        table.set(row, col++, _parms._learn_rate);
         table.set(row, col++, _parms._weak_learner.toString());
         table.set(row, col, _parms._seed);
         return table;
