@@ -2372,7 +2372,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // Version where the user has just ponied-up an array of data to be scored.
   // Data must be in proper order.  Handy for JUnit tests.
   public double score(double[] data){
-    double[] pred = score0(data, new double[_output.nclasses() + 1]);
+    double[] pred = score0(data, new double[_output.nclasses()]);
     return _output.nclasses() == 1 ? pred[0] /* regression */ : ArrayUtils.maxIndex(pred) /*classification?*/; 
   }
 
