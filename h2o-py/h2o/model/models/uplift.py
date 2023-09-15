@@ -369,6 +369,114 @@ class H2OBinomialUpliftModel(ModelBase):
         """
         return self._delegate_to_metrics(method='qini', train=train, valid=valid)
 
+    def ate(self, train=False, valid=False):
+        """
+        Retrieve Average Treatment Effect
+
+        If all are False (default), then return the training ATE metric.
+        If more than one options is set to True, then return a dictionary of metrics where the 
+        keys are "train" and "valid".
+
+        :param bool train: If True, return the ATE value for the training data.
+        :param bool valid: If True, return the ATE value for the validation data.
+
+        :returns: the ATE value for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10,
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="kl",
+        ...                                               distribution="bernoulli",
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.ate() # <- Default: return training metric value
+        >>> uplift_model.ate(train=True)
+        """
+        return self._delegate_to_metrics(method='ate', train=train, valid=valid)
+
+    def att(self, train=False, valid=False):
+        """
+        Retrieve Average Treatment Effect on the Treated
+
+        If all are False (default), then return the training ATT metric.
+        If more than one options is set to True, then return a dictionary of metrics where the 
+        keys are "train" and "valid".
+
+        :param bool train: If True, return the ATT value for the training data.
+        :param bool valid: If True, return the ATT value for the validation data.
+
+        :returns: the ATT value for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10,
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="kl",
+        ...                                               distribution="bernoulli",
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.att() # <- Default: return training metric value
+        >>> uplift_model.att(train=True)
+        """
+        return self._delegate_to_metrics(method='att', train=train, valid=valid)
+
+    def atc(self, train=False, valid=False):
+        """
+        Retrieve Average Treatment Effect on the Control
+
+        If all are False (default), then return the training ATC metric.
+        If more than one options is set to True, then return a dictionary of metrics where the 
+        keys are "train" and "valid".
+
+        :param bool train: If True, return the ATC value for the training data.
+        :param bool valid: If True, return the ATC value for the validation data.
+
+        :returns: the ATC value for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10,
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="kl",
+        ...                                               distribution="bernoulli",
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.atc() # <- Default: return training metric value
+        >>> uplift_model.atc(train=True)
+        """
+        return self._delegate_to_metrics(method='atc', train=train, valid=valid)
+
     def _delegate_to_metrics(self, method, train=False, valid=False, **kwargs):
         tm = ModelBase._get_metrics(self, train, valid, xval=None)
         m = {}

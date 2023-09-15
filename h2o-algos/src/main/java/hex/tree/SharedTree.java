@@ -852,6 +852,7 @@ public abstract class SharedTree<
         ModelMetrics mmv = scv.scoreAndMakeModelMetrics(_model, _parms.valid(), v, build_tree_one_node);
         _lastScoredTree = _model._output._ntrees;
         out._validation_metrics = mmv;
+        out._validation_metrics._description = "Validation metrics";
         if (_model._output._ntrees>0 || scoreZeroTrees()) //don't score the 0-tree model - the error is too large
           out._scored_valid[out._ntrees].fillFrom(mmv);
       }
