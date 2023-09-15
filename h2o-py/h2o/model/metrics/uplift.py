@@ -11,6 +11,9 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
     
     def _str_items_custom(self):
         items = [
+            "ATE: {}".format(self.ate()),
+            "ATT: {}".format(self.att()),
+            "ATC: {}".format(self.atc()),
             "AUUC: {}".format(self.auuc()),
             "AUUC normalized: {}".format(self.auuc_normalized()),
         ]
@@ -20,7 +23,94 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         aecut = self.aecu_table()
         if aecut: items.append(aecut)
         return items
-    
+
+    def ate(self):
+        """
+        Retrieve Average Treatment Effect value.
+        
+        :returns: ATE value.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="kl",
+        ...                                               distribution="bernoulli",
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> perf = uplift_model.model_performance()
+        >>> perf.ate()
+        """
+        return self._metric_json['ate']
+
+    def att(self):
+        """
+        Retrieve Average Treatment Effect on the Treated.
+        
+        :returns: ATT value.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="kl",
+        ...                                               distribution="bernoulli",
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> perf = uplift_model.model_performance()
+        >>> perf.att()
+        """
+        return self._metric_json['att']
+
+    def atc(self):
+        """
+        Retrieve Average Treatment Effect on the Control.
+        
+        :returns: ATC value.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="kl",
+        ...                                               distribution="bernoulli",
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> perf = uplift_model.model_performance()
+        >>> perf.atc()
+        """
+        return self._metric_json['atc']    
+
     def auuc(self, metric=None):
         """
         Retrieve area under cumulative uplift curve (AUUC) value.

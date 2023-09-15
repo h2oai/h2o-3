@@ -34,6 +34,7 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "categorical_encoding",
                 "distribution",
                 "check_constant_response",
+                "custom_metric_func",
                 "treatment_column",
                 "uplift_metric",
                 "auuc_type",

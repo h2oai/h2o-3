@@ -25,8 +25,9 @@ test.make_metrics_uplift_binomial <- function() {
     pred <- h2o.assign(h2o.predict(model,train)[,1],"pred")
     actual <- h2o.assign(train[,response],"act")
     treat <- h2o.assign(train[,treatment],"treatment")
+    print(treat)
     
-    m0 <- h2o.make_metrics(pred, actual, treatment=treatment)
+    m0 <- h2o.make_metrics(pred, actual, treatment=treat)
     print(m0)
     m1 <- h2o.performance(model, train)
     print(m1)
@@ -60,6 +61,21 @@ test.make_metrics_uplift_binomial <- function() {
     expect_true(is.data.frame(aecu_table1))
  
     expect_equal(aecu_table0, aecu_table1)
+
+    ate0 <- h2o.ate(m0)
+    ate1 <- h2o.ate(m1)
+
+    expect_equal(ate0, ate1)
+
+    att0 <- h2o.att(m0)
+    att1 <- h2o.att(m1)
+
+    expect_equal(att0, att1)
+
+    atc0 <- h2o.atc(m0)
+    atc1 <- h2o.atc(m1)
+
+    expect_equal(atc0, atc1)
 }
 
 doSuite("Check making uplift binomial model metrics.", makeSuite(
