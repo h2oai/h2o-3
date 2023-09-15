@@ -18,7 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * TODO valenad1
+ * Implementation of AdaBoost algorithm based on
+ *
+ * Raul Rojas, "Adaboost and the Super Bowl of Classifiers A Tutorial Introduction to Adaptive Boosting"
+ * Alexandru Niculescu-Mizil and Richard A. Caruana, "Obtaining Calibrated Probabilities from Boosting"
+ * Y. Freund, R. Schapire, “A Decision-Theoretic Generalization of on-Line Learning and an Application to Boosting”, 1995.
  *
  * @author Adam Valenta
  */
