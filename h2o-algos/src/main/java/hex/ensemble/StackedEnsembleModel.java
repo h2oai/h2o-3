@@ -171,8 +171,10 @@ public class StackedEnsembleModel
     String[] columns = null;
     baseModelsIdx.add(0);
     Frame fr = new Frame();
-    Scope.enter();
-    Scope.track(fr);
+    Frame levelOneFrame = null;
+    Frame levelOneFrameBg = null;
+    Frame adaptFr = null;
+    Frame adaptFrBg = null;
     try {
       for (Key<Model> bm : _parms._base_models) {
         if (isUsefulBaseModel(bm)) {
@@ -205,6 +207,8 @@ public class StackedEnsembleModel
               }
             }
             if (!Arrays.equals(columns, contributions._names)) {
+              Frame.deleteTempFrameAndItsNonSharedVecs(contributions, fr);
+              fr.delete();
               if (Original.equals(options._outputFormat)) {
                 throw new IllegalArgumentException("Base model contributions have different columns likely due to models using different categorical encoding. Please use output_format=\"compact\".");
               }
@@ -217,6 +221,7 @@ public class StackedEnsembleModel
                           .toArray(String[]::new)
           );
           fr.add(contributions);
+          Frame.deleteTempFrameAndItsNonSharedVecs(contributions, fr);
           baseModelsIdx.add(fr.numCols());
         }
       }
@@ -228,12 +233,12 @@ public class StackedEnsembleModel
       columns = Arrays.copyOfRange(columns, 0, columns.length - 3);
 
       List<Frame> tmpFrames = new ArrayList<>();
-      Frame adaptFr = adaptFrameForScore(frame, false, tmpFrames);
-      Frame levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, null);
+      adaptFr = adaptFrameForScore(frame, false, tmpFrames);
+      levelOneFrame = getLevelOnePredictFrame(frame, adaptFr, null);
 
       tmpFrames = new ArrayList<>();
-      Frame adaptFrBg = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      Frame levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, null);
+      adaptFrBg = adaptFrameForScore(backgroundFrame, false, tmpFrames);
+      levelOneFrameBg = getLevelOnePredictFrame(backgroundFrame, adaptFrBg, null);
 
       Frame metalearnerContrib = ((Model.Contributions) _output._metalearner).scoreContributions(levelOneFrame,
               Key.make(destination_key + "_" + _output._metalearner._key), j,
@@ -242,12 +247,14 @@ public class StackedEnsembleModel
                       .setOutputSpace(options._outputSpace)
                       .setOutputPerReference(true),
               levelOneFrameBg);
-
+    
       metalearnerContrib.setNames(Arrays.stream(metalearnerContrib._names)
               .map(name -> "metalearner_" + name)
               .toArray(String[]::new));
 
       fr.add(metalearnerContrib);
+      Frame.deleteTempFrameAndItsNonSharedVecs(metalearnerContrib, fr);
+
 
       Frame indivContribs = new GDeepSHAP(columns, baseModels.toArray(new String[0]),
               fr._names, baseModelsIdx.toArray(new Integer[0]), _parms._metalearner_transform)
@@ -268,7 +275,11 @@ public class StackedEnsembleModel
       }
     } finally {
       Log.info("Finished contributions calculation for " + this._key + "...");
+      if (null != levelOneFrame) levelOneFrame.delete();
+      if (null != levelOneFrameBg) levelOneFrameBg.delete();
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, frame);
+      if (null != adaptFr) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, frame);
+      if (null != adaptFrBg) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFrBg, backgroundFrame);
     }
   }
 

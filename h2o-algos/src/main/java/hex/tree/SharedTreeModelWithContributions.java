@@ -111,17 +111,19 @@ public abstract class SharedTreeModelWithContributions<
     }
 
     Log.info("Starting contributions calculation for " + this._key + "...");
+    Frame adaptedFrame = null;
+    Frame adaptedBgFrame = null;
     try {
       if (options._outputFormat == ContributionsOutputFormat.Compact || _output._domains == null) {
-        Frame adaptFrm = removeSpecialColumns(frame);
-        Frame adaptBackgroundFrm = removeSpecialColumns(backgroundFrame);
+        adaptedFrame = removeSpecialColumns(frame);
+        adaptedBgFrame = removeSpecialColumns(backgroundFrame);
 
-        final String[] outputNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
-        return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, false, null, options)
+        final String[] outputNames = ArrayUtils.append(adaptedFrame.names(), "BiasTerm");
+        return getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, false, null, options)
                 .runAndGetOutput(j, destination_key, outputNames);
       } else {
-        Frame adaptFrm = removeSpecialColumns(frame);
-        Frame adaptBackgroundFrm = removeSpecialColumns(backgroundFrame);
+        adaptedFrame = removeSpecialColumns(frame);
+        adaptedBgFrame = removeSpecialColumns(backgroundFrame);
         assert Parameters.CategoricalEncodingScheme.Enum.equals(_parms._categorical_encoding) : "Unsupported categorical encoding. Only enum is supported.";
         int[] catOffsets = new int[_output._domains.length + 1];
 
@@ -163,10 +165,12 @@ public abstract class SharedTreeModelWithContributions<
           }
         }
 
-        return getScoreContributionsWithBackgroundTask(this, adaptFrm, adaptBackgroundFrm, true, catOffsets, options)
+        return getScoreContributionsWithBackgroundTask(this, adaptedFrame, adaptedBgFrame, true, catOffsets, options)
                 .runAndGetOutput(j, destination_key, outputNames);
       }
     } finally {
+      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
+      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
   }

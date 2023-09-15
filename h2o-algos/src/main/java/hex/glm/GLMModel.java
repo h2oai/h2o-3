@@ -244,15 +244,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     List<Frame> tmpFrames = new ArrayList<>();
-
+    Frame adaptedFrame = null;
+    Frame adaptedBgFrame = null;
     if (backgroundFrame == null)
       throw H2O.unimpl("GLM supports contribution calculation only with background frame.");
 
     Log.info("Starting contributions calculation for " + this._key + "...");
     try {
-      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
-      DKV.put(adaptedBgFrame);
-      Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+      adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
+      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
       DataInfo dinfo = _output._dinfo.clone();
       dinfo._adaptedFrame = adaptedFrame;
       GLMContributionsWithBackground contributions = new GLMContributionsWithBackground(dinfo,
@@ -276,9 +276,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }).toArray(String[]::new)
               : _output._coefficient_names, 0, colNames, 0, colNames.length - 1);
       colNames[colNames.length - 1] = "BiasTerm";
-      return contributions.runAndGetOutput(j, destination_key,
-              colNames);
+      return contributions.runAndGetOutput(j, destination_key, colNames);
     } finally {
+      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
+      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for " + this._key + "...");
     }
 

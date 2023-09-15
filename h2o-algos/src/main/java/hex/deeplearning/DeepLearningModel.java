@@ -406,11 +406,13 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
       throw new UnsupportedOperationException("Only baseline SHAP is supported for this model. Please provide background frame.");
     
     Log.info("Starting contributions calculation for "+this._key+"...");
+    List<Frame> tmpFrames = new LinkedList<>();
+    Frame adaptedFrame = null;
+    Frame adaptedBgFrame = null;
     try {
-      List<Frame> tmpFrames = new LinkedList<>();
-      Frame adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
+      adaptedBgFrame = adaptFrameForScore(backgroundFrame, false, tmpFrames);
       DKV.put(adaptedBgFrame);
-      Frame adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
+      adaptedFrame = adaptFrameForScore(frame, false, tmpFrames);
       DeepSHAPContributionsWithBackground contributions = new DeepSHAPContributionsWithBackground(
               adaptedFrame,
               adaptedBgFrame,
@@ -428,6 +430,8 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
       colNames[colNames.length - 1] = "BiasTerm";
       return contributions.runAndGetOutput(j, destination_key, colNames);
     } finally {
+      if (null != adaptedFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedFrame, frame);
+      if (null != adaptedBgFrame) Frame.deleteTempFrameAndItsNonSharedVecs(adaptedBgFrame, backgroundFrame);
       Log.info("Finished contributions calculation for "+this._key+"...");
     }
   }
