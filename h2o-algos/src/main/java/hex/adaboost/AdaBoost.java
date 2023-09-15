@@ -12,6 +12,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Timer;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
@@ -110,6 +111,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
             }
             
             for (int n = 0; n < _parms._n_estimators; n++) {
+                Timer timer = new Timer();
                 ModelBuilder job = chooseWeakLearner(_trainWithWeights);
                 job._parms._seed += n;
                 Model model = (Model) job.trainModel().get();
@@ -128,6 +130,8 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 updateWeightsTask.doAll(_trainWithWeights.vec(_weightsName), _trainWithWeights.vec(_parms._response_column), score.vec("predict"));
                 _job.update(1);
                 _model.update(_job);
+                LOG.info((n + 1) + ". estimator was built in " + timer.toString());
+                LOG.info("*********************************************************************");
             }
             if (_trainWithWeights != _parms.train()) {
                 DKV.remove(_trainWithWeights._key);
