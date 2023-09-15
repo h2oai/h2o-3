@@ -50,6 +50,10 @@ dependencies {
         exclude group: "org.apache.thrift", module: "libthrift"
     }
 
+    // Upgrade dependencies coming from Hadoop to address vulnerabilities 
+    api "org.apache.commons:commons-compress:1.21"
+    api "com.google.protobuf:protobuf-java:3.21.7"
+
     constraints {
         api('com.fasterxml.jackson.core:jackson-databind:2.13.4.2') {
             because 'Fixes CVE-2022-42003'
