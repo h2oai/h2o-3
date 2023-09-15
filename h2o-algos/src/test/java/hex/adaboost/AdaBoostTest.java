@@ -30,8 +30,6 @@ import static org.junit.Assert.*;
 @CloudSize(1)
 @RunWith(H2ORunner.class)
 public class AdaBoostTest extends TestUtil {
-    
-    public boolean print = false;
 
     @Rule
     public EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -175,9 +173,6 @@ public class AdaBoostTest extends TestUtil {
             
             Frame score = adaBoostModel.score(train);
             Scope.track(score);
-            toCSV(score, "../prostatescore.csv");
-//            Frame scoreOriginal = Scope.track(parseTestFile("../prostatescore_original.csv"));
-//            assertFrameEquals(new Frame(scoreOriginal.vec(0)), new Frame(score.vec(0)), 0);
         } finally {
             Scope.exit();
         }
@@ -216,34 +211,6 @@ public class AdaBoostTest extends TestUtil {
         }
     }
 
-//    @Test
-//    public void testBasicTrainAndScoreGLM() {
-//        try {
-//            Scope.enter();
-//            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-//            Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-//            String response = "CAPSULE";
-//            train.toCategoricalCol(response);
-//            AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
-//            p._train = train._key;
-//            p._seed = 0xDECAF;
-//            p._n_estimators = 2;
-//            p._weak_learner = AdaBoostModel.Algorithm.GLM;
-//            p._response_column = response;
-//
-//            AdaBoost adaBoost = new AdaBoost(p);
-//            AdaBoostModel adaBoostModel = adaBoost.trainModel().get();
-//            Scope.track_generic(adaBoostModel);
-//            assertNotNull(adaBoostModel);
-//
-//            Frame score = adaBoostModel.score(test);
-//            Scope.track(score);
-//            toCSV(score, "../prostatescoreglm.csv");
-//        } finally {
-//            Scope.exit();
-//        }
-//    }
-
     @Test
     public void testBasicTrainAndScoreLarge() {
         try {
@@ -265,7 +232,6 @@ public class AdaBoostTest extends TestUtil {
 
             Frame score = adaBoostModel.score(train);
             Scope.track(score);
-            toCSV(score, "../creditcardfraudscore.csv");
         } finally {
             Scope.exit();
         }
@@ -295,7 +261,6 @@ public class AdaBoostTest extends TestUtil {
 
             Frame score = adaBoostModel.score(test);
             Scope.track(score);
-            toCSV(score, "../airlinesscore.csv");
         } finally {
             Scope.exit();
         }
@@ -325,23 +290,11 @@ public class AdaBoostTest extends TestUtil {
 
             Frame score = adaBoostModel.score(test);
             Scope.track(score);
-            toCSV(score, "../higgsscore.csv");
         } finally {
             Scope.exit();
         }
     }
-    
-    private void toCSV(Frame frame, String filename) {
-        if (print) {
-            File targetFile = new File(filename);
-            try {
-                FileUtils.copyInputStreamToFile(frame.toCSV(new Frame.CSVStreamParams()), targetFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-    
+
     @Test
     public void testCountWe() {
         Scope.enter();
