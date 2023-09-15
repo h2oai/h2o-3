@@ -2222,10 +2222,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
       Chunk responseChunk = null;
+      Chunk treatmentChunk = null;
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
-        if (_output.hasResponse()) {
+        if (_output.hasTreatment()){
+          actual = new float[2];
+          responseChunk = chks[_output.responseIdx()];
+          treatmentChunk = chks[_output.treatmentIdx()];
+        } else if (_output.hasResponse()) {
           actual = new float[1];
           responseChunk = chks[_output.responseIdx()];
         } else
@@ -2251,6 +2256,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             } else {
               for (int i = 0; i < actual.length; ++i)
                 actual[i] = (float) data(chks, row, i);
+            }
+            if (treatmentChunk != null) {
+              actual[1] = (float) treatmentChunk.atd(row);
             }
             _mb.perRow(preds, actual, weight, offset, Model.this);
             // Handle custom metric
