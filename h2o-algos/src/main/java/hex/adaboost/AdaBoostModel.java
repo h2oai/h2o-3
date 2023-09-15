@@ -90,17 +90,17 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
     public static class AdaBoostParameters extends Model.Parameters {
 
         /**
-         * TODO valenad1
+         * Number of weak learners to train. Defaults to 50.
          */
         public int _n_estimators;
 
         /**
-         * TODO valenad1
+         * Choose a weak learner type. Defaults to DRF.
          */
         public Algorithm _weak_learner;
 
         /**
-         * TODO valenad1
+         * Specify how quickly the training converge. Number in (0,1]. Defaults to 0.5.
          */
         public double _learn_rate;
 

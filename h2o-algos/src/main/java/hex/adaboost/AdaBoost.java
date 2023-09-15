@@ -24,6 +24,7 @@ import java.util.List;
  */
 public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoostParameters, AdaBoostModel.AdaBoostOutput> {
     private static final Logger LOG = Logger.getLogger(AdaBoost.class);
+    private static final int MAX_ESTIMATORS = 100_000;
 
     private AdaBoostModel _model;
     private String _weightsName = "weights";
@@ -51,14 +52,18 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     @Override
     public void init(boolean expensive) {
         super.init(expensive);
-        if (expensive) {
-            if (_parms._weak_learner == AdaBoostModel.Algorithm.AUTO) {
-                _parms._weak_learner = AdaBoostModel.Algorithm.DRF;
-            }
-            if (_parms._weights_column != null) {
-                // _parms._weights_column cannot be used all time since it breaks scoring
-                _weightsName = _parms._weights_column;
-            }
+        if(_parms._n_estimators < 1 || _parms._n_estimators > MAX_ESTIMATORS)
+            error("n_estimators", "Parameter n_estimators must be in interval [1, "
+                    + MAX_ESTIMATORS + "] but it is " + _parms._n_estimators);
+        if (_parms._weak_learner == AdaBoostModel.Algorithm.AUTO) {
+            _parms._weak_learner = AdaBoostModel.Algorithm.DRF;
+        }
+        if (_parms._weights_column != null) {
+            // _parms._weights_column cannot be used all time since it breaks scoring
+            _weightsName = _parms._weights_column;
+        }
+        if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) ) {
+            error("learn_rate", "learn_rate must be between 0 and 1");
         }
     }
 
