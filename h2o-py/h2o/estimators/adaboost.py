@@ -62,7 +62,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
         :param n_estimators: Number of AdaBoost weak learners.
                Defaults to ``50``.
         :type n_estimators: int
-        :param weak_learner: Weak learner
+        :param weak_learner: Choose a weak learner type. Defaults to DRF.
                Defaults to ``"auto"``.
         :type weak_learner: Literal["auto", "drf", "glm"]
         :param learn_rate: Learning rate (from 0.0 to 1.0)
@@ -178,7 +178,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
     @property
     def weak_learner(self):
         """
-        Weak learner
+        Choose a weak learner type. Defaults to DRF.
 
         Type: ``Literal["auto", "drf", "glm"]``, defaults to ``"auto"``.
         """
