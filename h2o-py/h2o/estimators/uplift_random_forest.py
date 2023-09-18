@@ -46,6 +46,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  check_constant_response=True,  # type: bool
+                 custom_metric_func=None,  # type: Optional[str]
                  treatment_column="treatment",  # type: str
                  uplift_metric="auto",  # type: Literal["auto", "kl", "euclidean", "chi_squared"]
                  auuc_type="auto",  # type: Literal["auto", "qini", "lift", "gain"]
@@ -137,6 +138,9 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                column being a constant value or not.
                Defaults to ``True``.
         :type check_constant_response: bool
+        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
+               Defaults to ``None``.
+        :type custom_metric_func: str, optional
         :param treatment_column: Define the column which will be used for computing uplift gain to select best split for
                a tree. The column has to divide the dataset into treatment (value 1) and control (value 0) groups.
                Defaults to ``"treatment"``.
@@ -178,6 +182,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.categorical_encoding = categorical_encoding
         self.distribution = distribution
         self.check_constant_response = check_constant_response
+        self.custom_metric_func = custom_metric_func
         self.treatment_column = treatment_column
         self.uplift_metric = uplift_metric
         self.auuc_type = auuc_type
@@ -524,6 +529,20 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def check_constant_response(self, check_constant_response):
         assert_is_type(check_constant_response, None, bool)
         self._parms["check_constant_response"] = check_constant_response
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
 
     @property
     def treatment_column(self):

@@ -3,15 +3,42 @@
 @Library('test-shared-library') _
 
 def dockerImage
-def branchOrTag
-def steamImage
+
+def setScanningStages(assemblyType, stageIndex) {
+    def assemblyImage
+    stage("${stageIndex}.A. Scan ${assemblyType} jar using Prisma") {
+        script {
+            branchName = "${env.BRANCH_NAME}".replace('/', '-')
+            assemblyImage = "h2o-assemblies/${assemblyType}:${BUILD_NUMBER}-${branchName}"
+
+            sh "docker build . -t ${assemblyImage} -f ./docker/prisma/Dockerfile.${assemblyType}jars"
+
+            // scan the image
+            prismaCloudScanImage ca: '',
+                    cert: '',
+                    dockerAddress: 'unix:///var/run/docker.sock',
+                    image: "${assemblyImage}",
+                    key: '',
+                    logLevel: 'info',
+                    podmanPath: '',
+                    project: '',
+                    resultsFile: "prisma-${assemblyType}-scan-results.json",
+                    ignoreImageBuildTime: true
+        }
+    }
+    stage("${stageIndex}.B. Export results for ${assemblyType} jar to CSV") {
+        withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+            sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${assemblyImage} > ${assemblyImage}.csv"
+        }
+        archiveArtifacts artifacts: "${assemblyImage}.csv"
+    }
+    stage("${stageIndex}.C. Publish report for ${assemblyType} jar") {
+        prismaCloudPublish resultsFilePattern: "prisma-${assemblyType}-scan-results.json"
+    }
+}
 
 pipeline {
     agent { node { label 'linux&&docker' } }
-
-    parameters {
-        string(name: 'BRANCH_OR_TAG', defaultValue: 'master', description: 'Enter branch or tag you want to scan.')
-    }
 
     options {
         ansiColor('xterm')
@@ -29,54 +56,28 @@ pipeline {
                 
             }
         }
-        stage('1. Build jar') {
+        stage('1. Build jars') {
             steps {
                 script{
                     dockerImage.inside(){
                         sh "./gradlew :h2o-assemblies:steam:shadowJar"
+                        sh "./gradlew :h2o-assemblies:main:shadowJar"
                         archiveArtifacts artifacts: "h2o-assemblies/steam/build/libs/*.jar"
+                        archiveArtifacts artifacts: "h2o-assemblies/main/build/libs/*.jar"
                     }
                 }
             }
         }
-        stage('2. Scan jar using Prisma'){
+        stage('2. Steam assembly jar') {
             steps {
-                script{
-                    branchOrTag = "${BRANCH_OR_TAG}".replace('/','-')
-                    steamImage = "h2o-assemblies/steam:${BUILD_NUMBER}-${branchOrTag}"
-                    
-                    sh "docker build . -t ${steamImage} -f ./docker/prisma/Dockerfile.scanningjars"
-
-                    // scan the image
-                    prismaCloudScanImage ca: '',
-                    cert: '',
-                    dockerAddress: 'unix:///var/run/docker.sock',
-                    image: "${steamImage}",
-                    key: '',
-                    logLevel: 'info',
-                    podmanPath: '',
-                    project: '',
-                    resultsFile: 'prisma-cloud-scan-results.json',
-                    ignoreImageBuildTime:true
-                }
-                
+                setScanningStages("steam", 2)
             }
         }
-        stage('3. Export results to CSV'){
-            steps{
-                withCredentials([usernamePassword(credentialsId: 'twistlock_credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh "curl -k -u \$USERNAME:\$PASSWORD https://mr-0xz1:8083/api/v1/scans/download?search=${steamImage} > ${steamImage}.csv"
-                }
-                archiveArtifacts artifacts: "${steamImage}.csv"
+        stage('3. Main assembly jar') {
+            steps {
+                setScanningStages("main", 3)
             }
         }
-        stage('4. Publish report'){
-            steps{
-                prismaCloudPublish resultsFilePattern: 'prisma-cloud-scan-results.json'
-            }
-        }
-
-
     }
     post {
       always {
