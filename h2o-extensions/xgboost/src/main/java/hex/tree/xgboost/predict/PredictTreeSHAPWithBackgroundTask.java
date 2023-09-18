@@ -1,9 +1,6 @@
 package hex.tree.xgboost.predict;
 
-import hex.ContributionsWithBackgroundFrameTask;
-import hex.DataInfo;
-import hex.DistributionFactory;
-import hex.Model;
+import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.XGBoostModelInfo;
@@ -21,6 +18,7 @@ public class PredictTreeSHAPWithBackgroundTask extends ContributionsWithBackgrou
   protected final XGBoostOutput _output;
   protected final boolean _outputAggregated;
   protected final boolean _outputSpace;
+  protected final Distribution _distribution;
   protected transient XGBoostJavaMojoModel _mojo;
 
   public PredictTreeSHAPWithBackgroundTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output,
@@ -31,6 +29,12 @@ public class PredictTreeSHAPWithBackgroundTask extends ContributionsWithBackgrou
     _output = output;
     _outputAggregated = Model.Contributions.ContributionsOutputFormat.Compact.equals(options._outputFormat);
     _outputSpace = outputSpace;
+    // FIXME: What's the proper way of getting the link here? _modelInfo._parameters._distribution is set to AUTO by default
+    _distribution = outputSpace ? (
+            _modelInfo._parameters.getDistributionFamily().equals(DistributionFamily.AUTO) && _output.isBinomialClassifier()
+                    ? DistributionFactory.getDistribution(DistributionFamily.bernoulli)
+                    : DistributionFactory.getDistribution(_modelInfo._parameters)
+    ): null;
   }
 
 
@@ -52,12 +56,11 @@ public class PredictTreeSHAPWithBackgroundTask extends ContributionsWithBackgrou
   protected void addContribToNewChunk(double[] contribs, NewChunk[] nc) {
     double transformationRatio = 1;
     double biasTerm = contribs[contribs.length - 1];
-    if (_outputSpace && _output.isBinomialClassifier()) {
+    if (_outputSpace) {
       final double linkSpaceX = Arrays.stream(contribs).sum();
       final double linkSpaceBg = biasTerm;
-      // FIXME: What's the proper way of getting the link here? _modelInfo._parameters._distribution is set to AUTO by default
-      final double outSpaceX = DistributionFactory.getDistribution(DistributionFamily.bernoulli).linkInv(linkSpaceX);
-      final double outSpaceBg = DistributionFactory.getDistribution(DistributionFamily.bernoulli).linkInv(linkSpaceBg);
+      final double outSpaceX = _distribution.linkInv(linkSpaceX);
+      final double outSpaceBg = _distribution.linkInv(linkSpaceBg);
       transformationRatio = Math.abs(linkSpaceX - linkSpaceBg) < 1e-6 ? 0 : (outSpaceX - outSpaceBg) / (linkSpaceX - linkSpaceBg);
       biasTerm = outSpaceBg;
     }
@@ -76,7 +79,6 @@ public class PredictTreeSHAPWithBackgroundTask extends ContributionsWithBackgrou
     double[] input = MemoryManager.malloc8d(cs.length);
     double[] inputBg = MemoryManager.malloc8d(cs.length);
     double[] contribs = MemoryManager.malloc8d(_outputAggregated ? ncs.length : _di.fullN() + 1);
-    // double[] output = _outputAggregated ? MemoryManager.malloc8d(ncs.length) : contribs;
 
     for (int row = 0; row < cs[0]._len; row++) {
       fillInput(cs, row, input);

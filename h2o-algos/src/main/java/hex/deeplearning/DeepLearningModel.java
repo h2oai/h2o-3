@@ -49,8 +49,9 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
     final Function<Double, Double> _activationDiff;
     final int[] _origIndices;
     final int _hiddenLayerMultiplier;
+    final boolean _outputSpace;
 
-    public DeepSHAPContributionsWithBackground(Frame fr, Frame backgroundFrame, boolean perReference, int[] origIndices) {
+    public DeepSHAPContributionsWithBackground(Frame fr, Frame backgroundFrame, boolean perReference, int[] origIndices, boolean outputSpace) {
       super(fr, backgroundFrame, perReference);
 
       switch (_parms._activation) {
@@ -80,6 +81,7 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
           _hiddenLayerMultiplier = 2;
       }
       _origIndices = origIndices;
+      _outputSpace = outputSpace;
     }
 
     protected double tanhActivation(double v) {
@@ -391,9 +393,11 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
           ncs[ncs.length - 1].addNum(forwardBgPass[forwardBgPass.length - 1][forwardBgPass[forwardBgPass.length - 1].length - 1]);
 
           backwardPass(forwardPass, forwardBgPass, backwardPass, row, bgRow);
-
+          final double multiplier = _outputSpace && forwardPass[forwardPass.length-1].length==1 
+                  ? div((forwardPass[forwardPass.length-1][0]-forwardBgPass[forwardBgPass.length-1][0]), Arrays.stream(backwardPass[0]).sum())
+                  : 1;
           for (int i = 0; i < backwardPass[0].length; i++) {
-            ncs[i].addNum(backwardPass[0][i]);
+            ncs[i].addNum(multiplier * backwardPass[0][i]);
           }
         }
       }
@@ -419,7 +423,8 @@ public class DeepLearningModel extends Model<DeepLearningModel, DeepLearningMode
               options._outputPerReference,
               ContributionsOutputFormat.Compact.equals(options._outputFormat)
                       ? model_info.data_info().coefOriginalColumnIndices(adaptedFrame)
-                      : null);
+                      : null,
+              options._outputSpace);
 
       String[] cols = ContributionsOutputFormat.Compact.equals(options._outputFormat)
               ? model_info.data_info.coefOriginalNames(adaptedFrame)

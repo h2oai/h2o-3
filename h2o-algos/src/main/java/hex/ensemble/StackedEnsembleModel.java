@@ -208,7 +208,6 @@ public class StackedEnsembleModel
             }
             if (!Arrays.equals(columns, contributions._names)) {
               Frame.deleteTempFrameAndItsNonSharedVecs(contributions, fr);
-              fr.delete();
               if (Original.equals(options._outputFormat)) {
                 throw new IllegalArgumentException("Base model contributions have different columns likely due to models using different categorical encoding. Please use output_format=\"compact\".");
               }
@@ -275,8 +274,8 @@ public class StackedEnsembleModel
       }
     } finally {
       Log.info("Finished contributions calculation for " + this._key + "...");
-      if (null != levelOneFrame) levelOneFrame.delete();
-      if (null != levelOneFrameBg) levelOneFrameBg.delete();
+      if (null != levelOneFrame) Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, frame);
+      if (null != levelOneFrameBg) Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrameBg, backgroundFrame);
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, frame);
       if (null != adaptFr) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, frame);
       if (null != adaptFrBg) Frame.deleteTempFrameAndItsNonSharedVecs(adaptFrBg, backgroundFrame);

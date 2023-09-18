@@ -260,8 +260,15 @@ def naiveBSHAP(mod, y, train, test, xrow, brow, link=False):
     preds = mod.predict(df).as_data_frame()
 
     resp = "Yes" if "Yes" in preds.columns else "predict"
-    if link:
+    if link is True or link == "logit":
         preds[resp] = prob_to_logit(preds[resp])
+    elif link == "log":
+        preds[resp] = np.log(preds[resp])
+    elif link == "inverse":
+        preds[resp] = 1/(preds[resp])
+    elif link == "tweedie":
+        preds[resp] = np.log(preds[resp])
+
     evals = list(zip(pset, preds[resp]))
 
     for c in tqdm(cols, desc="Calculating B-SHAP", leave=False):
@@ -345,7 +352,7 @@ def test_per_reference_aggregation(model, train, test, output_format):
     )
     for c in contrib.columns:
         diff = (contrib[c] - py_agg_contrib[c]).abs()
-        bool_diff = (diff < 1e-10).all()
+        bool_diff = diff.max() < 1e-10
         assert bool_diff, f"{c}: {bool_diff} ({diff.max()})"
 
 
@@ -414,6 +421,55 @@ def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, m
 
         test_per_reference_aggregation(mod, train, test, output_format)
 
+
+def helper_test_automl_distributions(y, train, test, output_format, distribution, eps=1e-4, max_models=13, **kwargs
+                       ):
+    remove_all_but(train, test)
+    distribution = distribution.lower()
+    # Using seed to prevent DL models to end up with an unstable model
+    aml = H2OAutoML(max_models=max_models, seed=seed,
+                    distribution=distribution,
+                    **kwargs)
+    aml.train(y=y, training_frame=train)
+
+    models = [m[0] for m in aml.leaderboard[:, "model_id"].as_data_frame(False, False)]
+
+    for model in models:
+        try:
+            print(model + " (" + output_format + ")\n" + "=" * (len(model) + len(output_format) + 3))
+            mod = h2o.get_model(model)
+            dist = mod.actual_params.get("distribution", mod.actual_params.get("family", "")).lower()
+            if hasattr(mod, "metalearner"):
+                dist = mod.metalearner().actual_params.get("distribution", mod.metalearner().actual_params.get("family", "")).lower()
+            if dist != distribution:
+                print(f"Skipping model {model}... {distribution} not supported...")
+                continue
+            
+            skip_naive = mod.algo.lower() in ["deeplearning", "stackedensemble"]
+            skip_symmetry = mod.algo.lower() in ["stackedensemble"] and output_format == "original"
+            skip_dummy = mod.algo.lower() in ["glm", "stackedensemble"] and output_format == "original"
+            link = False
+            if dist in ["poisson", "gamma", "tweedie", "negativebinomial"]:
+                link = "log"
+            if dist == "gamma" and "GLM" in model:
+                link = "inverse"
+        
+            test_local_accuracy(
+                mod, train, test, link=False, output_format=output_format, eps=eps, output_space=True
+            )
+        
+            if not skip_dummy:
+                test_dummy_property(mod, train, test, output_format=output_format)
+        
+            if not skip_symmetry:
+                test_symmetry(mod, train, test, output_format=output_format, eps=eps)
+        
+            if output_format.lower() == "compact" and not skip_naive:
+                test_contributions_against_naive(mod, y, train, test, link=link, eps=eps)
+        
+            test_per_reference_aggregation(mod, train, test, output_format)
+        except OSError:
+            pass  # when no base models are used by the SE
 
 ########################################################################################################################
 def test_drf_one_tree_binomial_original():
@@ -1481,7 +1537,8 @@ def test_se_all_models_with_default_config_binomial_original():
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "original", link=True, skip_naive=True, base_models=[gbm, drf, xgb, dl]
+        H2OStackedEnsembleEstimator, y, train, test, "original", link=True, skip_naive=True,
+        base_models=[gbm, drf, xgb, dl]
     )
 
 
@@ -1506,7 +1563,8 @@ def test_se_all_models_with_default_config_binomial_compact():
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "compact", link=True, skip_naive=True, base_models=[glm, gbm, drf, xgb, dl]
+        H2OStackedEnsembleEstimator, y, train, test, "compact", link=True, skip_naive=True,
+        base_models=[glm, gbm, drf, xgb, dl]
     )
 
 
@@ -1532,7 +1590,8 @@ def test_se_all_models_with_default_config_binomial_with_logit_transform_origina
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "original", link=True, skip_naive=True, base_models=[gbm, drf, xgb, dl],
+        H2OStackedEnsembleEstimator, y, train, test, "original", link=True, skip_naive=True,
+        base_models=[gbm, drf, xgb, dl],
         metalearner_transform="logit"
     )
 
@@ -1559,7 +1618,8 @@ def test_se_all_models_with_default_config_binomial_with_logit_transform_compact
     dl.train(y=y, training_frame=train)
 
     helper_test_all(
-        H2OStackedEnsembleEstimator, y, train, test, "compact", link=True, skip_naive=True, base_models=[gbm, drf, xgb, dl],
+        H2OStackedEnsembleEstimator, y, train, test, "compact", link=True, skip_naive=True,
+        base_models=[gbm, drf, xgb, dl],
         metalearner_transform="logit"
     )
 
@@ -1655,6 +1715,145 @@ def test_automl_regression_monotone_constraints_compact():
     train, test = import_data()
     helper_test_automl("fare", train, test, "compact", monotone=True)
 
+
+def test_distributions_compact():
+    def header(s):
+        print(s+"\n"+"="*len(s))
+    
+    train, test = import_data()
+    y = "age"
+    
+    header("Poisson")
+    print("Deep Learning")
+    dl = H2ODeepLearningEstimator(hidden=[5, 5], distribution="poisson")
+    dl.train(y=y, training_frame=train)
+    test_local_accuracy(dl, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GBM")
+    gbm = H2OGradientBoostingEstimator(ntrees=5, distribution="poisson")
+    gbm.train(y=y, training_frame=train)
+    test_local_accuracy(gbm, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GLM")
+    glm = H2OGeneralizedLinearEstimator(family="poisson")
+    glm.train(y=y, training_frame=train)
+    test_local_accuracy(glm, train, test, link=False, output_space=True, output_format="compact")
+
+    print("XGBoost")
+    xgb = H2OXGBoostEstimator(ntrees=5, distribution="poisson")
+    xgb.train(y=y, training_frame=train)
+    test_local_accuracy(xgb, train, test, link=False, output_space=True, output_format="compact")
+
+
+    header("Negative Binomial")
+    print("GLM")
+    glm = H2OGeneralizedLinearEstimator(family="negativebinomial")
+    glm.train(y=y, training_frame=train)
+    test_local_accuracy(glm, train, test, link=False, output_space=True, output_format="compact")
+
+
+    header("Gamma")
+    print("Deep Learning")
+    dl = H2ODeepLearningEstimator(hidden=[5, 5], distribution="gamma")
+    dl.train(y=y, training_frame=train)
+    test_local_accuracy(dl, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GBM")
+    gbm = H2OGradientBoostingEstimator(ntrees=5, distribution="gamma")
+    gbm.train(y=y, training_frame=train)
+    test_local_accuracy(gbm, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GLM")
+    glm = H2OGeneralizedLinearEstimator(family="gamma")
+    glm.train(y=y, training_frame=train)
+    test_local_accuracy(glm, train, test, link=False, output_space=True, output_format="compact")
+
+    print("XGBoost")
+    xgb = H2OXGBoostEstimator(ntrees=5, distribution="gamma")
+    xgb.train(y=y, training_frame=train)
+    test_local_accuracy(xgb, train, test, link=False, output_space=True, output_format="compact")
+
+
+    header("Laplace")
+    print("Deep Learning")
+    dl = H2ODeepLearningEstimator(hidden=[5, 5], distribution="laplace")
+    dl.train(y=y, training_frame=train)
+    test_local_accuracy(dl, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GBM")
+    gbm = H2OGradientBoostingEstimator(ntrees=5, distribution="laplace")
+    gbm.train(y=y, training_frame=train)
+    test_local_accuracy(gbm, train, test, link=False, output_space=True, output_format="compact")
+
+    header("Quantile")
+    print("Deep Learning")
+    dl = H2ODeepLearningEstimator(hidden=[5, 5], distribution="quantile")
+    dl.train(y=y, training_frame=train)
+    test_local_accuracy(dl, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GBM")
+    gbm = H2OGradientBoostingEstimator(ntrees=5, distribution="quantile")
+    gbm.train(y=y, training_frame=train)
+    test_local_accuracy(gbm, train, test, link=False, output_space=True, output_format="compact")
+
+    header("Huber")
+    print("Deep Learning")
+    dl = H2ODeepLearningEstimator(hidden=[5, 5], distribution="huber")
+    dl.train(y=y, training_frame=train)
+    test_local_accuracy(dl, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GBM")
+    gbm = H2OGradientBoostingEstimator(ntrees=5, distribution="huber")
+    gbm.train(y=y, training_frame=train)
+    test_local_accuracy(gbm, train, test, link=False, output_space=True, output_format="compact")
+
+    header("Tweedie")
+    print("Deep Learning")
+    dl = H2ODeepLearningEstimator(hidden=[5, 5], distribution="tweedie")
+    dl.train(y=y, training_frame=train)
+    test_local_accuracy(dl, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GBM")
+    gbm = H2OGradientBoostingEstimator(ntrees=5, distribution="tweedie")
+    gbm.train(y=y, training_frame=train)
+    test_local_accuracy(gbm, train, test, link=False, output_space=True, output_format="compact")
+
+    print("GLM")
+    glm = H2OGeneralizedLinearEstimator(family="tweedie")
+    glm.train(y=y, training_frame=train)
+    test_local_accuracy(glm, train, test, link=False, output_space=True, output_format="compact")
+
+    print("XGBoost")
+    xgb = H2OXGBoostEstimator(ntrees=5, distribution="tweedie")
+    xgb.train(y=y, training_frame=train)
+    test_local_accuracy(xgb, train, test, link=False, output_space=True, output_format="compact")
+
+
+def test_AutoML_distributions_compact():
+    """Unlike the other distribution test this one should catch even the newly supported distributions in potentially new algos
+    that are used by automl.
+    """
+    def header(s):
+        print(s+"\n"+"="*len(s))
+
+    train, test = import_data()
+    y = "age"
+
+    header("Poisson")
+    helper_test_automl_distributions(y, train, test, "compact", "poisson")
+    header("Negative Binomial")
+    helper_test_automl_distributions(y, train, test, "compact", "negativebinomial")
+    header("Gamma")
+    helper_test_automl_distributions(y, train, test, "compact", "gamma")
+    header("Laplace")
+    helper_test_automl_distributions(y, train, test, "compact", "laplace")
+    header("Quantile")
+    helper_test_automl_distributions(y, train, test, "compact", "quantile")
+    header("Huber")
+    helper_test_automl_distributions(y, train, test, "compact", "huber")
+    header("Tweedie")
+    helper_test_automl_distributions(y, train, test, "compact", "tweedie")
+    
 
 TESTS = [
     test_drf_one_tree_binomial_original,
@@ -1789,7 +1988,10 @@ TESTS = [
     test_automl_binomial_monotone_constraints_compact,
     test_automl_regression_monotone_constraints_original,
     test_automl_regression_monotone_constraints_compact,
+    test_distributions_compact,
+    test_AutoML_distributions_compact,
 ]
+
 
 if __name__ == "__main__":
     pyunit_utils.run_tests(TESTS)
