@@ -1631,6 +1631,7 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     assert_is_type(quote_header, bool)
     assert_is_type(parallel, bool)
     assert_is_type(format, str)
+    assert_is_type(write_checksum, bool)
     H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
                data={"path": path, "num_parts": parts, "force": force, 
                      "compression": compression, "separator": ord(sep),
