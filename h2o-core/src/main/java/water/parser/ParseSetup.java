@@ -66,6 +66,7 @@ public class ParseSetup extends Iced {
 
   public int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
+  public String[] parquetColumnTypes;  // internal parameters only
 
   public ParseSetup(ParseSetup ps) {
     this(ps._parse_type,
@@ -144,6 +145,10 @@ public class ParseSetup extends Iced {
     _synthetic_column_names = names;
     _synthetic_column_values = valueMapping;
     _synthetic_column_type = synthetic_column_type;
+  }
+
+  public void setParquetColumnTypes(String[] columnTypes) {
+    parquetColumnTypes = columnTypes.clone();
   }
 
   /**
@@ -322,6 +327,10 @@ public class ParseSetup extends Iced {
 
   public final DecryptionTool getDecryptionTool() {
     return DecryptionTool.get(_decrypt_tool);
+  }
+  
+  public final String[] getParquetColumnTypes() {
+    return parquetColumnTypes;
   }
 
   public final ParserInfo.ParseMethod parseMethod(int nfiles, Vec v) {

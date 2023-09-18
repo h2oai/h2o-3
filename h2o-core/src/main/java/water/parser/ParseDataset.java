@@ -26,6 +26,7 @@ import static water.parser.DefaultParserProviders.SVMLight_INFO;
 public final class ParseDataset {
   public Job<Frame> _job;
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
+  private String[] _parquetColumnTypes;
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
   public static Frame parse(Key okey, Key... keys) {
@@ -177,6 +178,11 @@ public final class ParseDataset {
     for( Key k : keys ) Lockable.read_lock(k,pds._job); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(pds, keys, setup, deleteOnDone); // Fire off background parse
     pds._job.start(fjt, totalParseSize);
+    if (setup.getForceColTypes() && "PARQUET".equals(setup.getParseType().name())) {
+      String[] parquetColTypes = setup.getParquetColumnTypes();
+      if (parquetColTypes != null)
+       pds._parquetColumnTypes = parquetColTypes.clone();
+    }
     return pds;
   }
 
@@ -405,9 +411,15 @@ public final class ParseDataset {
     job.update(0,"Calculating data summary.");
     logParseResults(fr);
     if (setup.getForceColTypes())  {
-      String[] originalColumnTypes = setup.getOrigColumnTypes();
-      if (originalColumnTypes != null) // force change the column types specified by user 
-        forceChangeColumnTypes(fr, originalColumnTypes);
+      String parseType = setup.getParseType().name();
+      String[] originalColumnTypes = "PARQUET".equals(parseType) ? setup.getParquetColumnTypes() 
+              : setup.getOrigColumnTypes();
+      if (originalColumnTypes != null) {
+        if ("PARQUET".equals(parseType)) // force change the column types specified by user 
+          forceChangeColumnTypes(fr, originalColumnTypes);
+        else
+          forceChangeColumnTypesParquet(fr, originalColumnTypes);
+      }
     }
       
     // Release the frame for overwriting
@@ -424,19 +436,51 @@ public final class ParseDataset {
     return pds;
   }
   
+  public static void forceChangeColumnTypesParquet(Frame fr, String[] columnTypes) {
+    int numCols = columnTypes.length;
+    for (int index=0; index<numCols; index++) {
+      switch (columnTypes[index]) {
+        case "BOOLEAN": 
+          if (!fr.vec(index).isCategorical())
+            fr.replace((index), fr.vec(index).toCategoricalVec());
+          break;
+        case "INT32":
+        case "INT64":
+          if (!fr.vec(index).isInt())
+            fr.replace((index), fr.vec(index).toIntegerVec());
+          break;
+        case "FLOAT":
+        case "DOUBLE":
+          if (fr.vec(index).isInt())
+            fr.replace((index), fr.vec(index).toDoubleVec());
+          break;
+        default: break; // no change for other types
+      }
+    }
+  }
+  
   private static void forceChangeColumnTypes(Frame fr, String[] columnTypes) {
     int numCols = columnTypes.length;
     for (int index=0; index<numCols; index++) {
       switch (columnTypes[index]) {
         case "enum":
         case "factor":
-        case "categorical": fr.replace((index), fr.vec(index).toCategoricalVec()).remove(); break;
+        case "categorical": 
+          if (!fr.vec(index).isCategorical()) 
+            fr.replace((index), fr.vec(index).toCategoricalVec()).remove(); // no change if type is already enum
+          break;
         case "int":
-        case "long": fr.replace((index), fr.vec(index).toIntegerVec()).remove(); break;
+        case "long": 
+          if (!fr.vec(index).isInt())
+            fr.replace((index), fr.vec(index).toIntegerVec()).remove(); 
+          break;
         case "float":
         case "double":
         case "real": fr.replace((index), fr.vec(index).toDoubleVec()).remove(); break;
-        case "numeric": fr.replace((index), fr.vec(index).toNumericVec()); break;
+        case "numeric": 
+          if (!fr.vec(index).isNumeric()) // only change when it is not numeric
+            fr.replace((index), fr.vec(index).toNumericVec()); 
+          break;
         default: break; // no conversion for other data types.
       }
     }
@@ -669,6 +713,7 @@ public final class ParseDataset {
 
     int _reservedKeys;
     private ParseWriter.ParseErr[] _errors = new ParseWriter.ParseErr[0];
+    String[] _parquetColumnTypes;
 
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key<Job> jobKey, Key[] fkeys, boolean deleteOnDone ) {
       _vg = vg; 
@@ -933,6 +978,7 @@ public final class ParseDataset {
       private transient NonBlockingSetInt _visited;
       private transient long [] _espc;
       final int _nchunks;
+      private String[] _parquetColumnTypes;
 
       DistributedParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey, int nchunks) {
         super(null);
@@ -1058,6 +1104,11 @@ public final class ParseDataset {
           Frame fr = (Frame)ice;
           if( _outerMFPT._deleteOnDone) fr.delete(_outerMFPT._jobKey,new Futures(), true).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._jobKey);
+        }
+        if ("PARQUET".equals(_setup.getParseType().name()) && _setup.getForceColTypes()) {
+          String[] parquetColumnTypes = _setup.getParquetColumnTypes();
+          if (parquetColumnTypes != null)
+            _parquetColumnTypes = parquetColumnTypes.clone();
         }
       }
     }

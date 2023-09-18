@@ -16,4 +16,5 @@ dependencies {
         exclude module: "servlet-api"
     }
     testRuntimeOnly project(":${defaultWebserverModule}")
+    runtimeOnly project(":h2o-jetty-9-minimal")
 }

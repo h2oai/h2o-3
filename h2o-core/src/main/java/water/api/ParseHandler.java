@@ -55,9 +55,9 @@ class ParseHandler extends Handler {
     if (parse.force_col_types && parse.column_types != null)
       setup.setOrigColumnTypes(parse.column_types);
     
-    if (parse.force_col_types && (parse.column_types == null || !"PARQUET".equals(parse.parse_type)))
+/*    if (parse.force_col_types && (parse.column_types == null || !"PARQUET".equals(parse.parse_type)))
       throw new H2OIllegalArgumentException("force_col_types: can only be enabled if you specify column types in" +
-              " parameter col_types or you are importing parquet files.");
+              " parameter col_types or you are importing parquet files.");*/
 
     parse.job = new JobV3(ParseDataset.parse(
             parse.destination_frame.key(), srcs, parse.delete_on_done, setup, parse.blocking
