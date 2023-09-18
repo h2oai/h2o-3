@@ -55,9 +55,6 @@ dependencies {
             because 'Fixes CVE-2022-42003'
             because 'Fixes PRISMA-2023-0067'
         }
-        api('net.minidev:json-smart:2.4.10') {
-            because 'Fixes CVE-2023-1370'
-        }
         api('org.codehaus.jettison:jettison:1.5.4') {
             because 'Fixes CVE-2023-1436'
             because 'Fixes CVE-2022-45693'
