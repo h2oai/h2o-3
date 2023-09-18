@@ -165,6 +165,9 @@ public class FrameParquetExporter  {
     private static ParquetWriter<Group> buildWriter(Path path, CompressionCodecName compressionCodecName, Configuration configuration, MessageType schema, ParquetFileWriter.Mode mode, boolean writeChecksum) throws IOException {
         GroupWriteSupport.setSchema(schema, configuration);
 
+        // The filesystem is cached for a given path and configuration, 
+        // therefore the following modification on the fs is a bit hacky as another process could use the same instance.
+        // However, given the current use case and the fact that the changes impacts only the way files are written, it should be on the safe side.
         FileSystem fs = path.getFileSystem(configuration);
         fs.setWriteChecksum(writeChecksum);
         return new ParquetWriter.Builder(path) {
@@ -182,7 +185,6 @@ public class FrameParquetExporter  {
                 .withCompressionCodec(compressionCodecName)
                 .withConf(configuration)
                 .withWriteMode(mode)
-                .withPageWriteChecksumEnabled(false)
                 .build();
     }
 }
