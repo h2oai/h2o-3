@@ -37,6 +37,7 @@ def export_file_parquet():
     if os.path.isdir(export_dir):
         shutil.rmtree(export_dir, ignore_errors=True)
     h2o.export_file(data, path=export_dir, format='parquet')
+    
     assert os.path.isdir(export_dir)
     assert any(os.path.splitext(f)[1] == '.crc' for f in os.listdir(export_dir))
 
@@ -48,6 +49,9 @@ def export_file_parquet_no_checksum():
     if os.path.isdir(export_dir):
         shutil.rmtree(export_dir, ignore_errors=True)
     h2o.export_file(data, path=export_dir, format='parquet', write_checksum=False)
+
+    assert os.path.isdir(export_dir)
+    assert os.listdir(export_dir)
     assert not any(os.path.splitext(f)[1] == '.crc' for f in os.listdir(export_dir))
 
 
