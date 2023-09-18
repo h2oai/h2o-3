@@ -29,7 +29,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  weights_column=None,  # type: Optional[str]
                  n_estimators=50,  # type: int
-                 weak_learner="auto",  # type: Literal["auto", "drf", "glm"]
+                 weak_learner="auto",  # type: Literal["auto", "drf", "glm", "gbm"]
                  learn_rate=0.5,  # type: float
                  seed=-1,  # type: int
                  ):
@@ -64,7 +64,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
         :type n_estimators: int
         :param weak_learner: Choose a weak learner type. Defaults to DRF.
                Defaults to ``"auto"``.
-        :type weak_learner: Literal["auto", "drf", "glm"]
+        :type weak_learner: Literal["auto", "drf", "glm", "gbm"]
         :param learn_rate: Learning rate (from 0.0 to 1.0)
                Defaults to ``0.5``.
         :type learn_rate: float
@@ -180,13 +180,13 @@ class H2OAdaBoostEstimator(H2OEstimator):
         """
         Choose a weak learner type. Defaults to DRF.
 
-        Type: ``Literal["auto", "drf", "glm"]``, defaults to ``"auto"``.
+        Type: ``Literal["auto", "drf", "glm", "gbm"]``, defaults to ``"auto"``.
         """
         return self._parms.get("weak_learner")
 
     @weak_learner.setter
     def weak_learner(self, weak_learner):
-        assert_is_type(weak_learner, None, Enum("auto", "drf", "glm"))
+        assert_is_type(weak_learner, None, Enum("auto", "drf", "glm", "gbm"))
         self._parms["weak_learner"] = weak_learner
 
     @property
