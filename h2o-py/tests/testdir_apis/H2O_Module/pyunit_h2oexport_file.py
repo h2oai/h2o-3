@@ -1,16 +1,18 @@
-import sys, os
+import os
+import shutil
+import sys
 sys.path.insert(1,"../../../")
-from tests import pyunit_utils
+from tests import pyunit_utils as pu
 import h2o
 
-def h2oexport_file():
+def export_file_csv():
     """
-    Python API test: h2o.export_file(frame, path, force=False, parts=1).  Note taht force=True is only honored if
+    Python API test: h2o.export_file(frame, path, force=False, parts=1).  Note that force=True is only honored if
     parts=1.  Otherwise, an error will be thrown.
     """
-    training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
+    training_data = h2o.import_file(pu.locate("smalldata/logreg/benign.csv"))
     try:
-        results_dir = pyunit_utils.locate("results")    # find directory path to results folder
+        results_dir = pu.locate("results")    # find directory path to results folder
         final_path = os.path.join(results_dir, 'frameData')
         h2o.export_file(training_data, final_path, force=True, parts=1)       # save data
         assert os.path.isfile(final_path), "h2o.export_file() command is not working."
@@ -28,7 +30,29 @@ def h2oexport_file():
                   "is not tested with multi-part export.".format(final_dir_path))
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2oexport_file)
-else:
-    h2oexport_file()
+def export_file_parquet():
+    data = h2o.import_file(pu.locate("smalldata/titanic/titanic_expanded.csv"), header=1)
+    path = pu.locate("results")
+    export_dir = os.path.join(path, data.frame_id + "_export_parquet")
+    if os.path.isdir(export_dir):
+        shutil.rmtree(export_dir, ignore_errors=True)
+    h2o.export_file(data, path=export_dir, format='parquet')
+    assert os.path.isdir(export_dir)
+    assert any(os.path.splitext(f)[1] == '.crc' for f in os.listdir(export_dir))
+
+
+def export_file_parquet_no_checksum():
+    data = h2o.import_file(pu.locate("smalldata/titanic/titanic_expanded.csv"), header=1)
+    path = pu.locate("results")
+    export_dir = os.path.join(path, data.frame_id + "_export_parquet_no_checksum")
+    if os.path.isdir(export_dir):
+        shutil.rmtree(export_dir, ignore_errors=True)
+    h2o.export_file(data, path=export_dir, format='parquet', write_checksum=False)
+    assert not any(os.path.splitext(f)[1] == '.crc' for f in os.listdir(export_dir))
+
+
+pu.run_tests([
+    export_file_csv,
+    export_file_parquet,
+    export_file_parquet_no_checksum
+])
