@@ -191,6 +191,8 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
         parms._train = frame._key;
         parms._response_column = _parms._response_column;
+        parms._weights_column = _weightsName;
+        parms._seed = _parms._seed;
         return new GLM(parms);
     }
 
