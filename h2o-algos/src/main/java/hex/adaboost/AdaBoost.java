@@ -177,9 +177,9 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
         parms._train = frame._key;
         parms._response_column = _parms._response_column;
+        parms._weights_column = _weightsName;
         parms._mtries = 1;
         parms._min_rows = 1;
-        parms._weights_column = _weightsName;
         parms._ntrees = 1;
         parms._sample_rate = 1;
         parms._max_depth = 1;

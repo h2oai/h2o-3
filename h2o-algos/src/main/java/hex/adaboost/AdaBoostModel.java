@@ -37,8 +37,8 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
         double alphas1 = 0;
         double linearCombination = 0;
         for (int i = 0; i < _output.alphas.length; i++) {
-            Model drfModel = DKV.getGet(_output.models[i]);
-            if (drfModel.score(data) == 0) {
+            Model model = DKV.getGet(_output.models[i]);
+            if (model.score(data) == 0) {
                 linearCombination += _output.alphas[i]*-1;
                 alphas0 += _output.alphas[i];
             } else {
