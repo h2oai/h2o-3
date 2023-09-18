@@ -11,7 +11,7 @@ import water.*;
 public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostParameters, AdaBoostModel.AdaBoostOutput> {
     private static final Logger LOG = Logger.getLogger(AdaBoostModel.class);
 
-    public enum Algorithm {DRF, GLM, AUTO}
+    public enum Algorithm {DRF, GLM, GBM, AUTO}
 
     public AdaBoostModel(Key<AdaBoostModel> selfKey, AdaBoostParameters parms,
                          AdaBoostOutput output) {

@@ -7,6 +7,8 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel;
 import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -166,6 +168,8 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         switch (_parms._weak_learner) {
             case GLM:
                 return getGLMWeakLearner(frame);
+            case GBM:
+                return getGBMWeakLearner(frame);
             default:
             case DRF:
                 return getDRFWeakLearner(frame);
@@ -194,6 +198,19 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         parms._weights_column = _weightsName;
         parms._seed = _parms._seed;
         return new GLM(parms);
+    }
+
+    private GBM getGBMWeakLearner(Frame frame) {
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = frame._key;
+        parms._response_column = _parms._response_column;
+        parms._weights_column = _weightsName;
+        parms._min_rows = 1;
+        parms._ntrees = 1;
+        parms._sample_rate = 1;
+        parms._max_depth = 1;
+        parms._seed = _parms._seed;
+        return new GBM(parms);
     }
 
     public TwoDimTable createModelSummaryTable() {
