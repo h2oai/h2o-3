@@ -31,7 +31,7 @@ import java.util.List;
  */
 public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoostParameters, AdaBoostModel.AdaBoostOutput> {
     private static final Logger LOG = Logger.getLogger(AdaBoost.class);
-    private static final int MAX_ESTIMATORS = 100_000;
+    private static final int MAX_LEARNERS = 100_000;
 
     private AdaBoostModel _model;
     private String _weightsName = "weights";
@@ -59,9 +59,9 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
     @Override
     public void init(boolean expensive) {
         super.init(expensive);
-        if(_parms._n_estimators < 1 || _parms._n_estimators > MAX_ESTIMATORS)
+        if(_parms._nlearners < 1 || _parms._nlearners > MAX_LEARNERS)
             error("n_estimators", "Parameter n_estimators must be in interval [1, "
-                    + MAX_ESTIMATORS + "] but it is " + _parms._n_estimators);
+                    + MAX_LEARNERS + "] but it is " + _parms._nlearners);
         if (_parms._weak_learner == AdaBoostModel.Algorithm.AUTO) {
             _parms._weak_learner = AdaBoostModel.Algorithm.DRF;
         }
@@ -96,8 +96,8 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
         }
 
         private void buildAdaboost() {
-            _model._output.alphas = new double[(int)_parms._n_estimators];
-            _model._output.models = new Key[(int)_parms._n_estimators];
+            _model._output.alphas = new double[(int)_parms._nlearners];
+            _model._output.models = new Key[(int)_parms._nlearners];
 
             Frame _trainWithWeights;
             if (_parms._weights_column == null) {
@@ -112,7 +112,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 _trainWithWeights = _parms.train();
             }
             
-            for (int n = 0; n < _parms._n_estimators; n++) {
+            for (int n = 0; n < _parms._nlearners; n++) {
                 Timer timer = new Timer();
                 ModelBuilder job = chooseWeakLearner(_trainWithWeights);
                 job._parms._seed += n;
@@ -233,7 +233,7 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 "");
         int row = 0;
         int col = 0;
-        table.set(row, col++, _parms._n_estimators);
+        table.set(row, col++, _parms._nlearners);
         table.set(row, col++, _parms._learn_rate);
         table.set(row, col++, _parms._weak_learner.toString());
         table.set(row, col, _parms._seed);

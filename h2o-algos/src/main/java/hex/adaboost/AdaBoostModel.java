@@ -92,7 +92,7 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
         /**
          * Number of weak learners to train. Defaults to 50.
          */
-        public int _n_estimators;
+        public int _nlearners;
 
         /**
          * Choose a weak learner type. Defaults to DRF.
@@ -121,12 +121,12 @@ public class AdaBoostModel extends Model<AdaBoostModel, AdaBoostModel.AdaBoostPa
 
         @Override
         public long progressUnits() {
-            return _n_estimators;
+            return _nlearners;
         }
 
         public AdaBoostParameters() {
             super();
-            _n_estimators = 50;
+            _nlearners = 50;
             _weak_learner = Algorithm.AUTO;
             _learn_rate = 0.5;
         }

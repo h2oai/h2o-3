@@ -3,8 +3,6 @@ package hex.adaboost;
 import hex.Model;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.drf.DRFModel;
-import hex.tree.gbm.GBM;
-import hex.tree.gbm.GBMModel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,7 +47,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -89,7 +87,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._weak_learner = AdaBoostModel.Algorithm.GLM;
             p._response_column = response;
 
@@ -113,7 +111,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -136,7 +134,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -168,7 +166,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._response_column = response;
             p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
 
@@ -197,7 +195,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -226,7 +224,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -255,7 +253,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._response_column = response;
 
             AdaBoost adaBoost = new AdaBoost(p);
@@ -330,7 +328,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 10;
+            p._nlearners = 10;
             p._response_column = response;
 
             AdaBoost adaBoostReference = new AdaBoost(p);
@@ -374,7 +372,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 10;
+            p._nlearners = 10;
             p._response_column = response;
 
             AdaBoost adaBoostReference = new AdaBoost(p);
@@ -419,7 +417,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 10;
+            p._nlearners = 10;
             p._response_column = response;
             p._ignore_const_cols = false;
 
@@ -447,7 +445,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._weak_learner = AdaBoostModel.Algorithm.GLM;
             p._response_column = response;
 
@@ -473,7 +471,7 @@ public class AdaBoostTest extends TestUtil {
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._n_estimators = 50;
+            p._nlearners = 50;
             p._weak_learner = AdaBoostModel.Algorithm.GBM;
             p._response_column = response;
 
