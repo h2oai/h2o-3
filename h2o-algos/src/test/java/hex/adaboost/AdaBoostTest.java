@@ -2,10 +2,9 @@ package hex.adaboost;
 
 import hex.Model;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.glm.GLM;
-import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
-import org.apache.commons.io.FileUtils;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,7 +21,6 @@ import water.runner.H2ORunner;
 import water.util.FrameUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -102,30 +100,7 @@ public class AdaBoostTest extends TestUtil {
         } finally {
             Scope.exit();
         }
-    }    
-
-    @Test
-    public void testBasicTrainGLMWeakLerner() {
-        try {
-            Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-            String response = "CAPSULE";
-            train.toCategoricalCol(response);
-            GLMModel.GLMParameters p = new GLMModel.GLMParameters();
-            p._train = train._key;
-            p._seed = 0xDECAF;
-            p._response_column = response;
-
-            GLM adaBoost = new GLM(p);
-            GLMModel adaBoostModel = adaBoost.trainModel().get();
-            Scope.track_generic(adaBoostModel);
-            assertNotNull(adaBoostModel);
-            Frame score = adaBoostModel.score(train);
-            Scope.track(score);
-        } finally {
-            Scope.exit();
-        }
-    }    
+    }
 
     @Test
     public void testBasicTrainLarge() {
@@ -467,7 +442,6 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-            Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
             String response = "CAPSULE";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
@@ -482,7 +456,7 @@ public class AdaBoostTest extends TestUtil {
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
 
-            Frame score = adaBoostModel.score(test);
+            Frame score = adaBoostModel.score(train);
             Scope.track(score);
         } finally {
             Scope.exit();
@@ -494,7 +468,6 @@ public class AdaBoostTest extends TestUtil {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-            Frame test = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
             String response = "CAPSULE";
             train.toCategoricalCol(response);
             AdaBoostModel.AdaBoostParameters p = new AdaBoostModel.AdaBoostParameters();
@@ -509,7 +482,7 @@ public class AdaBoostTest extends TestUtil {
             Scope.track_generic(adaBoostModel);
             assertNotNull(adaBoostModel);
 
-            Frame score = adaBoostModel.score(test);
+            Frame score = adaBoostModel.score(train);
             Scope.track(score);
         } finally {
             Scope.exit();
