@@ -24,7 +24,7 @@
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
-#' @param n_estimators Number of AdaBoost weak learners. Defaults to 50.
+#' @param nlearners Number of AdaBoost weak learners. Defaults to 50.
 #' @param weak_learner Choose a weak learner type. Defaults to DRF. Must be one of: "AUTO", "DRF", "GLM", "GBM". Defaults to AUTO.
 #' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.5.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
@@ -56,7 +56,7 @@ h2o.adaBoost <- function(x,
                          ignore_const_cols = TRUE,
                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                          weights_column = NULL,
-                         n_estimators = 50,
+                         nlearners = 50,
                          weak_learner = c("AUTO", "DRF", "GLM", "GBM"),
                          learn_rate = 0.5,
                          seed = -1)
@@ -89,8 +89,8 @@ h2o.adaBoost <- function(x,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(weights_column))
     parms$weights_column <- weights_column
-  if (!missing(n_estimators))
-    parms$n_estimators <- n_estimators
+  if (!missing(nlearners))
+    parms$nlearners <- nlearners
   if (!missing(weak_learner))
     parms$weak_learner <- weak_learner
   if (!missing(learn_rate))
@@ -108,7 +108,7 @@ h2o.adaBoost <- function(x,
                                          ignore_const_cols = TRUE,
                                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                          weights_column = NULL,
-                                         n_estimators = 50,
+                                         nlearners = 50,
                                          weak_learner = c("AUTO", "DRF", "GLM", "GBM"),
                                          learn_rate = 0.5,
                                          seed = -1,
@@ -146,8 +146,8 @@ h2o.adaBoost <- function(x,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(weights_column))
     parms$weights_column <- weights_column
-  if (!missing(n_estimators))
-    parms$n_estimators <- n_estimators
+  if (!missing(nlearners))
+    parms$nlearners <- nlearners
   if (!missing(weak_learner))
     parms$weak_learner <- weak_learner
   if (!missing(learn_rate))

@@ -20,14 +20,14 @@ public class AdaBoostV3 extends ModelBuilderSchema<
                 "weights_column",
 
                 // AdaBoost specific
-                "n_estimators",
+                "nlearners",
                 "weak_learner",
                 "learn_rate",
                 "seed",
         };
 
         @API(help = "Number of AdaBoost weak learners.", gridable = true)
-        public int n_estimators;
+        public int nlearners;
 
         @API(help = "Choose a weak learner type. Defaults to DRF.", gridable = true, values = {"AUTO", "DRF", "GLM", "GBM"})
         public AdaBoostModel.Algorithm weak_learner;

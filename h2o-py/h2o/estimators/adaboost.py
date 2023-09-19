@@ -28,7 +28,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
                  ignore_const_cols=True,  # type: bool
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  weights_column=None,  # type: Optional[str]
-                 n_estimators=50,  # type: int
+                 nlearners=50,  # type: int
                  weak_learner="auto",  # type: Literal["auto", "drf", "glm", "gbm"]
                  learn_rate=0.5,  # type: float
                  seed=-1,  # type: int
@@ -59,9 +59,9 @@ class H2OAdaBoostEstimator(H2OEstimator):
                that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
                Defaults to ``None``.
         :type weights_column: str, optional
-        :param n_estimators: Number of AdaBoost weak learners.
+        :param nlearners: Number of AdaBoost weak learners.
                Defaults to ``50``.
-        :type n_estimators: int
+        :type nlearners: int
         :param weak_learner: Choose a weak learner type. Defaults to DRF.
                Defaults to ``"auto"``.
         :type weak_learner: Literal["auto", "drf", "glm", "gbm"]
@@ -80,7 +80,7 @@ class H2OAdaBoostEstimator(H2OEstimator):
         self.ignore_const_cols = ignore_const_cols
         self.categorical_encoding = categorical_encoding
         self.weights_column = weights_column
-        self.n_estimators = n_estimators
+        self.nlearners = nlearners
         self.weak_learner = weak_learner
         self.learn_rate = learn_rate
         self.seed = seed
@@ -162,18 +162,18 @@ class H2OAdaBoostEstimator(H2OEstimator):
         self._parms["weights_column"] = weights_column
 
     @property
-    def n_estimators(self):
+    def nlearners(self):
         """
         Number of AdaBoost weak learners.
 
         Type: ``int``, defaults to ``50``.
         """
-        return self._parms.get("n_estimators")
+        return self._parms.get("nlearners")
 
-    @n_estimators.setter
-    def n_estimators(self, n_estimators):
-        assert_is_type(n_estimators, None, int)
-        self._parms["n_estimators"] = n_estimators
+    @nlearners.setter
+    def nlearners(self, nlearners):
+        assert_is_type(nlearners, None, int)
+        self._parms["nlearners"] = nlearners
 
     @property
     def weak_learner(self):

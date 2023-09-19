@@ -11,7 +11,7 @@ def adaBoost_save_and_load():
     train = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
     train["CAPSULE"] = train["CAPSULE"].asfactor()
 
-    adaboost_model = H2OAdaBoostEstimator(n_estimators=7, seed=12)
+    adaboost_model = H2OAdaBoostEstimator(nlearners=7, seed=12)
     adaboost_model.train(training_frame=train, y="CAPSULE")
     predict = adaboost_model.predict(train)
 
