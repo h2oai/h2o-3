@@ -32,7 +32,6 @@ dependencies {
   api "ai.h2o:h2o-tree-api:0.3.17"
   // dependencies that are shared with h2o-core - always use the same version as h2o-core
   api "com.google.code.gson:gson:${gsonVersion}"
-  api "no.priv.garshol.duke:duke:1.2"
   api "commons-lang:commons-lang:2.6"
   api "joda-time:joda-time:2.10.13"
   // test only

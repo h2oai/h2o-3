@@ -1030,7 +1030,8 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  // HEXDEV-194: Check reproducibility for the same # of chunks (i.e., same # of nodes) and same parameters
+  // GH issue https://github.com/h2oai/private-h2o-3/issues/480: Check reproducibility for the same # of
+  // chunks (i.e., same # of nodes) and same parameters
   @Test public void testReprodubility() {
     Frame tfr=null;
     final int N = 5;
@@ -1203,7 +1204,7 @@ public class GBMTest extends TestUtil {
       assertEquals(0.21694215729861027, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
-  // HEXDEV-223
+  // GH issue: https://github.com/h2oai/private-h2o-3/issues/457
   @Test public void testCategorical() {
     Frame tfr=null;
     final int N = 1;

@@ -828,7 +828,7 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  // HEXDEV-319
+  // gh issue: https://github.com/h2oai/private-h2o-3/issues/381
   @Ignore
   @Test public void testAirline() {
     Frame tfr=null;

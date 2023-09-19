@@ -85,7 +85,6 @@ ext {
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
-      project(':h2o-jetty-9-ext'),
       project(':h2o-jetty-9-minimal'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
@@ -133,7 +132,6 @@ ext {
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
-      project(':h2o-jetty-9-ext'),
       project(':h2o-jetty-9-minimal'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
@@ -242,6 +240,9 @@ subprojects {
             maven {
                 allowInsecureProtocol = true
                 url "${localNexusLocation}/public"
+            }
+            maven {
+                url "https://oss.sonatype.org/content/groups/staging/"
             }
         } else {
             mavenCentral()

@@ -382,7 +382,8 @@ class H2OConnection(h2o_meta()):
         if proxy and proxy != "(default)":
             conn._proxies = {scheme: proxy}
         elif not proxy:
-            # Give user a warning if there are any "*_proxy" variables in the environment. [PUBDEV-2504]
+            # Give user a warning if there are any "*_proxy" variables in the environment.
+            # GH issue: https://github.com/h2oai/h2o-3/issues/15409
             # To suppress the warning pass proxy = "(default)".
             for name in os.environ:
                 if name.lower() == scheme + "_proxy":

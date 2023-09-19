@@ -19,7 +19,7 @@ H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm 
 
 The metalearner will use default hyperparameter values for the specified algorithm, unless you also specify `metalearner_params <metalearner_params.html>`__ to customize the hyperparameters values.
 
-The default parameters for the metalearning algorithms may not be the best choice, so it's a good idea to experiment a bit with different parameters using ``metalearner_params``.  In the `next release <https://0xdata.atlassian.net/browse/PUBDEV-5281>`__ of H2O, there will be an option to easily do a grid search over metalearner parameters using the standard H2O Grid interface, which will make tuning the metalearner a bit easier.
+The default parameters for the metalearning algorithms may not be the best choice, so it's a good idea to experiment a bit with different parameters using ``metalearner_params``.  In the `next release <https://github.com/h2oai/h2o-3/issues/12153>`__ of H2O, there will be an option to easily do a grid search over metalearner parameters using the standard H2O Grid interface, which will make tuning the metalearner a bit easier.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

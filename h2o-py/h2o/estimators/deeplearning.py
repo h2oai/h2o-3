@@ -127,6 +127,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  elastic_averaging_regularization=0.001,  # type: float
                  export_checkpoints_dir=None,  # type: Optional[str]
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 custom_metric_func=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -432,6 +433,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
+               Defaults to ``None``.
+        :type custom_metric_func: str, optional
         """
         super(H2ODeepLearningEstimator, self).__init__()
         self._parms = {}
@@ -524,6 +528,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         self.elastic_averaging_regularization = elastic_averaging_regularization
         self.export_checkpoints_dir = export_checkpoints_dir
         self.auc_type = auc_type
+        self.custom_metric_func = custom_metric_func
 
     @property
     def training_frame(self):
@@ -3218,6 +3223,20 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+    @property
+    def custom_metric_func(self):
+        """
+        Reference to custom evaluation function, format: `language:keyName=funcName`
+
+        Type: ``str``.
+        """
+        return self._parms.get("custom_metric_func")
+
+    @custom_metric_func.setter
+    def custom_metric_func(self, custom_metric_func):
+        assert_is_type(custom_metric_func, None, str)
+        self._parms["custom_metric_func"] = custom_metric_func
 
 
 

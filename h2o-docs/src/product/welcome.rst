@@ -100,6 +100,10 @@ learn more:
 
 -  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git.
 
+.. note::
+   
+   By default, this setup is open. Follow `security guidelines <security.html>`__ if you want to secure your installation.
+
 Use Cases
 ~~~~~~~~~
 
@@ -165,6 +169,10 @@ At this point, determine whether you want to complete this quick start in either
         Type 'q()' to quit R.
         >
 
+        # By default, this setup is open. 
+        # Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+        # if you want to secure your installation.
+
         # Copy and paste the following commands in R to download dependency packages.
         > pkgs <- c("methods", "statmod", "stats", "graphics", "RCurl", "jsonlite", "tools", "utils")
         > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
@@ -199,6 +207,10 @@ At this point, determine whether you want to complete this quick start in either
 
    .. code-tab:: python
 
+      # By default, this setup is open. 
+      # Follow our security guidelines (https://docs.h2o.ai/h2o/latest-stable/h2o-docs/security.html) 
+      # if you want to secure your installation.
+      
       # Before starting Python, run the following commands to install dependencies.
       # Prepend these commands with `sudo` only if necessary:
       # h2o-3 user$ [sudo] pip install -U requests
@@ -432,7 +444,7 @@ After starting multiple "worker" node processes in addition to the JUnit test pr
 
 -  `KV Store Guide <https://www.h2o.ai/blog/kv-store-memory-analytics-part-2-2/>`_: Learn more about performance characteristics when implementing new algorithms.
 
--  `Contributing code <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`_: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that contributors can work on and how to contact us. **Note**: To access this link, you must have an `Atlassian account <https://id.atlassian.com/signup?application=mac&tenant=&continue=https%3A%2F%2Fmy.atlassian.com>`__.
+-  `Contributing code <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`_: If you're interested in contributing code to H2O, we appreciate your assistance!
 
 .. _on-hadoop:
 

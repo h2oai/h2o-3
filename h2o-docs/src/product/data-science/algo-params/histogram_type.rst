@@ -19,11 +19,14 @@ By default (AUTO) GBM/DRF bins from min...max in steps of (max-min)/N.  Use this
 
 - AUTO
 - UniformAdaptive
+- UniformRobust
 - Random
 - QuantilesGlobal
 - RoundRobin
 
 When ``histogram_type="UniformAdaptive"`` is specified, each feature is binned into buckets of equal step size (not population). This is the fastest method, and usually performs well, but can lead to less accurate splits if the distribution is highly skewed.
+
+If the dataset has outliers, the uniform method can lead to poor distribution. When ``histogram_type="UniformRobust"`` is specified, uniform binning is used for finding initial splits, then the bins are redefinied and the data will be better distributed over the empty bins. It takes the boundaries of the non-empty bins and refines them according to the squared error accumulated in each bin. Non-empty bins with higher squared error are split more than ones with lower squared error to create sub-bins that are refined uniformly. So, if uniform splitting fails, the next iteration of finding splits attempts to correct the issue by repeating the procedure with new bins. This allows it to recursively refine the promising bins as it gets deeper into the tree. This method is highly effective on datasets with large outliers.
 
 H2O supports extremely randomized trees (XRT) via ``histogram_type="Random"``. When this is specified, the algorithm will sample N-1 points from min...max and use the sorted list of those to find the best split. The cut points are random rather than uniform. For example, to generate 4 bins for some feature ranging from 0-100, 3 random numbers would be generated in this range (13.2, 89.12, 45.0). The sorted list of these random numbers forms the histogram bin boundaries e.g. (0-13.2, 13.2-45.0, 45.0-89.12, 89.12-100).
 
@@ -78,7 +81,7 @@ Example
 
 
 		# Example of values to grid over for `histogram_type`
-		hyper_params <- list( histogram_type = c("UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin") )
+		hyper_params <- list( histogram_type = c("UniformAdaptive", "UniformRobust", "Random", "QuantilesGlobal", "RoundRobin") )
 
 		# this example uses cartesian grid search because the search space is small
 		# and we want to see the performance of all models. For a larger search space use
@@ -136,7 +139,7 @@ Example
 		from h2o.grid.grid_search import H2OGridSearch
 
 		# select the values for histogram_type to grid over
-		hyper_params = {'histogram_type': ["UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"]}
+		hyper_params = {'histogram_type': ["UniformAdaptive", "UniformRobust", "Random", "QuantilesGlobal", "RoundRobin"]}
 
 		# this example uses cartesian grid search because the search space is small
 		# and we want to see the performance of all models. For a larger search space use

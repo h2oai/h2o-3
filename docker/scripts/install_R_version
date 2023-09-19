@@ -100,7 +100,7 @@ checkRInstallLog R.install.2.log
   )) \
 " 2>&1 | tee R.install.3.log
 checkRInstallLog R.install.3.log
-# Latest XGBoost (from source) does not compile; see https://0xdata.atlassian.net/browse/PUBDEV-7812
+# Latest XGBoost (from source) does not compile; see https://github.com/h2oai/h2o-3/issues/7830
 #/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
 #  install.packages(c('xgboost'), type='source') \
 #" 2>&1 | tee R.install.2.log

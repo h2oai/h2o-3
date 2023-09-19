@@ -592,6 +592,9 @@ def javamunge(assembly, pojoname, test, compile_only=False):
               else:
                 assert hp==pp, "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
 
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    
 def locate(path):
     """
     Search for a relative path and turn it into an absolute path.
@@ -684,7 +687,17 @@ def standalone_test(test, init_options={}):
     h2o.log_and_echo("STARTING TEST "+test.__name__)
     h2o.log_and_echo("")
     h2o.log_and_echo("------------------------------------------------------------")
-    test()
+    import os
+    import tempfile
+    with tempfile.TemporaryDirectory() as dir:  # Create a temporary dir that will clean itself
+        tempfile._once_lock.acquire()  # Better lock to avoid race conditions (but since we don't test in multiple threads (to avoid side-effects on the backend) it should not matter)
+        old_tempdir = tempfile.tempdir
+        try:
+            tempfile.tempdir = dir  # Tell tempfile to use this temporary dir as the root for all other temporary dirs
+            test()
+        finally:
+            tempfile.tempdir = old_tempdir
+            tempfile._once_lock.release()
 
 def run_tests(tests, run_in_isolation=True, init_options={}):
     #flatten in case of nested tests/test suites
@@ -3940,7 +3953,7 @@ def convertH2OFrameToDMatrixSparse(h2oFrame, yresp, enumCols=[]):
 
     pandas = __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols);
 
-    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1])
+    return xgb.DMatrix(data=csr_matrix(pandas[0]), label=pandas[1], feature_names=pandas[2])
 
 
 def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
@@ -3977,10 +3990,10 @@ def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
     pandaF = pd.concat([c0, pandaFtrain], axis=1)
     pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
     newX = list(pandaFtrain.columns.values)
-    data = pandaF[newX].values
-    label = pandaF[[yresp]].values
+    data = pandaF[newX].to_numpy()
+    label = pandaF[[yresp]].to_numpy()
 
-    return (data,label)
+    return (data,label,newX)
 
 def generatePandaEnumCols(pandaFtrain, cname, nrows):
     """

@@ -36,7 +36,7 @@ def pyunit_make_metrics(weights_col=None):
     print("\n\n======= REGRESSION ========\n")
     for distr in ["gaussian", "poisson", "laplace", "gamma"]:
         # Skipping on `laplace`
-        # GBM training fails due to a bug: https://0xdata.atlassian.net/browse/PUBDEV-7480
+        # GBM training fails due to a bug: https://github.com/h2oai/h2o-3/issues/8158
         if weights_col is not None and distr == "laplace":
             continue
         print("distribution: %s" % distr)
@@ -167,7 +167,7 @@ def pyunit_make_metrics(weights_col=None):
     model.train(x=predictors, y=response, training_frame=fr)
     predicted = h2o.assign(model.predict(fr)[1:], "pred")
     actual = h2o.assign(fr[response].asfactor(), "act")
-    domain = fr[response].levels()[0]
+    domain = fr[response].levels()[0]               
 
     m0 = model.model_performance(train=True)
     m1 = h2o.make_metrics(predicted, actual, domain=domain, weights=weights, auc_type="MACRO_OVR")
@@ -217,13 +217,20 @@ def pyunit_make_metrics_uplift():
     treatment = test[treatment_column]
     m1 = model.model_performance(test_data=test, auuc_type="AUTO", auuc_nbins=nbins)
     m2 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins)
+
+    err = 1e-5
     
-    print(m0.auuc())
-    print(m1.auuc())
-    print(m2.auuc())
+    assert abs(m0.auuc() - m1.auuc()) < err
+    assert abs(m1.auuc() - m2.auuc()) < err
     
-    assert abs(m0.auuc() - m1.auuc()) < 1e-5
-    assert abs(m1.auuc() - m2.auuc()) < 1e-5
+    assert abs(m0.ate() - m1.ate()) < err
+    assert abs(m1.ate() - m2.ate()) < err
+
+    assert abs(m0.att() - m1.att()) < err
+    assert abs(m1.att() - m2.att()) < err
+
+    assert abs(m0.atc() - m1.atc()) < err
+    assert abs(m1.atc() - m2.atc()) < err
 
 
 def suite_model_metrics():

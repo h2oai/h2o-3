@@ -256,6 +256,7 @@ def algo_to_modelname(algo):
     if algo == "deeplearning": return "Deep Learning - Neural Network"
     if algo == "xgboost": return "XGBoost"
     if algo == "drf": return "Random Forest Model in H2O"
+    if algo == "dt": return "Decision Tree Model in H2O"
     if algo == "upliftdrf": return "Uplift Random Forest Model in H2O"
     if algo == "gbm": return "Gradient Boosting Machine"
     if algo == "glm": return "H2O Generalized Linear Models"
@@ -334,6 +335,9 @@ def main():
         if name == "drf":
             module = "randomForest"
             file_name = "randomforest"
+        if name == "dt":
+            module = "decision_tree"
+            file_name = "decisiontree"
         if name == "upliftdrf":
             module = "upliftRandomForest"
             file_name = "upliftrandomforest"

@@ -72,6 +72,7 @@ Shared tree-based algorithm parameters
 
    - ``AUTO`` (default)
    - ``UniformAdaptive``
+   - ``UniformRobust``
    - ``Random``
    - ``QuantilesGlobal``
    - ``RoundRobin``

@@ -15,7 +15,7 @@ from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 def algo_max_runtime_secs():
     '''
     This pyunit test is written to ensure that column names and column types are returned in the model
-      output for every algorithm supported by H2O.  See PUBDEV-5801.
+      output for every algorithm supported by H2O.  See https://github.com/h2oai/h2o-3/issues/12655.
     '''
     seed = 12345
     print("Checking GLM.....")

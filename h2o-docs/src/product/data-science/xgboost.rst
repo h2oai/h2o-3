@@ -308,7 +308,7 @@ This section provides a list of XGBoost limitations - some of which will be addr
 
 The list of limitations include:
 
-  - XGBoost is not currently supported on Windows or on the new Apple M1 chip.  Please check the JIRA tickets for `Windows <https://h2oai.atlassian.net/browse/PUBDEV-8523>`__ and `Apple M1 <https://h2oai.atlassian.net/browse/PUBDEV-8482>`__ for updates. 
+  - XGBoost is not currently supported on Windows or on the new Apple M1 chip.  Please check the tickets for `Windows <https://github.com/h2oai/h2o-3/issues/7139>`__ and `Apple M1 <https://github.com/h2oai/h2o-3/issues/7180>`__ for updates. 
 
   - The list of supported platforms includes:
  

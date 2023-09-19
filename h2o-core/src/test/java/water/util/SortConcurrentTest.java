@@ -11,7 +11,7 @@ import water.runner.H2ORunner;
 
 /**
  * Test that Sort can be used concurrently - concurrent sort is used by Isotonic Regression in CV
- * See <a href="https://h2oai.atlassian.net/browse/PUBDEV-8830">https://h2oai.atlassian.net/browse/PUBDEV-8830</a>
+ * See <a href="https://github.com/h2oai/h2o-3/issues/6930">https://github.com/h2oai/h2o-3/issues/6930</a>
  * for the original issue.
  */
 @RunWith(H2ORunner.class)

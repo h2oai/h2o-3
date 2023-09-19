@@ -262,7 +262,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
 
     @API(help = "Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for" +
             " monotone I-splines, 3 for NBSplineTypeI M-splines (refer to doc " +
-            "here: https://h2oai.atlassian.net/browse/PUBDEV-8835).  If specified, must be the same size as " +
+            "here: https://github.com/h2oai/h2o-3/issues/6926).  If specified, must be the same size as " +
             "gam_columns", level = Level.critical, gridable = true)
     public int[] bs;
 

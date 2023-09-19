@@ -39,7 +39,7 @@ h2o.ensemble <- function(x, y, training_frame,
       if (numcats == 2) {
         family <- "binomial" 
       } else {
-        stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://0xdata.atlassian.net/browse/PUBDEV-2355")
+        stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://github.com/h2oai/h2o-3/issues/15262")
       }
     } else {
       family <- "gaussian"
@@ -65,7 +65,7 @@ h2o.ensemble <- function(x, y, training_frame,
     } else {
       numcats <- length(h2o.levels(training_frame[,y]))
       if (numcats > 2) {
-        stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://0xdata.atlassian.net/browse/PUBDEV-2355")
+        stop("Multinomial case not yet implemented for h2o.ensemble. Check here for progress: https://github.com/h2oai/h2o-3/issues/15262")
       } 
     }
     ylim <- NULL

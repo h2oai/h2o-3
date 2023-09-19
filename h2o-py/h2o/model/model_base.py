@@ -411,6 +411,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 "Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
                 "was requested.".format(num_weight_matrices, matrix_id))
         return h2o.get_frame(self._model_json["output"]["weights"][matrix_id]["URL"].split("/")[3])
+    
+    
 
     def biases(self, vector_id=0):
         """
@@ -446,6 +448,10 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     def catoffsets(self):
         """Categorical offsets for one-hot encoding."""
         return self._model_json["output"]["catoffsets"]
+    
+    def default_threshold(self):
+        """Default threshold for binomial classification model."""
+        return self._model_json["output"]["default_threshold"]
 
     def training_model_metrics(self):
         """
@@ -518,7 +524,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                               data={"auuc_type": auuc_type, "auuc_nbins": auuc_nbins})
             else:
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
-            # FIXME need to do the client-side filtering...  (PUBDEV-874)
+            # FIXME need to do the client-side filtering...  (https://github.com/h2oai/h2o-3/issues/13862)
             raw_metrics = None
             for mm in res["model_metrics"]:
                 if mm["frame"] is not None and mm["frame"]["name"] == test_data.frame_id:
@@ -629,10 +635,13 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         # For now, redirect to h2o.model.extensions.feature_interaction for models that support the feature, and print legacy message for others..
         # Later, the method will be exposed only for models supporting the feature.
         if has_extension(self, 'FeatureInteraction'):
-            return self._feature_interaction(max_interaction_depth=max_interaction_depth, 
-                                             max_tree_depth=max_tree_depth, 
-                                             max_deepening=max_deepening, 
-                                             path=path)
+            table = self._feature_interaction(max_interaction_depth=max_interaction_depth,
+                                              max_tree_depth=max_tree_depth,
+                                              max_deepening=max_deepening,
+                                              path=path)
+            if table is None:
+                print("There is no feature interaction for this model.")
+            return table
         print("No calculation available for this model")
 
     def h(self, frame, variables):
