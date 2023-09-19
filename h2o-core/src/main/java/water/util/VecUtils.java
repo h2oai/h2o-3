@@ -366,14 +366,14 @@ public class VecUtils {
   }
 
   public static Vec intToDouble(final Vec src) {
-     Vec newVec = copyOver(src, Vec.T_NUM, null);
+     //Vec newVec = copyOver(src, Vec.T_NUM, null);
+     Vec newVec = src.makeOneDoubles(Double.NaN);
      
       new MRTask() {
         @Override public void map(Chunk c) {
           for (int i=0;i<c._len;++i)
             if( !c.isNA(i) ) {
-              double temp = Integer.parseInt(src.domain()[(int) c.at8(i)])*1.0;
-              c.set(i, temp);
+              c.set(i, c.at8(i));
             }
         }
       }.doAll(newVec);

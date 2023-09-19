@@ -26,7 +26,7 @@ import static water.parser.DefaultParserProviders.SVMLight_INFO;
 public final class ParseDataset {
   public Job<Frame> _job;
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
-  private String[] _parquetColumnTypes;
+//  private String[] _parquetColumnTypes;
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
   public static Frame parse(Key okey, Key... keys) {
@@ -178,11 +178,11 @@ public final class ParseDataset {
     for( Key k : keys ) Lockable.read_lock(k,pds._job); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(pds, keys, setup, deleteOnDone); // Fire off background parse
     pds._job.start(fjt, totalParseSize);
-    if (setup.getForceColTypes() && "PARQUET".equals(setup.getParseType().name())) {
+/*    if (setup.getForceColTypes() && "PARQUET".equals(setup.getParseType().name())) {
       String[] parquetColTypes = setup.getParquetColumnTypes();
       if (parquetColTypes != null)
        pds._parquetColumnTypes = parquetColTypes.clone();
-    }
+    }*/
     return pds;
   }
 
@@ -416,9 +416,9 @@ public final class ParseDataset {
               : setup.getOrigColumnTypes();
       if (originalColumnTypes != null) {
         if ("PARQUET".equals(parseType)) // force change the column types specified by user 
-          forceChangeColumnTypes(fr, originalColumnTypes);
-        else
           forceChangeColumnTypesParquet(fr, originalColumnTypes);
+        else
+          forceChangeColumnTypes(fr, originalColumnTypes);
       }
     }
       
@@ -713,7 +713,7 @@ public final class ParseDataset {
 
     int _reservedKeys;
     private ParseWriter.ParseErr[] _errors = new ParseWriter.ParseErr[0];
-    String[] _parquetColumnTypes;
+    //String[] _parquetColumnTypes;
 
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key<Job> jobKey, Key[] fkeys, boolean deleteOnDone ) {
       _vg = vg; 
@@ -978,7 +978,7 @@ public final class ParseDataset {
       private transient NonBlockingSetInt _visited;
       private transient long [] _espc;
       final int _nchunks;
-      private String[] _parquetColumnTypes;
+    //  private String[] _parquetColumnTypes;
 
       DistributedParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey, int nchunks) {
         super(null);
@@ -1105,11 +1105,11 @@ public final class ParseDataset {
           if( _outerMFPT._deleteOnDone) fr.delete(_outerMFPT._jobKey,new Futures(), true).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._jobKey);
         }
-        if ("PARQUET".equals(_setup.getParseType().name()) && _setup.getForceColTypes()) {
+/*        if ("PARQUET".equals(_setup.getParseType().name()) && _setup.getForceColTypes() && _parquetColumnTypes == null) {
           String[] parquetColumnTypes = _setup.getParquetColumnTypes();
           if (parquetColumnTypes != null)
             _parquetColumnTypes = parquetColumnTypes.clone();
-        }
+        }*/
       }
     }
 

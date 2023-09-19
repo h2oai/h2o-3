@@ -460,6 +460,15 @@ public class Vec extends Keyed<Vec> {
 //    System.out.println("made vecs " + Arrays.toString(res));
     return res;
   }
+  
+  public Vec makeOneDoubles(double value) {
+    Key key = group().addVecs(1)[0];
+    Vec[] res = new Vec[1];
+    res[0] = new Vec(key, _rowLayout);
+    fillDoubleChunks(this, res, new double[]{value});
+    DKV.put(res[0]);
+    return res[0];
+  }
 
 
   private static void fillDoubleChunks(Vec v, final Vec[] ds, final double [] values){
