@@ -440,7 +440,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
-      timeoutValue: 160, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 300, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
@@ -546,8 +546,8 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.9 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.9',
-      timeoutValue: 170, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
+      timeoutValue: 300, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],      
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ]

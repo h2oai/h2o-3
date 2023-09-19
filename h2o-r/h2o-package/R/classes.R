@@ -672,6 +672,9 @@ setClass("H2OBinomialUpliftMetrics",    contains="H2OModelMetrics")
 #' @export
 setMethod("show", "H2OBinomialUpliftMetrics", function(object) {
     callNextMethod(object)  # call to the super
+    cat("ATE: ", object@metrics$ate, "\n", sep="" )
+    cat("ATT: ", object@metrics$atc, "\n", sep="" )
+    cat("ATC: ", object@metrics$att, "\n", sep="" )
     cat("Default AUUC:  ", object@metrics$AUUC, "\n", sep="")
     cat("All types of AUUC:  ", "\n", sep="")
     print(object@metrics$auuc_table)
