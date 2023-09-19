@@ -1603,7 +1603,7 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     :param format: one of 'csv' or 'parquet'. Defaults to 'csv'. Export
         to parquet is multipart and H2O itself determines the optimal number
         of files (1 file per chunk).
-    :param write_checksum: if supported by format (e.g. 'parquet'), 
+    :param write_checksum: if supported by the format (e.g. 'parquet'), 
         export will include a checksum file for each exported data file.
 
     :examples:

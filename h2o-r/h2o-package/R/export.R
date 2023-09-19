@@ -38,6 +38,8 @@
 #' @param format string, one of "csv" or "parquet". Default is "csv". Export
 #'        to parquet is multipart and H2O itself determines the optimal number
 #'        of files (1 file per chunk).
+#' @param write_checksum logical, if supported by the format (e.g. 'parquet'), 
+#'        export will include a checksum file for each exported data file.
 #'        
 #' @examples
 #'\dontrun{
