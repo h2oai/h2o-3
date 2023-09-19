@@ -266,8 +266,6 @@ def naiveBSHAP(mod, y, train, test, xrow, brow, link=False):
         preds[resp] = np.log(preds[resp])
     elif link == "inverse":
         preds[resp] = 1/(preds[resp])
-    elif link == "tweedie":
-        preds[resp] = np.log(preds[resp])
 
     evals = list(zip(pset, preds[resp]))
 
@@ -444,15 +442,18 @@ def helper_test_automl_distributions(y, train, test, output_format, distribution
             if dist != distribution:
                 print(f"Skipping model {model}... {distribution} not supported...")
                 continue
-            
+
             skip_naive = mod.algo.lower() in ["deeplearning", "stackedensemble"]
             skip_symmetry = mod.algo.lower() in ["stackedensemble"] and output_format == "original"
             skip_dummy = mod.algo.lower() in ["glm", "stackedensemble"] and output_format == "original"
             link = False
             if dist in ["poisson", "gamma", "tweedie", "negativebinomial"]:
                 link = "log"
-            if dist == "gamma" and "GLM" in model:
-                link = "inverse"
+            if "GLM" in model:
+                if dist == "gamma":
+                    link = "inverse"
+                if dist == "tweedie":
+                    link = "identity"
         
             test_local_accuracy(
                 mod, train, test, link=False, output_format=output_format, eps=eps, output_space=True
