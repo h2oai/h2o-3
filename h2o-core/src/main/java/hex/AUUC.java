@@ -234,7 +234,9 @@ public class AUUC extends Iced {
             if (qm != null) qm.remove();
             if (fr != null) DKV.remove(fr._key);
         }
-        if(Double.isNaN(quantiles[0])){
+        if(quantiles == null){
+            quantiles = new double[]{0};
+        } else if(Double.isNaN(quantiles[0])){
             quantiles[0] = 0;
         }
         return quantiles;

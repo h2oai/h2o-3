@@ -1039,7 +1039,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
 #' }
 #' @export
-h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type="NONE", auuc_nbins=-1) {
+h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type="NONE") {
 
   # data is now deprecated and the new arg name is newdata
   if (!is.null(data)) {
@@ -1082,10 +1082,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
         parms[["auuc_type"]] <- auuc_type
     } else if(!is.null(model@parameters$auuc_type) && model@parameters$auuc_type != "NONE"){
         parms[["auuc_type"]] <- model@parameters$auuc_type
-    }  
-    if(auuc_nbins > 0){
-        parms[["auuc_nbins"]] <- auuc_nbins
-    }  
+    }
     res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id, newdata.id), .params = parms)
 
     ####
@@ -1144,7 +1141,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' }
 #' @export
 h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, treatment=NULL, 
-                                auc_type="NONE", auuc_type="AUTO", auuc_nbins=-1, custom_auuc_thresholds=NULL) {
+                                auc_type="NONE", auuc_type="AUTO", auuc_nbins=-1) {
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
@@ -1169,7 +1166,6 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
       }
       params$auuc_type <- auuc_type
       params$auuc_nbins <- auuc_nbins
-      params$custom_auuc_thresholds <- paste("[", paste(custom_auuc_thresholds, collapse = ", "),"]")
   }
   params$domain <- domain
   params$distribution <- distribution
