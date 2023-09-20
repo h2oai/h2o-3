@@ -378,7 +378,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
-    :param force_col_types: If true, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Default to false."
+    :param force_col_types: If True, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Default to False.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
     :param escapechar: (Optional) One ASCII character used to escape other characters.
 
@@ -788,7 +788,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
-    :param force_col_types:  If true, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Default to false."
+    :param force_col_types:  If True, will force the column types to be either the ones in Parquet schema for Parquet files or the ones specified in column_types.  This parameter is used for numerical columns only.  Other column settings will happen without setting this parameter.  Default to False.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param partition_by: A list of columns the dataset has been partitioned by. None by default.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.

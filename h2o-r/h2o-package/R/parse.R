@@ -292,6 +292,7 @@ h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA
   # make a name only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
   if( !nzchar(destination_frame) ) destination_frame <- .key.make(parseSetup$destination_frame)
 
+  parseSetup$force_col_types <- force_col_types
   # return the parse setup as a list of setup :D
   parse.params <- list(
         source_frames      = sapply(parseSetup$source_frames, function(asrc) asrc$name),

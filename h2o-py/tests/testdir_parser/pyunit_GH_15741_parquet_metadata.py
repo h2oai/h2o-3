@@ -4,12 +4,7 @@ import h2o
 from tests import pyunit_utils
 
 
-def parquet_parse_simple():
-    """
-    Tests Parquet parser by comparing the summary of the original csv frame with the h2o parsed Parquet frame.
-    Basic use case of importing files with auto-detection of column types.
-    :return: None if passed.  Otherwise, an exception will be thrown.
-    """
+def test_parquet_column_types():
     h2oTypes = {"mixed_col":"real", "uniform_col": "int"}
     desiredTypes = {"mixed_col":"real", "uniform_col": "real"}
     parquet = h2o.import_file(path=pyunit_utils.locate("smalldata/parser/parquet/df.parquet"))
@@ -21,6 +16,6 @@ def parquet_parse_simple():
     
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(parquet_parse_simple)
+    pyunit_utils.standalone_test(test_parquet_column_types)
 else:
-    parquet_parse_simple()
+    test_parquet_column_types()

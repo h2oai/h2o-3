@@ -54,9 +54,10 @@
 #' @param decrypt_tool (Optional) Specify a Decryption Tool (key-reference
 #'        acquired by calling \link{h2o.decryptionSetup}.
 #' @param skipped_columns a list of column indices to be skipped during parsing.
-#' @param force_col_types (Optional) if true will force parser to return the exact column types specified in 
-#'         column_types.  For parquet, if column_types is not specified, the parquet schema will be used to determine 
-#'         the actual column type.
+#' @param force_col_types (Optional) If TRUE, will force the column types to be either the ones in Parquet 
+#'        schema for Parquet files or the ones specified in column_types.  This parameter is used for 
+#'        numerical columns only.  Other column settings will happen without setting this parameter.  
+#'        Default to FALSE.
 #' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
 #' @param partition_by names of the columns the persisted dataset has been partitioned by.
 #' @param quotechar A hint for the parser which character to expect as quoting character. None (default) means autodetection.
@@ -85,7 +86,7 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
                            col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL, force_col_types=FALSE,
                            custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="") {
   h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
-                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns,
+                   na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns, force_col_types,
                    custom_non_data_line_markers=custom_non_data_line_markers, partition_by, quotechar, escapechar)
 }
 
@@ -94,7 +95,7 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
 #' @export
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
                              col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
-                             custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="\\") {
+                             force_col_types=FALSE, custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="\\") {
   if(!is.character(path) || any(is.na(path)) || any(!nzchar(path))) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
