@@ -82,7 +82,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
      * @param customAuucThresholds custom threshold to calculate AUUC, if is not specified, the thresholds will be calculated from prediction vector       
      * @return ModelMetrics object
      */
-    static public ModelMetricsBinomialUplift make(Vec predictedProbs, Vec actualLabels, Vec treatment, String[] domain, AUUC.AUUCType auucType, int auucNbins, double[] customAuucThresholds) {
+    static public ModelMetricsBinomialUplift make(Vec predictedProbs, Vec actualLabels, Vec treatment, String[] domain, AUUC.AUUCType auucType, int auucNbins) {
         Scope.enter();
         try {
             Vec labels = actualLabels.toCategoricalVec();
@@ -99,14 +99,6 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if (!treatment.isCategorical() || treatment.cardinality() != 2)
                 throw new IllegalArgumentException("Treatment values should be catecorical value and have 2 class " + Arrays.toString(treatment.domain()) + " for uplift binomial uplift metrics.");
             long dataSize = treatment.length();
-            if (customAuucThresholds != null) {
-                if(customAuucThresholds.length == 0){
-                    throw new IllegalArgumentException("Custom AUUC thresholds array should have size greater than 0.");
-                }
-                if (auucNbins != customAuucThresholds.length) {
-                    Log.info("Custom AUUC thresholds are specified, so number of AUUC bins will equal to thresholds size.");
-                }
-            }
             if (auucNbins < -1 || auucNbins == 0 || auucNbins > dataSize)
                 throw new IllegalArgumentException("The number of bins to calculate AUUC need to be -1 (default value) or higher than zero, but less than data size.");
             if(auucNbins == -1)
@@ -115,11 +107,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             fr.add("labels", labels);
             fr.add("treatment", treatment);
             MetricBuilderBinomialUplift mb;
-            if (customAuucThresholds == null) {
-                mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, predictedProbs)).doAll(fr)._mb;
-            } else {
-                mb = new UpliftBinomialMetrics(labels.domain(), customAuucThresholds).doAll(fr)._mb;
-            }
+            mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, predictedProbs)).doAll(fr)._mb;
             labels.remove();
             ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, auucType);
             mm._description = "Computed on user-given predictions and labels.";
