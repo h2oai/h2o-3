@@ -16,6 +16,7 @@ import java.util.*;
 import static water.util.RandomUtils.getRNG;
 
 public class VecUtils {
+  public static final double EPS = 1e-3;
   /**
    * Create a new {@link Vec} of categorical values from an existing {@link Vec}.
    *
@@ -378,24 +379,18 @@ public class VecUtils {
   }
 
   public static Vec intToDouble(final Vec src) {
-     Vec newVec = copyOver(src, Vec.T_NUM, null);
-     
-      new MRTask() {
-        @Override public void map(Chunk c) {
-          boolean firstRow = c.start() == 0;
-          for (int i = 0; i < c._len; ++i) {
-            if (!c.isNA(i)) {
-                if (firstRow && i==0)
-                  c.set(i, c.at8(i) * 1.1+0.1);
-                else
-                  c.set(i, c.at8(i));
-              }
-            }
+    Vec newVec = copyOver(src, Vec.T_NUM, null);
+
+    new MRTask() {
+      @Override
+      public void map(Chunk c) {
+        for (int i = 0; i < c._len; ++i) {
+          if (!c.isNA(i)) {
+            c.set(i, (c.at8(i)+EPS)*2.0-c.at8(i)-2*EPS);
+          }
         }
-      }.doAll(newVec);
-      
-      newVec.set(0, newVec.at(0)/1.1-0.1); // take out the addition
-    
+      }
+    }.doAll(newVec);
     return newVec;
   }
 
