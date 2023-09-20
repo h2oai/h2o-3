@@ -1039,7 +1039,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
 #' }
 #' @export
-h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", custom_auuc_thresholds=NULL) {
+h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type="NONE", auuc_nbins=-1) {
 
   # data is now deprecated and the new arg name is newdata
   if (!is.null(data)) {
@@ -1061,6 +1061,9 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if( missingNewdata && auc_type != "NONE") {
     print("WARNING: The `auc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
   }
+  if( missingNewdata && auuc_type != "NONE") {
+    print("WARNING: The `auuc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
+  }  
   if( !missingNewdata ) {
     if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
       print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
@@ -1075,9 +1078,13 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
     } else if(!is.null(model@parameters$auc_type) && model@parameters$auc_type != "NONE"){
         parms[["auc_type"]] <- model@parameters$auc_type
     }
-    if(!is.null(custom_auuc_thresholds)){
-        parms[["custom_auuc_thresholds"]] <- paste("[", paste(custom_auuc_thresholds, collapse = ", "),"]")
-
+    if(auc_type != "NONE"){
+        parms[["auuc_type"]] <- auuc_type
+    } else if(!is.null(model@parameters$auuc_type) && model@parameters$auuc_type != "NONE"){
+        parms[["auuc_type"]] <- model@parameters$auuc_type
+    }  
+    if(auuc_nbins > 0){
+        parms[["auuc_nbins"]] <- auuc_nbins
     }  
     res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id, newdata.id), .params = parms)
 

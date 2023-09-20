@@ -48,7 +48,11 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
 
         @Override
         public boolean isBinomialClassifier() {
-            return false;
+            return true;
+        }
+
+        public void setDefaultAuucThresholds(double[] defaultAuucThresholds) {
+            this._defaultAuucThresholds = defaultAuucThresholds;
         }
     }
 

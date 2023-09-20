@@ -52,12 +52,12 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
     @Override
     public boolean haveMojo() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean havePojo() {
-        return false;
+        return true;
     }
 
     @Override

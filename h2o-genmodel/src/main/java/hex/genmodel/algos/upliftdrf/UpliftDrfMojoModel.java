@@ -1,5 +1,6 @@
 package hex.genmodel.algos.upliftdrf;
 
+import hex.ModelCategory;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 
 public class UpliftDrfMojoModel extends SharedTreeMojoModel {
@@ -32,5 +33,15 @@ public class UpliftDrfMojoModel extends SharedTreeMojoModel {
 
     public double[] getThresholds() {
         return _thresholds;
+    }
+
+    @Override
+    public int getPredsSize() {
+        return 3;
+    }
+
+    @Override
+    public int getPredsSize(ModelCategory mc) {
+        return getPredsSize();
     }
 }

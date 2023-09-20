@@ -244,20 +244,22 @@ def pyunit_make_metrics_uplift():
     print("Performance AUUC with no custom thresholds but change nbins parameter: {}".format(m6.auuc()))
     print("thresholds: {}".format(m6.thresholds()))
 
+    tol = 1e-5
+
     # default model auuc is calculated from train data, default thresholds are from validation data
-    assert abs(model.auuc() - m0.auuc()) > 1e-5 
+    assert abs(model.auuc() - m0.auuc()) > tol 
     # model performance calculates new thresholds but from the same data with the same number of bins, so AUUCs are same
-    assert abs(m0.auuc() - m1.auuc()) < 1e-5
+    assert abs(m0.auuc() - m1.auuc()) < tol
     # make method calculates new thresholds but from the same data with the same number of bins, so AUUCs are same
-    assert abs(m1.auuc() - m2.auuc()) < 1e-5
+    assert abs(m1.auuc() - m2.auuc()) < tol
     # if we use thresholds from performance metric and use it as custom, it makes the same metrics
-    assert abs(m1.auuc() - m3.auuc()) < 1e-5
+    assert abs(m1.auuc() - m3.auuc()) < tol
     # make methods with different nbins parameter changes thresholds and AUUC
-    assert abs(m3.auuc() - m5.auuc()) > 1e-5
+    assert abs(m3.auuc() - m5.auuc()) > tol
     # performance methods with different nbins parameter changes thresholds and AUUC
-    assert abs(m3.auuc() - m6.auuc()) > 1e-5
+    assert abs(m3.auuc() - m6.auuc()) > tol
     # make and performance method with the same nbins parameter and the same data calculates the same thresholds
-    assert abs(m5.auuc() - m6.auuc()) < 1e-5
+    assert abs(m5.auuc() - m6.auuc()) < tol
     
     print("===========================")
 
