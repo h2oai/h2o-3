@@ -18,14 +18,14 @@ def test_force_col_types():
     h2oTypes = h2oData.types
     pyunit_utils.equal_two_dicts_string(h2oOriginalTypes, h2oTypes)
     
-    h2oTypes["C16"]="int"
+    h2oTypes["C16"]="int"   # these will happen without force_col_type
     h2oTypes["C11"]="int"
     h2oTypes["C4"]="enum"
     h2oData2 = h2o.import_file(pyunit_utils.locate("smalldata/parser/synthetic_dataset.csv"), col_types=h2oTypes)
     h2o2Types = h2oData2.types
     pyunit_utils.equal_two_dicts_string(h2oTypes, h2o2Types)
 
-    h2oTypes = h2oData.types
+    h2oTypes = h2oData.types # these changes needs force_col_types = True
     h2oTypes["C2"]="real"
     h2oTypes["C49"]="real"
     h2oTypes["C48"]="int"
@@ -33,6 +33,7 @@ def test_force_col_types():
     h2o3Types = h2oData3.types
     pyunit_utils.equal_two_dicts_string(h2oOriginalTypes, h2o3Types)
 
+    # set force_col_types=True to Ensure changes here.
     h2oData4 = h2o.import_file(pyunit_utils.locate("smalldata/parser/synthetic_dataset.csv"), col_types=h2oTypes, force_col_types=True)
     h2o4Types = h2oData4.types
     pyunit_utils.equal_two_dicts_string(h2oTypes, h2o4Types)

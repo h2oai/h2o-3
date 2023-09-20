@@ -386,7 +386,7 @@ public class VecUtils {
       public void map(Chunk c) {
         for (int i = 0; i < c._len; ++i) {
           if (!c.isNA(i)) {
-            c.set(i, (c.at8(i)+EPS)*2.0-c.at8(i)-2*EPS);
+            c.set(i, (c.at8(i)+EPS)*2.0-c.at8(i)-2.0*EPS);
           }
         }
       }
