@@ -1040,7 +1040,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
 #' }
 #' @export
-h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", custom_auuc_thresholds=NULL) {
+h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE", auuc_type="NONE", auuc_nbins=-1) {
 
   # data is now deprecated and the new arg name is newdata
   if (!is.null(data)) {

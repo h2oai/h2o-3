@@ -21,6 +21,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;

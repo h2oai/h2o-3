@@ -70,47 +70,6 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     protected StringBuilder appendToStringMetrics(StringBuilder sb) {
         return sb;
     }
-
-    /**
-     * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
-     * @param predictedProbs A Vec containing predicted probabilities
-     * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
-     * @param treatment A Vec containing the treatment values               
-     * @param auucType Type of default AUUC
-     * @param nbins Number of bins to calculate AUUC (-1 means default value 1000, the number has to be higher than zero)  
-     * @return ModelMetrics object
-     */
-    static public ModelMetricsBinomialUplift make(Vec predictedProbs, Vec actualLabels, Vec treatment, AUUC.AUUCType auucType, int nbins) {
-        return make(predictedProbs, actualLabels, treatment, actualLabels.domain(), auucType, nbins, null);
-    }
-
-    /**
-     * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
-     * @param predictedProbs A Vec containing predicted probabilities
-     * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
-     * @param treatment A Vec containing the treatment values               
-     * @param auucType Type of default AUUC
-     * @param nbins Number of bins to calculate AUUC (-1 means default value 1000, the number has to be higher than zero)  
-     * @param customAuucThresholds custom threshold to calculate AUUC, if is not specified, the thresholds will be calculated from prediction vector             
-     * @return ModelMetrics object
-     */
-    static public ModelMetricsBinomialUplift make(Vec predictedProbs, Vec actualLabels, Vec treatment, AUUC.AUUCType auucType, int nbins, double[] customAuucThresholds) {
-        return make(predictedProbs, actualLabels, treatment, actualLabels.domain(), auucType, nbins, customAuucThresholds);
-    }
-
-    /**
-     * Build a Binomial ModelMetrics object from predicted probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
-     * @param predictedProbs A Vec containing predicted probabilities
-     * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
-     * @param treatment A Vec containing the treatment values               
-     * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
-     * @param auucType Type of default AUUC
-     * @param auucNbins Number of bins to calculate AUUC (-1 means default value 1000, the number has to be higher than zero)
-     * @return ModelMetrics object
-     */
-    static public ModelMetricsBinomialUplift make(Vec predictedProbs, Vec actualLabels, Vec treatment, String[] domain, AUUC.AUUCType auucType, int auucNbins) {
-        return make(predictedProbs, actualLabels, treatment, domain, auucType, auucNbins, null);
-    }
     
     /**
      * Build a Binomial ModelMetrics object from predicted probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)

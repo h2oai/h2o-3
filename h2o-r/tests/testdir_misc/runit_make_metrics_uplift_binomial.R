@@ -50,8 +50,6 @@ test.make_metrics_uplift_binomial <- function() {
     expect_equal(thresholds0, thresholds1, tolerance=tol)
     expect_equal(thresholds0, thresholds2, tolerance=tol)
     
-    m1 <- h2o.performance(model, train, custom_auuc_thresholds=thresholds)
-    print(m1)
     auuc0 <- h2o.auuc(m0)
     auuc1 <- h2o.auuc(m1)
     auuc2 <- h2o.auuc(m2)
