@@ -1605,7 +1605,7 @@ public class Frame extends Lockable<Frame> {
     return job.start(t, fr.anyVec().nChunks());
   }
 
-  public static Job exportParquet(Frame fr, String path, boolean overwrite, String compression) {
+  public static Job exportParquet(Frame fr, String path, boolean overwrite, String compression, boolean writeChecksum) {
     // Validate input
     if (! H2O.getPM().isEmptyDirectoryAllNodes(path)) {
       throw new H2OIllegalArgumentException(path, "exportFrame", "Cannot use path " + path +
@@ -1626,7 +1626,7 @@ public class Frame extends Lockable<Frame> {
     }
     Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
 
-    H2O.H2OCountedCompleter t = parquetExporter.export(fr, path, overwrite, compression);
+    H2O.H2OCountedCompleter t = parquetExporter.export(fr, path, overwrite, compression, writeChecksum);
     return job.start(t, fr.anyVec().nChunks());
   }
 
