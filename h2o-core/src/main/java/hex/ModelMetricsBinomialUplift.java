@@ -14,7 +14,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public double _att;
     public double _atc;
 
-    public ModelMetricsBinomialUplift(Model model, Frame frame, long nobs, String[] domain, 
+    public ModelMetricsBinomialUplift(Model model, Frame frame, long nobs, String[] domain,
                                       double ate, double att, double atc, double sigma, AUUC auuc,
                                       CustomMetric customMetric) {
         super(model, frame,  nobs, 0, domain, sigma, customMetric);
@@ -53,24 +53,24 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     }
 
     public double auuc() {return _auuc.auuc();}
-    
+
     public double qini(){return _auuc.qini();}
-    
+
     public double auucNormalized(){return _auuc.auucNormalized();}
-    
+
     public int nbins(){return _auuc._nBins;}
-    
+
     public double ate() {return _ate;}
-    
+
     public double att() {return _att;}
-    
+
     public double atc() {return _atc;}
 
     @Override
     protected StringBuilder appendToStringMetrics(StringBuilder sb) {
         return sb;
     }
-    
+
     /**
      * Build a Binomial ModelMetrics object from predicted probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
      * @param predictedProbs A Vec containing predicted probabilities
@@ -82,7 +82,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
      * @param customAuucThresholds custom threshold to calculate AUUC, if is not specified, the thresholds will be calculated from prediction vector       
      * @return ModelMetrics object
      */
-    static public ModelMetricsBinomialUplift make(Vec predictedProbs, Vec actualLabels, Vec treatment, String[] domain, AUUC.AUUCType auucType, int auucNbins) {
+    static public ModelMetricsBinomialUplift make(Vec predictedProbs, Vec actualLabels, Vec treatment, String[] domain, AUUC.AUUCType auucType, int auucNbins, double[] customAuucThresholds) {
         Scope.enter();
         try {
             Vec labels = actualLabels.toCategoricalVec();
@@ -99,6 +99,14 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if (!treatment.isCategorical() || treatment.cardinality() != 2)
                 throw new IllegalArgumentException("Treatment values should be catecorical value and have 2 class " + Arrays.toString(treatment.domain()) + " for uplift binomial uplift metrics.");
             long dataSize = treatment.length();
+            if (customAuucThresholds != null) {
+                if(customAuucThresholds.length == 0){
+                    throw new IllegalArgumentException("Custom AUUC thresholds array should have size greater than 0.");
+                }
+                if (auucNbins != customAuucThresholds.length) {
+                    Log.info("Custom AUUC thresholds are specified, so number of AUUC bins will equal to thresholds size.");
+                }
+            }
             if (auucNbins < -1 || auucNbins == 0 || auucNbins > dataSize)
                 throw new IllegalArgumentException("The number of bins to calculate AUUC need to be -1 (default value) or higher than zero, but less than data size.");
             if(auucNbins == -1)
@@ -107,7 +115,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             fr.add("labels", labels);
             fr.add("treatment", treatment);
             MetricBuilderBinomialUplift mb;
-            mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, predictedProbs)).doAll(fr)._mb;
+            if (customAuucThresholds == null) {
+                mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, predictedProbs)).doAll(fr)._mb;
+            } else {
+                mb = new UpliftBinomialMetrics(labels.domain(), customAuucThresholds).doAll(fr)._mb;
+            }
             labels.remove();
             ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, auucType);
             mm._description = "Computed on user-given predictions and labels.";
@@ -151,14 +163,14 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         public double _sumTE;
         public double _sumTETreatment;
         public long _treatmentCount;
-        
-        public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) { 
-            super(2,domain); 
+
+        public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) {
+            super(2,domain);
             if(thresholds != null) {
                 _auuc = new AUUC.AUUCBuilder(thresholds);
             }
         }
-        
+
         @Override public double[] perRow(double[] ds, float[] yact, Model m) {
             return perRow(ds, yact,1, 0, m);
         }
@@ -177,7 +189,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             int treatmentGroup = (int)yact[1]; // treatment = 1, control = 0
             double treatmentEffect = ds[0] *  weight;
             _sumTE += treatmentEffect; // result prediction
-            _sumTETreatment += treatmentGroup * treatmentEffect; 
+            _sumTETreatment += treatmentGroup * treatmentEffect;
             _treatmentCount += treatmentGroup *  weight;
             if (_auuc != null) {
                 _auuc.perRow(treatmentEffect, weight, y, treatmentGroup);
@@ -229,7 +241,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             AUUC auuc = null;
             if (preds != null) {
                 if (resp != null) {
-                        auuc = new AUUC(preds.vec(0), resp, treatment, auucType, nbins);
+                    auuc = new AUUC(preds.vec(0), resp, treatment, auucType, nbins);
                 }
             }
             return makeModelMetrics(m, f, auuc);

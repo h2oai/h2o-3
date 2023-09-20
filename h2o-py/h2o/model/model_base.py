@@ -148,7 +148,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: A new H2OFrame of predictions.
         """
-        if not isinstance(test_data, h2o.H2OFrame): 
+        if not isinstance(test_data, h2o.H2OFrame):
             raise ValueError("test_data must be an instance of H2OFrame")
         assert_is_type(type, None, Enum("Path", "Node_ID"))
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
@@ -298,7 +298,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                     data={"feature_frequencies": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
-    
+
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
         Predict on a dataset.
@@ -387,7 +387,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         :param test_data: Data to create a feature space on.
         :param layer: 0 index hidden layer.
         """
-        if test_data is None: 
+        if test_data is None:
             raise ValueError("Must specify test data")
         if str(layer).isdigit():
             j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
@@ -412,8 +412,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 "Weight matrix does not exist. Model has {0} weight matrices (0-based indexing), but matrix {1} "
                 "was requested.".format(num_weight_matrices, matrix_id))
         return h2o.get_frame(self._model_json["output"]["weights"][matrix_id]["URL"].split("/")[3])
-    
-    
+
+
 
     def biases(self, vector_id=0):
         """
@@ -449,7 +449,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     def catoffsets(self):
         """Categorical offsets for one-hot encoding."""
         return self._model_json["output"]["catoffsets"]
-    
+
     def default_threshold(self):
         """Default threshold for binomial classification model."""
         return self._model_json["output"]["default_threshold"]
@@ -459,9 +459,9 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         Return training model metrics for any model.
         """
         return self._model_json["output"]["training_metrics"]._metric_json
-    
-    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type=None, 
-                          auuc_type=None):
+
+    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type=None,
+                          auuc_type=None, auuc_nbins=-1, custom_auuc_thresholds=None):
         """
         Generate model metrics for this model on ``test_data``.
 
@@ -491,17 +491,17 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             If type is ``"auto"`` ("qini"), AUUC is calculated. 
         :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass.
         """
-        
+
         if test_data is None:
             if auc_type is not None and auc_type != "none":
                 print("WARNING: The `auc_type` parameter is set but it is not used because the `test_data` parameter is None.")
             if auuc_type is not None:
                 print("WARNING: The `auuc_type` parameter is set but it is not used because the `test_data` parameter is None.")
-            if train: 
+            if train:
                 return self._model_json["output"]["training_metrics"]
-            if valid: 
+            if valid:
                 return self._model_json["output"]["validation_metrics"]
-            if xval: 
+            if xval:
                 return self._model_json["output"]["cross_validation_metrics"]
             return self._model_json["output"]["training_metrics"]
         else:  # cases dealing with test_data not None
@@ -512,16 +512,20 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 return
             if auc_type is not None:
                 assert_is_type(auc_type, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
-                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id), 
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                               data={"auc_type": auc_type})
             elif auuc_type is not None:
                 assert_is_type(auuc_type, Enum("AUTO", "qini", "gain", "lift"))
+                assert_is_type(custom_auuc_thresholds, [float], None)
+                if custom_auuc_thresholds is not None and len(custom_auuc_thresholds) == 0:
+                    print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the custom_auuc_tresholds are empty.")
+                    return
                 if (self._model_json["treatment_column_name"] is not None) and not(self._model_json["treatment_column_name"] in test_data.names):
                     print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the treatment column in your dataset.")
                     return
-                
+
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                              data={"auuc_type": auuc_type})
+                              data={"auuc_type": auuc_type, "auuc_nbins": auuc_nbins, "custom_auuc_thresholds": custom_auuc_thresholds})
             else:
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
             # FIXME need to do the client-side filtering...  (https://github.com/h2oai/h2o-3/issues/13862)
@@ -542,7 +546,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if "scoring_history" in model and model["scoring_history"] is not None:
             return model["scoring_history"].as_data_frame()
         print("No score history for this model")
-        
+
     def negative_log_likelihood(self):
         """
         Retrieve model negative likelihood function value from scoring history if exists for GLM model
@@ -571,7 +575,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         warnings.warn(warning_message, UserWarning, stacklevel=2)
         return self._extract_scoring_history("objective")
 
-        
+
     def _extract_scoring_history(self, value):
         model = self._model_json["output"]
         if 'glm' == self.algo:
@@ -606,7 +610,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         # Later, the method will be exposed only for models supporting the feature.
         if has_extension(self, 'Trees'):
             return self._ntrees_actual()
-        print("No actual number of trees for this model")    
+        print("No actual number of trees for this model")
 
     def feature_interaction(self, max_interaction_depth=100, max_tree_depth=100, max_deepening=-1, path=None):
         """
@@ -707,7 +711,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if "cross_validation_metrics_summary" in model and model["cross_validation_metrics_summary"] is not None:
             return model["cross_validation_metrics_summary"]
         print("No cross-validation metrics summary for this model")
-        
+
     def varimp(self, use_pandas=False):
         """
         Pretty print the variable importances, or return them in a list.
@@ -720,7 +724,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if "variable_importances" in list(model.keys()) and model["variable_importances"]:
             vals = model["variable_importances"].cell_values
             header = model["variable_importances"].col_header
-                
+
             if use_pandas and can_use_pandas():
                 import pandas
                 return pandas.DataFrame(vals, columns=header)
@@ -740,7 +744,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: Return the residual deviance, or None if it is not present.
         """
-        if xval: 
+        if xval:
             raise H2OValueError("Cross-validation metrics are not available.")
         if valid and not train:
             return self._model_json["output"]["validation_metrics"].residual_deviance()
@@ -758,7 +762,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: Return the residual dof, or None if it is not present.
         """
-        if xval: 
+        if xval:
             raise H2OValueError("Cross-validation metrics are not available.")
         if valid and not train:
             return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
@@ -776,7 +780,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: Return the null deviance, or None if it is not present.
         """
-        if xval: 
+        if xval:
             raise H2OValueError("Cross-validation metrics are not available.")
         if valid and not train:
             return self._model_json["output"]["validation_metrics"].null_deviance()
@@ -794,11 +798,11 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: Return the null dof, or None if it is not present.
         """
-        if xval: 
+        if xval:
             raise H2OValueError("Cross-validation metrics are not available.")
         if valid and not train:
             return self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
-        else: 
+        else:
             return self._model_json["output"]["training_metrics"].null_degrees_of_freedom()
 
     def pprint_coef(self):
@@ -817,7 +821,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                                  "generate_variable_inflation_factors is enabled.")
         else:
             raise ValueError("variable inflation factors are only found in GLM models for numerical predictors.")
-        
+
     def coef(self):
         """
         Return the coefficients which can be applied to the non-standardized data.
@@ -856,7 +860,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                                  "compute_p_values=True.")
         else:
             raise ValueError("p-values, z-values and std_error are only found in GLM.")
-        
+
     def _fillMultinomialDict(self, standardize=False):
         if self.algo == 'gam':
             tbl = self._model_json["output"]["coefficients_table"]
@@ -1100,7 +1104,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         m = {}
         for k, v in tm.items(): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
-    
+
     def aucpr(self, train=False, valid=False, xval=False):
         """
         Get the aucPR (Area Under PRECISION RECALL Curve).
@@ -1117,7 +1121,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.items(): 
+        for k, v in tm.items():
             if v is not None and not is_type(v, h2o.model.metrics.binomial.H2OBinomialModelMetrics) and not is_type(v,
                                                                                                                     h2o.model.metrics.multinomial.H2OMultinomialModelMetrics):
                 raise H2OValueError("aucpr() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average PR AUC value, default is Weighted One-to-Rest PR AUC.")
@@ -1225,13 +1229,13 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         # noinspection PyProtectedMember
         output = o._model_json["output"]
         metrics = {}
-        if train: 
+        if train:
             metrics["train"] = output["training_metrics"]
-        if valid: 
+        if valid:
             metrics["valid"] = output["validation_metrics"]
-        if xval: 
+        if xval:
             metrics["xval"] = output["cross_validation_metrics"]
-        if len(metrics) == 0: 
+        if len(metrics) == 0:
             metrics["train"] = output["training_metrics"]
         return metrics
 
@@ -1270,13 +1274,13 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if col_pairs_2dpdp is not None:
             assert_is_type(col_pairs_2dpdp, [[str, str]])
             num_2dpdp = len(col_pairs_2dpdp)
-            
+
         if cols is None and col_pairs_2dpdp is None:
             raise ValueError("Must specify either cols or col_pairs_2dpd to generate partial dependency plots.")
 
         if col_pairs_2dpdp and targets and len(targets) > 1:
             raise ValueError("Multinomial 2D Partial Dependency is available only for one target.")
-            
+
         assert_is_type(destination_key, None, str)
         assert_is_type(nbins, int)
         assert_is_type(plot, bool)
@@ -1301,20 +1305,20 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             if weight_column not in data.names:
                 raise H2OValueError("Column %s does not exist in the data frame" % weight_column)
             weight_column = data.names.index(weight_column)
-        
+
         if row_index is not None:
             if not isinstance(row_index, int):
                 raise H2OValueError("Row index should be of type int.")
         else:
             row_index = -1
-            
+
         if targets is not None:
             assert_is_type(targets, list)
             for i in targets:
                 assert_is_type(i, str)
             num_1dpdp = num_1dpdp
             num_2dpdp = num_2dpdp
-        
+
         kwargs = {}
         kwargs["cols"] = cols
         kwargs["model_id"] = self.model_id
@@ -1336,9 +1340,9 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         pps = json["partial_dependence_data"]
 
         # Plot partial dependence plots using matplotlib
-        return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, 
+        return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize,
                                              col_pairs_2dpdp, data, nbins,
-                                             kwargs["user_cols"], kwargs["num_user_splits"], 
+                                             kwargs["user_cols"], kwargs["num_user_splits"],
                                              plot_stddev, cols, save_plot_path, row_index, targets, include_na)
 
     def __generate_user_splits(self, user_splits, data, kwargs):
@@ -1360,7 +1364,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                         user_cols.append(column_names[colKey])
                     else:
                         raise H2OValueError("Column names/indices used in user_splits are not valid.  They "
-                                                "should be chosen from the columns of your data set.")
+                                            "should be chosen from the columns of your data set.")
 
                     if data[colKey].isfactor()[0] or data[colKey].isnumeric()[0] or data.type(colKey) == "time": # replace enum string with actual value
                         nVal = len(val)
@@ -1373,8 +1377,8 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                                     numVal[ind] = domains.index(val[ind])
                                 else:
                                     raise H2OValueError("Illegal enum value {0} encountered.  To include missing"
-                                                            " values in your feature values, set include_na to "
-                                                            "True.".format(val[ind]))
+                                                        " values in your feature values, set include_na to "
+                                                        "True.".format(val[ind]))
 
                             user_values.extend(numVal)
                         else:
@@ -1382,7 +1386,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                         user_num_splits.append(nVal)
                     else:
                         raise H2OValueError("Partial dependency plots are generated for numerical and categorical "
-                                                "columns only.")
+                                            "columns only.")
                 kwargs["user_cols"] = user_cols
                 kwargs["user_splits"] = user_values
                 kwargs["num_user_splits"] = user_num_splits
@@ -1398,7 +1402,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if plot and to_fig > 0:     # plot 1d pdp for now
             plt = get_matplotlib_pyplot(server)
             cm = get_matplotlib_cm("Partial dependency plots")
-            if not plt: 
+            if not plt:
                 return decorate_plot_result(res=pps, figure=RAISE_ON_FIGURE_ACCESS)
             import matplotlib.gridspec as gridspec
             fig = plt.figure(figsize=figsize)
@@ -1415,13 +1419,13 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     if axes_3d is None or cm is None or plt is None:    # quit if cannot find toolbox
                         break
                     fig_plotted = self.__plot_2d_pdp(fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pps[i], nbins,
-                                                     user_cols, user_num_splits, plot_stddev, cm, i, row_index)                  
+                                                     user_cols, user_num_splits, plot_stddev, cm, i, row_index)
                 else:  # plot 1D pdp
                     col = cols[i]
                     if targets is None or target:
                         fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, row_index, target, include_na)
                     else:
-                        fig_plotted = self.__plot_1d_pdp_multinomial(col, i, data, pps, data_index, fig, gxs, cm, 
+                        fig_plotted = self.__plot_1d_pdp_multinomial(col, i, data, pps, data_index, fig, gxs, cm,
                                                                      plot_stddev, row_index, targets, include_na)
                         data_index = data_index + len(targets)
             if fig_plotted:
@@ -1435,7 +1439,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         else:
             return decorate_plot_result(res=pps)
 
-    def __plot_2d_pdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, 
+    def __plot_2d_pdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits,
                       plot_stddev, cm, i, row_index):
         ax = fig.add_subplot(gxs[i], projection='3d')
         col_pairs = col_pairs_2dpdp[i-num_1dpdp]
@@ -1465,20 +1469,20 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             title += ' and row index {}'.format(row_index)
         ax.set_title(title)
         return True
-    
+
     def __plot_1d_pdp(self, col, i, data, pp, fig, gxs, plot_stddev, row_index, target=None, include_na=False):
         cat = data[col].isfactor()[0]
         axs = fig.add_subplot(gxs[i])
-        self.__set_axs_1d(axs, plot_stddev, cat, pp, col, row_index, target, include_na) 
+        self.__set_axs_1d(axs, plot_stddev, cat, pp, col, row_index, target, include_na)
         return True
-    
-    def __plot_1d_pdp_multinomial(self, col, i, data, pps, data_start_index, fig, gxs, cm, plot_stddev, row_index, 
-                                    targets, include_na):
+
+    def __plot_1d_pdp_multinomial(self, col, i, data, pps, data_start_index, fig, gxs, cm, plot_stddev, row_index,
+                                  targets, include_na):
         cat = data[col].isfactor()[0]
         axs = fig.add_subplot(gxs[i])
         self.__set_axs_1d_multinomial(axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets, include_na)
         return True
-        
+
     # change x, y, z to be 2-D numpy arrays in order to plot it.
     # note that, x stays at one value for the duration of y value changes.
     def __pred_for_3d(self, x, y, z, colPairs, nbins, user_cols, user_num_splits):
@@ -1496,7 +1500,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         Y = np.transpose(np.array(y).reshape(nrow, nBins))
         Z = np.transpose(np.array(z).reshape(nrow, nBins))
         return X,Y,Z
-    
+
     def __grab_values(self, pp, index, data, col, axs):
         cat = data[col].isfactor()[0]
         if cat:
@@ -1511,18 +1515,18 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             xext = [None]*len(labels)
             for ind in range(len(labels)):
                 xext[ind] = labels.index(labels[ind])
-                
+
             if index == 0:    # x-axis
                 axs.set_xticks(x)
                 axs.set_xticklabels(xlab)
             else:   # y-axis
                 axs.set_yticks(x)
                 axs.set_yticklabels(xlab)
-            axs.margins(0.2) 
+            axs.margins(0.2)
             return xext
         else:
             return pp[index]
-        
+
     def __set_axs_1d(self, axs, plot_stddev, cat, pp, col, row_index, target, include_na):
         if not can_use_numpy():
             raise ImportError("numpy is required for partial plots.")
@@ -1560,7 +1564,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
             axs.set_ylim(min(y) - 0.2 * abs(min(y)), max(y) + 0.2 * abs(max(y)))
         if (not cat) and include_na:
             axs.plot(x, [y[np.argwhere(np.isnan(x))[0][0]]] * len(x), '--', color=numline._color,label="NAN")
-            axs.legend() 
+            axs.legend()
         title = "Partial Dependence Plot for {}".format(col)
         if target:
             title += " and class {}".format(target)
@@ -1571,7 +1575,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         axs.set_ylabel(pp.col_header[pp_start_index+1])
         axs.xaxis.grid()
         axs.yaxis.grid()
-        
+
     def __set_axs_1d_multinomial(self, axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets, include_na):
         if not can_use_numpy():
             raise ImportError("numpy is required for multinomial partial plots.")
@@ -1630,7 +1634,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         axs.set_title(title)
         axs.xaxis.grid()
         axs.yaxis.grid()
-        
+
     def varimp_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
         Plot the variable importance for a trained model.
@@ -1682,7 +1686,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         :returns: list of H2OModel objects.
         """
         cvmodels = self._model_json["output"]["cross_validation_models"]
-        if cvmodels is None: 
+        if cvmodels is None:
             return None
         m = []
         for p in cvmodels: m.append(h2o.get_model(p["name"]))
@@ -1697,7 +1701,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         :returns: list of H2OFrame objects.
         """
         preds = self._model_json["output"]["cross_validation_predictions"]
-        if preds is None: 
+        if preds is None:
             return None
         m = []
         for p in preds: m.append(h2o.get_frame(p["name"]))
@@ -1712,7 +1716,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         :returns: H2OFrame
         """
         preds = self._model_json["output"]["cross_validation_holdout_predictions_frame_id"]
-        if preds is None: 
+        if preds is None:
             return None
         return h2o.get_frame(preds["name"])
 
@@ -1723,7 +1727,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         :returns: H2OFrame
         """
         fid = self._model_json["output"]["cross_validation_fold_assignment_frame_id"]
-        if fid is None: 
+        if fid is None:
             return None
         return h2o.get_frame(fid["name"])
 
@@ -1896,7 +1900,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         if not server:
             plt.show()
         if save_plot_path is not None:
-            fig.savefig(fname=save_plot_path)    
+            fig.savefig(fname=save_plot_path)
         return decorate_plot_result(res=importance, figure=fig)
 
     def predicted_vs_actual_by_variable(self, frame, predicted, variable, use_pandas=False):
@@ -1958,7 +1962,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     # --------------------------------
     # ModelBase representation methods
     # --------------------------------
-    
+
     def _str_items(self, verbosity=None):
         verbosity = verbosity or 'full'  # default verbosity when printing model
         # edge cases
@@ -1979,12 +1983,12 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         items.extend([
             "%s : %s" % (self.__class__.__name__, self._model_json["algo_full_name"]),
             "Model Key: %s" % self.key,
-        ])
+            ])
         if verbosity in ['medium', 'full']:
             summary = self.get_summary()
             if summary is not None:
                 items.extend(["", summary])
-            
+
         if verbosity in ['full']:
             model = self._model_json["output"]
             tm = model["training_metrics"]
@@ -2000,9 +2004,9 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                 items.append(model["scoring_history"])
             if "variable_importances" in model and model["variable_importances"]:
                 items.append(model["variable_importances"])
-            
+
         return items
-    
+
     def _str_usage(self, verbosity=None, fmt=None):
         verbosity = verbosity or 'full'  # default verbosity when printing model
         if not self._model_json or verbosity == 'short':
@@ -2013,7 +2017,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         lines.append("Use `model.explain()` to inspect the model.")
         lines.extend(self._str_usage_custom())
         return format_user_tips(format_to_multiline(lines), fmt=fmt) if lines else ""
-    
+
     def _str_usage_custom(self):
         """
         Specific models can override this function to add model-specific user tips
@@ -2029,7 +2033,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
     def _str_pretty_(self, verbosity=None):
         return self._str_(verbosity)+self._str_usage(verbosity, 'pretty')
-    
+
     def _str_html_(self, verbosity=None):
         items = self._str_items(verbosity)
         html = format_to_html(items) if isinstance(items, list) else items
@@ -2044,20 +2048,19 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
     def summary(self):
         """Deprecated. Please use ``get_summary`` instead"""
         return self.get_summary()
-    
+
     def get_summary(self):
         """Return a detailed summary of the model."""
         return self._summary() or "No summary for this model"
-    
+
     def show_summary(self):
         """Print a detailed summary of the model."""
         summary = self.get_summary()
         if summary is not None:
             display(summary)
-            
+
     def show(self, verbosity=None, fmt=None):
         verbosity = verbosity or 'full'  # default verbosity for showing model
         return display(self, fmt=fmt, verbosity=verbosity)
 
     # FIXME: find a way to get rid of this awful habit that consists in doing [if data is present return data else print("no data")]
-    

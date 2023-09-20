@@ -37,6 +37,7 @@ class ModelMetricsHandler extends Handler {
     public boolean _compare_abs;
     public String _auuc_type;
     public int _auuc_nbins;
+    public double[] _custom_auuc_thresholds;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -237,6 +238,7 @@ class ModelMetricsHandler extends Handler {
       this.compare_abs = mml._compare_abs;
       this.auuc_type = mml._auuc_type;
       this.auuc_nbins = mml._auuc_nbins;
+      this.custom_auuc_thresholds = mml._custom_auuc_thresholds;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBaseV3[mml._model_metrics.length];
@@ -375,6 +377,10 @@ class ModelMetricsHandler extends Handler {
             level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
     public int auuc_nbins;
 
+    @API(help = "Custom AUUC thresholds (for uplift binomial classification).", 
+            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+    public double[] custom_auuc_thresholds;
+
     @API(help="Model Metrics.", direction=API.Direction.OUTPUT)
     public ModelMetricsBaseV3 model_metrics;
   }
@@ -407,6 +413,10 @@ class ModelMetricsHandler extends Handler {
      treatment = treatmentFrame.anyVec();
       if(s.auuc_type == null) s.auuc_type = AUUC.AUUCType.AUTO;
       if(s.auuc_nbins < -1 || s.auuc_nbins == 0) throw new H2OIllegalArgumentException("auuc_bins", "make", "The value has to be -1 or higher than 0.");
+      if(s.custom_auuc_thresholds != null) {
+        if (s.custom_auuc_thresholds.length == 0)
+          throw new H2OIllegalArgumentException("custom_auuc_thresholds", "make", "The length of the array has to be higher than 0.");
+      }
     }
 
     if (s.domain ==null) {
@@ -417,7 +427,7 @@ class ModelMetricsHandler extends Handler {
       s.model_metrics = new ModelMetricsRegressionV3().fillFromImpl(mm);
     } else if (s.domain.length==2) {
       if (treatment != null) {
-        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain, s.auuc_type, s.auuc_nbins);
+        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain, s.auuc_type, s.auuc_nbins, s.custom_auuc_thresholds);
         s.model_metrics = new ModelMetricsBinomialUpliftV3().fillFromImpl(mm);
       } else {
         if (pred.numCols()!=1) {
