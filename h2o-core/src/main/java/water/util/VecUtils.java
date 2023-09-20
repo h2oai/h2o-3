@@ -208,13 +208,25 @@ public class VecUtils {
       case Vec.T_STR:
         return stringToInteger(src);
       case Vec.T_NUM:
-      case Vec.T_TIME:
-      case Vec.T_UUID:
-        return src.makeCopy(null, Vec.T_NUM);
+        return numToInteger(src);
       default:
         throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
                 + " given to toNumericVec()");
     }
+  }
+
+  public static Vec numToInteger(final Vec src) {
+    Vec newVec = copyOver(src, Vec.T_NUM, null);
+
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        for (int i=0;i<c._len;++i)
+          if( !c.isNA(i) )
+              c.set(i, Math.round(c.atd(i)));
+      }
+    }.doAll(newVec);
+
+    return newVec;
   }
 
   /**
@@ -366,17 +378,23 @@ public class VecUtils {
   }
 
   public static Vec intToDouble(final Vec src) {
-     //Vec newVec = copyOver(src, Vec.T_NUM, null);
-     Vec newVec = src.makeOneDoubles(Double.NaN);
+     Vec newVec = copyOver(src, Vec.T_NUM, null);
      
       new MRTask() {
         @Override public void map(Chunk c) {
-          for (int i=0;i<c._len;++i)
-            if( !c.isNA(i) ) {
-              c.set(i, c.at8(i));
+          boolean firstRow = c.start() == 0;
+          for (int i = 0; i < c._len; ++i) {
+            if (!c.isNA(i)) {
+                if (firstRow && i==0)
+                  c.set(i, c.at8(i) * 1.1+0.1);
+                else
+                  c.set(i, c.at8(i));
+              }
             }
         }
       }.doAll(newVec);
+      
+      newVec.set(0, newVec.at(0)/1.1-0.1); // take out the addition
     
     return newVec;
   }

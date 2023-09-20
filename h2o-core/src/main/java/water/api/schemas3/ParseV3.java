@@ -40,7 +40,9 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   public int[] skipped_columns;
 
   @API(help="If true, will force the column types to be either the ones in Parquet schema for Parquet files or the " +
-          "ones stored in column_types.  Default to false.", direction=API.Direction.INPUT)
+          "ones specified in column_types.  This parameter is used for numerical columns only.  Other column" +
+          "settings will happen without setting this parameter.  Default to false.", 
+          direction=API.Direction.INPUT)
   public boolean force_col_types;
 
   @API(help="Domains for categorical columns")

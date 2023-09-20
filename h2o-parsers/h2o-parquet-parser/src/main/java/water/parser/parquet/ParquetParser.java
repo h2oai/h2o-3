@@ -32,20 +32,10 @@ public class ParquetParser extends Parser {
   private static final int MAX_PREVIEW_RECORDS = 1000;
 
   private final byte[] _metadata;
- // public static String[] _parquetColNames;
 
   ParquetParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
     _metadata = ((ParquetParseSetup) setup).parquetMetadata;
-    
-    if (setup.getForceColTypes() && _metadata != null && setup.getParquetColumnTypes() == null) {
-      String[] parquetColNames = extractColumnTypes(VecParquetReader.readFooter(_metadata));
-     setup.setParquetColumnTypes(parquetColNames);
-   //   _parquetColNames = parquetColNames.clone();
-    } /*else {
-      if (_parquetColNames != null)
-        _parquetColNames = _parquetColNames.clone();
-    }*/
   }
 
   @Override

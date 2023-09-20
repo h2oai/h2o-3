@@ -26,7 +26,7 @@ import static water.parser.DefaultParserProviders.SVMLight_INFO;
 public final class ParseDataset {
   public Job<Frame> _job;
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
-//  private String[] _parquetColumnTypes;
+
 
   // Keys are limited to ByteVec Keys and Frames-of-1-ByteVec Keys
   public static Frame parse(Key okey, Key... keys) {
@@ -178,11 +178,6 @@ public final class ParseDataset {
     for( Key k : keys ) Lockable.read_lock(k,pds._job); // Read-Lock BEFORE returning
     ParserFJTask fjt = new ParserFJTask(pds, keys, setup, deleteOnDone); // Fire off background parse
     pds._job.start(fjt, totalParseSize);
-/*    if (setup.getForceColTypes() && "PARQUET".equals(setup.getParseType().name())) {
-      String[] parquetColTypes = setup.getParquetColumnTypes();
-      if (parquetColTypes != null)
-       pds._parquetColumnTypes = parquetColTypes.clone();
-    }*/
     return pds;
   }
 
@@ -440,10 +435,6 @@ public final class ParseDataset {
     int numCols = columnTypes.length;
     for (int index=0; index<numCols; index++) {
       switch (columnTypes[index]) {
-        case "BOOLEAN": 
-          if (!fr.vec(index).isCategorical())
-            fr.replace((index), fr.vec(index).toCategoricalVec());
-          break;
         case "INT32":
         case "INT64":
           if (!fr.vec(index).isInt())
@@ -463,12 +454,6 @@ public final class ParseDataset {
     int numCols = columnTypes.length;
     for (int index=0; index<numCols; index++) {
       switch (columnTypes[index]) {
-        case "enum":
-        case "factor":
-        case "categorical": 
-          if (!fr.vec(index).isCategorical()) 
-            fr.replace((index), fr.vec(index).toCategoricalVec()).remove(); // no change if type is already enum
-          break;
         case "int":
         case "long": 
           if (!fr.vec(index).isInt())
@@ -476,10 +461,9 @@ public final class ParseDataset {
           break;
         case "float":
         case "double":
-        case "real": fr.replace((index), fr.vec(index).toDoubleVec()).remove(); break;
-        case "numeric": 
-          if (!fr.vec(index).isNumeric()) // only change when it is not numeric
-            fr.replace((index), fr.vec(index).toNumericVec()); 
+        case "real": 
+          if (fr.vec(index).isInt())
+            fr.replace((index), fr.vec(index).toDoubleVec()).remove(); 
           break;
         default: break; // no conversion for other data types.
       }
@@ -1105,11 +1089,6 @@ public final class ParseDataset {
           if( _outerMFPT._deleteOnDone) fr.delete(_outerMFPT._jobKey,new Futures(), true).blockForPending();
           else if( fr._key != null ) fr.unlock(_outerMFPT._jobKey);
         }
-/*        if ("PARQUET".equals(_setup.getParseType().name()) && _setup.getForceColTypes() && _parquetColumnTypes == null) {
-          String[] parquetColumnTypes = _setup.getParquetColumnTypes();
-          if (parquetColumnTypes != null)
-            _parquetColumnTypes = parquetColumnTypes.clone();
-        }*/
       }
     }
 
