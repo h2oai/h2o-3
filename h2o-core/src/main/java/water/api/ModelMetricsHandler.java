@@ -174,7 +174,6 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Set number of bins to calculate AUUC. Must be -1 or higher than 0. Default is -1 which means 1000 (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
     public int auuc_nbins;
     
-
     @API(help = "Set custom thresholds to calculate AUUC (optional, only for uplift binomial classification). ", json=false, direction = API.Direction.INPUT)
     public double[] custom_auuc_thresholds;
 
