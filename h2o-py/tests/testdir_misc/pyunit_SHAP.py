@@ -383,6 +383,7 @@ def helper_test_all(
 
 def helper_test_automl(y, train, test, output_format, eps=1e-4, max_models=13, monotone=False, **kwargs
                        ):
+    remove_all_but(train, test)
     # Using seed to prevent DL models to end up with an unstable model
     aml = H2OAutoML(max_models=max_models, seed=seed,
                     monotone_constraints=dict(age=1, family_size=-1) if monotone else None,

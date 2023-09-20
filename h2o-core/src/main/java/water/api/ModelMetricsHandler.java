@@ -512,8 +512,11 @@ class ModelMetricsHandler extends Handler {
     long workAmount = parms._frame.anyVec().nChunks();
     if (s.predict_contributions) {
       workAmount = parms._frame.anyVec().length();
-      if (null != parms._background_frame)
+      if (null != parms._background_frame) {
         workAmount = Math.max(workAmount, parms._background_frame.anyVec().length()); // Maps over the bigger frame while the smaller is sent across the cluster
+        if (!s.output_per_reference)
+          workAmount +=  parms._frame.anyVec().length() * parms._background_frame.anyVec().length(); // Aggregating over the baselines
+      }
       if (null == parms._predictions_name)
         parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
     } else if (s.row_to_tree_assignment) {

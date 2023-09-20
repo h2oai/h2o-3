@@ -1,9 +1,6 @@
 package hex;
 
-import water.Job;
-import water.JobUpdatePostMap;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -64,10 +61,56 @@ public abstract class ContributionsWithBackgroundFrameTask<T extends Contributio
     }
   }
 
+  double estimateRequiredMemory(int nCols) {
+    return 8 * nCols * _frame.numRows() * _backgroundFrame.numRows();
+  }
+
+  double estimatePerNodeMinimalMemory(int nCols) {
+    double reqMem = estimateRequiredMemory(nCols);
+    double maxMinChunkSizeInVectorGroup = Math.min(reqMem, 10000 * 8 * nCols);
+
+    long nRowsOfSmallerFrame = _isFrameBigger ? _backgroundFrame.numRows() : _frame.numRows();
+
+    // We need the whole smaller frame on each node and one chunk per col of the bigger frame (at minimum)
+    return Math.max(reqMem / H2O.CLOUD._memary.length, maxMinChunkSizeInVectorGroup + nRowsOfSmallerFrame * nCols * 8);
+  }
+
+
+  long minMemoryPerNode() {
+    long minMem = Long.MAX_VALUE;
+    for (H2ONode h2o : H2O.CLOUD._memary) {
+      long mem = h2o._heartbeat.get_free_mem(); // in bytes
+      if (mem < minMem)
+        minMem = mem;
+    }
+    return minMem;
+  }
+
+  long totalFreeMemory() {
+    long mem = 0;
+    for (H2ONode h2o : H2O.CLOUD._memary) {
+      mem += h2o._heartbeat.get_free_mem(); // in bytes
+    }
+    return mem;
+  }
+
+  boolean enoughMinMemory(double estimatedMemory) {
+    return minMemoryPerNode() > estimatedMemory;
+  }
+
   abstract protected void map(Chunk[] cs, Chunk[] bgCs, NewChunk[] ncs);
 
   // takes care of mapping over the bigger frame 
   public Frame runAndGetOutput(Job j, Key<Frame> destinationKey, String[] names) {
+    double reqMem = estimateRequiredMemory(names.length + 2);
+    double reqPerNodeMem = estimatePerNodeMinimalMemory(names.length + 2);
+    if (!enoughMinMemory(reqPerNodeMem)) {
+      throw new RuntimeException("Not enough memory. Estimated minimal total memory is " + reqMem + "B. " +
+              "Estimated minimal per node memory (assuming perfectly balanced datasets) is " + reqPerNodeMem + "B. " +
+              "Node with minimum memory has " + minMemoryPerNode() + "B. Total available memory is " + totalFreeMemory() + "B."
+      );
+    }
+  
     String[] namesWithRowIdx = new String[names.length + 2];
     System.arraycopy(names, 0, namesWithRowIdx, 0, names.length);
     namesWithRowIdx[names.length] = "RowIdx";
