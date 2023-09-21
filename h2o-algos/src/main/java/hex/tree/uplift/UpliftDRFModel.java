@@ -88,7 +88,7 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     }
 
     @Override
-    public ModelMojoWriter getMojo() {
+    public UpliftDrfMojoWriter getMojo() {
         return new UpliftDrfMojoWriter(this);
     }
 
