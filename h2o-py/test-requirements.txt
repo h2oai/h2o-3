@@ -32,6 +32,7 @@ shap==0.29.1
 boto3==1.18.65
 lifelines>=0.19.5
 xlsxwriter==1.3.7
+xgboost==1.7.6
 causalml==0.12.3; python_version <= '3.9'
 causalml==0.14.1; python_version > '3.9'
 colorama
