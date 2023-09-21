@@ -697,7 +697,6 @@ public final class ParseDataset {
 
     int _reservedKeys;
     private ParseWriter.ParseErr[] _errors = new ParseWriter.ParseErr[0];
-    //String[] _parquetColumnTypes;
 
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key<Job> jobKey, Key[] fkeys, boolean deleteOnDone ) {
       _vg = vg; 
@@ -962,7 +961,6 @@ public final class ParseDataset {
       private transient NonBlockingSetInt _visited;
       private transient long [] _espc;
       final int _nchunks;
-    //  private String[] _parquetColumnTypes;
 
       DistributedParse(VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey, int nchunks) {
         super(null);

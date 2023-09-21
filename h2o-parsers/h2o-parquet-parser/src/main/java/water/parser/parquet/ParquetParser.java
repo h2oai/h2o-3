@@ -123,7 +123,6 @@ public class ParquetParser extends Parser {
     byte[] metadataBytes = VecParquetReader.readFooterAsBytes(vec);
     ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes);
     checkCompatibility(metadata);
-  //  _parquetColNames = extractColumnTypes(metadata); 
     return toInitialSetup(metadata.getFileMetaData().getSchema(), metadataBytes);
   }
   
