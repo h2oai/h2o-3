@@ -107,7 +107,6 @@ public class AdaBoost extends ModelBuilder<AdaBoostModel, AdaBoostModel.AdaBoost
                 _trainWithWeights.add(_weightsName, weights);
                 DKV.put(_trainWithWeights);
                 Scope.track(weights);
-                _weightsName = _trainWithWeights.lastVecName();
             } else {
                 _trainWithWeights = _parms.train();
             }
